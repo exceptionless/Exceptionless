@@ -12,7 +12,7 @@
     let { children } = $props();
 
     const userQuery = getMeQuery();
-    let isAuthenticated = $derived(accessToken.value !== null);
+    let isAuthenticated = $derived(accessToken.current !== null);
     const filteredRoutes = $derived.by(() => {
         const context: NavigationItemContext = { authenticated: isAuthenticated, user: userQuery.data };
         return routes.filter((route) => (route.show ? route.show(context) : true));

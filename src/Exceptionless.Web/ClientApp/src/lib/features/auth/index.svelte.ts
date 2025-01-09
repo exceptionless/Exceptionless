@@ -1,13 +1,30 @@
 import { goto } from '$app/navigation';
 import { page } from '$app/stores';
 import { env } from '$env/dynamic/public';
-import { AuthJSONSerializer, persisted } from '$shared/persisted.svelte';
 import { useFetchClient } from '@exceptionless/fetchclient';
+import { PersistedState } from 'runed';
 import { get } from 'svelte/store';
 
 import type { Login, TokenResult } from './models';
 
-export const accessToken = persisted('satellizer_token', null, new AuthJSONSerializer());
+const authSerializer = {
+    deserialize: (value: null | string): null | string => {
+        if (value === '') {
+            return null;
+        }
+
+        return value;
+    },
+    serialize: (value: null | string): string => {
+        if (value === null) {
+            return '';
+        }
+
+        return value;
+    }
+};
+
+export const accessToken = new PersistedState<null | string>('satellizer_token', null, { serializer: authSerializer });
 
 export const enableAccountCreation = env.PUBLIC_ENABLE_ACCOUNT_CREATION === 'true';
 export const facebookClientId = env.PUBLIC_FACEBOOK_APPID;
@@ -98,7 +115,7 @@ export async function login(email: string, password: string) {
     });
 
     if (response.ok && response.data?.token) {
-        accessToken.value = response.data.token;
+        accessToken.current = response.data.token;
     } else if (response.status === 401) {
         response.problem.setErrorMessage('Invalid email or password');
     }
@@ -109,7 +126,7 @@ export async function login(email: string, password: string) {
 export async function logout() {
     const client = useFetchClient();
     await client.get('auth/logout', { expectedStatusCodes: [200, 401] });
-    accessToken.value = null;
+    accessToken.current = null;
 }
 
 async function oauthLogin(options: {
@@ -158,7 +175,7 @@ async function oauthLogin(options: {
     });
 
     if (response.ok && response.data?.token) {
-        accessToken.value = response.data.token;
+        accessToken.current = response.data.token;
         await goto(options.redirectUrl || '/');
     }
 }

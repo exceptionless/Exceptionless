@@ -9,7 +9,7 @@
     import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { useFetchClient } from '@exceptionless/fetchclient';
 
-    let isAuthenticated = $derived(accessToken.value !== null);
+    let isAuthenticated = $derived(accessToken.current !== null);
 
     $effect(() => {
         if (!isAuthenticated) {

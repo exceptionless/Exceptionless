@@ -92,7 +92,7 @@ export function getOrganizationProjectsQuery(request: GetOrganizationProjectsReq
     const queryClient = useQueryClient();
 
     return createQuery<ViewProject[], ProblemDetails>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.organizationId,
+        enabled: () => !!accessToken.current && !!request.route.organizationId,
         onSuccess: (data: ViewProject[]) => {
             data.forEach((project) => {
                 queryClient.setQueryData(queryKeys.id(project.id!), project);
@@ -117,7 +117,7 @@ export function getOrganizationProjectsQuery(request: GetOrganizationProjectsReq
 
 export function getProjectQuery(request: GetProjectRequest) {
     return createQuery<ViewProject, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.value && !!request.route.id,
+        enabled: () => !!accessToken.current && !!request.route.id,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<ViewProject>(`projects/${request.route.id}`, {

@@ -5,7 +5,7 @@
     import * as DataTable from '$comp/data-table';
     import * as FacetedFilter from '$comp/faceted-filter';
     import { toFacetedFilters } from '$comp/filters/facets';
-    import { DateFilter, filterChanged, filterRemoved, FilterSerializer, getDefaultFilters, type IFilter, toFilter } from '$comp/filters/filters.svelte';
+    import { DateFilter, filterChanged, filterRemoved, filterSerializer, getDefaultFilters, type IFilter, toFilter } from '$comp/filters/filters.svelte';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
@@ -17,11 +17,10 @@
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/StacksBulkActionsDropdownMenu.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { useFetchClientStatus } from '$shared/api/api.svelte';
-    import { persisted } from '$shared/persisted.svelte';
     import { isTableEmpty, removeTableData, removeTableSelection } from '$shared/table';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
-    import { useEventListener } from 'runed';
+    import { PersistedState, useEventListener } from 'runed';
     import { throttle } from 'throttle-debounce';
     import IconOpenInNew from '~icons/mdi/open-in-new';
 
@@ -44,18 +43,18 @@
     });
     const eventId = $derived(eventsResponse?.data?.[0]?.id);
 
-    const limit = persisted<number>('events.issues.limit', 10);
+    const limit = new PersistedState<number>('events.issues.limit', 10);
     const defaultFilters = getDefaultFilters().filter((f) => f.key !== 'type');
-    const persistedFilters = persisted<IFilter[]>('events.issues.filters', defaultFilters, new FilterSerializer());
-    persistedFilters.value.push(...defaultFilters.filter((df) => !persistedFilters.value.some((f) => f.key === df.key)));
+    const persistedFilters = new PersistedState<IFilter[]>('events.issues.filters', defaultFilters, { serializer: filterSerializer });
+    persistedFilters.current.push(...defaultFilters.filter((df) => !persistedFilters.current.some((f) => f.key === df.key)));
 
-    const filter = $derived(toFilter(persistedFilters.value.filter((f) => f.key !== 'date:date')));
-    const facets = $derived(toFacetedFilters(persistedFilters.value));
-    const time = $derived<string>((persistedFilters.value.find((f) => f.key === 'date:date') as DateFilter).value as string);
+    const filter = $derived(toFilter(persistedFilters.current.filter((f) => f.key !== 'date:date')));
+    const facets = $derived(toFacetedFilters(persistedFilters.current));
+    const time = $derived<string>((persistedFilters.current.find((f) => f.key === 'date:date') as DateFilter).value as string);
 
     function onDrawerFilterChanged(filter: IFilter): void {
         if (filter.key !== 'type') {
-            persistedFilters.value = filterChanged(persistedFilters.value, filter);
+            persistedFilters.current = filterChanged(persistedFilters.current, filter);
         }
 
         selectedStackId = undefined;
@@ -63,15 +62,15 @@
 
     function onFilterChanged(filter: IFilter): void {
         if (filter.key !== 'type') {
-            persistedFilters.value = filterChanged(persistedFilters.value, filter);
+            persistedFilters.current = filterChanged(persistedFilters.current, filter);
         }
     }
 
     function onFilterRemoved(filter?: IFilter): void {
-        persistedFilters.value = filterRemoved(persistedFilters.value, defaultFilters, filter);
+        persistedFilters.current = filterRemoved(persistedFilters.current, defaultFilters, filter);
     }
 
-    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: limit.value, mode: 'stack_frequent' });
+    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: limit.current, mode: 'stack_frequent' });
     const table = createTable(context.options);
     const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && !table.getCanPreviousPage());
 
@@ -113,7 +112,7 @@
         }
 
         // Do not refresh if the filter criteria doesn't match the web socket message.
-        if (!shouldRefreshPersistentEventChanged(persistedFilters.value, filter, message.organization_id, message.project_id, message.id)) {
+        if (!shouldRefreshPersistentEventChanged(persistedFilters.current, filter, message.organization_id, message.project_id, message.id)) {
             return;
         }
 
@@ -137,7 +136,7 @@
     <Card.Root>
         <Card.Title class="p-6 pb-0 text-2xl" level={2}>Issues <AutomaticRefreshIndicatorButton {canRefresh} refresh={loadData} /></Card.Title>
         <Card.Content class="pt-4">
-            <EventsDataTable bind:limit={limit.value} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
+            <EventsDataTable bind:limit={limit.current} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
                 {#snippet toolbarChildren()}
                     <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
                 {/snippet}
@@ -148,7 +147,7 @@
                         {/if}
                     </div>
 
-                    <DataTable.PageSize bind:value={limit.value} {table}></DataTable.PageSize>
+                    <DataTable.PageSize bind:value={limit.current} {table}></DataTable.PageSize>
                     <div class="flex items-center space-x-6 lg:space-x-8">
                         <DataTable.PageCount {table} />
                         <DataTable.Pagination {table} />

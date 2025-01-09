@@ -1,6 +1,5 @@
 import type { PersistentEventKnownTypes } from '$features/events/models';
 import type { StackStatus } from '$features/stacks/models';
-import type { Serializer } from '$shared/persisted.svelte';
 
 export interface IFilter {
     isEmpty(): boolean;
@@ -96,29 +95,6 @@ export class DateFilter implements IFilter {
             type: this.type,
             value: this.value
         };
-    }
-}
-
-export class FilterSerializer implements Serializer<IFilter[]> {
-    public deserialize(text: string): IFilter[] {
-        if (!text) {
-            return [];
-        }
-
-        const data: unknown[] = JSON.parse(text);
-        const filters: IFilter[] = [];
-        for (const filterData of data) {
-            const filter = getFilter(filterData as Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'>);
-            if (filter) {
-                filters.push(filter);
-            }
-        }
-
-        return filters;
-    }
-
-    public serialize(object: IFilter[]): string {
-        return JSON.stringify(object);
     }
 }
 
@@ -531,6 +507,26 @@ export class VersionFilter implements IFilter {
 export function filterChanged(filters: IFilter[], updated: IFilter): IFilter[] {
     return processFilterRules(setFilter(filters, updated), updated);
 }
+
+export const filterSerializer = {
+    deserialize: (value: string): IFilter[] => {
+        if (!value) {
+            return [];
+        }
+
+        const data: unknown[] = JSON.parse(value);
+        const filters: IFilter[] = [];
+        for (const filterData of data) {
+            const filter = getFilter(filterData as Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'>);
+            if (filter) {
+                filters.push(filter);
+            }
+        }
+
+        return filters;
+    },
+    serialize: JSON.stringify
+};
 
 export function filterRemoved(filters: IFilter[], defaultFilters: IFilter[], removed?: IFilter): IFilter[] {
     // If detail is undefined, remove all filters.

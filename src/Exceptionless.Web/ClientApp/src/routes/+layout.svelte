@@ -28,7 +28,7 @@
             throw response.problem ?? response;
         }
     });
-    setAccessTokenFunc(() => accessToken.value);
+    setAccessTokenFunc(() => accessToken.current);
 
     useMiddleware(async (ctx: FetchClientContext, next: () => Promise<void>) => {
         await next();

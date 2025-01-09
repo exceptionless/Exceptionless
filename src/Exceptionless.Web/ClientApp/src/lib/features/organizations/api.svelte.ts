@@ -35,7 +35,7 @@ export function getOrganizationQuery(request: GetOrganizationsRequest) {
     const queryClient = useQueryClient();
 
     return createQuery<ViewOrganization[], ProblemDetails>(() => ({
-        enabled: () => !!accessToken.value,
+        enabled: () => !!accessToken.current,
         onSuccess: (data: ViewOrganization[]) => {
             data.forEach((organization) => {
                 queryClient.setQueryData(queryKeys.id(organization.id!), organization);
