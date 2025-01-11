@@ -1,9 +1,9 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { page } from '$app/state';
-    import ErrorMessage from '$comp/ErrorMessage.svelte';
-    import Loading from '$comp/Loading.svelte';
-    import Logo from '$comp/Logo.svelte';
+    import ErrorMessage from '$comp/error-message.svelte';
+    import Loading from '$comp/loading.svelte';
+    import Logo from '$comp/logo.svelte';
     import { A, Muted, P } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';

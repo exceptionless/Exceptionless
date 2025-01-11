@@ -1,5 +1,5 @@
 <script lang="ts">
-    import Loading from '$comp/Loading.svelte';
+    import Loading from '$comp/loading.svelte';
     import Badge from '$comp/ui/badge/badge.svelte';
 </script>
 

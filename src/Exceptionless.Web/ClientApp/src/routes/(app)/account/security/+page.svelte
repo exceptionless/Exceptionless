@@ -1,7 +1,7 @@
 <script lang="ts">
-    import ErrorMessage from '$comp/ErrorMessage.svelte';
-    import PasswordInput from '$comp/form/PasswordInput.svelte';
-    import Loading from '$comp/Loading.svelte';
+    import ErrorMessage from '$comp/error-message.svelte';
+    import PasswordInput from '$comp/form/password-input.svelte';
+    import Loading from '$comp/loading.svelte';
     import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';

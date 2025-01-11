@@ -2,15 +2,15 @@
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
     import * as DataTable from '$comp/data-table';
-    import DelayedRender from '$comp/DelayedRender.svelte';
-    import ErrorMessage from '$comp/ErrorMessage.svelte';
+    import DelayedRender from '$comp/delayed-render.svelte';
+    import ErrorMessage from '$comp/error-message.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
     import { toFacetedFilters } from '$comp/filters/facets';
     import { filterChanged, filterRemoved, filterSerializer, getDefaultFilters, type IFilter, toFilter } from '$comp/filters/filters.svelte';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
-    import EventsDrawer from '$features/events/components/EventsDrawer.svelte';
+    import EventsDrawer from '$features/events/components/events-drawer.svelte';
     import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters';
     import { getTableContext } from '$features/events/components/table/options.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
