@@ -5,8 +5,8 @@
     import { Button } from '$comp/ui/button';
     import * as Command from '$comp/ui/command';
     import * as Popover from '$comp/ui/popover';
+    import Circle from 'lucide-svelte/icons/circle';
     import { toast } from 'svelte-sonner';
-    import IconAddCircleOutline from '~icons/mdi/add-circle-outline';
 
     interface Props {
         changed: (filter: IFilter) => void;
@@ -67,7 +67,7 @@
     <Popover.Trigger>
         {#snippet children()}
             <Button class="h-8" size="sm" variant="outline">
-                <IconAddCircleOutline class="mr-2 size-4" /> Filter
+                <Circle class="mr-2 size-4" /> Filter
             </Button>
         {/snippet}
     </Popover.Trigger>

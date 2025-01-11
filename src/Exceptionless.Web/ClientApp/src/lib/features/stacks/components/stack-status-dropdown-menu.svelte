@@ -1,7 +1,7 @@
 <script lang="ts">
     import Button from '$comp/ui/button/button.svelte';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import ChevronDown from '~icons/mdi/chevron-down';
+    import ChevronDown from 'lucide-svelte/icons/chevron-down';
 
     import { postChangeStatus, postMarkFixed, postMarkSnoozed } from '../api.svelte';
     import { Stack, StackStatus } from '../models';

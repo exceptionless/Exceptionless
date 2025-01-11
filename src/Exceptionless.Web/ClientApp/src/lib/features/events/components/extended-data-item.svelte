@@ -3,8 +3,8 @@
     import ObjectDump from '$comp/object-dump.svelte';
     import { Code, H4 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
-    import IconArrowDown from '~icons/mdi/arrow-down';
-    import IconArrowUp from '~icons/mdi/arrow-up';
+    import ArrowDown from 'lucide-svelte/icons/arrow-down';
+    import ArrowUp from 'lucide-svelte/icons/arrow-up';
 
     interface Props {
         canPromote?: boolean;
@@ -70,11 +70,11 @@
             {#if canPromote}
                 {#if !isPromoted}
                     <Button onclick={async () => await promote(title)} size="icon" title="Promote to Tab"
-                        ><IconArrowUp /><span class="sr-only">Promote to Tab</span></Button
+                        ><ArrowUp /><span class="sr-only">Promote to Tab</span></Button
                     >
                 {:else}
                     <Button onclick={async () => await demote(title)} size="icon" title="Demote Tab"
-                        ><IconArrowDown /><span class="sr-only">Demote Tab</span></Button
+                        ><ArrowDown /><span class="sr-only">Demote Tab</span></Button
                     >
                 {/if}
             {/if}

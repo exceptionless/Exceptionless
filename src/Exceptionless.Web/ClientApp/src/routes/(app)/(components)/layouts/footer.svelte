@@ -1,9 +1,9 @@
 <script lang="ts">
     import { A } from '$comp/typography';
-    import IconFacebook from '~icons/mdi/facebook';
-    import IconGitHub from '~icons/mdi/github';
-    import IconTwitter from '~icons/mdi/twitter';
-    import IconWeb from '~icons/mdi/web';
+    import Facebook from 'lucide-svelte/icons/facebook';
+    import GitHub from 'lucide-svelte/icons/github';
+    import Web from 'lucide-svelte/icons/globe';
+    import Twitter from 'lucide-svelte/icons/twitter';
 
     const currentYear = new Date().getFullYear();
 </script>
@@ -32,16 +32,16 @@
     </ul>
     <div class="flex space-x-6 sm:justify-center">
         <A aria-label="Exceptionless Facebook Website" href="https://www.facebook.com/exceptionless/" target="_blank" variant="navigation">
-            <IconFacebook class="size-5" />
+            <Facebook class="size-5" />
         </A>
         <A aria-label="Exceptionless Twitter Website" href="https://x.com/Exceptionless" target="_blank" variant="navigation">
-            <IconTwitter class="size-5" />
+            <Twitter class="size-5" />
         </A>
         <A aria-label="Exceptionless GitHub Website" href="https://github.com/exceptionless" target="_blank" variant="navigation">
-            <IconGitHub class="size-5" />
+            <GitHub class="size-5" />
         </A>
         <A aria-label="Exceptionless Website" href="https://exceptionless.com/" target="_blank" variant="navigation">
-            <IconWeb class="size-5" />
+            <Web class="size-5" />
         </A>
     </div>
 </div>

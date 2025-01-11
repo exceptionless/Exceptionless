@@ -6,7 +6,7 @@
     import * as Popover from '$comp/ui/popover';
     import Separator from '$comp/ui/separator/separator.svelte';
     import { cn } from '$lib/utils';
-    import IconCheck from '~icons/mdi/check';
+    import Check from 'lucide-svelte/icons/check';
 
     type Option = {
         label: string;
@@ -108,7 +108,7 @@
                                         updatedValues.includes(option.value) ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
                                     )}
                                 >
-                                    <IconCheck className={cn('h-4 w-4')} />
+                                    <Check className={cn('h-4 w-4')} />
                                 </div>
                                 <span>
                                     {option.label}

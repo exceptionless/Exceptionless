@@ -2,11 +2,11 @@
     import { goto } from '$app/navigation';
     import Button from '$comp/ui/button/button.svelte';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
+    import Reference from 'lucide-svelte/icons/link-2';
+    import Settings from 'lucide-svelte/icons/settings';
+    import Delete from 'lucide-svelte/icons/trash';
+    import PromoteToExternal from 'lucide-svelte/icons/trending-up';
     import { toast } from 'svelte-sonner';
-    import IconSettings from '~icons/mdi/gear';
-    import IconReference from '~icons/mdi/link';
-    import IconDelete from '~icons/mdi/trash-can';
-    import IconPromoteToExternal from '~icons/mdi/trending-up';
 
     import { deleteMarkCritical, deleteStack, postAddLink, postMarkCritical, postPromote } from '../api.svelte';
     import { Stack } from '../models';
@@ -112,7 +112,7 @@
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
         <Button variant="ghost" size="icon">
-            <IconSettings class="size-4" />
+            <Settings class="size-4" />
         </Button>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
@@ -128,16 +128,16 @@
             </DropdownMenu.CheckboxItem>
             <DropdownMenu.Separator />
             <DropdownMenu.Item onclick={() => promoteToExternal()} title="Used to promote stacks to external systems">
-                <IconPromoteToExternal class="mr-2 size-4" />
+                <PromoteToExternal class="mr-2 size-4" />
                 Promote To External
             </DropdownMenu.Item>
             <DropdownMenu.Item onclick={() => (openAddStackReferenceDialog = true)} title="Add a reference link to an external resource">
-                <IconReference class="mr-2 size-4" />
+                <Reference class="mr-2 size-4" />
                 Add Reference Link
             </DropdownMenu.Item>
             <DropdownMenu.Separator />
             <DropdownMenu.Item onclick={() => (openRemoveStackDialog = true)} class="text-destructive" title="Delete this stack">
-                <IconDelete class="mr-2 size-4" />
+                <Delete class="mr-2 size-4" />
                 Delete
             </DropdownMenu.Item>
         </DropdownMenu.Group>

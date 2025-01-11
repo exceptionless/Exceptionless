@@ -7,7 +7,7 @@
 
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import IconViewColumn from '~icons/mdi/view-column';
+    import ViewColumn from 'lucide-svelte/icons/columns-3';
 
     interface Props {
         table: Table<TData>;
@@ -19,7 +19,7 @@
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
         <Button class="ml-auto hidden h-8 lg:flex" size="sm" variant="outline">
-            <IconViewColumn class="mr-2 size-4" />
+            <ViewColumn class="mr-2 size-4" />
             View
         </Button>
     </DropdownMenu.Trigger>

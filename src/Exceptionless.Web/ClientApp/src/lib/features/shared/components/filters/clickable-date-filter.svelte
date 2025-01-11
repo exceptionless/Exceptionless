@@ -1,7 +1,7 @@
 <script lang="ts">
     import { A, type AProps } from '$comp/typography';
     import { cn } from '$lib/utils';
-    import IconFilter from '~icons/mdi/filter';
+    import Filter from 'lucide-svelte/icons/filter';
 
     import { DateFilter } from './filters.svelte';
 
@@ -17,6 +17,6 @@
 
 <A class={cn('cursor-pointer', className)} onclick={() => changed(new DateFilter(term, value))} {title} {...props}>
     {#snippet children()}
-        <IconFilter class="text-muted-foreground text-opacity-50 hover:text-primary" />
+        <Filter class="text-muted-foreground text-opacity-50 hover:text-primary" />
     {/snippet}
 </A>

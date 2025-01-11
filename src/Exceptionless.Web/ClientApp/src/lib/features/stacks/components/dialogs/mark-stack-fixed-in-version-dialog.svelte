@@ -4,10 +4,10 @@
     import * as AlertDialog from '$comp/ui/alert-dialog';
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
+    import Documentation from 'lucide-svelte/icons/help-circle';
     import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';
     import { debounce } from 'throttle-debounce';
-    import IconDocumentation from '~icons/mdi/help-circle';
 
     import { FixedInVersionForm } from '../../models';
 
@@ -94,9 +94,7 @@
                     these stacks have
                 {/if}
                 been fixed. Any submitted occurrences with a lower version will not cause a regression.
-                <A class="inline-flex" href="https://exceptionless.com/docs/versioning/" target="_blank" title="Versioning Documentation"
-                    ><IconDocumentation /></A
-                >
+                <A class="inline-flex" href="https://exceptionless.com/docs/versioning/" target="_blank" title="Versioning Documentation"><Documentation /></A>
             </P>
 
             <Form.Field {form} name="version">

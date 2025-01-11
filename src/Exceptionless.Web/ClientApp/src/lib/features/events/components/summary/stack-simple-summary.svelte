@@ -1,7 +1,7 @@
 <script lang="ts">
     import { A, Muted } from '$comp/typography';
     import { Badge } from '$comp/ui/badge';
-    import IconChevronRight from '~icons/mdi/chevron-right';
+    import ChevronRight from 'lucide-svelte/icons/chevron-right';
 
     import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from './index';
 
@@ -31,7 +31,7 @@
 
 {#if source.data.Path}
     <Muted class="ml-6 hidden sm:block">
-        <IconChevronRight class="inline" />
+        <ChevronRight class="inline" />
         <span class="line-clamp-1 inline">{source.data.Path}</span>
     </Muted>
 {/if}

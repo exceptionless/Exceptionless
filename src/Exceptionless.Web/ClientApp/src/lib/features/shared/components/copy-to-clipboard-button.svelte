@@ -3,8 +3,8 @@
     import type { VariantProps } from 'tailwind-variants';
 
     import { Button, type ButtonProps, type buttonVariants } from '$comp/ui/button';
+    import ClipboardCopy from 'lucide-svelte/icons/clipboard-copy';
     import { toast } from 'svelte-sonner';
-    import IconContentCopy from '~icons/mdi/content-copy';
 
     type Props = ButtonProps & {
         children?: Snippet;
@@ -29,7 +29,7 @@
         {#if children}
             {@render children()}
         {:else}
-            <IconContentCopy class="size-4" />
+            <ClipboardCopy class="size-4" />
         {/if}
     </Button>
 </div>

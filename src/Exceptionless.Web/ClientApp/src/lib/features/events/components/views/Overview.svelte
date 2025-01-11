@@ -24,9 +24,9 @@
         getStackTrace,
         hasErrorOrSimpleError
     } from '$features/events/persistent-event';
-    import IconEmail from '~icons/mdi/email';
-    import IconFilter from '~icons/mdi/filter';
-    import IconOpenInNew from '~icons/mdi/open-in-new';
+    import ExternalLink from 'lucide-svelte/icons/external-link';
+    import Filter from 'lucide-svelte/icons/filter';
+    import Email from 'lucide-svelte/icons/mail';
 
     import type { PersistentEvent } from '../../models/index';
 
@@ -198,7 +198,7 @@
                     {#each event.tags as tag (tag)}
                         <Badge color="dark"
                             ><ClickableStringFilter {changed} class="mr-1" term="tag" value={tag}
-                                ><IconFilter class="text-muted-foreground text-opacity-80 hover:text-secondary" /></ClickableStringFilter
+                                ><Filter class="text-muted-foreground text-opacity-80 hover:text-secondary" /></ClickableStringFilter
                             >{tag}</Badge
                         >
                     {/each}
@@ -213,7 +213,7 @@
                 >
                 <Table.Cell class="flex items-center gap-x-1"
                     >{requestUrl}<Button href={requestUrl} rel="noopener noreferrer" size="sm" target="_blank" title="Open in new window" variant="ghost"
-                        ><IconOpenInNew /></Button
+                        ><ExternalLink /></Button
                     ></Table.Cell
                 >
             </Table.Row>
@@ -231,9 +231,7 @@
                     <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
                         ><ClickableStringFilter {changed} term="user.email" value={userEmail} /></Table.Cell
                     >
-                    <Table.Cell class="flex items-center"
-                        >{userEmail}<A href="mailto:{userEmail}" title="Send email to {userEmail}"><IconEmail /></A></Table.Cell
-                    >
+                    <Table.Cell class="flex items-center">{userEmail}<A href="mailto:{userEmail}" title="Send email to {userEmail}"><Email /></A></Table.Cell>
                 </Table.Row>
             {/if}
             {#if userIdentity}

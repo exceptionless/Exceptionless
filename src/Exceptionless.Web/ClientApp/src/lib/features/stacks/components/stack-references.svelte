@@ -1,9 +1,9 @@
 <script lang="ts">
     import { A, Small } from '$comp/typography';
     import Button from '$comp/ui/button/button.svelte';
-    import IconReference from '~icons/mdi/link';
-    import IconOpenInNew from '~icons/mdi/open-in-new';
-    import IconRemove from '~icons/mdi/remove';
+    import ExternalLink from 'lucide-svelte/icons/external-link';
+    import Reference from 'lucide-svelte/icons/link';
+    import Delete from 'lucide-svelte/icons/trash';
 
     import { postRemoveLink } from '../api.svelte';
     import { Stack } from '../models';
@@ -39,13 +39,13 @@
     <ul class="space-y-2">
         {#each stack.references as reference (reference)}
             <li class="flex items-center gap-2">
-                <IconReference />
+                <Reference />
                 <A href={reference} target="_blank" rel="noopener noreferrer" class="flex items-center gap-2" variant="secondary">
                     <Small class="truncate">{reference}</Small>
-                    <IconOpenInNew />
+                    <ExternalLink />
                 </A>
                 <Button variant="destructive" size="xs" onclick={() => onOpenRemoveStackReferenceDialog(reference)}>
-                    <IconRemove />
+                    <Delete />
                 </Button>
             </li>
         {/each}

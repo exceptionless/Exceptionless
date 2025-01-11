@@ -20,9 +20,9 @@
     import { isTableEmpty, removeTableData, removeTableSelection } from '$shared/table';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
+    import ExternalLink from 'lucide-svelte/icons/external-link';
     import { PersistedState, useEventListener } from 'runed';
     import { throttle } from 'throttle-debounce';
-    import IconOpenInNew from '~icons/mdi/open-in-new';
 
     // TODO: Update this page to use StackSummaryModel instead of EventSummaryModel.
     let selectedStackId = $state<string>();
@@ -162,7 +162,7 @@
     <Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
         <Sheet.Header>
             <Sheet.Title
-                >Event Details <Button href="/event/{eventId}" size="sm" title="Open in new window" variant="ghost"><IconOpenInNew /></Button></Sheet.Title
+                >Event Details <Button href="/event/{eventId}" size="sm" title="Open in new window" variant="ghost"><ExternalLink /></Button></Sheet.Title
             >
         </Sheet.Header>
         <EventsDrawer changed={onDrawerFilterChanged} id={eventId || ''} close={() => (selectedStackId = undefined)}></EventsDrawer>

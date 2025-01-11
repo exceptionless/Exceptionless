@@ -1,4 +1,4 @@
-import StatusLogin from '~icons/mdi/status';
+import Activity from 'lucide-svelte/icons/activity';
 
 import type { NavigationItem } from '../routes';
 
@@ -6,7 +6,7 @@ export const routes: NavigationItem[] = [
     {
         group: 'status',
         href: '/next/status',
-        icon: StatusLogin,
+        icon: Activity,
         show: () => false,
         title: 'Service Status'
     }

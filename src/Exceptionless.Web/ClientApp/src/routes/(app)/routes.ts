@@ -1,6 +1,6 @@
-import IconEvents from '~icons/mdi/calendar-month-outline';
-import IconStacks from '~icons/mdi/checkbox-multiple-marked-outline';
-import IconEventLog from '~icons/mdi/sort-clock-descending-outline';
+import EventStream from 'lucide-svelte/icons/calendar-arrow-down';
+import Events from 'lucide-svelte/icons/calendar-days';
+import Stacks from 'lucide-svelte/icons/list-checks';
 
 import type { NavigationItem } from '../routes';
 
@@ -10,19 +10,19 @@ export const routes: NavigationItem[] = [
     {
         group: 'Dashboards',
         href: '/next/',
-        icon: IconEvents,
+        icon: Events,
         title: 'Events'
     },
     {
         group: 'Dashboards',
         href: '/next/issues',
-        icon: IconStacks,
+        icon: Stacks,
         title: 'Issues'
     },
     {
         group: 'Dashboards',
         href: '/next/stream',
-        icon: IconEventLog,
+        icon: EventStream,
         title: 'Event Stream'
     },
     ...accountRoutes

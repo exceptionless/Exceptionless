@@ -9,10 +9,10 @@
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { cn } from '$lib/utils';
-    import IconArrowDownward from '~icons/mdi/arrow-downward';
-    import IconArrowUpward from '~icons/mdi/arrow-upward';
-    import IconEyeOff from '~icons/mdi/eye-off-outline';
-    import IconUnfoldMore from '~icons/mdi/unfold-more-horizontal';
+    import ArrowDown from 'lucide-svelte/icons/arrow-down';
+    import ArrowUp from 'lucide-svelte/icons/arrow-up';
+    import ChevronsUpDown from 'lucide-svelte/icons/chevrons-up-down';
+    import EyeOff from 'lucide-svelte/icons/eye-off';
 
     type Props = HTMLAttributes<HTMLDivElement> & {
         column: Column<TData, unknown>;
@@ -31,25 +31,23 @@
                             {@render children()}
                         {/if}
                         {#if column.getIsSorted() === 'desc'}
-                            <IconArrowDownward />
+                            <ArrowDown />
                         {:else if column.getIsSorted() === 'asc'}
-                            <IconArrowUpward />
+                            <ArrowUp />
                         {:else}
-                            <IconUnfoldMore />
+                            <ChevronsUpDown />
                         {/if}
                     </Button>
                 {/snippet}
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start">
-                <DropdownMenu.Item onclick={() => column.toggleSorting(false)}
-                    ><IconArrowUpward class="mr-2 size-3.5 text-muted-foreground/70" />Asc</DropdownMenu.Item
-                >
+                <DropdownMenu.Item onclick={() => column.toggleSorting(false)}><ArrowUp class="mr-2 size-3.5 text-muted-foreground/70" />Asc</DropdownMenu.Item>
                 <DropdownMenu.Item onclick={() => column.toggleSorting(true)}
-                    ><IconArrowDownward class="mr-2 size-3.5 text-muted-foreground/70" />Desc</DropdownMenu.Item
+                    ><ArrowDown class="mr-2 size-3.5 text-muted-foreground/70" />Desc</DropdownMenu.Item
                 >
                 <DropdownMenu.Separator />
                 <DropdownMenu.Item onclick={() => column.toggleVisibility(false)}
-                    ><IconEyeOff class="mr-2 size-3.5 text-muted-foreground/70" />Hide</DropdownMenu.Item
+                    ><EyeOff class="mr-2 size-3.5 text-muted-foreground/70" />Hide</DropdownMenu.Item
                 >
             </DropdownMenu.Content>
         </DropdownMenu.Root>
