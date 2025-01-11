@@ -1,6 +1,6 @@
+import Stacks from 'lucide-svelte/icons/bug';
 import EventStream from 'lucide-svelte/icons/calendar-arrow-down';
 import Events from 'lucide-svelte/icons/calendar-days';
-import Stacks from 'lucide-svelte/icons/list-checks';
 
 import type { NavigationItem } from '../routes';
 
