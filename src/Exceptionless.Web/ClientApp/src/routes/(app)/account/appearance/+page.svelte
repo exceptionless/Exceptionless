@@ -5,7 +5,7 @@
     import { Separator } from '$comp/ui/separator';
     import { setMode, userPrefersMode } from 'mode-watcher';
 
-    import ThemePreview from './(components)/ThemePreview.svelte';
+    import ThemePreview from './(components)/theme-preview.svelte';
 
     function onUserThemePreferenceChange(mode?: string) {
         setMode(mode as 'dark' | 'light' | 'system');

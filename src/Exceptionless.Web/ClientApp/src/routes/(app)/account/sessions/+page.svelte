@@ -1,5 +1,5 @@
 <script lang="ts">
-    import DateTime from '$comp/formatters/DateTime.svelte';
+    import DateTime from '$comp/formatters/date-time.svelte';
     import { H3, Muted, P } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';

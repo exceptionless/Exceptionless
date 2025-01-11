@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
-    import AutomaticRefreshIndicatorButton from '$comp/AutomaticRefreshIndicatorButton.svelte';
+    import AutomaticRefreshIndicatorButton from '$comp/automatic-refresh-indicator-button.svelte';
     import * as DataTable from '$comp/data-table';
     import * as FacetedFilter from '$comp/faceted-filter';
     import { toFacetedFilters } from '$comp/filters/facets';
@@ -9,10 +9,10 @@
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
-    import EventsDrawer from '$features/events/components/EventsDrawer.svelte';
+    import EventsDrawer from '$features/events/components/events-drawer.svelte';
     import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters';
-    import EventsBulkActionsDropdownMenu from '$features/events/components/table/EventsBulkActionsDropdownMenu.svelte';
-    import EventsDataTable from '$features/events/components/table/EventsDataTable.svelte';
+    import EventsBulkActionsDropdownMenu from '$features/events/components/table/events-bulk-actions-dropdown-menu.svelte';
+    import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { useFetchClientStatus } from '$shared/api/api.svelte';

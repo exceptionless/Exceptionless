@@ -15,18 +15,18 @@ import {
     TypeFilter,
     type VersionFilter
 } from '../filters.svelte';
-import BooleanFacetedFilter from './BooleanFacetedFilter.svelte';
-import DateFacetedFilter from './DateFacetedFilter.svelte';
-import KeywordFacetedFilter from './KeywordFacetedFilter.svelte';
-import NumberFacetedFilter from './NumberFacetedFilter.svelte';
-import OrganizationFacetedFilter from './OrganizationFacetedFilter.svelte';
-import ProjectFacetedFilter from './ProjectFacetedFilter.svelte';
-import ReferenceFacetedFilter from './ReferenceFacetedFilter.svelte';
-import SessionFacetedFilter from './SessionFacetedFilter.svelte';
-import StatusFacetedFilter from './StatusFacetedFilter.svelte';
-import StringFacetedFilter from './StringFacetedFilter.svelte';
-import TypeFacetedFilter from './TypeFacetedFilter.svelte';
-import VersionFacetedFilter from './VersionFacetedFilter.svelte';
+import BooleanFacetedFilter from './boolean-faceted-filter.svelte';
+import DateFacetedFilter from './date-faceted-filter.svelte';
+import KeywordFacetedFilter from './keyword-faceted-filter.svelte';
+import NumberFacetedFilter from './number-faceted-filter.svelte';
+import OrganizationFacetedFilter from './organization-faceted-filter.svelte';
+import ProjectFacetedFilter from './project-faceted-filter.svelte';
+import ReferenceFacetedFilter from './reference-faceted-filter.svelte';
+import SessionFacetedFilter from './session-faceted-filter.svelte';
+import StatusFacetedFilter from './status-faceted-filter.svelte';
+import StringFacetedFilter from './string-faceted-filter.svelte';
+import TypeFacetedFilter from './type-faceted-filter.svelte';
+import VersionFacetedFilter from './version-faceted-filter.svelte';
 
 export type FacetedFilterProps<TFilter extends IFilter> = {
     filter: TFilter;

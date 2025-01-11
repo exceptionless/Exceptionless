@@ -1,7 +1,7 @@
 import type { FetchClientResponse } from '@exceptionless/fetchclient';
 
-import NumberFormatter from '$comp/formatters/Number.svelte';
-import TimeAgo from '$comp/formatters/TimeAgo.svelte';
+import NumberFormatter from '$comp/formatters/number.svelte';
+import TimeAgo from '$comp/formatters/time-ago.svelte';
 import { Checkbox } from '$comp/ui/checkbox';
 import { nameof } from '$lib/utils';
 import { DEFAULT_LIMIT } from '$shared/api/api.svelte';
@@ -21,10 +21,10 @@ import { PersistedState } from 'runed';
 import type { GetEventsMode, GetEventsParams } from '../../api.svelte';
 import type { EventSummaryModel, StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '../summary/index';
 
-import Summary from '../summary/Summary.svelte';
-import EventsUserIdentitySummaryCell from './EventsUserIdentitySummaryCell.svelte';
-import StackStatusCell from './StackStatusCell.svelte';
-import StackUsersSummaryCell from './StackUsersSummaryCell.svelte';
+import Summary from '../summary/summary.svelte';
+import EventsUserIdentitySummaryCell from './events-user-identity-summary-cell.svelte';
+import StackStatusCell from './stack-status-cell.svelte';
+import StackUsersSummaryCell from './stack-users-summary-cell.svelte';
 
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(mode: GetEventsMode = 'summary'): ColumnDef<TSummaryModel>[] {
     const columns: ColumnDef<TSummaryModel>[] = [

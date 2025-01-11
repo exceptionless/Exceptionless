@@ -1,8 +1,8 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
-    import ErrorMessage from '$comp/ErrorMessage.svelte';
-    import Loading from '$comp/Loading.svelte';
-    import Logo from '$comp/Logo.svelte';
+    import ErrorMessage from '$comp/error-message.svelte';
+    import Loading from '$comp/loading.svelte';
+    import Logo from '$comp/logo.svelte';
     import * as Card from '$comp/ui/card';
     import * as Form from '$comp/ui/form';
     import { accessToken, logout } from '$features/auth/index.svelte';

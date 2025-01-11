@@ -10,17 +10,17 @@
     import { invalidateStackQueries } from '$features/stacks/api.svelte';
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
     import { isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
-    import { WebSocketClient } from '$features/websockets/WebSocketClient.svelte';
+    import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
     import { validate } from '$shared/validation';
     import { setModelValidator, useMiddleware } from '@exceptionless/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
     import { fade } from 'svelte/transition';
 
     import { type NavigationItemContext, routes } from '../routes';
-    import FooterLayout from './(components)/layouts/Footer.svelte';
-    import NavbarLayout from './(components)/layouts/Navbar.svelte';
-    import SidebarLayout from './(components)/layouts/Sidebar.svelte';
-    import NavigationCommand from './(components)/NavigationCommand.svelte';
+    import FooterLayout from './(components)/layouts/footer.svelte';
+    import NavbarLayout from './(components)/layouts/navbar.svelte';
+    import SidebarLayout from './(components)/layouts/sidebar.svelte';
+    import NavigationCommand from './(components)/navigation-command.svelte';
 
     interface Props {
         children: Snippet;

@@ -5,7 +5,7 @@
 <script generics="TData" lang="ts">
     import type { Table } from '@tanstack/svelte-table';
 
-    import Number from '$comp/formatters/Number.svelte';
+    import Number from '$comp/formatters/number.svelte';
 
     interface Props {
         table: Table<TData>;

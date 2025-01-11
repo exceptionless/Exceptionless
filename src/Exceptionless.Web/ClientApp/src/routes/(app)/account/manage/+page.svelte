@@ -1,6 +1,6 @@
 <script lang="ts">
-    import ErrorMessage from '$comp/ErrorMessage.svelte';
-    import Loading from '$comp/Loading.svelte';
+    import ErrorMessage from '$comp/error-message.svelte';
+    import Loading from '$comp/loading.svelte';
     import { A, H3, Muted, Small } from '$comp/typography';
     import * as Avatar from '$comp/ui/avatar';
     import * as Form from '$comp/ui/form';
