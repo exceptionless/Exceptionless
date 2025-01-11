@@ -9,8 +9,8 @@
     import * as Sidebar from '$comp/ui/sidebar';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import logoSmall from '$lib/assets/exceptionless-48.png';
+    import Search from 'lucide-svelte/icons/search';
     import { MediaQuery } from 'svelte/reactivity';
-    import IconSearch from '~icons/mdi/search';
 
     interface Props {
         isCommandOpen: boolean;
@@ -42,7 +42,7 @@
             </div>
             <div class="flex items-center gap-x-2 lg:gap-x-3">
                 <Button onclick={onSearchClick} size="default" variant="outline">
-                    <IconSearch />
+                    <Search />
                     Search
                     <DropdownMenu.Shortcut class="ml-12">⌘K</DropdownMenu.Shortcut>
                 </Button>

@@ -3,7 +3,7 @@
 
     import { Input } from '$comp/ui/input';
     import { cn } from '$lib/utils';
-    import IconSearch from '~icons/mdi/search';
+    import Search from 'lucide-svelte/icons/search';
 
     type Props = HTMLInputAttributes;
 
@@ -13,7 +13,7 @@
 <div class="relative">
     <label class="sr-only" for={id}>Search</label>
     <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-        <IconSearch class="h-5 w-5" />
+        <Search class="h-5 w-5" />
     </div>
     <Input bind:value class={cn('pl-10', className)} {id} name="search" {placeholder} type="text" {...props} />
 </div>

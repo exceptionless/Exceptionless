@@ -3,8 +3,8 @@
     import { H3, Muted, P } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';
-    import IconCellphone from '~icons/mdi/cellphone';
-    import IconLaptop from '~icons/mdi/laptop';
+    import Laptop from 'lucide-svelte/icons/laptop';
+    import Smartphone from 'lucide-svelte/icons/smartphone';
 </script>
 
 <div class="space-y-6">
@@ -17,7 +17,7 @@
     <ul class="divide-y divide-border">
         <li class="pb-4">
             <div class="flex items-center space-x-4">
-                <IconLaptop />
+                <Laptop />
                 <div class="min-w-0 flex-1">
                     <P class="font-semibold">Wisconsin</P>
                     <Muted>Signed in on <DateTime value={new Date()}></DateTime></Muted>
@@ -29,7 +29,7 @@
         </li>
         <li class="py-4">
             <div class="flex items-center space-x-4">
-                <IconCellphone />
+                <Smartphone />
                 <div class="min-w-0 flex-1">
                     <P class="font-semibold">Texas</P>
                     <Muted>Signed in on <DateTime value={new Date()}></DateTime></Muted>

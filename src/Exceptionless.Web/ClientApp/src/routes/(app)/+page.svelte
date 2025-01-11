@@ -19,9 +19,9 @@
     import { isTableEmpty, removeTableData, removeTableSelection } from '$shared/table';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
+    import ExternalLink from 'lucide-svelte/icons/external-link';
     import { PersistedState, useEventListener } from 'runed';
     import { throttle } from 'throttle-debounce';
-    import IconOpenInNew from '~icons/mdi/open-in-new';
 
     let selectedEventId: null | string = $state(null);
     function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
@@ -145,7 +145,7 @@
     <Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
         <Sheet.Header>
             <Sheet.Title
-                >Event Details <Button href="/event/{selectedEventId}" size="sm" title="Open in new window" variant="ghost"><IconOpenInNew /></Button
+                >Event Details <Button href="/event/{selectedEventId}" size="sm" title="Open in new window" variant="ghost"><ExternalLink /></Button
                 ></Sheet.Title
             >
         </Sheet.Header>

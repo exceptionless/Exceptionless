@@ -6,7 +6,7 @@
     import { Button } from '$comp/ui/button';
     import * as Table from '$comp/ui/table';
     import { getRequestInfoPath, getRequestInfoUrl } from '$features/events/persistent-event';
-    import IconOpenInNew from '~icons/mdi/open-in-new';
+    import ExternalLink from 'lucide-svelte/icons/external-link';
 
     import type { PersistentEvent } from '../../models/index';
 
@@ -64,7 +64,7 @@
                 >
                 <Table.Cell class="flex items-center gap-x-1"
                     >{requestUrl}<Button href={requestUrl} rel="noopener noreferrer" size="sm" target="_blank" title="Open in new window" variant="ghost"
-                        ><IconOpenInNew /></Button
+                        ><ExternalLink /></Button
                     ></Table.Cell
                 >
             </Table.Row>
@@ -88,7 +88,7 @@
                         size="sm"
                         target="_blank"
                         title="Open in new window"
-                        variant="ghost"><IconOpenInNew /></Button
+                        variant="ghost"><ExternalLink /></Button
                     ></Table.Cell
                 >
             </Table.Row>

@@ -19,10 +19,10 @@
     import { User } from '$features/users/models';
     import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-    import IconFacebook from '~icons/mdi/facebook';
-    import IconGitHub from '~icons/mdi/github';
-    import IconGoogle from '~icons/mdi/google';
-    import IconMicrosoft from '~icons/mdi/microsoft';
+    import Facebook from 'lucide-svelte/icons/facebook';
+    import GitHub from 'lucide-svelte/icons/github';
+    import Google from '~icons/mdi/google';
+    import Microsoft from '~icons/mdi/microsoft';
 
     const data = $state(new User());
 
@@ -115,7 +115,7 @@
             {#if !microsoftClientId}
                 <li class="pb-4">
                     <div class="flex items-center space-x-4">
-                        <IconMicrosoft />
+                        <Microsoft />
                         <div class="min-w-0 flex-1 font-semibold">Microsoft account</div>
                         <div class="inline-flex items-center">
                             {#if true}
@@ -132,7 +132,7 @@
             {#if !googleClientId}
                 <li class="py-4">
                     <div class="flex items-center space-x-4">
-                        <IconGoogle />
+                        <Google />
                         <div class="min-w-0 flex-1 font-semibold">Google account</div>
                         <div class="inline-flex items-center">
                             {#if false}
@@ -149,7 +149,7 @@
             {#if !facebookClientId}
                 <li class="py-4">
                     <div class="flex items-center space-x-4">
-                        <IconFacebook />
+                        <Facebook />
                         <div class="min-w-0 flex-1 font-semibold">Facebook account</div>
                         <div class="inline-flex items-center">
                             {#if false}
@@ -166,7 +166,7 @@
             {#if !gitHubClientId}
                 <li class="py-4">
                     <div class="flex items-center space-x-4">
-                        <IconGitHub />
+                        <GitHub />
                         <div class="min-w-0 flex-1 font-semibold">GitHub account</div>
                         <div class="inline-flex items-center">
                             {#if true}

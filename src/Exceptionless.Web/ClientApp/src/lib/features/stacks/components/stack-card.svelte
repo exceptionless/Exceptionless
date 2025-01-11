@@ -15,12 +15,12 @@
     import { getStackQuery } from '$features/stacks/api.svelte';
     import { cardinality, max, min, sum } from '$shared/api/aggregations';
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
-    import IconFirstOccurrence from '~icons/mdi/arrow-left-circle';
-    import IconLastOccurrence from '~icons/mdi/arrow-right-circle';
-    import IconCalendar from '~icons/mdi/calendar';
-    import IconClock from '~icons/mdi/clock';
-    import IconFilter from '~icons/mdi/filter';
-    import IconUsers from '~icons/mdi/users';
+    import FirstOccurrence from 'lucide-svelte/icons/arrow-left-circle';
+    import LastOccurrence from 'lucide-svelte/icons/arrow-right-circle';
+    import Calendar from 'lucide-svelte/icons/calendar';
+    import Clock from 'lucide-svelte/icons/clock';
+    import Filter from 'lucide-svelte/icons/filter';
+    import Users from 'lucide-svelte/icons/users';
 
     import StackOptionsDropdownMenu from './stack-options-dropdown-menu.svelte';
     import StackReferences from './stack-references.svelte';
@@ -93,7 +93,7 @@
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <Tooltip.Root>
                     <Tooltip.Trigger class="flex flex-col items-center rounded-lg bg-muted p-2">
-                        <IconCalendar class="mb-1 size-6 text-primary" />
+                        <Calendar class="mb-1 size-6 text-primary" />
                         <span class="text-lg font-bold"><Number value={totalOccurrences} /></span>
                         <Muted>Total Events</Muted>
                     </Tooltip.Trigger>
@@ -103,7 +103,7 @@
                 </Tooltip.Root>
                 <Tooltip.Root>
                     <Tooltip.Trigger class="flex flex-col items-center rounded-lg bg-muted p-2">
-                        <IconUsers class="mb-1 size-6 text-primary" />
+                        <Users class="mb-1 size-6 text-primary" />
                         <span class="text-lg font-bold"><Percentage percent={(userCount / totalUserCount) * 100.0} /></span>
                         <Muted>Users Affected</Muted>
                     </Tooltip.Trigger>
@@ -111,7 +111,7 @@
                 </Tooltip.Root>
                 <Tooltip.Root>
                     <Tooltip.Trigger class="flex flex-col items-center rounded-lg bg-muted p-2">
-                        <IconFirstOccurrence class="mb-1 size-6 text-muted-foreground" />
+                        <FirstOccurrence class="mb-1 size-6 text-muted-foreground" />
                         <span class="text-lg font-bold"><TimeAgo value={firstOccurrence} /></span>
                         <Muted>First</Muted>
                     </Tooltip.Trigger>
@@ -121,7 +121,7 @@
                 </Tooltip.Root>
                 <Tooltip.Root>
                     <Tooltip.Trigger class="flex flex-col items-center rounded-lg bg-muted p-2">
-                        <IconLastOccurrence class="mb-1 size-6 text-muted-foreground" />
+                        <LastOccurrence class="mb-1 size-6 text-muted-foreground" />
                         <span class="text-lg font-bold"><TimeAgo value={lastOccurrence} /></span>
                         <Muted>Last</Muted>
                     </Tooltip.Trigger>
@@ -136,7 +136,7 @@
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {#if (stack.status === 'fixed' || stack.status === 'regressed') && stack.date_fixed}
                     <div class="flex items-center gap-2 text-sm">
-                        <IconCalendar class="size-4 text-green-500" />
+                        <Calendar class="size-4 text-green-500" />
                         <span>
                             Fixed {stack.fixed_in_version && `in ${stack.fixed_in_version}`} on <DateTime value={stack.date_fixed} />
                         </span>
@@ -145,7 +145,7 @@
 
                 {#if stack.status === 'snoozed' && stack.snooze_until_utc}
                     <div class="flex items-center gap-2 text-sm">
-                        <IconClock class="size-4 text-blue-500" />
+                        <Clock class="size-4 text-blue-500" />
                         <span>Snoozed until <DateTime value={stack.snooze_until_utc} /></span>
                     </div>
                 {/if}
@@ -156,7 +156,7 @@
                     {#each stack.tags as tag (tag)}
                         <Badge color="dark"
                             ><ClickableStringFilter {changed} class="mr-1" term="tag" value={tag}
-                                ><IconFilter class="text-muted-foreground text-opacity-80 hover:text-secondary" /></ClickableStringFilter
+                                ><Filter class="text-muted-foreground text-opacity-80 hover:text-secondary" /></ClickableStringFilter
                             >{tag}</Badge
                         >
                     {/each}

@@ -24,12 +24,12 @@
     } from '$features/auth/index.svelte';
     import { Login } from '$features/auth/models';
     import { applyServerSideErrors } from '$shared/validation';
+    import Facebook from 'lucide-svelte/icons/facebook';
+    import GitHub from 'lucide-svelte/icons/github';
     import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';
-    import IconFacebook from '~icons/mdi/facebook';
-    import IconGitHub from '~icons/mdi/github';
-    import IconGoogle from '~icons/mdi/google';
-    import IconMicrosoft from '~icons/mdi/microsoft';
+    import Google from '~icons/mdi/google';
+    import Microsoft from '~icons/mdi/microsoft';
 
     const redirectUrl = page.url.searchParams.get('redirect') ?? '/next';
 
@@ -119,22 +119,22 @@
             <div class="auto-cols-2 grid grid-flow-col grid-rows-2 gap-4">
                 {#if microsoftClientId}
                     <Button aria-label="Login with Microsoft" onclick={() => liveLogin(redirectUrl)}>
-                        <IconMicrosoft /> Microsoft
+                        <Microsoft /> Microsoft
                     </Button>
                 {/if}
                 {#if googleClientId}
                     <Button aria-label="Login with Google" onclick={() => googleLogin(redirectUrl)}>
-                        <IconGoogle /> Google
+                        <Google /> Google
                     </Button>
                 {/if}
                 {#if facebookClientId}
                     <Button aria-label="Login with Facebook" onclick={() => facebookLogin(redirectUrl)}>
-                        <IconFacebook /> Facebook
+                        <Facebook /> Facebook
                     </Button>
                 {/if}
                 {#if gitHubClientId}
                     <Button aria-label="Login with GitHub" onclick={() => githubLogin(redirectUrl)}>
-                        <IconGitHub /> GitHub
+                        <GitHub /> GitHub
                     </Button>
                 {/if}
             </div>
