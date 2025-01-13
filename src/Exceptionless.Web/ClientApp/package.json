@@ -53,7 +53,7 @@
     },
     "dependencies": {
         "@exceptionless/browser": "^3.1.0",
-        "@exceptionless/fetchclient": "^0.36.0",
+        "@exceptionless/fetchclient": "^0.40.0",
         "@iconify-json/mdi": "^1.2.2",
         "@tanstack/svelte-query": "https://pkg.pr.new/@tanstack/svelte-query@28f98f9",
         "@tanstack/svelte-query-devtools": "https://pkg.pr.new/@tanstack/svelte-query-devtools@28f98f9",
