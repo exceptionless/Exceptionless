@@ -1,13 +1,9 @@
 <script lang="ts">
     import DarkModeButton from '$comp/dark-mode-button.svelte';
-    import Loading from '$comp/loading.svelte';
     import Logo from '$comp/logo.svelte';
-    import { A } from '$comp/typography';
-    import * as Avatar from '$comp/ui/avatar';
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Sidebar from '$comp/ui/sidebar';
-    import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import logoSmall from '$lib/assets/exceptionless-48.png';
     import Search from 'lucide-svelte/icons/search';
     import { MediaQuery } from 'svelte/reactivity';
@@ -22,7 +18,6 @@
         isCommandOpen = true;
     }
 
-    const gravatar = getGravatarFromCurrentUser();
     const isMediumScreenQuery = new MediaQuery('(min-width: 768px)');
 </script>
 
@@ -48,79 +43,6 @@
                 </Button>
 
                 <DarkModeButton></DarkModeButton>
-
-                <DropdownMenu.Root>
-                    <DropdownMenu.Trigger>
-                        {#snippet children()}
-                            <Button class="rounded-full" size="icon" variant="ghost">
-                                <Avatar.Root class="size-7" title="Profile Image">
-                                    {#await gravatar.src}
-                                        <Avatar.Fallback><Loading /></Avatar.Fallback>
-                                    {:then src}
-                                        <Avatar.Image alt="gravatar" {src} />
-                                    {/await}
-                                    <Avatar.Fallback>{gravatar.initials}</Avatar.Fallback>
-                                </Avatar.Root>
-                            </Button>
-                        {/snippet}
-                    </DropdownMenu.Trigger>
-                    <DropdownMenu.Content align="end" class="w-56">
-                        <DropdownMenu.Label>My Account</DropdownMenu.Label>
-                        <DropdownMenu.Separator />
-                        <DropdownMenu.Group>
-                            <DropdownMenu.Item
-                                ><A variant="ghost" href="/next/account/manage" class="w-full">Account</A>
-                                <DropdownMenu.Shortcut>⇧⌘P</DropdownMenu.Shortcut>
-                            </DropdownMenu.Item>
-                            <!-- <DropdownMenu.Item
-                                ><A variant="ghost" href="/next/account/notifications" class="w-full">Notifications</A>
-                                <DropdownMenu.Shortcut>⇧⌘N</DropdownMenu.Shortcut>
-                            </DropdownMenu.Item> -->
-                        </DropdownMenu.Group>
-                        <!-- <DropdownMenu.Label>My Organization</DropdownMenu.Label>
-                        <DropdownMenu.Separator />
-                        <DropdownMenu.Group>
-                            <DropdownMenu.Item>
-                                Settings
-                                <DropdownMenu.Shortcut>⌘S</DropdownMenu.Shortcut>
-                            </DropdownMenu.Item>
-                            <DropdownMenu.Item>Team</DropdownMenu.Item>
-                            <DropdownMenu.Item>
-                                Invite users
-                                <DropdownMenu.Shortcut>⌘+I</DropdownMenu.Shortcut>
-                            </DropdownMenu.Item>
-                            <DropdownMenu.Item><A variant="ghost" href="/account/manage" class="w-full">
-                                Billing</A>
-                                <DropdownMenu.Shortcut>⌘B</DropdownMenu.Shortcut>
-                            </DropdownMenu.Item>
-                        </DropdownMenu.Group> -->
-                        <DropdownMenu.Label>Documentation</DropdownMenu.Label>
-                        <DropdownMenu.Separator />
-                        <DropdownMenu.Group>
-                            <DropdownMenu.Item
-                                ><A variant="ghost" href="https://exceptionless.com/docs/" target="_blank" class="w-full">Documentation</A></DropdownMenu.Item
-                            >
-                            <DropdownMenu.Item
-                                ><A variant="ghost" href="https://github.com/exceptionless/Exceptionless/issues" target="_blank" class="w-full">Support</A
-                                ></DropdownMenu.Item
-                            >
-                            <DropdownMenu.Item
-                                ><A variant="ghost" href="https://github.com/exceptionless/Exceptionless" target="_blank" class="w-full">GitHub</A
-                                ></DropdownMenu.Item
-                            >
-                            <DropdownMenu.Item><A variant="ghost" href="/docs/index.html" target="_blank" class="w-full">API</A></DropdownMenu.Item>
-                            <!-- <DropdownMenu.Item>
-                            Keyboard shortcuts
-                            <DropdownMenu.Shortcut>⌘K</DropdownMenu.Shortcut>
-                        </DropdownMenu.Item> -->
-                        </DropdownMenu.Group>
-                        <DropdownMenu.Separator />
-                        <DropdownMenu.Item
-                            ><A variant="ghost" href="/next/logout" class="w-full">Sign out</A>
-                            <DropdownMenu.Shortcut>⇧⌘Q</DropdownMenu.Shortcut>
-                        </DropdownMenu.Item>
-                    </DropdownMenu.Content>
-                </DropdownMenu.Root>
             </div>
         </div>
     </div>
