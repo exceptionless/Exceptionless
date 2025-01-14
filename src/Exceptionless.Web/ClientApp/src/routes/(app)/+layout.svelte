@@ -1,24 +1,28 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
-    import { page } from '$app/stores';
+    import { page } from '$app/state';
     import { useSidebar } from '$comp/ui/sidebar';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
-    import { invalidateOrganizationQueries } from '$features/organizations/api.svelte';
+    import { getOrganizationQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
     import { invalidateStackQueries } from '$features/stacks/api.svelte';
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
+    import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
     import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
     import { validate } from '$shared/validation';
     import { setModelValidator, useMiddleware } from '@exceptionless/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
+    import { PersistedState } from 'runed';
     import { fade } from 'svelte/transition';
 
     import { type NavigationItemContext, routes } from '../routes';
     import FooterLayout from './(components)/layouts/footer.svelte';
     import NavbarLayout from './(components)/layouts/navbar.svelte';
+    import SidebarOrganizationSwitcher from './(components)/layouts/sidebar-organization-switcher.svelte';
+    import SidebarUser from './(components)/layouts/sidebar-user.svelte';
     import SidebarLayout from './(components)/layouts/sidebar.svelte';
     import NavigationCommand from './(components)/navigation-command.svelte';
 
@@ -97,7 +101,13 @@
     }
 
     // Close Sidebar on page change on mobile
-    page.subscribe(() => {
+    let lastPage = $state(page.url.pathname);
+    $effect(() => {
+        if (lastPage === page.url.pathname) {
+            return;
+        }
+
+        lastPage = page.url.pathname;
         if (sidebar.isMobile) {
             sidebar.setOpen(false);
         }
@@ -141,21 +151,54 @@
         };
     });
 
-    const userQuery = getMeQuery();
+    const userResponse = getMeQuery();
+    const gravatar = getGravatarFromCurrentUser(userResponse);
+
+    // TODO: Use Context
+    const selectedOrganizationId = new PersistedState<string | undefined>('organization', undefined);
+    const organizationsResponse = getOrganizationQuery({});
+
+    $effect(() => {
+        if (!organizationsResponse.isSuccess) {
+            return;
+        }
+
+        if (organizationsResponse.data.length === 0) {
+            // TODO: Redirect to create organization page.
+            selectedOrganizationId.current = undefined;
+            return;
+        }
+
+        if (!organizationsResponse.data.find((organization) => organization.id === selectedOrganizationId.current)) {
+            selectedOrganizationId.current = organizationsResponse.data[0]!.id;
+        }
+    });
+
     const filteredRoutes = $derived.by(() => {
-        const context: NavigationItemContext = { authenticated: isAuthenticated, user: userQuery.data };
+        const context: NavigationItemContext = { authenticated: isAuthenticated, user: userResponse.data };
         return routes.filter((route) => (route.show ? route.show(context) : true));
     });
 </script>
 
 {#if isAuthenticated}
     <NavbarLayout bind:isCommandOpen></NavbarLayout>
-    <SidebarLayout routes={filteredRoutes} />
+    <SidebarLayout routes={filteredRoutes}>
+        {#snippet header()}
+            <SidebarOrganizationSwitcher
+                isLoading={organizationsResponse.isLoading}
+                organizations={organizationsResponse.data}
+                bind:selected={selectedOrganizationId.current}
+            />
+        {/snippet}
+        {#snippet footer()}
+            <SidebarUser isLoading={userResponse.isLoading} user={userResponse.data} {gravatar} />
+        {/snippet}
+    </SidebarLayout>
     <div class="flex w-full overflow-hidden pt-16">
         <div class="w-full text-secondary-foreground">
             <main class="px-4 pt-4">
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
-                {#key $page.url.pathname}
+                {#key page.url.pathname}
                     <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>
                         {@render children()}
                     </div>

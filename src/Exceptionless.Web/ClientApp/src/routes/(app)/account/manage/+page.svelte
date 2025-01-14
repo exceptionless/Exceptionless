@@ -151,7 +151,7 @@
         {#await gravatar.src}
             <Avatar.Fallback><Loading /></Avatar.Fallback>
         {:then src}
-            <Avatar.Image alt="gravatar" {src} />
+            <Avatar.Image alt={userResponse.data ? `${userResponse.data.full_name} avatar` : 'avatar'} {src} />
         {/await}
         <Avatar.Fallback>{gravatar.initials}</Avatar.Fallback>
     </Avatar.Root>
