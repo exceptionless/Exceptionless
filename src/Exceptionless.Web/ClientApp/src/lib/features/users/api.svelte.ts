@@ -4,7 +4,7 @@ import { accessToken } from '$features/auth/index.svelte';
 import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
-import { UpdateEmailAddressResult, type UpdateUser, User } from './models';
+import { UpdateEmailAddressResult, type UpdateUser, UpdateUserEmailAddress, User } from './models';
 
 export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>) {
     const { id } = message;
@@ -87,7 +87,7 @@ export function patchUser(request: PatchUserRequest) {
 
 export function postEmailAddress(request: PostEmailAddressRequest) {
     const queryClient = useQueryClient();
-    return createMutation<UpdateEmailAddressResult, ProblemDetails, Pick<User, 'email_address'>>(() => ({
+    return createMutation<UpdateEmailAddressResult, ProblemDetails, UpdateUserEmailAddress>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async (data: Pick<User, 'email_address'>) => {
             const client = useFetchClient();

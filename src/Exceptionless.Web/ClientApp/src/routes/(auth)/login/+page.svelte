@@ -47,8 +47,6 @@
                 await goto(redirectUrl);
             } else {
                 applyServerSideErrors(form, response.problem);
-                // https://github.com/ciscoheat/sveltekit-superforms/issues/536
-                message.set(form.message);
                 result.status = response.problem.status ?? 500;
             }
         },

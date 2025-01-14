@@ -1,6 +1,5 @@
 <script lang="ts">
     import ErrorMessage from '$comp/error-message.svelte';
-    import Loading from '$comp/loading.svelte';
     import { A, H3, Muted, Small } from '$comp/typography';
     import * as Avatar from '$comp/ui/avatar';
     import * as Form from '$comp/ui/form';
@@ -8,7 +7,7 @@
     import { Separator } from '$comp/ui/separator';
     import { getMeQuery, patchUser, postEmailAddress } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
-    import { UpdateUser, User } from '$features/users/models';
+    import { UpdateUser, UpdateUserEmailAddress } from '$features/users/models';
     import { applyServerSideErrors } from '$shared/validation';
     import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
     import { toast } from 'svelte-sonner';
@@ -36,7 +35,7 @@
         }
     });
 
-    const updateEmailAddressForm = superForm(defaults(userResponse.data ?? new User(), classvalidatorClient(User)), {
+    const updateEmailAddressForm = superForm(defaults(userResponse.data ?? new UpdateUserEmailAddress(), classvalidatorClient(UpdateUserEmailAddress)), {
         dataType: 'json',
         id: 'update-email-address',
         async onUpdate({ form, result }) {
@@ -54,15 +53,13 @@
             } catch (error: unknown) {
                 if (error instanceof ProblemDetails) {
                     applyServerSideErrors(form, error);
-                    // https://github.com/ciscoheat/sveltekit-superforms/issues/536
-                    updateEmailAddressFormMessage.set(form.message);
                     result.status = error.status ?? 500;
                     toastId = toast.error(form.message ?? 'Error saving email address. Please try again.');
                 }
             }
         },
         SPA: true,
-        validators: classvalidatorClient(User)
+        validators: classvalidatorClient(UpdateUserEmailAddress)
     });
 
     const updateUserForm = superForm(defaults(userResponse.data ?? new UpdateUser(), classvalidatorClient(UpdateUser)), {
@@ -83,8 +80,6 @@
             } catch (error: unknown) {
                 if (error instanceof ProblemDetails) {
                     applyServerSideErrors(form, error);
-                    // https://github.com/ciscoheat/sveltekit-superforms/issues/536
-                    updateUserFormMessage.set(form.message);
                     result.status = error.status ?? 500;
                     toastId = toast.error(form.message ?? 'Error saving full name. Please try again.');
                 }
@@ -101,6 +96,12 @@
 
         if (!$updateEmailAddressFormSubmitting && !$updateEmailAddressFormTainted) {
             updateEmailAddressForm.reset({ data: userResponse.data, keepMessage: true });
+        }
+    });
+
+    $effect(() => {
+        if (!userResponse.isSuccess) {
+            return;
         }
 
         if (!$updateUserFormSubmitting && !$updateUserFormTainted) {
@@ -149,7 +150,7 @@
 
     <Avatar.Root class="h-24 w-24" title="Profile Image">
         {#await gravatar.src}
-            <Avatar.Fallback><Loading /></Avatar.Fallback>
+            <Avatar.Fallback>{gravatar.initials}</Avatar.Fallback>
         {:then src}
             <Avatar.Image alt={userResponse.data ? `${userResponse.data.full_name} avatar` : 'avatar'} {src} />
         {/await}
