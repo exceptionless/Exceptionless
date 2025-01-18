@@ -9,6 +9,7 @@ export type NavigationItem = {
     group: string;
     href: string;
     icon: Component | typeof Icon;
+    openInNewTab?: boolean;
     show?: (context: NavigationItemContext) => boolean;
     title: string;
 };

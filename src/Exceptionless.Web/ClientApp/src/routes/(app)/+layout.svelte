@@ -19,11 +19,11 @@
     import { fade } from 'svelte/transition';
 
     import { type NavigationItemContext, routes } from '../routes';
-    import FooterLayout from './(components)/layouts/footer.svelte';
-    import NavbarLayout from './(components)/layouts/navbar.svelte';
+    import Footer from './(components)/layouts/footer.svelte';
+    import Navbar from './(components)/layouts/navbar.svelte';
     import SidebarOrganizationSwitcher from './(components)/layouts/sidebar-organization-switcher.svelte';
     import SidebarUser from './(components)/layouts/sidebar-user.svelte';
-    import SidebarLayout from './(components)/layouts/sidebar.svelte';
+    import Sidebar from './(components)/layouts/sidebar.svelte';
     import NavigationCommand from './(components)/navigation-command.svelte';
 
     interface Props {
@@ -181,8 +181,8 @@
 </script>
 
 {#if isAuthenticated}
-    <NavbarLayout bind:isCommandOpen></NavbarLayout>
-    <SidebarLayout routes={filteredRoutes}>
+    <Navbar bind:isCommandOpen></Navbar>
+    <Sidebar routes={filteredRoutes}>
         {#snippet header()}
             <SidebarOrganizationSwitcher
                 isLoading={organizationsResponse.isLoading}
@@ -190,10 +190,11 @@
                 bind:selected={selectedOrganizationId.current}
             />
         {/snippet}
+
         {#snippet footer()}
             <SidebarUser isLoading={userResponse.isLoading} user={userResponse.data} {gravatar} />
         {/snippet}
-    </SidebarLayout>
+    </Sidebar>
     <div class="flex w-full overflow-hidden pt-16">
         <div class="w-full text-secondary-foreground">
             <main class="px-4 pt-4">
@@ -205,7 +206,7 @@
                 {/key}
             </main>
 
-            <FooterLayout></FooterLayout>
+            <Footer></Footer>
         </div>
     </div>
 {/if}

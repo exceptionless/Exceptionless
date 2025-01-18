@@ -9,11 +9,14 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import { User } from '$features/users/models';
     import BadgeCheck from 'lucide-svelte/icons/badge-check';
+    import BookOpen from 'lucide-svelte/icons/book-open';
+    import Braces from 'lucide-svelte/icons/braces';
     // import Bell from 'lucide-svelte/icons/bell';
     import ChevronsUpDown from 'lucide-svelte/icons/chevrons-up-down';
+    import Help from 'lucide-svelte/icons/circle-help';
+    import GitHub from 'lucide-svelte/icons/github';
     // import CreditCard from 'lucide-svelte/icons/credit-card';
     import LogOut from 'lucide-svelte/icons/log-out';
-    // import Sparkles from 'lucide-svelte/icons/sparkles';
 
     interface Props {
         gravatar: Gravatar;
@@ -88,7 +91,7 @@
                         <DropdownMenu.Item>
                             <BadgeCheck />
                             <A variant="ghost" href="/next/account/manage" class="w-full">Account</A>
-                            <DropdownMenu.Shortcut>⇧⌘P</DropdownMenu.Shortcut>
+                            <DropdownMenu.Shortcut>⇧⌘ga</DropdownMenu.Shortcut>
                         </DropdownMenu.Item>
                         <!-- <DropdownMenu.Item>
                         <CreditCard />
@@ -102,33 +105,44 @@
                         <DropdownMenu.Shortcut>⇧⌘N</DropdownMenu.Shortcut>
                     </DropdownMenu.Item> -->
                     </DropdownMenu.Group>
+                    <DropdownMenu.Sub>
+                        <DropdownMenu.SubTrigger>
+                            <BookOpen />
+                            Help
+                        </DropdownMenu.SubTrigger>
+                        <DropdownMenu.SubContent>
+                            <DropdownMenu.Item>
+                                <BookOpen />
+                                <A variant="ghost" href="https://exceptionless.com/docs/" target="_blank" class="w-full">Documentation</A>
+                                <DropdownMenu.Shortcut>⌘gw</DropdownMenu.Shortcut>
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item>
+                                <Help />
+                                <A variant="ghost" href="https://github.com/exceptionless/Exceptionless/issues" target="_blank" class="w-full">Support</A>
+                                <DropdownMenu.Shortcut>⌘gs</DropdownMenu.Shortcut>
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item>
+                                <GitHub />
+                                <A variant="ghost" href="https://github.com/exceptionless/Exceptionless" target="_blank" class="w-full">GitHub</A>
+                                <DropdownMenu.Shortcut>⌘gg</DropdownMenu.Shortcut>
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item>
+                                <Braces />
+                                <A variant="ghost" href="/docs/index.html" target="_blank" class="w-full">API Reference</A>
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item>
+                                <BookOpen />
+                                Keyboard shortcuts
+                                <DropdownMenu.Shortcut>⌘K</DropdownMenu.Shortcut>
+                            </DropdownMenu.Item>
+                        </DropdownMenu.SubContent>
+                    </DropdownMenu.Sub>
                     <DropdownMenu.Separator />
                     <DropdownMenu.Item>
                         <LogOut />
                         <A variant="ghost" href="/next/logout" class="w-full">Log out</A>
                         <DropdownMenu.Shortcut>⇧⌘Q</DropdownMenu.Shortcut>
                     </DropdownMenu.Item>
-
-                    <!-- <DropdownMenu.Label>Documentation</DropdownMenu.Label>
-                <DropdownMenu.Separator />
-                <DropdownMenu.Group>
-                    <DropdownMenu.Item
-                        ><A variant="ghost" href="https://exceptionless.com/docs/" target="_blank" class="w-full">Documentation</A></DropdownMenu.Item
-                    >
-                    <DropdownMenu.Item
-                        ><A variant="ghost" href="https://github.com/exceptionless/Exceptionless/issues" target="_blank" class="w-full">Support</A
-                        ></DropdownMenu.Item
-                    >
-                    <DropdownMenu.Item
-                        ><A variant="ghost" href="https://github.com/exceptionless/Exceptionless" target="_blank" class="w-full">GitHub</A
-                        ></DropdownMenu.Item
-                    >
-                    <DropdownMenu.Item><A variant="ghost" href="/docs/index.html" target="_blank" class="w-full">API</A></DropdownMenu.Item>
-                   <DropdownMenu.Item>
-                    Keyboard shortcuts
-                    <DropdownMenu.Shortcut>⌘K</DropdownMenu.Shortcut>
-                 </DropdownMenu.Item>
-                </DropdownMenu.Group> -->
                 </DropdownMenu.Content>
             </DropdownMenu.Root>
         </Sidebar.MenuItem>
