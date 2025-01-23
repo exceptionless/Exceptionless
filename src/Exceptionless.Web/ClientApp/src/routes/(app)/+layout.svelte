@@ -6,6 +6,7 @@
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
     import { getOrganizationQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
+    import { organization } from '$features/organizations/context.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
     import { invalidateStackQueries } from '$features/stacks/api.svelte';
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
@@ -15,7 +16,6 @@
     import { validate } from '$shared/validation';
     import { setModelValidator, useMiddleware } from '@exceptionless/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
-    import { PersistedState } from 'runed';
     import { fade } from 'svelte/transition';
 
     import { type NavigationItemContext, routes } from '../routes';
@@ -154,10 +154,7 @@
     const userResponse = getMeQuery();
     const gravatar = getGravatarFromCurrentUser(userResponse);
 
-    // TODO: Use Context
-    const selectedOrganizationId = new PersistedState<string | undefined>('organization', undefined);
     const organizationsResponse = getOrganizationQuery({});
-
     $effect(() => {
         if (!organizationsResponse.isSuccess) {
             return;
@@ -165,12 +162,12 @@
 
         if (organizationsResponse.data.length === 0) {
             // TODO: Redirect to create organization page.
-            selectedOrganizationId.current = undefined;
+            organization.current = undefined;
             return;
         }
 
-        if (!organizationsResponse.data.find((organization) => organization.id === selectedOrganizationId.current)) {
-            selectedOrganizationId.current = organizationsResponse.data[0]!.id;
+        if (!organizationsResponse.data.find((org) => org.id === organization.current)) {
+            organization.current = organizationsResponse.data[0]!.id;
         }
     });
 
@@ -185,9 +182,10 @@
     <Sidebar routes={filteredRoutes}>
         {#snippet header()}
             <SidebarOrganizationSwitcher
+                class="pt-2"
                 isLoading={organizationsResponse.isLoading}
                 organizations={organizationsResponse.data}
-                bind:selected={selectedOrganizationId.current}
+                bind:selected={organization.current}
             />
         {/snippet}
 

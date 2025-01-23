@@ -26,7 +26,7 @@
         {/if}
     </Sidebar.Header>
     <Sidebar.Content>
-        <Sidebar.Group>
+        <Sidebar.Group class="pt-0">
             <Sidebar.Menu>
                 {#each dashboardRoutes as route (route.href)}
                     {@const Icon = route.icon}

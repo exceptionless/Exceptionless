@@ -1,4 +1,7 @@
 <script lang="ts">
+    import type { HTMLAttributes } from 'svelte/elements';
+
+    import DelayedRender from '$comp/delayed-render.svelte';
     import * as Avatar from '$comp/ui/avatar/index';
     import * as DropdownMenu from '$comp/ui/dropdown-menu/index';
     import * as Sidebar from '$comp/ui/sidebar/index';
@@ -9,13 +12,13 @@
     import ChevronsUpDown from 'lucide-svelte/icons/chevrons-up-down';
     import Plus from 'lucide-svelte/icons/plus';
 
-    interface Props {
+    type Props = HTMLAttributes<HTMLUListElement> & {
         isLoading: boolean;
         organizations: undefined | ViewOrganization[];
         selected: string | undefined;
-    }
+    };
 
-    let { isLoading, organizations, selected = $bindable() }: Props = $props();
+    let { class: className, isLoading, organizations, selected = $bindable() }: Props = $props();
 
     const sidebar = useSidebar();
     let activeOrganization = $derived(organizations?.find((organization) => organization.id === selected));
@@ -25,20 +28,8 @@
     }
 </script>
 
-{#if isLoading}
-    <Sidebar.Menu>
-        <Sidebar.MenuItem>
-            <Sidebar.MenuButton size="lg" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
-                <Skeleton class="size-8 min-w-8 rounded-lg" />
-                <div class="grid flex-1 gap-1">
-                    <Skeleton class="h-4 w-full" />
-                    <Skeleton class="h-3 w-full" />
-                </div>
-            </Sidebar.MenuButton>
-        </Sidebar.MenuItem>
-    </Sidebar.Menu>
-{:else}
-    <Sidebar.Menu>
+{#if organizations && organizations.length > 1}
+    <Sidebar.Menu class={className}>
         <Sidebar.MenuItem>
             <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
@@ -90,4 +81,18 @@
             </DropdownMenu.Root>
         </Sidebar.MenuItem>
     </Sidebar.Menu>
+{:else if isLoading}
+    <DelayedRender>
+        <Sidebar.Menu>
+            <Sidebar.MenuItem>
+                <Sidebar.MenuButton size="lg" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+                    <Skeleton class="size-8 min-w-8 rounded-lg" />
+                    <div class="grid flex-1 gap-1">
+                        <Skeleton class="h-4 w-full" />
+                        <Skeleton class="h-3 w-full" />
+                    </div>
+                </Sidebar.MenuButton>
+            </Sidebar.MenuItem>
+        </Sidebar.Menu>
+    </DelayedRender>
 {/if}
