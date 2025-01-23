@@ -2,7 +2,7 @@
     import type { Snippet } from 'svelte';
 
     import { goto } from '$app/navigation';
-    import { page } from '$app/stores';
+    import { page } from '$app/state';
     import * as Sidebar from '$comp/ui/sidebar';
     import { Toaster } from '$comp/ui/sonner';
     import { accessToken } from '$features/auth/index.svelte';
@@ -43,7 +43,7 @@
         }
 
         if ((status === 0 || status === 503) && !ctx.options.expectedStatusCodes?.includes(status)) {
-            const { url } = get(page);
+            const url = page.url;
             if (url.pathname.startsWith('/next/status')) {
                 return;
             }
