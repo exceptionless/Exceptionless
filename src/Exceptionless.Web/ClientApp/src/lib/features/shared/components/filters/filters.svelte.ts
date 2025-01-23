@@ -179,44 +179,7 @@ export class NumberFilter implements IFilter {
     }
 }
 
-export class OrganizationFilter implements IFilter {
-    public type: string = 'organization';
-    public value = $state<string>();
-
-    public get key(): string {
-        return this.type;
-    }
-
-    constructor(value?: string) {
-        this.value = value;
-    }
-
-    public isEmpty(): boolean {
-        return !this.value?.trim();
-    }
-
-    public reset(): void {
-        this.value = undefined;
-    }
-
-    public toFilter(): string {
-        if (this.isEmpty()) {
-            return '';
-        }
-
-        return `organization:${this.value}`;
-    }
-
-    public toJSON() {
-        return {
-            type: this.type,
-            value: this.value
-        };
-    }
-}
-
 export class ProjectFilter implements IFilter {
-    public organization = $state<string | undefined>();
     public type: string = 'project';
 
     public value = $state<string[]>([]);
@@ -225,8 +188,7 @@ export class ProjectFilter implements IFilter {
         return this.type;
     }
 
-    constructor(organization: string | undefined, value: string[] = []) {
-        this.organization = organization;
+    constructor(value: string[] = []) {
         this.value = value;
     }
 
@@ -252,7 +214,6 @@ export class ProjectFilter implements IFilter {
 
     public toJSON() {
         return {
-            organization: this.organization,
             type: this.type,
             value: this.value
         };
@@ -544,8 +505,7 @@ export function filterRemoved(filters: IFilter[], defaultFilters: IFilter[], rem
 
 export function getDefaultFilters(includeDateFilter = true): IFilter[] {
     return [
-        new OrganizationFilter(),
-        new ProjectFilter(undefined, []),
+        new ProjectFilter([]),
         new StatusFilter([]),
         new TypeFilter([]),
         new DateFilter('date', 'last week'),
@@ -565,10 +525,8 @@ export function getFilter(filter: Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'
             return new KeywordFilter(filter.value as string);
         case 'number':
             return new NumberFilter(filter.term as string, filter.value as number);
-        case 'organization':
-            return new OrganizationFilter(filter.value as string);
         case 'project':
-            return new ProjectFilter(filter.organization as string, filter.value as string[]);
+            return new ProjectFilter(filter.value as string[]);
         case 'reference':
             return new ReferenceFilter(filter.value as string);
         case 'session':
@@ -590,10 +548,6 @@ export function getKeywordFilter(filters: IFilter[]): KeywordFilter | undefined 
     return filters.find((f) => f.type === 'keyword') as KeywordFilter;
 }
 
-export function getOrganizationFilter(filters: IFilter[]): OrganizationFilter | undefined {
-    return filters.find((f) => f.type === 'organization') as OrganizationFilter;
-}
-
 export function getProjectFilter(filters: IFilter[]): ProjectFilter {
     return filters.find((f) => f.type === 'project') as ProjectFilter;
 }
@@ -612,28 +566,7 @@ export function processFilterRules(filters: IFilter[], changed?: IFilter): IFilt
         }
     });
 
-    const projectFilter = filtered.find((f) => f.type === 'project') as ProjectFilter;
-    if (projectFilter) {
-        let organizationFilter = filtered.find((f) => f.type === 'organization') as OrganizationFilter;
-
-        // If there is a project filter, verify the organization filter is set
-        if (!organizationFilter) {
-            organizationFilter = new OrganizationFilter(projectFilter.organization);
-            filtered.push(organizationFilter);
-        }
-
-        // If the organization filter changes and organization is not set on the project filter, clear the project filter
-        if (changed?.type === 'organization' && projectFilter.organization !== organizationFilter.value) {
-            projectFilter.organization = organizationFilter.value;
-            projectFilter.value = [];
-        }
-
-        // If the project filter changes and the organization filter is not set, set it
-        if (organizationFilter.value !== projectFilter.organization) {
-            organizationFilter.value = projectFilter.organization;
-        }
-    }
-
+    console.trace(`Processed filter rules as filter ${changed?.type} changed`);
     return filtered;
 }
 

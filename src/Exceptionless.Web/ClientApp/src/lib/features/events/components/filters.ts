@@ -1,4 +1,6 @@
-import { getKeywordFilter, getOrganizationFilter, getProjectFilter, getStackFilter, type IFilter } from '$comp/filters/filters.svelte';
+import { getKeywordFilter, getProjectFilter, getStackFilter, type IFilter } from '$comp/filters/filters.svelte';
+// TODO: Don't import this.
+import { organization } from '$features/organizations/context.svelte';
 
 export function shouldRefreshPersistentEventChanged(
     filters: IFilter[],
@@ -37,10 +39,7 @@ export function shouldRefreshPersistentEventChanged(
     }
 
     if (organization_id) {
-        const organizationFilter = getOrganizationFilter(filters);
-        if (organizationFilter && !organizationFilter.isEmpty()) {
-            return organizationFilter.value === organization_id;
-        }
+        return organization.current === organization_id;
     }
 
     return true;

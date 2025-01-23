@@ -1,5 +1,7 @@
 <script lang="ts">
     import { ProjectFilter } from '$comp/filters/filters.svelte';
+    import { organization } from '$features/organizations/context.svelte';
+    // TODO: look at why we go across features here
     import { getOrganizationProjectsQuery } from '$features/projects/api.svelte';
 
     import type { FacetedFilterProps } from '.';
@@ -11,7 +13,7 @@
     const response = getOrganizationProjectsQuery({
         route: {
             get organizationId() {
-                return filter.organization;
+                return organization.current;
             }
         }
     });

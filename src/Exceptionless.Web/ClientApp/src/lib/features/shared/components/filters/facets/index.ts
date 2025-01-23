@@ -6,7 +6,6 @@ import {
     type IFilter,
     KeywordFilter,
     type NumberFilter,
-    OrganizationFilter,
     ProjectFilter,
     ReferenceFilter,
     SessionFilter,
@@ -19,7 +18,6 @@ import BooleanFacetedFilter from './boolean-faceted-filter.svelte';
 import DateFacetedFilter from './date-faceted-filter.svelte';
 import KeywordFacetedFilter from './keyword-faceted-filter.svelte';
 import NumberFacetedFilter from './number-faceted-filter.svelte';
-import OrganizationFacetedFilter from './organization-faceted-filter.svelte';
 import ProjectFacetedFilter from './project-faceted-filter.svelte';
 import ReferenceFacetedFilter from './reference-faceted-filter.svelte';
 import SessionFacetedFilter from './session-faceted-filter.svelte';
@@ -63,9 +61,6 @@ export function toFacetedFilters(filters: IFilter[]): FacetedFilter<IFilter>[] {
             case 'number': {
                 const numberFilter = filter as NumberFilter;
                 return new FacetedFilter((numberFilter.term as string) ?? 'Number', NumberFacetedFilter, numberFilter);
-            }
-            case 'organization': {
-                return new FacetedFilter('Organization', OrganizationFacetedFilter, filter as OrganizationFilter);
             }
             case 'project': {
                 return new FacetedFilter('Project', ProjectFacetedFilter, filter as ProjectFilter);
