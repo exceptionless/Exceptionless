@@ -134,7 +134,6 @@
                     ><ClickableProjectFilter
                         {changed}
                         class="mr-0"
-                        organization={projectResponse.data.organization_id!}
                         value={[projectResponse.data.id!]}
                     /></Table.Cell
                 >

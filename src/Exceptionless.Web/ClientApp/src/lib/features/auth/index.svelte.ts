@@ -3,7 +3,6 @@ import { page } from '$app/state';
 import { env } from '$env/dynamic/public';
 import { useFetchClient } from '@exceptionless/fetchclient';
 import { PersistedState } from 'runed';
-import { get } from 'svelte/store';
 
 import type { Login, TokenResult } from './models';
 

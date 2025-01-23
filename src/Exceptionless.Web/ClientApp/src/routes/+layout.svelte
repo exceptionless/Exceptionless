@@ -11,7 +11,6 @@
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
     import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
     import { ModeWatcher } from 'mode-watcher';
-    import { get } from 'svelte/store';
 
     import '../app.css';
     import { routes } from './routes';
@@ -53,7 +52,7 @@
     });
 
     $effect(() => {
-        const currentRoute = routes.find((route) => $page.url.pathname === route.href);
+        const currentRoute = routes.find((route) => page.url.pathname === route.href);
         if (currentRoute) {
             document.title = `${currentRoute.title} - Exceptionless`;
         } else {
