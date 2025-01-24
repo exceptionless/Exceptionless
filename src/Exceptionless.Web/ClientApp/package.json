@@ -70,6 +70,7 @@
         "runed": "^0.23.1",
         "svelte-sonner": "^0.3.28",
         "svelte-time": "^0.9.0",
+        "sveltekit-search-params": "^4.0.0-next.0",
         "sveltekit-superforms": "^2.23.1",
         "tailwind-merge": "^2.6.0",
         "tailwind-variants": "^0.3.1",
