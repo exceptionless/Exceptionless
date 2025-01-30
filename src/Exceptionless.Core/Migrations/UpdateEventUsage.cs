@@ -90,7 +90,7 @@ public sealed class UpdateEventUsage : MigrationBase
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error updating organization {OrganizationId}: {Message}", organization.Id, ex.Message);
+                    _logger.LogError(ex, "Error updating organization {Organization}: {Message}", organization.Id, ex.Message);
                     error++;
                 }
             }
@@ -129,7 +129,7 @@ public sealed class UpdateEventUsage : MigrationBase
                         long eventTotal = dateHistogramBucket.Total.GetValueOrDefault();
                         if (eventTotal > usage.Total)
                         {
-                            _logger.LogInformation("Updating {ProjectName} ({ProjectId}) {UsageDate} usage total from {UsageTotalFrom} to {UsageTotal}", project.Name, project.Id, usage.Date, usage.Total, eventTotal);
+                            _logger.LogInformation("Updating {ProjectName} ({Project}) {UsageDate} usage total from {UsageTotalFrom} to {UsageTotal}", project.Name, project.Id, usage.Date, usage.Total, eventTotal);
                             usage.Total = (int)eventTotal;
                         }
 
@@ -141,7 +141,7 @@ public sealed class UpdateEventUsage : MigrationBase
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error updating project {ProjectId}: {Message}", project.Id, ex.Message);
+                    _logger.LogError(ex, "Error updating project {Project}: {Message}", project.Id, ex.Message);
                 }
             }
 

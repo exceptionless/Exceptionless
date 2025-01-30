@@ -239,7 +239,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                     var stacks = await _stackRepository.FindAsync(q => q.Project(projectId).FilterExpression($"signature_hash:{signature}"));
                     if (stacks.Documents.Count < 2)
                     {
-                        _logger.LogError("Did not find multiple stacks with signature {SignatureHash} and project {ProjectId}", signature, projectId);
+                        _logger.LogError("Did not find multiple stacks with signature {SignatureHash} and project {Project}", signature, projectId);
                         continue;
                     }
 
@@ -341,7 +341,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                 catch (Exception ex)
                 {
                     error++;
-                    _logger.LogError(ex, "Error fixing duplicate stack {ProjectId} {SignatureHash}", projectId, signature);
+                    _logger.LogError(ex, "Error fixing duplicate stack {Project} {SignatureHash}", projectId, signature);
                 }
             }
 

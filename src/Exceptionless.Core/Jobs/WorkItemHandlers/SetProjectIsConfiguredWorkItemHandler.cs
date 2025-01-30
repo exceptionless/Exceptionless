@@ -30,7 +30,8 @@ public class SetProjectIsConfiguredWorkItemHandler : WorkItemHandlerBase
     public override async Task HandleItemAsync(WorkItemContext context)
     {
         var workItem = context.GetData<SetProjectIsConfiguredWorkItem>();
-        Log.LogInformation("Setting Is Configured for project: {ProjectId}", workItem.ProjectId);
+        using var _ = Log.BeginScope(new ExceptionlessState().Project(workItem.ProjectId));
+        Log.LogInformation("Setting Is Configured for project: {Project}", workItem.ProjectId);
 
         var project = await _projectRepository.GetByIdAsync(workItem.ProjectId);
         if (project is null || project.IsConfigured.GetValueOrDefault())

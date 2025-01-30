@@ -32,7 +32,7 @@ public class EnqueueOrganizationNotificationOnPlanOverage : IStartupAction
     {
         return _subscriber.SubscribeAsync<PlanOverage>(async overage =>
         {
-            _logger.LogInformation("Enqueueing plan overage work item for organization: {OrganizationId} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", overage.OrganizationId, overage.IsHourly, !overage.IsHourly);
+            _logger.LogInformation("Enqueueing plan overage work item for organization: {Organization} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", overage.OrganizationId, overage.IsHourly, !overage.IsHourly);
 
             await _workItemQueue.EnqueueAsync(new OrganizationNotificationWorkItem
             {

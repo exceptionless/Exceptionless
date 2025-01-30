@@ -82,14 +82,14 @@ public class EventPostsJob : QueueJobBase<EventPost>
         bool isInternalProject = ep.ProjectId == _appOptions.InternalProjectId;
         if (!isInternalProject && _logger.IsEnabled(LogLevel.Information))
         {
-            using (_logger.BeginScope(new ExceptionlessState().Tag("processing").Tag("compressed").Tag(ep.ContentEncoding).Value(payload.Length)))
-                _logger.LogInformation("Processing post: id={QueueEntryId} path={FilePath} project={ProjectId} ip={IpAddress} v={ApiVersion} agent={UserAgent}", entry.Id, payloadPath, ep.ProjectId, ep.IpAddress, ep.ApiVersion, ep.UserAgent);
+            using var processingScope = _logger.BeginScope(new ExceptionlessState().Tag("processing").Tag("compressed").Tag(ep.ContentEncoding).Value(payload.Length));
+            _logger.LogInformation("Processing post: id={QueueEntryId} path={FilePath} project={Project} ip={IpAddress} v={ApiVersion} agent={UserAgent}", entry.Id, payloadPath, ep.ProjectId, ep.IpAddress, ep.ApiVersion, ep.UserAgent);
         }
 
         var project = await projectTask;
         if (project is null)
         {
-            if (!isInternalProject) _logger.LogError("Unable to process EventPost {FilePath}: Unable to load project: {ProjectId}", payloadPath, ep.ProjectId);
+            if (!isInternalProject) _logger.LogError("Unable to process EventPost {FilePath}: Unable to load project: {Project}", payloadPath, ep.ProjectId);
             await Task.WhenAll(CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime), organizationTask);
             return JobResult.Success;
         }
@@ -153,7 +153,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
         if (organization is null)
         {
             if (!isInternalProject)
-                _logger.LogError("Unable to process EventPost {FilePath}: Unable to load organization: {OrganizationId}", payloadPath, project.OrganizationId);
+                _logger.LogError("Unable to process EventPost {FilePath}: Unable to load organization: {Organization}", payloadPath, project.OrganizationId);
 
             await CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime);
             return JobResult.Success;

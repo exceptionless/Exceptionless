@@ -88,12 +88,12 @@ public class StackService
                 }
                 else
                 {
-                    _logger.LogTrace("Increment event count {OccurrenceCount} for organization:{OrganizationId} project:{ProjectId} stack:{StackId} with Min Date:{OccurrenceMinDate} Max Date:{OccurrenceMaxDate}", occurrenceCount, organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate);
+                    _logger.LogTrace("Increment event count {OccurrenceCount} for organization:{Organization} project:{Project} stack:{Stack} with Min Date:{OccurrenceMinDate} Max Date:{OccurrenceMaxDate}", occurrenceCount, organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error incrementing event count for organization: {OrganizationId} project:{ProjectId} stack:{StackId}", organizationId, projectId, stackId);
+                _logger.LogError(ex, "Error incrementing event count for organization: {Organization} project:{Project} stack:{Stack}", organizationId, projectId, stackId);
                 if (!shouldRetry)
                 {
                     await IncrementStackUsageAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount);

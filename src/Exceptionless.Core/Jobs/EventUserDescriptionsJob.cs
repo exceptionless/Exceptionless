@@ -23,21 +23,21 @@ public class EventUserDescriptionsJob : QueueJobBase<EventUserDescription>
 
     protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventUserDescription> context)
     {
-        _logger.LogTrace("Processing user description: id={0}", context.QueueEntry.Id);
+        _logger.LogTrace("Processing user description: id={QueueEntryId}", context.QueueEntry.Id);
 
         try
         {
             await ProcessUserDescriptionAsync(context.QueueEntry.Value);
-            _logger.LogInformation("Processed user description: id={Id}", context.QueueEntry.Id);
+            _logger.LogInformation("Processed user description: id={QueueEntryId}", context.QueueEntry.Id);
         }
         catch (DocumentNotFoundException ex)
         {
-            _logger.LogError(ex, "An event with this reference id {ReferenceId} has not been processed yet or was deleted. Queue Id: {Id}", ex.Id, context.QueueEntry.Id);
+            _logger.LogError(ex, "An event with this reference id {ReferenceId} has not been processed yet or was deleted. Queue Id: {QueueEntryId}", ex.Id, context.QueueEntry.Id);
             return JobResult.FromException(ex);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while processing the EventUserDescription {Id}: {Message}", context.QueueEntry.Id, ex.Message);
+            _logger.LogError(ex, "An error occurred while processing the EventUserDescription {QueueEntryId}: {Message}", context.QueueEntry.Id, ex.Message);
             return JobResult.FromException(ex);
         }
 

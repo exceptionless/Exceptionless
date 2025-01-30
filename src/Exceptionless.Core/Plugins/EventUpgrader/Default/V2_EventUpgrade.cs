@@ -132,7 +132,7 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
 
         if (json.Length > 200000)
         {
-            _logger.LogError("__ExceptionInfo on {Id} is Too Big: {Length}", id, json.Length);
+            _logger.LogError("__ExceptionInfo on {Event} is Too Big: {Length}", id, json.Length);
             return;
         }
 

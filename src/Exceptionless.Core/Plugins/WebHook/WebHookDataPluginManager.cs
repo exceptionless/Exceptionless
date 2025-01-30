@@ -59,7 +59,7 @@ public class WebHookDataPluginManager : PluginManagerBase<IWebHookDataPlugin>
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error calling create from stack {StackId} in plugin {PluginName}: {Message}", context.Stack.Id, plugin.Name, ex.Message);
+                _logger.LogError(ex, "Error calling create from stack {Stack} in plugin {PluginName}: {Message}", context.Stack.Id, plugin.Name, ex.Message);
             }
         }
 

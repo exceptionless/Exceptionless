@@ -54,7 +54,7 @@ public sealed class FixDuplicateStacks : MigrationBase
 
         while (buckets.Count > 0)
         {
-            _logger.LogInformation($"Found {total} duplicate stacks in batch #{batch}.");
+            _logger.LogInformation("Found {Total} duplicate stacks in batch #{Batch}", total, batch);
 
             foreach (var duplicateSignature in buckets)
             {
@@ -74,7 +74,7 @@ public sealed class FixDuplicateStacks : MigrationBase
                     var stacks = await _stackRepository.FindAsync(q => q.Project(projectId).FilterExpression($"signature_hash:{signature}"));
                     if (stacks.Documents.Count < 2)
                     {
-                        _logger.LogError("Did not find multiple stacks with signature {SignatureHash} and project {ProjectId}", signature, projectId);
+                        _logger.LogError("Did not find multiple stacks with signature {SignatureHash} and project {Project}", signature, projectId);
                         continue;
                     }
 
@@ -173,7 +173,7 @@ public sealed class FixDuplicateStacks : MigrationBase
                 catch (Exception ex)
                 {
                     error++;
-                    _logger.LogError(ex, "Error fixing duplicate stack {ProjectId} {SignatureHash}", projectId, signature);
+                    _logger.LogError(ex, "Error fixing duplicate stack {Project} {SignatureHash}", projectId, signature);
                 }
             }
 

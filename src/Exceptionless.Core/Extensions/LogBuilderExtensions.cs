@@ -5,7 +5,7 @@ public class ExceptionlessState : Dictionary<string, object?>
     public ExceptionlessState Project(string projectId)
     {
         if (!String.IsNullOrEmpty(projectId))
-            base["project"] = projectId;
+            base["Project"] = projectId;
 
         return this;
     }
@@ -13,7 +13,7 @@ public class ExceptionlessState : Dictionary<string, object?>
     public ExceptionlessState Organization(string organizationId)
     {
         if (!String.IsNullOrEmpty(organizationId))
-            base["organization"] = organizationId;
+            base["Organization"] = organizationId;
 
         return this;
     }

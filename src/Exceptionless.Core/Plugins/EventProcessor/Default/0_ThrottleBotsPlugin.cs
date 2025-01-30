@@ -59,7 +59,7 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
                 continue;
 
             var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-            _logger.LogInformation("Bot throttle triggered. IP: {IP} Time: {ThrottlingPeriod} Project: {ProjectId}", clientIpAddressGroup.Key, utcNow.Floor(_throttlingPeriod), firstContext.Event.ProjectId);
+            _logger.LogInformation("Bot throttle triggered. IP: {IP} Time: {ThrottlingPeriod} Project: {Project}", clientIpAddressGroup.Key, utcNow.Floor(_throttlingPeriod), firstContext.Event.ProjectId);
 
             // The throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
             await _workItemQueue.EnqueueAsync(new RemoveBotEventsWorkItem

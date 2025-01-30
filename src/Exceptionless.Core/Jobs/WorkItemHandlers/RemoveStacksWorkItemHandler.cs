@@ -29,13 +29,12 @@ public class RemoveStacksWorkItemHandler : WorkItemHandlerBase
     public override async Task HandleItemAsync(WorkItemContext context)
     {
         var wi = context.GetData<RemoveStacksWorkItem>();
-        using (Log.BeginScope(new ExceptionlessState().Organization(wi.OrganizationId).Project(wi.ProjectId)))
-        {
-            Log.LogInformation("Received remove stacks work item for project: {ProjectId}", wi.ProjectId);
-            await context.ReportProgressAsync(0, "Starting soft deleting of stacks...");
-            long deleted = await _stackRepository.SoftDeleteByProjectIdAsync(wi.OrganizationId, wi.ProjectId);
-            await _cacheClient.RemoveByPrefixAsync(String.Concat("stack-filter:", wi.OrganizationId, ":", wi.ProjectId));
-            await context.ReportProgressAsync(100, $"Stacks soft deleted: {deleted}");
-        }
+        using var _ = Log.BeginScope(new ExceptionlessState().Organization(wi.OrganizationId).Project(wi.ProjectId));
+
+        Log.LogInformation("Received remove stacks work item for project: {Project}", wi.ProjectId);
+        await context.ReportProgressAsync(0, "Starting soft deleting of stacks...");
+        long deleted = await _stackRepository.SoftDeleteByProjectIdAsync(wi.OrganizationId, wi.ProjectId);
+        await _cacheClient.RemoveByPrefixAsync(String.Concat("stack-filter:", wi.OrganizationId, ":", wi.ProjectId));
+        await context.ReportProgressAsync(100, $"Stacks soft deleted: {deleted}");
     }
 }

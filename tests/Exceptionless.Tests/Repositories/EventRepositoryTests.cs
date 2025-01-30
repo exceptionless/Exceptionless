@@ -99,13 +99,13 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
         _logger.LogDebug("Actual order:");
         foreach (var t in _ids)
-            _logger.LogDebug("{Id}: {Date}", t.Item1, t.Item2.ToLongTimeString());
+            _logger.LogDebug("{Event}: {Date}", t.Item1, t.Item2.ToLongTimeString());
 
         _logger.LogDebug("");
         _logger.LogDebug("Sorted order:");
         var sortedIds = _ids.OrderBy(t => t.Item2.Ticks).ThenBy(t => t.Item1).ToList();
         foreach (var t in sortedIds)
-            _logger.LogDebug("{Id}: {Date}", t.Item1, t.Item2.ToLongTimeString());
+            _logger.LogDebug("{Event}: {Date}", t.Item1, t.Item2.ToLongTimeString());
 
         _logger.LogDebug("");
         _logger.LogDebug("Tests:");
@@ -113,7 +113,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         Assert.Equal(_ids.Count, await _repository.CountAsync());
         for (int i = 0; i < sortedIds.Count; i++)
         {
-            _logger.LogDebug("Current - {Id}: {Date}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
+            _logger.LogDebug("Current - {Event}: {Date}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
             if (i == 0)
                 Assert.Null((await _repository.GetPreviousAndNextEventIdsAsync(sortedIds[i].Item1)).Previous);
             else
@@ -128,20 +128,20 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
         _logger.LogDebug("Actual order:");
         foreach (var t in _ids)
-            _logger.LogDebug("{Id}: {Date}", t.Item1, t.Item2.ToLongTimeString());
+            _logger.LogDebug("{Event}: {Date}", t.Item1, t.Item2.ToLongTimeString());
 
         _logger.LogDebug("");
         _logger.LogDebug("Sorted order:");
         var sortedIds = _ids.OrderBy(t => t.Item2.Ticks).ThenBy(t => t.Item1).ToList();
         foreach (var t in sortedIds)
-            _logger.LogDebug("{Id}: {Date}", t.Item1, t.Item2.ToLongTimeString());
+            _logger.LogDebug("{Event}: {Date}", t.Item1, t.Item2.ToLongTimeString());
 
         _logger.LogDebug("");
         _logger.LogDebug("Tests:");
         Assert.Equal(_ids.Count, await _repository.CountAsync());
         for (int i = 0; i < sortedIds.Count; i++)
         {
-            _logger.LogDebug("Current - {Id}: {Date}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
+            _logger.LogDebug("Current - {Event}: {Date}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
             string? nextId = (await _repository.GetPreviousAndNextEventIdsAsync(sortedIds[i].Item1)).Next;
             if (i == sortedIds.Count - 1)
                 Assert.Null(nextId);

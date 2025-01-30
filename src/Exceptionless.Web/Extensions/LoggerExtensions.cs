@@ -1,4 +1,4 @@
-﻿namespace Exceptionless.Web.Extensions;
+namespace Exceptionless.Web.Extensions;
 
 internal static class LoggerExtensions
 {

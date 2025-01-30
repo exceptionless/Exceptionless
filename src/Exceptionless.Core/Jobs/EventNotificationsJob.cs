@@ -63,7 +63,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
 
         bool shouldLog = ev.ProjectId != _appOptions.InternalProjectId;
         int sent = 0;
-        if (shouldLog) _logger.LogTrace("Process notification: project={ProjectId} event={Id} stack={Stack}", ev.ProjectId, ev.Id, ev.StackId);
+        if (shouldLog) _logger.LogTrace("Process notification: project={Project} event={Event} stack={Stack}", ev.ProjectId, ev.Id, ev.StackId);
 
         var project = await _projectRepository.GetByIdAsync(ev.ProjectId, o => o.Cache());
         if (project is null)
@@ -146,7 +146,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
             if (sent > 0)
             {
                 await _cache.SetAsync(String.Concat("notify:stack-throttle:", ev.StackId), _timeProvider.GetUtcNow().UtcDateTime, _timeProvider.GetUtcNow().UtcDateTime.AddMinutes(15));
-                if (shouldLog) _logger.LogInformation("Notifications sent: event={Id} stack={Stack} count={SentCount}", ev.Id, ev.StackId, sent);
+                if (shouldLog) _logger.LogInformation("Notifications sent: event={Event} stack={Stack} count={SentCount}", ev.Id, ev.StackId, sent);
             }
         }
         return JobResult.Success;
@@ -175,7 +175,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
 
         if (!user.OrganizationIds.Contains(project.OrganizationId))
         {
-            if (shouldLog) _logger.LogError("Unauthorized user: project={ProjectId} user={UserId} organization={Organization} event={Id}", project.Id, userId, project.OrganizationId, ev.Id);
+            if (shouldLog) _logger.LogError("Unauthorized user: project={Project} user={UserId} organization={Organization} event={Event}", project.Id, userId, project.OrganizationId, ev.Id);
             return false;
         }
 
