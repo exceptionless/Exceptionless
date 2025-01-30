@@ -1,14 +1,14 @@
 <script lang="ts">
-    import type { IFilter } from '$comp/filters/filters.svelte';
+    import type { IFilter } from '$comp/faceted-filter';
     import type { ViewProject } from '$features/projects/models';
 
-    import ClickableProjectFilter from '$comp/filters/clickable-project-filter.svelte';
     import DateTime from '$comp/formatters/date-time.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import * as Tabs from '$comp/ui/tabs';
     import { getEventQuery } from '$features/events/api.svelte';
+    import * as EventsFacetedFilter from '$features/events/components/filters';
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
     import { getProjectQuery } from '$features/projects/api.svelte';
     import StackCard from '$features/stacks/components/stack-card.svelte';
@@ -131,11 +131,7 @@
             {#if projectResponse.isSuccess}
                 <Table.Head class="w-40 whitespace-nowrap">Project</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableProjectFilter
-                        {changed}
-                        class="mr-0"
-                        value={[projectResponse.data.id!]}
-                    /></Table.Cell
+                    ><EventsFacetedFilter.ProjectTrigger {changed} class="mr-0" value={[projectResponse.data.id!]} /></Table.Cell
                 >
                 <Table.Cell>{projectResponse.data.name}</Table.Cell>
             {:else}

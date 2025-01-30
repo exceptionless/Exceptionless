@@ -4,14 +4,14 @@
     import AutomaticRefreshIndicatorButton from '$comp/automatic-refresh-indicator-button.svelte';
     import * as DataTable from '$comp/data-table';
     import * as FacetedFilter from '$comp/faceted-filter';
-    import { toFacetedFilters } from '$comp/filters/facets';
-    import { DateFilter, filterChanged, filterRemoved, filterSerializer, getDefaultFilters, type IFilter, toFilter } from '$comp/filters/filters.svelte';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
     import { getStackEventsQuery } from '$features/events/api.svelte';
     import EventsDrawer from '$features/events/components/events-drawer.svelte';
-    import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters';
+    import { toFacetedFilters } from '$features/events/components/filters';
+    import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters/helpers';
+    import { DateFilter, filterChanged, filterRemoved, filterSerializer, getDefaultFilters, toFilter } from '$features/events/components/filters/models.svelte';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
@@ -45,14 +45,14 @@
 
     const limit = new PersistedState<number>('events.issues.limit', 10);
     const defaultFilters = getDefaultFilters().filter((f) => f.key !== 'type');
-    const persistedFilters = new PersistedState<IFilter[]>('events.issues.filters', defaultFilters, { serializer: filterSerializer });
+    const persistedFilters = new PersistedState<FacetedFilter.IFilter[]>('events.issues.filters', defaultFilters, { serializer: filterSerializer });
     persistedFilters.current.push(...defaultFilters.filter((df) => !persistedFilters.current.some((f) => f.key === df.key)));
 
     const filter = $derived(toFilter(persistedFilters.current.filter((f) => f.key !== 'date:date')));
     const facets = $derived(toFacetedFilters(persistedFilters.current));
     const time = $derived<string>((persistedFilters.current.find((f) => f.key === 'date:date') as DateFilter).value as string);
 
-    function onDrawerFilterChanged(filter: IFilter): void {
+    function onDrawerFilterChanged(filter: FacetedFilter.IFilter): void {
         if (filter.key !== 'type') {
             persistedFilters.current = filterChanged(persistedFilters.current, filter);
         }
@@ -60,14 +60,14 @@
         selectedStackId = undefined;
     }
 
-    function onFilterChanged(filter: IFilter): void {
+    function onFilterChanged(filter: FacetedFilter.IFilter): void {
         if (filter.key !== 'type') {
             persistedFilters.current = filterChanged(persistedFilters.current, filter);
         }
     }
 
-    function onFilterRemoved(filter?: IFilter): void {
-        persistedFilters.current = filterRemoved(persistedFilters.current, defaultFilters, filter);
+    function onFilterRemoved(filter?: FacetedFilter.IFilter): void {
+        persistedFilters.current = filterRemoved(persistedFilters.current, filter);
     }
 
     const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: limit.current, mode: 'stack_frequent' });

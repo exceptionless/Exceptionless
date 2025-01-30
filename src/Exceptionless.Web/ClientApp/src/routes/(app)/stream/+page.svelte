@@ -5,13 +5,13 @@
     import DelayedRender from '$comp/delayed-render.svelte';
     import ErrorMessage from '$comp/error-message.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
-    import { toFacetedFilters } from '$comp/filters/facets';
-    import { filterChanged, filterRemoved, filterSerializer, getDefaultFilters, type IFilter, toFilter } from '$comp/filters/filters.svelte';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
     import EventsDrawer from '$features/events/components/events-drawer.svelte';
-    import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters';
+    import { toFacetedFilters } from '$features/events/components/filters';
+    import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters/helpers';
+    import { filterChanged, filterRemoved, filterSerializer, getDefaultFilters, toFilter } from '$features/events/components/filters/models.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { useFetchClientStatus } from '$shared/api/api.svelte';
@@ -30,25 +30,25 @@
 
     const limit = new PersistedState<number>('events.stream.limit', 10);
     const defaultFilters = getDefaultFilters(false);
-    const persistedFilters = new PersistedState<IFilter[]>('events.stream.filters', defaultFilters, { serializer: filterSerializer });
+    const persistedFilters = new PersistedState<FacetedFilter.IFilter[]>('events.stream.filters', defaultFilters, { serializer: filterSerializer });
     persistedFilters.current.push(...defaultFilters.filter((df) => !persistedFilters.current.some((f) => f.key === df.key)));
 
     const filter = $derived(toFilter(persistedFilters.current));
     const facets = $derived(toFacetedFilters(persistedFilters.current));
 
-    function onDrawerFilterChanged(filter: IFilter): void {
+    function onDrawerFilterChanged(filter: FacetedFilter.IFilter): void {
         persistedFilters.current = filterChanged(persistedFilters.current, filter);
         selectedEventId = null;
     }
 
-    function onFilterChanged(filter: IFilter): void {
+    function onFilterChanged(filter: FacetedFilter.IFilter): void {
         if (filter.key !== 'date:date') {
             persistedFilters.current = filterChanged(persistedFilters.current, filter);
         }
     }
 
-    function onFilterRemoved(filter?: IFilter): void {
-        persistedFilters.current = filterRemoved(persistedFilters.current, defaultFilters, filter);
+    function onFilterRemoved(filter?: FacetedFilter.IFilter): void {
+        persistedFilters.current = filterRemoved(persistedFilters.current, filter);
     }
 
     const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: limit.current, mode: 'summary' }, function (options) {
