@@ -10,7 +10,7 @@ internal static class LoggerExtensions
         LoggerMessage.Define<string, string, string>(
             LogLevel.Trace,
             new EventId(0, nameof(RecordWebHook)),
-            "Process web hook call: id={Id} project={ProjectId} url={Url}");
+            "Process web hook call: id={WebHook} project={Project} url={Url}");
 
     private static readonly Action<ILogger, Exception?> _webHookCancelled =
         LoggerMessage.Define(
@@ -28,25 +28,25 @@ internal static class LoggerExtensions
         LoggerMessage.Define<HttpStatusCode?, string, string, string>(
             LogLevel.Error,
             new EventId(3, nameof(WebHookTimeout)),
-            "Timeout calling web hook: status={Status} org={organization} project={ProjectId} url={Url}");
+            "Timeout calling web hook: status={Status} organization={Organization} project={Project} url={Url}");
 
     private static readonly Action<ILogger, HttpStatusCode?, string, string, string, Exception?> _webHookError =
         LoggerMessage.Define<HttpStatusCode?, string, string, string>(
             LogLevel.Error,
             new EventId(4, nameof(WebHookError)),
-            "Error calling web hook: status={Status} org={organization} project={ProjectId} url={Url}");
+            "Error calling web hook: status={Status} organization={Organization} project={Project} url={Url}");
 
     private static readonly Action<ILogger, HttpStatusCode?, string, string, string, Exception?> _webHookComplete =
         LoggerMessage.Define<HttpStatusCode?, string, string, string>(
             LogLevel.Information,
             new EventId(5, nameof(WebHookError)),
-            "Web hook POST complete: status={Status} org={organization} project={ProjectId} url={Url}");
+            "Web hook POST complete: status={Status} organization={Organization} project={Project} url={Url}");
 
     private static readonly Action<ILogger, string, HttpStatusCode?, string, string, string, Exception?> _webHookDisabledStatusCode =
         LoggerMessage.Define<string, HttpStatusCode?, string, string, string>(
             LogLevel.Warning,
             new EventId(6, nameof(WebHookDisabledStatusCode)),
-            "Disabling Web hook instance {WebHookId} due to status code: status={Status} org={organization} project={ProjectId} url={Url}");
+            "Disabling Web hook instance {WebHookId} due to status code: status={Status} organization={Organization} project={Project} url={Url}");
 
     private static readonly Action<ILogger, string, Exception?> _webHookDisabledTooManyErrors =
         LoggerMessage.Define<string>(
@@ -82,25 +82,25 @@ internal static class LoggerExtensions
         LoggerMessage.Define<string, string>(
             LogLevel.Information,
             new EventId(12, nameof(RemoveOrganizationStart)),
-            "Removing organization: {Organization} ({OrganizationId})");
+            "Removing organization: {OrganizationName} ({Organization})");
 
     private static readonly Action<ILogger, string, string, long, long, long, Exception?> _removeOrganizationComplete =
         LoggerMessage.Define<string, string, long, long, long>(
             LogLevel.Information,
             new EventId(14, nameof(RemoveOrganizationComplete)),
-            "Removed organization: {Organization} ({OrganizationId}), Removed {RemovedProjects} Projects, {RemovedStacks} Stacks, {RemovedEvents} Events");
+            "Removed organization: {OrganizationName} ({Organization}), Removed {RemovedProjects} Projects, {RemovedStacks} Stacks, {RemovedEvents} Events");
 
     private static readonly Action<ILogger, string, string, Exception?> _removeProjectStart =
         LoggerMessage.Define<string, string>(
             LogLevel.Information,
             new EventId(15, nameof(RemoveProjectStart)),
-            "Removing project: {Project} ({ProjectId})");
+            "Removing project: {ProjectName} ({Project})");
 
     private static readonly Action<ILogger, string, string, long, long, Exception?> _removeProjectComplete =
         LoggerMessage.Define<string, string, long, long>(
             LogLevel.Information,
             new EventId(16, nameof(RemoveProjectComplete)),
-            "Removed project: {Project} ({ProjectId}), Removed {RemovedStacks} Stacks, {RemovedEvents} Events");
+            "Removed project: {ProjectName} ({Project}), Removed {RemovedStacks} Stacks, {RemovedEvents} Events");
 
 
     private static readonly Action<ILogger, long, long, Exception?> _removeStacksComplete =
@@ -113,25 +113,25 @@ internal static class LoggerExtensions
         LoggerMessage.Define<DateTime, string, string, long>(
             LogLevel.Information,
             new EventId(18, nameof(RetentionEnforcementStackStart)),
-            "Enforcing stack retention period older than {RetentionPeriod:g} for organization {OrganizationName} ({OrganizationId}), Found {TotalStacks} Stacks");
+            "Enforcing stack retention period older than {RetentionPeriod:g} for organization {OrganizationName} ({Organization}), Found {TotalStacks} Stacks");
 
     private static readonly Action<ILogger, string, string, long, Exception?> _retentionEnforcementStackComplete =
         LoggerMessage.Define<string, string, long>(
             LogLevel.Information,
             new EventId(19, nameof(RetentionEnforcementStackComplete)),
-            "Enforced stack retention period for {OrganizationName} ({OrganizationId}), Removed {RemovedStacks} Stacks");
+            "Enforced stack retention period for {OrganizationName} ({Organization}), Removed {RemovedStacks} Stacks");
 
     private static readonly Action<ILogger, DateTime, string, string, Exception?> _retentionEnforcementEventStart =
         LoggerMessage.Define<DateTime, string, string>(
             LogLevel.Information,
             new EventId(20, nameof(RetentionEnforcementEventStart)),
-            "Enforcing event retention period older than {RetentionPeriod:g} for organization {OrganizationName} ({OrganizationId}).");
+            "Enforcing event retention period older than {RetentionPeriod:g} for organization {OrganizationName} ({Organization}).");
 
     private static readonly Action<ILogger, string, string, long, Exception?> _retentionEnforcementEventComplete =
         LoggerMessage.Define<string, string, long>(
             LogLevel.Information,
             new EventId(21, nameof(RetentionEnforcementEventComplete)),
-            "Enforced event retention period for {OrganizationName} ({OrganizationId}), Removed {RemovedEvents} Events");
+            "Enforced event retention period for {OrganizationName} ({Organization}), Removed {RemovedEvents} Events");
 
     public static void RemoveStacksComplete(this ILogger logger, long removedStacks, long removedEvents)
         => _removeStacksComplete(logger, removedStacks, removedEvents, null);

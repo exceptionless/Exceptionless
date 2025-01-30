@@ -113,7 +113,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error removing soft deleted organization {OrganizationId}: {Message}", organization.Id, ex.Message);
+                    _logger.LogError(ex, "Error removing soft deleted organization {Organization}: {Message}", organization.Id, ex.Message);
                 }
 
                 // Sleep so we are not hammering the backend.
@@ -141,7 +141,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error removing soft deleted project {ProjectId}: {Message}", project.Id, ex.Message);
+                    _logger.LogError(ex, "Error removing soft deleted project {Project}: {Message}", project.Id, ex.Message);
                 }
 
                 // Sleep so we are not hammering the backend.
@@ -246,7 +246,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error enforcing retention for Organization {OrganizationId}: {Message}", organization.Id, ex.Message);
+                    _logger.LogError(ex, "Error enforcing retention for Organization {Organization}: {Message}", organization.Id, ex.Message);
                 }
 
                 // Sleep so we are not hammering the backend.

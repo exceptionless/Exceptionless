@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Plugins.EventProcessor;
+﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Plugins.EventProcessor;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline;
@@ -20,7 +21,7 @@ public class CopySimpleDataToIdxAction : EventPipelineActionBase
         if (fieldCount > 20 && _logger.IsEnabled(LogLevel.Warning))
         {
             var ev = ctx.Event;
-            using (_logger.BeginScope(new ExceptionlessState().Organization(ctx.Organization.Id).Property("Event", new { ev.Date, ev.StackId, ev.Type, ev.Source, ev.Message, ev.Value, ev.Geo, ev.ReferenceId, ev.Tags, ev.Idx })))
+            using (_logger.BeginScope(new ExceptionlessState().Organization(ctx.Organization.Id).Project(ev.ProjectId).Property("Event", new { ev.Date, ev.StackId, ev.Type, ev.Source, ev.Message, ev.Value, ev.Geo, ev.ReferenceId })))
                 _logger.LogWarning("Event has {FieldCount} indexed fields", fieldCount);
         }
 

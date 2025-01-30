@@ -83,7 +83,7 @@ public class OrganizationService : IStartupAction
             }
             else
             {
-                _logger.LogInformation("Removing user {User} from organization: {OrganizationName} ({OrganizationId})", user.Id, organization.Name, organization.Id);
+                _logger.LogInformation("Removing user {User} from organization: {OrganizationName} ({Organization})", user.Id, organization.Name, organization.Id);
                 user.OrganizationIds.Remove(organization.Id);
 
                 await _userRepository.SaveAsync(user, o => o.Cache());
@@ -95,13 +95,13 @@ public class OrganizationService : IStartupAction
 
     public Task<long> RemoveTokensAsync(Organization organization)
     {
-        _logger.LogInformation("Removing tokens for {OrganizationName} ({OrganizationId})", organization.Name, organization.Id);
+        _logger.LogInformation("Removing tokens for {OrganizationName} ({Organization})", organization.Name, organization.Id);
         return _tokenRepository.RemoveAllByOrganizationIdAsync(organization.Id);
     }
 
     public Task<long> RemoveWebHooksAsync(Organization organization)
     {
-        _logger.LogInformation("Removing web hooks for {OrganizationName} ({OrganizationId})", organization.Name, organization.Id);
+        _logger.LogInformation("Removing web hooks for {OrganizationName} ({Organization})", organization.Name, organization.Id);
         return _webHookRepository.RemoveAllByOrganizationIdAsync(organization.Id);
     }
 

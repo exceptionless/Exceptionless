@@ -48,7 +48,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error calling GetEventSummaryHtml for Event {Id} in plugin {PluginName}: {Message}", ev.Id, plugin.Name, ex.Message);
+                _logger.LogError(ex, "Error calling GetEventSummaryHtml for Event {Event} in plugin {PluginName}: {Message}", ev.Id, plugin.Name, ex.Message);
             }
         }
 
@@ -72,7 +72,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error calling GetStackTitle for Event {Id} in plugin {PluginName}: {Message}", ev.Id, plugin.Name, ex.Message);
+                _logger.LogError(ex, "Error calling GetStackTitle for Event {Event} in plugin {PluginName}: {Message}", ev.Id, plugin.Name, ex.Message);
             }
         }
 
@@ -96,7 +96,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error calling GetEventNotificationMailMessage for Event {Id} in plugin {PluginName}: {Message}", ev.Id, plugin.Name, ex.Message);
+                _logger.LogError(ex, "Error calling GetEventNotificationMailMessage for Event {Event} in plugin {PluginName}: {Message}", ev.Id, plugin.Name, ex.Message);
             }
         }
 
@@ -120,7 +120,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error calling GetSlackEventNotificationMessage for Event {Id} in plugin {PluginName}: {Message}", ev.Id, plugin.Name, ex.Message);
+                _logger.LogError(ex, "Error calling GetSlackEventNotificationMessage for Event {Event} in plugin {PluginName}: {Message}", ev.Id, plugin.Name, ex.Message);
             }
         }
 

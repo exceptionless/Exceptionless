@@ -75,7 +75,7 @@ public class UsageService
                     if (organization is null)
                         continue;
 
-                    _logger.LogInformation("Saving org ({OrganizationId}-{OrganizationName}) event usage for time bucket: {BucketUtc}...", organizationId, organization.Name, bucketUtc);
+                    _logger.LogInformation("Saving org ({Organization}-{OrganizationName}) event usage for time bucket: {BucketUtc}...", organizationId, organization.Name, bucketUtc);
 
                     var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(bucketUtc, organizationId));
                     var bucketBlocked = await _cache.GetAsync<int>(GetBucketBlockedCacheKey(bucketUtc, organizationId));
@@ -153,7 +153,7 @@ public class UsageService
                     if (project is null)
                         continue;
 
-                    _logger.LogInformation("Saving project ({ProjectId}-{ProjectName}) event usage for time bucket: {BucketUtc}...", projectId, project.Name, bucketUtc);
+                    _logger.LogInformation("Saving project ({Project}-{ProjectName}) event usage for time bucket: {BucketUtc}...", projectId, project.Name, bucketUtc);
 
                     var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(bucketUtc, project.OrganizationId, projectId));
                     var bucketBlocked = await _cache.GetAsync<int>(GetBucketBlockedCacheKey(bucketUtc, project.OrganizationId, projectId));

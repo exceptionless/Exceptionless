@@ -52,7 +52,7 @@ public class StripeEventHandler
             }
             default:
             {
-                _logger.LogTrace("Unhandled stripe webhook called. Type: {Type} Id: {Id} Account: {Account}", stripeEvent.Type, stripeEvent.Id, stripeEvent.Account);
+                _logger.LogTrace("Unhandled stripe webhook called. Type: {StripeType} Id: {StripeId} Account: {StripeAccount}", stripeEvent.Type, stripeEvent.Id, stripeEvent.Account);
                 break;
             }
         }
