@@ -144,7 +144,9 @@
         {#if event.type !== 'error'}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Event Type</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableTypeFilter {changed} value={[event.type as string]} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                    ><EventsFacetedFilter.TypeTrigger {changed} value={[event.type as string]} /></Table.Cell
+                >
                 <Table.Cell>{event.type}</Table.Cell>
             </Table.Row>
         {/if}

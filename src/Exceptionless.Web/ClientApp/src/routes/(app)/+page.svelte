@@ -29,23 +29,29 @@
         selectedEventId = row.id;
     }
 
+    // TODO: Default filters
     const params = queryParameters({ filter: ssp.string(), limit: ssp.number(10), time: ssp.string() });
-    // TODO: Parse filters to build new ones.
     let filters = $state<FacetedFilter.IFilter[]>([]);
     const filter = $derived(toFilter(filters.filter((f) => f.type !== 'date')));
     const time = $derived<string>((filters.find((f) => f.type === 'date') as DateFilter)?.value as string);
 
     function onDrawerFilterChanged(added: FacetedFilter.IFilter): void {
         filters = filterChanged(filters ?? [], added);
+        params.filter = filter;
+        params.time = time;
         selectedEventId = null;
     }
 
     function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
         filters = filterChanged(filters ?? [], addedOrUpdated);
+        params.filter = filter;
+        params.time = time;
     }
 
     function onFilterRemoved(removed?: FacetedFilter.IFilter): void {
         filters = filterRemoved(filters ?? [], removed);
+        params.filter = filter;
+        params.time = time;
     }
 
     const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: params.limit, mode: 'summary' });
@@ -106,9 +112,6 @@
     useEventListener(document, 'PersistentEventChanged', async (event) => await onPersistentEventChanged((event as CustomEvent).detail));
 
     $effect(() => {
-        // TODO: Check this
-        params.filter = filter;
-        params.time = time;
         loadData();
     });
 </script>

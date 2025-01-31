@@ -507,18 +507,6 @@ export function filterRemoved(filters: IFilter[], removed?: IFilter): IFilter[] 
     return filters.filter((f) => f.id !== removed.id);
 }
 
-export function getDefaultFilters(includeDateFilter = true): IFilter[] {
-    return [
-        new ProjectFilter([]),
-        new StatusFilter([]),
-        new TypeFilter([]),
-        new DateFilter('date', 'last week'),
-        new ReferenceFilter(),
-        new SessionFilter(),
-        new KeywordFilter()
-    ].filter((f) => includeDateFilter || f.type !== 'date');
-}
-
 export function getFilter(filter: Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'> & Record<string, unknown>): IFilter | undefined {
     switch (filter.type) {
         case 'boolean':

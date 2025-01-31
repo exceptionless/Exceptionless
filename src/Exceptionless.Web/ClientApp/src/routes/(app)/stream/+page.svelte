@@ -9,9 +9,9 @@
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
     import EventsDrawer from '$features/events/components/events-drawer.svelte';
-    import { toFacetedFilters } from '$features/events/components/filters';
     import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters/helpers';
-    import { filterChanged, filterRemoved, filterSerializer, getDefaultFilters, toFilter } from '$features/events/components/filters/models.svelte';
+    import { filterChanged, filterRemoved, toFilter } from '$features/events/components/filters/models.svelte';
+    import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { useFetchClientStatus } from '$shared/api/api.svelte';
@@ -19,8 +19,8 @@
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
     import ExternalLink from 'lucide-svelte/icons/external-link';
-    import { PersistedState } from 'runed';
     import { useEventListener } from 'runed';
+    import { queryParameters, ssp } from 'sveltekit-search-params';
     import { debounce } from 'throttle-debounce';
 
     let selectedEventId: null | string = $state(null);
@@ -28,30 +28,30 @@
         selectedEventId = row.id;
     }
 
-    const limit = new PersistedState<number>('events.stream.limit', 10);
-    const defaultFilters = getDefaultFilters(false);
-    const persistedFilters = new PersistedState<FacetedFilter.IFilter[]>('events.stream.filters', defaultFilters, { serializer: filterSerializer });
-    persistedFilters.current.push(...defaultFilters.filter((df) => !persistedFilters.current.some((f) => f.key === df.key)));
+    // TODO: Default filters
+    const params = queryParameters({ filter: ssp.string(), limit: ssp.number(10) });
+    let filters = $state<FacetedFilter.IFilter[]>([]);
+    const filter = $derived(toFilter(filters));
 
-    const filter = $derived(toFilter(persistedFilters.current));
-    const facets = $derived(toFacetedFilters(persistedFilters.current));
-
-    function onDrawerFilterChanged(filter: FacetedFilter.IFilter): void {
-        persistedFilters.current = filterChanged(persistedFilters.current, filter);
+    function onDrawerFilterChanged(added: FacetedFilter.IFilter): void {
+        filters = filterChanged(filters, added);
+        params.filter = filter;
         selectedEventId = null;
     }
 
-    function onFilterChanged(filter: FacetedFilter.IFilter): void {
-        if (filter.key !== 'date:date') {
-            persistedFilters.current = filterChanged(persistedFilters.current, filter);
+    function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
+        if (addedOrUpdated.type !== 'date') {
+            filters = filterChanged(filters, addedOrUpdated);
+            params.filter = filter;
         }
     }
 
-    function onFilterRemoved(filter?: FacetedFilter.IFilter): void {
-        persistedFilters.current = filterRemoved(persistedFilters.current, filter);
+    function onFilterRemoved(removed?: FacetedFilter.IFilter): void {
+        filters = filterRemoved(filters, removed);
+        params.filter = filter;
     }
 
-    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: limit.current, mode: 'summary' }, function (options) {
+    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: params.limit, mode: 'summary' }, function (options) {
         options.columns = options.columns.filter((c) => c.id !== 'select').map((c) => ({ ...c, enableSorting: false }));
         options.enableMultiRowSelection = false;
         options.enableRowSelection = false;
@@ -94,7 +94,7 @@
                 data.push(summary);
             }
 
-            context.data = data.slice(-limit.current);
+            context.data = data.slice(-params.limit);
             context.meta = response.meta;
         }
     }
@@ -112,7 +112,7 @@
         }
 
         // Do not refresh if the filter criteria doesn't match the web socket message.
-        if (!shouldRefreshPersistentEventChanged(persistedFilters.current, filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
+        if (!shouldRefreshPersistentEventChanged(filters, filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
             return;
         }
 
@@ -132,7 +132,9 @@
     <Card.Content>
         <DataTable.Root>
             <DataTable.Toolbar {table}>
-                <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
+                <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
+                    <OrganizationDefaultsFacetedFilterBuilder includeDateFacets={false} />
+                </FacetedFilter.Root>
             </DataTable.Toolbar>
             <DataTable.Body rowClick={rowclick} {table}>
                 {#if clientStatus.isLoading}
@@ -145,7 +147,7 @@
             </DataTable.Body>
             <DataTable.Footer {table}>
                 <div class="flex w-full items-center justify-center space-x-4">
-                    <DataTable.PageSize bind:value={limit.current} {table} />
+                    <DataTable.PageSize bind:value={params.limit} {table} />
                     <div class="text-center">
                         <ErrorMessage message={response?.problem?.errors.general} />
                     </div>

@@ -1,6 +1,3 @@
-import { type IFilter } from '$comp/faceted-filter';
-import { FacetedFilter } from '$comp/faceted-filter';
-
 import BooleanFacetedFilterBuilder from './boolean-faceted-filter-builder.svelte';
 import BooleanFacetedFilterTrigger from './boolean-faceted-filter-trigger.svelte';
 import BooleanFacetedFilter from './boolean-faceted-filter.svelte';
@@ -9,7 +6,7 @@ import DateFacetedFilterTrigger from './date-faceted-filter-trigger.svelte';
 import DateFacetedFilter from './date-faceted-filter.svelte';
 import KeywordFacetedFilterBuilder from './keyword-faceted-filter-builder.svelte';
 import KeywordFacetedFilter from './keyword-faceted-filter.svelte';
-import {
+export {
     type BooleanFilter,
     type DateFilter,
     KeywordFilter,
@@ -113,53 +110,3 @@ export {
     VersionFacetedFilterTrigger,
     VersionFacetedFilterTrigger as VersionTrigger
 };
-
-export function toFacetedFilters(filters: IFilter[]): FacetedFilter<IFilter>[] {
-    return filters.map((filter) => {
-        switch (filter.type) {
-            case 'boolean': {
-                const booleanFilter = filter as BooleanFilter;
-                return new FacetedFilter((booleanFilter.term as string) ?? 'Boolean', BooleanFacetedFilter, booleanFilter);
-            }
-            case 'date': {
-                const dateFilter = filter as DateFilter;
-                const title = dateFilter.term === 'date' ? 'Date Range' : (dateFilter.term ?? 'Date');
-                return new FacetedFilter(title, DateFacetedFilter, dateFilter);
-            }
-            case 'keyword': {
-                return new FacetedFilter('Keyword', KeywordFacetedFilter, filter as KeywordFilter);
-            }
-            case 'number': {
-                const numberFilter = filter as NumberFilter;
-                return new FacetedFilter((numberFilter.term as string) ?? 'Number', NumberFacetedFilter, numberFilter);
-            }
-            case 'project': {
-                return new FacetedFilter('Project', ProjectFacetedFilter, filter as ProjectFilter);
-            }
-            case 'reference': {
-                return new FacetedFilter('Reference', ReferenceFacetedFilter, filter as ReferenceFilter);
-            }
-            case 'session': {
-                return new FacetedFilter('Session', SessionFacetedFilter, filter as SessionFilter);
-            }
-            case 'status': {
-                return new FacetedFilter('Status', StatusFacetedFilter, filter as StatusFilter);
-            }
-            case 'string': {
-                const stringFilter = filter as StringFilter;
-                return new FacetedFilter((stringFilter.term as string) ?? 'String', StringFacetedFilter, stringFilter);
-            }
-            case 'type': {
-                return new FacetedFilter('Type', TypeFacetedFilter, filter as TypeFilter);
-            }
-            case 'version': {
-                const versionFilter = filter as VersionFilter;
-                return new FacetedFilter((versionFilter.term as string) ?? 'Version', VersionFacetedFilter, versionFilter);
-            }
-            default: {
-                throw new Error(`Unknown filter type: ${filter.type}`);
-            }
-        }
-    }) as unknown as FacetedFilter<IFilter>[];
-    // TODO: look into why unknown is required here.
-}

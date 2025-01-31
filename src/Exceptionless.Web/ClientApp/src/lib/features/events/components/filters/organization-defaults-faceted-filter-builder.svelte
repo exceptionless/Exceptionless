@@ -24,22 +24,22 @@
     const eventsNumberFilters: KnownTermsFilterConfig[] = [
         { term: 'value', title: 'Value' },
         { term: 'count', title: 'Count' },
-        { term: 'data.@request.port', title: 'Http Port' } // number, verify
+        { term: 'data.@request.port', title: 'Http Port' } // TODO: verify
     ];
 
     const eventsStringFilters: KnownTermsFilterConfig[] = [
-        { term: 'stack', title: 'Stack Id' }, // Think about if this needed
-        { term: 'id', title: 'Id' }, // Think about if this needed
+        { term: 'stack', title: 'Stack Id' }, // TODO: Think about if this needed
+        { term: 'id', title: 'Id' }, // TODO: Think about if this needed
         { term: 'source', title: 'Source' },
         { priority: 80, term: 'message', title: 'Message' },
-        { priority: 70, term: 'tag', title: 'Tag' }, // Special tags filter?
-        { priority: 50, term: 'level', title: 'Log Level' }, // need special log level;
+        { priority: 70, term: 'tag', title: 'Tag' }, // TODO: Do we need special tags filter?
+        { priority: 50, term: 'level', title: 'Log Level' }, // TODO: Do we need special log level
         { term: 'submission', title: 'Submission Method' },
         { term: 'ip', title: 'Ip Address' },
         { term: 'useragent', title: 'User Agent' },
         { priority: 40, term: 'path', title: 'Http Path' },
-        { term: 'data.@request.host', title: 'Http Host' }, // verify
-        { term: 'data.@request.http_method', title: 'Http Method' }, // verify
+        { term: 'data.@request.host', title: 'Http Host' }, // TODO: verify
+        { term: 'data.@request.http_method', title: 'Http Method' }, // TODO: verify
         { term: 'browser', title: 'Browser' },
         { term: 'client.useragent', title: 'Client User Agent' },
         { term: 'device', title: 'Device' },
