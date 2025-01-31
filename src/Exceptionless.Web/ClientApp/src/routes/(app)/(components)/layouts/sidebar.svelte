@@ -1,23 +1,32 @@
 <script lang="ts">
+    import type { ComponentProps, Snippet } from 'svelte';
+
     import { page } from '$app/state';
     import * as Sidebar from '$comp/ui/sidebar';
     import { useSidebar } from '$comp/ui/sidebar';
 
     import type { NavigationItem } from '../../../routes';
 
-    interface Props {
+    type Props = ComponentProps<typeof Sidebar.Root> & {
+        footer?: Snippet;
+        header?: Snippet;
         routes: NavigationItem[];
-    }
+    };
 
-    let { routes }: Props = $props();
+    let { footer, header, routes, ...props }: Props = $props();
     const dashboardRoutes = routes.filter((route) => route.group === 'Dashboards');
 
     const sidebar = useSidebar();
 </script>
 
-<Sidebar.Root collapsible="icon">
-    <Sidebar.Content class={!sidebar.isMobile ? 'mt-16' : ''}>
-        <Sidebar.Group>
+<Sidebar.Root collapsible="icon" {...props}>
+    <Sidebar.Header class={!sidebar.isMobile ? 'mt-16' : ''}>
+        {#if header}
+            {@render header()}
+        {/if}
+    </Sidebar.Header>
+    <Sidebar.Content>
+        <Sidebar.Group class="pt-0">
             <Sidebar.Menu>
                 {#each dashboardRoutes as route (route.href)}
                     {@const Icon = route.icon}
@@ -36,4 +45,9 @@
         </Sidebar.Group>
     </Sidebar.Content>
     <Sidebar.Rail />
+    <Sidebar.Footer>
+        {#if footer}
+            {@render footer()}
+        {/if}
+    </Sidebar.Footer>
 </Sidebar.Root>

@@ -9,7 +9,7 @@
     "aliases": {
         "components": "$comp",
         "utils": "$lib/utils",
-        "ui": "$lib/features/shared/components/ui",
+        "ui": "$comp/ui",
         "hooks": "$lib/hooks"
     },
     "typescript": true,

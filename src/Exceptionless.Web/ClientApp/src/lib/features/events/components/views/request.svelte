@@ -1,10 +1,10 @@
 <script lang="ts">
-    import type { IFilter } from '$comp/filters/filters.svelte';
+    import type { IFilter } from '$comp/faceted-filter';
 
-    import ClickableStringFilter from '$comp/filters/clickable-string-filter.svelte';
     import { H4 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Table from '$comp/ui/table';
+    import * as EventsFacetedFilter from '$features/events/components/filters';
     import { getRequestInfoPath, getRequestInfoUrl } from '$features/events/persistent-event';
     import ExternalLink from 'lucide-svelte/icons/external-link';
 
@@ -60,7 +60,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">URL</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter {changed} term="path" value={requestUrlPath} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger {changed} term="path" value={requestUrlPath} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center gap-x-1"
                     >{requestUrl}<Button href={requestUrl} rel="noopener noreferrer" size="sm" target="_blank" title="Open in new window" variant="ghost"
@@ -72,7 +72,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">URL</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter {changed} term="path" value={requestUrlPath} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger {changed} term="path" value={requestUrlPath} /></Table.Cell
                 >
                 <Table.Cell>{requestUrlPath}</Table.Cell>
             </Table.Row>
@@ -97,7 +97,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Client IP Address</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter {changed} term="ip" value={request.client_ip_address} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger {changed} term="ip" value={request.client_ip_address} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center">{request.client_ip_address}</Table.Cell>
             </Table.Row>
@@ -106,7 +106,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">User Agent</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter {changed} term="useragent" value={request.user_agent} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger {changed} term="useragent" value={request.user_agent} /></Table.Cell
                 >
                 <Table.Cell>{request.user_agent}</Table.Cell>
             </Table.Row>
@@ -114,19 +114,23 @@
         {#if device}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Device</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter {changed} term="device" value={device} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                    ><EventsFacetedFilter.StringTrigger {changed} term="device" value={device} /></Table.Cell
+                >
                 <Table.Cell>{device}</Table.Cell>
             </Table.Row>
         {/if}
         {#if browser}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Browser</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter {changed} term="browser" value={browser} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                    ><EventsFacetedFilter.StringTrigger {changed} term="browser" value={browser} /></Table.Cell
+                >
                 <Table.Cell class="flex items-center"
                     >{browser}
                     {#if browserMajorVersion}&nbsp;
-                        <ClickableStringFilter {changed} term="browser.major" value={browserMajorVersion} class="decoration-dotted"
-                            >{browserVersion}</ClickableStringFilter
+                        <EventsFacetedFilter.StringTrigger {changed} term="browser.major" value={browserMajorVersion} class="decoration-dotted"
+                            >{browserVersion}</EventsFacetedFilter.StringTrigger
                         >
                     {/if}</Table.Cell
                 >
@@ -135,11 +139,13 @@
         {#if os}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Browser OS</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter {changed} term="os" value={os} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><EventsFacetedFilter.StringTrigger {changed} term="os" value={os} /></Table.Cell>
                 <Table.Cell class="flex items-center"
                     >{os}
                     {#if osMajorVersion}&nbsp;
-                        <ClickableStringFilter {changed} term="os.major" value={osMajorVersion} class="decoration-dotted">{osVersion}</ClickableStringFilter>
+                        <EventsFacetedFilter.StringTrigger {changed} term="os.major" value={osMajorVersion} class="decoration-dotted"
+                            >{osVersion}</EventsFacetedFilter.StringTrigger
+                        >
                     {/if}</Table.Cell
                 >
             </Table.Row>

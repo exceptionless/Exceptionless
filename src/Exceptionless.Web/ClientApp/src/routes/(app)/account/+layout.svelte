@@ -11,10 +11,10 @@
 
     let { children } = $props();
 
-    const userQuery = getMeQuery();
+    const userResponse = getMeQuery();
     let isAuthenticated = $derived(accessToken.current !== null);
     const filteredRoutes = $derived.by(() => {
-        const context: NavigationItemContext = { authenticated: isAuthenticated, user: userQuery.data };
+        const context: NavigationItemContext = { authenticated: isAuthenticated, user: userResponse.data };
         return routes.filter((route) => (route.show ? route.show(context) : true));
     });
 </script>

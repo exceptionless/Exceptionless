@@ -1,11 +1,10 @@
 <script lang="ts">
-    import type { IFilter } from '$comp/filters/filters.svelte';
+    import type { IFilter } from '$comp/faceted-filter';
 
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
-    import ClickableStringFilter from '$comp/filters/clickable-string-filter.svelte';
-    import ClickableVersionFilter from '$comp/filters/clickable-version-filter.svelte';
     import { H4 } from '$comp/typography';
     import * as Table from '$comp/ui/table';
+    import * as EventsFacetedFilter from '$features/events/components/filters';
     import { getErrorData, getErrorType, getMessage, getStackTrace } from '$features/events/persistent-event';
 
     import type { PersistentEvent } from '../../models/index';
@@ -35,14 +34,16 @@
     <Table.Body>
         <Table.Row class="group">
             <Table.Head class="w-40 whitespace-nowrap">Error Type</Table.Head>
-            <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter {changed} term="error.type" value={errorType} /></Table.Cell>
+            <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                ><EventsFacetedFilter.StringTrigger {changed} term="error.type" value={errorType} /></Table.Cell
+            >
             <Table.Cell>{errorType}</Table.Cell>
         </Table.Row>
         {#if message}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Message</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter {changed} term="error.message" value={message} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger {changed} term="error.message" value={message} /></Table.Cell
                 >
                 <Table.Cell>{message}</Table.Cell>
             </Table.Row>
@@ -50,7 +51,9 @@
         {#if code}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Code</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableVersionFilter {changed} term="error.code" value={code} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                    ><EventsFacetedFilter.VersionTrigger {changed} term="error.code" value={code} /></Table.Cell
+                >
                 <Table.Cell>{code}</Table.Cell>
             </Table.Row>
         {/if}

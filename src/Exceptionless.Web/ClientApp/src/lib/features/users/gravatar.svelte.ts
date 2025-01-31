@@ -1,24 +1,19 @@
+import { getInitials } from '$shared/strings';
+
 import { getMeQuery } from './api.svelte';
 
-export function getGravatarFromCurrentUser(query?: ReturnType<typeof getMeQuery>) {
+export interface Gravatar {
+    initials: string;
+    src: Promise<null | string>;
+}
+export function getGravatarFromCurrentUser(query?: ReturnType<typeof getMeQuery>): Gravatar {
     const meQuery = query ?? getMeQuery();
     const fullName = $derived<string | undefined>(meQuery.data?.full_name);
     const emailAddress = $derived<string | undefined>(meQuery.data?.email_address);
 
     return {
         get initials() {
-            if (!fullName) {
-                return 'NA';
-            }
-
-            const initials = fullName
-                .split(' ')
-                .map((name) => name.trim())
-                .filter((name) => name.length > 0)
-                .map((name) => name[0])
-                .join('');
-
-            return initials.length > 2 ? initials.substring(0, 2) : initials;
+            return getInitials(fullName);
         },
         get src() {
             return emailAddress ? getGravatarSrc(emailAddress) : Promise.resolve(null);

@@ -27,7 +27,7 @@
             <Command.Group heading={group}>
                 {#each items as route (route.href)}
                     <Command.Item>
-                        <A class="flex gap-x-2" href={route.href} onclick={closeCommandWindow}>
+                        <A class="flex gap-x-2" href={route.href} onclick={closeCommandWindow} target={route.openInNewTab ? '_blank' : undefined}>
                             {#if route.icon}
                                 {@const Icon = route.icon}
                                 <Icon />
