@@ -4,13 +4,13 @@
     import AutomaticRefreshIndicatorButton from '$comp/automatic-refresh-indicator-button.svelte';
     import * as DataTable from '$comp/data-table';
     import * as FacetedFilter from '$comp/faceted-filter';
-    import { toFacetedFilters } from '$comp/filters/facets';
-    import { DateFilter, filterChanged, filterRemoved, filterSerializer, getDefaultFilters, type IFilter, toFilter } from '$comp/filters/filters.svelte';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
     import EventsDrawer from '$features/events/components/events-drawer.svelte';
-    import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters';
+    import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters/helpers';
+    import { DateFilter, filterChanged, filterRemoved, toFilter } from '$features/events/components/filters/models.svelte';
+    import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import EventsBulkActionsDropdownMenu from '$features/events/components/table/events-bulk-actions-dropdown-menu.svelte';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
@@ -20,7 +20,8 @@
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
     import ExternalLink from 'lucide-svelte/icons/external-link';
-    import { PersistedState, useEventListener } from 'runed';
+    import { useEventListener } from 'runed';
+    import { queryParameters, ssp } from 'sveltekit-search-params';
     import { throttle } from 'throttle-debounce';
 
     let selectedEventId: null | string = $state(null);
@@ -28,29 +29,32 @@
         selectedEventId = row.id;
     }
 
-    const limit = new PersistedState<number>('events.limit', 10);
-    const defaultFilters = getDefaultFilters();
-    const persistedFilters = new PersistedState<IFilter[]>('events.filters', defaultFilters, { serializer: filterSerializer });
-    persistedFilters.current.push(...defaultFilters.filter((df) => !persistedFilters.current.some((f) => f.key === df.key)));
+    // TODO: Default filters
+    const params = queryParameters({ filter: ssp.string(), limit: ssp.number(10), time: ssp.string() });
+    let filters = $state<FacetedFilter.IFilter[]>([]);
+    const filter = $derived(toFilter(filters.filter((f) => f.type !== 'date')));
+    const time = $derived<string>((filters.find((f) => f.type === 'date') as DateFilter)?.value as string);
 
-    const filter = $derived(toFilter(persistedFilters.current.filter((f) => f.key !== 'date:date')));
-    const facets = $derived(toFacetedFilters(persistedFilters.current));
-    const time = $derived<string>((persistedFilters.current.find((f) => f.key === 'date:date') as DateFilter).value as string);
-
-    function onDrawerFilterChanged(filter: IFilter): void {
-        persistedFilters.current = filterChanged(persistedFilters.current, filter);
+    function onDrawerFilterChanged(added: FacetedFilter.IFilter): void {
+        filters = filterChanged(filters ?? [], added);
+        params.filter = filter;
+        params.time = time;
         selectedEventId = null;
     }
 
-    function onFilterChanged(filter: IFilter): void {
-        persistedFilters.current = filterChanged(persistedFilters.current, filter);
+    function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
+        filters = filterChanged(filters ?? [], addedOrUpdated);
+        params.filter = filter;
+        params.time = time;
     }
 
-    function onFilterRemoved(filter?: IFilter): void {
-        persistedFilters.current = filterRemoved(persistedFilters.current, defaultFilters, filter);
+    function onFilterRemoved(removed?: FacetedFilter.IFilter): void {
+        filters = filterRemoved(filters ?? [], removed);
+        params.filter = filter;
+        params.time = time;
     }
 
-    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: limit.current, mode: 'summary' });
+    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: params.limit, mode: 'summary' });
     const table = createTable(context.options);
     const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && !table.getCanPreviousPage());
 
@@ -92,7 +96,7 @@
         }
 
         // Do not refresh if the filter criteria doesn't match the web socket message.
-        if (!shouldRefreshPersistentEventChanged(persistedFilters.current, filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
+        if (!shouldRefreshPersistentEventChanged(filters ?? [], filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
             return;
         }
 
@@ -119,9 +123,11 @@
             <AutomaticRefreshIndicatorButton {canRefresh} refresh={loadData} /></Card.Title
         >
         <Card.Content class="pt-4">
-            <EventsDataTable bind:limit={limit.current} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
+            <EventsDataTable bind:limit={params.limit} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
                 {#snippet toolbarChildren()}
-                    <FacetedFilter.Root changed={onFilterChanged} {facets} remove={onFilterRemoved}></FacetedFilter.Root>
+                    <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
+                        <OrganizationDefaultsFacetedFilterBuilder />
+                    </FacetedFilter.Root>
                 {/snippet}
                 {#snippet footerChildren()}
                     <div class="h-9 min-w-[140px]">
@@ -130,7 +136,7 @@
                         {/if}
                     </div>
 
-                    <DataTable.PageSize bind:value={limit.current} {table}></DataTable.PageSize>
+                    <DataTable.PageSize bind:value={params.limit} {table}></DataTable.PageSize>
                     <div class="flex items-center space-x-6 lg:space-x-8">
                         <DataTable.PageCount {table} />
                         <DataTable.Pagination {table} />

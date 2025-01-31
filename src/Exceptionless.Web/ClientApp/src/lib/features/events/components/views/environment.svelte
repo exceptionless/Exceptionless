@@ -1,10 +1,10 @@
 <script lang="ts">
-    import type { IFilter } from '$comp/filters/filters.svelte';
+    import type { IFilter } from '$comp/faceted-filter';
 
-    import ClickableStringFilter from '$comp/filters/clickable-string-filter.svelte';
     import Bytes from '$comp/formatters/bytes.svelte';
     import Number from '$comp/formatters/number.svelte';
     import * as Table from '$comp/ui/table';
+    import * as EventsFacetedFilter from '$features/events/components/filters';
 
     import type { PersistentEvent } from '../../models/index';
 
@@ -25,7 +25,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Machine Name</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter {changed} term="machine" value={environment.machine_name} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger {changed} term="machine" value={environment.machine_name} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center">{environment.machine_name}</Table.Cell>
             </Table.Row>
@@ -34,7 +34,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">IP Address</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter {changed} term="ip" value={environment.ip_address} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger {changed} term="ip" value={environment.ip_address} /></Table.Cell
                 >
                 <Table.Cell>{environment.ip_address}</Table.Cell>
             </Table.Row>
@@ -71,7 +71,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">OS Name</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter {changed} term="os" value={environment.o_s_name} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger {changed} term="os" value={environment.o_s_name} /></Table.Cell
                 >
                 <Table.Cell>{environment.o_s_name}</Table.Cell>
             </Table.Row>
@@ -80,7 +80,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">OS Version</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter {changed} term="os.version" value={environment.o_s_version} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger {changed} term="os.version" value={environment.o_s_version} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center">{environment.o_s_version}</Table.Cell>
             </Table.Row>
@@ -89,7 +89,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Architecture</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter {changed} term="architecture" value={environment.architecture} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger {changed} term="architecture" value={environment.architecture} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center">{environment.architecture}</Table.Cell>
             </Table.Row>

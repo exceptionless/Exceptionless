@@ -1,13 +1,7 @@
 <script lang="ts">
-    import type { IFilter } from '$comp/filters/filters.svelte';
+    import type { IFilter } from '$comp/faceted-filter';
 
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
-    import ClickableNumberFilter from '$comp/filters/clickable-number-filter.svelte';
-    import ClickableReferenceFilter from '$comp/filters/clickable-reference-filter.svelte';
-    import ClickableSessionFilter from '$comp/filters/clickable-session-filter.svelte';
-    import ClickableStringFilter from '$comp/filters/clickable-string-filter.svelte';
-    import ClickableTypeFilter from '$comp/filters/clickable-type-filter.svelte';
-    import ClickableVersionFilter from '$comp/filters/clickable-version-filter.svelte';
     import Duration from '$comp/formatters/duration.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
     import Live from '$comp/live.svelte';
@@ -15,6 +9,7 @@
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
     import * as Table from '$comp/ui/table';
+    import * as EventsFacetedFilter from '$features/events/components/filters';
     import {
         getErrorType,
         getLocation,
@@ -109,10 +104,13 @@
             <Table.Row class="group">
                 {#if isSessionStart}
                     <Table.Head class="w-40 whitespace-nowrap">Session</Table.Head>
-                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableSessionFilter {changed} value={event.reference_id} /></Table.Cell>
+                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                        ><EventsFacetedFilter.SessionTrigger {changed} value={event.reference_id} /></Table.Cell
+                    >
                 {:else}
                     <Table.Head class="w-40 whitespace-nowrap">Reference</Table.Head>
-                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableReferenceFilter {changed} value={event.reference_id} /></Table.Cell
+                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                        ><EventsFacetedFilter.ReferenceTrigger {changed} value={event.reference_id} /></Table.Cell
                     >
                 {/if}
                 <Table.Cell>{event.reference_id}</Table.Cell>
@@ -122,10 +120,14 @@
             <Table.Row class="group">
                 {#if reference.name === 'session'}
                     <Table.Head class="w-40 whitespace-nowrap">Session</Table.Head>
-                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableSessionFilter {changed} value={reference.id} /></Table.Cell>
+                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                        ><EventsFacetedFilter.SessionTrigger {changed} value={reference.id} /></Table.Cell
+                    >
                 {:else}
                     <Table.Head class="w-40 whitespace-nowrap">{reference.name}</Table.Head>
-                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableReferenceFilter {changed} value={reference.id} /></Table.Cell>
+                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                        ><EventsFacetedFilter.ReferenceTrigger {changed} value={reference.id} /></Table.Cell
+                    >
                 {/if}
                 <Table.Cell>{reference.id}</Table.Cell>
             </Table.Row>
@@ -133,14 +135,18 @@
         {#if level}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Level</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter {changed} term="level" value={level} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                    ><EventsFacetedFilter.StringTrigger {changed} term="level" value={level} /></Table.Cell
+                >
                 <Table.Cell class="flex items-center"><LogLevel {level}></LogLevel></Table.Cell>
             </Table.Row>
         {/if}
         {#if event.type !== 'error'}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Event Type</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableTypeFilter {changed} value={[event.type as string]} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                    ><EventsFacetedFilter.TypeTrigger {changed} value={[event.type as string]} /></Table.Cell
+                >
                 <Table.Cell>{event.type}</Table.Cell>
             </Table.Row>
         {/if}
@@ -148,7 +154,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Error Type</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter {changed} term="error.type" value={errorType} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger {changed} term="error.type" value={errorType} /></Table.Cell
                 >
                 <Table.Cell>{errorType}</Table.Cell>
             </Table.Row>
@@ -157,7 +163,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Source</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter {changed} term="source" value={event.source} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger {changed} term="source" value={event.source} /></Table.Cell
                 >
                 <Table.Cell>{event.source}</Table.Cell>
             </Table.Row>
@@ -165,21 +171,27 @@
         {#if !isSessionStart && event.value}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Value</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableNumberFilter {changed} term="value" value={event.value} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                    ><EventsFacetedFilter.NumberTrigger {changed} term="value" value={event.value} /></Table.Cell
+                >
                 <Table.Cell>{event.value}</Table.Cell>
             </Table.Row>
         {/if}
         {#if message}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Message</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableStringFilter {changed} term="message" value={message} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                    ><EventsFacetedFilter.StringTrigger {changed} term="message" value={message} /></Table.Cell
+                >
                 <Table.Cell>{message}</Table.Cell>
             </Table.Row>
         {/if}
         {#if version}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Version</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><ClickableVersionFilter {changed} term="version" value={version} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                    ><EventsFacetedFilter.VersionTrigger {changed} term="version" value={version} /></Table.Cell
+                >
                 <Table.Cell>{version}</Table.Cell>
             </Table.Row>
         {/if}
@@ -197,8 +209,8 @@
                 <Table.Cell class="flex flex-wrap items-center justify-start gap-2 overflow-auto">
                     {#each event.tags as tag (tag)}
                         <Badge color="dark"
-                            ><ClickableStringFilter {changed} class="mr-1" term="tag" value={tag}
-                                ><Filter class="text-muted-foreground text-opacity-80 hover:text-secondary" /></ClickableStringFilter
+                            ><EventsFacetedFilter.StringTrigger {changed} class="mr-1" term="tag" value={tag}
+                                ><Filter class="text-muted-foreground text-opacity-80 hover:text-secondary" /></EventsFacetedFilter.StringTrigger
                             >{tag}</Badge
                         >
                     {/each}
@@ -209,7 +221,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">URL</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><ClickableStringFilter {changed} term="path" value={requestUrlPath} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger {changed} term="path" value={requestUrlPath} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center gap-x-1"
                     >{requestUrl}<Button href={requestUrl} rel="noopener noreferrer" size="sm" target="_blank" title="Open in new window" variant="ghost"
@@ -229,7 +241,7 @@
                 <Table.Row class="group">
                     <Table.Head class="w-40 whitespace-nowrap">User Email</Table.Head>
                     <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><ClickableStringFilter {changed} term="user.email" value={userEmail} /></Table.Cell
+                        ><EventsFacetedFilter.StringTrigger {changed} term="user.email" value={userEmail} /></Table.Cell
                     >
                     <Table.Cell class="flex items-center">{userEmail}<A href="mailto:{userEmail}" title="Send email to {userEmail}"><Email /></A></Table.Cell>
                 </Table.Row>
@@ -238,7 +250,7 @@
                 <Table.Row class="group">
                     <Table.Head class="w-40 whitespace-nowrap">User Identity</Table.Head>
                     <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><ClickableStringFilter {changed} term="user" value={userIdentity} /></Table.Cell
+                        ><EventsFacetedFilter.StringTrigger {changed} term="user" value={userIdentity} /></Table.Cell
                     >
                     <Table.Cell>{userIdentity}</Table.Cell>
                 </Table.Row>
@@ -247,7 +259,7 @@
                 <Table.Row class="group">
                     <Table.Head class="w-40 whitespace-nowrap">User Name</Table.Head>
                     <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><ClickableStringFilter {changed} term="user.name" value={userName} /></Table.Cell
+                        ><EventsFacetedFilter.StringTrigger {changed} term="user.name" value={userName} /></Table.Cell
                     >
                     <Table.Cell>{userName}</Table.Cell>
                 </Table.Row>
@@ -256,7 +268,7 @@
                 <Table.Row class="group">
                     <Table.Head class="w-40 whitespace-nowrap">User Description</Table.Head>
                     <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><ClickableStringFilter {changed} term="user.description" value={userDescription} /></Table.Cell
+                        ><EventsFacetedFilter.StringTrigger {changed} term="user.description" value={userDescription} /></Table.Cell
                     >
                     <Table.Cell>{userDescription}</Table.Cell>
                 </Table.Row>

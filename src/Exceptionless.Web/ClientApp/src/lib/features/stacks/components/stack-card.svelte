@@ -1,7 +1,5 @@
 <script lang="ts">
-    import type { IFilter } from '$comp/filters/filters.svelte';
-
-    import ClickableStringFilter from '$comp/filters/clickable-string-filter.svelte';
+    import { type IFilter } from '$comp/faceted-filter';
     import DateTime from '$comp/formatters/date-time.svelte';
     import Number from '$comp/formatters/number.svelte';
     import Percentage from '$comp/formatters/percentage.svelte';
@@ -12,6 +10,7 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Tooltip from '$comp/ui/tooltip';
     import { getProjectCountQuery, getStackCountQuery } from '$features/events/api.svelte';
+    import * as EventsFacetedFilter from '$features/events/components/filters';
     import { getStackQuery } from '$features/stacks/api.svelte';
     import { cardinality, max, min, sum } from '$shared/api/aggregations';
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
@@ -79,7 +78,7 @@
             <Card.Title class="flex flex-row items-center justify-between text-lg font-semibold">
                 <span class="mb-2 flex flex-col lg:mb-0">
                     <div class="flex items-center">
-                        <ClickableStringFilter {changed} class="mr-2" term="stack" value={stack.id} />
+                        <EventsFacetedFilter.StringTrigger {changed} class="mr-2" term="stack" value={stack.id} />
                         <span class="truncate">{stack.title}</span>
                     </div>
                 </span>
@@ -155,8 +154,8 @@
                 <div class="flex flex-wrap gap-2">
                     {#each stack.tags as tag (tag)}
                         <Badge color="dark"
-                            ><ClickableStringFilter {changed} class="mr-1" term="tag" value={tag}
-                                ><Filter class="text-muted-foreground text-opacity-80 hover:text-secondary" /></ClickableStringFilter
+                            ><EventsFacetedFilter.StringTrigger {changed} class="mr-1" term="tag" value={tag}
+                                ><Filter class="text-muted-foreground text-opacity-80 hover:text-secondary" /></EventsFacetedFilter.StringTrigger
                             >{tag}</Badge
                         >
                     {/each}
