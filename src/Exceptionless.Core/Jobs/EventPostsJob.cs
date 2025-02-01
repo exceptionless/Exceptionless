@@ -345,11 +345,11 @@ public class EventPostsJob : QueueJobBase<EventPost>
 
     protected override void LogProcessingQueueEntry(IQueueEntry<EventPost> entry)
     {
-        _logger.LogDebug("Processing {QueueEntryName} queue entry ({QueueEntryId})", _queueEntryName, entry.Id);
+        _logger.LogDebug("Processing {QueueName} queue entry ({QueueEntryId})", _queueName, entry.Id);
     }
 
     protected override void LogAutoCompletedQueueEntry(IQueueEntry<EventPost> entry)
     {
-        _logger.LogDebug("Auto completed {QueueEntryName} queue entry ({QueueEntryId})", _queueEntryName, entry.Id);
+        _logger.LogDebug("Auto completed {QueueName} queue entry ({QueueEntryId})", _queueName, entry.Id);
     }
 }
