@@ -1,6 +1,6 @@
 <script lang="ts">
     import { builderContext, type FacetFilterBuilder, type IFilter } from '$comp/faceted-filter';
-    import { onMount } from 'svelte';
+    import { onDestroy } from 'svelte';
 
     import { NumberFilter } from './models.svelte';
     import NumberFacetedFilter from './number-faceted-filter.svelte';
@@ -13,15 +13,13 @@
 
     const { priority = 0, term, title = 'Number' }: Props = $props();
 
-    onMount(() => {
-        const builder: FacetFilterBuilder<NumberFilter> = {
-            component: NumberFacetedFilter,
-            create: (filter?: NumberFilter) => filter ?? new NumberFilter(term),
-            priority,
-            title
-        };
+    const builder: FacetFilterBuilder<NumberFilter> = {
+        component: NumberFacetedFilter,
+        create: (filter?: NumberFilter) => filter ?? new NumberFilter(term),
+        priority,
+        title
+    };
 
-        builderContext.set(`number-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
-        return () => builderContext.delete('number');
-    });
+    builderContext.set(`number-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
+    onDestroy(() => builderContext.delete('number'));
 </script>

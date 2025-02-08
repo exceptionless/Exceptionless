@@ -9,20 +9,30 @@
     import * as Sheet from '$comp/ui/sheet';
     import { getStackEventsQuery } from '$features/events/api.svelte';
     import EventsDrawer from '$features/events/components/events-drawer.svelte';
-    import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters/helpers';
-    import { DateFilter, filterChanged, filterRemoved, toFilter } from '$features/events/components/filters/models.svelte';
+    import { type DateFilter, TypeFilter } from '$features/events/components/filters';
+    import {
+        applyDefaultDateFilter,
+        clearFilterCache,
+        filterChanged,
+        filterRemoved,
+        getFiltersFromCache,
+        shouldRefreshPersistentEventChanged,
+        toFilter,
+        updateFilterCache
+    } from '$features/events/components/filters/helpers';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
+    import { organization } from '$features/organizations/context.svelte';
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { useFetchClientStatus } from '$shared/api/api.svelte';
+    import { DEFAULT_LIMIT, useFetchClientStatus } from '$shared/api/api.svelte';
     import { isTableEmpty, removeTableData, removeTableSelection } from '$shared/table';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
+    import { queryParamsState } from 'kit-query-params';
     import ExternalLink from 'lucide-svelte/icons/external-link';
     import { useEventListener } from 'runed';
-    import { queryParameters, ssp } from 'sveltekit-search-params';
     import { throttle } from 'throttle-debounce';
 
     // TODO: Update this page to use StackSummaryModel instead of EventSummaryModel.
@@ -44,37 +54,52 @@
     });
     const eventId = $derived(eventsResponse?.data?.[0]?.id);
 
-    // TODO: Default filters
-    const params = queryParameters({ filter: ssp.string(), limit: ssp.number(10), time: ssp.string() });
-    let filters = $state<FacetedFilter.IFilter[]>([]);
-    const filter = $derived(toFilter(filters.filter((f) => f.type !== 'date')));
-    const time = $derived<string>((filters.find((f) => f.type === 'date') as DateFilter)?.value as string);
+    updateFilterCache('(type:404 OR type:error)', [new TypeFilter(['404', 'error'])]);
+    const params = queryParamsState({
+        default: {
+            filter: '(type:404 OR type:error)',
+            limit: DEFAULT_LIMIT,
+            time: 'last week'
+        },
+        pushHistory: true,
+        schema: {
+            filter: 'string',
+            limit: 'number',
+            time: 'string'
+        }
+    });
 
-    function onDrawerFilterChanged(added: FacetedFilter.IFilter): void {
-        if (added.type !== 'type') {
-            filters = filterChanged(filters, added);
-            params.filter = filter;
-            params.time = time;
+    let filters = $state(applyDefaultDateFilter(getFiltersFromCache(params.filter), params.time));
+    $effect(() => {
+        // Handle case where pop state loses the limit
+        params.limit ??= DEFAULT_LIMIT;
+
+        // Track filter changes when the parameters change
+        filters = applyDefaultDateFilter(getFiltersFromCache(params.filter), params.time);
+    });
+
+    function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
+        if (addedOrUpdated.type !== 'type') {
+            updateFilters(filterChanged(filters ?? [], addedOrUpdated));
         }
 
         selectedStackId = undefined;
     }
 
-    function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
-        if (addedOrUpdated.type !== 'type') {
-            filters = filterChanged(filters, addedOrUpdated);
-            params.filter = filter;
-            params.time = time;
-        }
-    }
-
     function onFilterRemoved(removed?: FacetedFilter.IFilter): void {
-        filters = filterRemoved(filters, removed);
-        params.filter = filter;
-        params.time = time;
+        updateFilters(filterRemoved(filters ?? [], removed));
     }
 
-    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: params.limit, mode: 'stack_frequent' });
+    function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
+        const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
+
+        updateFilterCache(filter, updatedFilters);
+        filters = updatedFilters;
+        params.time = (updatedFilters.find((f) => f.type === 'date') as DateFilter)?.value as string;
+        params.filter = filter;
+    }
+
+    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: params.limit!, mode: 'stack_frequent' });
     const table = createTable(context.options);
     const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && !table.getCanPreviousPage());
 
@@ -90,8 +115,8 @@
         clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
             params: {
                 ...context.parameters,
-                filter: ['(type:404 OR type:error)', filter].filter(Boolean).join(' '),
-                time
+                filter: params.filter,
+                time: params.time
             }
         });
 
@@ -116,7 +141,7 @@
         }
 
         // Do not refresh if the filter criteria doesn't match the web socket message.
-        if (!shouldRefreshPersistentEventChanged(filters, filter, message.organization_id, message.project_id, message.id)) {
+        if (!shouldRefreshPersistentEventChanged(filters, params.filter, message.organization_id, message.project_id, message.id)) {
             return;
         }
 
@@ -140,7 +165,7 @@
     <Card.Root>
         <Card.Title class="p-6 pb-0 text-2xl" level={2}>Issues <AutomaticRefreshIndicatorButton {canRefresh} refresh={loadData} /></Card.Title>
         <Card.Content class="pt-4">
-            <EventsDataTable bind:limit={params.limit} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
+            <EventsDataTable bind:limit={params.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
                 {#snippet toolbarChildren()}
                     <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                         <OrganizationDefaultsFacetedFilterBuilder />
@@ -153,7 +178,7 @@
                         {/if}
                     </div>
 
-                    <DataTable.PageSize bind:value={params.limit} {table}></DataTable.PageSize>
+                    <DataTable.PageSize bind:value={params.limit!} {table}></DataTable.PageSize>
                     <div class="flex items-center space-x-6 lg:space-x-8">
                         <DataTable.PageCount {table} />
                         <DataTable.Pagination {table} />
@@ -171,6 +196,6 @@
                 >Event Details <Button href="/event/{eventId}" size="sm" title="Open in new window" variant="ghost"><ExternalLink /></Button></Sheet.Title
             >
         </Sheet.Header>
-        <EventsDrawer changed={onDrawerFilterChanged} id={eventId || ''} close={() => (selectedStackId = undefined)}></EventsDrawer>
+        <EventsDrawer changed={onFilterChanged} id={eventId || ''} close={() => (selectedStackId = undefined)}></EventsDrawer>
     </Sheet.Content>
 </Sheet.Root>
