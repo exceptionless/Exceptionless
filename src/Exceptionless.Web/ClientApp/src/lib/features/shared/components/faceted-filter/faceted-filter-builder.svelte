@@ -21,6 +21,9 @@
 
     let open = $state(false);
     let lastOpenFilterId = $state<string>();
+
+    // Clear the builder context because multiple builders will be loaded during page navigation.
+    builderContext.clear();
     let facets: FacetedFilter<IFilter>[] = $derived.by(() => {
         if (builderContext.size === 0) {
             return [];

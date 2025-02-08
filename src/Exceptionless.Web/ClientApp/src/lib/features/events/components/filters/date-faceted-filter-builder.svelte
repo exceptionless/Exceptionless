@@ -1,6 +1,5 @@
 <script lang="ts">
     import { builderContext, type FacetFilterBuilder, type IFilter } from '$comp/faceted-filter';
-    import { onDestroy } from 'svelte';
 
     import DateFacetedFilter from './date-faceted-filter.svelte';
     import { DateFilter } from './models.svelte';
@@ -21,5 +20,4 @@
     };
 
     builderContext.set(`date-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
-    onDestroy(() => builderContext.delete('date'));
 </script>

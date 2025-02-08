@@ -1,6 +1,5 @@
 <script lang="ts">
     import { builderContext, type FacetFilterBuilder, type IFilter } from '$comp/faceted-filter';
-    import { onDestroy } from 'svelte';
 
     import { StringFilter } from './models.svelte';
     import StringFacetedFilter from './string-faceted-filter.svelte';
@@ -21,5 +20,4 @@
     };
 
     builderContext.set(`string-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
-    onDestroy(() => builderContext.delete('string'));
 </script>

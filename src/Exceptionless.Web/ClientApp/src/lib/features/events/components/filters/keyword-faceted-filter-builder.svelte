@@ -1,6 +1,5 @@
 <script lang="ts">
     import { builderContext, type FacetFilterBuilder, type IFilter } from '$comp/faceted-filter';
-    import { onDestroy } from 'svelte';
 
     import KeywordFacetedFilter from './keyword-faceted-filter.svelte';
     import { KeywordFilter } from './models.svelte';
@@ -20,5 +19,4 @@
     };
 
     builderContext.set('keyword', builder as unknown as FacetFilterBuilder<IFilter>);
-    onDestroy(() => builderContext.delete('keyword'));
 </script>

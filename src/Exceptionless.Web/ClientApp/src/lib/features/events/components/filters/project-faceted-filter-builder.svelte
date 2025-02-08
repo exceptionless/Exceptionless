@@ -1,6 +1,5 @@
 <script lang="ts">
     import { builderContext, type FacetFilterBuilder, type IFilter } from '$comp/faceted-filter';
-    import { onDestroy } from 'svelte';
 
     import { ProjectFilter } from './models.svelte';
     import ProjectFacetedFilter from './project-faceted-filter.svelte';
@@ -20,5 +19,4 @@
     };
 
     builderContext.set('project', builder as unknown as FacetFilterBuilder<IFilter>);
-    onDestroy(() => builderContext.delete('project'));
 </script>

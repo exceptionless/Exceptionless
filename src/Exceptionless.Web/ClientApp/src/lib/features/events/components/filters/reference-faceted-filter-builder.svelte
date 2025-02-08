@@ -1,6 +1,5 @@
 <script lang="ts">
     import { builderContext, type FacetFilterBuilder, type IFilter } from '$comp/faceted-filter';
-    import { onDestroy } from 'svelte';
 
     import { ReferenceFilter } from './models.svelte';
     import ReferenceFacetedFilter from './reference-faceted-filter.svelte';
@@ -20,5 +19,4 @@
     };
 
     builderContext.set('reference', builder as unknown as FacetFilterBuilder<IFilter>);
-    onDestroy(() => builderContext.delete('reference'));
 </script>
