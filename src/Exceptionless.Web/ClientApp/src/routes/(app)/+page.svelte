@@ -53,6 +53,14 @@
         }
     });
 
+    function onSwitchOrganization() {
+        clearFilterCache();
+        //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
+        params.filter = '';
+        params.limit = DEFAULT_LIMIT;
+        params.time = 'last week';
+    }
+
     let filters = $state(applyDefaultDateFilter(getFiltersFromCache(params.filter), params.time));
     $effect(() => {
         // Handle case where pop state loses the limit
@@ -132,11 +140,6 @@
         }
 
         await throttledLoadData();
-    }
-
-    function onSwitchOrganization() {
-        clearFilterCache();
-        params.$reset();
     }
 
     useEventListener(document, 'refresh', () => loadData());

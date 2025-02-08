@@ -69,6 +69,15 @@
         }
     });
 
+    function onSwitchOrganization() {
+        clearFilterCache();
+        updateFilterCache('(type:404 OR type:error)', [new TypeFilter(['404', 'error'])]);
+        //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
+        params.filter = '(type:404 OR type:error)';
+        params.limit = DEFAULT_LIMIT;
+        params.time = 'last week';
+    }
+
     let filters = $state(applyDefaultDateFilter(getFiltersFromCache(params.filter), params.time));
     $effect(() => {
         // Handle case where pop state loses the limit
@@ -151,11 +160,6 @@
         }
 
         await throttledLoadData();
-    }
-
-    function onSwitchOrganization() {
-        clearFilterCache();
-        params.$reset();
     }
 
     useEventListener(document, 'refresh', async () => await loadData());
