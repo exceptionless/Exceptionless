@@ -108,11 +108,11 @@
     let clientResponse = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
 
     async function loadData() {
-        if (client.isLoading) {
+        if (client.isLoading || !organization.current) {
             return;
         }
 
-        clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
+        clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
             params: {
                 ...context.parameters,
                 filter: params.filter,
@@ -153,7 +153,13 @@
         await throttledLoadData();
     }
 
+    function onSwitchOrganization() {
+        clearFilterCache();
+        params.$reset();
+    }
+
     useEventListener(document, 'refresh', async () => await loadData());
+    useEventListener(document, 'switch-organization', onSwitchOrganization);
     useEventListener(document, 'StackChanged', async (event) => await onStackChanged((event as CustomEvent).detail));
 
     $effect(() => {

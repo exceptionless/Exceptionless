@@ -93,6 +93,10 @@
     let before: string | undefined;
 
     async function loadData(filterChanged: boolean = false) {
+        if (!organization.current) {
+            return;
+        }
+
         if (client.isLoading && filterChanged && !before) {
             return;
         }
@@ -101,7 +105,7 @@
             before = undefined;
         }
 
-        response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
+        response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
             params: {
                 ...context.parameters,
                 before,
@@ -144,7 +148,13 @@
         await debouncedLoadData();
     }
 
+    function onSwitchOrganization() {
+        clearFilterCache();
+        params.$reset();
+    }
+
     useEventListener(document, 'refresh', async () => await loadData());
+    useEventListener(document, 'switch-organization', onSwitchOrganization);
     useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEventChanged((event as CustomEvent).detail));
 
     $effect(() => {

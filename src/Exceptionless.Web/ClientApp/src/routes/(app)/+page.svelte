@@ -89,11 +89,11 @@
     let clientResponse = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
 
     async function loadData() {
-        if (client.isLoading) {
+        if (client.isLoading || !organization.current) {
             return;
         }
 
-        clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
+        clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
             params: {
                 ...context.parameters,
                 filter: params.filter,
@@ -122,7 +122,7 @@
         }
 
         // Do not refresh if the filter criteria doesn't match the web socket message.
-        if (!shouldRefreshPersistentEventChanged(filters ?? [], filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
+        if (!shouldRefreshPersistentEventChanged(filters ?? [], params.filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
             return;
         }
 
@@ -134,7 +134,13 @@
         await throttledLoadData();
     }
 
+    function onSwitchOrganization() {
+        clearFilterCache();
+        params.$reset();
+    }
+
     useEventListener(document, 'refresh', () => loadData());
+    useEventListener(document, 'switch-organization', onSwitchOrganization);
     useEventListener(document, 'PersistentEventChanged', async (event) => await onPersistentEventChanged((event as CustomEvent).detail));
 
     $effect(() => {
