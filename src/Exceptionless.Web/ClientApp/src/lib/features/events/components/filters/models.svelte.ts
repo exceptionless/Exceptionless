@@ -2,6 +2,8 @@ import type { IFilter } from '$comp/faceted-filter';
 import type { PersistentEventKnownTypes } from '$features/events/models';
 import type { StackStatus } from '$features/stacks/models';
 
+import { quoteIfSpecialCharacters } from './helpers';
+
 export class BooleanFilter implements IFilter {
     public id: string = crypto.randomUUID();
     public term = $state<string>();
@@ -16,14 +18,6 @@ export class BooleanFilter implements IFilter {
     constructor(term?: string, value?: boolean) {
         this.term = term;
         this.value = value;
-    }
-
-    public isEmpty(): boolean {
-        return this.value === undefined;
-    }
-
-    public reset(): void {
-        this.value = undefined;
     }
 
     public toFilter(): string {
@@ -63,14 +57,6 @@ export class DateFilter implements IFilter {
         this.value = value;
     }
 
-    public isEmpty(): boolean {
-        return this.value === undefined;
-    }
-
-    public reset(): void {
-        this.value = undefined;
-    }
-
     public toFilter(): string {
         if (this.term === undefined) {
             return '';
@@ -107,16 +93,8 @@ export class KeywordFilter implements IFilter {
         this.value = value;
     }
 
-    public isEmpty(): boolean {
-        return !this.value?.trim();
-    }
-
-    public reset(): void {
-        this.value = undefined;
-    }
-
     public toFilter(): string {
-        if (this.isEmpty()) {
+        if (!this.value?.trim()) {
             return '';
         }
 
@@ -145,14 +123,6 @@ export class NumberFilter implements IFilter {
     constructor(term?: string, value?: number) {
         this.term = term;
         this.value = value;
-    }
-
-    public isEmpty(): boolean {
-        return this.value === undefined;
-    }
-
-    public reset(): void {
-        this.value = undefined;
     }
 
     public toFilter(): string {
@@ -190,14 +160,6 @@ export class ProjectFilter implements IFilter {
         this.value = value;
     }
 
-    public isEmpty(): boolean {
-        return this.value.length === 0;
-    }
-
-    public reset(): void {
-        this.value = [];
-    }
-
     public toFilter(): string {
         if (this.value.length == 0) {
             return '';
@@ -232,16 +194,8 @@ export class ReferenceFilter implements IFilter {
         this.value = value;
     }
 
-    public isEmpty(): boolean {
-        return !this.value?.trim();
-    }
-
-    public reset(): void {
-        this.value = undefined;
-    }
-
     public toFilter(): string {
-        if (this.isEmpty()) {
+        if (!this.value?.trim()) {
             return '';
         }
 
@@ -270,16 +224,8 @@ export class SessionFilter implements IFilter {
         this.value = value;
     }
 
-    public isEmpty(): boolean {
-        return !this.value?.trim();
-    }
-
-    public reset(): void {
-        this.value = undefined;
-    }
-
     public toFilter(): string {
-        if (this.isEmpty()) {
+        if (!this.value?.trim()) {
             return '';
         }
 
@@ -307,14 +253,6 @@ export class StatusFilter implements IFilter {
 
     constructor(value: StackStatus[] = []) {
         this.value = value;
-    }
-
-    public isEmpty(): boolean {
-        return this.value.length === 0;
-    }
-
-    public reset(): void {
-        this.value = [];
     }
 
     public toFilter(): string {
@@ -353,14 +291,6 @@ export class StringFilter implements IFilter {
         this.value = value;
     }
 
-    public isEmpty(): boolean {
-        return this.value === undefined;
-    }
-
-    public reset(): void {
-        this.value = undefined;
-    }
-
     public toFilter(): string {
         if (this.term === undefined) {
             return '';
@@ -394,14 +324,6 @@ export class TypeFilter implements IFilter {
 
     constructor(value: PersistentEventKnownTypes[] = []) {
         this.value = value;
-    }
-
-    public isEmpty(): boolean {
-        return this.value.length === 0;
-    }
-
-    public reset(): void {
-        this.value = [];
     }
 
     public toFilter(): string {
@@ -440,14 +362,6 @@ export class VersionFilter implements IFilter {
         this.value = value;
     }
 
-    public isEmpty(): boolean {
-        return this.value === undefined;
-    }
-
-    public reset(): void {
-        this.value = undefined;
-    }
-
     public toFilter(): string {
         if (this.term === undefined) {
             return '';
@@ -467,137 +381,4 @@ export class VersionFilter implements IFilter {
             value: this.value
         };
     }
-}
-
-export function filterChanged(filters: IFilter[], addedOrUpdated: IFilter): IFilter[] {
-    const index = filters.findIndex((f) => f.id === addedOrUpdated.id);
-    if (index === -1) {
-        return processFilterRules([...filters, addedOrUpdated]);
-    }
-
-    return processFilterRules([...filters.slice(0, index), addedOrUpdated, ...filters.slice(index + 1)]);
-}
-
-export const filterSerializer = {
-    deserialize: (value: string): IFilter[] => {
-        if (!value) {
-            return [];
-        }
-
-        const data: unknown[] = JSON.parse(value);
-        const filters: IFilter[] = [];
-        for (const filterData of data) {
-            const filter = getFilter(filterData as Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'>);
-            if (filter) {
-                filters.push(filter);
-            }
-        }
-
-        return filters;
-    },
-    serialize: JSON.stringify
-};
-
-export function filterRemoved(filters: IFilter[], removed?: IFilter): IFilter[] {
-    // If detail is undefined, remove all filters.
-    if (!removed) {
-        return [];
-    }
-
-    return filters.filter((f) => f.id !== removed.id);
-}
-
-export function getFilter(filter: Omit<IFilter, 'isEmpty' | 'reset' | 'toFilter'> & Record<string, unknown>): IFilter | undefined {
-    switch (filter.type) {
-        case 'boolean':
-            return new BooleanFilter(filter.term as string, filter.value as boolean);
-        case 'date':
-            return new DateFilter(filter.term as string, filter.value as Date);
-        case 'keyword':
-            return new KeywordFilter(filter.value as string);
-        case 'number':
-            return new NumberFilter(filter.term as string, filter.value as number);
-        case 'project':
-            return new ProjectFilter(filter.value as string[]);
-        case 'reference':
-            return new ReferenceFilter(filter.value as string);
-        case 'session':
-            return new SessionFilter(filter.value as string);
-        case 'status':
-            return new StatusFilter(filter.value as StackStatus[]);
-        case 'string':
-            return new StringFilter(filter.term as string, filter.value as string);
-        case 'type':
-            return new TypeFilter(filter.value as PersistentEventKnownTypes[]);
-        case 'version':
-            return new VersionFilter(filter.term as string, filter.value as string);
-        default:
-            throw new Error(`Unknown filter type: ${filter.type}`);
-    }
-}
-
-export function getKeywordFilter(filters: IFilter[]): KeywordFilter | undefined {
-    return filters.find((f) => f.type === 'keyword') as KeywordFilter;
-}
-
-export function getProjectFilter(filters: IFilter[]): ProjectFilter {
-    return filters.find((f) => f.type === 'project') as ProjectFilter;
-}
-
-export function getStackFilter(filters: IFilter[]): StringFilter | undefined {
-    return filters.find((f) => f.type === 'string') as StringFilter;
-}
-
-export function quote(value?: null | string): string | undefined {
-    return value ? `"${value}"` : undefined;
-}
-
-export function quoteIfSpecialCharacters(value?: null | string): null | string | undefined {
-    // Check for lucene special characters or whitespace
-    const regex = new RegExp('\\+|\\-|\\&|\\||\\!|\\(|\\)|\\{|\\}|\\[|\\]|\\^|\\"|\\~|\\*|\\?|\\:|\\\\|\\/|\\s', 'g');
-
-    if (value && value.match(regex)) {
-        return quote(value);
-    }
-
-    return value;
-}
-
-export function toFilter(filters: IFilter[]): string {
-    return filters
-        .map((f) => f.toFilter())
-        .filter(Boolean)
-        .join(' ')
-        .trim();
-}
-
-function processFilterRules(filters: IFilter[]): IFilter[] {
-    // 1. There can only be one date filter by term at a time.
-    // 2. There can only be one project filter.
-
-    const uniqueFilters = new Map<string, IFilter>();
-    for (const filter of filters) {
-        if (filter.type === 'project' || filter.type === 'date') {
-            const existingFilter = uniqueFilters.get(filter.key);
-            if (existingFilter) {
-                if ('value' in existingFilter && 'value' in filter) {
-                    if (Array.isArray(existingFilter.value) && Array.isArray(filter.value)) {
-                        existingFilter.value = [...new Set([...existingFilter.value, ...filter.value])];
-                    } else if (filter.value !== undefined) {
-                        existingFilter.value = filter.value;
-                    }
-                } else {
-                    const { id, ...props } = filter;
-                    console.trace(`Filter with key ${existingFilter.type} (${id}) already exists. Merging properties`);
-                    Object.assign(existingFilter, props);
-                }
-            }
-
-            uniqueFilters.set(filter.key, existingFilter ?? filter);
-        } else {
-            uniqueFilters.set(filter.id, filter);
-        }
-    }
-
-    return Array.from(uniqueFilters.values());
 }

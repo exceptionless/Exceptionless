@@ -72,28 +72,37 @@
     ];
 </script>
 
+<FacetedFilter.KeywordBuilder priority={15} />
+
 {#each eventsBooleanFilters as { priority, term, title }}
     <FacetedFilter.BooleanBuilder {priority} {term} {title} />
 {/each}
+
 {#if includeDateFacets}
     {#each eventsDateFilters as { priority, term, title }}
         <FacetedFilter.DateBuilder {priority} {term} {title} />
     {/each}
 {/if}
+
 {#each eventsGeoFilters as { priority, term, title }}
     <FacetedFilter.StringBuilder {priority} {term} {title} />
 {/each}
+
 {#each eventsNumberFilters as { priority, term, title }}
     <FacetedFilter.NumberBuilder {priority} {term} {title} />
 {/each}
+
 <FacetedFilter.ProjectBuilder />
 <FacetedFilter.ReferenceBuilder />
 <FacetedFilter.SessionBuilder />
 <FacetedFilter.StatusBuilder />
+
 {#each eventsStringFilters as { priority, term, title }}
     <FacetedFilter.StringBuilder {priority} {term} {title} />
 {/each}
-<FacetedFilter.TypeBuilder />
+
+<FacetedFilter.TypeBuilder priority={50} />
+
 {#each eventsVersionFilters as { priority, term, title }}
     <FacetedFilter.VersionBuilder {priority} {term} {title} />
 {/each}

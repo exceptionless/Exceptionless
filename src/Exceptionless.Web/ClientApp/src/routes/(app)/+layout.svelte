@@ -6,7 +6,7 @@
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
     import { getOrganizationQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
+    import { dispatchSwitchOrganizationEvent, organization } from '$features/organizations/context.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
     import { invalidateStackQueries } from '$features/stacks/api.svelte';
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
@@ -163,11 +163,13 @@
         if (organizationsResponse.data.length === 0) {
             // TODO: Redirect to create organization page.
             organization.current = undefined;
+            dispatchSwitchOrganizationEvent();
             return;
         }
 
         if (!organizationsResponse.data.find((org) => org.id === organization.current)) {
             organization.current = organizationsResponse.data[0]!.id;
+            dispatchSwitchOrganizationEvent();
         }
     });
 
@@ -185,7 +187,13 @@
                 class="pt-2"
                 isLoading={organizationsResponse.isLoading}
                 organizations={organizationsResponse.data}
-                bind:selected={organization.current}
+                bind:selected={
+                    () => organization.current,
+                    (v) => {
+                        organization.current = v;
+                        dispatchSwitchOrganizationEvent();
+                    }
+                }
             />
         {/snippet}
 

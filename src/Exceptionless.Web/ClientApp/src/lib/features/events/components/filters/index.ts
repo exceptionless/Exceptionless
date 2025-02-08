@@ -6,19 +6,6 @@ import DateFacetedFilterTrigger from './date-faceted-filter-trigger.svelte';
 import DateFacetedFilter from './date-faceted-filter.svelte';
 import KeywordFacetedFilterBuilder from './keyword-faceted-filter-builder.svelte';
 import KeywordFacetedFilter from './keyword-faceted-filter.svelte';
-export {
-    type BooleanFilter,
-    type DateFilter,
-    KeywordFilter,
-    type NumberFilter,
-    ProjectFilter,
-    ReferenceFilter,
-    SessionFilter,
-    StatusFilter,
-    type StringFilter,
-    TypeFilter,
-    type VersionFilter
-} from './models.svelte';
 import NumberFacetedFilterBuilder from './number-faceted-filter-builder.svelte';
 import NumberFacetedFilterTrigger from './number-faceted-filter-trigger.svelte';
 import NumberFacetedFilter from './number-faceted-filter.svelte';
@@ -110,3 +97,17 @@ export {
     VersionFacetedFilterTrigger,
     VersionFacetedFilterTrigger as VersionTrigger
 };
+
+export {
+    type BooleanFilter,
+    type DateFilter,
+    KeywordFilter,
+    type NumberFilter,
+    ProjectFilter,
+    ReferenceFilter,
+    SessionFilter,
+    StatusFilter,
+    type StringFilter,
+    TypeFilter,
+    type VersionFilter
+} from './models.svelte';

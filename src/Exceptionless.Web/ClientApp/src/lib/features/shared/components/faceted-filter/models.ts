@@ -9,10 +9,8 @@ export type FacetedFilterProps<TFilter extends IFilter> = {
 };
 
 export interface IFilter {
-    readonly id: string;
-    isEmpty(): boolean;
+    id: string;
     readonly key: string;
-    reset(): void;
     toFilter(): string;
     readonly type: string;
 }
