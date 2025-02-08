@@ -9,18 +9,26 @@
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
     import EventsDrawer from '$features/events/components/events-drawer.svelte';
-    import { shouldRefreshPersistentEventChanged } from '$features/events/components/filters/helpers';
-    import { filterChanged, filterRemoved, toFilter } from '$features/events/components/filters/models.svelte';
+    import {
+        clearFilterCache,
+        filterChanged,
+        filterRemoved,
+        getFiltersFromCache,
+        shouldRefreshPersistentEventChanged,
+        toFilter,
+        updateFilterCache
+    } from '$features/events/components/filters/helpers';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
+    import { organization } from '$features/organizations/context.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { useFetchClientStatus } from '$shared/api/api.svelte';
+    import { DEFAULT_LIMIT, useFetchClientStatus } from '$shared/api/api.svelte';
     import { isTableEmpty, removeTableData } from '$shared/table';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
+    import { queryParamsState } from 'kit-query-params';
     import ExternalLink from 'lucide-svelte/icons/external-link';
     import { useEventListener } from 'runed';
-    import { queryParameters, ssp } from 'sveltekit-search-params';
     import { debounce } from 'throttle-debounce';
 
     let selectedEventId: null | string = $state(null);
@@ -28,30 +36,54 @@
         selectedEventId = row.id;
     }
 
-    // TODO: Default filters
-    const params = queryParameters({ filter: ssp.string(), limit: ssp.number(10) });
-    let filters = $state<FacetedFilter.IFilter[]>([]);
-    const filter = $derived(toFilter(filters));
+    const params = queryParamsState({
+        default: {
+            filter: '',
+            limit: DEFAULT_LIMIT
+        },
+        pushHistory: true,
+        schema: {
+            filter: 'string',
+            limit: 'number'
+        }
+    });
 
-    function onDrawerFilterChanged(added: FacetedFilter.IFilter): void {
-        filters = filterChanged(filters, added);
-        params.filter = filter;
-        selectedEventId = null;
+    function onSwitchOrganization() {
+        clearFilterCache();
+        //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
+        params.filter = '';
+        params.limit = DEFAULT_LIMIT;
     }
+
+    let filters = $state(getFiltersFromCache(params.filter));
+    $effect(() => {
+        // Handle case where pop state loses the limit
+        params.limit ??= DEFAULT_LIMIT;
+
+        // Track filter changes when the parameters change
+        filters = getFiltersFromCache(params.filter);
+    });
 
     function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
         if (addedOrUpdated.type !== 'date') {
-            filters = filterChanged(filters, addedOrUpdated);
-            params.filter = filter;
+            updateFilters(filterChanged(filters ?? [], addedOrUpdated));
         }
+
+        selectedEventId = null;
     }
 
     function onFilterRemoved(removed?: FacetedFilter.IFilter): void {
-        filters = filterRemoved(filters, removed);
+        updateFilters(filterRemoved(filters ?? [], removed));
+    }
+
+    function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
+        const filter = toFilter(updatedFilters);
+        updateFilterCache(filter, updatedFilters);
+        filters = updatedFilters;
         params.filter = filter;
     }
 
-    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: params.limit, mode: 'summary' }, function (options) {
+    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: params.limit!, mode: 'summary' }, function (options) {
         options.columns = options.columns.filter((c) => c.id !== 'select').map((c) => ({ ...c, enableSorting: false }));
         options.enableMultiRowSelection = false;
         options.enableRowSelection = false;
@@ -68,6 +100,10 @@
     let before: string | undefined;
 
     async function loadData(filterChanged: boolean = false) {
+        if (!organization.current) {
+            return;
+        }
+
         if (client.isLoading && filterChanged && !before) {
             return;
         }
@@ -76,11 +112,11 @@
             before = undefined;
         }
 
-        response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>('events', {
+        response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
             params: {
                 ...context.parameters,
                 before,
-                filter
+                filter: params.filter
             }
         });
 
@@ -94,7 +130,7 @@
                 data.push(summary);
             }
 
-            context.data = data.slice(-params.limit);
+            context.data = data.slice(-params.limit!);
             context.meta = response.meta;
         }
     }
@@ -112,7 +148,7 @@
         }
 
         // Do not refresh if the filter criteria doesn't match the web socket message.
-        if (!shouldRefreshPersistentEventChanged(filters, filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
+        if (!shouldRefreshPersistentEventChanged(filters, params.filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
             return;
         }
 
@@ -120,6 +156,7 @@
     }
 
     useEventListener(document, 'refresh', async () => await loadData());
+    useEventListener(document, 'switch-organization', onSwitchOrganization);
     useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEventChanged((event as CustomEvent).detail));
 
     $effect(() => {
@@ -147,7 +184,7 @@
             </DataTable.Body>
             <DataTable.Footer {table}>
                 <div class="flex w-full items-center justify-center space-x-4">
-                    <DataTable.PageSize bind:value={params.limit} {table} />
+                    <DataTable.PageSize bind:value={params.limit!} {table} />
                     <div class="text-center">
                         <ErrorMessage message={response?.problem?.errors.general} />
                     </div>
@@ -165,6 +202,6 @@
                 ></Sheet.Title
             >
         </Sheet.Header>
-        <EventsDrawer changed={onDrawerFilterChanged} id={selectedEventId || ''} close={() => (selectedEventId = null)}></EventsDrawer>
+        <EventsDrawer changed={onFilterChanged} id={selectedEventId || ''} close={() => (selectedEventId = null)}></EventsDrawer>
     </Sheet.Content>
 </Sheet.Root>

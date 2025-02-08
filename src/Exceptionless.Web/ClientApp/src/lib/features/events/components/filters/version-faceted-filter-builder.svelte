@@ -1,6 +1,5 @@
 <script lang="ts">
     import { builderContext, type FacetFilterBuilder, type IFilter } from '$comp/faceted-filter';
-    import { onMount } from 'svelte';
 
     import { VersionFilter } from './models.svelte';
     import VersionFacetedFilter from './version-faceted-filter.svelte';
@@ -13,15 +12,12 @@
 
     const { priority = 0, term, title = 'Version' }: Props = $props();
 
-    onMount(() => {
-        const builder: FacetFilterBuilder<VersionFilter> = {
-            component: VersionFacetedFilter,
-            create: (filter?: VersionFilter) => filter ?? new VersionFilter(term),
-            priority,
-            title
-        };
+    const builder: FacetFilterBuilder<VersionFilter> = {
+        component: VersionFacetedFilter,
+        create: (filter?: VersionFilter) => filter ?? new VersionFilter(term),
+        priority,
+        title
+    };
 
-        builderContext.set(`version-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
-        return () => builderContext.delete('version');
-    });
+    builderContext.set(`version-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
 </script>

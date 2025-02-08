@@ -1,6 +1,5 @@
 <script lang="ts">
     import { builderContext, type FacetFilterBuilder, type IFilter } from '$comp/faceted-filter';
-    import { onMount } from 'svelte';
 
     import { StringFilter } from './models.svelte';
     import StringFacetedFilter from './string-faceted-filter.svelte';
@@ -13,15 +12,12 @@
 
     const { priority = 0, term, title = 'String' }: Props = $props();
 
-    onMount(() => {
-        const builder: FacetFilterBuilder<StringFilter> = {
-            component: StringFacetedFilter,
-            create: (filter?: StringFilter) => filter ?? new StringFilter(term),
-            priority,
-            title
-        };
+    const builder: FacetFilterBuilder<StringFilter> = {
+        component: StringFacetedFilter,
+        create: (filter?: StringFilter) => filter ?? new StringFilter(term),
+        priority,
+        title
+    };
 
-        builderContext.set(`string-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
-        return () => builderContext.delete('string');
-    });
+    builderContext.set(`string-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
 </script>

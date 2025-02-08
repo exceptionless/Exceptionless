@@ -21,8 +21,15 @@
 
     let open = $state(false);
     let lastOpenFilterId = $state<string>();
-    let facets: FacetedFilter<IFilter>[] = $derived(
-        filters.map((filter) => {
+
+    // Clear the builder context because multiple builders will be loaded during page navigation.
+    builderContext.clear();
+    let facets: FacetedFilter<IFilter>[] = $derived.by(() => {
+        if (builderContext.size === 0) {
+            return [];
+        }
+
+        return filters.map((filter) => {
             const builder = builderContext.get(filter.key);
             if (!builder) {
                 throw new Error(`Facet filter builder not found for key: ${filter.key}`);
@@ -35,8 +42,8 @@
                 open: lastOpenFilterId === f.id,
                 title: builder.title
             };
-        })
-    );
+        });
+    });
 
     const sortedBuilders = $derived(
         [...builderContext.entries()].sort((facetA, facetB) => {
@@ -74,7 +81,6 @@
 
     function onRemoveAll() {
         lastOpenFilterId = undefined;
-        facets.forEach((facet) => facet.filter.reset());
         remove();
     }
 
