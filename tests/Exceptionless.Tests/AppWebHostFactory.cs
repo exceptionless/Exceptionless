@@ -24,7 +24,8 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 
         builder.AddElasticsearch("Elasticsearch", port: 9200)
             .WithContainerName("Exceptionless-Elasticsearch-Test")
-            .WithLifetime(ContainerLifetime.Persistent);
+            .WithLifetime(ContainerLifetime.Persistent)
+            .WithKibana(b => b.WithLifetime(ContainerLifetime.Persistent).WithContainerName("Exceptionless-Kibana-Test"));
 
         _app = builder.Build();
 

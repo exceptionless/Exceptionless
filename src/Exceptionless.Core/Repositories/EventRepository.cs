@@ -210,7 +210,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return organizations.Single();
     }
 
-    protected override async Task<CustomFieldDefinition?> HandleUnmappedCustomField(PersistentEvent document, string name, object value)
+    protected override async Task<CustomFieldDefinition?> HandleUnmappedCustomField(PersistentEvent document, string name, object value, IDictionary<string, CustomFieldDefinition> existingFields)
     {
         if (!AutoCreateCustomFields)
             return null;
