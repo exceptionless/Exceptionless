@@ -9,6 +9,7 @@
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
     import EventsDrawer from '$features/events/components/events-drawer.svelte';
+    import { StatusFilter } from '$features/events/components/filters';
     import {
         clearFilterCache,
         filterChanged,
@@ -21,6 +22,7 @@
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, useFetchClientStatus } from '$shared/api/api.svelte';
     import { isTableEmpty, removeTableData } from '$shared/table';
@@ -36,11 +38,15 @@
         selectedEventId = row.id;
     }
 
+    const DEFAULT_FILTERS = [new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
+    const DEFAULT_PARAMS = {
+        filter: '(status:open OR status:regressed)',
+        limit: DEFAULT_LIMIT
+    };
+
+    updateFilterCache(DEFAULT_PARAMS.filter, DEFAULT_FILTERS);
     const params = queryParamsState({
-        default: {
-            filter: '',
-            limit: DEFAULT_LIMIT
-        },
+        default: DEFAULT_PARAMS,
         pushHistory: true,
         schema: {
             filter: 'string',
@@ -50,9 +56,9 @@
 
     function onSwitchOrganization() {
         clearFilterCache();
+        updateFilterCache(DEFAULT_PARAMS.filter, DEFAULT_FILTERS);
         //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
-        params.filter = '';
-        params.limit = DEFAULT_LIMIT;
+        Object.assign(params, DEFAULT_PARAMS);
     }
 
     let filters = $state(getFiltersFromCache(params.filter));
