@@ -9,7 +9,7 @@
     import * as Sheet from '$comp/ui/sheet';
     import { getStackEventsQuery } from '$features/events/api.svelte';
     import EventsDrawer from '$features/events/components/events-drawer.svelte';
-    import { type DateFilter, TypeFilter } from '$features/events/components/filters';
+    import { type DateFilter, StatusFilter, TypeFilter } from '$features/events/components/filters';
     import {
         applyDefaultDateFilter,
         clearFilterCache,
@@ -25,6 +25,7 @@
     import { getTableContext } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
+    import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, useFetchClientStatus } from '$shared/api/api.svelte';
     import { isTableEmpty, removeTableData, removeTableSelection } from '$shared/table';
@@ -54,13 +55,16 @@
     });
     const eventId = $derived(eventsResponse?.data?.[0]?.id);
 
-    updateFilterCache('(type:404 OR type:error)', [new TypeFilter(['404', 'error'])]);
+    const DEFAULT_FILTERS = [new TypeFilter(['404', 'error']), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
+    const DEFAULT_PARAMS = {
+        filter: '(type:404 OR type:error) (status:open OR status:regressed)',
+        limit: DEFAULT_LIMIT,
+        time: 'last week'
+    };
+
+    updateFilterCache(DEFAULT_PARAMS.filter, DEFAULT_FILTERS);
     const params = queryParamsState({
-        default: {
-            filter: '(type:404 OR type:error)',
-            limit: DEFAULT_LIMIT,
-            time: 'last week'
-        },
+        default: DEFAULT_PARAMS,
         pushHistory: true,
         schema: {
             filter: 'string',
@@ -71,11 +75,9 @@
 
     function onSwitchOrganization() {
         clearFilterCache();
-        updateFilterCache('(type:404 OR type:error)', [new TypeFilter(['404', 'error'])]);
+        updateFilterCache(DEFAULT_PARAMS.filter, DEFAULT_FILTERS);
         //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
-        params.filter = '(type:404 OR type:error)';
-        params.limit = DEFAULT_LIMIT;
-        params.time = 'last week';
+        Object.assign(params, DEFAULT_PARAMS);
     }
 
     let filters = $state(applyDefaultDateFilter(getFiltersFromCache(params.filter), params.time));

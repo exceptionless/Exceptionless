@@ -95,7 +95,7 @@
 <FacetedFilter.ProjectBuilder />
 <FacetedFilter.ReferenceBuilder />
 <FacetedFilter.SessionBuilder />
-<FacetedFilter.StatusBuilder />
+<FacetedFilter.StatusBuilder priority={50} />
 
 {#each eventsStringFilters as { priority, term, title }}
     <FacetedFilter.StringBuilder {priority} {term} {title} />

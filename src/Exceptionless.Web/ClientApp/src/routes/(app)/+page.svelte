@@ -1,5 +1,4 @@
 <script lang="ts">
-    import type { DateFilter } from '$features/events/components/filters';
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
     import AutomaticRefreshIndicatorButton from '$comp/automatic-refresh-indicator-button.svelte';
@@ -9,6 +8,7 @@
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
     import EventsDrawer from '$features/events/components/events-drawer.svelte';
+    import { type DateFilter, StatusFilter } from '$features/events/components/filters';
     import {
         applyDefaultDateFilter,
         clearFilterCache,
@@ -24,6 +24,7 @@
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, useFetchClientStatus } from '$shared/api/api.svelte';
     import { isTableEmpty, removeTableData, removeTableSelection } from '$shared/table';
@@ -39,12 +40,16 @@
         selectedEventId = row.id;
     }
 
+    const DEFAULT_FILTERS = [new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
+    const DEFAULT_PARAMS = {
+        filter: '(status:open OR status:regressed)',
+        limit: DEFAULT_LIMIT,
+        time: 'last week'
+    };
+
+    updateFilterCache(DEFAULT_PARAMS.filter, DEFAULT_FILTERS);
     const params = queryParamsState({
-        default: {
-            filter: '',
-            limit: DEFAULT_LIMIT,
-            time: 'last week'
-        },
+        default: DEFAULT_PARAMS,
         pushHistory: true,
         schema: {
             filter: 'string',
@@ -55,10 +60,9 @@
 
     function onSwitchOrganization() {
         clearFilterCache();
+        updateFilterCache(DEFAULT_PARAMS.filter, DEFAULT_FILTERS);
         //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
-        params.filter = '';
-        params.limit = DEFAULT_LIMIT;
-        params.time = 'last week';
+        Object.assign(params, DEFAULT_PARAMS);
     }
 
     let filters = $state(applyDefaultDateFilter(getFiltersFromCache(params.filter), params.time));
@@ -81,7 +85,6 @@
 
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
         const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
-
         updateFilterCache(filter, updatedFilters);
         filters = updatedFilters;
         params.time = (updatedFilters.find((f) => f.type === 'date') as DateFilter)?.value as string;
