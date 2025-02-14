@@ -131,8 +131,17 @@
 
 {#each facets as facet (facet.filter.id)}
     {@const Facet = facet.component}
-    <Facet filter={facet.filter} {filterChanged} {filterRemoved} bind:open={() => facet.open, (isOpen) => {
-            lastOpenFilterId = isOpen ? facet.filter.id : undefined;
-            facet.open = isOpen;
-     }} title={facet.title} />
+    <Facet
+        filter={facet.filter}
+        {filterChanged}
+        {filterRemoved}
+        bind:open={
+            () => facet.open,
+            (isOpen) => {
+                lastOpenFilterId = isOpen ? facet.filter.id : undefined;
+                facet.open = isOpen;
+            }
+        }
+        title={facet.title}
+    />
 {/each}
