@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
+    import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
     import DelayedRender from '$comp/delayed-render.svelte';
     import ErrorMessage from '$comp/error-message.svelte';
@@ -11,7 +12,7 @@
     import EventsDrawer from '$features/events/components/events-drawer.svelte';
     import { StatusFilter } from '$features/events/components/filters';
     import {
-        clearFilterCache,
+        buildFilterCacheKey,
         filterCacheVersionNumber,
         filterChanged,
         filterRemoved,
@@ -45,7 +46,11 @@
         limit: DEFAULT_LIMIT
     };
 
-    updateFilterCache(DEFAULT_PARAMS.filter, DEFAULT_FILTERS);
+    function filterCacheKey(filter: null | string): string {
+        return buildFilterCacheKey(organization.current, page.url.pathname, filter);
+    }
+
+    updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
     const params = queryParamsState({
         default: DEFAULT_PARAMS,
         pushHistory: true,
@@ -55,18 +60,21 @@
         }
     });
 
-    function onSwitchOrganization() {
-        clearFilterCache();
-        updateFilterCache(DEFAULT_PARAMS.filter, DEFAULT_FILTERS);
-        //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
-        Object.assign(params, DEFAULT_PARAMS);
-    }
+    watch(
+        () => organization.current,
+        () => {
+            updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
+            //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
+            Object.assign(params, DEFAULT_PARAMS);
+        },
+        { lazy: true }
+    );
 
-    let filters = $state(getFiltersFromCache(params.filter));
+    let filters = $state(getFiltersFromCache(filterCacheKey(params.filter), params.filter));
     watch(
         [() => params.filter, () => filterCacheVersionNumber()],
         ([filter]) => {
-            filters = getFiltersFromCache(filter);
+            filters = getFiltersFromCache(filterCacheKey(filter), filter);
         },
         { lazy: true }
     );
@@ -90,7 +98,7 @@
 
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
         const filter = toFilter(updatedFilters);
-        updateFilterCache(filter, updatedFilters);
+        updateFilterCache(filterCacheKey(filter), updatedFilters);
         params.filter = filter;
     }
 
@@ -167,7 +175,6 @@
     }
 
     useEventListener(document, 'refresh', async () => await loadData());
-    useEventListener(document, 'switch-organization', onSwitchOrganization);
     useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEventChanged((event as CustomEvent).detail));
 
     $effect(() => {

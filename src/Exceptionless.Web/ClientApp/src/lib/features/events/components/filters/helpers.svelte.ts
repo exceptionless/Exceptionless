@@ -1,7 +1,6 @@
 import type { IFilter } from '$comp/faceted-filter';
 
 import { organization } from '$features/organizations/context.svelte';
-import { SvelteMap } from 'svelte/reactivity';
 
 import { DateFilter, KeywordFilter, type ProjectFilter, type StringFilter } from './models.svelte';
 
@@ -9,7 +8,7 @@ let filterCacheVersion = $state(1);
 export function filterCacheVersionNumber() {
     return filterCacheVersion;
 }
-const filterCache = new SvelteMap<null | string, IFilter[]>();
+const filterCache = new Map<null | string, IFilter[]>();
 
 export function applyTimeFilter(filters: IFilter[], time: null | string): IFilter[] {
     const dateFilterIndex = filters.findIndex((f) => f.key === 'date-date');
@@ -25,8 +24,13 @@ export function applyTimeFilter(filters: IFilter[], time: null | string): IFilte
     return filters;
 }
 
+export function buildFilterCacheKey(organization: string | undefined, scope: string, filter: null | string): string {
+    return `${organization ?? ''}:${scope}:${filter ?? ''}`;
+}
+
 export function clearFilterCache() {
     filterCache.clear();
+    filterCacheVersion = 1;
 }
 
 export function filterChanged(filters: IFilter[], addedOrUpdated: IFilter): IFilter[] {
@@ -47,8 +51,7 @@ export function filterRemoved(filters: IFilter[], removed?: IFilter): IFilter[] 
     return filters.filter((f) => f.id !== removed.id);
 }
 
-export function getFiltersFromCache(filter: null | string): IFilter[] {
-    const cacheKey = filter ?? '';
+export function getFiltersFromCache(cacheKey: string, filter: null | string): IFilter[] {
     if (filterCache.has(cacheKey)) {
         const filters = filterCache.get(cacheKey)?.map((f) => f.clone()) ?? [];
         return filters;
@@ -140,8 +143,15 @@ export function toFilter(filters: IFilter[]): string {
         .trim();
 }
 
-export function updateFilterCache(filter: null | string, filters: IFilter[]) {
-    filterCache.set(filter ?? '', filters);
+export function updateFilterCache(cacheKey: string, filters: IFilter[]) {
+    // Prevent unbounded growth
+    if (filterCache.size >= 100) {
+        const oldestKey = filterCache.keys().next().value;
+        filterCache.delete(oldestKey as string);
+    }
+
+    filterCache.delete(cacheKey);
+    filterCache.set(cacheKey, filters);
     filterCacheVersion += 1;
 }
 
