@@ -1,22 +1,28 @@
 import type { IFilter } from '$comp/faceted-filter';
 
 import { organization } from '$features/organizations/context.svelte';
+import { SvelteMap } from 'svelte/reactivity';
 
 import { DateFilter, KeywordFilter, type ProjectFilter, type StringFilter } from './models.svelte';
 
-const filterCache = new Map<null | string, IFilter[]>();
+let filterCacheVersion = $state(1);
+export function filterCacheVersionNumber() {
+    return filterCacheVersion;
+}
+const filterCache = new SvelteMap<null | string, IFilter[]>();
 
-export function applyDefaultDateFilter(filters: IFilter[], time: null | string): IFilter[] {
-    if (!time) {
-        return filters;
+export function applyTimeFilter(filters: IFilter[], time: null | string): IFilter[] {
+    const dateFilterIndex = filters.findIndex((f) => f.key === 'date-date');
+    if (dateFilterIndex >= 0) {
+        if (time) {
+            const dateFilter = filters[dateFilterIndex] as DateFilter;
+            dateFilter.value = time;
+        }
+    } else if (time) {
+        filters.push(new DateFilter('date', time));
     }
 
-    const dateFilter = filters.find((f) => f.key === 'date-date');
-    if (dateFilter) {
-        return filters;
-    }
-
-    return [...filters, new DateFilter('date', time)];
+    return filters;
 }
 
 export function clearFilterCache() {
@@ -42,12 +48,14 @@ export function filterRemoved(filters: IFilter[], removed?: IFilter): IFilter[] 
 }
 
 export function getFiltersFromCache(filter: null | string): IFilter[] {
-    if (!filter) {
-        return [];
+    const cacheKey = filter ?? '';
+    if (filterCache.has(cacheKey)) {
+        const filters = filterCache.get(cacheKey)?.map((f) => f.clone()) ?? [];
+        return filters;
     }
 
-    if (filterCache.has(filter)) {
-        return filterCache.get(filter) ?? [];
+    if (!filter) {
+        return [];
     }
 
     // If filter is not in cache, return it in a new KeywordFilter instance.
@@ -133,9 +141,8 @@ export function toFilter(filters: IFilter[]): string {
 }
 
 export function updateFilterCache(filter: null | string, filters: IFilter[]) {
-    if (filter) {
-        filterCache.set(filter, filters);
-    }
+    filterCache.set(filter ?? '', filters);
+    filterCacheVersion += 1;
 }
 
 function processFilterRules(filters: IFilter[]): IFilter[] {
