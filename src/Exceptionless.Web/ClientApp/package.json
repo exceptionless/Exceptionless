@@ -68,7 +68,7 @@
         "mode-watcher": "^0.5.1",
         "oidc-client-ts": "^3.1.0",
         "pretty-ms": "^9.2.0",
-        "runed": "^0.23.3",
+        "runed": "^0.23.4",
         "svelte-sonner": "^0.3.28",
         "svelte-time": "^2.0.0",
         "sveltekit-superforms": "^2.23.1",
