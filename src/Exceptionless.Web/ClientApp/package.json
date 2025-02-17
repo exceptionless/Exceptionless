@@ -35,7 +35,7 @@
         "cross-env": "^7.0.3",
         "eslint": "^9.20.1",
         "eslint-config-prettier": "^10.0.1",
-        "eslint-plugin-perfectionist": "^4.8.0",
+        "eslint-plugin-perfectionist": "^4.9.0",
         "eslint-plugin-svelte": "^2.46.1",
         "npm-run-all": "^4.1.5",
         "postcss": "^8.5.2",
