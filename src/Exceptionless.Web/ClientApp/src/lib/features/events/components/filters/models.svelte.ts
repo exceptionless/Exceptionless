@@ -1,5 +1,6 @@
 import type { IFilter } from '$comp/faceted-filter';
 import type { PersistentEventKnownTypes } from '$features/events/models';
+import type { LogLevel } from '$features/events/models/event-data';
 import type { StackStatus } from '$features/stacks/models';
 
 import { quoteIfSpecialCharacters } from './helpers.svelte';
@@ -101,6 +102,39 @@ export class KeywordFilter implements IFilter {
         }
 
         return this.value!.trim();
+    }
+}
+
+export class LevelFilter implements IFilter {
+    public id: string = crypto.randomUUID();
+    public type: string = 'level';
+
+    public value = $state<LogLevel[]>([]);
+
+    public get key(): string {
+        return this.type;
+    }
+
+    constructor(value: LogLevel[] = []) {
+        this.value = value;
+    }
+
+    public clone(): IFilter {
+        const filter = new LevelFilter(this.value);
+        filter.id = this.id;
+        return filter;
+    }
+
+    public toFilter(): string {
+        if (this.value.length == 0) {
+            return '';
+        }
+
+        if (this.value.length == 1) {
+            return `level:${this.value[0]}`;
+        }
+
+        return `(${this.value.map((val) => `level:${val}`).join(' OR ')})`;
     }
 }
 
