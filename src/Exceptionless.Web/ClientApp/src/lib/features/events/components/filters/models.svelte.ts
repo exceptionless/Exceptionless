@@ -2,7 +2,7 @@ import type { IFilter } from '$comp/faceted-filter';
 import type { PersistentEventKnownTypes } from '$features/events/models';
 import type { StackStatus } from '$features/stacks/models';
 
-import { quoteIfSpecialCharacters } from './helpers';
+import { quoteIfSpecialCharacters } from './helpers.svelte';
 
 export class BooleanFilter implements IFilter {
     public id: string = crypto.randomUUID();
@@ -20,6 +20,12 @@ export class BooleanFilter implements IFilter {
         this.value = value;
     }
 
+    public clone(): IFilter {
+        const filter = new BooleanFilter(this.term, this.value);
+        filter.id = this.id;
+        return filter;
+    }
+
     public toFilter(): string {
         if (this.term === undefined) {
             return '';
@@ -30,14 +36,6 @@ export class BooleanFilter implements IFilter {
         }
 
         return `${this.term}:${this.value}`;
-    }
-
-    public toJSON() {
-        return {
-            term: this.term,
-            type: this.type,
-            value: this.value
-        };
     }
 }
 
@@ -57,6 +55,12 @@ export class DateFilter implements IFilter {
         this.value = value;
     }
 
+    public clone(): IFilter {
+        const filter = new DateFilter(this.term, this.value);
+        filter.id = this.id;
+        return filter;
+    }
+
     public toFilter(): string {
         if (this.term === undefined) {
             return '';
@@ -68,14 +72,6 @@ export class DateFilter implements IFilter {
 
         const date = this.value instanceof Date ? this.value.toISOString() : this.value;
         return `${this.term}:${quoteIfSpecialCharacters(date)}`;
-    }
-
-    public toJSON() {
-        return {
-            term: this.term,
-            type: this.type,
-            value: this.value
-        };
     }
 }
 
@@ -93,19 +89,18 @@ export class KeywordFilter implements IFilter {
         this.value = value;
     }
 
+    public clone(): IFilter {
+        const filter = new KeywordFilter(this.value);
+        filter.id = this.id;
+        return filter;
+    }
+
     public toFilter(): string {
         if (!this.value?.trim()) {
             return '';
         }
 
         return this.value!.trim();
-    }
-
-    public toJSON() {
-        return {
-            type: this.type,
-            value: this.value
-        };
     }
 }
 
@@ -125,6 +120,12 @@ export class NumberFilter implements IFilter {
         this.value = value;
     }
 
+    public clone(): IFilter {
+        const filter = new NumberFilter(this.term, this.value);
+        filter.id = this.id;
+        return filter;
+    }
+
     public toFilter(): string {
         if (this.term === undefined) {
             return '';
@@ -135,14 +136,6 @@ export class NumberFilter implements IFilter {
         }
 
         return `${this.term}:${this.value}`;
-    }
-
-    public toJSON() {
-        return {
-            term: this.term,
-            type: this.type,
-            value: this.value
-        };
     }
 }
 
@@ -160,6 +153,12 @@ export class ProjectFilter implements IFilter {
         this.value = value;
     }
 
+    public clone(): IFilter {
+        const filter = new ProjectFilter(this.value);
+        filter.id = this.id;
+        return filter;
+    }
+
     public toFilter(): string {
         if (this.value.length == 0) {
             return '';
@@ -170,13 +169,6 @@ export class ProjectFilter implements IFilter {
         }
 
         return `(${this.value.map((val) => `project:${val}`).join(' OR ')})`;
-    }
-
-    public toJSON() {
-        return {
-            type: this.type,
-            value: this.value
-        };
     }
 }
 
@@ -194,19 +186,18 @@ export class ReferenceFilter implements IFilter {
         this.value = value;
     }
 
+    public clone(): IFilter {
+        const filter = new ReferenceFilter(this.value);
+        filter.id = this.id;
+        return filter;
+    }
+
     public toFilter(): string {
         if (!this.value?.trim()) {
             return '';
         }
 
         return `reference:${quoteIfSpecialCharacters(this.value)}`;
-    }
-
-    public toJSON() {
-        return {
-            type: this.type,
-            value: this.value
-        };
     }
 }
 
@@ -224,6 +215,12 @@ export class SessionFilter implements IFilter {
         this.value = value;
     }
 
+    public clone(): IFilter {
+        const filter = new SessionFilter(this.value);
+        filter.id = this.id;
+        return filter;
+    }
+
     public toFilter(): string {
         if (!this.value?.trim()) {
             return '';
@@ -231,13 +228,6 @@ export class SessionFilter implements IFilter {
 
         const session = quoteIfSpecialCharacters(this.value);
         return `(reference:${session} OR ref.session:${session})`;
-    }
-
-    public toJSON() {
-        return {
-            type: this.type,
-            value: this.value
-        };
     }
 }
 
@@ -255,6 +245,12 @@ export class StatusFilter implements IFilter {
         this.value = value;
     }
 
+    public clone(): IFilter {
+        const filter = new StatusFilter(this.value);
+        filter.id = this.id;
+        return filter;
+    }
+
     public toFilter(): string {
         if (this.value.length == 0) {
             return '';
@@ -265,13 +261,6 @@ export class StatusFilter implements IFilter {
         }
 
         return `(${this.value.map((val) => `status:${val}`).join(' OR ')})`;
-    }
-
-    public toJSON() {
-        return {
-            type: this.type,
-            value: this.value
-        };
     }
 }
 
@@ -291,6 +280,12 @@ export class StringFilter implements IFilter {
         this.value = value;
     }
 
+    public clone(): IFilter {
+        const filter = new StringFilter(this.term, this.value);
+        filter.id = this.id;
+        return filter;
+    }
+
     public toFilter(): string {
         if (this.term === undefined) {
             return '';
@@ -301,14 +296,6 @@ export class StringFilter implements IFilter {
         }
 
         return `${this.term}:${quoteIfSpecialCharacters(this.value)}`;
-    }
-
-    public toJSON() {
-        return {
-            term: this.term,
-            type: this.type,
-            value: this.value
-        };
     }
 }
 
@@ -326,6 +313,12 @@ export class TypeFilter implements IFilter {
         this.value = value;
     }
 
+    public clone(): IFilter {
+        const filter = new TypeFilter(this.value);
+        filter.id = this.id;
+        return filter;
+    }
+
     public toFilter(): string {
         if (this.value.length == 0) {
             return '';
@@ -336,13 +329,6 @@ export class TypeFilter implements IFilter {
         }
 
         return `(${this.value.map((val) => `type:${val}`).join(' OR ')})`;
-    }
-
-    public toJSON() {
-        return {
-            type: this.type,
-            value: this.value
-        };
     }
 }
 
@@ -362,6 +348,12 @@ export class VersionFilter implements IFilter {
         this.value = value;
     }
 
+    public clone(): IFilter {
+        const filter = new VersionFilter(this.term, this.value);
+        filter.id = this.id;
+        return filter;
+    }
+
     public toFilter(): string {
         if (this.term === undefined) {
             return '';
@@ -372,13 +364,5 @@ export class VersionFilter implements IFilter {
         }
 
         return `${this.term}:${quoteIfSpecialCharacters(this.value)}`;
-    }
-
-    public toJSON() {
-        return {
-            term: this.term,
-            type: this.type,
-            value: this.value
-        };
     }
 }

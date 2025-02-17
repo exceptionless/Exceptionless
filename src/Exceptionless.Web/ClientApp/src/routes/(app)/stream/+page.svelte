@@ -12,13 +12,14 @@
     import { StatusFilter } from '$features/events/components/filters';
     import {
         clearFilterCache,
+        filterCacheVersionNumber,
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
         shouldRefreshPersistentEventChanged,
         toFilter,
         updateFilterCache
-    } from '$features/events/components/filters/helpers';
+    } from '$features/events/components/filters/helpers.svelte';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
@@ -30,7 +31,7 @@
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import ExternalLink from 'lucide-svelte/icons/external-link';
-    import { useEventListener } from 'runed';
+    import { useEventListener, watch } from 'runed';
     import { debounce } from 'throttle-debounce';
 
     let selectedEventId: null | string = $state(null);
@@ -62,12 +63,17 @@
     }
 
     let filters = $state(getFiltersFromCache(params.filter));
+    watch(
+        [() => params.filter, () => filterCacheVersionNumber()],
+        ([filter]) => {
+            filters = getFiltersFromCache(filter);
+        },
+        { lazy: true }
+    );
+
     $effect(() => {
         // Handle case where pop state loses the limit
         params.limit ??= DEFAULT_LIMIT;
-
-        // Track filter changes when the parameters change
-        filters = getFiltersFromCache(params.filter);
     });
 
     function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
@@ -85,7 +91,6 @@
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
         const filter = toFilter(updatedFilters);
         updateFilterCache(filter, updatedFilters);
-        filters = updatedFilters;
         params.filter = filter;
     }
 

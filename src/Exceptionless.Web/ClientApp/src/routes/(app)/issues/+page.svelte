@@ -11,15 +11,16 @@
     import EventsDrawer from '$features/events/components/events-drawer.svelte';
     import { type DateFilter, StatusFilter, TypeFilter } from '$features/events/components/filters';
     import {
-        applyDefaultDateFilter,
+        applyTimeFilter,
         clearFilterCache,
+        filterCacheVersionNumber,
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
         shouldRefreshPersistentEventChanged,
         toFilter,
         updateFilterCache
-    } from '$features/events/components/filters/helpers';
+    } from '$features/events/components/filters/helpers.svelte';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
@@ -33,7 +34,7 @@
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import ExternalLink from 'lucide-svelte/icons/external-link';
-    import { useEventListener } from 'runed';
+    import { useEventListener, watch } from 'runed';
     import { throttle } from 'throttle-debounce';
 
     // TODO: Update this page to use StackSummaryModel instead of EventSummaryModel.
@@ -80,13 +81,18 @@
         Object.assign(params, DEFAULT_PARAMS);
     }
 
-    let filters = $state(applyDefaultDateFilter(getFiltersFromCache(params.filter), params.time));
+    let filters = $state(applyTimeFilter(getFiltersFromCache(params.filter), params.time));
+    watch(
+        [() => params.filter, () => params.time, () => filterCacheVersionNumber()],
+        ([filter, time]) => {
+            filters = applyTimeFilter(getFiltersFromCache(filter), time);
+        },
+        { lazy: true }
+    );
+
     $effect(() => {
         // Handle case where pop state loses the limit
         params.limit ??= DEFAULT_LIMIT;
-
-        // Track filter changes when the parameters change
-        filters = applyDefaultDateFilter(getFiltersFromCache(params.filter), params.time);
     });
 
     function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
@@ -105,7 +111,6 @@
         const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
 
         updateFilterCache(filter, updatedFilters);
-        filters = updatedFilters;
         params.time = (updatedFilters.find((f) => f.type === 'date') as DateFilter)?.value as string;
         params.filter = filter;
     }

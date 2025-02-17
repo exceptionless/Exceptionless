@@ -9,6 +9,7 @@ export type FacetedFilterProps<TFilter extends IFilter> = {
 };
 
 export interface IFilter {
+    clone(): IFilter;
     id: string;
     readonly key: string;
     toFilter(): string;
