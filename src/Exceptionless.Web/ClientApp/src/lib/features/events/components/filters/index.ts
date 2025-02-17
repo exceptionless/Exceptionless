@@ -24,6 +24,9 @@ import StatusFacetedFilter from './status-faceted-filter.svelte';
 import StringFacetedFilterBuilder from './string-faceted-filter-builder.svelte';
 import StringFacetedFilterTrigger from './string-faceted-filter-trigger.svelte';
 import StringFacetedFilter from './string-faceted-filter.svelte';
+import TagFacetedFilterBuilder from './tag-faceted-filter-builder.svelte';
+import TagFacetedFilterTrigger from './tag-faceted-filter-trigger.svelte';
+import TagFacetedFilter from './tag-faceted-filter.svelte';
 import TypeFacetedFilterBuilder from './type-faceted-filter-builder.svelte';
 import TypeFacetedFilterTrigger from './type-faceted-filter-trigger.svelte';
 import TypeFacetedFilter from './type-faceted-filter.svelte';
@@ -84,6 +87,12 @@ export {
     StringFacetedFilterBuilder,
     StringFacetedFilterTrigger,
     StringFacetedFilterTrigger as StringTrigger,
+    TagFacetedFilter as Tag,
+    TagFacetedFilterBuilder as TagBuilder,
+    TagFacetedFilter,
+    TagFacetedFilterBuilder,
+    TagFacetedFilterTrigger,
+    TagFacetedFilterTrigger as TagTrigger,
     TypeFacetedFilter as Type,
     TypeFacetedFilterBuilder as TypeBuilder,
     TypeFacetedFilter,
@@ -99,15 +108,16 @@ export {
 };
 
 export {
-    type BooleanFilter,
-    type DateFilter,
+    BooleanFilter,
+    DateFilter,
     KeywordFilter,
-    type NumberFilter,
+    NumberFilter,
     ProjectFilter,
     ReferenceFilter,
     SessionFilter,
     StatusFilter,
-    type StringFilter,
+    StringFilter,
+    TagFilter,
     TypeFilter,
-    type VersionFilter
+    VersionFilter
 } from './models.svelte';
