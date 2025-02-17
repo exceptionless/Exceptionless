@@ -6,6 +6,9 @@ import DateFacetedFilterTrigger from './date-faceted-filter-trigger.svelte';
 import DateFacetedFilter from './date-faceted-filter.svelte';
 import KeywordFacetedFilterBuilder from './keyword-faceted-filter-builder.svelte';
 import KeywordFacetedFilter from './keyword-faceted-filter.svelte';
+import LevelFacetedFilterBuilder from './level-faceted-filter-builder.svelte';
+import LevelFacetedFilterTrigger from './level-faceted-filter-trigger.svelte';
+import LevelFacetedFilter from './level-faceted-filter.svelte';
 import NumberFacetedFilterBuilder from './number-faceted-filter-builder.svelte';
 import NumberFacetedFilterTrigger from './number-faceted-filter-trigger.svelte';
 import NumberFacetedFilter from './number-faceted-filter.svelte';
@@ -51,6 +54,12 @@ export {
     KeywordFacetedFilterBuilder as KeywordBuilder,
     KeywordFacetedFilter,
     KeywordFacetedFilterBuilder,
+    LevelFacetedFilter as Level,
+    LevelFacetedFilterBuilder as LevelBuilder,
+    LevelFacetedFilter,
+    LevelFacetedFilterBuilder,
+    LevelFacetedFilterTrigger,
+    LevelFacetedFilterTrigger as LevelTrigger,
     NumberFacetedFilter as Number,
     NumberFacetedFilterBuilder as NumberBuilder,
     NumberFacetedFilter,
@@ -111,6 +120,7 @@ export {
     BooleanFilter,
     DateFilter,
     KeywordFilter,
+    LevelFilter,
     NumberFilter,
     ProjectFilter,
     ReferenceFilter,

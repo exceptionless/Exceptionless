@@ -156,12 +156,9 @@ export function updateFilterCache(cacheKey: string, filters: IFilter[]) {
 }
 
 function processFilterRules(filters: IFilter[]): IFilter[] {
-    // 1. There can only be one date filter by term at a time.
-    // 2. There can only be one project filter.
-    // 3. There can only be one tag filter.
     const uniqueFilters = new Map<string, IFilter>();
     for (const filter of filters) {
-        const singletonFilterTypes = ['date', 'project', 'tag'];
+        const singletonFilterTypes = ['date', 'level', 'project', 'tag', 'type'];
         if (singletonFilterTypes.includes(filter.type)) {
             const existingFilter = uniqueFilters.get(filter.key);
             if (existingFilter) {

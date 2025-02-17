@@ -135,9 +135,7 @@
         {#if level}
             <Table.Row class="group">
                 <Table.Head class="w-40 whitespace-nowrap">Level</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger {changed} term="level" value={level} /></Table.Cell
-                >
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><EventsFacetedFilter.LevelTrigger {changed} value={[level]} /></Table.Cell>
                 <Table.Cell class="flex items-center"><LogLevel {level}></LogLevel></Table.Cell>
             </Table.Row>
         {/if}

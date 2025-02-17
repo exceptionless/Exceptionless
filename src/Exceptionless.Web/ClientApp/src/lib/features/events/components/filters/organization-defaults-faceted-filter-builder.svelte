@@ -32,7 +32,6 @@
         { term: 'id', title: 'Id' }, // TODO: Think about if this needed
         { term: 'source', title: 'Source' },
         { priority: 80, term: 'message', title: 'Message' },
-        { priority: 50, term: 'level', title: 'Log Level' }, // TODO: Do we need special log level
         { term: 'submission', title: 'Submission Method' },
         { term: 'ip', title: 'Ip Address' },
         { term: 'useragent', title: 'User Agent' },
@@ -72,6 +71,7 @@
 </script>
 
 <FacetedFilter.KeywordBuilder priority={15} />
+<FacetedFilter.LevelBuilder priority={50} />
 
 {#each eventsBooleanFilters as { priority, term, title }}
     <FacetedFilter.BooleanBuilder {priority} {term} {title} />

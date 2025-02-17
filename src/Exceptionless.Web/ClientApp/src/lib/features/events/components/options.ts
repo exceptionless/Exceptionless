@@ -1,5 +1,6 @@
 import { StackStatus } from '$features/stacks/models';
 
+import type { LogLevel } from '../models/event-data';
 import type { PersistentEventKnownTypes } from '../models/index';
 
 export const eventTypes: { label: string; value: PersistentEventKnownTypes }[] = [
@@ -30,6 +31,33 @@ export const eventTypes: { label: string; value: PersistentEventKnownTypes }[] =
     {
         label: 'Session End',
         value: 'sessionend'
+    }
+];
+
+export const logLevels: { label: string; value: LogLevel }[] = [
+    {
+        label: 'Trace',
+        value: 'trace'
+    },
+    {
+        label: 'Debug',
+        value: 'debug'
+    },
+    {
+        label: 'Information',
+        value: 'info'
+    },
+    {
+        label: 'Warning',
+        value: 'warn'
+    },
+    {
+        label: 'Error',
+        value: 'error'
+    },
+    {
+        label: 'Fatal',
+        value: 'fatal'
     }
 ];
 
