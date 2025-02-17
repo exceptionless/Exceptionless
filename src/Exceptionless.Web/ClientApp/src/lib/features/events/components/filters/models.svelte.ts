@@ -299,6 +299,39 @@ export class StringFilter implements IFilter {
     }
 }
 
+export class TagFilter implements IFilter {
+    public id: string = crypto.randomUUID();
+    public type: string = 'tag';
+
+    public value = $state<PersistentEventKnownTypes[]>([]);
+
+    public get key(): string {
+        return this.type;
+    }
+
+    constructor(value: PersistentEventKnownTypes[] = []) {
+        this.value = value;
+    }
+
+    public clone(): IFilter {
+        const filter = new TagFilter(this.value);
+        filter.id = this.id;
+        return filter;
+    }
+
+    public toFilter(): string {
+        if (this.value.length == 0) {
+            return '';
+        }
+
+        if (this.value.length == 1) {
+            return `tag:${this.value[0]}`;
+        }
+
+        return `(${this.value.map((val) => `tag:${val}`).join(' OR ')})`;
+    }
+}
+
 export class TypeFilter implements IFilter {
     public id: string = crypto.randomUUID();
     public type: string = 'type';

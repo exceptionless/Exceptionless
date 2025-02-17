@@ -154,8 +154,8 @@
                 <div class="flex flex-wrap gap-2">
                     {#each stack.tags as tag (tag)}
                         <Badge color="dark"
-                            ><EventsFacetedFilter.StringTrigger {changed} class="mr-1" term="tag" value={tag}
-                                ><Filter class="text-muted-foreground text-opacity-80 hover:text-secondary" /></EventsFacetedFilter.StringTrigger
+                            ><EventsFacetedFilter.TagTrigger {changed} class="mr-1" value={[tag]}
+                                ><Filter class="text-muted-foreground text-opacity-80 hover:text-secondary" /></EventsFacetedFilter.TagTrigger
                             >{tag}</Badge
                         >
                     {/each}

@@ -32,7 +32,6 @@
         { term: 'id', title: 'Id' }, // TODO: Think about if this needed
         { term: 'source', title: 'Source' },
         { priority: 80, term: 'message', title: 'Message' },
-        { priority: 70, term: 'tag', title: 'Tag' }, // TODO: Do we need special tags filter?
         { priority: 50, term: 'level', title: 'Log Level' }, // TODO: Do we need special log level
         { term: 'submission', title: 'Submission Method' },
         { term: 'ip', title: 'Ip Address' },
@@ -101,6 +100,7 @@
     <FacetedFilter.StringBuilder {priority} {term} {title} />
 {/each}
 
+<FacetedFilter.TagBuilder priority={70} />
 <FacetedFilter.TypeBuilder priority={50} />
 
 {#each eventsVersionFilters as { priority, term, title }}

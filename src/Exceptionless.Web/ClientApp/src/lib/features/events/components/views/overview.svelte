@@ -209,8 +209,8 @@
                 <Table.Cell class="flex flex-wrap items-center justify-start gap-2 overflow-auto">
                     {#each event.tags as tag (tag)}
                         <Badge color="dark"
-                            ><EventsFacetedFilter.StringTrigger {changed} class="mr-1" term="tag" value={tag}
-                                ><Filter class="text-muted-foreground text-opacity-80 hover:text-secondary" /></EventsFacetedFilter.StringTrigger
+                            ><EventsFacetedFilter.TagTrigger {changed} class="mr-1" value={[tag]}
+                                ><Filter class="text-muted-foreground text-opacity-80 hover:text-secondary" /></EventsFacetedFilter.TagTrigger
                             >{tag}</Badge
                         >
                     {/each}
