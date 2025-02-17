@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
+    import { page } from '$app/state';
     import AutomaticRefreshIndicatorButton from '$comp/automatic-refresh-indicator-button.svelte';
     import * as DataTable from '$comp/data-table';
     import * as FacetedFilter from '$comp/faceted-filter';
@@ -12,7 +13,7 @@
     import { type DateFilter, StatusFilter, TypeFilter } from '$features/events/components/filters';
     import {
         applyTimeFilter,
-        clearFilterCache,
+        buildFilterCacheKey,
         filterCacheVersionNumber,
         filterChanged,
         filterRemoved,
@@ -63,7 +64,11 @@
         time: 'last week'
     };
 
-    updateFilterCache(DEFAULT_PARAMS.filter, DEFAULT_FILTERS);
+    function filterCacheKey(filter: null | string): string {
+        return buildFilterCacheKey(organization.current, page.url.pathname, filter);
+    }
+
+    updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
     const params = queryParamsState({
         default: DEFAULT_PARAMS,
         pushHistory: true,
@@ -74,18 +79,21 @@
         }
     });
 
-    function onSwitchOrganization() {
-        clearFilterCache();
-        updateFilterCache(DEFAULT_PARAMS.filter, DEFAULT_FILTERS);
-        //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
-        Object.assign(params, DEFAULT_PARAMS);
-    }
+    watch(
+        () => organization.current,
+        () => {
+            updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
+            //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
+            Object.assign(params, DEFAULT_PARAMS);
+        },
+        { lazy: true }
+    );
 
-    let filters = $state(applyTimeFilter(getFiltersFromCache(params.filter), params.time));
+    let filters = $state(applyTimeFilter(getFiltersFromCache(filterCacheKey(params.filter), params.filter), params.time));
     watch(
         [() => params.filter, () => params.time, () => filterCacheVersionNumber()],
         ([filter, time]) => {
-            filters = applyTimeFilter(getFiltersFromCache(filter), time);
+            filters = applyTimeFilter(getFiltersFromCache(filterCacheKey(filter), filter), time);
         },
         { lazy: true }
     );
@@ -110,7 +118,7 @@
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
         const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
 
-        updateFilterCache(filter, updatedFilters);
+        updateFilterCache(filterCacheKey(filter), updatedFilters);
         params.time = (updatedFilters.find((f) => f.type === 'date') as DateFilter)?.value as string;
         params.filter = filter;
     }
@@ -170,7 +178,6 @@
     }
 
     useEventListener(document, 'refresh', async () => await loadData());
-    useEventListener(document, 'switch-organization', onSwitchOrganization);
     useEventListener(document, 'StackChanged', async (event) => await onStackChanged((event as CustomEvent).detail));
 
     $effect(() => {
