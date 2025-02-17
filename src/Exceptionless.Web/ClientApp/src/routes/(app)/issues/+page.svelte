@@ -104,10 +104,7 @@
     });
 
     function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
-        if (addedOrUpdated.type !== 'type') {
-            updateFilters(filterChanged(filters ?? [], addedOrUpdated));
-        }
-
+        updateFilters(filterChanged(filters ?? [], addedOrUpdated));
         selectedStackId = undefined;
     }
 
