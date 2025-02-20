@@ -1,4 +1,3 @@
-using Exceptionless.Core;
 using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -13,22 +12,22 @@ using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Migrations;
 
-public class SetStackDuplicateSignatureMigrationTests : TestWithServices
+public class SetStackDuplicateSignatureMigrationTests : IntegrationTestsBase
 {
     private readonly StackData _stackData;
     private readonly IStackRepository _repository;
 
-    public SetStackDuplicateSignatureMigrationTests(ITestOutputHelper output) : base(output)
+    public SetStackDuplicateSignatureMigrationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _stackData = GetService<StackData>();
         _repository = GetService<IStackRepository>();
     }
 
-    protected override void RegisterServices(IServiceCollection services, AppOptions options)
+    protected override void RegisterServices(IServiceCollection services)
     {
         services.AddTransient<SetStackDuplicateSignature>();
         services.AddSingleton<ILock>(new EmptyLock());
-        base.RegisterServices(services, options);
+        base.RegisterServices(services);
     }
 
     [Fact]
@@ -44,6 +43,7 @@ public class SetStackDuplicateSignatureMigrationTests : TestWithServices
         var migration = GetService<SetStackDuplicateSignature>();
         var context = new MigrationContext(GetService<ILock>(), _logger, CancellationToken.None);
         await migration.RunAsync(context);
+        await RefreshDataAsync();
 
         string expectedDuplicateSignature = $"{stack.ProjectId}:{stack.SignatureHash}";
         var actualStack = await _repository.GetByIdAsync(stack.Id);
