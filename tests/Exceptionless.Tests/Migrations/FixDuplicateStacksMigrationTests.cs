@@ -11,6 +11,7 @@ using Foundatio.Utility;
 using Nest;
 using Xunit;
 using Xunit.Abstractions;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests.Migrations;
 
@@ -39,6 +40,7 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
     [Fact]
     public async Task WillMergeDuplicatedStacks()
     {
+        Log.DefaultMinimumLevel = LogLevel.Trace;
         var originalStack = _stackData.GenerateStack();
         originalStack.Id = ObjectId.GenerateNewId().ToString();
         originalStack.TotalOccurrences = 100;

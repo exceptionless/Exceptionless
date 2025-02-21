@@ -69,8 +69,6 @@ public sealed class PersistentEventQueryValidatorTests : TestWithServices
             return;
         }
 
-        // NOTE: we have to do this because we don't have access to the right query parser instance.
-        result = await EventFieldsQueryVisitor.RunAsync(result, context);
         Assert.Equal(expected, await GenerateQueryVisitor.RunAsync(result, context));
 
         var info = await _validator.ValidateQueryAsync(result);
