@@ -158,8 +158,8 @@ export function updateFilterCache(cacheKey: string, filters: IFilter[]) {
 function processFilterRules(filters: IFilter[]): IFilter[] {
     const uniqueFilters = new Map<string, IFilter>();
     for (const filter of filters) {
-        const singletonFilterTypes = ['date', 'level', 'project', 'tag', 'type'];
-        if (singletonFilterTypes.includes(filter.type)) {
+        const singletonFilterKeys = ['date-date', 'level', 'project', 'string-stack', 'tag', 'type'];
+        if (singletonFilterKeys.includes(filter.key)) {
             const existingFilter = uniqueFilters.get(filter.key);
             if (existingFilter) {
                 existingFilter.id = filter.id;
