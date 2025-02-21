@@ -29,7 +29,7 @@
 
                 <a class="ml-2 mr-14 flex dark:text-white md:min-w-[250px] lg:ml-3" href="./">
                     {#if isMediumScreenQuery.current}
-                        <Logo class="absolute top-[0px] mr-3 h-[65px]" />
+                        <Logo class="absolute top-[9px] mr-3 h-[45px]" />
                     {:else}
                         <img alt="Exceptionless Logo" class="mr-3 h-8" src={logoSmall} />
                     {/if}
