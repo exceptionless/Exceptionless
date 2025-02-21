@@ -11,6 +11,7 @@
     import * as Tooltip from '$comp/ui/tooltip';
     import { getProjectCountQuery, getStackCountQuery } from '$features/events/api.svelte';
     import * as EventsFacetedFilter from '$features/events/components/filters';
+    import { StringFilter } from '$features/events/components/filters';
     import { getStackQuery } from '$features/stacks/api.svelte';
     import { cardinality, max, min, sum } from '$shared/api/aggregations';
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
@@ -91,7 +92,7 @@
         <Card.Content class="space-y-4 pt-2">
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <Tooltip.Root>
-                    <Tooltip.Trigger class="flex flex-col items-center rounded-lg bg-muted p-2">
+                    <Tooltip.Trigger class="flex flex-col items-center rounded-lg bg-muted p-2" onclick={() => changed(new StringFilter('stack', stack.id))}>
                         <Calendar class="mb-1 size-6 text-primary" />
                         <span class="text-lg font-bold"><Number value={totalOccurrences} /></span>
                         <Muted>Total Events</Muted>
