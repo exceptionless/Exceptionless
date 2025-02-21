@@ -1,10 +1,13 @@
 <script lang="ts">
+    import type { DropDownItem } from '$features/shared/options';
+
     import Button from '$comp/ui/button/button.svelte';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import ChevronDown from 'lucide-svelte/icons/chevron-down';
 
     import { postChangeStatus, postMarkFixed, postMarkSnoozed } from '../api.svelte';
     import { Stack, StackStatus } from '../models';
+    import { stackStatuses } from '../options';
     import MarkStackDiscardedDialog from './dialogs/mark-stack-discarded-dialog.svelte';
     import MarkStackFixedInVersionDialog from './dialogs/mark-stack-fixed-in-version-dialog.svelte';
 
@@ -14,19 +17,11 @@
 
     let { stack }: Props = $props();
 
-    type Item = { label: string; value: StackStatus };
-    const items: Item[] = [
-        { label: 'Open', value: StackStatus.Open },
-        { label: 'Fixed', value: StackStatus.Fixed },
-        { label: 'Regressed', value: StackStatus.Regressed },
-        { label: 'Snoozed', value: StackStatus.Snoozed },
-        { label: 'Ignored', value: StackStatus.Ignored },
-        { label: 'Discarded', value: StackStatus.Discarded }
-    ];
-
     let openMarkStackDiscardedDialog = $state<boolean>(false);
     let openMarkStackFixedInVersionDialog = $state<boolean>(false);
-    let selected = $derived((items.find((item) => item.value === stack?.status) || items[items.length - 1]) as Item);
+    let selected = $derived(
+        (stackStatuses.find((option) => option.value === stack?.status) || stackStatuses[stackStatuses.length - 1]) as DropDownItem<StackStatus>
+    );
 
     const updateMarkFixed = postMarkFixed({
         route: {
