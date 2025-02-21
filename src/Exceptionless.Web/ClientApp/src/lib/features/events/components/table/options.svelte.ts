@@ -1,3 +1,4 @@
+import type { StackStatus } from '$features/stacks/models';
 import type { FetchClientResponse } from '@exceptionless/fetchclient';
 
 import NumberFormatter from '$comp/formatters/number.svelte';
@@ -84,7 +85,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
         columns.push(
             {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('status'),
-                cell: (prop) => renderComponent(StackStatusCell, { value: prop.getValue<string>() }),
+                cell: (prop) => renderComponent(StackStatusCell, { value: prop.getValue<StackStatus>() }),
                 enableSorting: false,
                 header: 'Status',
                 id: 'status',

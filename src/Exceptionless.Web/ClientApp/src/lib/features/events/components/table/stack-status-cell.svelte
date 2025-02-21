@@ -1,16 +1,18 @@
 <script lang="ts">
-    import { stackStatuses } from '../options';
+    import type { StackStatus } from '$features/stacks/models';
+
+    import { stackStatuses } from '$features/stacks/options';
 
     interface Props {
-        value: string;
+        value: StackStatus;
     }
 
     let { value }: Props = $props();
-    let status = $derived(stackStatuses.find((status) => status.value === value));
+    let label = $derived(stackStatuses.find((option) => option.value === value)?.label ?? value);
 </script>
 
-{#if status}
+{#if value}
     <div class="flex w-[100px] items-center">
-        <span>{status.label}</span>
+        <span>{label}</span>
     </div>
 {/if}

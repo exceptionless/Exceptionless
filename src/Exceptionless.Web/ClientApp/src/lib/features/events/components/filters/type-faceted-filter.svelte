@@ -2,7 +2,7 @@
     import type { FacetedFilterProps } from '$comp/faceted-filter';
 
     import * as FacetedFilter from '$comp/faceted-filter';
-    import { eventTypes } from '$features/events/components/options';
+    import { eventTypes } from '$features/events/options';
 
     import { TypeFilter } from './models.svelte';
 

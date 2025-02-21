@@ -2,7 +2,7 @@
     import type { FacetedFilterProps } from '$comp/faceted-filter';
 
     import * as FacetedFilter from '$comp/faceted-filter';
-    import { logLevels } from '$features/events/components/options';
+    import { logLevels } from '$features/events/options';
 
     import { LevelFilter } from './models.svelte';
 
