@@ -23,7 +23,7 @@
         {:else}
             {#each values as value (value)}
                 <Badge class="rounded-sm px-1 font-normal" variant="secondary">
-                    <span class="max-w-14 truncate">{@render displayValue(value)}</span>
+                    <span class="max-w-24 truncate md:max-w-48">{@render displayValue(value)}</span>
                 </Badge>
             {/each}
         {/if}
