@@ -232,7 +232,7 @@
 </Table.Root>
 
 {#if userEmail || userIdentity || userName || userDescription}
-    <H4 class="mb-2 mt-4">User Info</H4>
+    <H4 class="mt-4 mb-2">User Info</H4>
     <Table.Root>
         <Table.Body>
             {#if userEmail}
@@ -282,7 +282,7 @@
             <CopyToClipboardButton title="Copy Stack Trace to Clipboard" value={stackTrace}></CopyToClipboardButton>
         </div>
     </div>
-    <div class="mt-2 max-h-[300px] flex-grow overflow-auto text-xs">
+    <div class="mt-2 max-h-[300px] grow overflow-auto text-xs">
         {#if event.data?.['@error']}
             <StackTrace error={event.data['@error']} />
         {:else if event.data?.['@simple_error']}

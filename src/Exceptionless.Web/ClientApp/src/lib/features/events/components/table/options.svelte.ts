@@ -18,6 +18,7 @@ import {
     type VisibilityState
 } from '@tanstack/svelte-table';
 import { PersistedState } from 'runed';
+import { untrack } from 'svelte';
 
 import type { GetEventsMode, GetEventsParams } from '../../api.svelte';
 import type { EventSummaryModel, StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '../summary/index';
@@ -144,15 +145,15 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
 ) {
     let _parameters = $state(params);
     let _pageCount = $state(0);
+    let _columns = $state(getColumns<TSummaryModel>(untrack(() => _parameters.mode)));
     let _data = $state([] as TSummaryModel[]);
     let _loading = $state(false);
     let _meta = $state({} as FetchClientResponse<unknown>['meta']);
 
-    const columns = getColumns<TSummaryModel>(_parameters.mode);
     const [columnVisibility, setColumnVisibility] = createPersistedTableState('events-column-visibility', <VisibilityState>{});
     const [pagination, setPagination] = createTableState<PaginationState>({
         pageIndex: 0,
-        pageSize: _parameters.limit ?? DEFAULT_LIMIT
+        pageSize: untrack(() => _parameters.limit) ?? DEFAULT_LIMIT
     });
     const [sorting, setSorting] = createTableState<ColumnSort[]>([
         {
@@ -201,7 +202,12 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
     };
 
     const options = configureOptions({
-        columns,
+        get columns() {
+            return _columns;
+        },
+        set columns(value) {
+            _columns = value;
+        },
         get data() {
             return _data;
         },

@@ -15,6 +15,6 @@
 </Badge>
 <div class="hidden space-x-1 lg:flex">
     <Badge class="rounded-sm px-1 font-normal" variant="secondary">
-        <span class="md:max-w-120 max-w-60 truncate">{@render children()}</span>
+        <span class="max-w-60 truncate md:max-w-120">{@render children()}</span>
     </Badge>
 </div>

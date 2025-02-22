@@ -160,7 +160,7 @@
 {/if}
 
 {#if hasHeaders}
-    <H4 class="mb-2 mt-4">Headers</H4>
+    <H4 class="mt-4 mb-2">Headers</H4>
     <Table.Root>
         <Table.Header>
             <Table.Row>
@@ -180,7 +180,7 @@
 {/if}
 
 {#if hasCookies}
-    <H4 class="mb-2 mt-4">Cookie Values</H4>
+    <H4 class="mt-4 mb-2">Cookie Values</H4>
     <Table.Root>
         <Table.Header>
             <Table.Row>
