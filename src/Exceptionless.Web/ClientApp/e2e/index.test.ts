@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
-test('index page has expected h1', async ({ page }) => {
+test('default route should redirect to login page when unauthorized', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Log in to your account' })).toBeVisible();
+    await page.waitForURL('/next/login');
+    await expect(page.getByRole('button', { name: 'Log in' })).toBeVisible();
 });
