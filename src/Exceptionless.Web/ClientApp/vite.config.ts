@@ -1,7 +1,6 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { svelteTesting } from '@testing-library/svelte/vite';
-import Icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
 
 const aspNetConfig = getAspNetConfig();
@@ -11,13 +10,7 @@ export default defineConfig({
         sourcemap: true,
         target: 'esnext'
     },
-    plugins: [
-        sveltekit(),
-        tailwindcss(),
-        Icons({
-            compiler: 'svelte'
-        })
-    ],
+    plugins: [sveltekit(), tailwindcss()],
     server: {
         hmr: aspNetConfig.hmr,
         host: true,

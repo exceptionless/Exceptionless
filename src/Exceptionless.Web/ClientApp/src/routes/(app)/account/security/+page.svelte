@@ -17,12 +17,12 @@
         microsoftClientId
     } from '$features/auth/index.svelte';
     import { User } from '$features/users/models';
+    import Google from '$lib/assets/google.svg';
+    import Microsoft from '$lib/assets/microsoft.svg';
     import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
     import Facebook from 'lucide-svelte/icons/facebook';
     import GitHub from 'lucide-svelte/icons/github';
-    import Google from '~icons/mdi/google';
-    import Microsoft from '~icons/mdi/microsoft';
 
     const data = $state(new User());
 
@@ -115,7 +115,7 @@
             {#if !microsoftClientId}
                 <li class="pb-4">
                     <div class="flex items-center space-x-4">
-                        <Microsoft />
+                        <img alt="Microsoft" src={Microsoft} />
                         <div class="min-w-0 flex-1 font-semibold">Microsoft account</div>
                         <div class="inline-flex items-center">
                             {#if true}
@@ -132,7 +132,7 @@
             {#if !googleClientId}
                 <li class="py-4">
                     <div class="flex items-center space-x-4">
-                        <Google />
+                        <img alt="Google" src={Google} />
                         <div class="min-w-0 flex-1 font-semibold">Google account</div>
                         <div class="inline-flex items-center">
                             {#if false}
