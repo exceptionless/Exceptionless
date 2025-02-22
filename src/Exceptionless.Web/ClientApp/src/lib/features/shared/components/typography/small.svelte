@@ -8,7 +8,7 @@
     let { children, class: className, ...props }: Props = $props();
 </script>
 
-<small class={cn('text-sm font-medium leading-none', className)} {...props}>
+<small class={cn('text-sm leading-none font-medium', className)} {...props}>
     {#if children}
         {@render children()}
     {/if}

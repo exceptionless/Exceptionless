@@ -1,6 +1,8 @@
 import { sveltekit } from '@sveltejs/kit/vite';
+import tailwindcss from '@tailwindcss/vite';
+import { svelteTesting } from '@testing-library/svelte/vite';
 import Icons from 'unplugin-icons/vite';
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite';
 
 const aspNetConfig = getAspNetConfig();
 
@@ -11,6 +13,7 @@ export default defineConfig({
     },
     plugins: [
         sveltekit(),
+        tailwindcss(),
         Icons({
             compiler: 'svelte'
         })
@@ -66,7 +69,31 @@ export default defineConfig({
         strictPort: true
     },
     test: {
-        include: ['src/**/*.{test,spec}.{js,ts}']
+        workspace: [
+            {
+                extends: './vite.config.ts',
+                plugins: [svelteTesting()],
+
+                test: {
+                    clearMocks: true,
+                    environment: 'jsdom',
+                    exclude: ['src/lib/server/**'],
+                    include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
+                    name: 'client',
+                    setupFiles: ['./vitest-setup-client.ts']
+                }
+            },
+            {
+                extends: './vite.config.ts',
+
+                test: {
+                    environment: 'node',
+                    exclude: ['src/**/*.svelte.{test,spec}.{js,ts}'],
+                    include: ['src/**/*.{test,spec}.{js,ts}'],
+                    name: 'server'
+                }
+            }
+        ]
     }
 });
 

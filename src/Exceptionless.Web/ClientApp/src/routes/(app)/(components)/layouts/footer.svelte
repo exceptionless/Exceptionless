@@ -8,7 +8,7 @@
     const currentYear = new Date().getFullYear();
 </script>
 
-<div class="mx-4 my-6 text-sm text-muted-foreground md:flex md:items-center md:justify-between">
+<div class="text-muted-foreground mx-4 my-6 text-sm md:flex md:items-center md:justify-between">
     <ul class="mb-6 flex flex-wrap items-center md:mb-0">
         <li>
             &copy; {currentYear}

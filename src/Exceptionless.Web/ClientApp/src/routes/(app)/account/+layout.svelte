@@ -26,7 +26,7 @@
     <Separator class="mx-6 my-6 w-auto" />
 
     <Card.Content>
-        <div class="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
+        <div class="flex flex-col space-y-8 lg:flex-row lg:space-y-0 lg:space-x-12">
             <aside class="-mx-4 lg:w-1/5">
                 <SidebarNav routes={filteredRoutes} />
             </aside>

@@ -17,7 +17,7 @@
     <Command.List>
         <Command.Separator />
         {#if showApply}
-            <Command.Item class="justify-center text-center font-bold text-primary" onSelect={apply}>Apply filter</Command.Item>
+            <Command.Item class="text-primary justify-center text-center font-bold" onSelect={apply}>Apply filter</Command.Item>
             <Command.Separator />
         {/if}
         {#if showClear}

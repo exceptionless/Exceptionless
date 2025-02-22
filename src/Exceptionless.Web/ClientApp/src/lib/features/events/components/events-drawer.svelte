@@ -144,7 +144,7 @@
 </Table.Root>
 
 {#if eventResponse.isSuccess}
-    <Tabs.Root class="mb-4 mt-4" value={activeTab}>
+    <Tabs.Root class="mt-4 mb-4" value={activeTab}>
         <Tabs.List class="mb-4 w-full justify-normal">
             {#each tabs as tab (tab)}
                 <Tabs.Trigger value={tab}>{tab}</Tabs.Trigger>
