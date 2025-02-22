@@ -145,10 +145,10 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
 ) {
     let _parameters = $state(params);
     let _pageCount = $state(0);
+    let _columns = $state(getColumns<TSummaryModel>(untrack(() => _parameters.mode)));
     let _data = $state([] as TSummaryModel[]);
     let _loading = $state(false);
     let _meta = $state({} as FetchClientResponse<unknown>['meta']);
-    const _columns = $derived(getColumns<TSummaryModel>(_parameters.mode));
 
     const [columnVisibility, setColumnVisibility] = createPersistedTableState('events-column-visibility', <VisibilityState>{});
     const [pagination, setPagination] = createTableState<PaginationState>({
@@ -204,6 +204,9 @@ export function getTableContext<TSummaryModel extends SummaryModel<SummaryTempla
     const options = configureOptions({
         get columns() {
             return _columns;
+        },
+        set columns(value) {
+            _columns = value;
         },
         get data() {
             return _data;
