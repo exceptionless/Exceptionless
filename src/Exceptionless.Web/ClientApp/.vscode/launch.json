@@ -62,6 +62,6 @@
             "url": "http://localhost:6006",
             "webRoot": "${workspaceFolder}",
             "preLaunchTask": "npm run storybook"
-        },
+        }
     ]
 }
