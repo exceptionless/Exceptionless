@@ -67,13 +67,13 @@
     >
 </Table.Root>
 
-<div class="mb-2 mt-4 flex justify-between">
+<div class="mt-4 mb-2 flex justify-between">
     <H4>Stack Trace</H4>
     <div class="flex justify-end">
         <CopyToClipboardButton title="Copy Stack Trace to Clipboard" value={stackTrace}></CopyToClipboardButton>
     </div>
 </div>
-<div class="mb-4 mt-2 overflow-auto text-xs">
+<div class="mt-2 mb-4 overflow-auto text-xs">
     {#if event.data?.['@error']}
         <StackTrace error={event.data['@error']} />
     {:else if event.data?.['@simple_error']}
@@ -88,7 +88,7 @@
 {/each}
 
 {#if modules.length}
-    <div class="mb-2 mt-4 flex items-center justify-between">
+    <div class="mt-4 mb-2 flex items-center justify-between">
         <H4>Modules</H4>
     </div>
     <Table.Root>

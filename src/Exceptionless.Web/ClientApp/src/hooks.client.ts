@@ -1,3 +1,5 @@
+import type { ServerInit } from '@sveltejs/kit';
+
 import { env } from '$env/dynamic/public';
 import { Exceptionless, toError } from '@exceptionless/browser';
 
@@ -8,13 +10,15 @@ if (PUBLIC_BASE_URL) {
     env.PUBLIC_BASE_URL = PUBLIC_BASE_URL;
 }
 
-await Exceptionless.startup((c) => {
-    c.apiKey = env.PUBLIC_EXCEPTIONLESS_API_KEY;
-    c.serverUrl = env.PUBLIC_EXCEPTIONLESS_SERVER_URL || window.location.origin;
+export const init: ServerInit = async () => {
+    await Exceptionless.startup((c) => {
+        c.apiKey = env.PUBLIC_EXCEPTIONLESS_API_KEY;
+        c.serverUrl = env.PUBLIC_EXCEPTIONLESS_SERVER_URL || window.location.origin;
 
-    c.defaultTags.push('UI', 'Svelte');
-    c.settings['@@log:*'] = 'debug';
-});
+        c.defaultTags.push('UI', 'Svelte');
+        c.settings['@@log:*'] = 'debug';
+    });
+};
 
 /** @type {import('@sveltejs/kit').HandleClientError} */
 export async function handleError({ error, event, message, status }) {

@@ -194,7 +194,7 @@
         {/snippet}
     </Sidebar>
     <div class="flex w-full overflow-hidden pt-16">
-        <div class="w-full text-secondary-foreground">
+        <div class="text-secondary-foreground w-full">
             <main class="px-4 pt-4">
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
                 {#key page.url.pathname}

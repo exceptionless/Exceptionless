@@ -21,13 +21,13 @@
     const isMediumScreenQuery = new MediaQuery('(min-width: 768px)');
 </script>
 
-<nav class="fixed z-30 w-full border-b bg-background text-foreground">
+<nav class="bg-background text-foreground fixed z-30 w-full border-b">
     <div class="px-3 py-3 lg:px-5 lg:pl-3">
         <div class="flex items-center justify-between">
             <div class="flex items-center justify-start">
                 <Sidebar.Trigger variant="outline" class="size-9" />
 
-                <a class="ml-2 mr-14 flex dark:text-white md:min-w-[250px] lg:ml-3" href="./">
+                <a class="mr-14 ml-2 flex md:min-w-[250px] lg:ml-3 dark:text-white" href="./">
                     {#if isMediumScreenQuery.current}
                         <Logo class="absolute top-[9px] mr-3 h-[45px]" />
                     {:else}

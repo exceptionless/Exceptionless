@@ -92,8 +92,8 @@
         <Card.Content class="space-y-4 pt-2">
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <Tooltip.Root>
-                    <Tooltip.Trigger class="flex flex-col items-center rounded-lg bg-muted p-2" onclick={() => changed(new StringFilter('stack', stack.id))}>
-                        <Calendar class="mb-1 size-6 text-primary" />
+                    <Tooltip.Trigger class="bg-muted flex flex-col items-center rounded-lg p-2" onclick={() => changed(new StringFilter('stack', stack.id))}>
+                        <Calendar class="text-primary mb-1 size-6" />
                         <span class="text-lg font-bold"><Number value={totalOccurrences} /></span>
                         <Muted>Total Events</Muted>
                     </Tooltip.Trigger>
@@ -102,16 +102,16 @@
                     </Tooltip.Content>
                 </Tooltip.Root>
                 <Tooltip.Root>
-                    <Tooltip.Trigger class="flex flex-col items-center rounded-lg bg-muted p-2">
-                        <Users class="mb-1 size-6 text-primary" />
+                    <Tooltip.Trigger class="bg-muted flex flex-col items-center rounded-lg p-2">
+                        <Users class="text-primary mb-1 size-6" />
                         <span class="text-lg font-bold"><Percentage percent={(userCount / totalUserCount) * 100.0} /></span>
                         <Muted>Users Affected</Muted>
                     </Tooltip.Trigger>
                     <Tooltip.Content side="bottom"><Number value={userCount} /> of <Number value={totalUserCount} /> Users Affected</Tooltip.Content>
                 </Tooltip.Root>
                 <Tooltip.Root>
-                    <Tooltip.Trigger class="flex flex-col items-center rounded-lg bg-muted p-2">
-                        <FirstOccurrence class="mb-1 size-6 text-muted-foreground" />
+                    <Tooltip.Trigger class="bg-muted flex flex-col items-center rounded-lg p-2">
+                        <FirstOccurrence class="text-muted-foreground mb-1 size-6" />
                         <span class="text-lg font-bold"><TimeAgo value={firstOccurrence} /></span>
                         <Muted>First</Muted>
                     </Tooltip.Trigger>
@@ -120,8 +120,8 @@
                     </Tooltip.Content>
                 </Tooltip.Root>
                 <Tooltip.Root>
-                    <Tooltip.Trigger class="flex flex-col items-center rounded-lg bg-muted p-2">
-                        <LastOccurrence class="mb-1 size-6 text-muted-foreground" />
+                    <Tooltip.Trigger class="bg-muted flex flex-col items-center rounded-lg p-2">
+                        <LastOccurrence class="text-muted-foreground mb-1 size-6" />
                         <span class="text-lg font-bold"><TimeAgo value={lastOccurrence} /></span>
                         <Muted>Last</Muted>
                     </Tooltip.Trigger>
@@ -185,7 +185,7 @@
         <Card.Content class="space-y-4 pt-2">
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 {#each { length: 4 } as name, index (`${name}-${index}`)}
-                    <div class="flex flex-col items-center rounded-lg bg-muted p-2">
+                    <div class="bg-muted flex flex-col items-center rounded-lg p-2">
                         <Skeleton class="mb-1 size-6" />
                         <Skeleton class="mb-1 h-[28px] w-[60px]" />
                         <Skeleton class="h-[24px] w-[80px]" />

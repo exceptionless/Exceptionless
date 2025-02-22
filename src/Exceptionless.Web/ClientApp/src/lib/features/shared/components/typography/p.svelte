@@ -8,7 +8,7 @@
     let { children, class: className, ...props }: Props = $props();
 </script>
 
-<p class={cn('leading-7 [&:not(:first-child)]:mt-6', className)} {...props}>
+<p class={cn('leading-7 not-first:mt-6', className)} {...props}>
     {#if children}
         {@render children()}
     {/if}

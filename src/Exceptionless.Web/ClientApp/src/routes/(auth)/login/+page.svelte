@@ -23,13 +23,13 @@
         microsoftClientId
     } from '$features/auth/index.svelte';
     import { Login } from '$features/auth/models';
+    import Google from '$lib/assets/google.svg';
+    import Microsoft from '$lib/assets/microsoft.svg';
     import { applyServerSideErrors } from '$shared/validation';
     import Facebook from 'lucide-svelte/icons/facebook';
     import GitHub from 'lucide-svelte/icons/github';
     import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';
-    import Google from '~icons/mdi/google';
-    import Microsoft from '~icons/mdi/microsoft';
 
     const redirectUrl = page.url.searchParams.get('redirect') ?? '/next';
 
@@ -117,12 +117,12 @@
             <div class="auto-cols-2 grid grid-flow-col grid-rows-2 gap-4">
                 {#if microsoftClientId}
                     <Button aria-label="Login with Microsoft" onclick={() => liveLogin(redirectUrl)}>
-                        <Microsoft /> Microsoft
+                        <img alt="Microsoft" src={Microsoft} /> Microsoft
                     </Button>
                 {/if}
                 {#if googleClientId}
                     <Button aria-label="Login with Google" onclick={() => googleLogin(redirectUrl)}>
-                        <Google /> Google
+                        <img alt="Google" src={Google} /> Google
                     </Button>
                 {/if}
                 {#if facebookClientId}

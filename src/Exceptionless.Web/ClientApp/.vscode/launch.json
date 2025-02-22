@@ -32,6 +32,14 @@
             "preLaunchTask": "npm run dev:api"
         },
         {
+            "type": "msedge",
+            "request": "launch",
+            "name": "Storybook (Edge)",
+            "url": "http://localhost:6006",
+            "webRoot": "${workspaceFolder}",
+            "preLaunchTask": "npm run storybook"
+        },
+        {
             "type": "chrome",
             "request": "launch",
             "name": "Web (Chrome)",
@@ -46,6 +54,14 @@
             "url": "http://localhost:5173/next",
             "webRoot": "${workspaceFolder}",
             "preLaunchTask": "npm run dev:api"
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Storybook (Chrome)",
+            "url": "http://localhost:6006",
+            "webRoot": "${workspaceFolder}",
+            "preLaunchTask": "npm run storybook"
         }
     ]
 }

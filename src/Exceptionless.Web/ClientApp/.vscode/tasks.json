@@ -122,6 +122,18 @@
             "script": "test:unit",
             "problemMatcher": [],
             "label": "npm run test:unit"
+        },
+        {
+            "type": "npm",
+            "script": "test:e2e",
+            "problemMatcher": [],
+            "label": "npm run test:e2e"
+        },
+        {
+            "type": "npm",
+            "script": "storybook",
+            "problemMatcher": [],
+            "label": "npm run storybook"
         }
     ]
 }

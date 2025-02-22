@@ -53,18 +53,18 @@
                     {/snippet}
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content
-                    class="w-[--bits-dropdown-menu-anchor-width] min-w-56 rounded-lg"
+                    class="w-(--bits-dropdown-menu-anchor-width) min-w-56 rounded-lg"
                     align="start"
                     side={sidebar.isMobile ? 'bottom' : 'right'}
                     sideOffset={4}
                 >
-                    <DropdownMenu.Label class="text-xs text-muted-foreground">Organizations</DropdownMenu.Label>
+                    <DropdownMenu.Label class="text-muted-foreground text-xs">Organizations</DropdownMenu.Label>
                     {#if organizations}
                         {#each organizations as organization, index (organization.name)}
                             <DropdownMenu.Item
                                 onSelect={() => onOrganizationSelected(organization)}
                                 data-active={organization.id === selected}
-                                class="gap-2 p-2 data-[active=true]:bg-accent data-[active=true]:text-accent-foreground"
+                                class="data-[active=true]:bg-accent data-[active=true]:text-accent-foreground gap-2 p-2"
                             >
                                 <Avatar.Root class="size-6 rounded-lg border" title={organization.name}>
                                     <Avatar.Fallback class="rounded-lg">{getInitials(organization.name)}</Avatar.Fallback>
@@ -76,10 +76,10 @@
                     {/if}
                     <DropdownMenu.Separator />
                     <DropdownMenu.Item class="gap-2 p-2">
-                        <div class="flex size-6 items-center justify-center rounded-md border bg-background">
+                        <div class="bg-background flex size-6 items-center justify-center rounded-md border">
                             <Plus class="size-4" />
                         </div>
-                        <div class="font-medium text-muted-foreground">Add organization</div>
+                        <div class="text-muted-foreground font-medium">Add organization</div>
                     </DropdownMenu.Item>
                 </DropdownMenu.Content>
             </DropdownMenu.Root>

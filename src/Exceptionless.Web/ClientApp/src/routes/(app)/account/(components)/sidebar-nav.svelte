@@ -21,7 +21,7 @@
     });
 </script>
 
-<nav class={cn('flex space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1', className)} {...props}>
+<nav class={cn('flex space-x-2 lg:flex-col lg:space-y-1 lg:space-x-0', className)} {...props}>
     {#each routes as route (route.href)}
         {@const isActive = page.url.pathname === route.href}
 
@@ -32,7 +32,7 @@
             variant="ghost"
         >
             {#if isActive}
-                <div class="absolute inset-0 rounded-md bg-muted" in:send={{ key: 'active-sidebar-tab' }} out:receive={{ key: 'active-sidebar-tab' }}></div>
+                <div class="bg-muted absolute inset-0 rounded-md" in:send={{ key: 'active-sidebar-tab' }} out:receive={{ key: 'active-sidebar-tab' }}></div>
             {/if}
             <div class="relative">
                 {route.title}
