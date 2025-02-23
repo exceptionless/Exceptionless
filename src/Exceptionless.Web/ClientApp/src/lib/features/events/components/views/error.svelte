@@ -2,7 +2,7 @@
     import type { IFilter } from '$comp/faceted-filter';
 
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
-    import { H4 } from '$comp/typography';
+    import { H3 } from '$comp/typography';
     import * as Table from '$comp/ui/table';
     import * as EventsFacetedFilter from '$features/events/components/filters';
     import { getErrorData, getErrorType, getMessage, getStackTrace } from '$features/events/persistent-event';
@@ -33,7 +33,7 @@
 <Table.Root>
     <Table.Body>
         <Table.Row class="group">
-            <Table.Head class="w-40 whitespace-nowrap">Error Type</Table.Head>
+            <Table.Head class="w-40 font-semibold whitespace-nowrap">Error Type</Table.Head>
             <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
                 ><EventsFacetedFilter.StringTrigger {changed} term="error.type" value={errorType} /></Table.Cell
             >
@@ -41,7 +41,7 @@
         </Table.Row>
         {#if message}
             <Table.Row class="group">
-                <Table.Head class="w-40 whitespace-nowrap">Message</Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap">Message</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
                     ><EventsFacetedFilter.StringTrigger {changed} term="error.message" value={message} /></Table.Cell
                 >
@@ -50,7 +50,7 @@
         {/if}
         {#if code}
             <Table.Row class="group">
-                <Table.Head class="w-40 whitespace-nowrap">Code</Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap">Code</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
                     ><EventsFacetedFilter.VersionTrigger {changed} term="error.code" value={code} /></Table.Cell
                 >
@@ -59,7 +59,7 @@
         {/if}
         {#if submissionMethod}
             <Table.Row>
-                <Table.Head class="w-40 whitespace-nowrap">Submission Method</Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap">Submission Method</Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell>{submissionMethod}</Table.Cell>
             </Table.Row>
@@ -68,7 +68,7 @@
 </Table.Root>
 
 <div class="mt-4 mb-2 flex justify-between">
-    <H4>Stack Trace</H4>
+    <H3>Stack Trace</H3>
     <div class="flex justify-end">
         <CopyToClipboardButton title="Copy Stack Trace to Clipboard" value={stackTrace}></CopyToClipboardButton>
     </div>
@@ -81,15 +81,18 @@
     {/if}
 </div>
 
-{#each errorData as ed}
-    <div class="mt-2">
-        <ExtendedDataItem canPromote={false} data={ed.data} title={ed.title}></ExtendedDataItem>
-    </div>
-{/each}
+{#if errorData.length}
+    <H3 class="mt-2 mb-2">Additional Data</H3>
+    {#each errorData as ed}
+        <div class="mt-2">
+            <ExtendedDataItem canPromote={false} data={ed.data} title={ed.type}></ExtendedDataItem>
+        </div>
+    {/each}
+{/if}
 
 {#if modules.length}
     <div class="mt-4 mb-2 flex items-center justify-between">
-        <H4>Modules</H4>
+        <H3>Modules</H3>
     </div>
     <Table.Root>
         <Table.Header>

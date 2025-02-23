@@ -117,25 +117,25 @@
     <Table.Body>
         <Table.Row class="group">
             {#if eventResponse.isSuccess}
-                <Table.Head class="w-40 whitespace-nowrap">Occurred On</Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap">Occurred On</Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell class="flex items-center"
                     ><DateTime value={eventResponse.data.date}></DateTime> (<TimeAgo value={eventResponse.data.date}></TimeAgo>)</Table.Cell
                 >
             {:else}
-                <Table.Head class="w-40 whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>{/if}
         </Table.Row>
         <Table.Row class="group">
             {#if projectResponse.isSuccess}
-                <Table.Head class="w-40 whitespace-nowrap">Project</Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap">Project</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
                     ><EventsFacetedFilter.ProjectTrigger {changed} class="mr-0" value={[projectResponse.data.id!]} /></Table.Cell
                 >
                 <Table.Cell>{projectResponse.data.name}</Table.Cell>
             {:else}
-                <Table.Head class="w-40 whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>
             {/if}
@@ -145,7 +145,7 @@
 
 {#if eventResponse.isSuccess}
     <Tabs.Root class="mt-4 mb-4" value={activeTab}>
-        <Tabs.List class="mb-4 w-full justify-normal">
+        <Tabs.List class="w-full justify-normal">
             {#each tabs as tab (tab)}
                 <Tabs.Trigger value={tab}>{tab}</Tabs.Trigger>
             {/each}
@@ -177,7 +177,7 @@
         <Table.Body>
             {#each { length: 5 } as name, index (`${name}-${index}`)}
                 <Table.Row class="group">
-                    <Table.Head class="w-40 whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
+                    <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
                     <Table.Cell class="w-4 pr-0"></Table.Cell>
                     <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>
                 </Table.Row>
