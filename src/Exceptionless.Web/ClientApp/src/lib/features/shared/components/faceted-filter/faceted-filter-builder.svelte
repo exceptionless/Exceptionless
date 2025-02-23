@@ -96,7 +96,7 @@
 <Popover.Root bind:open>
     <Popover.Trigger>
         {#snippet children()}
-            <Button class="h-8" size="sm" variant="outline">
+            <Button class="gap-x-1 px-3" size="lg" variant="outline">
                 <Circle class="mr-2 size-4" /> Filter
             </Button>
         {/snippet}
