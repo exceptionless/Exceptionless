@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
 
-    import { H4 } from '$comp/typography';
+    import { H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Table from '$comp/ui/table';
     import * as EventsFacetedFilter from '$features/events/components/filters';
@@ -51,14 +51,14 @@
     <Table.Body>
         {#if request.http_method}
             <Table.Row>
-                <Table.Head class="w-40 whitespace-nowrap">HTTP Method</Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap">HTTP Method</Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell>{request.http_method}</Table.Cell>
             </Table.Row>
         {/if}
         {#if requestUrl}
             <Table.Row class="group">
-                <Table.Head class="w-40 whitespace-nowrap">URL</Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap">URL</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
                     ><EventsFacetedFilter.StringTrigger {changed} term="path" value={requestUrlPath} /></Table.Cell
                 >
@@ -70,7 +70,7 @@
             </Table.Row>
         {:else if requestUrlPath}
             <Table.Row class="group">
-                <Table.Head class="w-40 whitespace-nowrap">URL</Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap">URL</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
                     ><EventsFacetedFilter.StringTrigger {changed} term="path" value={requestUrlPath} /></Table.Cell
                 >
@@ -79,7 +79,7 @@
         {/if}
         {#if request.referrer}
             <Table.Row>
-                <Table.Head class="w-40 whitespace-nowrap">Referrer</Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap">Referrer</Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell class="flex items-center gap-x-1"
                     >{request.referrer}<Button
@@ -95,7 +95,7 @@
         {/if}
         {#if request.client_ip_address}
             <Table.Row class="group">
-                <Table.Head class="w-40 whitespace-nowrap">Client IP Address</Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap">Client IP Address</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
                     ><EventsFacetedFilter.StringTrigger {changed} term="ip" value={request.client_ip_address} /></Table.Cell
                 >
@@ -104,7 +104,7 @@
         {/if}
         {#if request.user_agent}
             <Table.Row class="group">
-                <Table.Head class="w-40 whitespace-nowrap">User Agent</Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap">User Agent</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
                     ><EventsFacetedFilter.StringTrigger {changed} term="useragent" value={request.user_agent} /></Table.Cell
                 >
@@ -113,7 +113,7 @@
         {/if}
         {#if device}
             <Table.Row class="group">
-                <Table.Head class="w-40 whitespace-nowrap">Device</Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap">Device</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
                     ><EventsFacetedFilter.StringTrigger {changed} term="device" value={device} /></Table.Cell
                 >
@@ -122,7 +122,7 @@
         {/if}
         {#if browser}
             <Table.Row class="group">
-                <Table.Head class="w-40 whitespace-nowrap">Browser</Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap">Browser</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
                     ><EventsFacetedFilter.StringTrigger {changed} term="browser" value={browser} /></Table.Cell
                 >
@@ -138,7 +138,7 @@
         {/if}
         {#if os}
             <Table.Row class="group">
-                <Table.Head class="w-40 whitespace-nowrap">Browser OS</Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap">Browser OS</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><EventsFacetedFilter.StringTrigger {changed} term="os" value={os} /></Table.Cell>
                 <Table.Cell class="flex items-center"
                     >{os}
@@ -160,7 +160,7 @@
 {/if}
 
 {#if hasHeaders}
-    <H4 class="mt-4 mb-2">Headers</H4>
+    <H3 class="mt-4 mb-2">Headers</H3>
     <Table.Root>
         <Table.Header>
             <Table.Row>
@@ -180,7 +180,7 @@
 {/if}
 
 {#if hasCookies}
-    <H4 class="mt-4 mb-2">Cookie Values</H4>
+    <H3 class="mt-4 mb-2">Cookie Values</H3>
     <Table.Root>
         <Table.Header>
             <Table.Row>

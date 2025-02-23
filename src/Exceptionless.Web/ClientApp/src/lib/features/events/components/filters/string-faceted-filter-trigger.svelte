@@ -19,6 +19,6 @@
     {#if children}
         {@render children()}
     {:else}
-        <Filter class="text-muted-foreground text-opacity-50 hover:text-primary" />
+        <Filter class="text-muted-foreground text-opacity-50 hover:text-primary size-5" />
     {/if}
 </A>

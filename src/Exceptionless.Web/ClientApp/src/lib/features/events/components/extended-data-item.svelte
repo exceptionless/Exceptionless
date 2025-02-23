@@ -81,7 +81,7 @@
         </div>
     </div>
 
-    <div class="mt-2 grow overflow-auto text-xs">
+    <div class="grow overflow-auto text-xs">
         {#if showRaw}
             <pre class="bg-muted rounded p-2 break-words whitespace-pre-wrap"><Code class="px-0"><div class="bg-inherit">{json}</div></Code></pre>
         {:else}

@@ -15,6 +15,6 @@
 
 <A class={cn('cursor-pointer', className)} onclick={() => changed(new ProjectFilter(value))} {title} {...props}>
     {#snippet children()}
-        <Filter class="text-muted-foreground text-opacity-50 hover:text-primary" />
+        <Filter class="text-muted-foreground text-opacity-50 hover:text-primary size-5" />
     {/snippet}
 </A>
