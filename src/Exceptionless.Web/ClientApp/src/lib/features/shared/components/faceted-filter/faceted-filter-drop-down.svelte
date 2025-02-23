@@ -72,9 +72,9 @@
 <Popover.Root bind:open>
     <Popover.Trigger>
         {#snippet children()}
-            <Button class="h-8" size="sm" variant="outline">
+            <Button class="gap-x-1 px-3" size="lg" variant="outline">
                 {title}
-                <Separator class="mx-2 h-4" orientation="vertical" />
+                <Separator class="mx-2" orientation="vertical" />
                 {#if loading}
                     <FacetedFilter.BadgeLoading />
                 {:else if value !== undefined}
