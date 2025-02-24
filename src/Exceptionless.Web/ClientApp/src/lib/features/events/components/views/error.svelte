@@ -10,8 +10,8 @@
     import type { PersistentEvent } from '../../models/index';
 
     import ExtendedDataItem from '../extended-data-item.svelte';
-    import SimpleStackTrace from '../simple-stack-trace.svelte';
-    import StackTrace from '../stack-trace.svelte';
+    import SimpleStackTrace from '../simple-stack-trace/simple-stack-trace.svelte';
+    import StackTrace from '../stack-trace/stack-trace.svelte';
 
     interface Props {
         changed: (filter: IFilter) => void;
