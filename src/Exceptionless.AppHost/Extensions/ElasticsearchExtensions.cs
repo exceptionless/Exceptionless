@@ -1,5 +1,4 @@
-﻿using Aspire.Hosting.Lifecycle;
-using Aspire.Hosting.Utils;
+using Aspire.Hosting.Lifecycle;
 using HealthChecks.Elasticsearch;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -100,7 +99,7 @@ public static class ElasticsearchBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        return builder.WithVolume(name ?? VolumeNameGenerator.CreateVolumeName(builder, "data"), "/usr/share/elasticsearch/data");
+        return builder.WithVolume(name ?? VolumeNameGenerator.Generate(builder, "data"), "/usr/share/elasticsearch/data");
     }
 
     public static IResourceBuilder<ElasticsearchResource> WithDataBindMount(this IResourceBuilder<ElasticsearchResource> builder, string source)
