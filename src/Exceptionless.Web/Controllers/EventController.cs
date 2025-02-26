@@ -1441,4 +1441,17 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         return totals;
     }
+
+    protected override Task<IEnumerable<string>> DeleteModelsAsync(ICollection<PersistentEvent> events)
+    {
+        var user = CurrentUser;
+        foreach (var projectEvents in events.GroupBy(ev => ev.ProjectId))
+        {
+            var ev = projectEvents.First();
+            using var _ = _logger.BeginScope(new ExceptionlessState().Organization(ev.OrganizationId).Project(ev.ProjectId).Tag("Delete").Identity(user.EmailAddress).Property("User", user).SetHttpContext(HttpContext));
+            _logger.LogInformation("User {User} deleted {RemovedCount} events in project ({ProjectId})", user.Id, projectEvents.Count(), ev.ProjectId);
+        }
+
+        return base.DeleteModelsAsync(events);
+    }
 }

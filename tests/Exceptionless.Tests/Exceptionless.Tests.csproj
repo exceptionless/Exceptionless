@@ -9,7 +9,7 @@
 
     <PackageReference Include="FluentRest.NewtonsoftJson" Version="10.0.0" />
 
-    <PackageReference Include="Aspire.Hosting.Testing" Version="9.0.0" />
+    <PackageReference Include="Aspire.Hosting.Testing" Version="9.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.2" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="9.2.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
