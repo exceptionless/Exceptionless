@@ -36,7 +36,7 @@ internal static class LoggerExtensions
         LoggerMessage.Define<string, string, string>(
             LogLevel.Information,
             new EventId(5, nameof(UserDeletingOrganization)),
-            "User {User} deleting organization: {OrganizationName}  ({OrganizationId})");
+            "User {User} deleting organization: {OrganizationName} ({OrganizationId})");
 
     private static readonly Action<ILogger, string, Exception?> _userLoggedIn =
         LoggerMessage.Define<string>(
