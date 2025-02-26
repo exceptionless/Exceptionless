@@ -191,7 +191,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             await _organizationService.SoftDeleteOrganizationAsync(organization, user.Id);
         }
 
-        return Enumerable.Empty<string>();
+        return [];
     }
 
     #endregion

@@ -99,6 +99,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.True(response.Content.Headers.ContentLength > 0);
 
         var config = await response.DeserializeAsync<ClientConfiguration>();
+        Assert.NotNull(config);
         Assert.True(config.Settings.GetBoolean("IncludeConditionalData"));
         Assert.Equal(0, config.Version);
     }

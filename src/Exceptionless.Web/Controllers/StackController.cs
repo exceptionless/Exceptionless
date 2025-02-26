@@ -39,7 +39,6 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     private readonly WebHookDataPluginManager _webHookDataPluginManager;
     private readonly ICacheClient _cache;
     private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
-    private readonly BillingManager _billingManager;
     private readonly FormattingPluginManager _formattingPluginManager;
     private readonly AppOptions _options;
 
@@ -52,7 +51,6 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         WebHookDataPluginManager webHookDataPluginManager,
         IQueue<WebHookNotification> webHookNotificationQueue,
         ICacheClient cacheClient,
-        BillingManager billingManager,
         FormattingPluginManager formattingPluginManager,
         SemanticVersionParser semanticVersionParser,
         IMapper mapper,
@@ -70,7 +68,6 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         _webHookDataPluginManager = webHookDataPluginManager;
         _webHookNotificationQueue = webHookNotificationQueue;
         _cache = cacheClient;
-        _billingManager = billingManager;
         _formattingPluginManager = formattingPluginManager;
         _semanticVersionParser = semanticVersionParser;
         _options = options;
@@ -654,5 +651,18 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         totals.AddRange(aggregations);
 
         return totals;
+    }
+
+    protected override Task<IEnumerable<string>> DeleteModelsAsync(ICollection<Stack> stacks)
+    {
+        var user = CurrentUser;
+        foreach (var projectStacks in stacks.GroupBy(ev => ev.ProjectId))
+        {
+            var stack = projectStacks.First();
+            using var _ = _logger.BeginScope(new ExceptionlessState().Organization(stack.OrganizationId).Project(stack.ProjectId).Tag("Delete").Identity(user.EmailAddress).Property("User", user).SetHttpContext(HttpContext));
+            _logger.LogInformation("User {User} deleted {RemovedCount} stacks in project ({ProjectId})", user.Id, projectStacks.Count(), stack.ProjectId);
+        }
+
+        return base.DeleteModelsAsync(stacks);
     }
 }
