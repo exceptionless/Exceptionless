@@ -32,7 +32,7 @@
     const { enhance, form: formData } = form;
 </script>
 
-<AlertDialog.Root bind:open onOpenChange={() => form.reset()}>
+<AlertDialog.Root bind:open>
     <AlertDialog.Content class="sm:max-w-[425px]">
         <form method="POST" use:enhance>
             <AlertDialog.Header>
