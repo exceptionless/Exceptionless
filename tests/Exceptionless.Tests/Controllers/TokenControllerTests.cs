@@ -39,7 +39,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeCreated()
         );
 
-        Assert.NotNull(token.Id);
+        Assert.NotNull(token?.Id);
         Assert.Null(token.UserId);
         Assert.False(token.IsDisabled);
         Assert.Equal(2, token.Scopes.Count);
@@ -94,7 +94,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
            .StatusCodeShouldBeCreated()
         );
 
-        Assert.NotNull(token.Id);
+        Assert.NotNull(token?.Id);
         Assert.Null(token.UserId);
         Assert.False(token.IsDisabled);
         Assert.Equal(2, token.Scopes.Count);
@@ -113,6 +113,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
            .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(updatedToken);
         Assert.True(updatedToken.IsDisabled);
         Assert.Equal(updateToken.Notes, updatedToken.Notes);
 
@@ -151,7 +152,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
            .StatusCodeShouldBeCreated()
         );
 
-        Assert.NotNull(token.Id);
+        Assert.NotNull(token?.Id);
         Assert.Null(token.UserId);
         Assert.False(token.IsDisabled);
         Assert.Single(token.Scopes);

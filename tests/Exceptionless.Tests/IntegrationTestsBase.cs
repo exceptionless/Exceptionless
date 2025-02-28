@@ -233,7 +233,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         return response;
     }
 
-    protected async Task<T> SendRequestAsAsync<T>(Action<AppSendBuilder> configure)
+    protected async Task<T?> SendRequestAsAsync<T>(Action<AppSendBuilder> configure)
     {
         var response = await SendRequestAsync(configure);
 
@@ -251,13 +251,13 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         });
     }
 
-    protected async Task<T> SendGlobalAdminRequestAsAsync<T>(Action<AppSendBuilder> configure)
+    protected async Task<T?> SendGlobalAdminRequestAsAsync<T>(Action<AppSendBuilder> configure)
     {
         var response = await SendGlobalAdminRequestAsync(configure);
         return await response.DeserializeAsync<T>();
     }
 
-    protected Task<T> DeserializeResponseAsync<T>(HttpResponseMessage response)
+    protected Task<T?> DeserializeResponseAsync<T>(HttpResponseMessage response)
     {
         return response.DeserializeAsync<T>();
     }
