@@ -1,5 +1,5 @@
 export interface About {
-    AppMode: string;
-    InformationalVersion: string;
-    MachineName: string;
+    app_mode: string;
+    informational_version: string;
+    machine_name: string;
 }

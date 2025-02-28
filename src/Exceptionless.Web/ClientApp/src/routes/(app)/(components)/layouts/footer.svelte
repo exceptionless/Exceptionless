@@ -1,11 +1,15 @@
 <script lang="ts">
     import { A } from '$comp/typography';
+    import { getAboutQuery } from '$features/status/api.svelte';
     import Facebook from 'lucide-svelte/icons/facebook';
     import GitHub from 'lucide-svelte/icons/github';
     import Web from 'lucide-svelte/icons/globe';
     import Twitter from 'lucide-svelte/icons/twitter';
 
     const currentYear = new Date().getFullYear();
+
+    const aboutQuery = getAboutQuery();
+    const version = $derived(aboutQuery.data?.informational_version?.split('+')[0]);
 </script>
 
 <div class="text-muted-foreground mx-4 my-6 text-sm md:flex md:items-center md:justify-between">
@@ -15,19 +19,25 @@
             <A class="mr-4 md:mr-6" href="https://exceptionless.com" target="_blank" variant="navigation">Exceptionless</A>
         </li>
         <li>
-            <A class="mr-4 md:mr-6" href="https://exceptionless.com/news/" variant="navigation">News</A>
+            <A class="mr-4 md:mr-6" href="https://exceptionless.com/news/" variant="navigation" target="_blank">News</A>
         </li>
         <li>
-            <A class="mr-4 md:mr-6" href="https://exceptionless.com/terms/" variant="navigation">Terms of Use</A>
+            <A class="mr-4 md:mr-6" href="https://exceptionless.com/terms/" variant="navigation" target="_blank">Terms of Use</A>
         </li>
         <li>
-            <A class="mr-4 md:mr-6" href="https://exceptionless.com/privacy/" variant="navigation">Privacy Policy</A>
+            <A class="mr-4 md:mr-6" href="https://exceptionless.com/privacy/" variant="navigation" target="_blank">Privacy Policy</A>
         </li>
         <li>
-            <A class="mr-4 md:mr-6" href="https://exceptionless.com" variant="navigation">Contact</A>
+            <A class="mr-4 md:mr-6" href="https://exceptionless.com" variant="navigation" target="_blank">Contact</A>
         </li>
         <li>
-            <A href="https://github.com/exceptionless/Exceptionless/releases" variant="navigation">9.0-TODO</A>
+            <A href="https://github.com/exceptionless/Exceptionless/releases" variant="navigation" target="_blank"
+                >{#if aboutQuery.isSuccess}
+                    {version}
+                {:else}
+                    Releases
+                {/if}</A
+            >
         </li>
     </ul>
     <div class="flex space-x-6 sm:justify-center">
