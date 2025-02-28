@@ -17,6 +17,6 @@
 </script>
 
 <pre class="bg-muted rounded p-2 break-words whitespace-pre-wrap"><Code class="px-0"
-        >{#each errors.reverse() as error, index}<SimpleStackTraceHeader {error} /><SimpleStackTraceFrames {error} />{#if index < errors.length - 1}<br
+        >{#each errors.reverse() as error, index (index)}<SimpleStackTraceHeader {error} /><SimpleStackTraceFrames {error} />{#if index < errors.length - 1}<br
                 />{/if}{/each}</Code
     ></pre>

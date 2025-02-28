@@ -83,7 +83,7 @@
 
 {#if errorData.length}
     <H3 class="mt-2 mb-2">Additional Data</H3>
-    {#each errorData as ed}
+    {#each errorData as ed, index (index)}
         <div class="mt-2">
             <ExtendedDataItem canPromote={false} data={ed.data} title={ed.type}></ExtendedDataItem>
         </div>
@@ -102,7 +102,7 @@
             </Table.Row>
         </Table.Header>
         <Table.Body>
-            {#each modules as module}
+            {#each modules as module (module.module_id)}
                 <Table.Row>
                     <Table.Cell class="whitespace-nowrap">{module.name}</Table.Cell>
                     <Table.Cell>{module.version}</Table.Cell>

@@ -70,7 +70,7 @@
 </script>
 
 <div class="bg-background text-foreground">
-    <ModeWatcher defaultMode={'dark'} />
+    <ModeWatcher defaultMode="dark" />
 
     <QueryClientProvider client={queryClient}>
         <Sidebar.Provider>

@@ -45,7 +45,7 @@
 <div class="rounded-md border">
     <Table.Root>
         <Table.Header>
-            {#each table.getHeaderGroups() as headerGroup}
+            {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
                 <Table.Row>
                     {#each headerGroup.headers as header (header.id)}
                         <Table.Head class={getHeaderColumnClass(header)}>

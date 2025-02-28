@@ -8,4 +8,4 @@
     let { parameter }: Props = $props();
 </script>
 
-{#if parameter.generic_arguments?.length}{'<'}<span class="text-purple-400">{parameter.generic_arguments.join(', ')}</span>{'>'}{/if}
+{#if parameter.generic_arguments?.length}&lt;<span class="text-purple-400">{parameter.generic_arguments.join(', ')}</span>&gt;{/if}

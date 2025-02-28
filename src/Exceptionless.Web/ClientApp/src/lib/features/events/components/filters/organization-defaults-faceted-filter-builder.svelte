@@ -73,21 +73,21 @@
 <FacetedFilter.KeywordBuilder priority={15} />
 <FacetedFilter.LevelBuilder priority={50} />
 
-{#each eventsBooleanFilters as { priority, term, title }}
+{#each eventsBooleanFilters as { priority, term, title } (term)}
     <FacetedFilter.BooleanBuilder {priority} {term} {title} />
 {/each}
 
 {#if includeDateFacets}
-    {#each eventsDateFilters as { priority, term, title }}
+    {#each eventsDateFilters as { priority, term, title } (term)}
         <FacetedFilter.DateBuilder {priority} {term} {title} />
     {/each}
 {/if}
 
-{#each eventsGeoFilters as { priority, term, title }}
+{#each eventsGeoFilters as { priority, term, title } (term)}
     <FacetedFilter.StringBuilder {priority} {term} {title} />
 {/each}
 
-{#each eventsNumberFilters as { priority, term, title }}
+{#each eventsNumberFilters as { priority, term, title } (term)}
     <FacetedFilter.NumberBuilder {priority} {term} {title} />
 {/each}
 
@@ -96,13 +96,13 @@
 <FacetedFilter.SessionBuilder />
 <FacetedFilter.StatusBuilder priority={50} />
 
-{#each eventsStringFilters as { priority, term, title }}
+{#each eventsStringFilters as { priority, term, title } (term)}
     <FacetedFilter.StringBuilder {priority} {term} {title} />
 {/each}
 
 <FacetedFilter.TagBuilder priority={70} />
 <FacetedFilter.TypeBuilder priority={50} />
 
-{#each eventsVersionFilters as { priority, term, title }}
+{#each eventsVersionFilters as { priority, term, title } (term)}
     <FacetedFilter.VersionBuilder {priority} {term} {title} />
 {/each}

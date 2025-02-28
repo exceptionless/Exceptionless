@@ -37,7 +37,7 @@
 </script>
 
 <div class="space-y-4">
-    {#each items as { data, promoted, title }}
+    {#each items as { data, promoted, title } (title)}
         {#if promoted === false}
             <div data-id={title}>
                 <ExtendedDataItem {data} promote={onPromote} {title}></ExtendedDataItem>
