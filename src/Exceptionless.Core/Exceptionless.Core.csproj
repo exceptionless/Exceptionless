@@ -37,8 +37,4 @@
     <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="7.17.14" Condition="'$(ReferenceFoundatioRepositoriesSource)' == '' OR '$(ReferenceFoundatioRepositoriesSource)' == 'false'" />
     <ProjectReference Include="..\..\..\..\Foundatio\Foundatio.Repositories\src\Foundatio.Repositories.Elasticsearch\Foundatio.Repositories.Elasticsearch.csproj" Condition="'$(ReferenceFoundatioRepositoriesSource)' == 'true'" />
   </ItemGroup>
-
-  <ItemGroup Label="Transitive dependency updates to resolve vulnerability warnings">
-    <PackageReference Include="System.Text.Json" Version="9.0.2" />
-  </ItemGroup>
 </Project>
