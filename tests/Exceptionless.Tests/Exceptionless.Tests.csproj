@@ -7,7 +7,7 @@
     <PackageReference Include="Exceptionless.RandomData" Version="1.2.2" />
     <PackageReference Include="Foundatio.Xunit" Version="11.0.8" />
 
-    <PackageReference Include="FluentRest.NewtonsoftJson" Version="10.0.0" />
+    <PackageReference Include="FluentRest.NewtonsoftJson" Version="10.1.0" />
 
     <PackageReference Include="Aspire.Hosting.Testing" Version="9.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.2" />

@@ -32,7 +32,7 @@ public class StatusControllerTests : IntegrationTestsBase
     {
         var utcNow = DateTime.UtcNow;
 
-        ReleaseNotification notification;
+        ReleaseNotification? notification;
         if (!String.IsNullOrEmpty(message) || sendMessageAsContentIfEmpty)
         {
             notification = await SendRequestAsAsync<ReleaseNotification>(r => r
@@ -53,6 +53,7 @@ public class StatusControllerTests : IntegrationTestsBase
                 .StatusCodeShouldBeOk());
         }
 
+        Assert.NotNull(notification);
         Assert.Equal(message, notification.Message);
         Assert.Equal(critical, notification.Critical);
         Assert.True(notification.Date.IsAfterOrEqual(utcNow));
