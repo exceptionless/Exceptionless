@@ -17,6 +17,7 @@
     <ReferenceFoundatioSource>false</ReferenceFoundatioSource>
     <ReferenceFoundatioRepositoriesSource>false</ReferenceFoundatioRepositoriesSource>
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
 
   <ItemGroup>
