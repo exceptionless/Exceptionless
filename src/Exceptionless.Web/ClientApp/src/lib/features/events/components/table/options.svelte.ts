@@ -54,7 +54,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             }
         },
         {
-            cell: (prop) => renderComponent(Summary, { summary: prop.row.original }),
+            cell: (prop) => renderComponent(Summary, { showStatus: false, summary: prop.row.original }),
             enableHiding: false,
             header: 'Summary'
         }
