@@ -24,6 +24,10 @@
     let activeOrganization = $derived(organizations?.find((organization) => organization.id === selected));
 
     function onOrganizationSelected(organization: ViewOrganization): void {
+        if (sidebar.isMobile) {
+            sidebar.toggle();
+        }
+
         if (organization.id === selected) {
             return;
         }

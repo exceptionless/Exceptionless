@@ -26,6 +26,12 @@
 
     let { gravatar, isLoading, user, ...props }: Props = $props();
     const sidebar = useSidebar();
+
+    function onMenuClick() {
+        if (sidebar.isMobile) {
+            sidebar.toggle();
+        }
+    }
 </script>
 
 {#if isLoading}
@@ -90,7 +96,7 @@
                     <DropdownMenu.Group>
                         <DropdownMenu.Item>
                             <BadgeCheck />
-                            <A variant="ghost" href="/next/account/manage" class="w-full">Account</A>
+                            <A variant="ghost" href="/next/account/manage" class="w-full" onclick={onMenuClick}>Account</A>
                             <DropdownMenu.Shortcut>⇧⌘ga</DropdownMenu.Shortcut>
                         </DropdownMenu.Item>
                         <!-- <DropdownMenu.Item>
