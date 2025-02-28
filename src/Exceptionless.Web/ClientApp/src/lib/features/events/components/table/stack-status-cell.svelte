@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { StackStatus } from '$features/stacks/models';
 
-    import StackStatusBadge from "$features/stacks/components/stack-status-badge.svelte";
+    import StackStatusBadge from '$features/stacks/components/stack-status-badge.svelte';
 
     interface Props {
         value: StackStatus;

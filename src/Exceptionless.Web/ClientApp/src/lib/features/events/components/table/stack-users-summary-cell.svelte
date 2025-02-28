@@ -11,5 +11,5 @@
 </script>
 
 <abbr title={`${source.users} of ${source.total_users} users`}>
-    {percentage.toFixed()}%
+    {percentage.toFixed(1)}%
 </abbr>
