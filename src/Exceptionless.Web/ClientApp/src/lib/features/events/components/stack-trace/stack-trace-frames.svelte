@@ -11,5 +11,5 @@
 </script>
 
 {#if error.stack_trace}<div class="bg-inherit pl-[10px]">
-        {#each error.stack_trace as frame}<StackTraceFrame {frame} />{/each}
+        {#each error.stack_trace as frame, index (index)}<StackTraceFrame {frame} />{/each}
     </div>{/if}

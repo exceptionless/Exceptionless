@@ -12,6 +12,6 @@
     let { frame }: Props = $props();
 </script>
 
-{#if frame.parameters}{#each frame.parameters as parameter, index}{#if index > 0},{' '}{/if}<StackTraceFrameParameterNamespace
+{#if frame.parameters}{#each frame.parameters as parameter, index (index)}{#if index > 0},&nbsp;{/if}<StackTraceFrameParameterNamespace
             {parameter}
         /><StackTraceFrameParameterGenericArguments {parameter} /><StackTraceFrameParameterName {parameter} />{/each}{/if}

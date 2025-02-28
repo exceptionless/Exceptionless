@@ -8,4 +8,4 @@
     let { parameter }: Props = $props();
 </script>
 
-{#if parameter.name}{' '}{parameter.name}{/if}
+{#if parameter.name}&nbsp;{parameter.name}{/if}

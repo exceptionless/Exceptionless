@@ -17,7 +17,7 @@
 </script>
 
 <ul class={cn('my-6 ml-6 list-disc [&>li]:mt-2', className)} {...props}>
-    {#each items as item}
+    {#each items as item, index (index)}
         <li>
             {#if displayValue}{@render displayValue(item)}{:else}{item}{/if}
         </li>

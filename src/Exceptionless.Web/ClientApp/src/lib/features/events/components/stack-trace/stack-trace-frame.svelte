@@ -19,4 +19,4 @@
         at <StackTraceFrameNamespace {frame} /><StackTraceFrameMethodName {frame} /><StackTraceFrameGenericArguments {frame} />(<StackTraceFrameParameters
             {frame}
         />)<StackTraceFrameOffset {frame} /><StackTraceFrameFileName {frame} />
-    </div>{:else}{'<null>'}{/if}
+    </div>{:else}&lt;null&gt;{/if}

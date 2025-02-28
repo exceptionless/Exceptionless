@@ -14,7 +14,7 @@
 
 <div class="text-muted-foreground flex text-sm text-pretty">
     {#if table.getSelectedRowModel().rows.length > 0}
-        {Object.keys(table.getSelectedRowModel().rows).length} of{' '}
+        {Object.keys(table.getSelectedRowModel().rows).length} of&nbsp;
         {table.getRowModel().rows.length} row(s) selected.
     {/if}
 </div>

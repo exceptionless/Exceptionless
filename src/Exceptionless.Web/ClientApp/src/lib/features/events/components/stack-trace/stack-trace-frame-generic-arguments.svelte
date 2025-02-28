@@ -8,4 +8,4 @@
     let { frame }: Props = $props();
 </script>
 
-{#if frame.generic_arguments?.length}{'<'}<span class="text-purple-400">{frame.generic_arguments.join(', ')}</span>{'>'}{/if}
+{#if frame.generic_arguments?.length}&lt;<span class="text-purple-400">{frame.generic_arguments.join(', ')}</span>&gt;{/if}
