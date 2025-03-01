@@ -42,8 +42,8 @@
 </div>
 
 {#if source.data.Path}
-    <Muted class="ml-6 hidden sm:block">
-        <ChevronRight class="inline" />
+    <Muted class="hidden sm:block">
+        <ChevronRight class="inline size-4" />
         <span class="line-clamp-1 inline">{source.data.Path}</span>
     </Muted>
 {/if}
