@@ -9,7 +9,7 @@
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
     import { getStackEventsQuery } from '$features/events/api.svelte';
-    import EventsDrawer from '$features/events/components/events-drawer.svelte';
+    import EventsOverview from '$features/events/components/events-overview.svelte';
     import { type DateFilter, StatusFilter, TypeFilter } from '$features/events/components/filters';
     import {
         applyTimeFilter,
@@ -214,9 +214,9 @@
     <Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
         <Sheet.Header>
             <Sheet.Title
-                >Event Details <Button href="/event/{eventId}" size="sm" title="Open in new window" variant="ghost"><ExternalLink /></Button></Sheet.Title
+                >Event Details <Button href="/next/event/{eventId}" size="sm" title="Open in new window" variant="ghost"><ExternalLink /></Button></Sheet.Title
             >
         </Sheet.Header>
-        <EventsDrawer changed={onFilterChanged} id={eventId || ''} close={() => (selectedStackId = undefined)}></EventsDrawer>
+        <EventsOverview changed={onFilterChanged} id={eventId || ''} close={() => (selectedStackId = undefined)}></EventsOverview>
     </Sheet.Content>
 </Sheet.Root>
