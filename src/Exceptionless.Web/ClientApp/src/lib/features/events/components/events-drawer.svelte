@@ -145,7 +145,7 @@
 
 {#if eventResponse.isSuccess}
     <Tabs.Root class="mt-4 mb-4" value={activeTab}>
-        <Tabs.List class="w-full justify-normal">
+        <Tabs.List class="w-full justify-normal overflow-scroll">
             {#each tabs as tab (tab)}
                 <Tabs.Trigger value={tab}>{tab}</Tabs.Trigger>
             {/each}
