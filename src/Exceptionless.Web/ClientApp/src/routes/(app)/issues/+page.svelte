@@ -217,6 +217,6 @@
                 >Event Details <Button href="/next/event/{eventId}" size="sm" title="Open in new window" variant="ghost"><ExternalLink /></Button></Sheet.Title
             >
         </Sheet.Header>
-        <EventsOverview changed={onFilterChanged} id={eventId || ''} close={() => (selectedStackId = undefined)}></EventsOverview>
+        <EventsOverview filterChanged={onFilterChanged} id={eventId || ''} handleError={() => (selectedStackId = undefined)}></EventsOverview>
     </Sheet.Content>
 </Sheet.Root>

@@ -207,6 +207,6 @@
                 ></Sheet.Title
             >
         </Sheet.Header>
-        <EventsOverview changed={onFilterChanged} id={selectedEventId || ''} close={() => (selectedEventId = null)}></EventsOverview>
+        <EventsOverview filterChanged={onFilterChanged} id={selectedEventId || ''} handleError={() => (selectedEventId = null)}></EventsOverview>
     </Sheet.Content>
 </Sheet.Root>

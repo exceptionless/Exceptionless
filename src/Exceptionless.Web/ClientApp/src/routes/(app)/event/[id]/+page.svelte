@@ -1,39 +1,40 @@
 <script lang="ts">
+    import type { ProblemDetails } from '@exceptionless/fetchclient';
+
+    import { goto } from '$app/navigation';
     import { page } from '$app/state';
+    import * as FacetedFilter from '$comp/faceted-filter';
     import * as Card from '$comp/ui/card';
     import EventsOverview from '$features/events/components/events-overview.svelte';
+    import { buildFilterCacheKey, toFilter, updateFilterCache } from '$features/events/components/filters/helpers.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { watch } from 'runed';
+    import { toast } from 'svelte-sonner';
 
     watch(
         () => organization.current,
-        () => {
-            // TODO: Redirect?
+        async () => {
+            await goto('/next/');
         },
         { lazy: true }
     );
 
-    function onFilterChanged() {}
+    async function filterChanged(addedOrUpdated: FacetedFilter.IFilter) {
+        // Prime the default page cache so that the filter is preserved and not a keyword filter.
+        const filter = toFilter([addedOrUpdated]);
+        const filterCacheKey = buildFilterCacheKey(organization.current, '/next/', filter);
+        updateFilterCache(filterCacheKey, [addedOrUpdated]);
 
-    function close() {
-        /*
+        await goto(`/next/?filter=${encodeURIComponent(filter)}`);
+    }
 
-        if (response && response.status === 426) {
-                            return billingService.confirmUpgradePlan(response.data.message).then(
-                                function () {
-                                    return getEvent();
-                                },
-                                function () {
-                                    $state.go("app.frequent");
-                                }
-                            );
-                        }
+    async function handleError(problem: ProblemDetails) {
+        if (problem.status === 426) {
+            // TODO: Show a message to the user that they need to upgrade their subscription.
+        }
 
-                        $state.go("app.frequent");
-                        notificationService.error(
-                            translateService.T("Cannot_Find_Event", { eventId: $stateParams.id })
-                        );
-         */
+        toast.error(`The event "${page.params.id}" could not be found.`);
+        await goto('/next/');
     }
 </script>
 
@@ -41,7 +42,7 @@
     <Card.Root>
         <Card.Title class="p-6 pb-0 text-2xl" level={2}>Event Details</Card.Title>
         <Card.Content class="pt-4">
-            <EventsOverview changed={onFilterChanged} id={page.params.id || ''} {close}></EventsOverview>
+            <EventsOverview {filterChanged} id={page.params.id || ''} {handleError}></EventsOverview>
         </Card.Content>
     </Card.Root>
 </div>
