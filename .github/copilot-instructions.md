@@ -37,6 +37,7 @@ Located in the `src/Exceptionless.Web/ClientApp` directory.
   - Follow the Composite Component Pattern.
   - Organize code into vertical slices (e.g., features aligned with API controllers) and maintain shared components in a central folder.
   - Use **kebab-case** for filenames and directories (e.g., `components/event-overview.svelte`).
+  - Reexport generated code `src/Exceptionless.Web/ClientApp/src/lib/generated` from the respective feature models folder.
   - **Do NOT** use any server-side Svelte features.
 
 - **UI, Accessibility & Testing:**
