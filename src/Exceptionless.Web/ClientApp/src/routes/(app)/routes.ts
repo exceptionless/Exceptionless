@@ -30,6 +30,13 @@ export const routes: NavigationItem[] = [
         title: 'Event Stream'
     },
     {
+        group: 'Event',
+        href: '/(app)/event/[id]',
+        icon: Events,
+        show: () => false,
+        title: 'Event Details'
+    },
+    {
         group: 'Help',
         href: 'https://exceptionless.com/docs/',
         icon: BookOpen,

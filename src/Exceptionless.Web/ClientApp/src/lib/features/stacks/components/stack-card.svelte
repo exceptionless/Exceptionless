@@ -27,11 +27,11 @@
     import StackStatusDropdownMenu from './stack-status-dropdown-menu.svelte';
 
     interface Props {
-        changed: (filter: IFilter) => void;
+        filterChanged: (filter: IFilter) => void;
         id: string | undefined;
     }
 
-    let { changed, id }: Props = $props();
+    let { filterChanged, id }: Props = $props();
 
     const stackResponse = getStackQuery({
         route: {
@@ -79,7 +79,7 @@
             <Card.Title class="flex flex-row items-center justify-between text-lg font-semibold">
                 <span class="mb-2 flex flex-col lg:mb-0">
                     <div class="flex items-center">
-                        <EventsFacetedFilter.StringTrigger {changed} class="mr-2" term="stack" value={stack.id} />
+                        <EventsFacetedFilter.StringTrigger changed={filterChanged} class="mr-2" term="stack" value={stack.id} />
                         <span class="truncate">{stack.title}</span>
                     </div>
                 </span>
@@ -92,7 +92,10 @@
         <Card.Content class="space-y-4 pt-2">
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <Tooltip.Root>
-                    <Tooltip.Trigger class="bg-muted flex flex-col items-center rounded-lg p-2" onclick={() => changed(new StringFilter('stack', stack.id))}>
+                    <Tooltip.Trigger
+                        class="bg-muted flex flex-col items-center rounded-lg p-2"
+                        onclick={() => filterChanged(new StringFilter('stack', stack.id))}
+                    >
                         <Calendar class="text-primary mb-1 size-6" />
                         <span class="text-lg font-bold"><Number value={totalOccurrences} /></span>
                         <Muted>Total Events</Muted>
@@ -155,7 +158,7 @@
                 <div class="flex flex-wrap gap-2">
                     {#each stack.tags as tag (tag)}
                         <Badge color="dark"
-                            ><EventsFacetedFilter.TagTrigger {changed} class="mr-1" value={[tag]}
+                            ><EventsFacetedFilter.TagTrigger changed={filterChanged} class="mr-1" value={[tag]}
                                 ><Filter class="text-muted-foreground text-opacity-80 hover:text-secondary size-5" /></EventsFacetedFilter.TagTrigger
                             >{tag}</Badge
                         >
