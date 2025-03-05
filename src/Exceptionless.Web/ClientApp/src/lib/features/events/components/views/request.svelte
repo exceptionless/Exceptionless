@@ -13,11 +13,11 @@
     import ExtendedDataItem from '../extended-data-item.svelte';
 
     interface Props {
-        changed: (filter: IFilter) => void;
         event: PersistentEvent;
+        filterChanged: (filter: IFilter) => void;
     }
 
-    let { changed, event }: Props = $props();
+    let { event, filterChanged }: Props = $props();
     let request = $derived(event.data?.['@request'] ?? {});
     let requestUrl = $derived(getRequestInfoUrl(event));
     let requestUrlPath = $derived(getRequestInfoPath(event));
@@ -60,7 +60,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">URL</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger {changed} term="path" value={requestUrlPath} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="path" value={requestUrlPath} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center gap-x-1"
                     >{requestUrl}<Button href={requestUrl} rel="noopener noreferrer" size="sm" target="_blank" title="Open in new window" variant="ghost"
@@ -72,7 +72,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">URL</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger {changed} term="path" value={requestUrlPath} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="path" value={requestUrlPath} /></Table.Cell
                 >
                 <Table.Cell>{requestUrlPath}</Table.Cell>
             </Table.Row>
@@ -97,7 +97,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Client IP Address</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger {changed} term="ip" value={request.client_ip_address} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="ip" value={request.client_ip_address} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center">{request.client_ip_address}</Table.Cell>
             </Table.Row>
@@ -106,7 +106,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">User Agent</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger {changed} term="useragent" value={request.user_agent} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="useragent" value={request.user_agent} /></Table.Cell
                 >
                 <Table.Cell>{request.user_agent}</Table.Cell>
             </Table.Row>
@@ -115,7 +115,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Device</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger {changed} term="device" value={device} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="device" value={device} /></Table.Cell
                 >
                 <Table.Cell>{device}</Table.Cell>
             </Table.Row>
@@ -124,12 +124,12 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Browser</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger {changed} term="browser" value={browser} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="browser" value={browser} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center"
                     >{browser}
                     {#if browserMajorVersion}&nbsp;
-                        <EventsFacetedFilter.StringTrigger {changed} term="browser.major" value={browserMajorVersion} class="decoration-dotted"
+                        <EventsFacetedFilter.StringTrigger changed={filterChanged} term="browser.major" value={browserMajorVersion} class="decoration-dotted"
                             >{browserVersion}</EventsFacetedFilter.StringTrigger
                         >
                     {/if}</Table.Cell
@@ -139,11 +139,13 @@
         {#if os}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Browser OS</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"><EventsFacetedFilter.StringTrigger {changed} term="os" value={os} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="os" value={os} /></Table.Cell
+                >
                 <Table.Cell class="flex items-center"
                     >{os}
                     {#if osMajorVersion}&nbsp;
-                        <EventsFacetedFilter.StringTrigger {changed} term="os.major" value={osMajorVersion} class="decoration-dotted"
+                        <EventsFacetedFilter.StringTrigger changed={filterChanged} term="os.major" value={osMajorVersion} class="decoration-dotted"
                             >{osVersion}</EventsFacetedFilter.StringTrigger
                         >
                     {/if}</Table.Cell

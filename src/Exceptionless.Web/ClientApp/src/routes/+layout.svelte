@@ -52,9 +52,9 @@
     });
 
     $effect(() => {
-        const currentRoute = routes.find((route) => page.url.pathname === route.href);
+        const currentRoute = routes.find((route) => page.url.pathname === route.href || page.route.id === route.href);
         if (currentRoute) {
-            document.title = `${currentRoute.title} - Exceptionless`;
+            document.title = `${currentRoute.title.replace('[id]', page.params.id ?? '')} - Exceptionless`;
         } else {
             document.title = 'Exceptionless';
         }

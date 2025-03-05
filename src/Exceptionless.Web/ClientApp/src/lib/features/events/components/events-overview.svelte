@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
     import type { ViewProject } from '$features/projects/models';
+    import type { ProblemDetails } from '@exceptionless/fetchclient';
 
     import DateTime from '$comp/formatters/date-time.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
@@ -24,12 +25,12 @@
     import TraceLog from './views/trace-log.svelte';
 
     interface Props {
-        changed: (filter: IFilter) => void;
-        close: () => void;
+        filterChanged: (filter: IFilter) => void;
+        handleError: (problem: ProblemDetails) => void;
         id: string;
     }
 
-    let { changed, close, id }: Props = $props();
+    let { filterChanged, handleError, id }: Props = $props();
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -106,12 +107,12 @@
 
     $effect(() => {
         if (eventResponse.isError) {
-            close();
+            handleError(eventResponse.error);
         }
     });
 </script>
 
-<StackCard {changed} id={eventResponse.data?.stack_id}></StackCard>
+<StackCard {filterChanged} id={eventResponse.data?.stack_id}></StackCard>
 
 <Table.Root class="mt-4">
     <Table.Body>
@@ -131,7 +132,7 @@
             {#if projectResponse.isSuccess}
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Project</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.ProjectTrigger {changed} class="mr-0" value={[projectResponse.data.id!]} /></Table.Cell
+                    ><EventsFacetedFilter.ProjectTrigger changed={filterChanged} class="mr-0" value={[projectResponse.data.id!]} /></Table.Cell
                 >
                 <Table.Cell>{projectResponse.data.name}</Table.Cell>
             {:else}
@@ -154,13 +155,13 @@
         {#each tabs as tab (tab)}
             <Tabs.Content value={tab}>
                 {#if tab === 'Overview'}
-                    <Overview {changed} event={eventResponse.data}></Overview>
+                    <Overview {filterChanged} event={eventResponse.data}></Overview>
                 {:else if tab === 'Exception'}
-                    <Error {changed} event={eventResponse.data}></Error>
+                    <Error {filterChanged} event={eventResponse.data}></Error>
                 {:else if tab === 'Environment'}
-                    <Environment {changed} event={eventResponse.data}></Environment>
+                    <Environment {filterChanged} event={eventResponse.data}></Environment>
                 {:else if tab === 'Request'}
-                    <Request {changed} event={eventResponse.data}></Request>
+                    <Request {filterChanged} event={eventResponse.data}></Request>
                 {:else if tab === 'Trace Log'}
                     <TraceLog logs={eventResponse.data.data?.['@trace']}></TraceLog>
                 {:else if tab === 'Extended Data'}

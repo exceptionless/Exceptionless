@@ -14,11 +14,11 @@
     import StackTrace from '../stack-trace/stack-trace.svelte';
 
     interface Props {
-        changed: (filter: IFilter) => void;
         event: PersistentEvent;
+        filterChanged: (filter: IFilter) => void;
     }
 
-    let { changed, event }: Props = $props();
+    let { event, filterChanged }: Props = $props();
 
     let errorData = $derived(getErrorData(event));
     let errorType = $derived(getErrorType(event));
@@ -35,7 +35,7 @@
         <Table.Row class="group">
             <Table.Head class="w-40 font-semibold whitespace-nowrap">Error Type</Table.Head>
             <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                ><EventsFacetedFilter.StringTrigger {changed} term="error.type" value={errorType} /></Table.Cell
+                ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="error.type" value={errorType} /></Table.Cell
             >
             <Table.Cell>{errorType}</Table.Cell>
         </Table.Row>
@@ -43,7 +43,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Message</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger {changed} term="error.message" value={message} /></Table.Cell
+                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="error.message" value={message} /></Table.Cell
                 >
                 <Table.Cell>{message}</Table.Cell>
             </Table.Row>
@@ -52,7 +52,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Code</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.VersionTrigger {changed} term="error.code" value={code} /></Table.Cell
+                    ><EventsFacetedFilter.VersionTrigger changed={filterChanged} term="error.code" value={code} /></Table.Cell
                 >
                 <Table.Cell>{code}</Table.Cell>
             </Table.Row>
