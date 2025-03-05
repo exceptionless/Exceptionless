@@ -13,8 +13,8 @@
 
     watch(
         () => organization.current,
-        async () => {
-            await goto('/next/');
+        () => {
+            goto('/next/');
         },
         { lazy: true }
     );
