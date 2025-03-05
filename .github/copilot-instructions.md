@@ -113,21 +113,7 @@ This project features an **ASP.NET Core** backend (REST API) and a **Svelte 5 Ty
 
 ---
 
-## 8. Developer Planning & Reflection
-
-### Pre-Coding Reflection
-
-Before implementing your solution, reflect on the following steps:
-
-1. **Core Requirement:** Identify the problem or feature you need to implement.
-2. **Approach Comparison:** Consider three possible approaches to the implementation.
-3. **Simplicity First:** Choose the simplest approach that meets all requirements.
-4. **Clarifying Questions:** Ask:
-   - Can this be split into smaller functions?
-   - Are there unnecessary abstractions?
-   - Will this be clear to a junior
-
-## 9. Project Structure
+## 8. Project Structure
 
 ```plaintext
 project-root/
