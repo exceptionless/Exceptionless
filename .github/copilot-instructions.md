@@ -1,109 +1,133 @@
 # Copilot Instructions
 
-This project features an **ASP.NET Core** backend (REST API) and a **Svelte 5 TypeScript** frontend (SPA). All contributions should respect existing formatting and conventions specified in the project’s `.editorconfig`.
+This project features an **ASP.NET Core** backend (REST API) and a **Svelte 5 TypeScript** frontend (SPA). All contributions must respect existing formatting and conventions specified in the `.editorconfig` file.
 
 ---
 
 ## 1. General Coding Guidelines
 
-- **Maintain File Style & Minimal Diffs:**
-  - Match the code style of the file. When unsure, use the style defined in the `.editorconfig`.
-  - Keep diffs as small as possible. Preserve existing formatting, including extra spaces and comments.
+- **Code Style & Minimal Diffs:**
+  - Match the file's existing style; use `.editorconfig` when unsure.
+  - Preserve extra spaces, comments, and minimize diffs.
 
-- **Complete, Clear, and Modern Code:**
-  - Write complete code for every step—no placeholders or TODOs.
-  - Prioritize readability by using modern language features, clear naming, and clean code practices.
-  - It's acceptable to employ defensive coding practices when needed to handle unexpected scenarios gracefully.
+- **Modern Code Practices:**
+  - Write complete, runnable code—no placeholders or TODOs.
+  - Use modern language features, clear naming conventions, and defensive coding when necessary.
+  - Follow SOLID, DRY, and clean code principles. Remove unused code.
 
-- **Design Principles:**
-  - Follow SOLID, DRY, and overall clean code principles.
-  - Remove unused code; simplicity equals maintainability.
-
-- **Behavioral Changes:**
-  - Flag any user-visible changes and review them carefully.
+- **Behavior Management:**
+  - Flag any user-visible changes for review.
+  - Deliver exactly what’s requested—avoid adding unnecessary features unless explicitly instructed.
 
 ---
 
 ## 2. Frontend Guidelines (Svelte 5 / TypeScript SPA)
 
 - **Framework & Best Practices:**
-  - Built with Svelte 5 in SPA mode using TypeScript and Tailwind CSS.
-  - Adhere to modern ES6 best practices and the ESLint recommended configuration ([standardjs](https://standardjs.com)).
+  - Use Svelte 5 in SPA mode with TypeScript and Tailwind CSS.
+  - Follow modern ES6 best practices and the ESLint recommended configuration ([standardjs](https://standardjs.com)).
 
 - **Architecture & Components:**
-  - Utilize the Composite Component Pattern (similar to shadcn-svelte).
-  - Organize code using vertical slices for features with a shared folder for common components.
-  - **Avoid** using any server-side Svelte features.
+  - Follow the Composite Component Pattern.
+  - Organize code into vertical slices (e.g., features aligned with API controllers) and maintain shared components in a central folder.
+  - Use **kebab-case** for filenames and directories (e.g., `components/event-overview.svelte`).
+  - **Do NOT** use any server-side Svelte features.
 
-- **UI, Accessibility, and Navigation:**
-  - Ensure excellent keyboard navigation for all front-end interactions.
-  - Leverage shadcn-svelte components, which are built on [bits-ui](https://bits-ui.com/docs/llms.txt).
-  - Build forms using shadcn-svelte forms & superforms, and validate with class-validator.
-  - For icons use lucide-svelte.
-  - Follow mobile-first responsive design, semantic HTML, and secure WCAG 2.2 Level AA compliance.
+- **UI, Accessibility & Testing:**
+  - Ensure excellent keyboard navigation for all interactions.
+  - Build forms with shadcn-svelte forms & superforms, and validate with class-validator.
+  - Ensure semantic HTML, mobile-first design, and WCAG 2.2 Level AA compliance.
+  - Use shadcn-svelte components (based on [bits-ui](https://bits-ui.com/docs/llms.txt)).
 
-- **Testing:**
+- **API Calls:**
+  - Use TanStack Query for all API calls centralized in an `api.svelte.ts` file.
+  - Leverage `@exceptionless/fetchclient` for network operations.
+
+- **Testing Tools:**
   - Unit Testing: Vitest
   - Component Testing: Testing Library
   - E2E Testing: Playwright
 
 - **Reference:**
-  - Svelte 5 SPA guidelines: [https://svelte.dev/llms-full.txt](https://svelte.dev/llms-full.txt)
+  - Svelte 5: [https://svelte.dev/llms-full.txt](https://svelte.dev/llms-full.txt)
 
 ---
 
 ## 3. Backend Guidelines (ASP.NET Core / C#)
 
-- **Framework & Language Features:**
-  - Developed with the latest ASP.NET Core and C#.
-  - Enable Nullable Reference Types.
+- **Framework & Features:**
+  - Use the latest ASP.NET Core with C# and enable Nullable Reference Types.
 
-- **Coding Conventions & Best Practices:**
-  - Follow guidelines from the `.editorconfig` and Microsoft's [coding conventions](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions).
-  - Adhere to Microsoft's best practices for ASP.NET Core development and [unit testing with xUnit](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices).
+- **Conventions & Best Practices:**
+  - Adhere to the `.editorconfig` file and Microsoft's [coding conventions](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions).
+  - Follow Microsoft's [unit testing best practices](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices).
 
-- **Architecture Considerations:**
-  - Factor in the inherent challenges of distributed computing when designing features.
-
----
-
-## 4. Performance
-
-- **Optimizations:**
-  - Lazy load components when possible.
-  - Optimize images and assets.
-  - Employ effective caching strategies.
+- **Architectural Considerations:**
+  - Design services with awareness of distributed computing challenges.
 
 ---
 
-## 5. Security
+## 4. Security Guidelines
 
-- **Data Protection & Validation:**
-  - Sanitize all user inputs and validate data rigorously.
+- **Best Practices:**
+  - Sanitize all user inputs and rigorously validate data.
   - Follow OWASP guidelines and implement a robust Content Security Policy.
-  - Embrace Shift-Left security practices.
+  - Adopt Shift-Left security practices to identify vulnerabilities early.
+
+---
+
+## 5. Developer Planning & Reflection
+
+- **Pre-Coding Reflection:**
+  1. Identify the problem or feature you’re solving.
+  2. Consider three possible approaches.
+  3. Choose the simplest approach that satisfies all requirements.
+  4. Clarify:
+     - Can the solution be modularized into smaller functions?
+     - Are there unnecessary abstractions?
+     - Will the implementation be clear to a junior developer?
+
+- **Post-Coding Reflection:**
+  1. Review for refactor opportunities—can clarity or maintainability be improved?
+  2. Identify potential edge cases or areas prone to bugs.
+  3. Verify robust error handling and validation mechanisms.
 
 ---
 
 ## 6. Code Reviews
 
 - **Focus Areas:**
-  - Review for complexity, consistency, duplication, and adherence to best practices.
-  - Verify robust error handling and the effectiveness of defensive coding when applied.
+  - Ensure adherence to complexity, consistency, and clean code standards.
+  - Validate robust error handling and defensive coding practices.
+  - Check for duplication and maintainable solutions.
 
 ---
 
 ## 7. Debugging Guidelines
 
-1. **Reproduce** the issue using minimal steps and code.
-2. **Understand** the core problem.
-3. **Hypothesize** the root cause.
-4. **Test & Verify** the solution.
-5. **Document** the fix and any adjustments made.
+1. **Reproduce** the issue with minimal steps and code.
+2. **Understand** the underlying problem thoroughly.
+3. **Form Hypotheses** about the cause.
+4. **Test & Verify** potential solutions.
+5. **Document** fixes and adjustments clearly for future reference.
 
 ---
 
-## 8. Project Structure
+## 8. Developer Planning & Reflection
+
+### Pre-Coding Reflection
+
+Before implementing your solution, reflect on the following steps:
+
+1. **Core Requirement:** Identify the problem or feature you need to implement.
+2. **Approach Comparison:** Consider three possible approaches to the implementation.
+3. **Simplicity First:** Choose the simplest approach that meets all requirements.
+4. **Clarifying Questions:** Ask:
+   - Can this be split into smaller functions?
+   - Are there unnecessary abstractions?
+   - Will this be clear to a junior
+
+## 9. Project Structure
 
 ```plaintext
 project-root/
