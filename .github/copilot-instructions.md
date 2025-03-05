@@ -32,6 +32,7 @@ Located in the `src/Exceptionless.Web/ClientApp` directory.
 - **Framework & Best Practices:**
   - Use Svelte 5 in SPA mode with TypeScript and Tailwind CSS.
   - Follow modern ES6 best practices and the ESLint recommended configuration ([standardjs](https://standardjs.com)).
+  - Code can be formatted and linted with `npm run format` and checked for errors with `npm run check`.
 
 - **Architecture & Components:**
   - Follow the Composite Component Pattern.
@@ -66,12 +67,13 @@ Located in the `src/Exceptionless.Web/ClientApp` directory.
 
 ## 3. Backend Guidelines (ASP.NET Core / C#)
 
-- **Framework & Features:**
+- **Framework & Best Practices:**
   - Use the latest ASP.NET Core with C# and enable Nullable Reference Types.
+  - Code can be formatted with `dotnet format` and checked for errors with `dotnet build`.
 
 - **Conventions & Best Practices:**
-  - Adhere to the `.editorconfig` file and Microsoft's [coding conventions](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions).
-  - Follow Microsoft's [unit testing best practices](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices).
+- Adhere to the `.editorconfig` file and Microsoft's [coding conventions](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions).
+- Follow Microsoft's [unit testing best practices](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices).
 
 - **Architectural Considerations:**
   - Design services with awareness of distributed computing challenges.
