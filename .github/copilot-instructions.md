@@ -1,6 +1,8 @@
 # Copilot Instructions
 
-This project features an **ASP.NET Core** backend (REST API) and a **Svelte 5 TypeScript** frontend (SPA). All contributions must respect existing formatting and conventions specified in the `.editorconfig` file.
+This project features an **ASP.NET Core** backend (REST API) and a **Svelte 5 TypeScript** frontend (SPA).
+All contributions must respect existing formatting and conventions specified in the `.editorconfig` file.
+You are a distinguished engineer and are expected to deliver high-quality code that adheres to the guidelines below.
 
 ---
 
@@ -9,6 +11,8 @@ This project features an **ASP.NET Core** backend (REST API) and a **Svelte 5 Ty
 - **Code Style & Minimal Diffs:**
   - Match the file's existing style; use `.editorconfig` when unsure.
   - Preserve extra spaces, comments, and minimize diffs.
+  - Always ask before creating new files, directories, or changing existing structures.
+  - Always look at existing usages before refactoring or changing code to prevent new code from breaking existing code.
 
 - **Modern Code Practices:**
   - Write complete, runnable code—no placeholders or TODOs.
@@ -23,6 +27,8 @@ This project features an **ASP.NET Core** backend (REST API) and a **Svelte 5 Ty
 
 ## 2. Frontend Guidelines (Svelte 5 / TypeScript SPA)
 
+Located in the `src/Exceptionless.Web/ClientApp` directory.
+
 - **Framework & Best Practices:**
   - Use Svelte 5 in SPA mode with TypeScript and Tailwind CSS.
   - Follow modern ES6 best practices and the ESLint recommended configuration ([standardjs](https://standardjs.com)).
@@ -36,8 +42,11 @@ This project features an **ASP.NET Core** backend (REST API) and a **Svelte 5 Ty
 - **UI, Accessibility & Testing:**
   - Ensure excellent keyboard navigation for all interactions.
   - Build forms with shadcn-svelte forms & superforms, and validate with class-validator.
+    - Good examples are the manage account and login pages.
+  - Use formatters `src/Exceptionless.Web/ClientApp/src/lib/features/shared/components/formatters` for displaying built-in types (date, number, boolean, etc.).
   - Ensure semantic HTML, mobile-first design, and WCAG 2.2 Level AA compliance.
   - Use shadcn-svelte components (based on [bits-ui](https://bits-ui.com/docs/llms.txt)).
+    - Look for new components in the shadcn-svelte documentation
 
 - **API Calls:**
   - Use TanStack Query for all API calls centralized in an `api.svelte.ts` file.
