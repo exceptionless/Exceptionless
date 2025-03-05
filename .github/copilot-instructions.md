@@ -58,8 +58,9 @@ Located in the `src/Exceptionless.Web/ClientApp` directory.
   - Component Testing: Testing Library
   - E2E Testing: Playwright
 
-- **Reference:**
-  - Svelte 5: [https://svelte.dev/llms-full.txt](https://svelte.dev/llms-full.txt)
+- **Reference documentation:**
+  - Always use Svelte 5 features: [https://svelte.dev/llms-full.txt](https://svelte.dev/llms-full.txt)
+    - on:click -> onclick
 
 ---
 
