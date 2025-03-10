@@ -78,7 +78,7 @@
         "clsx": "^2.1.1",
         "formsnap": "^2.0.0",
         "kit-query-params": "^0.0.26",
-        "lucide-svelte": "^0.477.0",
+        "lucide-svelte": "^0.479.0",
         "mode-watcher": "^0.5.1",
         "oidc-client-ts": "^3.1.0",
         "pretty-ms": "^9.2.0",
