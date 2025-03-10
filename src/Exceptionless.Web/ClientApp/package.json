@@ -48,7 +48,7 @@
         "@types/node": "^22.13.9",
         "@types/throttle-debounce": "^5.0.2",
         "cross-env": "^7.0.3",
-        "eslint": "^9.21.0",
+        "eslint": "^9.22.0",
         "eslint-config-prettier": "^10.0.2",
         "eslint-plugin-perfectionist": "^4.9.0",
         "eslint-plugin-svelte": "^3.0.3",
