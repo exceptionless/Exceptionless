@@ -1,7 +1,7 @@
 import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
-import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { ViewProject } from './models';
@@ -21,13 +21,22 @@ export async function invalidateProjectQueries(queryClient: QueryClient, message
     }
 }
 
+// TODO: Do we need to scope these all by organization?
 export const queryKeys = {
+    deleteProject: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'delete'] as const,
     deletePromotedTab: (id: string | undefined) => [...queryKeys.id(id), 'demote-tab'] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
+    ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
     organization: (id: string | undefined) => [...queryKeys.type, 'organization', id] as const,
     postPromotedTab: (id: string | undefined) => [...queryKeys.id(id), 'promote-tab'] as const,
     type: ['Project'] as const
 };
+
+export interface DeleteProjectRequest {
+    route: {
+        ids: string[];
+    };
+}
 
 export interface deletePromotedTabRequest {
     route: {
@@ -58,6 +67,29 @@ export interface PostPromotedTabRequest {
     route: {
         id: string | undefined;
     };
+}
+
+export function deleteProject(request: DeleteProjectRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<FetchClientResponse<unknown>, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.ids?.length,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            const response = await client.delete(`projects/${request.route.ids?.join(',')}`, {
+                expectedStatusCodes: [202]
+            });
+
+            return response;
+        },
+        mutationKey: queryKeys.deleteProject(request.route.ids),
+        onError: () => {
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+        },
+        onSuccess: () => {
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+        }
+    }));
 }
 
 export function deletePromotedTab(request: deletePromotedTabRequest) {
@@ -91,7 +123,7 @@ export function deletePromotedTab(request: deletePromotedTabRequest) {
 export function getOrganizationProjectsQuery(request: GetOrganizationProjectsRequest) {
     const queryClient = useQueryClient();
 
-    return createQuery<ViewProject[], ProblemDetails>(() => ({
+    return createQuery<FetchClientResponse<ViewProject[]>, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.organizationId,
         onSuccess: (data: ViewProject[]) => {
             data.forEach((project) => {
@@ -109,7 +141,7 @@ export function getOrganizationProjectsQuery(request: GetOrganizationProjectsReq
                 signal
             });
 
-            return response.data!;
+            return response;
         },
         queryKey: queryKeys.organization(request.route.organizationId)
     }));
