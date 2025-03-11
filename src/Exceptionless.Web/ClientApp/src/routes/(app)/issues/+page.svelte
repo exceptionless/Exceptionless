@@ -183,9 +183,10 @@
 </script>
 
 <div class="flex flex-col space-y-4">
-    <Card.Root>
-        <Card.Title class="p-6 pb-0 text-2xl" level={2}>Issues <AutomaticRefreshIndicatorButton {canRefresh} refresh={loadData} /></Card.Title>
-        <Card.Content class="pt-4">
+    <Card.Root
+        ><Card.Header>
+            <Card.Title class="text-2xl" level={2}>Issues <AutomaticRefreshIndicatorButton {canRefresh} refresh={loadData} /></Card.Title>
+        </Card.Header><Card.Content class="pt-4">
             <EventsDataTable bind:limit={params.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
                 {#snippet toolbarChildren()}
                     <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>

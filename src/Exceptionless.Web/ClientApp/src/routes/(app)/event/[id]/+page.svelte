@@ -39,8 +39,10 @@
 </script>
 
 <div class="flex flex-col space-y-4">
-    <Card.Root>
-        <Card.Title class="p-6 pb-0 text-2xl" level={2}>Event Details</Card.Title>
+    <Card.Root
+        ><Card.Header>
+            <Card.Title class="text-2xl" level={2}>Event Details</Card.Title></Card.Header
+        >
         <Card.Content class="pt-4">
             <EventsOverview {filterChanged} id={page.params.id || ''} {handleError}></EventsOverview>
         </Card.Content>

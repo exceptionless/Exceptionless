@@ -21,7 +21,7 @@
     <Card.Root class="mx-auto max-w-sm">
         <Card.Header>
             <Logo />
-            <Card.Title class="text-center text-2xl">Service Status</Card.Title>
+            <Card.Title class="text-center text-2xl" level={2}>Service Status</Card.Title>
         </Card.Header>
         <Card.Content>
             <P class="text-center text-sm">

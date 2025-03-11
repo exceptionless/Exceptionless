@@ -19,10 +19,11 @@
     });
 </script>
 
-<Card.Root>
-    <Card.Title class="p-6 pb-0 text-2xl" level={2}>Settings</Card.Title>
-    <Card.Description class="pl-6">Manage your account settings and set e-mail preferences.</Card.Description>
-
+<Card.Root
+    ><Card.Header>
+        <Card.Title class="text-2xl" level={2}>Settings</Card.Title>
+        <Card.Description>Manage your account settings and set e-mail preferences.</Card.Description>
+    </Card.Header>
     <Separator class="mx-6 my-6 w-auto" />
 
     <Card.Content>

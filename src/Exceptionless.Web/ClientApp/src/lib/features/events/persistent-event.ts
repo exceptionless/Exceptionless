@@ -1,3 +1,4 @@
+// TODO: Remove this reference.
 import type { ViewProject } from '$features/projects/models';
 
 import { buildUrl } from '$shared/url';

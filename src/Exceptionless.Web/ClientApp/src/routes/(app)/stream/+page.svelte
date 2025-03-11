@@ -182,8 +182,10 @@
     });
 </script>
 
-<Card.Root>
-    <Card.Title class="p-6 pb-0 text-2xl" level={2}>Event Stream</Card.Title>
+<Card.Root
+    ><Card.Header>
+        <Card.Title class="text-2xl" level={2}>Event Stream</Card.Title>
+    </Card.Header>
     <Card.Content>
         <DataTable.Root>
             <DataTable.Toolbar {table}>

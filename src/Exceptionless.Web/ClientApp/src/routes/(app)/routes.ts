@@ -1,9 +1,9 @@
-import BookOpen from 'lucide-svelte/icons/book-open';
-import Braces from 'lucide-svelte/icons/braces';
-import Stacks from 'lucide-svelte/icons/bug';
+import Documentation from 'lucide-svelte/icons/book-open';
+import ApiDocumentations from 'lucide-svelte/icons/braces';
+import Issues from 'lucide-svelte/icons/bug';
 import EventStream from 'lucide-svelte/icons/calendar-arrow-down';
 import Events from 'lucide-svelte/icons/calendar-days';
-import Help from 'lucide-svelte/icons/circle-help';
+import Support from 'lucide-svelte/icons/circle-help';
 import GitHub from 'lucide-svelte/icons/github';
 
 import type { NavigationItem } from '../routes';
@@ -20,7 +20,7 @@ export const routes: NavigationItem[] = [
     {
         group: 'Dashboards',
         href: '/next/issues',
-        icon: Stacks,
+        icon: Issues,
         title: 'Issues'
     },
     {
@@ -39,14 +39,14 @@ export const routes: NavigationItem[] = [
     {
         group: 'Help',
         href: 'https://exceptionless.com/docs/',
-        icon: BookOpen,
+        icon: Documentation,
         openInNewTab: true,
         title: 'Documentation'
     },
     {
         group: 'Help',
         href: 'https://github.com/exceptionless/Exceptionless/issues',
-        icon: Help,
+        icon: Support,
         openInNewTab: true,
         title: 'Support'
     },
@@ -60,7 +60,7 @@ export const routes: NavigationItem[] = [
     {
         group: 'Help',
         href: '/docs/index.html',
-        icon: Braces,
+        icon: ApiDocumentations,
         openInNewTab: true,
         title: 'API'
     },
