@@ -1,1 +1,1 @@
-export { ViewProject } from '$generated/api';
+export { NewProject, ViewProject } from '$generated/api';

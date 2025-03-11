@@ -4,7 +4,7 @@ import { accessToken } from '$features/auth/index.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
-import type { ViewProject } from './models';
+import type { NewProject, ViewProject } from './models';
 
 export async function invalidateProjectQueries(queryClient: QueryClient, message: WebSocketMessageValue<'ProjectChanged'>) {
     const { id, organization_id } = message;
@@ -38,20 +38,26 @@ export interface DeleteProjectRequest {
     };
 }
 
-export interface deletePromotedTabRequest {
+export interface DeletePromotedTabParams {
+    name: string;
+}
+
+export interface DeletePromotedTabRequest {
     route: {
         id: string;
     };
 }
 
-export interface GetOrganizationProjectsRequest {
-    params?: {
+export interface GetOrganizationProjectsParams {
         filter?: string;
         limit?: number;
-        mode?: 'stats';
+    mode?: GetProjectsMode;
         page?: number;
         sort?: string;
-    };
+}
+
+export interface GetOrganizationProjectsRequest {
+    params?: GetOrganizationProjectsParams;
     route: {
         organizationId: string | undefined;
     };
@@ -61,6 +67,16 @@ export interface GetProjectRequest {
     route: {
         id: string | undefined;
     };
+}
+
+export type GetProjectsMode = 'stats' | null;
+
+export interface GetProjectsParams {
+    filter?: string;
+}
+
+export interface PostPromotedTabParams {
+    name: string;
 }
 
 export interface PostPromotedTabRequest {
@@ -92,13 +108,13 @@ export function deleteProject(request: DeleteProjectRequest) {
     }));
 }
 
-export function deletePromotedTab(request: deletePromotedTabRequest) {
+export function deletePromotedTab(request: DeletePromotedTabRequest) {
     const queryClient = useQueryClient();
-    return createMutation<boolean, ProblemDetails, { name: string }>(() => ({
-        mutationFn: async (params: { name: string }) => {
+    return createMutation<boolean, ProblemDetails, DeletePromotedTabParams>(() => ({
+        mutationFn: async (params: DeletePromotedTabParams) => {
             const client = useFetchClient();
             const response = await client.delete(`projects/${request.route.id}/promotedtabs`, {
-                params
+                params: { ...params }
             });
 
             return response.ok;
@@ -161,14 +177,29 @@ export function getProjectQuery(request: GetProjectRequest) {
         queryKey: queryKeys.id(request.route.id)
     }));
 }
+export function postProject() {
+    const queryClient = useQueryClient();
+
+    return createMutation<ViewProject, ProblemDetails, NewProject>(() => ({
+        enabled: () => !!accessToken.current,
+        mutationFn: async (project: NewProject) => {
+            const client = useFetchClient();
+            const response = await client.postJSON<ViewProject>('projects', project);
+            return response.data!;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        }
+    }));
+}
 
 export function postPromotedTab(request: PostPromotedTabRequest) {
     const queryClient = useQueryClient();
-    return createMutation<boolean, ProblemDetails, { name: string }>(() => ({
-        mutationFn: async (params: { name: string }) => {
+    return createMutation<boolean, ProblemDetails, PostPromotedTabParams>(() => ({
+        mutationFn: async (params: PostPromotedTabParams) => {
             const client = useFetchClient();
             const response = await client.post(`projects/${request.route.id}/promotedtabs`, undefined, {
-                params
+                params: { ...params }
             });
 
             return response.ok;
