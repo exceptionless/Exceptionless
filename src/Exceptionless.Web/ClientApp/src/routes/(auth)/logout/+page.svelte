@@ -39,7 +39,7 @@
 <Card.Root class="mx-auto max-w-sm">
     <Card.Header>
         <Logo />
-        <Card.Title class="text-center text-2xl">Log out?</Card.Title>
+        <Card.Title class="text-center text-2xl" level={2}>Log out?</Card.Title>
     </Card.Header>
     <Card.Content>
         <form onsubmit={onLogout}>

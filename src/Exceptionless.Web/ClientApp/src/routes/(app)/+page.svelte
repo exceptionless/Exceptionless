@@ -170,9 +170,11 @@
 
 <div class="flex flex-col space-y-4">
     <Card.Root>
-        <Card.Title class="gap-x-1 p-6 pb-0 text-2xl" level={2}
-            >Events
-            <AutomaticRefreshIndicatorButton {canRefresh} refresh={loadData} /></Card.Title
+        <Card.Header>
+            <Card.Title class="text-2xl" level={2}
+                >Events
+                <AutomaticRefreshIndicatorButton {canRefresh} refresh={loadData} /></Card.Title
+            ></Card.Header
         >
         <Card.Content class="pt-4">
             <EventsDataTable bind:limit={params.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
