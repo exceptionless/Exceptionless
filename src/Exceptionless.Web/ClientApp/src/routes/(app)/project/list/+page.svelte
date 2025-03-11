@@ -66,7 +66,7 @@
         <Card.Header>
             <Card.Title class="text-2xl" level={2}>My Projects</Card.Title>
             <Card.Description>
-                <Button href="/next/project/new">
+                <Button href="/next/project/add">
                     <Plus class="mr-2 size-4" />
                     Add New Project
                 </Button>

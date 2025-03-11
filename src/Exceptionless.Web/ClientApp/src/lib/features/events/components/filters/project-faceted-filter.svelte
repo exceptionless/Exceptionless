@@ -19,8 +19,9 @@
         }
     });
 
+    const projects = $derived(response.data?.data ?? []);
     const options = $derived(
-        response.data?.map((project) => ({
+        projects.map((project) => ({
             label: project.name!,
             value: project.id!
         })) ?? []
@@ -31,9 +32,9 @@
             return;
         }
 
-        const projects = response.data.filter((project) => filter.value.includes(project.id!));
-        if (filter.value.length !== projects.length) {
-            filter.value = projects.map((project) => project.id!);
+        const filteredProjects = projects.filter((project) => filter.value.includes(project.id!)) ?? [];
+        if (filter.value.length !== filteredProjects.length) {
+            filter.value = filteredProjects.map((project) => project.id!);
             filterChanged(filter);
         }
     });
