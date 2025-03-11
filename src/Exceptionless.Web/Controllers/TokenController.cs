@@ -216,7 +216,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// Remove
     /// </summary>
     /// <param name="ids">A comma-delimited list of token identifiers.</param>
-    /// <response code="204">No Content.</response>
+    /// <response code="202">Accepted</response>
     /// <response code="400">One or more validation errors occurred.</response>
     /// <response code="404">One or more tokens were not found.</response>
     /// <response code="500">An error occurred while deleting one or more tokens.</response>

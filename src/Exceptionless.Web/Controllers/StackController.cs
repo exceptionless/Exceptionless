@@ -436,7 +436,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// Remove
     /// </summary>
     /// <param name="ids">A comma-delimited list of stack identifiers.</param>
-    /// <response code="204">No Content.</response>
+    /// <response code="202">Accepted</response>
     /// <response code="400">One or more validation errors occurred.</response>
     /// <response code="404">One or more stacks were not found.</response>
     /// <response code="500">An error occurred while deleting one or more stacks.</response>
