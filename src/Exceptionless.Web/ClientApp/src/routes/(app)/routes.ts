@@ -9,6 +9,7 @@ import GitHub from 'lucide-svelte/icons/github';
 import type { NavigationItem } from '../routes';
 
 import { routes as accountRoutes } from './account/routes';
+import { routes as projectRoutes } from './project/routes';
 
 export const routes: NavigationItem[] = [
     {
@@ -64,5 +65,6 @@ export const routes: NavigationItem[] = [
         openInNewTab: true,
         title: 'API'
     },
-    ...accountRoutes
+    ...accountRoutes,
+    ...projectRoutes
 ];
