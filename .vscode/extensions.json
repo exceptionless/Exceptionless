@@ -4,6 +4,13 @@
     "streetsidesoftware.code-spell-checker",
     "tintoy.msbuild-project-tools",
     "humao.rest-client",
-    "ms-kubernetes-tools.vscode-kubernetes-tools"
+    "ms-kubernetes-tools.vscode-kubernetes-tools",
+    "svelte.svelte-vscode",
+    "bradlc.vscode-tailwindcss",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-playwright.playwright",
+    "selemondev.vscode-shadcn-svelte",
+    "vitest.explorer"
   ]
 }
