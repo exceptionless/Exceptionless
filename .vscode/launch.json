@@ -38,6 +38,68 @@
       "name": ".NET Core Attach",
       "type": "coreclr",
       "request": "attach"
+    },
+    {
+      "name": "frontend: Attach to Chrome",
+      "port": 9222,
+      "request": "attach",
+      "type": "chrome",
+      "webRoot": "${workspaceFolder}/src/Exceptionless.Web/ClientApp"
+    },
+    {
+      "name": "frontend: Attach to Edge",
+      "port": 9222,
+      "request": "attach",
+      "type": "msedge",
+      "webRoot": "${workspaceFolder}/src/Exceptionless.Web/ClientApp"
+    },
+    {
+      "type": "msedge",
+      "request": "launch",
+      "name": "frontend: Web (Edge)",
+      "url": "http://localhost:5173/next",
+      "webRoot": "${workspaceFolder}/src/Exceptionless.Web/ClientApp",
+      "preLaunchTask": "npm run dev"
+    },
+    {
+      "type": "msedge",
+      "request": "launch",
+      "name": "frontend: Web Dev Api (Edge)",
+      "url": "http://localhost:5173/next",
+      "webRoot": "${workspaceFolder}/src/Exceptionless.Web/ClientApp",
+      "preLaunchTask": "npm run dev:api"
+    },
+    {
+      "type": "msedge",
+      "request": "launch",
+      "name": "frontend: Storybook (Edge)",
+      "url": "http://localhost:6006",
+      "webRoot": "${workspaceFolder}/src/Exceptionless.Web/ClientApp",
+      "preLaunchTask": "npm run storybook"
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "frontend: Web (Chrome)",
+      "url": "http://localhost:5173/next",
+      "webRoot": "${workspaceFolder}/src/Exceptionless.Web/ClientApp",
+      "preLaunchTask": "npm run dev"
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "frontend: Web Dev Api (Chrome)",
+      "url": "http://localhost:5173/next",
+      "webRoot": "${workspaceFolder}/src/Exceptionless.Web/ClientApp",
+      "preLaunchTask": "npm run dev:api"
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "frontend: Storybook (Chrome)",
+      "url": "http://localhost:6006",
+      "webRoot": "${workspaceFolder}/src/Exceptionless.Web/ClientApp",
+      "preLaunchTask": "npm run storybook"
     }
   ]
 }

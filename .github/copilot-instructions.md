@@ -13,6 +13,9 @@ You are a distinguished engineer and are expected to deliver high-quality code t
   - Preserve extra spaces, comments, and minimize diffs.
   - Always ask before creating new files, directories, or changing existing structures.
   - Always look at existing usages before refactoring or changing code to prevent new code from breaking existing code.
+  - Assume any existing uncommitted code is correct and ask before changing it.
+  - Don't add code comments unless necessary. Code should be self-explanatory.
+  - Don't use deprecated or insecure libraries, algorithms or features.
 
 - **Modern Code Practices:**
   - Write complete, runnable code—no placeholders or TODOs.
@@ -32,13 +35,17 @@ Located in the `src/Exceptionless.Web/ClientApp` directory.
 - **Framework & Best Practices:**
   - Use Svelte 5 in SPA mode with TypeScript and Tailwind CSS.
   - Follow modern ES6 best practices and the ESLint recommended configuration ([standardjs](https://standardjs.com)).
-  - Code can be formatted and linted with `npm run format` and checked for errors with `npm run check`.
+  - Code can be formatted and linted with `npm run format` and checked for errors with `npm run check` tasks.
+  - Don't use namespace imports unless importing svelte-shadcn component or from a barrel export index file.
+  - Limit use of $effect as there is usually a better way to solve the problem like using $derived.
 
 - **Architecture & Components:**
   - Follow the Composite Component Pattern.
   - Organize code into vertical slices (e.g., features aligned with API controllers) and maintain shared components in a central folder.
   - Use **kebab-case** for filenames and directories (e.g., `components/event-overview.svelte`).
   - Reexport generated code `src/Exceptionless.Web/ClientApp/src/lib/generated` from the respective feature models folder.
+    - Always look for models in generated code before creating new models.
+  - If a function returns a promise always await it.
   - **Do NOT** use any server-side Svelte features.
 
 - **UI, Accessibility & Testing:**
@@ -46,6 +53,8 @@ Located in the `src/Exceptionless.Web/ClientApp` directory.
   - Build forms with shadcn-svelte forms & superforms, and validate with class-validator.
     - Good examples are the manage account and login pages.
   - Use formatters `src/Exceptionless.Web/ClientApp/src/lib/features/shared/components/formatters` for displaying built-in types (date, number, boolean, etc.).
+  - All dialogs should use shadcn-svelte dialog components.
+    - Good examples are the mark fixed and delete stack dialogs.
   - Ensure semantic HTML, mobile-first design, and WCAG 2.2 Level AA compliance.
   - Use shadcn-svelte components (based on [bits-ui](https://bits-ui.com/docs/llms.txt)).
     - Look for new components in the shadcn-svelte documentation
@@ -62,6 +71,7 @@ Located in the `src/Exceptionless.Web/ClientApp` directory.
 - **Reference documentation:**
   - Always use Svelte 5 features: [https://svelte.dev/llms-full.txt](https://svelte.dev/llms-full.txt)
     - on:click -> onclick
+    - import { page } from '$app/stores'; -> import { page } from '$app/state';
 
 ---
 
