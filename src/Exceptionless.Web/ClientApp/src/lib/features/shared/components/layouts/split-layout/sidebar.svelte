@@ -1,8 +1,6 @@
 <script lang="ts">
-    import type { Snippet } from "svelte";
+    import type { Snippet } from 'svelte';
     import type { HTMLAttributes } from 'svelte/elements';
-
-    import { cn } from '$lib/utils';
 
     interface Props extends HTMLAttributes<HTMLElement> {
         children: Snippet;
@@ -18,13 +16,6 @@
     };
 </script>
 
-<aside
-    class={cn(
-        "w-full",
-        widthClasses[width],
-        className
-    )}
-    {...props}
->
+<aside class={['w-full', widthClasses[width], className]} {...props}>
     {@render children()}
 </aside>
