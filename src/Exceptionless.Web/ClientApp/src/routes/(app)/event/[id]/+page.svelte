@@ -11,6 +11,7 @@
     import { watch } from 'runed';
     import { toast } from 'svelte-sonner';
 
+    // TODO: Have this happen automatically when the organization changes.
     watch(
         () => organization.current,
         () => {
