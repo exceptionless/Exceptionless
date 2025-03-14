@@ -20,11 +20,10 @@ import { untrack } from 'svelte';
 
 import type { GetOrganizationProjectsParams, GetProjectsMode } from '../../api.svelte';
 
-export function getColumns<ViewProject>(mode: GetProjectsMode = 'stats'): ColumnDef<ViewProject>[] {
-    const columns: ColumnDef<ViewProject>[] = [
+export function getColumns<TProject extends ViewProject>(mode: GetProjectsMode = 'stats'): ColumnDef<TProject>[] {
+    const columns: ColumnDef<TProject>[] = [
         {
             accessorKey: 'name',
-
             cell: (info) => info.getValue(),
             enableHiding: false,
             header: 'Name',
@@ -70,14 +69,14 @@ export function getColumns<ViewProject>(mode: GetProjectsMode = 'stats'): Column
     return columns;
 }
 
-export function getTableContext<ViewProject>(
+export function getTableContext<TProject extends ViewProject>(
     params: GetOrganizationProjectsParams,
-    configureOptions: (options: TableOptions<ViewProject>) => TableOptions<ViewProject> = (options) => options
+    configureOptions: (options: TableOptions<TProject>) => TableOptions<TProject> = (options) => options
 ) {
     let _parameters = $state(params);
     let _pageCount = $state(0);
-    let _columns = $state(getColumns<ViewProject>(untrack(() => _parameters.mode)));
-    let _data = $state([] as ViewProject[]);
+    let _columns = $state(getColumns<TProject>(untrack(() => _parameters.mode)));
+    let _data = $state([] as TProject[]);
     let _loading = $state(false);
     let _meta = $state({} as FetchClientResponse<unknown>['meta']);
 
