@@ -56,7 +56,7 @@
             <Configure />
             Download & Configure Client
         </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => (showRemoveProjectDialog = true)}>
+        <DropdownMenu.Item onclick={() => (showRemoveProjectDialog = true)} disabled={removeProject.isPending}>
             <X />
             Delete
         </DropdownMenu.Item>
