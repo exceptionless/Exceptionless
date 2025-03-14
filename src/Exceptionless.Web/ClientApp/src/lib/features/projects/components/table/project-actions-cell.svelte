@@ -1,11 +1,10 @@
 <!-- filepath: /Users/blake/Projects/Exceptionless/Exceptionless/src/Exceptionless.Web/ClientApp/src/lib/features/projects/components/project-actions.svelte -->
 <script lang="ts">
-    import type { ViewProject } from '$features/projects/models';
-
     import { goto } from '$app/navigation';
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { deleteProject } from '$features/projects/api.svelte';
+    import { ViewProject } from '$features/projects/models';
     import Issues from 'lucide-svelte/icons/bug';
     import ChevronDown from 'lucide-svelte/icons/chevron-down';
     import Configure from 'lucide-svelte/icons/cloud';
