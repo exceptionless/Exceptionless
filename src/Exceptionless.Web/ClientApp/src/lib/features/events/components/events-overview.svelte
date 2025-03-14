@@ -106,6 +106,10 @@
     }
 
     $effect(() => {
+        if (projectResponse.isError) {
+            handleError(projectResponse.error);
+        }
+
         if (eventResponse.isError) {
             handleError(eventResponse.error);
         }
