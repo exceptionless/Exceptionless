@@ -5,6 +5,8 @@
 ### TODO
 
 - Investigate loading data in - export function load({ url, fetch }) {}
+- <https://svelte.dev/docs/svelte/class#The-class:-directive> migrate from cn / cslx
+- IsBoolean on model gen.
 
 #### shadcn svelte upgrade
 
