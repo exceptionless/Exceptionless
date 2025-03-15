@@ -2,7 +2,7 @@
     import { A } from '$comp/typography';
     import * as Command from '$comp/ui/command';
 
-    import type { NavigationItem } from '../../routes';
+    import type { NavigationItem } from '../../routes.svelte';
 
     let { open = $bindable(), routes }: { open: boolean; routes: NavigationItem[] } = $props();
 

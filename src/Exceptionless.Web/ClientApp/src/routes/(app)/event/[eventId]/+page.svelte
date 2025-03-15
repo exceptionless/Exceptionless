@@ -34,7 +34,7 @@
             // TODO: Show a message to the user that they need to upgrade their subscription.
         }
 
-        toast.error(`The event "${page.params.id}" could not be found.`);
+        toast.error(`The event "${page.params.eventId}" could not be found.`);
         await goto('/next/');
     }
 </script>
@@ -45,7 +45,7 @@
             <Card.Title class="text-2xl" level={2}>Event Details</Card.Title></Card.Header
         >
         <Card.Content class="pt-4">
-            <EventsOverview {filterChanged} id={page.params.id || ''} {handleError}></EventsOverview>
+            <EventsOverview {filterChanged} id={page.params.eventId || ''} {handleError}></EventsOverview>
         </Card.Content>
     </Card.Root>
 </div>

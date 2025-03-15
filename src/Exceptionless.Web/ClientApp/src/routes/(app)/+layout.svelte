@@ -18,7 +18,7 @@
     import { useQueryClient } from '@tanstack/svelte-query';
     import { fade } from 'svelte/transition';
 
-    import { type NavigationItemContext, routes } from '../routes';
+    import { type NavigationItemContext, routes } from '../routes.svelte';
     import Footer from './(components)/layouts/footer.svelte';
     import Navbar from './(components)/layouts/navbar.svelte';
     import SidebarOrganizationSwitcher from './(components)/layouts/sidebar-organization-switcher.svelte';
@@ -173,7 +173,7 @@
 
     const filteredRoutes = $derived.by(() => {
         const context: NavigationItemContext = { authenticated: isAuthenticated, user: userResponse.data };
-        return routes.filter((route) => (route.show ? route.show(context) : true));
+        return routes().filter((route) => (route.show ? route.show(context) : true));
     });
 </script>
 
