@@ -5,7 +5,7 @@
     import * as Sidebar from '$comp/ui/sidebar';
     import { useSidebar } from '$comp/ui/sidebar';
 
-    import type { NavigationItem } from '../../../routes';
+    import type { NavigationItem } from '../../../routes.svelte';
 
     type Props = ComponentProps<typeof Sidebar.Root> & {
         footer?: Snippet;

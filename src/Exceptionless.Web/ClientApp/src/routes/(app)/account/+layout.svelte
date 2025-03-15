@@ -5,10 +5,10 @@
     import * as SplitLayout from '$features/shared/components/layouts/split-layout';
     import { getMeQuery } from '$features/users/api.svelte';
 
-    import type { NavigationItemContext } from '../../routes';
+    import type { NavigationItemContext } from '../../routes.svelte';
 
     import SidebarNav from '../(components)/sidebar-nav.svelte';
-    import { routes } from './routes';
+    import { routes } from './routes.svelte';
 
     let { children } = $props();
 
@@ -16,7 +16,7 @@
     let isAuthenticated = $derived(accessToken.current !== null);
     const filteredRoutes = $derived.by(() => {
         const context: NavigationItemContext = { authenticated: isAuthenticated, user: userResponse.data };
-        return routes.filter((route) => (route.show ? route.show(context) : true));
+        return routes().filter((route) => (route.show ? route.show(context) : true));
     });
 </script>
 

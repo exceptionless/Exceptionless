@@ -3,7 +3,7 @@
 
     import * as Navigation from '$lib/features/shared/components/navigation';
 
-    import type { NavigationItem } from '../../routes';
+    import type { NavigationItem } from '../../routes.svelte';
 
     interface Props extends HTMLAttributes<HTMLElement> {
         routes: NavigationItem[];
