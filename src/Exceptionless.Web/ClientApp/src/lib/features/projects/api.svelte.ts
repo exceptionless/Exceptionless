@@ -1,10 +1,10 @@
+import type { NewProject, UpdateProject, ViewProject } from '$features/projects/models';
 import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
-import type { NewProject, ViewProject } from './models';
 
 export async function invalidateProjectQueries(queryClient: QueryClient, message: WebSocketMessageValue<'ProjectChanged'>) {
     const { id, organization_id } = message;
@@ -29,6 +29,7 @@ export const queryKeys = {
     ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
     organization: (id: string | undefined) => [...queryKeys.type, 'organization', id] as const,
     postPromotedTab: (id: string | undefined) => [...queryKeys.id(id), 'promote-tab'] as const,
+    resetData: (id: string | undefined) => [...queryKeys.id(id), 'reset-data'] as const,
     type: ['Project'] as const
 };
 
@@ -84,6 +85,18 @@ export interface PostPromotedTabRequest {
         id: string | undefined;
     };
 }
+export interface ResetDataRequest {
+    route: {
+        id: string;
+    };
+}
+
+export interface UpdateProjectRequest {
+    route: {
+        id: string;
+    };
+}
+
 
 export function deleteProject(request: DeleteProjectRequest) {
     const queryClient = useQueryClient();
@@ -220,3 +233,35 @@ export function postPromotedTab(request: PostPromotedTabRequest) {
         }
     }));
 }
+
+export function resetData(request: ResetDataRequest) {
+    return createMutation<void, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            await client.post(`projects/${request.route.id}/reset-data`, undefined, {
+                expectedStatusCodes: [202]
+            });
+        },
+        mutationKey: queryKeys.resetData(request.route.id)
+    }));
+}
+
+export function updateProject(request: UpdateProjectRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<ViewProject, ProblemDetails, UpdateProject>(() => ({
+        mutationFn: async (data: UpdateProject) => {
+            const client = useFetchClient();
+            const response = await client.patchJSON<ViewProject>(`projects/${request.route.id}`, data);
+            return response.data!;
+        },
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+        },
+        onSuccess: (project: ViewProject) => {
+            queryClient.setQueryData(queryKeys.id(request.route.id), project);
+        }
+    }));
+        }
+
