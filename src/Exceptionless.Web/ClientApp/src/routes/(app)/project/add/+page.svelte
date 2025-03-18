@@ -32,7 +32,7 @@
             toast.dismiss(toastId);
             try {
                 await createProject.mutateAsync(form.data);
-                toastId = toast.success('Project created successfully');
+                toastId = toast.success('Project added successfully');
                 await goto('/next/project/configure');
 
                 // HACK: This is to prevent sveltekit from stealing focus

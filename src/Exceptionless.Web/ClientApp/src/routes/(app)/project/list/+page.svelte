@@ -39,19 +39,17 @@
         }
     }
 
-    const projectsQuery = $derived(
-        getOrganizationProjectsQuery({
-            params: context.parameters,
-            route: {
-                get organizationId() {
-                    return organization.current;
-                }
+    const projectsQuery = getOrganizationProjectsQuery({
+        params: context.parameters,
+        route: {
+            get organizationId() {
+                return organization.current;
             }
-        })
-    );
+        }
+    });
 
     watch(
-        () => projectsQuery.isSuccess,
+        () => projectsQuery.dataUpdatedAt,
         () => {
             if (projectsQuery.isSuccess) {
                 context.data = projectsQuery.data.data || [];

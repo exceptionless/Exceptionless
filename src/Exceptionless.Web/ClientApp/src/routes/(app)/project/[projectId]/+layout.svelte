@@ -31,7 +31,10 @@
 
 <Card.Root>
     <Card.Header>
-        <Card.Title class="text-2xl" level={2}>Settings</Card.Title>
+        <Card.Title class="text-2xl" level={2}
+            >{#if projectResponse.isSuccess}{projectResponse.data.name}
+            {/if} Settings</Card.Title
+        >
         <Card.Description>Manage your project settings and integrations.</Card.Description>
     </Card.Header>
     <Separator class="mx-6 my-6 w-auto" />
