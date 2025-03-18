@@ -9,6 +9,7 @@
     import { organization } from '$features/organizations/context.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
     import { invalidateStackQueries } from '$features/stacks/api.svelte';
+    import { invalidateTokenQueries } from '$features/tokens/api.svelte';
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
@@ -83,6 +84,9 @@
                     break;
                 case 'StackChanged':
                     await invalidateStackQueries(queryClient, data.message);
+                    break;
+                case 'TokenChanged':
+                    await invalidateTokenQueries(queryClient, data.message);
                     break;
                 case 'UserChanged':
                     await invalidateUserQueries(queryClient, data.message);

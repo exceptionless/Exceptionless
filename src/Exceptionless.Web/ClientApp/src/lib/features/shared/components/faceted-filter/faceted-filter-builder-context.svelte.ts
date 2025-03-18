@@ -11,4 +11,4 @@ export interface FacetFilterBuilder<TFilter extends IFilter> {
     title: string;
 }
 
-export const builderContext = $state(new SvelteMap<string, FacetFilterBuilder<IFilter>>());
+export const builderContext = new SvelteMap<string, FacetFilterBuilder<IFilter>>();
