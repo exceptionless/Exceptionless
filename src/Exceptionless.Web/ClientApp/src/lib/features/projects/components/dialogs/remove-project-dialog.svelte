@@ -1,4 +1,3 @@
-<!-- filepath: /Users/blake/Projects/Exceptionless/Exceptionless/src/Exceptionless.Web/ClientApp/src/lib/features/projects/components/confirm-project-delete-AlertDialog.svelte -->
 <script lang="ts">
     import * as AlertDialog from '$comp/ui/alert-dialog';
     import { buttonVariants } from '$comp/ui/button';

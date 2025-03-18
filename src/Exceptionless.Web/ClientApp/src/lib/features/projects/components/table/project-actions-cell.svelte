@@ -1,4 +1,3 @@
-<!-- filepath: /Users/blake/Projects/Exceptionless/Exceptionless/src/Exceptionless.Web/ClientApp/src/lib/features/projects/components/project-actions.svelte -->
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { Button } from '$comp/ui/button';

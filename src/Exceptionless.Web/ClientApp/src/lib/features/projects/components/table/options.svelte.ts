@@ -62,7 +62,7 @@ export function getColumns<TProject extends ViewProject>(mode: GetProjectsMode =
         header: 'Actions',
         id: 'actions',
         meta: {
-            class: 'w-32'
+            class: 'w-16'
         }
     });
 
