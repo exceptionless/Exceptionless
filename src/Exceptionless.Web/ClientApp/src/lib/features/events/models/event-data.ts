@@ -127,3 +127,31 @@ export interface UserInfo {
     identity?: string;
     name?: string;
 }
+
+// TODO: Move to a helper.
+export function getLogLevel(level?: LogLevel): LogLevel | null {
+    switch (level?.toLowerCase().trim()) {
+        case '0':
+        case 'false':
+        case 'no':
+        case 'off':
+            return 'off';
+        case '1':
+        case 'trace':
+        case 'true':
+        case 'yes':
+            return 'trace';
+        case 'debug':
+            return 'debug';
+        case 'error':
+            return 'error';
+        case 'fatal':
+            return 'fatal';
+        case 'info':
+            return 'info';
+        case 'warn':
+            return 'warn';
+        default:
+            return null;
+    }
+}
