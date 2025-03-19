@@ -56,7 +56,7 @@ export interface ITargetErrorData extends Record<string, string | undefined> {
     Method?: string;
 }
 
-export type LogLevel = 'debug' | 'error' | 'fatal' | 'info' | 'trace' | 'warn' | string;
+export type LogLevel = 'debug' | 'error' | 'fatal' | 'info' | 'off' | 'trace' | 'warn' | string;
 
 export interface ManualStackingInfo {
     signature_data?: Record<string, string>;
