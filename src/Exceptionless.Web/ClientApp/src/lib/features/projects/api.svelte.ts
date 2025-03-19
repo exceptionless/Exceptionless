@@ -1,10 +1,10 @@
-import type { NewProject, UpdateProject, ViewProject } from '$features/projects/models';
+import type { ClientConfiguration, NewProject, UpdateProject, ViewProject } from '$features/projects/models';
 import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
+import { ValueFromBody } from '$features/shared/models';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
-
 
 export async function invalidateProjectQueries(queryClient: QueryClient, message: WebSocketMessageValue<'ProjectChanged'>) {
     const { id, organization_id } = message;
@@ -23,15 +23,27 @@ export async function invalidateProjectQueries(queryClient: QueryClient, message
 
 // TODO: Do we need to scope these all by organization?
 export const queryKeys = {
+    config: (id: string | undefined) => [...queryKeys.id(id), 'config'] as const,
+    deleteConfig: (id: string | undefined) => [...queryKeys.id(id), 'delete-config'] as const,
     deleteProject: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'delete'] as const,
     deletePromotedTab: (id: string | undefined) => [...queryKeys.id(id), 'demote-tab'] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
     organization: (id: string | undefined) => [...queryKeys.type, 'organization', id] as const,
+    postConfig: (id: string | undefined) => [...queryKeys.id(id), 'post-config'] as const,
     postPromotedTab: (id: string | undefined) => [...queryKeys.id(id), 'promote-tab'] as const,
     resetData: (id: string | undefined) => [...queryKeys.id(id), 'reset-data'] as const,
     type: ['Project'] as const
 };
+export interface DeleteConfigParams {
+    key: string;
+}
+
+export interface DeleteConfigRequest {
+    route: {
+        id: string | undefined;
+    };
+}
 
 export interface DeleteProjectRequest {
     route: {
@@ -64,6 +76,12 @@ export interface GetOrganizationProjectsRequest {
     };
 }
 
+export interface GetProjectConfigRequest {
+    route: {
+        id: string | undefined;
+    };
+}
+
 export interface GetProjectRequest {
     route: {
         id: string | undefined;
@@ -72,8 +90,15 @@ export interface GetProjectRequest {
 
 export type GetProjectsMode = 'stats' | null;
 
-export interface GetProjectsParams {
-    filter?: string;
+export interface PostConfigParams {
+    key: string;
+    value: string;
+}
+
+export interface PostConfigRequest {
+    route: {
+        id: string | undefined;
+    };
 }
 
 export interface PostPromotedTabParams {
@@ -85,6 +110,7 @@ export interface PostPromotedTabRequest {
         id: string | undefined;
     };
 }
+
 export interface ResetDataRequest {
     route: {
         id: string;
@@ -96,7 +122,6 @@ export interface UpdateProjectRequest {
         id: string;
     };
 }
-
 
 export function deleteProject(request: DeleteProjectRequest) {
     const queryClient = useQueryClient();
@@ -117,6 +142,26 @@ export function deleteProject(request: DeleteProjectRequest) {
         },
         onSuccess: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+        }
+    }));
+}
+
+export function deleteProjectConfig(request: DeleteConfigRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, DeleteConfigParams>(() => ({
+        enabled: () => !!accessToken.current,
+        mutationFn: async (params: DeleteConfigParams) => {
+            const client = useFetchClient();
+            const response = await client.delete(`projects/${request.route.id}/config`, {
+                params: { key: params.key }
+            });
+
+            return response.ok;
+        },
+        mutationKey: queryKeys.deleteConfig(request.route.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.config(request.route.id) });
         }
     }));
 }
@@ -176,6 +221,21 @@ export function getOrganizationProjectsQuery(request: GetOrganizationProjectsReq
     }));
 }
 
+export function getProjectConfig(request: GetProjectConfigRequest) {
+    return createQuery<ClientConfiguration, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<ClientConfiguration>(`projects/${request.route.id}/config`, {
+                signal
+            });
+
+            return response.data!;
+        },
+        queryKey: queryKeys.config(request.route.id)
+    }));
+}
+
 export function getProjectQuery(request: GetProjectRequest) {
     return createQuery<ViewProject, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
@@ -190,6 +250,7 @@ export function getProjectQuery(request: GetProjectRequest) {
         queryKey: queryKeys.id(request.route.id)
     }));
 }
+
 export function postProject() {
     const queryClient = useQueryClient();
 
@@ -202,6 +263,26 @@ export function postProject() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        }
+    }));
+}
+
+export function postProjectConfig(request: PostConfigRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, PostConfigParams>(() => ({
+        enabled: () => !!accessToken.current,
+        mutationFn: async (params: PostConfigParams) => {
+            const client = useFetchClient();
+            const response = await client.post(`projects/${request.route.id}/config`, new ValueFromBody(params.value), {
+                params: { key: params.key }
+            });
+
+            return response.ok;
+        },
+        mutationKey: queryKeys.postConfig(request.route.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.config(request.route.id) });
         }
     }));
 }

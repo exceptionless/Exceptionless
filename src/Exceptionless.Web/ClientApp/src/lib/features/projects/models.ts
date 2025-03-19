@@ -1,4 +1,4 @@
-export { NewProject, ViewProject } from '$generated/api';
+export { ClientConfiguration, NewProject, ViewProject } from '$generated/api';
 
 import { IsBoolean, IsString } from 'class-validator';
 
