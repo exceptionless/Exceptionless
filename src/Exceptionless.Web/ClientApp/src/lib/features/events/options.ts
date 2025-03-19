@@ -58,5 +58,9 @@ export const logLevels: DropDownItem<LogLevel>[] = [
     {
         label: 'Fatal',
         value: 'fatal'
+    },
+    {
+        label: 'Off',
+        value: 'off'
     }
 ];
