@@ -1,3 +1,5 @@
+import { logLevels } from '../options';
+
 export interface EnvironmentInfo {
     architecture?: string;
     available_physical_memory?: number;
@@ -129,7 +131,7 @@ export interface UserInfo {
 }
 
 // TODO: Move to a helper.
-export function getLogLevel(level?: LogLevel): LogLevel | null {
+export function getLogLevel(level?: LogLevel | null): LogLevel | null {
     switch (level?.toLowerCase().trim()) {
         case '0':
         case 'false':
@@ -152,6 +154,11 @@ export function getLogLevel(level?: LogLevel): LogLevel | null {
         case 'warn':
             return 'warn';
         default:
-            return null;
+            return level ?? null;
     }
+}
+
+export function getLogLevelDisplayName(level?: LogLevel | null): LogLevel | null {
+    const resolvedLevel = getLogLevel(level);
+    return logLevels.find((l) => l.value === resolvedLevel)?.label ?? level ?? null;
 }

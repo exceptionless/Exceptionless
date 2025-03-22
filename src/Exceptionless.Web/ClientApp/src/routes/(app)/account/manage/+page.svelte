@@ -46,7 +46,7 @@
             toast.dismiss(toastId);
             try {
                 await updateEmailAddress.mutateAsync(form.data);
-                toastId = toast.success('Account updated successfully.');
+                toastId = toast.success('Successfully updated Account');
 
                 // HACK: This is to prevent sveltekit from stealing focus
                 result.type = 'failure';
@@ -73,7 +73,7 @@
             toast.dismiss(toastId);
             try {
                 form.data = await updateUser.mutateAsync(form.data);
-                toastId = toast.success('Account updated successfully.');
+                toastId = toast.success('Successfully updated Account');
 
                 // HACK: This is to prevent sveltekit from stealing focus
                 result.type = 'failure';

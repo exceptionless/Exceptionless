@@ -1,7 +1,7 @@
 <script lang="ts">
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { Skeleton } from '$comp/ui/skeleton';
-    import { getLogLevel, type LogLevel } from '$features/events/models/event-data';
+    import { getLogLevel, getLogLevelDisplayName, type LogLevel } from '$features/events/models/event-data';
     import { logLevels } from '$features/events/options';
     import { deleteProjectConfig, getProjectConfig, postProjectConfig } from '$features/projects/api.svelte';
     import { Button } from '$features/shared/components/ui/button';
@@ -44,19 +44,20 @@
             value: level
         });
 
-        toast.success(`Successfully updated Log level to ${level}`);
+        toast.success(`Successfully updated Log level to ${getLogLevelDisplayName(level)}`);
     }
 
     async function revertToDefaultLogLevel() {
         removeProjectConfig.mutateAsync({
             key: `@@log:${source}`
         });
-        toast.success(`Successfully reverted to default (${defaultLevel}) log level`);
+        toast.success(`Successfully reverted to default (${defaultLevelDisplayName}) log level`);
     }
 
     const configSettings = $derived(projectConfigResponse.data?.settings ?? {});
     const level = $derived(getLogLevel(configSettings[`@@log:${source ?? ''}`]));
     const defaultLevel = $derived(getDefaultLogLevel(configSettings, source ?? ''));
+    const defaultLevelDisplayName = $derived(getLogLevelDisplayName(defaultLevel));
 
     function getDefaultLogLevel(configSettings: Record<string, string>, source: string): LogLevel | null {
         const sourcePrefix = '@@log:';
@@ -131,11 +132,12 @@
     <DropdownMenu.Root>
         <DropdownMenu.Trigger>
             <Button variant="outline">
-                Log Level:
                 {#if level}
-                    {level}
+                    Log Level: {getLogLevelDisplayName(level)}
+                {:else if defaultLevel}
+                    Log Level: {defaultLevelDisplayName} (Default)
                 {:else}
-                    {defaultLevel} (Default)
+                    Select a Default Log Level
                 {/if}
                 <ChevronDown class="size-4" />
             </Button>
@@ -145,17 +147,20 @@
                 <DropdownMenu.GroupHeading>Log Level</DropdownMenu.GroupHeading>
                 <DropdownMenu.Separator />
 
-                {#each logLevels as level (level.value)}
-                    <DropdownMenu.Item
-                        title={`Update Log Level to ${level.label}`}
-                        onclick={() => setLogLevel(level.value)}
-                        disabled={updateProjectConfig.isPending}>{level.label}</DropdownMenu.Item
+                {#each logLevels as lvl (lvl.value)}
+                    <DropdownMenu.CheckboxItem
+                        checked={lvl.value === level}
+                        title={`Update Log Level to ${lvl.label}`}
+                        onclick={() => setLogLevel(lvl.value)}
+                        disabled={updateProjectConfig.isPending}>{lvl.label}</DropdownMenu.CheckboxItem
                     >
                 {/each}
                 {#if level && source !== '*'}
                     <DropdownMenu.Separator />
-                    <DropdownMenu.Item title={`Reset to default (${defaultLevel})`} onclick={revertToDefaultLogLevel} disabled={removeProjectConfig.isPending}
-                        >Default ({defaultLevel})</DropdownMenu.Item
+                    <DropdownMenu.Item
+                        title={`Reset to default (${defaultLevelDisplayName})`}
+                        onclick={revertToDefaultLogLevel}
+                        disabled={removeProjectConfig.isPending}>Default ({defaultLevelDisplayName})</DropdownMenu.Item
                     >
                 {/if}
             </DropdownMenu.Group>
