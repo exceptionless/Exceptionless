@@ -93,7 +93,7 @@
                 await update.mutateAsync(form.data);
 
                 toast.dismiss(toastId);
-                toastId = toast.success('Project name updated successfully.');
+                toastId = toast.success('Successfully updated Project name');
             } catch (ex) {
                 const problem = ex as ProblemDetails;
                 applyServerSideErrors(form, problem);

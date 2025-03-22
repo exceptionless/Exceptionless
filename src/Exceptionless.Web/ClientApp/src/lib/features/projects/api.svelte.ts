@@ -332,6 +332,7 @@ export function updateProject(request: UpdateProjectRequest) {
     const queryClient = useQueryClient();
 
     return createMutation<ViewProject, ProblemDetails, UpdateProject>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async (data: UpdateProject) => {
             const client = useFetchClient();
             const response = await client.patchJSON<ViewProject>(`projects/${request.route.id}`, data);
