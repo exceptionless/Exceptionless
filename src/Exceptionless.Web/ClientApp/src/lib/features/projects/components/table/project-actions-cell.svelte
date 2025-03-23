@@ -66,4 +66,6 @@
     </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<RemoveProjectDialog bind:open={showRemoveProjectDialog} name={project.name} {remove} />
+{#if showRemoveProjectDialog}
+    <RemoveProjectDialog bind:open={showRemoveProjectDialog} name={project.name} {remove} />
+{/if}

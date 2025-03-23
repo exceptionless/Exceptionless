@@ -61,10 +61,12 @@
     let deleteBotDataEnabled = $state(false);
 
     const dataExclusionsIsDirty = $derived(dataExclusions !== projectConfigResponse.data?.settings['@@DataExclusions']);
-    const excludePrivateInformationIsDirty = $derived(excludePrivateInformation !== (projectConfigResponse.data?.settings['@@IncludePrivateInformation'] === 'false'));
+    const excludePrivateInformationIsDirty = $derived(
+        excludePrivateInformation !== (projectConfigResponse.data?.settings['@@IncludePrivateInformation'] === 'false')
+    );
     const userNamespacesIsDirty = $derived(userNamespaces !== projectConfigResponse.data?.settings.UserNamespaces);
     const commonMethodsIsDirty = $derived(commonMethods !== projectConfigResponse.data?.settings.CommonMethods);
-    const userAgentsIsDirty = $derived(userAgents !== projectConfigResponse.data?.settings['@@UserAgentBotPatterns'] as string);
+    const userAgentsIsDirty = $derived(userAgents !== (projectConfigResponse.data?.settings['@@UserAgentBotPatterns'] as string));
     const deleteBotDataEnabledIsDirty = $derived(deleteBotDataEnabled !== projectResponse.data?.delete_bot_data_enabled);
 
     async function updateOrRemoveProjectConfig(key: string, value: null | string, displayName: string) {
