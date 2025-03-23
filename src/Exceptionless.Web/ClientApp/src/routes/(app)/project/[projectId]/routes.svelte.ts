@@ -34,9 +34,9 @@ export function routes(): NavigationItem[] {
         },
         {
             group: 'Project Settings',
-            href: `/next/project/${page.params.projectId}/config`,
+            href: `/next/project/${page.params.projectId}/client-settings`,
             icon: ClientConfig,
-            title: 'Client Configuration'
+            title: 'Client Settings'
         },
         {
             group: 'Project Settings',
