@@ -38,6 +38,7 @@ Located in the `src/Exceptionless.Web/ClientApp` directory.
   - Code can be formatted and linted with `npm run format` and checked for errors with `npm run check` tasks.
   - Don't use namespace imports unless importing svelte-shadcn component or from a barrel export index file.
   - Limit use of $effect as there is usually a better way to solve the problem like using $derived.
+  - All single-line control statements in JavaScript must be enclosed in curly braces to ensure unambiguous control flow, enhance readability, and prevent potential errors arising from unintended statement grouping.
 
 - **Architecture & Components:**
   - Follow the Composite Component Pattern.
