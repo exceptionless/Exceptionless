@@ -62,11 +62,11 @@ export interface DeletePromotedTabRequest {
 }
 
 export interface GetOrganizationProjectsParams {
-        filter?: string;
-        limit?: number;
+    filter?: string;
+    limit?: number;
     mode?: GetProjectsMode;
-        page?: number;
-        sort?: string;
+    page?: number;
+    sort?: string;
 }
 
 export interface GetOrganizationProjectsRequest {
@@ -345,5 +345,4 @@ export function updateProject(request: UpdateProjectRequest) {
             queryClient.setQueryData(queryKeys.id(request.route.id), project);
         }
     }));
-        }
-
+}

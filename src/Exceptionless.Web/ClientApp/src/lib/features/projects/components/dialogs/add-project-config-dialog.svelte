@@ -35,7 +35,7 @@
     <AlertDialog.Content class="sm:max-w-[425px]">
         <form method="POST" use:enhance>
             <AlertDialog.Header>
-                <AlertDialog.Title>Add New Configuration Setting</AlertDialog.Title>
+                <AlertDialog.Title>Add New Configuration Value</AlertDialog.Title>
                 <AlertDialog.Description
                     >The <A href="https://exceptionless.com/docs/project-settings/#client-configuration" target="_blank">configuration value</A> will be sent to
                     the Exceptionless clients in real time.</AlertDialog.Description
@@ -83,7 +83,7 @@
 
             <AlertDialog.Footer>
                 <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-                <AlertDialog.Action>Add Configuration Setting</AlertDialog.Action>
+                <AlertDialog.Action>Add Configuration Value</AlertDialog.Action>
             </AlertDialog.Footer>
         </form>
     </AlertDialog.Content>

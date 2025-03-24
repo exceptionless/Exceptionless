@@ -12,6 +12,7 @@
     import { invalidateTokenQueries } from '$features/tokens/api.svelte';
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
+    import { invalidateWebhookQueries } from '$features/webhooks/api.svelte';
     import { isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
     import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
     import { validate } from '$shared/validation';
@@ -90,6 +91,9 @@
                     break;
                 case 'UserChanged':
                     await invalidateUserQueries(queryClient, data.message);
+                    break;
+                case 'WebHookChanged':
+                    await invalidateWebhookQueries(queryClient, data.message);
                     break;
                 default:
                     await queryClient.invalidateQueries({ queryKey: [data.message.type] });
