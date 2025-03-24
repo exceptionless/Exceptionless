@@ -109,7 +109,15 @@
     </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<EnableTokenDialog bind:open={showEnableTokenDialog} id={token.id} notes={token.notes} enable={() => updateDisabled(false)} />
-<DisableTokenDialog bind:open={showDisableTokenDialog} id={token.id} notes={token.notes} disable={() => updateDisabled(true)} />
-<UpdateTokenNotesDialog bind:open={showUpdateNotesDialog} save={updateNotes} />
-<RemoveTokenDialog bind:open={showRemoveTokenDialog} id={token.id} notes={token.notes} {remove} />
+{#if showEnableTokenDialog}
+    <EnableTokenDialog bind:open={showEnableTokenDialog} id={token.id} notes={token.notes} enable={() => updateDisabled(false)} />
+{/if}
+{#if showDisableTokenDialog}
+    <DisableTokenDialog bind:open={showDisableTokenDialog} id={token.id} notes={token.notes} disable={() => updateDisabled(true)} />
+{/if}
+{#if showUpdateNotesDialog}
+    <UpdateTokenNotesDialog bind:open={showUpdateNotesDialog} save={updateNotes} />
+{/if}
+{#if showRemoveTokenDialog}
+    <RemoveTokenDialog bind:open={showRemoveTokenDialog} id={token.id} notes={token.notes} {remove} />
+{/if}

@@ -4,7 +4,6 @@ import Configure from 'lucide-svelte/icons/cloud-download';
 import ApiKey from 'lucide-svelte/icons/key';
 import Integration from 'lucide-svelte/icons/plug-2';
 import Settings from 'lucide-svelte/icons/settings';
-import Webhook from 'lucide-svelte/icons/webhook';
 
 import type { NavigationItem } from '../../../routes.svelte';
 
@@ -34,27 +33,21 @@ export function routes(): NavigationItem[] {
         },
         {
             group: 'Project Settings',
-            href: `/next/project/${page.params.projectId}/client-settings`,
+            href: `/next/project/${page.params.projectId}/configuration-values`,
             icon: ClientConfig,
-            title: 'Client Settings'
-        },
-        {
-            group: 'Project Settings',
-            href: `/next/project/${page.params.projectId}/configure`,
-            icon: Configure,
-            title: 'Download & Configure Client'
-        },
-        {
-            group: 'Project Settings',
-            href: `/next/project/${page.params.projectId}/webhooks`,
-            icon: Webhook,
-            title: 'Webhooks'
+            title: 'Configuration Values'
         },
         {
             group: 'Project Settings',
             href: `/next/project/${page.params.projectId}/integrations`,
             icon: Integration,
             title: 'Integrations'
+        },
+        {
+            group: 'Project Settings',
+            href: `/next/project/${page.params.projectId}/configure`,
+            icon: Configure,
+            title: 'Configure Client'
         }
     ];
 }
