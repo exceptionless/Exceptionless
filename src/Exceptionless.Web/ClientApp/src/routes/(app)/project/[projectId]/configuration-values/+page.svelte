@@ -90,7 +90,7 @@
 
 <div class="space-y-6">
     <div>
-        <H3>Client Configuration Settings</H3>
+        <H3>Configuration Values</H3>
         <Muted
             >The <A href="https://exceptionless.com/docs/project-settings/#client-configuration" target="_blank">configuration value</A> will be sent to the Exceptionless
             clients in real time. This allows you to change how your app works without redeploying your app.</Muted
@@ -103,7 +103,7 @@
             <div class="h-9 min-w-[140px]">
                 <Button size="sm" onclick={() => (showAddProjectConfigDialog = true)}>
                     <Plus class="mr-2 size-4" />
-                    Add Client Configuration Setting</Button
+                    Add Configuration Value</Button
                 >
             </div>
 
