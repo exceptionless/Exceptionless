@@ -45,6 +45,7 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
         AddIndex(Tokens = new TokenIndex(this));
         AddIndex(Users = new UserIndex(this));
         AddIndex(WebHooks = new WebHookIndex(this));
+        AddCustomFieldIndex(_appOptions.ElasticsearchOptions.ScopePrefix + "customfields", appOptions.ElasticsearchOptions.NumberOfReplicas);
     }
 
     public Task RunAsync(CancellationToken shutdownToken = default)

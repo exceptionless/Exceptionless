@@ -1,10 +1,11 @@
 ﻿using System.Diagnostics;
+using Foundatio.Repositories.Elasticsearch.CustomFields;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
 
 [DebuggerDisplay("Id: {Id}, Type: {Type}, Date: {Date}, Message: {Message}, Value: {Value}, Count: {Count}")]
-public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWithIdentity, IHaveCreatedDate
+public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWithIdentity, IHaveCreatedDate, IHaveVirtualCustomFields
 {
     /// <summary>
     /// Unique id that identifies an event.
@@ -39,5 +40,15 @@ public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWith
     /// <summary>
     /// Used to store primitive data type custom data values for searching the event.
     /// </summary>
-    public DataDictionary Idx { get; set; } = new();
+    public IDictionary<string, object?> Idx { get; set; } = new DataDictionary();
+
+    object? IHaveVirtualCustomFields.GetCustomField(string name) => Data?[name];
+    IDictionary<string, object?> IHaveVirtualCustomFields.GetCustomFields() => Data ?? [];
+    void IHaveVirtualCustomFields.RemoveCustomField(string name) => Data?.Remove(name);
+    void IHaveVirtualCustomFields.SetCustomField(string name, object value)
+    {
+        Data ??= new DataDictionary();
+        Data[name] = value;
+    }
+    string IHaveVirtualCustomFields.GetTenantKey() => OrganizationId;
 }
