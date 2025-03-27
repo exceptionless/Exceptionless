@@ -5,8 +5,10 @@
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';
     import { env } from '$env/dynamic/public';
+    import { slackOAuthLogin } from '$features/auth/index.svelte';
     import { organization } from '$features/organizations/context.svelte';
-    import { getProjectQuery } from '$features/projects/api.svelte';
+    import { deleteSlack, getProjectQuery, postSlack } from '$features/projects/api.svelte';
+    import RemoveSlackDialog from '$features/projects/components/dialogs/remove-slack-dialog.svelte';
     import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
     import { postWebhook } from '$features/webhooks/api.svelte';
     import { getProjectWebhooksQuery } from '$features/webhooks/api.svelte';
@@ -23,6 +25,7 @@
     import { toast } from 'svelte-sonner';
 
     let showAddWebhookDialog = $state(false);
+    let showRemoveSlackDialog = $state(false);
     const projectId = page.params.projectId || '';
     const projectResponse = getProjectQuery({
         route: {
@@ -36,6 +39,22 @@
     const hasSlackIntegration = $derived(projectResponse.data?.has_slack_integration ?? false);
     const newWebhook = postWebhook();
 
+    const addSlackMutation = postSlack({
+        route: {
+            get id() {
+                return projectId;
+            }
+        }
+    });
+
+    const removeSlackMutation = deleteSlack({
+        route: {
+            get id() {
+                return projectId;
+            }
+        }
+    });
+
     async function addWebhook(webhook: NewWebhook) {
         try {
             await newWebhook.mutateAsync(webhook);
@@ -46,23 +65,22 @@
     }
 
     async function addSlack() {
-        /*
-
- .confirmDanger(
-                            translateService.T("Are you sure you want to remove slack support?"),
-                            translateService.T("Remove Slack")
-                        )
-
-         function onSuccess(response) {
-                    return Restangular.one("projects", id).post("slack", null, { code: response.code });
-                }
-
-                return $auth.link("slack").then(onSuccess);
-                */
+        try {
+            const code = await slackOAuthLogin();
+            await addSlackMutation.mutateAsync({ code });
+            toast.success('Successfully connected Slack integration.');
+        } catch {
+            toast.error('Error connecting Slack integration. Please try again.');
+        }
     }
 
     async function removeSlack() {
-        //return Restangular.one("projects", id).one("slack").remove();
+        try {
+            await removeSlackMutation.mutateAsync();
+            toast.success('Successfully removed Slack integration.');
+        } catch {
+            toast.error('Error removing Slack integration. Please try again.');
+        }
     }
 
     const DEFAULT_PARAMS = {
@@ -126,7 +144,7 @@
             >
 
             {#if hasSlackIntegration}
-                <Button onclick={removeSlack}><img class="text- mr-2 size-4" alt="Slack" src={Slack} /> Connect Slack</Button>
+                <Button onclick={() => (showRemoveSlackDialog = true)}><img class="text- mr-2 size-4" alt="Slack" src={Slack} /> Remove Slack</Button>
             {:else}
                 <Button onclick={addSlack}><img class="text- mr-2 size-4" alt="Slack" src={Slack} /> Connect Slack</Button>
             {/if}
@@ -158,4 +176,8 @@
 
 {#if showAddWebhookDialog && organization.current}
     <AddWebhookDialog bind:open={showAddWebhookDialog} save={addWebhook} {projectId} organizationId={organization.current} />
+{/if}
+
+{#if showRemoveSlackDialog}
+    <RemoveSlackDialog bind:open={showRemoveSlackDialog} remove={removeSlack} />
 {/if}
