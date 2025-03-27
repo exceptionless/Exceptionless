@@ -1,4 +1,4 @@
-import type { ClientConfiguration, NewProject, UpdateProject, ViewProject } from '$features/projects/models';
+import type { ClientConfiguration, NewProject, NotificationSettings, UpdateProject, ViewProject } from '$features/projects/models';
 import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
@@ -30,11 +30,14 @@ export const queryKeys = {
     deleteSlack: (id: string | undefined) => [...queryKeys.id(id), 'delete-slack'] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
+    integrationNotificationSettings: (id: string | undefined, integration: string) => [...queryKeys.id(id), integration, 'notification-settings'] as const,
     organization: (id: string | undefined) => [...queryKeys.type, 'organization', id] as const,
     postConfig: (id: string | undefined) => [...queryKeys.id(id), 'post-config'] as const,
     postProject: () => [...queryKeys.type, 'post-project'] as const,
     postPromotedTab: (id: string | undefined) => [...queryKeys.id(id), 'promote-tab'] as const,
     postSlack: (id: string | undefined) => [...queryKeys.id(id), 'post-slack'] as const,
+    putIntegrationNotificationSettings: (id: string | undefined, integration: string) =>
+        [...queryKeys.id(id), integration, 'put-notification-settings'] as const,
     resetData: (id: string | undefined) => [...queryKeys.id(id), 'reset-data'] as const,
     type: ['Project'] as const
 };
@@ -91,6 +94,13 @@ export interface GetProjectConfigRequest {
     };
 }
 
+export interface GetProjectIntegrationNotificationSettingsRequest {
+    route: {
+        id: string | undefined;
+        integration: string;
+    };
+}
+
 export interface GetProjectRequest {
     route: {
         id: string | undefined;
@@ -127,6 +137,13 @@ export interface PostSlackParams {
 export interface PostSlackRequest {
     route: {
         id: string | undefined;
+    };
+}
+
+export interface PutProjectIntegrationNotificationSettingsRequest {
+    route: {
+        id: string | undefined;
+        integration: string;
     };
 }
 
@@ -273,6 +290,21 @@ export function getProjectConfig(request: GetProjectConfigRequest) {
     }));
 }
 
+export function getProjectIntegrationNotificationSettings(request: GetProjectIntegrationNotificationSettingsRequest) {
+    return createQuery<NotificationSettings, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<NotificationSettings>(`projects/${request.route.id}/${request.route.integration}/notifications`, {
+                signal
+            });
+
+            return response.data!;
+        },
+        queryKey: queryKeys.integrationNotificationSettings(request.route.id, request.route.integration)
+    }));
+}
+
 export function getProjectQuery(request: GetProjectRequest) {
     return createQuery<ViewProject, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
@@ -367,6 +399,23 @@ export function postSlack(request: PostSlackRequest) {
         mutationKey: queryKeys.postSlack(request.route.id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+        }
+    }));
+}
+
+export function putProjectIntegrationNotificationSettings(request: PutProjectIntegrationNotificationSettingsRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, NotificationSettings>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async (settings: NotificationSettings) => {
+            const client = useFetchClient();
+            const response = await client.put(`projects/${request.route.id}/${request.route.integration}/notifications`, settings);
+            return response.ok;
+        },
+        mutationKey: queryKeys.putIntegrationNotificationSettings(request.route.id, request.route.integration),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.integrationNotificationSettings(request.route.id, request.route.integration) });
         }
     }));
 }
