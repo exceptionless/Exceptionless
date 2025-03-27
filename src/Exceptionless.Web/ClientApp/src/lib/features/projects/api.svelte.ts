@@ -27,11 +27,14 @@ export const queryKeys = {
     deleteConfig: (id: string | undefined) => [...queryKeys.id(id), 'delete-config'] as const,
     deleteProject: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'delete'] as const,
     deletePromotedTab: (id: string | undefined) => [...queryKeys.id(id), 'demote-tab'] as const,
+    deleteSlack: (id: string | undefined) => [...queryKeys.id(id), 'delete-slack'] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
     organization: (id: string | undefined) => [...queryKeys.type, 'organization', id] as const,
     postConfig: (id: string | undefined) => [...queryKeys.id(id), 'post-config'] as const,
+    postProject: () => [...queryKeys.type, 'post-project'] as const,
     postPromotedTab: (id: string | undefined) => [...queryKeys.id(id), 'promote-tab'] as const,
+    postSlack: (id: string | undefined) => [...queryKeys.id(id), 'post-slack'] as const,
     resetData: (id: string | undefined) => [...queryKeys.id(id), 'reset-data'] as const,
     type: ['Project'] as const
 };
@@ -56,6 +59,12 @@ export interface DeletePromotedTabParams {
 }
 
 export interface DeletePromotedTabRequest {
+    route: {
+        id: string;
+    };
+}
+
+export interface DeleteSlackRequest {
     route: {
         id: string;
     };
@@ -106,6 +115,16 @@ export interface PostPromotedTabParams {
 }
 
 export interface PostPromotedTabRequest {
+    route: {
+        id: string;
+    };
+}
+
+export interface PostSlackParams {
+    code: string;
+}
+
+export interface PostSlackRequest {
     route: {
         id: string | undefined;
     };
@@ -194,6 +213,24 @@ export function deletePromotedTab(request: DeletePromotedTabRequest) {
     }));
 }
 
+export function deleteSlack(request: DeleteSlackRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && request.route.id,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            const response = await client.delete(`projects/${request.route.id}/slack`);
+
+            return response.ok;
+        },
+        mutationKey: queryKeys.deleteSlack(request.route.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+        }
+    }));
+}
+
 export function getOrganizationProjectsQuery(request: GetOrganizationProjectsRequest) {
     const queryClient = useQueryClient();
 
@@ -261,6 +298,7 @@ export function postProject() {
             const response = await client.postJSON<ViewProject>('projects', project);
             return response.data!;
         },
+        mutationKey: queryKeys.postProject(),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.type });
         }
@@ -311,6 +349,24 @@ export function postPromotedTab(request: PostPromotedTabRequest) {
                     promoted_tabs: [...(previousProject?.promoted_tabs ?? []), variables.name]
                 });
             }
+        }
+    }));
+}
+
+export function postSlack(request: PostSlackRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, PostSlackParams>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async (params: PostSlackParams) => {
+            const client = useFetchClient();
+            const response = await client.post(`projects/${request.route.id}/slack`, { code: params.code });
+
+            return response.ok;
+        },
+        mutationKey: queryKeys.postSlack(request.route.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
         }
     }));
 }
