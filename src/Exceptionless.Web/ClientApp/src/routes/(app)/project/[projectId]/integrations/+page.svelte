@@ -1,4 +1,6 @@
 <script lang="ts">
+    import type { NotificationSettings } from '$features/projects/models';
+
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
     import { H3, H4, Muted, P } from '$comp/typography';
@@ -7,8 +9,15 @@
     import { env } from '$env/dynamic/public';
     import { slackOAuthLogin } from '$features/auth/index.svelte';
     import { organization } from '$features/organizations/context.svelte';
-    import { deleteSlack, getProjectQuery, postSlack } from '$features/projects/api.svelte';
+    import {
+        deleteSlack,
+        getProjectIntegrationNotificationSettings,
+        getProjectQuery,
+        postSlack,
+        putProjectIntegrationNotificationSettings
+    } from '$features/projects/api.svelte';
     import RemoveSlackDialog from '$features/projects/components/dialogs/remove-slack-dialog.svelte';
+    import NotificationSettingsForm from '$features/projects/components/notification-settings-form.svelte';
     import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
     import { postWebhook } from '$features/webhooks/api.svelte';
     import { getProjectWebhooksQuery } from '$features/webhooks/api.svelte';
@@ -24,6 +33,7 @@
     import { watch } from 'runed';
     import { toast } from 'svelte-sonner';
 
+    let toastId = $state<number | string>();
     let showAddWebhookDialog = $state(false);
     let showRemoveSlackDialog = $state(false);
     const projectId = page.params.projectId || '';
@@ -55,31 +65,66 @@
         }
     });
 
+    const slackNotificationSettingsResponse = getProjectIntegrationNotificationSettings({
+        route: {
+            get id() {
+                return projectId;
+            },
+            integration: 'slack'
+        }
+    });
+
+    const updateSlackNotificationSettingsResponse = putProjectIntegrationNotificationSettings({
+        route: {
+            get id() {
+                return projectId;
+            },
+            integration: 'slack'
+        }
+    });
+
     async function addWebhook(webhook: NewWebhook) {
+        toast.dismiss(toastId);
+
         try {
             await newWebhook.mutateAsync(webhook);
-            toast.success('Webhook added successfully');
+            toastId = toast.success('Webhook added successfully');
         } catch {
-            toast.error('Error adding webhook. Please try again.');
+            toastId = toast.error('Error adding webhook. Please try again.');
         }
     }
 
     async function addSlack() {
+        toast.dismiss(toastId);
+
         try {
             const code = await slackOAuthLogin();
             await addSlackMutation.mutateAsync({ code });
-            toast.success('Successfully connected Slack integration.');
+            toastId = toast.success('Successfully connected Slack integration.');
         } catch {
-            toast.error('Error connecting Slack integration. Please try again.');
+            toastId = toast.error('Error connecting Slack integration. Please try again.');
         }
     }
 
     async function removeSlack() {
+        toast.dismiss(toastId);
+
         try {
             await removeSlackMutation.mutateAsync();
-            toast.success('Successfully removed Slack integration.');
+            toastId = toast.success('Successfully removed Slack integration.');
         } catch {
-            toast.error('Error removing Slack integration. Please try again.');
+            toastId = toast.error('Error removing Slack integration. Please try again.');
+        }
+    }
+
+    async function updateSlackNotificationSettings(settings: NotificationSettings) {
+        toast.dismiss(toastId);
+
+        try {
+            await updateSlackNotificationSettingsResponse.mutateAsync(settings);
+            toastId = toast.success('Successfully updated Slack notification settings.');
+        } catch {
+            toastId = toast.error('Error updating Slack notification settings. Please try again.');
         }
     }
 
@@ -142,6 +187,8 @@
                 >Integrate Exceptionless with Slack to receive real-time notifications about new errors, critical events, and system alerts directly in your
                 team's Slack channels. Keep your team informed and respond faster to issues without constantly checking the dashboard.</P
             >
+
+            <NotificationSettingsForm settings={slackNotificationSettingsResponse.data} changed={updateSlackNotificationSettings} />
 
             {#if hasSlackIntegration}
                 <Button onclick={() => (showRemoveSlackDialog = true)}><img class="text- mr-2 size-4" alt="Slack" src={Slack} /> Remove Slack</Button>
