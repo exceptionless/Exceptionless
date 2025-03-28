@@ -188,7 +188,7 @@
                 team's Slack channels. Keep your team informed and respond faster to issues without constantly checking the dashboard.</P
             >
 
-            <NotificationSettingsForm settings={slackNotificationSettingsResponse.data} changed={updateSlackNotificationSettings} />
+            <NotificationSettingsForm settings={slackNotificationSettingsResponse.data} save={updateSlackNotificationSettings} />
 
             {#if hasSlackIntegration}
                 <Button onclick={() => (showRemoveSlackDialog = true)}><img class="text- mr-2 size-4" alt="Slack" src={Slack} /> Remove Slack</Button>
