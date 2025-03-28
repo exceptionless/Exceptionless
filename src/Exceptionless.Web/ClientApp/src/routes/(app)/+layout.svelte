@@ -9,8 +9,10 @@
     import { organization } from '$features/organizations/context.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
     import { invalidateStackQueries } from '$features/stacks/api.svelte';
+    import { invalidateTokenQueries } from '$features/tokens/api.svelte';
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
+    import { invalidateWebhookQueries } from '$features/webhooks/api.svelte';
     import { isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
     import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
     import { validate } from '$shared/validation';
@@ -18,7 +20,7 @@
     import { useQueryClient } from '@tanstack/svelte-query';
     import { fade } from 'svelte/transition';
 
-    import { type NavigationItemContext, routes } from '../routes';
+    import { type NavigationItemContext, routes } from '../routes.svelte';
     import Footer from './(components)/layouts/footer.svelte';
     import Navbar from './(components)/layouts/navbar.svelte';
     import SidebarOrganizationSwitcher from './(components)/layouts/sidebar-organization-switcher.svelte';
@@ -84,8 +86,14 @@
                 case 'StackChanged':
                     await invalidateStackQueries(queryClient, data.message);
                     break;
+                case 'TokenChanged':
+                    await invalidateTokenQueries(queryClient, data.message);
+                    break;
                 case 'UserChanged':
                     await invalidateUserQueries(queryClient, data.message);
+                    break;
+                case 'WebHookChanged':
+                    await invalidateWebhookQueries(queryClient, data.message);
                     break;
                 default:
                     await queryClient.invalidateQueries({ queryKey: [data.message.type] });
@@ -173,7 +181,7 @@
 
     const filteredRoutes = $derived.by(() => {
         const context: NavigationItemContext = { authenticated: isAuthenticated, user: userResponse.data };
-        return routes.filter((route) => (route.show ? route.show(context) : true));
+        return routes().filter((route) => (route.show ? route.show(context) : true));
     });
 </script>
 
