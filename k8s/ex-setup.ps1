@@ -12,18 +12,20 @@ winget install Microsoft.AzureCLI
 winget install Helm.Helm
 helm repo add "stable" "https://charts.helm.sh/stable" --force-update
 helm repo add jetstack https://charts.jetstack.io
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts                                                                                                                     ❮  3s 868ms   
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo add signoz https://charts.signoz.io
 helm repo update
 
 ### setup
-$RESOURCE_GROUP="exceptionless-v6"
-$CLUSTER="ex-k8s-v6"
-$VNET="ex-net-v6"
-$ENV="dev"
+$RESOURCE_GROUP = "exceptionless-v6"
+$CLUSTER = "ex-k8s-v6"
+$VNET = "ex-net-v6"
+$ENV = "dev"
 
 # it's important to have a decent sized network (reserve a /16 for each cluster).
 az network vnet create -g $RESOURCE_GROUP -n $VNET --subnet-name $CLUSTER --address-prefixes 10.60.0.0/16 --subnet-prefixes 10.60.0.0/18 --location eastus
-$SUBNET_ID=$(az network vnet subnet list --resource-group $RESOURCE_GROUP --vnet-name $VNET --query '[0].id' --output tsv)
+$SUBNET_ID = $(az network vnet subnet list --resource-group $RESOURCE_GROUP --vnet-name $VNET --query '[0].id' --output tsv)
 
 # create new service principal and update the cluster to use it (check how to renew below)
 az ad sp create-for-rbac --skip-assignment --name $CLUSTER
@@ -60,8 +62,8 @@ kubectl config set-context --current --namespace=ex-$ENV
 # setup elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl create -f https://download.elastic.co/downloads/eck/2.15.0/crds.yaml
-kubectl apply -f https://download.elastic.co/downloads/eck/2.15.0/operator.yaml
+kubectl create -f https://download.elastic.co/downloads/eck/2.16.1/crds.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/2.16.1/operator.yaml
 
 # view ES operator logs
 kubectl -n elastic-system logs -f statefulset.apps/elastic-operator
@@ -73,7 +75,7 @@ kubectl get elasticsearch
 kubectl get es; kubectl get pods -l common.k8s.elastic.co/type=elasticsearch
 
 # get elastic password into env variable
-$ELASTIC_PASSWORD=$(kubectl get secret "ex-$ENV-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
+$ELASTIC_PASSWORD = $(kubectl get secret "ex-$ENV-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
 
 # port forward elasticsearch
 $ELASTIC_JOB = kubectl port-forward service/ex-$ENV-es-http 9200 &
@@ -110,8 +112,8 @@ helm install --namespace ingress-nginx -f nginx-values.yaml ingress-nginx ingres
 
 # wait for external ip to be assigned
 kubectl get service -l app.kubernetes.io/name=ingress-nginx --namespace ingress-nginx
-$IP=$(kubectl get service -l app.kubernetes.io/name=ingress-nginx --namespace ingress-nginx -o=jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
-$PUBLICIPID=$(az network public-ip list --query "[?ipAddress!=null]|[?contains(ipAddress, '$IP')].[id]" --output tsv)
+$IP = $(kubectl get service -l app.kubernetes.io/name=ingress-nginx --namespace ingress-nginx -o=jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
+$PUBLICIPID = $(az network public-ip list --query "[?ipAddress!=null]|[?contains(ipAddress, '$IP')].[id]" --output tsv)
 az network public-ip update --ids $PUBLICIPID --dns-name $CLUSTER
 
 # install cert-manager
@@ -123,7 +125,7 @@ kubectl apply -f cluster-issuer.yaml
 # https://kubecost.com/install?ref=home
 kubectl create namespace kubecost
 helm repo add kubecost https://kubecost.github.io/cost-analyzer/
-$KUBECOST_KEY=""
+$KUBECOST_KEY = ""
 helm install kubecost kubecost/cost-analyzer --namespace kubecost --set kubecostToken="ZXJpY0Bjb2Rlc21pdGh0b29scy5jb20=xm343yadf98"
 
 # install goldilocks
@@ -152,7 +154,7 @@ helm repo add signoz https://charts.signoz.io
 helm install signoz-collector signoz/k8s-infra -f signoz.yaml --set "signozApiKey=$SIGNOZ_KEY"
 
 # install exceptionless app
-$VERSION="8.0.0"
+$VERSION = "8.0.0"
 helm install ex-$ENV .\exceptionless --namespace ex-$ENV --values ex-$ENV-values.yaml `
     --set "version=$VERSION" `
     --set "elasticsearch.connectionString=$ELASTIC_CONNECTIONSTRING" `
@@ -170,22 +172,22 @@ helm install ex-$ENV .\exceptionless --namespace ex-$ENV --values ex-$ENV-values
     --set "config.EX_MaxMindGeoIpKey=$EX_MaxMindGeoIpKey" `
     --set "config.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret"
 
-$ENV="dev"
-$REDIS_CONNECTIONSTRING="server=ex-dev-redis\,password=veR9d6VB6Z\,abortConnect=false\,serviceName=exceptionless"
+$ENV = "dev"
+$REDIS_CONNECTIONSTRING = "server=ex-dev-redis\,password=veR9d6VB6Z\,abortConnect=false\,serviceName=exceptionless"
 helm upgrade ex-$ENV .\exceptionless --namespace ex-$ENV --reuse-values --set "redis.connectionString=$REDIS_CONNECTIONSTRING"
 helm upgrade ex-$ENV .\exceptionless --namespace ex-$ENV --reuse-values --set "app.image.repository=exceptionless/ui-ci"
 
 # create service principal for talking to k8s
-$SUBSCRIPTION_ID=$(az account show --query 'id' --output tsv)
-$AZ_TENANT=$(az account show --query 'tenantId' --output tsv)
-$SERVICE_PRINCIPAL=$(az ad sp create-for-rbac --role="Azure Kubernetes Service Cluster User Role" --name http://$CLUSTER-ci --scopes="/subscriptions/$SUBSCRIPTION_ID" -o json)
-$AZ_USERNAME=`echo $SERVICE_PRINCIPAL | jq -r '.appId'`
-$AZ_PASSWORD=`echo $SERVICE_PRINCIPAL | jq -r '.password'`
-Write-Output "AZ_USERNAME=$AZ_USERNAME AZ_PASSWORD=$AZ_PASSWORD AZ_TENANT=$AZ_TENANT | az login --service-principal --username \$AZ_USERNAME --password \$AZ_PASSWORD --tenant \$AZ_TENANT"
+$SUBSCRIPTION_ID = $(az account show --query 'id' --output tsv)
+$AZ_TENANT = $(az account show --query 'tenantId' --output tsv)
+$SERVICE_PRINCIPAL = $(az ad sp create-for-rbac --role="Azure Kubernetes Service Cluster User Role" --name http://$CLUSTER-ci --scopes="/subscriptions/$SUBSCRIPTION_ID" -o json)
+$AZ_USERNAME = `echo $SERVICE_PRINCIPAL | jq -r '.appId'`
+    $AZ_PASSWORD=`echo $SERVICE_PRINCIPAL | jq -r '.password'`
+    Write-Output "AZ_USERNAME=$AZ_USERNAME AZ_PASSWORD=$AZ_PASSWORD AZ_TENANT=$AZ_TENANT | az login --service-principal --username \$AZ_USERNAME --password \$AZ_PASSWORD --tenant \$AZ_TENANT"
 
 # renew service principal
-$SP_ID=$(az aks show --resource-group $RESOURCE_GROUP --name $CLUSTER --query servicePrincipalProfile.clientId -o tsv)
-$SP_SECRET=$(az ad sp credential reset --id $SP_ID --years 3 --query password -o tsv)
+$SP_ID = $(az aks show --resource-group $RESOURCE_GROUP --name $CLUSTER --query servicePrincipalProfile.clientId -o tsv)
+$SP_SECRET = $(az ad sp credential reset --id $SP_ID --years 3 --query password -o tsv)
 # store secret in 1Password (Exceptionless Azure CI Service Principal)
 az aks update-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --reset-service-principal --service-principal $SP_ID --client-secret $SP_SECRET
 az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER --overwrite-existing

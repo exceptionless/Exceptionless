@@ -1,5 +1,5 @@
 # get elasticsearch password
-$ELASTIC_PASSWORD=$(kubectl get secret --namespace ex-prod "ex-prod-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
+$ELASTIC_PASSWORD = $(kubectl get secret --namespace ex-prod "ex-prod-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
 
 # connect to kibana
 $ELASTIC_JOB = kubectl port-forward --namespace ex-prod service/ex-prod-kb-http 5660:5601 &
@@ -12,7 +12,7 @@ Remove-Job $ELASTIC_JOB
 curl -k https://elastic:$ELASTIC_PASSWORD@localhost:9260/_cluster/health?pretty
 
 # port forward monitoring elasticsearch
-$ELASTIC_MONITOR_PASSWORD=$(kubectl get secret --namespace elastic-system "elastic-monitor-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
+$ELASTIC_MONITOR_PASSWORD = $(kubectl get secret --namespace elastic-system "elastic-monitor-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
 $ELASTIC_JOB = kubectl port-forward --namespace elastic-system service/elastic-monitor-es-http 9280:9200 &
 Remove-Job $ELASTIC_JOB
 
@@ -26,11 +26,11 @@ curl -X PUT -H "Content-Type: application/json" -g -k -d '{ "transient": { "acti
 curl -k -X DELETE "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/.ds-traces-apm-default-2022.09.01-000108"
 
 # connect to redis OR use k9s to shell into a redis pod
-$REDIS_PASSWORD=$(kubectl get secret --namespace ex-prod ex-prod-redis -o go-template='{{index .data "redis-password" | base64decode }}')
+$REDIS_PASSWORD = $(kubectl get secret --namespace ex-prod ex-prod-redis -o go-template='{{index .data "redis-password" | base64decode }}')
 kubectl exec --stdin --tty ex-prod-redis-node-0 -- /bin/bash -c "redis-cli -a $REDIS_PASSWORD"
 
 # open kubernetes dashboard
-$DASHBOARD_PASSWORD=$(kubectl get secret --namespace kubernetes-dashboard admin-user-token-w8jg7 -o go-template='{{.data.token | base64decode }}')
+$DASHBOARD_PASSWORD = $(kubectl get secret --namespace kubernetes-dashboard admin-user-token-w8jg7 -o go-template='{{.data.token | base64decode }}')
 kubectl proxy
 Start-Process "http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/"
 
@@ -81,12 +81,16 @@ helm repo update
 helm upgrade goldilocks fairwinds-stable/goldilocks --namespace goldilocks --reset-values --dry-run
 helm upgrade vpa fairwinds-stable/vpa --namespace vpa -f vpa-values.yaml --reset-values --dry-run
 
+# upgrade signoz
+helm repo update
+helm upgrade --reset-values signoz-collector signoz/k8s-infra -f signoz.yaml --set "signozApiKey=$SIGNOZ_KEY" --dry-run
+
 # upgrade elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl replace -f https://download.elastic.co/downloads/eck/2.15.0/crds.yaml
-kubectl create -f https://download.elastic.co/downloads/eck/2.15.0/crds.yaml
-kubectl apply -f https://download.elastic.co/downloads/eck/2.15.0/operator.yaml
+kubectl replace -f https://download.elastic.co/downloads/eck/2.16.1/crds.yaml
+kubectl create -f https://download.elastic.co/downloads/eck/2.16.1/crds.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/2.16.1/operator.yaml
 
 # upgrade elasticsearch
 kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml
@@ -95,7 +99,7 @@ kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml
 kubectl apply --namespace elastic-system -f elastic-monitor.yaml
 
 # upgrade exceptionless app to a new docker image tag
-$VERSION="8.0.0"
+$VERSION = "8.0.0"
 helm upgrade --set "version=$VERSION" --reuse-values ex-prod --namespace ex-prod .\exceptionless
 helm upgrade --reuse-values ex-prod --namespace ex-prod .\exceptionless
 # see what an upgrade will do
