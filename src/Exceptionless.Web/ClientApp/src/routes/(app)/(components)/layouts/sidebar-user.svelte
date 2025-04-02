@@ -24,7 +24,7 @@
         user: undefined | User;
     }
 
-    let { gravatar, isLoading, user, ...props }: Props = $props();
+    let { gravatar, isLoading, user }: Props = $props();
     const sidebar = useSidebar();
 
     function onMenuClick() {
