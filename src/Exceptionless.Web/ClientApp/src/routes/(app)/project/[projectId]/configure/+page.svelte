@@ -2,6 +2,7 @@
     import { page } from '$app/state';
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import { A, Code, H3, Muted, P } from '$comp/typography';
+    import * as Alert from '$comp/ui/alert';
     import { Button } from '$comp/ui/button';
     import { Input } from '$comp/ui/input';
     import * as Select from '$comp/ui/select';
@@ -169,11 +170,11 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
     <ol class="list-decimal space-y-8 pl-5">
         <li>
             <P>Select your project type:</P>
-            <Select.Root 
-                type="single" 
+            <Select.Root
+                type="single"
                 value={selectedProjectType?.key}
-                onValueChange={(value) => { 
-                    const found = projectTypes.find(p => p.key === value); 
+                onValueChange={(value) => {
+                    const found = projectTypes.find((P) => P.key === value);
                     selectedProjectType = found || null;
                 }}
             >
@@ -183,7 +184,7 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
                 <Select.Content>
                     <Select.Group>
                         <Select.GroupHeading>Command Line</Select.GroupHeading>
-                        {#each projectTypes.filter((p) => p.platform === 'Command Line') as type (type.key)}
+                        {#each projectTypes.filter((P) => P.platform === 'Command Line') as type (type.key)}
                             <Select.Item value={type.key}>
                                 {type.name}
                             </Select.Item>
@@ -192,7 +193,7 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
                     <Select.Separator />
                     <Select.Group>
                         <Select.GroupHeading>.NET</Select.GroupHeading>
-                        {#each projectTypes.filter((p) => p.platform === '.NET') as type (type.key)}
+                        {#each projectTypes.filter((P) => P.platform === '.NET') as type (type.key)}
                             <Select.Item value={type.key}>
                                 {type.name}
                             </Select.Item>
@@ -201,7 +202,7 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
                     <Select.Separator />
                     <Select.Group>
                         <Select.GroupHeading>JavaScript</Select.GroupHeading>
-                        {#each projectTypes.filter((p) => p.platform === 'JavaScript') as type (type.key)}
+                        {#each projectTypes.filter((P) => P.platform === 'JavaScript') as type (type.key)}
                             <Select.Item value={type.key}>
                                 {type.name}
                             </Select.Item>
@@ -215,16 +216,14 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
             {#if isCommandLine(selectedProjectType)}
                 <li>
                     <P>Execute the following in your shell:</P>
-                    <div class="bg-muted relative overflow-x-auto rounded-md p-4">
+                    <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
                         {#if isBashShell(selectedProjectType)}
                             <Code class="block whitespace-pre">{codeSamples.bashShell}</Code>
                         {:else}
                             <Code class="block whitespace-pre">{codeSamples.powerShell}</Code>
                         {/if}
                         <div class="absolute top-2 right-2">
-                            <CopyToClipboardButton
-                                value={isBashShell(selectedProjectType) ? codeSamples.bashShell : codeSamples.powerShell}
-                            />
+                            <CopyToClipboardButton value={isBashShell(selectedProjectType) ? codeSamples.bashShell : codeSamples.powerShell} />
                         </div>
                     </div>
                 </li>
@@ -234,7 +233,7 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
                 <li>
                     {#if isDotNet(selectedProjectType)}
                         <P>Install the NuGet package:</P>
-                        <div class="bg-muted relative overflow-x-auto rounded-md p-4">
+                        <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
                             <Code class="block">Install-Package {selectedProjectType.key}</Code>
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={`Install-Package ${selectedProjectType.key}`} />
@@ -245,7 +244,7 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
                     {#if isJavaScript(selectedProjectType)}
                         {#if !isNode(selectedProjectType)}
                             <P>Install via npm:</P>
-                            <div class="bg-muted relative overflow-x-auto rounded-md p-4">
+                            <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
                                 <Code class="block">npm install @exceptionless/browser --save</Code>
                                 <div class="absolute top-2 right-2">
                                     <CopyToClipboardButton value="npm install @exceptionless/browser --save" />
@@ -255,7 +254,7 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
 
                         {#if isNode(selectedProjectType)}
                             <P>Install via npm:</P>
-                            <div class="bg-muted relative overflow-x-auto rounded-md p-4">
+                            <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
                                 <Code class="block">npm install @exceptionless/node --save</Code>
                                 <div class="absolute top-2 right-2">
                                     <CopyToClipboardButton value="npm install @exceptionless/node --save" />
@@ -269,7 +268,7 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
             {#if isJavaScript(selectedProjectType)}
                 <li>
                     <P>Configure the ExceptionlessClient with your Exceptionless API key:</P>
-                    <div class="bg-muted relative overflow-x-auto rounded-md p-4">
+                    <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
                         {#if !isNode(selectedProjectType)}
                             <Code class="block whitespace-pre">{codeSamples.browserJs}</Code>
                             <div class="absolute top-2 right-2">
@@ -299,14 +298,14 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
 
                     {#if selectedProjectType.key === 'Exceptionless'}
                         <P>Add to your application startup:</P>
-                        <div class="bg-muted relative overflow-x-auto rounded-md p-4">
+                        <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
                             <Code class="block whitespace-pre">{codeSamples.exceptionlessDefault}</Code>
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.exceptionlessDefault} />
                             </div>
                         </div>
                         <P>Then add code to handle unhandled exceptions:</P>
-                        <div class="bg-muted relative overflow-x-auto rounded-md p-4">
+                        <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
                             <Code class="block whitespace-pre">{codeSamples.unhandledException}</Code>
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.unhandledException} />
@@ -316,7 +315,7 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
 
                     {#if selectedProjectType.key === 'Exceptionless.AspNetCore'}
                         <P>Add to your application startup:</P>
-                        <div class="bg-muted relative overflow-x-auto rounded-md p-4">
+                        <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
                             <Code class="block whitespace-pre">{codeSamples.aspNetCore}</Code>
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.aspNetCore} />
@@ -326,7 +325,7 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
 
                     {#if selectedProjectType.key === 'Exceptionless.Nancy'}
                         <P>Add to your bootstrapper:</P>
-                        <div class="bg-muted relative overflow-x-auto rounded-md p-4">
+                        <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
                             <Code class="block whitespace-pre">{codeSamples.nancy}</Code>
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.nancy} />
@@ -336,7 +335,7 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
 
                     {#if selectedProjectType.key === 'Exceptionless.Windows' || selectedProjectType.key === 'Exceptionless.Wpf'}
                         <P>Add to your application startup:</P>
-                        <div class="bg-muted relative overflow-x-auto rounded-md p-4">
+                        <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
                             <Code class="block whitespace-pre">{codeSamples.windows}</Code>
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.windows} />
@@ -346,14 +345,14 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
 
                     {#if selectedProjectType.key === 'Exceptionless.WebApi'}
                         <P>Add to your WebApiConfig.Register method:</P>
-                        <div class="bg-muted relative overflow-x-auto rounded-md p-4">
+                        <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
                             <Code class="block whitespace-pre">{codeSamples.webApi}</Code>
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.webApi} />
                             </div>
                         </div>
                         <P>If hosting your Web API in ASP.NET, also add to your Global.asax.cs Application_Start:</P>
-                        <div class="bg-muted relative overflow-x-auto rounded-md p-4">
+                        <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
                             <Code class="block whitespace-pre">{codeSamples.webApiInAspNet}</Code>
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.webApiInAspNet} />
@@ -366,46 +365,32 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
     </ol>
 
     {#if selectedProjectType}
-        <div class="mt-6">
-            <div class="rounded-md border border-green-500 bg-green-50 p-4">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path
-                                fill-rule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                                clip-rule="evenodd"
-                            />
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-medium text-green-800">That's it!</h3>
-                        <div class="mt-2 text-sm text-green-700">
-                            {#if isCommandLine(selectedProjectType)}
-                                <p>
-                                    You can now send data to Exceptionless using the command line. For more information, check out the
-                                    <A href="https://exceptionless.com/docs/clients/dotnet/sending-events/" target="_blank">documentation</A>
-                                    for more ways to submit events.
-                                </p>
-                            {/if}
-                            {#if isDotNet(selectedProjectType)}
-                                <p>
-                                    Your project should now automatically be sending all unhandled exceptions to Exceptionless! For more information, check out the
-                                    <A href="https://exceptionless.com/docs/clients/dotnet/sending-events/" target="_blank">documentation</A>
-                                    for more ways to submit events. You can also manually send exceptions using <code>ex.ToExceptionless().Submit()</code>.
-                                </p>
-                            {/if}
-                            {#if isJavaScript(selectedProjectType)}
-                                <p>
-                                    Your project should now automatically be sending all unhandled exceptions to Exceptionless! For more information, check out the
-                                    <A href="https://exceptionless.com/docs/clients/javascript/sending-events/" target="_blank">documentation</A>
-                                    for more ways to submit events. You can also manually send exceptions using <code>await Exceptionless.submitException(ex);</code>.
-                                </p>
-                            {/if}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <Alert.Root>
+            <Alert.Title>That's it!</Alert.Title>
+            <Alert.Description>
+                {#if isCommandLine(selectedProjectType)}
+                    <P>
+                        You can now send data to Exceptionless using the command line. For more information, check out the
+                        <A href="https://exceptionless.com/docs/clients/dotnet/sending-events/" target="_blank">documentation</A>
+                        for more ways to submit events.
+                    </P>
+                {/if}
+                {#if isDotNet(selectedProjectType)}
+                    <P>
+                        Your project should now automatically be sending all unhandled exceptions to Exceptionless! For more information, check out the
+                        <A href="https://exceptionless.com/docs/clients/dotnet/sending-events/" target="_blank">documentation</A>
+                        for more ways to submit events. You can also manually send exceptions using <code>ex.ToExceptionless().Submit()</code>.
+                    </P>
+                {/if}
+                {#if isJavaScript(selectedProjectType)}
+                    <P>
+                        Your project should now automatically be sending all unhandled exceptions to Exceptionless! For more information, check out the
+                        <A href="https://exceptionless.com/docs/clients/javascript/sending-events/" target="_blank">documentation</A>
+                        for more ways to submit events. You can also manually send exceptions using
+                        <code>await Exceptionless.submitException(ex);</code>.
+                    </P>
+                {/if}
+            </Alert.Description>
+        </Alert.Root>
     {/if}
 </div>
