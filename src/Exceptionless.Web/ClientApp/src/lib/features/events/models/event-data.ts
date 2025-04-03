@@ -1,3 +1,5 @@
+import { logLevels } from '../options';
+
 export interface EnvironmentInfo {
     architecture?: string;
     available_physical_memory?: number;
@@ -56,7 +58,7 @@ export interface ITargetErrorData extends Record<string, string | undefined> {
     Method?: string;
 }
 
-export type LogLevel = 'debug' | 'error' | 'fatal' | 'info' | 'trace' | 'warn' | string;
+export type LogLevel = 'debug' | 'error' | 'fatal' | 'info' | 'off' | 'trace' | 'warn' | string;
 
 export interface ManualStackingInfo {
     signature_data?: Record<string, string>;
@@ -126,4 +128,37 @@ export interface UserInfo {
     data?: Record<string, unknown>;
     identity?: string;
     name?: string;
+}
+
+// TODO: Move to a helper.
+export function getLogLevel(level?: LogLevel | null): LogLevel | null {
+    switch (level?.toLowerCase().trim()) {
+        case '0':
+        case 'false':
+        case 'no':
+        case 'off':
+            return 'off';
+        case '1':
+        case 'trace':
+        case 'true':
+        case 'yes':
+            return 'trace';
+        case 'debug':
+            return 'debug';
+        case 'error':
+            return 'error';
+        case 'fatal':
+            return 'fatal';
+        case 'info':
+            return 'info';
+        case 'warn':
+            return 'warn';
+        default:
+            return level ?? null;
+    }
+}
+
+export function getLogLevelDisplayName(level?: LogLevel | null): LogLevel | null {
+    const resolvedLevel = getLogLevel(level);
+    return logLevels.find((l) => l.value === resolvedLevel)?.label ?? level ?? null;
 }

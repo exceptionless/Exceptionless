@@ -17,6 +17,7 @@
         "clsx",
         "cmdk",
         "colour",
+        "Contoso",
         "dockerignore",
         "editorconfig",
         "elasticsearch",
@@ -51,6 +52,7 @@
         "typeschema",
         "WCAG",
         "websockets",
+        "Writeline",
         "Xunit"
     ],
     "css.customData": [

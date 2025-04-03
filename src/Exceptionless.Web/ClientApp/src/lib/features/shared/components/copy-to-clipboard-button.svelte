@@ -3,6 +3,7 @@
     import type { VariantProps } from 'tailwind-variants';
 
     import { Button, type ButtonProps, type buttonVariants } from '$comp/ui/button';
+    import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
     import ClipboardCopy from 'lucide-svelte/icons/clipboard-copy';
     import { toast } from 'svelte-sonner';
 
@@ -14,11 +15,13 @@
 
     let { children, size = 'icon', title = 'Copy to Clipboard', value }: Props = $props();
 
+    const clipboard = new UseClipboard();
+
     async function copyToClipboard() {
-        try {
-            await navigator.clipboard.writeText(value ?? '');
+        await clipboard.copy(value ?? '');
+        if (clipboard.copied) {
             toast.success('Copy to clipboard succeeded');
-        } catch {
+        } else {
             toast.error('Copy to clipboard failed');
         }
     }

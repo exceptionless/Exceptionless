@@ -64,6 +64,7 @@
         }
     });
 
+    // TODO: Log Level
     const stack = $derived(stackResponse.data!);
     const eventOccurrences = $derived(sum(stackCountResponse?.data?.aggregations, 'sum_count')?.value ?? 0);
     const totalOccurrences = $derived(stack && stack.total_occurrences > eventOccurrences ? stack.total_occurrences : eventOccurrences);
