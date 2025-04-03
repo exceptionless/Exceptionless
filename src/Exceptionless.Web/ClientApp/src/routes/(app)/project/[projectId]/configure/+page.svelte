@@ -1,7 +1,7 @@
 <script lang="ts">
     import { page } from '$app/state';
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
-    import { A, Code, H3, Muted, P } from '$comp/typography';
+    import { A, Code, CodeBlock, H3, Muted, P } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Button } from '$comp/ui/button';
     import { Input } from '$comp/ui/input';
@@ -218,9 +218,9 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
                     <P>Execute the following in your shell:</P>
                     <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
                         {#if isBashShell(selectedProjectType)}
-                            <Code class="block whitespace-pre">{codeSamples.bashShell}</Code>
+                            <CodeBlock code={codeSamples.bashShell} language="shellscript" />
                         {:else}
-                            <Code class="block whitespace-pre">{codeSamples.powerShell}</Code>
+                            <CodeBlock code={codeSamples.powerShell} language="powershell" />
                         {/if}
                         <div class="absolute top-2 right-2">
                             <CopyToClipboardButton value={isBashShell(selectedProjectType) ? codeSamples.bashShell : codeSamples.powerShell} />
@@ -270,12 +270,12 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
                     <P>Configure the ExceptionlessClient with your Exceptionless API key:</P>
                     <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
                         {#if !isNode(selectedProjectType)}
-                            <Code class="block whitespace-pre">{codeSamples.browserJs}</Code>
+                            <CodeBlock code={codeSamples.browserJs} language="javascript" />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.browserJs} />
                             </div>
                         {:else}
-                            <Code class="block whitespace-pre">{codeSamples.nodeJs}</Code>
+                            <CodeBlock code={codeSamples.nodeJs} language="javascript" />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.nodeJs} />
                             </div>
@@ -299,14 +299,14 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
                     {#if selectedProjectType.key === 'Exceptionless'}
                         <P>Add to your application startup:</P>
                         <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
-                            <Code class="block whitespace-pre">{codeSamples.exceptionlessDefault}</Code>
+                            <CodeBlock code={codeSamples.exceptionlessDefault} language="csharp" />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.exceptionlessDefault} />
                             </div>
                         </div>
                         <P>Then add code to handle unhandled exceptions:</P>
                         <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
-                            <Code class="block whitespace-pre">{codeSamples.unhandledException}</Code>
+                            <CodeBlock code={codeSamples.unhandledException} language="csharp" />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.unhandledException} />
                             </div>
@@ -316,7 +316,7 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
                     {#if selectedProjectType.key === 'Exceptionless.AspNetCore'}
                         <P>Add to your application startup:</P>
                         <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
-                            <Code class="block whitespace-pre">{codeSamples.aspNetCore}</Code>
+                            <CodeBlock code={codeSamples.aspNetCore} language="csharp" />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.aspNetCore} />
                             </div>
@@ -326,7 +326,7 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
                     {#if selectedProjectType.key === 'Exceptionless.Nancy'}
                         <P>Add to your bootstrapper:</P>
                         <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
-                            <Code class="block whitespace-pre">{codeSamples.nancy}</Code>
+                            <CodeBlock code={codeSamples.nancy} language="csharp" />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.nancy} />
                             </div>
@@ -336,7 +336,7 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
                     {#if selectedProjectType.key === 'Exceptionless.Windows' || selectedProjectType.key === 'Exceptionless.Wpf'}
                         <P>Add to your application startup:</P>
                         <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
-                            <Code class="block whitespace-pre">{codeSamples.windows}</Code>
+                            <CodeBlock code={codeSamples.windows} language="csharp" />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.windows} />
                             </div>
@@ -346,14 +346,14 @@ Invoke-RestMethod -Uri "${serverUrl}/api/v2/events" -Method "Post" -Body $body -
                     {#if selectedProjectType.key === 'Exceptionless.WebApi'}
                         <P>Add to your WebApiConfig.Register method:</P>
                         <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
-                            <Code class="block whitespace-pre">{codeSamples.webApi}</Code>
+                            <CodeBlock code={codeSamples.webApi} language="csharp" />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.webApi} />
                             </div>
                         </div>
                         <P>If hosting your Web API in ASP.NET, also add to your Global.asax.cs Application_Start:</P>
                         <div class="bg-muted P-4 relative overflow-x-auto rounded-md">
-                            <Code class="block whitespace-pre">{codeSamples.webApiInAspNet}</Code>
+                            <CodeBlock code={codeSamples.webApiInAspNet} language="csharp" />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.webApiInAspNet} />
                             </div>
