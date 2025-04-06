@@ -1,4 +1,6 @@
 <script lang="ts">
+    import type { HTMLAttributes } from 'svelte/elements';
+
     // NOTE: We are disabling html tags warnings as we are running it through DOMPurify.
     /* eslint svelte/no-at-html-tags: "off" */
     import csharpLanguage from '@shikijs/langs/csharp';
@@ -14,12 +16,12 @@
     import { createHighlighterCoreSync } from 'shiki/core';
     import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
 
-    interface Props {
+    type Props = HTMLAttributes<HTMLPreElement> & {
         code: string;
         language: 'csharp' | 'javascript' | 'json' | 'powershell' | 'shellscript' | 'xml';
-    }
+    };
 
-    const { code, language }: Props = $props();
+    const { class: className, code, language, ...props }: Props = $props();
 
     let theme = $derived($mode === 'light' ? 'github-light' : 'github-dark');
     const jsEngine = createJavaScriptRegexEngine();
@@ -52,4 +54,4 @@
     );
 </script>
 
-<pre class="bg-muted relative rounded px-[0.3rem] py-[0.2rem] font-mono text-sm">{@html content}</pre>
+<pre class={['bg-muted relative rounded px-[0.6rem] py-[0.5rem] font-mono text-sm', className]} {...props}>{@html content}</pre>

@@ -85,6 +85,11 @@
         }
     );
 
+    $effect(() => {
+        // Handle case where pop state loses the limit
+        params.limit ??= DEFAULT_LIMIT;
+    });
+
     // TODO: Add Skeleton
 </script>
 
