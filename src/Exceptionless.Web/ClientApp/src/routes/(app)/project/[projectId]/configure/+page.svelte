@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { goto } from '$app/navigation';
     import { page } from '$app/state';
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import { A, CodeBlock, H3, Muted, P } from '$comp/typography';
@@ -8,6 +9,7 @@
     import { env } from '$env/dynamic/public';
     import { getProjectTokensQuery } from '$features/tokens/api.svelte';
     import { queryParamsState } from 'kit-query-params';
+    import { useEventListener } from 'runed';
 
     // Project ID from route params
     const projectId = page.params.projectId || '';
@@ -62,10 +64,12 @@
     // Use query params for type
     const params = queryParamsState({
         default: {
+            redirect: false,
             type: undefined
         },
         pushHistory: true,
         schema: {
+            redirect: 'boolean',
             type: 'string'
         }
     });
@@ -190,6 +194,12 @@ public partial class App : Application {
     ExceptionlessClient.Default.Register();
   }
 }`
+    });
+
+    useEventListener(document, 'PersistentEventChanged', async () => {
+        if (params.redirect) {
+            await goto('/next/issues');
+        }
     });
 </script>
 
