@@ -57,6 +57,11 @@
             }
         }
     );
+
+    $effect(() => {
+        // Handle case where pop state loses the limit
+        params.limit ??= DEFAULT_LIMIT;
+    });
 </script>
 
 <div class="flex flex-col space-y-4">

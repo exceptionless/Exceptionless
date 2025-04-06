@@ -79,11 +79,6 @@
         { lazy: true }
     );
 
-    $effect(() => {
-        // Handle case where pop state loses the limit
-        params.limit ??= DEFAULT_LIMIT;
-    });
-
     function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
         if (addedOrUpdated.type !== 'date') {
             updateFilters(filterChanged(filters ?? [], addedOrUpdated));
@@ -176,6 +171,11 @@
 
     useEventListener(document, 'refresh', async () => await loadData());
     useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEventChanged((event as CustomEvent).detail));
+
+    $effect(() => {
+        // Handle case where pop state loses the limit
+        params.limit ??= DEFAULT_LIMIT;
+    });
 
     $effect(() => {
         loadData();
