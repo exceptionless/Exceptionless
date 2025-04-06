@@ -33,7 +33,7 @@
             try {
                 await createProject.mutateAsync(form.data);
                 toastId = toast.success('Project added successfully');
-                await goto('/next/project/configure');
+                await goto('/next/project/configure?redirect=true');
 
                 // HACK: This is to prevent sveltekit from stealing focus
                 result.type = 'failure';
