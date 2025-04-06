@@ -7,16 +7,14 @@
     import * as Select from '$comp/ui/select';
     import { Separator } from '$comp/ui/separator';
     import { env } from '$env/dynamic/public';
-    import { getProjectTokensQuery } from '$features/tokens/api.svelte';
+    import { getProjectDefaultTokenQuery } from '$features/tokens/api.svelte';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener } from 'runed';
 
     // Project ID from route params
     const projectId = page.params.projectId || '';
 
-    // Get project tokens
-    const tokensQuery = getProjectTokensQuery({
-        params: { limit: 1 },
+    const defaultTokenQuery = getProjectDefaultTokenQuery({
         route: {
             get projectId() {
                 return projectId;
@@ -24,12 +22,9 @@
         }
     });
 
-    const apiKey = $derived(tokensQuery.data?.data?.[0]?.id || 'YOUR_API_KEY');
-
-    // Server URL for API requests
+    const apiKey = $derived(defaultTokenQuery.data?.id || 'YOUR_API_KEY');
     const serverUrl = env.PUBLIC_API_URL || window.location.origin;
 
-    // Define the project type interface
     interface ProjectType {
         config?: string;
         id: string;
@@ -38,7 +33,6 @@
         platform: string;
     }
 
-    // Project type handling
     const projectTypes: ProjectType[] = [
         { id: 'bash', label: 'Bash Shell', platform: 'Command Line' },
         { id: 'powershell', label: 'PowerShell', platform: 'Command Line' },
@@ -61,7 +55,6 @@
 
     const projectTypesGroupedByPlatform = Object.groupBy(projectTypes, (p) => p.platform);
 
-    // Use query params for type
     const params = queryParamsState({
         default: {
             redirect: false,
@@ -74,7 +67,6 @@
         }
     });
 
-    // Set selected project type based on query param
     let selectedProjectType = $state<null | ProjectType>(null);
 
     $effect(() => {
@@ -85,7 +77,7 @@
                 selectedProjectType = found;
             } else {
                 params.type = null;
-                selectedProjectType = null; // Reset selectedProjectType if not found
+                selectedProjectType = null;
             }
         }
     });

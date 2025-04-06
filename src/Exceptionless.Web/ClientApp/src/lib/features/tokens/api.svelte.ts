@@ -33,12 +33,19 @@ export const queryKeys = {
     ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
     postProjectToken: (id: string | undefined) => [...queryKeys.project(id), 'post'] as const,
     project: (id: string | undefined) => [...queryKeys.type, 'project', id] as const,
+    projectDefaultToken: (projectId: string | undefined) => [...queryKeys.project(projectId), 'default'] as const,
     type: ['Token'] as const
 };
 
 export interface DeleteTokenRequest {
     route: {
         ids: string[];
+    };
+}
+
+export interface GetProjectDefaultTokenRequest {
+    route: {
+        projectId: string | undefined;
     };
 }
 
@@ -86,6 +93,27 @@ export function deleteToken(request: DeleteTokenRequest) {
         onSuccess: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         }
+    }));
+}
+
+export function getProjectDefaultTokenQuery(request: GetProjectDefaultTokenRequest) {
+    const queryClient = useQueryClient();
+
+    return createQuery<ViewToken, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.projectId,
+        onSuccess: (token: ViewToken) => {
+            queryClient.setQueryData(queryKeys.id(token.id!), token);
+        },
+        queryClient,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<ViewToken>(`projects/${request.route.projectId}/tokens/default`, {
+                signal
+            });
+
+            return response.data!;
+        },
+        queryKey: queryKeys.projectDefaultToken(request.route.projectId)
     }));
 }
 
