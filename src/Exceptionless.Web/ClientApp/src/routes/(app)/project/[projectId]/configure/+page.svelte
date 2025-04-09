@@ -449,7 +449,7 @@ public partial class App : Application {
                                 <CopyToClipboardButton value={codeSamples.webApiRegister} />
                             </div>
                         </div>
-                        <P>If you are hosting Web API inside of ASP.NET, you would register Exceptionless like:</P>
+                        <P>If you are hosting Web API inside of ASP.NET, you would register Exceptionless using GlobalConfiguration.</P>
                         <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
                             <CodeBlock code={codeSamples.webApiRegisterAspNet} language="csharp" />
                             <div class="absolute top-2 right-2">
