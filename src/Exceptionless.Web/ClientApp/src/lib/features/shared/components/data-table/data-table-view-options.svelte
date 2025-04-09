@@ -18,9 +18,8 @@
 
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
-        <Button class="ml-auto hidden h-8 lg:flex" size="sm" variant="outline">
-            <ViewColumn class="mr-2 size-4" />
-            View
+        <Button size="icon" variant="outline" title="Toggle columns">
+            <ViewColumn class="size-4" />
         </Button>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content>
