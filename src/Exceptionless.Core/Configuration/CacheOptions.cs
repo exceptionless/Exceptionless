@@ -24,6 +24,13 @@ public class CacheOptions
         {
             options.Data = cs.ParseConnectionString();
             options.Provider = options.Data.GetString(nameof(options.Provider));
+            var providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
+
+            var providerOptions = providerConnectionString.ParseConnectionString(defaultKey: "server");
+            options.Data ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            options.Data.AddRange(providerOptions);
+
+            options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });
         }
         else
         {
@@ -31,18 +38,9 @@ public class CacheOptions
             if (!String.IsNullOrEmpty(redisConnectionString))
             {
                 options.Provider = "redis";
+                options.ConnectionString = redisConnectionString;
             }
         }
-
-        string? providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
-        if (!String.IsNullOrEmpty(providerConnectionString))
-        {
-            var providerOptions = providerConnectionString.ParseConnectionString(defaultKey: "server");
-            options.Data ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            options.Data.AddRange(providerOptions);
-        }
-
-        options.ConnectionString = options.Data.BuildConnectionString([nameof(options.Provider)]);
 
         return options;
     }

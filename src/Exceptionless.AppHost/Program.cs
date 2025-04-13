@@ -6,7 +6,7 @@ var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
     .WithDataVolume("exceptionless.data.v1")
     .WithKibana(b => b.WithLifetime(ContainerLifetime.Persistent).WithContainerName("Exceptionless-Kibana"));
 
-var storage = builder.AddMinIo("S3", s => s.WithCredentials("guest", "password").WithPorts(9000).WithBucket("ex-events"))
+var storage = builder.AddMinIo("Storage", s => s.WithCredentials("guest", "password").WithPorts(9000).WithBucket("ex-events"))
     .WithLifetime(ContainerLifetime.Persistent)
     .WithContainerName("Exceptionless-Storage");
 
@@ -15,12 +15,13 @@ var cache = builder.AddRedis("Redis", port: 6379)
     .WithLifetime(ContainerLifetime.Persistent)
     .WithContainerName("Exceptionless-Redis")
     .WithClearCommand()
-    .WithRedisInsight(b => b.WithLifetime(ContainerLifetime.Persistent).WithContainerName("Exceptionless-RedisInsight"));
+    .WithRedisInsight(b => b.WithLifetime(ContainerLifetime.Persistent).WithContainerName("Exceptionless-RedisInsight").WithUrlForEndpoint("http", u => u.DisplayText = "Cache"));
 
 var mail = builder.AddContainer("Mail", "mailhog/mailhog")
     .WithLifetime(ContainerLifetime.Persistent)
     .WithContainerName("Exceptionless-Mail")
     .WithEndpoint(8025, 8025, "http")
+    .WithUrlForEndpoint("http", u => u.DisplayText = "Mail")
     .WithEndpoint(1025, 1025);
 
 builder.AddProject<Projects.Exceptionless_Job>("Jobs", "AllJobs")
@@ -31,6 +32,7 @@ builder.AddProject<Projects.Exceptionless_Job>("Jobs", "AllJobs")
     .WaitFor(elastic)
     .WaitFor(cache)
     .WaitFor(mail)
+    .WithUrlForEndpoint("http", u => u.DisplayText = "Jobs")
     .WithHttpHealthCheck("/health");
 
 var api = builder.AddProject<Projects.Exceptionless_Web>("Api", "Exceptionless")
@@ -42,16 +44,19 @@ var api = builder.AddProject<Projects.Exceptionless_Web>("Api", "Exceptionless")
     .WaitFor(elastic)
     .WaitFor(cache)
     .WaitFor(mail)
+    .WithUrlForEndpoint("http", u => u.DisplayText = "Api")
     .WithHttpHealthCheck("/health");
 
 builder.AddNpmApp("Web", "../../src/Exceptionless.Web/ClientApp", "dev")
     .WithReference(api)
     .WithEnvironment("ASPNETCORE_URLS", "http://localhost:5200")
+    .WithUrlForEndpoint("http", u => u.DisplayText = "Web")
     .WithEndpoint(port: 5173, targetPort: 5173, scheme: "http", env: "PORT", isProxied: false);
 
 builder.AddNpmApp("AngularWeb", "../../src/Exceptionless.Web/ClientApp.angular", "serve")
     .WithReference(api)
     .WithEnvironment("ASPNETCORE_URLS", "http://localhost:5200")
+    .WithUrlForEndpoint("http", u => u.DisplayText = "Old Web")
     .WithEndpoint(port: 5100, targetPort: 5100, scheme: "http", env: "PORT", isProxied: false);
 
 builder.Build().Run();

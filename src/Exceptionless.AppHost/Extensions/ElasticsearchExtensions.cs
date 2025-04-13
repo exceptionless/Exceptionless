@@ -56,6 +56,7 @@ public static class ElasticsearchBuilderExtensions
             .WithImage(ElasticsearchContainerImageTags.Image, ElasticsearchContainerImageTags.Tag)
             .WithImageRegistry(ElasticsearchContainerImageTags.ElasticsearchRegistry)
             .WithHttpEndpoint(targetPort: ElasticsearchPort, port: port, name: ElasticsearchResource.PrimaryEndpointName)
+            .WithUrlForEndpoint(ElasticsearchResource.PrimaryEndpointName, u => u.DisplayText = "Elasticsearch")
             .WithEndpoint(targetPort: ElasticsearchInternalPort, name: ElasticsearchResource.InternalEndpointName)
             .WithEnvironment("discovery.type", "single-node")
             .WithEnvironment("xpack.security.enabled", "false")
@@ -86,6 +87,7 @@ public static class ElasticsearchBuilderExtensions
                                       .WithImage(ElasticsearchContainerImageTags.KibanaImage, ElasticsearchContainerImageTags.Tag)
                                       .WithImageRegistry(ElasticsearchContainerImageTags.KibanaRegistry)
                                       .WithHttpEndpoint(targetPort: KibanaPort, name: containerName)
+                                      .WithUrlForEndpoint(containerName, u => u.DisplayText = "Kibana")
                                       .WithEnvironment("xpack.security.enabled", "false")
                                       .ExcludeFromManifest();
 
