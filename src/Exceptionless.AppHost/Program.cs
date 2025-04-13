@@ -56,7 +56,7 @@ builder.AddNpmApp("Web", "../../src/Exceptionless.Web/ClientApp", "dev")
 builder.AddNpmApp("AngularWeb", "../../src/Exceptionless.Web/ClientApp.angular", "serve")
     .WithReference(api)
     .WithEnvironment("ASPNETCORE_URLS", "http://localhost:5200")
-    .WithUrlForEndpoint("http", u => u.DisplayText = "Old Web")
+    .WithUrlForEndpoint("http", u => u.DisplayText = "Angular Web")
     .WithEndpoint(port: 5100, targetPort: 5100, scheme: "http", env: "PORT", isProxied: false);
 
 builder.Build().Run();

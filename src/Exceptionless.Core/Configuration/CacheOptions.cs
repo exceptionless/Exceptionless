@@ -24,7 +24,7 @@ public class CacheOptions
         {
             options.Data = cs.ParseConnectionString();
             options.Provider = options.Data.GetString(nameof(options.Provider));
-            var providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
+            string? providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
 
             var providerOptions = providerConnectionString.ParseConnectionString(defaultKey: "server");
             options.Data ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

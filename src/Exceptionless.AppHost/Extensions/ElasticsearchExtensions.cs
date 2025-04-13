@@ -57,7 +57,7 @@ public static class ElasticsearchBuilderExtensions
             .WithImageRegistry(ElasticsearchContainerImageTags.ElasticsearchRegistry)
             .WithHttpEndpoint(targetPort: ElasticsearchPort, port: port, name: ElasticsearchResource.PrimaryEndpointName)
             .WithUrlForEndpoint(ElasticsearchResource.PrimaryEndpointName, u => u.DisplayText = "Elasticsearch")
-            .WithEndpoint(targetPort: ElasticsearchInternalPort, name: ElasticsearchResource.InternalEndpointName)
+            //.WithEndpoint(targetPort: ElasticsearchInternalPort, name: ElasticsearchResource.InternalEndpointName)
             .WithEnvironment("discovery.type", "single-node")
             .WithEnvironment("xpack.security.enabled", "false")
             .WithEnvironment("action.destructive_requires_name", "false")
