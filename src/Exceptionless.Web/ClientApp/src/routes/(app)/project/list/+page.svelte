@@ -1,4 +1,3 @@
-<!-- Project List Page -->
 <script lang="ts">
     import type { ViewProject } from '$features/projects/models';
 
@@ -7,40 +6,48 @@
     import * as Card from '$comp/ui/card';
     import { Input } from '$comp/ui/input';
     import { organization } from '$features/organizations/context.svelte';
-    import { getOrganizationProjectsQuery } from '$features/projects/api.svelte';
-    import { getTableContext } from '$features/projects/components/table/options.svelte';
+    import { type GetOrganizationProjectsParams, getOrganizationProjectsQuery } from '$features/projects/api.svelte';
+    import { getTableOptions } from '$features/projects/components/table/options.svelte';
     import ProjectsDataTable from '$features/projects/components/table/projects-data-table.svelte';
     import { DEFAULT_LIMIT } from '$shared/api/api.svelte';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import Plus from 'lucide-svelte/icons/plus';
-    import { watch } from 'runed';
-
-    let filter = $state('');
 
     const DEFAULT_PARAMS = {
+        filter: '',
         limit: DEFAULT_LIMIT
     };
 
-    const params = queryParamsState({
+    const queryParams = queryParamsState({
         default: DEFAULT_PARAMS,
         pushHistory: true,
         schema: {
+            filter: 'string',
             limit: 'number'
         }
     });
 
-    const context = getTableContext<ViewProject>({ limit: params.limit!, mode: 'stats' });
-    const table = createTable(context.options);
-
-    async function rowClick(project: ViewProject) {
-        if (project.id) {
-            await goto(`/next/project/${project.id}/manage`);
-        }
-    }
+    const projectsQueryParameters: GetOrganizationProjectsParams = $state({
+        get filter() {
+            return queryParams.filter!;
+        },
+        set filter(value) {
+            queryParams.filter = value;
+        },
+        get limit() {
+            return queryParams.limit!;
+        },
+        set limit(value) {
+            queryParams.limit = value;
+        },
+        mode: 'stats'
+    });
 
     const projectsQuery = getOrganizationProjectsQuery({
-        params: context.parameters,
+        get params() {
+            return projectsQueryParameters;
+        },
         route: {
             get organizationId() {
                 return organization.current;
@@ -48,19 +55,21 @@
         }
     });
 
-    watch(
-        () => projectsQuery.dataUpdatedAt,
-        () => {
-            if (projectsQuery.isSuccess) {
-                context.data = projectsQuery.data.data || [];
-                context.meta = projectsQuery.data.meta;
-            }
+    const table = createTable(getTableOptions<ViewProject>(projectsQueryParameters, projectsQuery));
+
+    async function rowClick(project: ViewProject) {
+        if (project.id) {
+            await goto(`/next/project/${project.id}/manage`);
         }
-    );
+    }
+
+    async function addProject() {
+        await goto('/next/project/add');
+    }
 
     $effect(() => {
         // Handle case where pop state loses the limit
-        params.limit ??= DEFAULT_LIMIT;
+        queryParams.limit ??= DEFAULT_LIMIT;
     });
 </script>
 
@@ -68,17 +77,19 @@
     <Card.Root>
         <Card.Header>
             <Card.Title class="text-2xl" level={2}>My Projects</Card.Title>
-            <Card.Description>
-                <Button href="/next/project/add">
-                    <Plus class="mr-2 size-4" />
-                    Add New Project
+            <Card.Description>View and manage your projects. Click on a project to view its details.</Card.Description>
+            <Card.Action>
+                <Button variant="secondary" size="icon" onclick={addProject} title="Add Project">
+                    <Plus class="size-4" />
                 </Button>
-            </Card.Description>
+            </Card.Action>
         </Card.Header>
         <Card.Content class="pt-4">
-            <ProjectsDataTable bind:limit={params.limit!} isLoading={projectsQuery.isLoading} {rowClick} {table}>
+            <ProjectsDataTable bind:limit={projectsQueryParameters.limit!} isLoading={projectsQuery.isLoading} {rowClick} {table} onAdd={addProject}>
                 {#snippet toolbarChildren()}
-                    <Input type="search" placeholder="Filter projects..." bind:value={filter} />
+                    <div class="min-w-fit flex-1">
+                        <Input type="search" placeholder="Filter projects..." class="w-full" bind:value={projectsQueryParameters.filter} />
+                    </div>
                 {/snippet}
             </ProjectsDataTable>
         </Card.Content>

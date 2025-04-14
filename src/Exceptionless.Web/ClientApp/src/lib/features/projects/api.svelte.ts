@@ -271,7 +271,7 @@ export function getOrganizationProjectsQuery(request: GetOrganizationProjectsReq
 
             return response;
         },
-        queryKey: queryKeys.organization(request.route.organizationId)
+        queryKey: [...queryKeys.organization(request.route.organizationId), { params: request.params }]
     }));
 }
 
