@@ -106,7 +106,7 @@ public class Bootstrapper
     {
         if (String.Equals(options.Provider, "redis"))
         {
-            container.ReplaceSingleton(s => GetRedisConnection(options.Data, s.GetRequiredService<ILoggerFactory>()));
+            container.ReplaceSingleton(s => GetRedisConnection(options.ConnectionString!, s.GetRequiredService<ILoggerFactory>()));
 
             if (!String.IsNullOrEmpty(options.Scope))
                 container.ReplaceSingleton<ICacheClient>(s => new ScopedCacheClient(CreateRedisCacheClient(s), options.Scope));
@@ -121,7 +121,7 @@ public class Bootstrapper
     {
         if (String.Equals(options.Provider, "redis"))
         {
-            container.ReplaceSingleton(s => GetRedisConnection(options.Data, s.GetRequiredService<ILoggerFactory>()));
+            container.ReplaceSingleton(s => GetRedisConnection(options.ConnectionString!, s.GetRequiredService<ILoggerFactory>()));
 
             container.ReplaceSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions
             {
@@ -145,9 +145,9 @@ public class Bootstrapper
         }
     }
 
-    private static IConnectionMultiplexer GetRedisConnection(Dictionary<string, string> options, ILoggerFactory loggerFactory)
+    private static IConnectionMultiplexer GetRedisConnection(string connectionString, ILoggerFactory loggerFactory)
     {
-        return ConnectionMultiplexer.Connect(options.GetString("server"), o => o.LoggerFactory = loggerFactory);
+        return ConnectionMultiplexer.Connect(connectionString, o => o.LoggerFactory = loggerFactory);
     }
 
     private static void RegisterQueue(IServiceCollection container, QueueOptions options, bool runMaintenanceTasks)
