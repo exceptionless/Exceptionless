@@ -41,6 +41,7 @@ public static class MinIoExtensions
             .WithArgs("server", "/data", "--console-address", $":{MinIoResource.DefaultConsolePort}")
             .WithEndpoint(port: options.ApiPort, targetPort: MinIoResource.DefaultApiPort, name: MinIoResource.ApiEndpointName)
             .WithHttpEndpoint(port: options.ConsolePort, targetPort: MinIoResource.DefaultConsolePort, name: MinIoResource.ConsoleEndpointName)
+            .WithUrlForEndpoint(MinIoResource.ConsoleEndpointName, u => u.DisplayText = "Storage")
             .ConfigureCredentials(options)
             .ConfigureVolume(options);
     }
