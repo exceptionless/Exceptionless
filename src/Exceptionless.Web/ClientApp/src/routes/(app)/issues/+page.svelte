@@ -26,11 +26,11 @@
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import { isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { isTableEmpty, removeTableData, removeTableSelection } from '$shared/table';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
