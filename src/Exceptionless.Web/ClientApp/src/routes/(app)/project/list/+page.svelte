@@ -85,7 +85,7 @@
             </Card.Action>
         </Card.Header>
         <Card.Content class="pt-4">
-            <ProjectsDataTable bind:limit={projectsQueryParameters.limit!} isLoading={projectsQuery.isLoading} {rowClick} {table} onAdd={addProject}>
+            <ProjectsDataTable bind:limit={projectsQueryParameters.limit!} isLoading={projectsQuery.isLoading} {rowClick} {table}>
                 {#snippet toolbarChildren()}
                     <div class="min-w-fit flex-1">
                         <Input type="search" placeholder="Filter projects..." class="w-full" bind:value={projectsQueryParameters.filter} />
