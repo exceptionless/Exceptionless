@@ -6,7 +6,7 @@
         "EX_AppMode": "Development"
       },
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:5002;http://localhost:5003"
+      "applicationUrl": "http://localhost:5003"
     },
     "CleanupDataJob": {
       "commandName": "Project",
@@ -15,7 +15,7 @@
         "EX_AppMode": "Development"
       },
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:5002;http://localhost:5003"
+      "applicationUrl": "http://localhost:5003"
     },
     "DataMigrationJob": {
       "commandName": "Project",
@@ -24,7 +24,7 @@
         "EX_AppMode": "Development"
       },
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:5002;http://localhost:5003"
+      "applicationUrl": "http://localhost:5003"
     },
     "MigrationJob": {
       "commandName": "Project",
@@ -33,7 +33,7 @@
         "EX_AppMode": "Development"
       },
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:5002;http://localhost:5003"
+      "applicationUrl": "http://localhost:5003"
     },
     "EventPostsJob": {
       "commandName": "Project",
@@ -42,7 +42,7 @@
         "EX_AppMode": "Development"
       },
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:5002;http://localhost:5003"
+      "applicationUrl": "http://localhost:5003"
     },
     "EventUserDescriptionsJob": {
       "commandName": "Project",
@@ -51,7 +51,7 @@
         "EX_AppMode": "Development"
       },
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:5002;http://localhost:5003"
+      "applicationUrl": "http://localhost:5003"
     },
     "EventNotificationsJob": {
       "commandName": "Project",
@@ -60,7 +60,7 @@
         "EX_AppMode": "Development"
       },
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:5002;http://localhost:5003"
+      "applicationUrl": "http://localhost:5003"
     },
     "MailMessageJob": {
       "commandName": "Project",
@@ -69,7 +69,7 @@
         "EX_AppMode": "Development"
       },
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:5002;http://localhost:5003"
+      "applicationUrl": "http://localhost:5003"
     },
     "WebHooksJob": {
       "commandName": "Project",
@@ -78,7 +78,7 @@
         "EX_AppMode": "Development"
       },
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:5002;http://localhost:5003"
+      "applicationUrl": "http://localhost:5003"
     },
     "CloseInactiveSessionsJob": {
       "commandName": "Project",
@@ -87,7 +87,7 @@
         "EX_AppMode": "Development"
       },
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:5002;http://localhost:5003"
+      "applicationUrl": "http://localhost:5003"
     },
     "DailySummaryJob": {
       "commandName": "Project",
@@ -96,7 +96,7 @@
         "EX_AppMode": "Development"
       },
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:5002;http://localhost:5003"
+      "applicationUrl": "http://localhost:5003"
     },
     "DownloadGeoIPDatabaseJob": {
       "commandName": "Project",
@@ -105,7 +105,7 @@
         "EX_AppMode": "Development"
       },
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:5002;http://localhost:5003"
+      "applicationUrl": "http://localhost:5003"
     },
     "WorkItemJob": {
       "commandName": "Project",
@@ -114,7 +114,7 @@
         "EX_AppMode": "Development"
       },
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:5002;http://localhost:5003"
+      "applicationUrl": "http://localhost:5003"
     },
     "MaintainIndexesJob": {
       "commandName": "Project",
@@ -123,7 +123,7 @@
         "EX_AppMode": "Development"
       },
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:5002;http://localhost:5003"
+      "applicationUrl": "hhttp://localhost:5003"
     },
     "StackEventCountJob": {
       "commandName": "Project",
@@ -132,7 +132,7 @@
         "EX_AppMode": "Development"
       },
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:5002;http://localhost:5003"
+      "applicationUrl": "http://localhost:5003"
     },
     "EventSnapshotJob": {
       "commandName": "Project",
@@ -141,7 +141,7 @@
         "EX_AppMode": "Development"
       },
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:5002;http://localhost:5003"
+      "applicationUrl": "http://localhost:5003"
     }
   }
 }
