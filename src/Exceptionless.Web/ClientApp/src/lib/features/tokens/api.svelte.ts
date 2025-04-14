@@ -8,7 +8,6 @@ import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanst
 
 export async function invalidateTokenQueries(queryClient: QueryClient, message: WebSocketMessageValue<'TokenChanged'>) {
     const { id, organization_id, project_id } = message;
-    console.log('invalidateTokenQueries', message);
     if (id) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
     }

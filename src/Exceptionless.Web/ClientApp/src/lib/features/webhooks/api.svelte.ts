@@ -8,7 +8,6 @@ import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanst
 
 export async function invalidateWebhookQueries(queryClient: QueryClient, message: WebSocketMessageValue<'WebhookChanged'>) {
     const { id, organization_id, project_id } = message;
-    console.log('invalidateWebhookQueries', message);
     if (id) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
     }

@@ -24,10 +24,10 @@
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import { getTableContext } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import { isTableEmpty, removeTableData } from '$features/shared/table.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { isTableEmpty, removeTableData } from '$shared/table';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
