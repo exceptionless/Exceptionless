@@ -4,9 +4,9 @@
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { deleteProjectConfig, postProjectConfig } from '$features/projects/api.svelte';
-    import ChevronDown from 'lucide-svelte/icons/chevron-down';
-    import Edit from 'lucide-svelte/icons/pen';
-    import X from 'lucide-svelte/icons/x';
+    import ChevronDown from '@lucide/svelte/icons/chevron-down';
+    import Edit from '@lucide/svelte/icons/pen';
+    import X from '@lucide/svelte/icons/x';
     import { toast } from 'svelte-sonner';
 
     import RemoveProjectConfigDialog from '../dialogs/remove-project-config-dialog.svelte';

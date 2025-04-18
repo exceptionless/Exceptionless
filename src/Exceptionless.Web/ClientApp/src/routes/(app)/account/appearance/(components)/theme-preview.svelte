@@ -7,7 +7,7 @@
 
     let { mode }: Props = $props();
 
-    let resolvedMode = $state(mode !== 'system' ? mode : ($systemPrefersMode ?? 'dark'));
+    let resolvedMode = $state(mode !== 'system' ? mode : (systemPrefersMode.current ?? 'dark'));
 </script>
 
 {#if resolvedMode === 'light'}

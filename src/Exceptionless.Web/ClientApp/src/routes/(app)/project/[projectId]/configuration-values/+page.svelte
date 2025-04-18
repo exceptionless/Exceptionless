@@ -10,9 +10,9 @@
     import ProjectsConfigDataTable from '$features/projects/components/table/projects-config-data-table.svelte';
     import { ClientConfigurationSetting } from '$features/projects/models';
     import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
+    import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
-    import Plus from 'lucide-svelte/icons/plus';
     import { watch } from 'runed';
     import { toast } from 'svelte-sonner';
 

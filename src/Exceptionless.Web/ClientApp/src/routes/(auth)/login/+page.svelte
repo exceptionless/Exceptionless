@@ -26,8 +26,8 @@
     import Google from '$lib/assets/google.svg';
     import Microsoft from '$lib/assets/microsoft.svg';
     import { applyServerSideErrors } from '$shared/validation';
-    import Facebook from 'lucide-svelte/icons/facebook';
-    import GitHub from 'lucide-svelte/icons/github';
+    import Facebook from '@lucide/svelte/icons/facebook';
+    import GitHub from '@lucide/svelte/icons/github';
     import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';
 

@@ -6,8 +6,8 @@
     import Button from '$comp/ui/button/button.svelte';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { deleteEvent } from '$features/events/api.svelte';
+    import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import { type Table as SvelteTable } from '@tanstack/svelte-table';
-    import ChevronDown from 'lucide-svelte/icons/chevron-down';
     import { toast } from 'svelte-sonner';
 
     import RemoveEventDialog from '../dialogs/remove-event-dialog.svelte';

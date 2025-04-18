@@ -1,9 +1,9 @@
 import { page } from '$app/state';
-import ClientConfig from 'lucide-svelte/icons/braces';
-import Configure from 'lucide-svelte/icons/cloud-download';
-import ApiKey from 'lucide-svelte/icons/key';
-import Integration from 'lucide-svelte/icons/plug-2';
-import Settings from 'lucide-svelte/icons/settings';
+import ClientConfig from '@lucide/svelte/icons/braces';
+import Configure from '@lucide/svelte/icons/cloud-download';
+import ApiKey from '@lucide/svelte/icons/key';
+import Integration from '@lucide/svelte/icons/plug-2';
+import Settings from '@lucide/svelte/icons/settings';
 
 import type { NavigationItem } from '../../../routes.svelte';
 

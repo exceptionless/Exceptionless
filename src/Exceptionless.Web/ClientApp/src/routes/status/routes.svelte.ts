@@ -1,4 +1,4 @@
-import Activity from 'lucide-svelte/icons/activity';
+import Activity from '@lucide/svelte/icons/activity';
 
 import type { NavigationItem } from '../routes.svelte';
 

@@ -3,7 +3,7 @@
 
     import { A, Muted } from '$comp/typography';
     import StackStatusBadge from '$features/stacks/components/stack-status-badge.svelte';
-    import ChevronRight from 'lucide-svelte/icons/chevron-right';
+    import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
     import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from './index';
 

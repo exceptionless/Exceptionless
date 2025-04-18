@@ -20,10 +20,9 @@
     import { UpdateProject } from '$features/projects/models';
     import { applyServerSideErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
-    import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
-    import Issues from 'lucide-svelte/icons/bug';
-    import NotificationSettings from 'lucide-svelte/icons/mail';
-    import X from 'lucide-svelte/icons/x';
+    import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
+    import Issues from '@lucide/svelte/icons/bug';
+    import X from '@lucide/svelte/icons/x';
     import { toast } from 'svelte-sonner';
     import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';

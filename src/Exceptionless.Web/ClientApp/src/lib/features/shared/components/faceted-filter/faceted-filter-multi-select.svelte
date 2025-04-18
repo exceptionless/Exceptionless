@@ -6,7 +6,7 @@
     import * as Popover from '$comp/ui/popover';
     import Separator from '$comp/ui/separator/separator.svelte';
     import { cn } from '$lib/utils';
-    import Check from 'lucide-svelte/icons/check';
+    import Check from '@lucide/svelte/icons/check';
 
     type Option = {
         label: string;

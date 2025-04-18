@@ -1,10 +1,10 @@
 <script lang="ts">
     import { A } from '$comp/typography';
     import { getAboutQuery } from '$features/status/api.svelte';
-    import Facebook from 'lucide-svelte/icons/facebook';
-    import GitHub from 'lucide-svelte/icons/github';
-    import Web from 'lucide-svelte/icons/globe';
-    import Twitter from 'lucide-svelte/icons/twitter';
+    import Facebook from '@lucide/svelte/icons/facebook';
+    import GitHub from '@lucide/svelte/icons/github';
+    import Web from '@lucide/svelte/icons/globe';
+    import Twitter from '@lucide/svelte/icons/twitter';
 
     const currentYear = new Date().getFullYear();
 

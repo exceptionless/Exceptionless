@@ -1,5 +1,5 @@
-import LogIn from 'lucide-svelte/icons/log-in';
-import LogOut from 'lucide-svelte/icons/log-out';
+import LogIn from '@lucide/svelte/icons/log-in';
+import LogOut from '@lucide/svelte/icons/log-out';
 
 import type { NavigationItem, NavigationItemContext } from '../routes.svelte';
 

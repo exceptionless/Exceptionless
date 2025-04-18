@@ -10,9 +10,9 @@
     import { getTableOptions } from '$features/projects/components/table/options.svelte';
     import ProjectsDataTable from '$features/projects/components/table/projects-data-table.svelte';
     import { DEFAULT_LIMIT } from '$shared/api/api.svelte';
+    import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
-    import Plus from 'lucide-svelte/icons/plus';
 
     const DEFAULT_PARAMS = {
         filter: '',

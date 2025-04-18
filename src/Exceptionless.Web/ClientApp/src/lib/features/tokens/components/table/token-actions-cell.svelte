@@ -4,12 +4,12 @@
     import { deleteToken, patchToken } from '$features/tokens/api.svelte';
     import { ViewToken } from '$features/tokens/models';
     import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
-    import Disable from 'lucide-svelte/icons/ban';
-    import Enable from 'lucide-svelte/icons/check';
-    import ChevronDown from 'lucide-svelte/icons/chevron-down';
-    import Copy from 'lucide-svelte/icons/copy';
-    import Edit from 'lucide-svelte/icons/pen';
-    import X from 'lucide-svelte/icons/x';
+    import Disable from '@lucide/svelte/icons/ban';
+    import Enable from '@lucide/svelte/icons/check';
+    import ChevronDown from '@lucide/svelte/icons/chevron-down';
+    import Copy from '@lucide/svelte/icons/copy';
+    import Edit from '@lucide/svelte/icons/pen';
+    import X from '@lucide/svelte/icons/x';
     import { toast } from 'svelte-sonner';
 
     import DisableTokenDialog from '../dialogs/disable-token-dialog.svelte';

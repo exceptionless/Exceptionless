@@ -1,5 +1,5 @@
 import { page } from '$app/state';
-import Events from 'lucide-svelte/icons/calendar-days';
+import Events from '@lucide/svelte/icons/calendar-days';
 
 import type { NavigationItem } from '../../routes.svelte';
 

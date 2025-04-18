@@ -1,9 +1,9 @@
-import Notifications from 'lucide-svelte/icons/bell';
-import Password from 'lucide-svelte/icons/key-round';
-import Verify from 'lucide-svelte/icons/shield-check';
-import Appearance from 'lucide-svelte/icons/sun-moon';
-import Account from 'lucide-svelte/icons/user';
-import Sessions from 'lucide-svelte/icons/users';
+import Notifications from '@lucide/svelte/icons/bell';
+import Password from '@lucide/svelte/icons/key-round';
+import Verify from '@lucide/svelte/icons/shield-check';
+import Appearance from '@lucide/svelte/icons/sun-moon';
+import Account from '@lucide/svelte/icons/user';
+import Sessions from '@lucide/svelte/icons/users';
 
 import type { NavigationItem } from '../../routes.svelte';
 

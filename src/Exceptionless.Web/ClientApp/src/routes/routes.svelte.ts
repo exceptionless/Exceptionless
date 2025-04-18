@@ -1,5 +1,5 @@
 import type { User } from '$features/users/models';
-import type { Icon } from 'lucide-svelte';
+import type { Icon } from '@lucide/svelte';
 import type { Component } from 'svelte';
 
 import { routes as appRoutes } from './(app)/routes.svelte';

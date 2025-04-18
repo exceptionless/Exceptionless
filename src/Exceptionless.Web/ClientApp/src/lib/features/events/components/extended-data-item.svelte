@@ -3,8 +3,8 @@
     import ObjectDump from '$comp/object-dump.svelte';
     import { Code, H4 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
-    import ArrowDown from 'lucide-svelte/icons/arrow-down';
-    import ArrowUp from 'lucide-svelte/icons/arrow-up';
+    import ArrowDown from '@lucide/svelte/icons/arrow-down';
+    import ArrowUp from '@lucide/svelte/icons/arrow-up';
 
     interface Props {
         canPromote?: boolean;

@@ -4,12 +4,12 @@
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { deleteProject } from '$features/projects/api.svelte';
     import { ViewProject } from '$features/projects/models';
-    import Issues from 'lucide-svelte/icons/bug';
-    import ChevronDown from 'lucide-svelte/icons/chevron-down';
-    import Configure from 'lucide-svelte/icons/cloud';
-    import Organization from 'lucide-svelte/icons/group';
-    import Edit from 'lucide-svelte/icons/pen';
-    import X from 'lucide-svelte/icons/x';
+    import Issues from '@lucide/svelte/icons/bug';
+    import ChevronDown from '@lucide/svelte/icons/chevron-down';
+    import Configure from '@lucide/svelte/icons/cloud';
+    import Organization from '@lucide/svelte/icons/group';
+    import Edit from '@lucide/svelte/icons/pen';
+    import X from '@lucide/svelte/icons/x';
     import { toast } from 'svelte-sonner';
 
     import RemoveProjectDialog from '../dialogs/remove-project-dialog.svelte';

@@ -1,7 +1,7 @@
 <script lang="ts">
     import { A, type AProps } from '$comp/typography';
     import { cn } from '$lib/utils';
-    import Filter from 'lucide-svelte/icons/filter';
+    import Filter from '@lucide/svelte/icons/filter';
 
     import { LevelFilter } from './models.svelte';
 

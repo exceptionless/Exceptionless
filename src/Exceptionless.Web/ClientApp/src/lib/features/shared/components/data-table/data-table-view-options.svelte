@@ -7,7 +7,7 @@
 
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import ViewColumn from 'lucide-svelte/icons/columns-3';
+    import ViewColumn from '@lucide/svelte/icons/columns-3';
 
     interface Props {
         table: Table<TData>;

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { A, Muted } from '$comp/typography';
-    import ChevronRight from 'lucide-svelte/icons/chevron-right';
+    import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
     import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from './index';
 

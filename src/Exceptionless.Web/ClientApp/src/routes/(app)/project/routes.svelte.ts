@@ -1,4 +1,4 @@
-import Settings from 'lucide-svelte/icons/settings';
+import Settings from '@lucide/svelte/icons/settings';
 
 import type { NavigationItem } from '../../routes.svelte';
 

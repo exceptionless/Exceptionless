@@ -5,7 +5,7 @@
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Sidebar from '$comp/ui/sidebar';
     import logoSmall from '$lib/assets/exceptionless-48.png';
-    import Search from 'lucide-svelte/icons/search';
+    import Search from '@lucide/svelte/icons/search';
     import { MediaQuery } from 'svelte/reactivity';
 
     interface Props {
