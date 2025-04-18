@@ -9,8 +9,8 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import { ViewOrganization } from '$features/organizations/models';
     import { getInitials } from '$shared/strings';
-    import ChevronsUpDown from 'lucide-svelte/icons/chevrons-up-down';
-    import Plus from 'lucide-svelte/icons/plus';
+    import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
+    import Plus from '@lucide/svelte/icons/plus';
 
     type Props = HTMLAttributes<HTMLUListElement> & {
         isLoading: boolean;

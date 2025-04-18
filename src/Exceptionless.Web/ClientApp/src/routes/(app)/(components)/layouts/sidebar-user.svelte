@@ -8,15 +8,15 @@
     import { useSidebar } from '$comp/ui/sidebar/index';
     import { Skeleton } from '$comp/ui/skeleton';
     import { User } from '$features/users/models';
-    import BadgeCheck from 'lucide-svelte/icons/badge-check';
-    import BookOpen from 'lucide-svelte/icons/book-open';
-    import Braces from 'lucide-svelte/icons/braces';
-    // import Bell from 'lucide-svelte/icons/bell';
-    import ChevronsUpDown from 'lucide-svelte/icons/chevrons-up-down';
-    import Help from 'lucide-svelte/icons/circle-help';
-    import GitHub from 'lucide-svelte/icons/github';
-    // import CreditCard from 'lucide-svelte/icons/credit-card';
-    import LogOut from 'lucide-svelte/icons/log-out';
+    import BadgeCheck from '@lucide/svelte/icons/badge-check';
+    import BookOpen from '@lucide/svelte/icons/book-open';
+    import Braces from '@lucide/svelte/icons/braces';
+    // import Bell from '@lucide/svelte/icons/bell';
+    import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
+    import Help from '@lucide/svelte/icons/circle-help';
+    import GitHub from '@lucide/svelte/icons/github';
+    // import CreditCard from '@lucide/svelte/icons/credit-card';
+    import LogOut from '@lucide/svelte/icons/log-out';
 
     interface Props {
         gravatar: Gravatar;

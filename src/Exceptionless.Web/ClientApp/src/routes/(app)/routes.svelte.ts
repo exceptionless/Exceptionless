@@ -1,10 +1,10 @@
-import Documentation from 'lucide-svelte/icons/book-open';
-import ApiDocumentations from 'lucide-svelte/icons/braces';
-import Issues from 'lucide-svelte/icons/bug';
-import EventStream from 'lucide-svelte/icons/calendar-arrow-down';
-import Events from 'lucide-svelte/icons/calendar-days';
-import Support from 'lucide-svelte/icons/circle-help';
-import GitHub from 'lucide-svelte/icons/github';
+import Documentation from '@lucide/svelte/icons/book-open';
+import ApiDocumentations from '@lucide/svelte/icons/braces';
+import Issues from '@lucide/svelte/icons/bug';
+import EventStream from '@lucide/svelte/icons/calendar-arrow-down';
+import Events from '@lucide/svelte/icons/calendar-days';
+import Support from '@lucide/svelte/icons/circle-help';
+import GitHub from '@lucide/svelte/icons/github';
 
 import type { NavigationItem } from '../routes.svelte';
 

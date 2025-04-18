@@ -2,10 +2,10 @@
     import { goto } from '$app/navigation';
     import Button from '$comp/ui/button/button.svelte';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import Reference from 'lucide-svelte/icons/link-2';
-    import Settings from 'lucide-svelte/icons/settings';
-    import Delete from 'lucide-svelte/icons/trash';
-    import PromoteToExternal from 'lucide-svelte/icons/trending-up';
+    import Reference from '@lucide/svelte/icons/link-2';
+    import Settings from '@lucide/svelte/icons/settings';
+    import Delete from '@lucide/svelte/icons/trash';
+    import PromoteToExternal from '@lucide/svelte/icons/trending-up';
     import { toast } from 'svelte-sonner';
 
     import { deleteMarkCritical, deleteStack, postAddLink, postMarkCritical, postPromote } from '../api.svelte';

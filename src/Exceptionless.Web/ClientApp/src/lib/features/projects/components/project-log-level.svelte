@@ -5,7 +5,7 @@
     import { logLevels } from '$features/events/options';
     import { deleteProjectConfig, getProjectConfig, postProjectConfig } from '$features/projects/api.svelte';
     import { Button } from '$features/shared/components/ui/button';
-    import ChevronDown from 'lucide-svelte/icons/chevron-down';
+    import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import { toast } from 'svelte-sonner';
 
     interface Props {

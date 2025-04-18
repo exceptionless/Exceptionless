@@ -15,12 +15,12 @@
     import { getStackQuery } from '$features/stacks/api.svelte';
     import { cardinality, max, min, sum } from '$shared/api/aggregations';
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
-    import FirstOccurrence from 'lucide-svelte/icons/arrow-left-circle';
-    import LastOccurrence from 'lucide-svelte/icons/arrow-right-circle';
-    import Calendar from 'lucide-svelte/icons/calendar';
-    import Clock from 'lucide-svelte/icons/clock';
-    import Filter from 'lucide-svelte/icons/filter';
-    import Users from 'lucide-svelte/icons/users';
+    import FirstOccurrence from '@lucide/svelte/icons/arrow-left-circle';
+    import LastOccurrence from '@lucide/svelte/icons/arrow-right-circle';
+    import Calendar from '@lucide/svelte/icons/calendar';
+    import Clock from '@lucide/svelte/icons/clock';
+    import Filter from '@lucide/svelte/icons/filter';
+    import Users from '@lucide/svelte/icons/users';
 
     import StackOptionsDropdownMenu from './stack-options-dropdown-menu.svelte';
     import StackReferences from './stack-references.svelte';

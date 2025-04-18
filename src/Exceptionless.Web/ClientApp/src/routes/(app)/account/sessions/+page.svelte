@@ -3,8 +3,8 @@
     import { H3, Muted, P } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';
-    import Laptop from 'lucide-svelte/icons/laptop';
-    import Smartphone from 'lucide-svelte/icons/smartphone';
+    import Laptop from '@lucide/svelte/icons/laptop';
+    import Smartphone from '@lucide/svelte/icons/smartphone';
 </script>
 
 <div class="space-y-6">

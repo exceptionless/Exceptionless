@@ -21,8 +21,8 @@
     import Microsoft from '$lib/assets/microsoft.svg';
     import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-    import Facebook from 'lucide-svelte/icons/facebook';
-    import GitHub from 'lucide-svelte/icons/github';
+    import Facebook from '@lucide/svelte/icons/facebook';
+    import GitHub from '@lucide/svelte/icons/github';
 
     const data = $state(new User());
 

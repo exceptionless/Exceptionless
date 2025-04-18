@@ -26,10 +26,10 @@
     import WebhooksDataTable from '$features/webhooks/components/table/webhooks-data-table.svelte';
     import { NewWebhook, Webhook } from '$features/webhooks/models';
     import Slack from '$lib/assets/slack.svg'; // TOOD: Fix the slack icon to be an svg component
+    import Plus from '@lucide/svelte/icons/plus';
+    import Zapier from '@lucide/svelte/icons/zap';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
-    import Plus from 'lucide-svelte/icons/plus';
-    import Zapier from 'lucide-svelte/icons/zap';
     import { watch } from 'runed';
     import { toast } from 'svelte-sonner';
 

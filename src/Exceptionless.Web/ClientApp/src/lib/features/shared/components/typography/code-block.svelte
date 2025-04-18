@@ -23,7 +23,7 @@
 
     const { class: className, code, language, ...props }: Props = $props();
 
-    let theme = $derived($mode === 'light' ? 'github-light' : 'github-dark');
+    let theme = $derived(mode.current === 'light' ? 'github-light' : 'github-dark');
     const jsEngine = createJavaScriptRegexEngine();
 
     const highlighter = createHighlighterCoreSync({

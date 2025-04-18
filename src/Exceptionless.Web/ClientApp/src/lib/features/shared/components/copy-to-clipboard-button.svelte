@@ -4,7 +4,7 @@
 
     import { Button, type ButtonProps, type buttonVariants } from '$comp/ui/button';
     import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
-    import ClipboardCopy from 'lucide-svelte/icons/clipboard-copy';
+    import ClipboardCopy from '@lucide/svelte/icons/clipboard-copy';
     import { toast } from 'svelte-sonner';
 
     type Props = ButtonProps & {

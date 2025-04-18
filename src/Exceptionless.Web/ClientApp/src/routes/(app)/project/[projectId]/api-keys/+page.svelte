@@ -10,9 +10,9 @@
     import { getTableContext } from '$features/tokens/components/table/options.svelte';
     import TokensDataTable from '$features/tokens/components/table/tokens-data-table.svelte';
     import { NewToken, ViewToken } from '$features/tokens/models';
+    import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
-    import Plus from 'lucide-svelte/icons/plus';
     import { watch } from 'runed';
     import { toast } from 'svelte-sonner';
 

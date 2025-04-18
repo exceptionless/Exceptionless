@@ -29,9 +29,9 @@
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, useFetchClientStatus } from '$shared/api/api.svelte';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
+    import ExternalLink from '@lucide/svelte/icons/external-link';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
-    import ExternalLink from 'lucide-svelte/icons/external-link';
     import { useEventListener, watch } from 'runed';
     import { debounce } from 'throttle-debounce';
 

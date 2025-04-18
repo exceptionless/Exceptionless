@@ -3,8 +3,8 @@
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { deleteWebhook } from '$features/webhooks/api.svelte';
     import { Webhook } from '$features/webhooks/models';
-    import ChevronDown from 'lucide-svelte/icons/chevron-down';
-    import X from 'lucide-svelte/icons/x';
+    import ChevronDown from '@lucide/svelte/icons/chevron-down';
+    import X from '@lucide/svelte/icons/x';
     import { toast } from 'svelte-sonner';
 
     import RemoveWebhookDialog from '../dialogs/remove-webhook-dialog.svelte';
