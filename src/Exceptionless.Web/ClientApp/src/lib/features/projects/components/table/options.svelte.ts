@@ -5,7 +5,7 @@ import NumberFormatter from '$comp/formatters/number.svelte';
 import ProjectActionsCell from '$features/projects/components/table/project-actions-cell.svelte';
 import { ViewProject } from '$features/projects/models';
 import { getSharedTableOptions } from '$features/shared/table.svelte';
-import { type ColumnDef, renderComponent, type TableOptions } from '@tanstack/svelte-table';
+import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
 
 import type { GetOrganizationProjectsParams, GetProjectsMode } from '../../api.svelte';
 
@@ -60,23 +60,22 @@ export function getColumns<TProject extends ViewProject>(mode: GetProjectsMode =
 
 export function getTableOptions<TProject extends ViewProject>(
     queryParameters: GetOrganizationProjectsParams,
-    queryResponse: CreateQueryResult<FetchClientResponse<TProject[]>, ProblemDetails>,
-    configureOptions: (options: TableOptions<TProject>) => TableOptions<TProject> = (options) => options
+    queryResponse: CreateQueryResult<FetchClientResponse<TProject[]>, ProblemDetails>
 ) {
-    return getSharedTableOptions<TProject>(
-        {
-            columnPersistenceKey: 'project',
-            get columns() {
-                return getColumns<TProject>(queryParameters.mode);
-            },
-            paginationStrategy: 'offset',
-            get queryParameters() {
-                return queryParameters;
-            },
-            get queryResponse() {
-                return queryResponse.data;
-            }
+    return getSharedTableOptions<TProject>({
+        columnPersistenceKey: 'projects-column-visibility',
+        get columns() {
+            return getColumns<TProject>(queryParameters.mode);
         },
-        configureOptions
-    );
+        paginationStrategy: 'offset',
+        get queryData() {
+            return queryResponse.data?.data ?? [];
+        },
+        get queryMeta() {
+            return queryResponse.data?.meta;
+        },
+        get queryParameters() {
+            return queryParameters;
+        }
+    });
 }

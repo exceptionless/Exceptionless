@@ -6,14 +6,13 @@
     import { Separator } from '$comp/ui/separator';
     import { organization } from '$features/organizations/context.svelte';
     import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
-    import { getProjectTokensQuery, postProjectToken } from '$features/tokens/api.svelte';
-    import { getTableContext } from '$features/tokens/components/table/options.svelte';
+    import { type GetProjectTokensParams, getProjectTokensQuery, postProjectToken } from '$features/tokens/api.svelte';
+    import { getTableOptions } from '$features/tokens/components/table/options.svelte';
     import TokensDataTable from '$features/tokens/components/table/tokens-data-table.svelte';
     import { NewToken, ViewToken } from '$features/tokens/models';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
-    import { watch } from 'runed';
     import { toast } from 'svelte-sonner';
 
     const projectId = page.params.projectId || '';
@@ -40,7 +39,7 @@
         limit: DEFAULT_LIMIT
     };
 
-    const params = queryParamsState({
+    const queryParams = queryParamsState({
         default: DEFAULT_PARAMS,
         pushHistory: true,
         schema: {
@@ -48,11 +47,19 @@
         }
     });
 
-    const context = getTableContext<ViewToken>({ limit: params.limit! });
-    const table = createTable(context.options);
+    const tokensQueryParameters: GetProjectTokensParams = $state({
+        get limit() {
+            return queryParams.limit!;
+        },
+        set limit(value) {
+            queryParams.limit = value;
+        }
+    });
 
     const tokensQuery = getProjectTokensQuery({
-        params: context.parameters,
+        get params() {
+            return tokensQueryParameters;
+        },
         route: {
             get projectId() {
                 return projectId;
@@ -60,19 +67,11 @@
         }
     });
 
-    watch(
-        () => tokensQuery.dataUpdatedAt,
-        () => {
-            if (tokensQuery.isSuccess) {
-                context.data = tokensQuery.data.data || [];
-                context.meta = tokensQuery.data.meta;
-            }
-        }
-    );
+    const table = createTable(getTableOptions<ViewToken>(tokensQueryParameters, tokensQuery));
 
     $effect(() => {
         // Handle case where pop state loses the limit
-        params.limit ??= DEFAULT_LIMIT;
+        queryParams.limit ??= DEFAULT_LIMIT;
     });
 
     // TODO: Add Skeleton
@@ -85,7 +84,7 @@
     </div>
     <Separator />
 
-    <TokensDataTable bind:limit={params.limit!} isLoading={tokensQuery.isLoading} {table}>
+    <TokensDataTable bind:limit={tokensQueryParameters.limit!} isLoading={tokensQuery.isLoading} {table}>
         {#snippet footerChildren()}
             <div class="h-9 min-w-[140px]">
                 <Button size="sm" onclick={addApiKey}>
@@ -94,7 +93,7 @@
                 >
             </div>
 
-            <DataTable.PageSize bind:value={params.limit!} {table}></DataTable.PageSize>
+            <DataTable.PageSize bind:value={tokensQueryParameters.limit!} {table}></DataTable.PageSize>
             <div class="flex items-center space-x-6 lg:space-x-8">
                 <DataTable.PageCount {table} />
                 <DataTable.Pagination {table} />

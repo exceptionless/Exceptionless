@@ -1,24 +1,17 @@
-import type { ClientConfigurationSetting } from '$features/projects/models';
+import type { ProblemDetails } from '@exceptionless/fetchclient';
+import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import ProjectConfigActionsCell from '$features/projects/components/table/project-config-actions-cell.svelte';
-import {
-    type ColumnDef,
-    getCoreRowModel,
-    getPaginationRowModel,
-    renderComponent,
-    type TableOptions,
-    type Updater,
-    type VisibilityState
-} from '@tanstack/svelte-table';
-import { PersistedState } from 'runed';
+import { type ClientConfiguration, ClientConfigurationSetting } from '$features/projects/models';
+import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
+import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
 
-export type ProjectClientConfigurationSettingsParameters = {
-    limit: number;
+export type ConfigurationSettingsColumnParameters = {
     projectId: string;
 };
 
 export function getColumns<TClientConfigurationSetting extends ClientConfigurationSetting>(
-    params: ProjectClientConfigurationSettingsParameters
+    params: ConfigurationSettingsColumnParameters
 ): ColumnDef<TClientConfigurationSetting>[] {
     const columns: ColumnDef<TClientConfigurationSetting>[] = [
         {
@@ -54,63 +47,34 @@ export function getColumns<TClientConfigurationSetting extends ClientConfigurati
     return columns;
 }
 
-export function getTableContext<TClientConfigurationSetting extends ClientConfigurationSetting>(
-    params: ProjectClientConfigurationSettingsParameters,
-    configureOptions: (options: TableOptions<TClientConfigurationSetting>) => TableOptions<TClientConfigurationSetting> = (options) => options
+export function getTableOptions<TClientConfigurationSetting extends ClientConfigurationSetting>(
+    columnParameters: ConfigurationSettingsColumnParameters,
+    queryParameters: TableMemoryPagingParameters,
+    queryResponse: CreateQueryResult<ClientConfiguration, ProblemDetails>
 ) {
-    let _columns = $state(getColumns<TClientConfigurationSetting>(params));
-    let _data = $state([] as TClientConfigurationSetting[]);
+    const knownSettingsToHide = ['@@log:*', '@@DataExclusions', '@@IncludePrivateInformation', '@@UserAgentBotPatterns', 'UserNamespaces', 'CommonMethods'];
+    const queryData = $derived(
+        Object.entries(queryResponse.data?.settings ?? {})
+            .map(([key, value]) => {
+                const config = new ClientConfigurationSetting() as TClientConfigurationSetting;
+                config.key = key;
+                config.value = value;
+                return config;
+            })
+            .filter((setting) => !knownSettingsToHide.includes(setting.key))
+    );
 
-    const [columnVisibility, setColumnVisibility] = createPersistedTableState('project-config-column-visibility', <VisibilityState>{});
-    const options = configureOptions({
+    return getSharedTableOptions<TClientConfigurationSetting>({
+        columnPersistenceKey: 'projects-configuration-values-column-visibility',
         get columns() {
-            return _columns;
+            return getColumns<TClientConfigurationSetting>(columnParameters);
         },
-        set columns(value) {
-            _columns = value;
+        paginationStrategy: 'memory',
+        get queryData() {
+            return queryData;
         },
-        get data() {
-            return _data;
-        },
-        set data(value) {
-            _data = value;
-        },
-        enableMultiRowSelection: true,
-        enableRowSelection: true,
-        enableSortingRemoval: false,
-        getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getRowId: (originalRow) => originalRow.key,
-        onColumnVisibilityChange: setColumnVisibility,
-        state: {
-            get columnVisibility() {
-                return columnVisibility();
-            }
+        get queryParameters() {
+            return queryParameters;
         }
     });
-
-    return {
-        get data() {
-            return _data;
-        },
-        set data(value) {
-            _data = value;
-        },
-        options
-    };
-}
-
-function createPersistedTableState<T>(key: string, initialValue: T): [() => T, (updater: Updater<T>) => void] {
-    const persistedValue = new PersistedState<T>(key, initialValue);
-
-    return [
-        () => persistedValue.current,
-        (updater: Updater<T>) => {
-            if (updater instanceof Function) {
-                persistedValue.current = updater(persistedValue.current);
-            } else {
-                persistedValue.current = updater;
-            }
-        }
-    ];
 }

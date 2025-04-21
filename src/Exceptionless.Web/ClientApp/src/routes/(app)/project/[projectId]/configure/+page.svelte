@@ -55,7 +55,7 @@
 
     const projectTypesGroupedByPlatform = Object.groupBy(projectTypes, (p) => p.platform);
 
-    const params = queryParamsState({
+    const queryParams = queryParamsState({
         default: {
             redirect: false,
             type: undefined
@@ -71,12 +71,12 @@
 
     $effect(() => {
         // Handle case where pop state loses the limit
-        if (params.type) {
-            const found = projectTypes.find((p) => p.id === params.type);
+        if (queryParams.type) {
+            const found = projectTypes.find((p) => p.id === queryParams.type);
             if (found) {
                 selectedProjectType = found;
             } else {
-                params.type = null;
+                queryParams.type = null;
                 selectedProjectType = null;
             }
         }
@@ -189,7 +189,7 @@ public partial class App : Application {
     });
 
     useEventListener(document, 'PersistentEventChanged', async () => {
-        if (params.redirect) {
+        if (queryParams.redirect) {
             await goto('/next/issues');
         }
     });
@@ -207,10 +207,10 @@ public partial class App : Application {
             <P>Select your project type.</P>
             <Select.Root
                 type="single"
-                bind:value={params.type as string | undefined}
+                bind:value={queryParams.type as string | undefined}
                 onValueChange={(value) => {
                     selectedProjectType = projectTypes.find((P) => P.package === value) || null;
-                    params.type = value;
+                    queryParams.type = value;
                 }}
             >
                 <Select.Trigger class="w-full">

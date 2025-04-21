@@ -19,10 +19,10 @@
     import RemoveSlackDialog from '$features/projects/components/dialogs/remove-slack-dialog.svelte';
     import NotificationSettingsForm from '$features/projects/components/notification-settings-form.svelte';
     import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
-    import { postWebhook } from '$features/webhooks/api.svelte';
+    import { type GetProjectWebhooksParams, postWebhook } from '$features/webhooks/api.svelte';
     import { getProjectWebhooksQuery } from '$features/webhooks/api.svelte';
     import AddWebhookDialog from '$features/webhooks/components/dialogs/add-webhook-dialog.svelte';
-    import { getTableContext } from '$features/webhooks/components/table/options.svelte';
+    import { getTableOptions } from '$features/webhooks/components/table/options.svelte';
     import WebhooksDataTable from '$features/webhooks/components/table/webhooks-data-table.svelte';
     import { NewWebhook, Webhook } from '$features/webhooks/models';
     import Slack from '$lib/assets/slack.svg'; // TOOD: Fix the slack icon to be an svg component
@@ -30,14 +30,13 @@
     import Zapier from '@lucide/svelte/icons/zap';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
-    import { watch } from 'runed';
     import { toast } from 'svelte-sonner';
 
     let toastId = $state<number | string>();
     let showAddWebhookDialog = $state(false);
     let showRemoveSlackDialog = $state(false);
     const projectId = page.params.projectId || '';
-    const projectResponse = getProjectQuery({
+    const projectQuery = getProjectQuery({
         route: {
             get id() {
                 return projectId;
@@ -46,7 +45,7 @@
     });
 
     const isSlackEnabled = !!env.PUBLIC_SLACK_APPID;
-    const hasSlackIntegration = $derived(projectResponse.data?.has_slack_integration ?? false);
+    const hasSlackIntegration = $derived(projectQuery.data?.has_slack_integration ?? false);
     const newWebhook = postWebhook();
 
     const addSlackMutation = postSlack({
@@ -65,7 +64,7 @@
         }
     });
 
-    const slackNotificationSettingsResponse = getProjectIntegrationNotificationSettings({
+    const slackNotificationSettingsQuery = getProjectIntegrationNotificationSettings({
         route: {
             get id() {
                 return projectId;
@@ -132,7 +131,7 @@
         limit: DEFAULT_LIMIT
     };
 
-    const params = queryParamsState({
+    const queryParams = queryParamsState({
         default: DEFAULT_PARAMS,
         pushHistory: true,
         schema: {
@@ -140,11 +139,19 @@
         }
     });
 
-    const context = getTableContext<Webhook>({ limit: params.limit! });
-    const table = createTable(context.options);
+    const webhooksQueryParameters: GetProjectWebhooksParams = $state({
+        get limit() {
+            return queryParams.limit!;
+        },
+        set limit(value) {
+            queryParams.limit = value;
+        }
+    });
 
     const webhooksQuery = getProjectWebhooksQuery({
-        params: context.parameters,
+        get params() {
+            return webhooksQueryParameters;
+        },
         route: {
             get projectId() {
                 return projectId;
@@ -152,19 +159,11 @@
         }
     });
 
-    watch(
-        () => webhooksQuery.dataUpdatedAt,
-        () => {
-            if (webhooksQuery.isSuccess) {
-                context.data = webhooksQuery.data.data || [];
-                context.meta = webhooksQuery.data.meta;
-            }
-        }
-    );
+    const table = createTable(getTableOptions<Webhook>(webhooksQueryParameters, webhooksQuery));
 
     $effect(() => {
         // Handle case where pop state loses the limit
-        params.limit ??= DEFAULT_LIMIT;
+        queryParams.limit ??= DEFAULT_LIMIT;
     });
 </script>
 
@@ -193,7 +192,7 @@
                 team's Slack channels. Keep your team informed and respond faster to issues without constantly checking the dashboard.</P
             >
 
-            <NotificationSettingsForm settings={slackNotificationSettingsResponse.data} save={updateSlackNotificationSettings} />
+            <NotificationSettingsForm settings={slackNotificationSettingsQuery.data} save={updateSlackNotificationSettings} />
 
             {#if hasSlackIntegration}
                 <Button onclick={() => (showRemoveSlackDialog = true)}><img class="text- mr-2 size-4" alt="Slack" src={Slack} /> Remove Slack</Button>
@@ -207,7 +206,7 @@
         <H4>Webhooks</H4>
         <P>The following web hooks will be called for this project.</P>
 
-        <WebhooksDataTable bind:limit={params.limit!} isLoading={webhooksQuery.isLoading} {table}>
+        <WebhooksDataTable bind:limit={webhooksQueryParameters.limit!} isLoading={webhooksQuery.isLoading} {table}>
             {#snippet footerChildren()}
                 <div class="h-9 min-w-[140px]">
                     <Button size="sm" onclick={() => (showAddWebhookDialog = true)}>
@@ -216,7 +215,7 @@
                     >
                 </div>
 
-                <DataTable.PageSize bind:value={params.limit!} {table}></DataTable.PageSize>
+                <DataTable.PageSize bind:value={webhooksQueryParameters.limit!} {table}></DataTable.PageSize>
                 <div class="flex items-center space-x-6 lg:space-x-8">
                     <DataTable.PageCount {table} />
                     <DataTable.Pagination {table} />
