@@ -1,10 +1,12 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { page } from '$app/state';
+    import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import { Separator } from '$comp/ui/separator';
     import { getProjectQuery } from '$features/projects/api.svelte';
     import * as SplitLayout from '$features/shared/components/layouts/split-layout';
+    import NotificationSettings from '@lucide/svelte/icons/mail';
     import { toast } from 'svelte-sonner';
 
     import SidebarNav from '../../(components)/sidebar-nav.svelte';
@@ -36,6 +38,11 @@
             {/if} Settings</Card.Title
         >
         <Card.Description>Manage your project settings and integrations.</Card.Description>
+        <Card.Action>
+            <Button variant="secondary" size="icon" href="/account/manage?tab=notifications&projectId={projectId}" title="Notification Settings">
+                <NotificationSettings class="size-4" />
+            </Button>
+        </Card.Action>
     </Card.Header>
     <Separator class="mx-6 my-6 w-auto" />
 
