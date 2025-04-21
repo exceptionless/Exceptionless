@@ -142,8 +142,8 @@ ctx._source.total_occurrences += params.count;";
 
     protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Stack>> documents, ChangeType? changeType = null)
     {
-        var keys = documents.UnionOriginalAndModified().Select(GetStackSignatureCacheKey).Distinct();
-        await Cache.RemoveAllAsync(keys);
+        var keysToRemove = documents.UnionOriginalAndModified().Select(GetStackSignatureCacheKey).Distinct();
+        await Cache.RemoveAllAsync(keysToRemove);
         await base.InvalidateCacheAsync(documents, changeType);
     }
 
