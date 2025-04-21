@@ -62,9 +62,7 @@
     const settings = $derived(projectConfigQuery.data?.settings ?? {});
 
     const dataExclusionsIsDirty = $derived(dataExclusions !== settings['@@DataExclusions']);
-    const excludePrivateInformationIsDirty = $derived(
-        excludePrivateInformation !== (settings['@@IncludePrivateInformation'] === 'false')
-    );
+    const excludePrivateInformationIsDirty = $derived(excludePrivateInformation !== (settings['@@IncludePrivateInformation'] === 'false'));
     const userNamespacesIsDirty = $derived(userNamespaces !== settings.UserNamespaces);
     const commonMethodsIsDirty = $derived(commonMethods !== settings.CommonMethods);
     const userAgentsIsDirty = $derived(userAgents !== (settings['@@UserAgentBotPatterns'] as string));
@@ -154,7 +152,6 @@
 
     $effect(() => {
         if (projectConfigQuery.dataUpdatedAt) {
-
             dataExclusions = settings['@@DataExclusions'] ?? '';
             excludePrivateInformation = settings['@@IncludePrivateInformation'] === 'false';
             userNamespaces = settings.UserNamespaces ?? '';
@@ -177,9 +174,9 @@
 
     <section class="space-y-2">
         <H4>Default Log Level</H4>
-        <P
+        <Muted
             >The default log level controls the minimum log level that should be accepted for log events. Log levels can also be overridden at the log stack
-            level.</P
+            level.</Muted
         >
 
         <ProjectLogLevel source="*" {projectId} />
@@ -187,10 +184,10 @@
 
     <section class="space-y-2">
         <H4>Data Exclusions</H4>
-        <P
+        <Muted
             >A comma delimited list of field names that should be removed from any error report data (e.g., extended data properties, form fields, cookies and
             query parameters). You can also specify a <A href="https://exceptionless.com/docs/security/" target="_blank">field name with wildcards (*)</A> to specify
-            starts with, ends with, or contains just to be extra safe.</P
+            starts with, ends with, or contains just to be extra safe.</Muted
         >
         <Input type="text" placeholder="Example: *Password*, CreditCard*, SSN" bind:value={dataExclusions} onchange={debouncedSaveDataExclusion} />
 
@@ -207,18 +204,18 @@
         <div class="space-y-4">
             <div class="space-y-2">
                 <Large>User Namespaces</Large>
-                <P
+                <Muted
                     >A comma delimited list of the namespace names that your applications code belongs to. If this value is set, only methods inside of these
-                    namespaces will be considered as stacking targets.</P
+                    namespaces will be considered as stacking targets.</Muted
                 >
                 <Input type="text" placeholder="Example: Contoso" bind:value={userNamespaces} onchange={debouncedSaveUserNamespaces} />
             </div>
 
             <div class="space-y-2">
                 <Large>Common Methods</Large>
-                <P
+                <Muted
                     >A comma delimited list of common method names that should not be used as stacking targets. This is useful when your code contains shared
-                    utility methods that throw a lot of errors.</P
+                    utility methods that throw a lot of errors.</Muted
                 >
                 <Input type="text" placeholder="Example: Assert, Writeline" bind:value={commonMethods} onchange={debouncedSaveCommonMethods} />
             </div>
@@ -227,7 +224,7 @@
 
     <section class="space-y-2">
         <H4>Spam Detection</H4>
-        <P>A comma delimited list of user agents that should be ignored.</P>
+        <Muted>A comma delimited list of user agents that should be ignored.</Muted>
         <Input type="text" placeholder="Example: SpamBot" bind:value={userAgents} onchange={debouncedSaveUserAgents} />
 
         <div class="flex items-center space-x-2 pt-1">
