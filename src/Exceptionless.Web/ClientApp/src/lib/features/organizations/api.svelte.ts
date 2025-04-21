@@ -51,6 +51,6 @@ export function getOrganizationQuery(request: GetOrganizationsRequest) {
 
             return response.data!;
         },
-        queryKey: queryKeys.list(request.params?.mode ?? undefined)
+        queryKey: [...queryKeys.list(request.params?.mode ?? undefined), { params: request.params }]
     }));
 }

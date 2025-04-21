@@ -139,7 +139,7 @@ export function getProjectTokensQuery(request: GetProjectTokensRequest) {
 
             return response;
         },
-        queryKey: queryKeys.project(request.route.projectId)
+        queryKey: [...queryKeys.project(request.route.projectId), { params: request.params }]
     }));
 }
 

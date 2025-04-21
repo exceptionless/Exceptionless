@@ -230,7 +230,7 @@ export function getStackCountQuery(request: GetStackCountRequest) {
 
             return response.data!;
         },
-        queryKey: queryKeys.stacksCount(request.route.stackId)
+        queryKey: [...queryKeys.stacksCount(request.route.stackId), { params: request.params }]
     }));
 }
 
