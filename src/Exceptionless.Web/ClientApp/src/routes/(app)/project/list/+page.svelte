@@ -79,8 +79,9 @@
             <Card.Title class="text-2xl" level={2}>My Projects</Card.Title>
             <Card.Description>View and manage your projects. Click on a project to view its details.</Card.Description>
             <Card.Action>
-                <Button variant="secondary" size="icon" onclick={addProject} title="Add Project">
-                    <Plus class="size-4" />
+                <Button size="icon" onclick={addProject} title="Add Project">
+                    <Plus class="size-4" aria-hidden="true" />
+                    <span class="sr-only">Add Project</span>
                 </Button>
             </Card.Action>
         </Card.Header>

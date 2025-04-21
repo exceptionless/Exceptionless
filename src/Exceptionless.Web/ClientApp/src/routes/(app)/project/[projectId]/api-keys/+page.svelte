@@ -82,8 +82,9 @@
             <H3>API Keys</H3>
             <Muted>Create and manage API keys for authenticating your applications with Exceptionless.</Muted>
         </div>
-        <Button variant="secondary" size="icon" onclick={addApiKey} title="Add API Key">
-            <Plus class="size-4" />
+        <Button size="icon" onclick={addApiKey} title="Add API Key" class="flex-shrink-0">
+            <Plus class="size-4" aria-hidden="true" />
+            <span class="sr-only">Add API Key</span>
         </Button>
     </div>
     <Separator />
