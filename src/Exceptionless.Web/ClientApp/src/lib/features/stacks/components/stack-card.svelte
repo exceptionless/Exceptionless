@@ -33,7 +33,7 @@
 
     let { filterChanged, id }: Props = $props();
 
-    const stackResponse = getStackQuery({
+    const stackQuery = getStackQuery({
         route: {
             get id() {
                 return id;
@@ -41,19 +41,19 @@
         }
     });
 
-    const projectCountResponse = getProjectCountQuery({
+    const projectCountQuery = getProjectCountQuery({
         params: {
             aggregations: 'cardinality:user'
         },
         route: {
             get projectId() {
-                return stackResponse.data?.project_id;
+                return stackQuery.data?.project_id;
             }
         }
     });
 
     // TODO: Add stack charts for Occurrences, Average Value, Value Sum
-    const stackCountResponse = getStackCountQuery({
+    const stackCountQuery = getStackCountQuery({
         params: {
             aggregations: `date:(date${DEFAULT_OFFSET ? '^' + DEFAULT_OFFSET : ''} cardinality:user sum:count~1) min:date max:date cardinality:user sum:count~1`
         },
@@ -65,16 +65,16 @@
     });
 
     // TODO: Log Level
-    const stack = $derived(stackResponse.data!);
-    const eventOccurrences = $derived(sum(stackCountResponse?.data?.aggregations, 'sum_count')?.value ?? 0);
+    const stack = $derived(stackQuery.data!);
+    const eventOccurrences = $derived(sum(stackCountQuery?.data?.aggregations, 'sum_count')?.value ?? 0);
     const totalOccurrences = $derived(stack && stack.total_occurrences > eventOccurrences ? stack.total_occurrences : eventOccurrences);
-    const userCount = $derived(sum(stackCountResponse?.data?.aggregations, 'cardinality_user')?.value ?? 0);
-    const totalUserCount = $derived(cardinality(projectCountResponse?.data?.aggregations, 'cardinality_user')?.value ?? 0);
-    const firstOccurrence = $derived(min<string>(stackCountResponse?.data?.aggregations, 'min_date')?.value ?? stack?.first_occurrence);
-    const lastOccurrence = $derived(max<string>(stackCountResponse?.data?.aggregations, 'max_date')?.value ?? stack?.last_occurrence);
+    const userCount = $derived(sum(stackCountQuery?.data?.aggregations, 'cardinality_user')?.value ?? 0);
+    const totalUserCount = $derived(cardinality(projectCountQuery?.data?.aggregations, 'cardinality_user')?.value ?? 0);
+    const firstOccurrence = $derived(min<string>(stackCountQuery?.data?.aggregations, 'min_date')?.value ?? stack?.first_occurrence);
+    const lastOccurrence = $derived(max<string>(stackCountQuery?.data?.aggregations, 'max_date')?.value ?? stack?.last_occurrence);
 </script>
 
-{#if stackResponse.isSuccess}
+{#if stackQuery.isSuccess}
     <Card.Root>
         <Card.Header>
             <Card.Title class="flex flex-row items-center justify-between text-lg font-semibold">

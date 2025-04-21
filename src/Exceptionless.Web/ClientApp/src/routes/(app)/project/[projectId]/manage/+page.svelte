@@ -31,7 +31,7 @@
     let toastId = $state<number | string>();
 
     const projectId = page.params.projectId || '';
-    const projectResponse = getProjectQuery({
+    const projectQuery = getProjectQuery({
         route: {
             get id() {
                 return projectId;
@@ -81,7 +81,7 @@
         toastId = toast.success('Successfully queued the project for data reset.');
     }
 
-    const form = superForm(defaults(projectResponse.data ?? new UpdateProject(), classvalidatorClient(UpdateProject)), {
+    const form = superForm(defaults(projectQuery.data ?? new UpdateProject(), classvalidatorClient(UpdateProject)), {
         dataType: 'json',
         async onUpdate({ form, result }) {
             if (!form.valid) {
@@ -108,12 +108,12 @@
     const debouncedFormSubmit = debounce(1000, submit);
 
     $effect(() => {
-        if (!projectResponse.isSuccess) {
+        if (!projectQuery.isSuccess) {
             return;
         }
 
         if (!$submitting && !$tainted) {
-            form.reset({ data: projectResponse.data, keepMessage: true });
+            form.reset({ data: projectQuery.data, keepMessage: true });
         }
     });
 
@@ -225,7 +225,7 @@
     </div>
 </div>
 
-{#if projectResponse.isSuccess}
-    <ResetProjectDataDialog bind:open={showResetDialog} name={projectResponse.data.name} {reset} />
-    <RemoveProjectDialog bind:open={showRemoveDialog} name={projectResponse.data.name} {remove} />
+{#if projectQuery.isSuccess}
+    <ResetProjectDataDialog bind:open={showResetDialog} name={projectQuery.data.name} {reset} />
+    <RemoveProjectDialog bind:open={showRemoveDialog} name={projectQuery.data.name} {remove} />
 {/if}
