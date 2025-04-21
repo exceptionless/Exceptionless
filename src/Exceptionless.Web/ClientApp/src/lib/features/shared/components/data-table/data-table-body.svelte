@@ -28,7 +28,7 @@
             return;
         }
 
-        return 'cursor-pointer hover';
+        return 'cursor-pointer hover truncate max-w-sm';
     }
 
     function onCellClick(cell: Cell<TData, unknown>): void {
