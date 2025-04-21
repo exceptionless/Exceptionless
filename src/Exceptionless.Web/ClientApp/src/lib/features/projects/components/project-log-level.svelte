@@ -14,7 +14,7 @@
     }
 
     let { projectId, source }: Props = $props();
-    const projectConfigResponse = getProjectConfig({
+    const projectConfigQuery = getProjectConfig({
         route: {
             get id() {
                 return projectId;
@@ -54,7 +54,7 @@
         toast.success(`Successfully reverted to default (${defaultLevelDisplayName}) log level`);
     }
 
-    const configSettings = $derived(projectConfigResponse.data?.settings ?? {});
+    const configSettings = $derived(projectConfigQuery.data?.settings ?? {});
     const level = $derived(getLogLevel(configSettings[`@@log:${source ?? ''}`]));
     const defaultLevel = $derived(getDefaultLogLevel(configSettings, source ?? ''));
     const defaultLevelDisplayName = $derived(getLogLevelDisplayName(defaultLevel));
@@ -128,7 +128,7 @@
     }
 </script>
 
-{#if projectConfigResponse.isSuccess}
+{#if projectConfigQuery.isSuccess}
     <DropdownMenu.Root>
         <DropdownMenu.Trigger>
             <Button variant="outline">

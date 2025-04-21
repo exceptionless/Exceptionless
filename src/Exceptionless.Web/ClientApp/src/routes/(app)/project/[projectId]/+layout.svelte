@@ -13,7 +13,7 @@
     let { children } = $props();
 
     const projectId = page.params.projectId || '';
-    const projectResponse = getProjectQuery({
+    const projectQuery = getProjectQuery({
         route: {
             get id() {
                 return projectId;
@@ -22,7 +22,7 @@
     });
 
     $effect(() => {
-        if (projectResponse.isError) {
+        if (projectQuery.isError) {
             toast.error(`The project "${projectId}" could not be found.`);
             goto('/next/project/list');
         }
@@ -32,7 +32,7 @@
 <Card.Root>
     <Card.Header>
         <Card.Title class="text-2xl" level={2}
-            >{#if projectResponse.isSuccess}{projectResponse.data.name}
+            >{#if projectQuery.isSuccess}{projectQuery.data.name}
             {/if} Settings</Card.Title
         >
         <Card.Description>Manage your project settings and integrations.</Card.Description>

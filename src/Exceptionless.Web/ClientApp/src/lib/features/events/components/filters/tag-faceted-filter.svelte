@@ -12,7 +12,7 @@
 
     // Store the organizationId to prevent loading when switching organizations.
     const organizationId = organization.current;
-    const response = getOrganizationCountQuery({
+    const countQuery = getOrganizationCountQuery({
         params: {
             aggregations: 'terms:tags'
         },
@@ -23,7 +23,7 @@
         }
     });
 
-    const tags = $derived(Array.from(new Set(['Critical', ...(terms(response.data?.aggregations, 'terms_tags')?.buckets?.map((tag) => tag.key) ?? [])])));
+    const tags = $derived(Array.from(new Set(['Critical', ...(terms(countQuery.data?.aggregations, 'terms_tags')?.buckets?.map((tag) => tag.key) ?? [])])));
     const options = $derived(
         tags.map((tag) => ({
             label: tag,
@@ -32,7 +32,7 @@
     );
 
     $effect(() => {
-        if (!response.isSuccess || filter.value.length === 0) {
+        if (!countQuery.isSuccess || filter.value.length === 0) {
             return;
         }
 

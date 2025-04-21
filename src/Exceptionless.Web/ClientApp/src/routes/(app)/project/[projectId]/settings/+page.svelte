@@ -13,7 +13,7 @@
 
     let toastId = $state<number | string>();
     const projectId = page.params.projectId || '';
-    const projectResponse = getProjectQuery({
+    const projectQuery = getProjectQuery({
         route: {
             get id() {
                 return projectId;
@@ -29,7 +29,7 @@
         }
     });
 
-    const projectConfigResponse = getProjectConfig({
+    const projectConfigQuery = getProjectConfig({
         route: {
             get id() {
                 return projectId;
@@ -59,15 +59,16 @@
     let commonMethods = $state('');
     let userAgents = $state('');
     let deleteBotDataEnabled = $state(false);
+    const settings = $derived(projectConfigQuery.data?.settings ?? {});
 
-    const dataExclusionsIsDirty = $derived(dataExclusions !== projectConfigResponse.data?.settings['@@DataExclusions']);
+    const dataExclusionsIsDirty = $derived(dataExclusions !== settings['@@DataExclusions']);
     const excludePrivateInformationIsDirty = $derived(
-        excludePrivateInformation !== (projectConfigResponse.data?.settings['@@IncludePrivateInformation'] === 'false')
+        excludePrivateInformation !== (settings['@@IncludePrivateInformation'] === 'false')
     );
-    const userNamespacesIsDirty = $derived(userNamespaces !== projectConfigResponse.data?.settings.UserNamespaces);
-    const commonMethodsIsDirty = $derived(commonMethods !== projectConfigResponse.data?.settings.CommonMethods);
-    const userAgentsIsDirty = $derived(userAgents !== (projectConfigResponse.data?.settings['@@UserAgentBotPatterns'] as string));
-    const deleteBotDataEnabledIsDirty = $derived(deleteBotDataEnabled !== projectResponse.data?.delete_bot_data_enabled);
+    const userNamespacesIsDirty = $derived(userNamespaces !== settings.UserNamespaces);
+    const commonMethodsIsDirty = $derived(commonMethods !== settings.CommonMethods);
+    const userAgentsIsDirty = $derived(userAgents !== (settings['@@UserAgentBotPatterns'] as string));
+    const deleteBotDataEnabledIsDirty = $derived(deleteBotDataEnabled !== projectQuery.data?.delete_bot_data_enabled);
 
     async function updateOrRemoveProjectConfig(key: string, value: null | string, displayName: string) {
         toast.dismiss(toastId);
@@ -152,16 +153,17 @@
     const debouncedSaveDeleteBotDataEnabled = debounce(500, saveDeleteBotDataEnabled);
 
     $effect(() => {
-        if (projectConfigResponse.dataUpdatedAt) {
-            dataExclusions = projectConfigResponse.data?.settings['@@DataExclusions'] ?? '';
-            excludePrivateInformation = projectConfigResponse.data?.settings['@@IncludePrivateInformation'] === 'false';
-            userNamespaces = projectConfigResponse.data?.settings.UserNamespaces ?? '';
-            commonMethods = projectConfigResponse.data?.settings.CommonMethods ?? '';
-            userAgents = projectConfigResponse.data?.settings['@@UserAgentBotPatterns'] ?? '';
+        if (projectConfigQuery.dataUpdatedAt) {
+
+            dataExclusions = settings['@@DataExclusions'] ?? '';
+            excludePrivateInformation = settings['@@IncludePrivateInformation'] === 'false';
+            userNamespaces = settings.UserNamespaces ?? '';
+            commonMethods = settings.CommonMethods ?? '';
+            userAgents = settings['@@UserAgentBotPatterns'] ?? '';
         }
 
-        if (projectResponse.dataUpdatedAt) {
-            deleteBotDataEnabled = projectResponse.data?.delete_bot_data_enabled ?? false;
+        if (projectQuery.dataUpdatedAt) {
+            deleteBotDataEnabled = projectQuery.data?.delete_bot_data_enabled ?? false;
         }
     });
 </script>

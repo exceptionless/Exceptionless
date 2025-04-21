@@ -159,28 +159,28 @@
         };
     });
 
-    const userResponse = getMeQuery();
-    const gravatar = getGravatarFromCurrentUser(userResponse);
+    const meQuery = getMeQuery();
+    const gravatar = getGravatarFromCurrentUser(meQuery);
 
-    const organizationsResponse = getOrganizationQuery({});
+    const organizationsQuery = getOrganizationQuery({});
     $effect(() => {
-        if (!organizationsResponse.isSuccess) {
+        if (!organizationsQuery.isSuccess) {
             return;
         }
 
-        if (organizationsResponse.data.length === 0) {
+        if (organizationsQuery.data.length === 0) {
             // TODO: Redirect to create organization page.
             organization.current = undefined;
             return;
         }
 
-        if (!organizationsResponse.data.find((org) => org.id === organization.current)) {
-            organization.current = organizationsResponse.data[0]!.id;
+        if (!organizationsQuery.data.find((org) => org.id === organization.current)) {
+            organization.current = organizationsQuery.data[0]!.id;
         }
     });
 
     const filteredRoutes = $derived.by(() => {
-        const context: NavigationItemContext = { authenticated: isAuthenticated, user: userResponse.data };
+        const context: NavigationItemContext = { authenticated: isAuthenticated, user: meQuery.data };
         return routes().filter((route) => (route.show ? route.show(context) : true));
     });
 </script>
@@ -191,14 +191,14 @@
         {#snippet header()}
             <SidebarOrganizationSwitcher
                 class="pt-2"
-                isLoading={organizationsResponse.isLoading}
-                organizations={organizationsResponse.data}
+                isLoading={organizationsQuery.isLoading}
+                organizations={organizationsQuery.data}
                 bind:selected={organization.current}
             />
         {/snippet}
 
         {#snippet footer()}
-            <SidebarUser isLoading={userResponse.isLoading} user={userResponse.data} {gravatar} />
+            <SidebarUser isLoading={meQuery.isLoading} user={meQuery.data} {gravatar} />
         {/snippet}
     </Sidebar>
     <div class="flex w-full overflow-hidden pt-16">

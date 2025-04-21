@@ -16,13 +16,13 @@
     import { debounce } from 'throttle-debounce';
 
     let toastId = $state<number | string>();
-    const userResponse = getMeQuery();
-    const isEmailAddressVerified = $derived(userResponse.data?.is_email_address_verified ?? false);
-    const gravatar = getGravatarFromCurrentUser(userResponse);
+    const meQuery = getMeQuery();
+    const isEmailAddressVerified = $derived(meQuery.data?.is_email_address_verified ?? false);
+    const gravatar = getGravatarFromCurrentUser(meQuery);
     const updateUser = patchUser({
         route: {
             get id() {
-                return userResponse.data?.id;
+                return meQuery.data?.id;
             }
         }
     });
@@ -30,12 +30,12 @@
     const updateEmailAddress = postEmailAddress({
         route: {
             get id() {
-                return userResponse.data?.id;
+                return meQuery.data?.id;
             }
         }
     });
 
-    const updateEmailAddressForm = superForm(defaults(userResponse.data ?? new UpdateUserEmailAddress(), classvalidatorClient(UpdateUserEmailAddress)), {
+    const updateEmailAddressForm = superForm(defaults(meQuery.data ?? new UpdateUserEmailAddress(), classvalidatorClient(UpdateUserEmailAddress)), {
         dataType: 'json',
         id: 'update-email-address',
         async onUpdate({ form, result }) {
@@ -62,7 +62,7 @@
         validators: classvalidatorClient(UpdateUserEmailAddress)
     });
 
-    const updateUserForm = superForm(defaults(userResponse.data ?? new UpdateUser(), classvalidatorClient(UpdateUser)), {
+    const updateUserForm = superForm(defaults(meQuery.data ?? new UpdateUser(), classvalidatorClient(UpdateUser)), {
         dataType: 'json',
         id: 'update-user',
         async onUpdate({ form, result }) {
@@ -90,22 +90,22 @@
     });
 
     $effect(() => {
-        if (!userResponse.isSuccess) {
+        if (!meQuery.isSuccess) {
             return;
         }
 
         if (!$updateEmailAddressFormSubmitting && !$updateEmailAddressFormTainted) {
-            updateEmailAddressForm.reset({ data: userResponse.data, keepMessage: true });
+            updateEmailAddressForm.reset({ data: meQuery.data, keepMessage: true });
         }
     });
 
     $effect(() => {
-        if (!userResponse.isSuccess) {
+        if (!meQuery.isSuccess) {
             return;
         }
 
         if (!$updateUserFormSubmitting && !$updateUserFormTainted) {
-            updateUserForm.reset({ data: userResponse.data, keepMessage: true });
+            updateUserForm.reset({ data: meQuery.data, keepMessage: true });
         }
     });
 
@@ -133,7 +133,7 @@
         toast.dismiss(toastId);
         const client = useFetchClient();
         try {
-            await client.get(`users/${userResponse.data?.id}/resend-verification-email`);
+            await client.get(`users/${meQuery.data?.id}/resend-verification-email`);
             toastId = toast.success('Please check your inbox for the verification email.');
         } catch {
             toastId = toast.error('Error sending verification email. Please try again.');
@@ -152,7 +152,7 @@
         {#await gravatar.src}
             <Avatar.Fallback>{gravatar.initials}</Avatar.Fallback>
         {:then src}
-            <Avatar.Image alt={userResponse.data ? `${userResponse.data.full_name} avatar` : 'avatar'} {src} />
+            <Avatar.Image alt={meQuery.data ? `${meQuery.data.full_name} avatar` : 'avatar'} {src} />
         {/await}
         <Avatar.Fallback>{gravatar.initials}</Avatar.Fallback>
     </Avatar.Root>

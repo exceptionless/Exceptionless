@@ -9,9 +9,9 @@
 
     let redirect = page.url.searchParams.get('redirect');
 
-    const healthResponse = getHealthQuery();
+    const healthQuery = getHealthQuery();
     $effect(() => {
-        if (healthResponse.isSuccess && redirect) {
+        if (healthQuery.isSuccess && redirect) {
             goto(redirect, { replaceState: true });
         }
     });
@@ -25,9 +25,9 @@
         </Card.Header>
         <Card.Content>
             <P class="text-center text-sm">
-                {#if healthResponse.isLoading}
+                {#if healthQuery.isLoading}
                     <Loading /> Checking service status...
-                {:else if healthResponse.isSuccess}
+                {:else if healthQuery.isSuccess}
                     Service is healthy.
                 {:else}
                     We're sorry but the website is currently undergoing maintenance.
@@ -36,7 +36,7 @@
                     {/if}
                 {/if}
             </P>
-            {#if healthResponse.isLoading || healthResponse.isSuccess}
+            {#if healthQuery.isLoading || healthQuery.isSuccess}
                 <P class="text-center text-sm">If you are currently experiencing an issue please contact support.</P>
             {:else}
                 <P class="text-center text-sm">Please contact support for more information.</P>
