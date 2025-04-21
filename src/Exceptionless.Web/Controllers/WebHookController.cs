@@ -49,7 +49,7 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
         page = GetPage(page);
         limit = GetLimit(limit);
         var results = await _repository.GetByProjectIdAsync(projectId, o => o.PageNumber(page).PageLimit(limit));
-        return OkWithResourceLinks(results.Documents.ToArray(), results.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
+        return OkWithResourceLinks(results.Documents.ToArray(), results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
     }
 
     /// <summary>
