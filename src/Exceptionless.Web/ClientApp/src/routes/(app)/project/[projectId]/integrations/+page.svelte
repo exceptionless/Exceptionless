@@ -176,9 +176,9 @@
 
     <section class="space-y-2">
         <H4>Zapier</H4>
-        <P
+        <Muted
             >Exceptionless has a native Zapier integration. You can use Zapier to connect your Exceptionless account to over 3,000 other applications all
-            without writing any code.</P
+            without writing any code.</Muted
         >
 
         <Button href="https://zapier.com/apps/exceptionless/integrations" target="_blank"><Zapier class="mr-2 size-4" /> Connect Zapier</Button>
@@ -187,9 +187,9 @@
     {#if isSlackEnabled}
         <section class="space-y-2">
             <H4>Slack</H4>
-            <P
+            <Muted
                 >Integrate Exceptionless with Slack to receive real-time notifications about new errors, critical events, and system alerts directly in your
-                team's Slack channels. Keep your team informed and respond faster to issues without constantly checking the dashboard.</P
+                team's Slack channels. Keep your team informed and respond faster to issues without constantly checking the dashboard.</Muted
             >
 
             <NotificationSettingsForm settings={slackNotificationSettingsQuery.data} save={updateSlackNotificationSettings} />
@@ -203,25 +203,18 @@
     {/if}
 
     <section class="space-y-2">
-        <H4>Webhooks</H4>
-        <P>The following web hooks will be called for this project.</P>
+        <div class="flex items-start justify-between">
+            <div>
+                <H4>Webhooks</H4>
+                <Muted>The following web hooks will be called for this project.</Muted>
+            </div>
 
-        <WebhooksDataTable bind:limit={webhooksQueryParameters.limit!} isLoading={webhooksQuery.isLoading} {table}>
-            {#snippet footerChildren()}
-                <div class="h-9 min-w-[140px]">
-                    <Button size="sm" onclick={() => (showAddWebhookDialog = true)}>
-                        <Plus class="mr-2 size-4" />
-                        Add Webhook</Button
-                    >
-                </div>
+            <Button variant="secondary" size="icon" onclick={() => (showAddWebhookDialog = true)} title="Add Webhook">
+                <Plus class="size-4" />
+            </Button>
+        </div>
 
-                <DataTable.PageSize bind:value={webhooksQueryParameters.limit!} {table}></DataTable.PageSize>
-                <div class="flex items-center space-x-6 lg:space-x-8">
-                    <DataTable.PageCount {table} />
-                    <DataTable.Pagination {table} />
-                </div>
-            {/snippet}
-        </WebhooksDataTable>
+        <WebhooksDataTable bind:limit={webhooksQueryParameters.limit!} isLoading={webhooksQuery.isLoading} {table} />
     </section>
 </div>
 

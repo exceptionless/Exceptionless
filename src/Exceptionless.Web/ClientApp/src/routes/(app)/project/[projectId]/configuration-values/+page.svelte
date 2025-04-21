@@ -74,31 +74,22 @@
 </script>
 
 <div class="space-y-6">
-    <div>
-        <H3>Configuration Values</H3>
-        <Muted
-            >The <A href="https://exceptionless.com/docs/project-settings/#client-configuration" target="_blank">configuration value</A> will be sent to the Exceptionless
-            clients in real time. This allows you to change how your app works without redeploying your app.</Muted
-        >
+    <div class="flex items-start justify-between">
+        <div>
+            <H3>Configuration Values</H3>
+            <Muted
+                >The <A href="https://exceptionless.com/docs/project-settings/#client-configuration" target="_blank">configuration value</A> will be sent to the
+                Exceptionless clients in real time. This allows you to change how your app works without redeploying your app.</Muted
+            >
+        </div>
+
+        <Button variant="secondary" size="icon" onclick={() => (showAddProjectConfigDialog = true)} title="Add Configuration Value">
+            <Plus class="size-4" />
+        </Button>
     </div>
     <Separator />
 
-    <ProjectsConfigDataTable bind:limit={queryParams.limit!} isLoading={projectConfigQuery.isLoading} {table}>
-        {#snippet footerChildren()}
-            <div class="h-9 min-w-[140px]">
-                <Button size="sm" onclick={() => (showAddProjectConfigDialog = true)}>
-                    <Plus class="mr-2 size-4" />
-                    Add Configuration Value</Button
-                >
-            </div>
-
-            <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
-            <div class="flex items-center space-x-6 lg:space-x-8">
-                <DataTable.PageCount {table} />
-                <DataTable.Pagination {table} />
-            </div>
-        {/snippet}
-    </ProjectsConfigDataTable>
+    <ProjectsConfigDataTable bind:limit={queryParams.limit!} isLoading={projectConfigQuery.isLoading} {table} />
 </div>
 
 {#if showAddProjectConfigDialog}

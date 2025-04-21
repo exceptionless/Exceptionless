@@ -78,26 +78,16 @@
 </script>
 
 <div class="space-y-6">
-    <div>
-        <H3>API Keys</H3>
-        <Muted>Create and manage API keys for authenticating your applications with Exceptionless.</Muted>
+    <div class="flex items-start justify-between">
+        <div>
+            <H3>API Keys</H3>
+            <Muted>Create and manage API keys for authenticating your applications with Exceptionless.</Muted>
+        </div>
+        <Button variant="secondary" size="icon" onclick={addApiKey} title="Add API Key">
+            <Plus class="size-4" />
+        </Button>
     </div>
     <Separator />
 
-    <TokensDataTable bind:limit={tokensQueryParameters.limit!} isLoading={tokensQuery.isLoading} {table}>
-        {#snippet footerChildren()}
-            <div class="h-9 min-w-[140px]">
-                <Button size="sm" onclick={addApiKey}>
-                    <Plus class="mr-2 size-4" />
-                    Add API Key</Button
-                >
-            </div>
-
-            <DataTable.PageSize bind:value={tokensQueryParameters.limit!} {table}></DataTable.PageSize>
-            <div class="flex items-center space-x-6 lg:space-x-8">
-                <DataTable.PageCount {table} />
-                <DataTable.Pagination {table} />
-            </div>
-        {/snippet}
-    </TokensDataTable>
+    <TokensDataTable bind:limit={tokensQueryParameters.limit!} isLoading={tokensQuery.isLoading} {table} />
 </div>
