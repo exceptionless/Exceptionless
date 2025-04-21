@@ -21,7 +21,7 @@
         <AlertDialog.Header>
             <AlertDialog.Title>Delete Project</AlertDialog.Title>
             <AlertDialog.Description>
-                Are you sure you want to delete "{name}"?
+                Are you sure you want to delete "<span class="truncate max-w-[200px] inline-block align-bottom" title={name}>{name}</span>"?
             </AlertDialog.Description>
         </AlertDialog.Header>
         <AlertDialog.Footer>
