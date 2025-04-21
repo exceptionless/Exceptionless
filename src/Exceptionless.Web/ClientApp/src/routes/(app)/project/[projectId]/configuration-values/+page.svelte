@@ -6,18 +6,17 @@
     import { Separator } from '$comp/ui/separator';
     import { getProjectConfig, postProjectConfig } from '$features/projects/api.svelte';
     import AddProjectConfigDialog from '$features/projects/components/dialogs/add-project-config-dialog.svelte';
-    import { getTableContext } from '$features/projects/components/table/config-options.svelte';
+    import { getTableOptions } from '$features/projects/components/table/config-options.svelte';
     import ProjectsConfigDataTable from '$features/projects/components/table/projects-config-data-table.svelte';
     import { ClientConfigurationSetting } from '$features/projects/models';
     import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
-    import { watch } from 'runed';
     import { toast } from 'svelte-sonner';
 
     const projectId = page.params.projectId || '';
-    const projectConfigResponse = getProjectConfig({
+    const projectConfigQuery = getProjectConfig({
         route: {
             get id() {
                 return projectId;
@@ -47,7 +46,7 @@
         limit: DEFAULT_LIMIT
     };
 
-    const params = queryParamsState({
+    const queryParams = queryParamsState({
         default: DEFAULT_PARAMS,
         pushHistory: true,
         schema: {
@@ -55,39 +54,20 @@
         }
     });
 
-    const contextParameters = {
+    const inMemoryQueryParameters = {
         get limit() {
-            return params.limit!;
+            return queryParams.limit!;
         },
         get projectId() {
             return projectId;
         }
     };
 
-    // TODO: Fix paging
-    const context = getTableContext<ClientConfigurationSetting>(contextParameters);
-    const table = createTable(context.options);
-
-    const knownSettingsToHide = ['@@log:*', '@@DataExclusions', '@@IncludePrivateInformation', '@@UserAgentBotPatterns', 'UserNamespaces', 'CommonMethods'];
-    watch(
-        () => projectConfigResponse.dataUpdatedAt,
-        () => {
-            if (projectConfigResponse.isSuccess) {
-                context.data = Object.entries(projectConfigResponse.data.settings)
-                    .map(([key, value]) => {
-                        const config = new ClientConfigurationSetting();
-                        config.key = key;
-                        config.value = value;
-                        return config;
-                    })
-                    .filter((setting) => !knownSettingsToHide.includes(setting.key));
-            }
-        }
-    );
+    const table = createTable(getTableOptions<ClientConfigurationSetting>(inMemoryQueryParameters, inMemoryQueryParameters, projectConfigQuery));
 
     $effect(() => {
         // Handle case where pop state loses the limit
-        params.limit ??= DEFAULT_LIMIT;
+        queryParams.limit ??= DEFAULT_LIMIT;
     });
 
     // TODO: Add Skeleton
@@ -103,7 +83,7 @@
     </div>
     <Separator />
 
-    <ProjectsConfigDataTable bind:limit={params.limit!} isLoading={projectConfigResponse.isLoading} {table}>
+    <ProjectsConfigDataTable bind:limit={queryParams.limit!} isLoading={projectConfigQuery.isLoading} {table}>
         {#snippet footerChildren()}
             <div class="h-9 min-w-[140px]">
                 <Button size="sm" onclick={() => (showAddProjectConfigDialog = true)}>
@@ -112,7 +92,7 @@
                 >
             </div>
 
-            <DataTable.PageSize bind:value={params.limit!} {table}></DataTable.PageSize>
+            <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
             <div class="flex items-center space-x-6 lg:space-x-8">
                 <DataTable.PageCount {table} />
                 <DataTable.Pagination {table} />

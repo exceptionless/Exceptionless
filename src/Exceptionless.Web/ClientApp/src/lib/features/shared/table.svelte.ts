@@ -16,13 +16,16 @@ import { PersistedState } from 'runed';
 import { DEFAULT_LIMIT } from './api/api.svelte';
 
 export type PaginationStrategy = 'cursor' | 'memory' | 'offset';
+export type QueryMeta = FetchClientResponse<unknown>['meta'];
 
 export interface TableConfiguration<TData, TPaginationStrategy extends PaginationStrategy = PaginationStrategy> {
     columnPersistenceKey: string;
     columns: ColumnDef<TData>[];
+    configureOptions?: (options: TableOptions<TData>) => TableOptions<TData>;
     paginationStrategy: TPaginationStrategy;
+    queryData?: TData[];
+    queryMeta?: QueryMeta;
     queryParameters: TablePagingParameters<TPaginationStrategy>;
-    queryResponse?: FetchClientResponse<TData[]>;
 }
 
 export interface TableCursorPagingParameters {
@@ -34,7 +37,7 @@ export interface TableCursorPagingParameters {
 
 export interface TableMemoryPagingParameters {
     limit?: number;
-    sort?: string;
+    page?: number;
 }
 
 export interface TableOffsetPagingParameters {
@@ -52,10 +55,12 @@ export type TablePagingParameters<T extends PaginationStrategy = PaginationStrat
         : never;
 
 export function getSharedTableOptions<TData, TPaginationStrategy extends PaginationStrategy = PaginationStrategy>(
-    configuration: TableConfiguration<TData, TPaginationStrategy>,
-    configureOptions: (options: TableOptions<TData>) => TableOptions<TData> = (options) => options
+    configuration: TableConfiguration<TData, TPaginationStrategy>
 ): TableOptions<TData> {
-    const paginationStrategy = $derived(configuration.paginationStrategy ?? 'cursor');
+    const isCursorPaging = $derived(!configuration.paginationStrategy || configuration.paginationStrategy === 'cursor');
+    const isOffsetPaging = $derived(configuration.paginationStrategy === 'offset');
+    const isMemoryPaging = $derived(configuration.paginationStrategy === 'memory');
+
     const [pageCount, setPageCount] = createTableState(0);
     const [columns, setColumns] = createTableState<ColumnDef<TData>[]>(configuration.columns);
 
@@ -64,12 +69,11 @@ export function getSharedTableOptions<TData, TPaginationStrategy extends Paginat
     const [columnVisibility, setColumnVisibility] = createPersistedTableState(visibilityKey, <VisibilityState>{});
 
     // Initialize pagination state from parameters
-    const initialPageIndex =
-        paginationStrategy === 'offset'
-            ? (configuration.queryParameters as TableOffsetPagingParameters).page !== undefined
-                ? Number((configuration.queryParameters as TableOffsetPagingParameters).page) - 1
-                : 0
-            : 0;
+    const initialPageIndex = isOffsetPaging
+        ? (configuration.queryParameters as TableOffsetPagingParameters).page !== undefined
+            ? Number((configuration.queryParameters as TableOffsetPagingParameters).page) - 1
+            : 0
+        : 0;
 
     const [pagination, setPagination] = createTableState<PaginationState>({
         pageIndex: initialPageIndex,
@@ -78,7 +82,7 @@ export function getSharedTableOptions<TData, TPaginationStrategy extends Paginat
 
     const [allData, setAllData] = createTableState<TData[]>([]);
     const [data, setData] = createTableState<TData[]>([]);
-    const [meta, setMeta] = createTableState<FetchClientResponse<unknown>['meta'] | undefined>(undefined);
+    const [meta, setMeta] = createTableState<QueryMeta | undefined>(undefined);
     const [sorting, setSorting] = createTableState<ColumnSort[]>([]);
     const [rowSelection, setRowSelection] = createTableState<RowSelectionState>({});
 
@@ -88,23 +92,25 @@ export function getSharedTableOptions<TData, TPaginationStrategy extends Paginat
         setPagination(updaterOrValue);
         const currentPageInfo = pagination();
 
-        configuration.queryParameters.limit = currentPageInfo.pageSize;
+        if (configuration.queryParameters.limit !== currentPageInfo.pageSize) {
+            configuration.queryParameters.limit = currentPageInfo.pageSize;
+        }
 
         // Handle memory pagination directly (no parameter change needed)
-        if (paginationStrategy === 'memory' && allData().length > 0) {
+        if (isMemoryPaging && allData().length > 0) {
             const start = currentPageInfo.pageIndex * currentPageInfo.pageSize;
             setData(allData().slice(start, start + currentPageInfo.pageSize));
-        } else if (paginationStrategy === 'cursor') {
+        } else if (isCursorPaging) {
             const queryMeta = meta();
             const nextLink = queryMeta?.links?.next?.after;
             const previousLink = queryMeta?.links?.previous?.before;
 
-            (configuration.queryParameters as TableCursorPagingParameters).after = currentPageInfo.pageIndex > previousPageIndex ? nextLink : undefined;
+            const parameters = configuration.queryParameters as TableCursorPagingParameters;
+            parameters.after = currentPageInfo.pageIndex > previousPageIndex ? nextLink : undefined;
             // Ensure previousLink is only used when actually moving back and not on the first page
-            (configuration.queryParameters as TableCursorPagingParameters).before =
-                currentPageInfo.pageIndex < previousPageIndex && currentPageInfo.pageIndex > 0 ? previousLink : undefined;
-        } else if (paginationStrategy === 'offset') {
-            (configuration.queryParameters as TableOffsetPagingParameters).page = currentPageInfo.pageIndex + 1; // API uses 1-based index
+            parameters.before = currentPageInfo.pageIndex < previousPageIndex && currentPageInfo.pageIndex > 0 ? previousLink : undefined;
+        } else if (isOffsetPaging || isMemoryPaging) {
+            (configuration.queryParameters as TableMemoryPagingParameters | TableOffsetPagingParameters).page = currentPageInfo.pageIndex + 1; // API uses 1-based index
         }
     };
 
@@ -112,40 +118,74 @@ export function getSharedTableOptions<TData, TPaginationStrategy extends Paginat
         setSorting(updaterOrValue);
         const newSorting = sorting();
 
-        if (paginationStrategy === 'cursor') {
-            (configuration.queryParameters as TableCursorPagingParameters).after = undefined;
-            (configuration.queryParameters as TableCursorPagingParameters).before = undefined;
-        } else if (paginationStrategy === 'offset') {
-            (configuration.queryParameters as TableOffsetPagingParameters).page = 1;
+        const sort = newSorting.length > 0 ? newSorting.map((sort) => `${sort.desc ? '-' : ''}${sort.id}`).join(',') : undefined;
+        if (isCursorPaging) {
+            const parameters = configuration.queryParameters as TableCursorPagingParameters;
+            parameters.after = undefined;
+            parameters.before = undefined;
+            parameters.sort = sort;
+        } else if (isOffsetPaging) {
+            const parameters = configuration.queryParameters as TableOffsetPagingParameters;
+            parameters.page = 1;
+            parameters.sort = sort;
+        } else if (isMemoryPaging) {
+            (configuration.queryParameters as TableMemoryPagingParameters).page = 1;
         }
-
-        configuration.queryParameters.sort = newSorting.length > 0 ? newSorting.map((sort) => `${sort.desc ? '-' : ''}${sort.id}`).join(',') : undefined;
     };
 
     const setDataImpl = (data: TData[]) => {
-        if (paginationStrategy === 'memory') {
+        if (isMemoryPaging) {
             setAllData(data);
 
             const pageInfo = pagination();
-            const start = pageInfo.pageIndex * pageInfo.pageSize;
-            setData(data.slice(start, start + pageInfo.pageSize));
+            const pageSize = pageInfo.pageSize;
+            const maxValidPageIndex = Math.max(0, Math.ceil(data.length / pageSize) - 1);
+            const needsAdjustment = pageInfo.pageIndex > maxValidPageIndex;
+            const targetPageIndex = needsAdjustment ? maxValidPageIndex : pageInfo.pageIndex;
+
+            // Update pagination state only if needed
+            if (needsAdjustment) {
+                setPagination((prev) => ({
+                    ...prev,
+                    pageIndex: targetPageIndex
+                }));
+            }
+
+            // Calculate slice with the appropriate page index
+            const start = targetPageIndex * pageSize;
+            setData(data.slice(start, start + pageSize));
         } else {
             setData(data);
         }
     };
 
-    const setMetaImpl = (meta: FetchClientResponse<unknown>['meta'] | undefined) => {
+    const setMetaImpl = (meta: QueryMeta | undefined) => {
         setMeta(meta);
         const limit = configuration.queryParameters.limit ?? DEFAULT_LIMIT;
-        const total = (meta?.total as number) ?? 0;
-        setPageCount(Math.ceil(total / limit));
+
+        const total = isMemoryPaging ? allData().length : ((meta?.total as number) ?? 0);
+        const totalPages = Math.ceil(total / limit);
+        setPageCount(totalPages);
+
+        // // Only adjust pagination for offset pagination here
+        // // Memory pagination adjusts in setDataImpl to avoid duplication
+        // if (isOffsetPaging) {
+        //     const maxValidPageIndex = Math.max(0, totalPages - 1);
+        //     const paginationState = pagination();
+        //     if (paginationState.pageIndex > maxValidPageIndex) {
+        //         setPagination((prev) => ({
+        //             ...prev,
+        //             pageIndex: maxValidPageIndex
+        //         }));
+        //     }
+        // }
     };
 
-    $effect(() => {
-        setDataImpl(configuration.queryResponse?.data ?? []);
-        setMetaImpl(configuration.queryResponse?.meta);
-    });
+    // NOTE: Two different effects are used here to avoid circular dependency issues with in memory paging.
+    $effect(() => setDataImpl(configuration.queryData ?? []));
+    $effect(() => setMetaImpl(configuration.queryMeta));
 
+    const configureOptions = configuration.configureOptions ?? ((options) => options);
     return configureOptions({
         get columns() {
             return columns();
@@ -213,6 +253,7 @@ export function isTableEmpty<TData>(table: SvelteTable<TData>): boolean {
 export function removeTableData<TData>(table: SvelteTable<TData>, predicate: (value: TData, index: number, array: TData[]) => boolean): boolean {
     if (table.options.data.some(predicate)) {
         table.options.data = table.options.data.filter((value, index, array) => !predicate(value, index, array));
+
         return true;
     }
 

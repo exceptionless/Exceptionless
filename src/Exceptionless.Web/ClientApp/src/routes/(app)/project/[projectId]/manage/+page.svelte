@@ -2,18 +2,13 @@
     import { goto } from '$app/navigation';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
-    import DateTime from '$comp/formatters/date-time.svelte';
-    import Number from '$comp/formatters/number.svelte';
-    import TimeAgo from '$comp/formatters/time-ago.svelte';
     import Loading from '$comp/loading.svelte';
-    import { H3, H4, Muted } from '$comp/typography';
+    import { H3, Muted } from '$comp/typography';
     import { Button, buttonVariants } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
     import { Separator } from '$comp/ui/separator';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import * as Table from '$comp/ui/table';
     import { deleteProject, getProjectQuery, resetData, updateProject } from '$features/projects/api.svelte';
     import RemoveProjectDialog from '$features/projects/components/dialogs/remove-project-dialog.svelte';
     import ResetProjectDataDialog from '$features/projects/components/dialogs/reset-project-data-dialog.svelte';
@@ -141,53 +136,15 @@
         </Form.Field>
     </form>
 
-    <div>
+    <!-- <div>
         <H4>Usage</H4>
         <Muted>View your historical usage.</Muted>
-    </div>
-
-    <Table.Root class="mt-4">
-        <Table.Body>
-            <Table.Row class="group">
-                {#if projectResponse.isSuccess}
-                    <Table.Head class="w-40 font-semibold whitespace-nowrap">Created On</Table.Head>
-                    <Table.Cell class="flex items-center"
-                        ><DateTime value={projectResponse.data.created_utc}></DateTime> (<TimeAgo value={projectResponse.data.created_utc}
-                        ></TimeAgo>)</Table.Cell
-                    >
-                {:else}
-                    <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
-                    <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>{/if}
-            </Table.Row>
-            <Table.Row class="group">
-                {#if projectResponse.isSuccess}
-                    <Table.Head class="w-40 font-semibold whitespace-nowrap">Total Events</Table.Head>
-                    <Table.Cell><Number value={projectResponse.data.event_count} /></Table.Cell>
-                {:else}
-                    <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
-                    <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>
-                {/if}
-            </Table.Row>
-            <Table.Row class="group">
-                {#if projectResponse.isSuccess}
-                    <Table.Head class="w-40 font-semibold whitespace-nowrap">Total Stacks</Table.Head>
-                    <Table.Cell><Number value={projectResponse.data.stack_count} /></Table.Cell>
-                {:else}
-                    <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
-                    <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>
-                {/if}
-            </Table.Row>
-        </Table.Body>
-    </Table.Root>
+    </div> -->
 
     <div class="flex w-full items-center justify-between">
         <div class="flex gap-2">
             <Button variant="secondary" href="/issues?filter=project:{projectId}">
                 <Issues class="mr-2 size-4" /> Go To Issues
-            </Button>
-
-            <Button variant="secondary" href="/account/manage?tab=notifications&projectId={projectId}">
-                <NotificationSettings class="mr-2 size-4" /> Notification Settings
             </Button>
         </div>
 
