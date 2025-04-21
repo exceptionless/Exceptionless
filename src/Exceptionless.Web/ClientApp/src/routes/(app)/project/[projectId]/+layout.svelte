@@ -33,9 +33,13 @@
 
 <Card.Root>
     <Card.Header>
-        <Card.Title class="text-2xl" level={2}
-            >{#if projectQuery.isSuccess}{projectQuery.data.name}
-            {/if} Settings</Card.Title
+        <Card.Title class="text-2xl flex items-center gap-1" level={2}
+            >{#if projectQuery.isSuccess}
+            <div class="max-w-[70%] overflow-hidden" title={projectQuery.data.name}>
+                <span class="truncate block">{projectQuery.data.name}</span>
+            </div>
+        {/if}
+        <span class="flex-shrink-0">Settings</span></Card.Title
         >
         <Card.Description>Manage your project settings and integrations.</Card.Description>
         <Card.Action>

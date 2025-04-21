@@ -1,6 +1,5 @@
 <script lang="ts">
     import { page } from '$app/state';
-    import * as DataTable from '$comp/data-table';
     import { A, H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';

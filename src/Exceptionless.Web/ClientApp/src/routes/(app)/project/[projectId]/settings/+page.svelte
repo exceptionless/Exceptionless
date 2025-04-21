@@ -1,6 +1,6 @@
 <script lang="ts">
     import { page } from '$app/state';
-    import { A, H3, H4, Large, Muted, P } from '$comp/typography';
+    import { A, H3, H4, Large, Muted } from '$comp/typography';
     import { Input } from '$comp/ui/input';
     import { Label } from '$comp/ui/label';
     import { Separator } from '$comp/ui/separator';

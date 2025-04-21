@@ -2,8 +2,7 @@
     import type { NotificationSettings } from '$features/projects/models';
 
     import { page } from '$app/state';
-    import * as DataTable from '$comp/data-table';
-    import { H3, H4, Muted, P } from '$comp/typography';
+    import { H3, H4, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';
     import { env } from '$env/dynamic/public';
