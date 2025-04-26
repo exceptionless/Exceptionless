@@ -69,6 +69,7 @@
     "dependencies": {
         "@exceptionless/browser": "^3.1.0",
         "@exceptionless/fetchclient": "^0.40.0",
+        "@lucide/svelte": "^0.503.0",
         "@tanstack/svelte-query": "https://pkg.pr.new/@tanstack/svelte-query@8c9ce9",
         "@tanstack/svelte-query-devtools": "https://pkg.pr.new/@tanstack/svelte-query-devtools@8c9ce9",
         "@tanstack/svelte-table": "^9.0.0-alpha.10",
@@ -79,7 +80,6 @@
         "dompurify": "^3.2.5",
         "formsnap": "^2.0.1",
         "kit-query-params": "^0.0.26",
-        "@lucide/svelte": "^0.503.0",
         "mode-watcher": "^1.0.2",
         "oidc-client-ts": "^3.2.0",
         "pretty-ms": "^9.2.0",

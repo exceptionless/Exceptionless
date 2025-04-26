@@ -97,7 +97,7 @@
 
         try {
             const code = await slackOAuthLogin();
-            await addSlackMutation.mutateAsync({ code });
+            await addSlackMutation.mutateAsync(code);
             toastId = toast.success('Successfully connected Slack integration.');
         } catch {
             toastId = toast.error('Error connecting Slack integration. Please try again.');
@@ -191,9 +191,9 @@
                 team's Slack channels. Keep your team informed and respond faster to issues without constantly checking the dashboard.</Muted
             >
 
-            <NotificationSettingsForm settings={slackNotificationSettingsQuery.data} save={updateSlackNotificationSettings} />
-
             {#if hasSlackIntegration}
+                <NotificationSettingsForm settings={slackNotificationSettingsQuery.data} save={updateSlackNotificationSettings} />
+
                 <Button onclick={() => (showRemoveSlackDialog = true)}><img class="text- mr-2 size-4" alt="Slack" src={Slack} /> Remove Slack</Button>
             {:else}
                 <Button onclick={addSlack}><img class="text- mr-2 size-4" alt="Slack" src={Slack} /> Connect Slack</Button>

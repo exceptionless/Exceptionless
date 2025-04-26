@@ -58,7 +58,7 @@
 </script>
 
 {#if settings}
-    <form method="POST" use:enhance>
+    <form method="POST" use:enhance class="space-y-2">
         <ErrorMessage message={$message} />
 
         <div class="flex items-center space-x-2">
