@@ -130,10 +130,6 @@ export interface PostPromotedTabRequest {
     };
 }
 
-export interface PostSlackParams {
-    code: string;
-}
-
 export interface PostSlackRequest {
     route: {
         id: string | undefined;
@@ -388,17 +384,17 @@ export function postPromotedTab(request: PostPromotedTabRequest) {
 export function postSlack(request: PostSlackRequest) {
     const queryClient = useQueryClient();
 
-    return createMutation<boolean, ProblemDetails, PostSlackParams>(() => ({
+    return createMutation<boolean, ProblemDetails, string>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
-        mutationFn: async (params: PostSlackParams) => {
+        mutationFn: async (code: string) => {
             const client = useFetchClient();
-            const response = await client.post(`projects/${request.route.id}/slack`, { code: params.code });
+            const response = await client.post(`projects/${request.route.id}/slack`, undefined, { params: { code } });
 
             return response.ok;
         },
         mutationKey: queryKeys.postSlack(request.route.id),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+            queryClient.invalidateQueries({ queryKey: queryKeys.integrationNotificationSettings(request.route.id, 'slack') });
         }
     }));
 }
@@ -414,8 +410,8 @@ export function putProjectIntegrationNotificationSettings(request: PutProjectInt
             return response.ok;
         },
         mutationKey: queryKeys.putIntegrationNotificationSettings(request.route.id, request.route.integration),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.integrationNotificationSettings(request.route.id, request.route.integration) });
+        onSuccess: (_: boolean, variables: NotificationSettings) => {
+            queryClient.setQueryData(queryKeys.integrationNotificationSettings(request.route.id, request.route.integration), variables);
         }
     }));
 }
