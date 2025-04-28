@@ -1,6 +1,8 @@
 <script lang="ts">
     import ErrorMessage from '$comp/error-message.svelte';
     import PasswordInput from '$comp/form/password-input.svelte';
+    import GoogleIcon from '$comp/icons/GoogleIcon.svelte';
+    import MicrosoftIcon from '$comp/icons/MicrosoftIcon.svelte';
     import Loading from '$comp/loading.svelte';
     import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
@@ -17,8 +19,6 @@
         microsoftClientId
     } from '$features/auth/index.svelte';
     import { User } from '$features/users/models';
-    import Google from '$lib/assets/google.svg';
-    import Microsoft from '$lib/assets/microsoft.svg';
     import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
     import Facebook from '@lucide/svelte/icons/facebook';
@@ -115,7 +115,7 @@
             {#if !microsoftClientId}
                 <li class="pb-4">
                     <div class="flex items-center space-x-4">
-                        <img alt="Microsoft" src={Microsoft} />
+                        <MicrosoftIcon class="size-4" />
                         <div class="min-w-0 flex-1 font-semibold">Microsoft account</div>
                         <div class="inline-flex items-center">
                             {#if true}
@@ -132,7 +132,7 @@
             {#if !googleClientId}
                 <li class="py-4">
                     <div class="flex items-center space-x-4">
-                        <img alt="Google" src={Google} />
+                        <GoogleIcon class="size-4" />
                         <div class="min-w-0 flex-1 font-semibold">Google account</div>
                         <div class="inline-flex items-center">
                             {#if false}
@@ -149,7 +149,7 @@
             {#if !facebookClientId}
                 <li class="py-4">
                     <div class="flex items-center space-x-4">
-                        <Facebook />
+                        <Facebook class="size-4" />
                         <div class="min-w-0 flex-1 font-semibold">Facebook account</div>
                         <div class="inline-flex items-center">
                             {#if false}
@@ -166,7 +166,7 @@
             {#if !gitHubClientId}
                 <li class="py-4">
                     <div class="flex items-center space-x-4">
-                        <GitHub />
+                        <GitHub class="size-4" />
                         <div class="min-w-0 flex-1 font-semibold">GitHub account</div>
                         <div class="inline-flex items-center">
                             {#if true}

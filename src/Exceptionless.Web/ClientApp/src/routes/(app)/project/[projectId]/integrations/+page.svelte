@@ -2,6 +2,7 @@
     import type { NotificationSettings } from '$features/projects/models';
 
     import { page } from '$app/state';
+    import SlackIcon from '$comp/icons/SlackIcon.svelte';
     import { H3, H4, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';
@@ -24,7 +25,6 @@
     import { getTableOptions } from '$features/webhooks/components/table/options.svelte';
     import WebhooksDataTable from '$features/webhooks/components/table/webhooks-data-table.svelte';
     import { NewWebhook, Webhook } from '$features/webhooks/models';
-    import Slack from '$lib/assets/slack.svg'; // TOOD: Fix the slack icon to be an svg component
     import Plus from '@lucide/svelte/icons/plus';
     import Zapier from '@lucide/svelte/icons/zap';
     import { createTable } from '@tanstack/svelte-table';
@@ -194,9 +194,9 @@
             {#if hasSlackIntegration}
                 <NotificationSettingsForm settings={slackNotificationSettingsQuery.data} save={updateSlackNotificationSettings} />
 
-                <Button onclick={() => (showRemoveSlackDialog = true)}><img class="text- mr-2 size-4" alt="Slack" src={Slack} /> Remove Slack</Button>
+                <Button onclick={() => (showRemoveSlackDialog = true)}><SlackIcon class="mr-2 size-4" /> Remove Slack</Button>
             {:else}
-                <Button onclick={addSlack}><img class="text- mr-2 size-4" alt="Slack" src={Slack} /> Connect Slack</Button>
+                <Button onclick={addSlack}><SlackIcon class="mr-2 size-4" /> Connect Slack</Button>
             {/if}
         </section>
     {/if}
