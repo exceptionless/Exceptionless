@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { GetEventsParams } from '$features/events/api.svelte';
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
     import { page } from '$app/state';
@@ -22,16 +23,16 @@
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
-    import { getTableContext } from '$features/events/components/table/options.svelte';
+    import { getColumns } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import { getSharedTableOptions, isTableEmpty, removeTableData } from '$features/shared/table.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { isTableEmpty, removeTableData } from '$shared/table';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
+    import ExternalLink from '@lucide/svelte/icons/external-link';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
-    import ExternalLink from 'lucide-svelte/icons/external-link';
     import { useEventListener, watch } from 'runed';
     import { debounce } from 'throttle-debounce';
 
@@ -51,7 +52,7 @@
     }
 
     updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
-    const params = queryParamsState({
+    const queryParams = queryParamsState({
         default: DEFAULT_PARAMS,
         pushHistory: true,
         schema: {
@@ -65,24 +66,19 @@
         () => {
             updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
             //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
-            Object.assign(params, DEFAULT_PARAMS);
+            Object.assign(queryParams, DEFAULT_PARAMS);
         },
         { lazy: true }
     );
 
-    let filters = $state(getFiltersFromCache(filterCacheKey(params.filter), params.filter));
+    let filters = $state(getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter));
     watch(
-        [() => params.filter, () => filterCacheVersionNumber()],
+        [() => queryParams.filter, () => filterCacheVersionNumber()],
         ([filter]) => {
             filters = getFiltersFromCache(filterCacheKey(filter), filter);
         },
         { lazy: true }
     );
-
-    $effect(() => {
-        // Handle case where pop state loses the limit
-        params.limit ??= DEFAULT_LIMIT;
-    });
 
     function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
         if (addedOrUpdated.type !== 'date') {
@@ -99,24 +95,56 @@
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
         const filter = toFilter(updatedFilters);
         updateFilterCache(filterCacheKey(filter), updatedFilters);
-        params.filter = filter;
+        queryParams.filter = filter;
     }
 
-    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: params.limit!, mode: 'summary' }, function (options) {
-        options.columns = options.columns.filter((c) => c.id !== 'select').map((c) => ({ ...c, enableSorting: false }));
-        options.enableMultiRowSelection = false;
-        options.enableRowSelection = false;
-        options.manualSorting = false;
-        return options;
+    const eventsQueryParameters: GetEventsParams = $state({
+        get filter() {
+            return queryParams.filter!;
+        },
+        set filter(value) {
+            queryParams.filter = value;
+        },
+        get limit() {
+            return queryParams.limit!;
+        },
+        set limit(value) {
+            queryParams.limit = value;
+        },
+        mode: 'summary'
     });
-
-    const table = createTable(context.options);
 
     const client = useFetchClient();
     const clientStatus = useFetchClientStatus(client);
+    let clientResponse = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
+    let before = $state<string | undefined>(undefined);
+    let queryData = $state<EventSummaryModel<SummaryTemplateKeys>[]>([]);
 
-    let response = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
-    let before: string | undefined;
+    const table = createTable(
+        getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
+            columnPersistenceKey: 'stream-column-visibility',
+            get columns() {
+                return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode);
+            },
+            configureOptions: (options) => {
+                options.columns = options.columns.filter((c) => c.id !== 'select').map((c) => ({ ...c, enableSorting: false }));
+                options.enableMultiRowSelection = false;
+                options.enableRowSelection = false;
+                options.manualSorting = false;
+                return options;
+            },
+            paginationStrategy: 'cursor',
+            get queryData() {
+                return queryData;
+            },
+            get queryMeta() {
+                return clientResponse?.meta;
+            },
+            get queryParameters() {
+                return eventsQueryParameters;
+            }
+        })
+    );
 
     async function loadData(filterChanged: boolean = false) {
         if (!organization.current) {
@@ -131,26 +159,24 @@
             before = undefined;
         }
 
-        response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
+        clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
             params: {
-                ...context.parameters,
-                before,
-                filter: params.filter
+                ...eventsQueryParameters,
+                before
             }
         });
 
-        if (response.ok) {
-            if (response.meta.links.previous?.before) {
-                before = response.meta.links.previous?.before;
+        if (clientResponse.ok) {
+            if (clientResponse.meta.links.previous?.before) {
+                before = clientResponse.meta.links.previous?.before;
             }
 
-            const data = filterChanged ? [] : context.data;
-            for (const summary of response.data?.reverse() || []) {
+            const data = filterChanged ? [] : queryData;
+            for (const summary of clientResponse.data?.reverse() || []) {
                 data.push(summary);
             }
 
-            context.data = data.slice(-params.limit!);
-            context.meta = response.meta;
+            queryData = data.slice(-queryParams.limit!);
         }
     }
 
@@ -167,7 +193,7 @@
         }
 
         // Do not refresh if the filter criteria doesn't match the web socket message.
-        if (!shouldRefreshPersistentEventChanged(filters, params.filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
+        if (!shouldRefreshPersistentEventChanged(filters, queryParams.filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
             return;
         }
 
@@ -176,6 +202,11 @@
 
     useEventListener(document, 'refresh', async () => await loadData());
     useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEventChanged((event as CustomEvent).detail));
+
+    $effect(() => {
+        // Handle case where pop state loses the limit
+        queryParams.limit ??= DEFAULT_LIMIT;
+    });
 
     $effect(() => {
         loadData();
@@ -204,9 +235,9 @@
             </DataTable.Body>
             <DataTable.Footer {table}>
                 <div class="flex w-full items-center justify-center space-x-4">
-                    <DataTable.PageSize bind:value={params.limit!} {table} />
+                    <DataTable.PageSize bind:value={queryParams.limit!} {table} />
                     <div class="text-center">
-                        <ErrorMessage message={response?.problem?.errors.general} />
+                        <ErrorMessage message={clientResponse?.problem?.errors.general} />
                     </div>
                 </div>
             </DataTable.Footer>

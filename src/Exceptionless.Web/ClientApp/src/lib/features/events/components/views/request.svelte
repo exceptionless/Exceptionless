@@ -6,7 +6,7 @@
     import * as Table from '$comp/ui/table';
     import * as EventsFacetedFilter from '$features/events/components/filters';
     import { getRequestInfoPath, getRequestInfoUrl } from '$features/events/persistent-event';
-    import ExternalLink from 'lucide-svelte/icons/external-link';
+    import ExternalLink from '@lucide/svelte/icons/external-link';
 
     import type { PersistentEvent } from '../../models/index';
 

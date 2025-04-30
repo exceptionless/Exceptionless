@@ -6,9 +6,9 @@
     import type { Table } from '@tanstack/svelte-table';
 
     import { Button } from '$comp/ui/button';
-    import ChevronLeft from 'lucide-svelte/icons/chevron-left';
-    import ChevronRight from 'lucide-svelte/icons/chevron-right';
-    import ChevronDoubleLeft from 'lucide-svelte/icons/chevrons-left';
+    import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+    import ChevronRight from '@lucide/svelte/icons/chevron-right';
+    import ChevronDoubleLeft from '@lucide/svelte/icons/chevrons-left';
 
     interface Props {
         table: Table<TData>;

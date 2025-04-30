@@ -26,6 +26,7 @@
 
     let valueString = $derived(value + '');
     let selected = $derived((items.find((item) => item.value === valueString) || items[0]) as Item);
+
     function onValueChange(newValue: string) {
         value = Number(newValue);
         table.setPageSize(Number(newValue));

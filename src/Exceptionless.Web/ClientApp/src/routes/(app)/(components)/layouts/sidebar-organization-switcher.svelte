@@ -9,8 +9,8 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import { ViewOrganization } from '$features/organizations/models';
     import { getInitials } from '$shared/strings';
-    import ChevronsUpDown from 'lucide-svelte/icons/chevrons-up-down';
-    import Plus from 'lucide-svelte/icons/plus';
+    import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
+    import Plus from '@lucide/svelte/icons/plus';
 
     type Props = HTMLAttributes<HTMLUListElement> & {
         isLoading: boolean;
@@ -81,9 +81,9 @@
                     <DropdownMenu.Separator />
                     <DropdownMenu.Item class="gap-2 p-2">
                         <div class="bg-background flex size-6 items-center justify-center rounded-md border">
-                            <Plus class="size-4" />
+                            <Plus class="size-4" aria-hidden="true" />
                         </div>
-                        <div class="text-muted-foreground font-medium">Add organization</div>
+                        <span class="text-muted-foreground font-medium">Add organization</span>
                     </DropdownMenu.Item>
                 </DropdownMenu.Content>
             </DropdownMenu.Root>

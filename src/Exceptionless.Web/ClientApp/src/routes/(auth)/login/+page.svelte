@@ -2,6 +2,8 @@
     import { goto } from '$app/navigation';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
+    import GoogleIcon from '$comp/icons/GoogleIcon.svelte';
+    import MicrosoftIcon from '$comp/icons/MicrosoftIcon.svelte';
     import Loading from '$comp/loading.svelte';
     import Logo from '$comp/logo.svelte';
     import { A, Muted, P } from '$comp/typography';
@@ -23,11 +25,9 @@
         microsoftClientId
     } from '$features/auth/index.svelte';
     import { Login } from '$features/auth/models';
-    import Google from '$lib/assets/google.svg';
-    import Microsoft from '$lib/assets/microsoft.svg';
     import { applyServerSideErrors } from '$shared/validation';
-    import Facebook from 'lucide-svelte/icons/facebook';
-    import GitHub from 'lucide-svelte/icons/github';
+    import Facebook from '@lucide/svelte/icons/facebook';
+    import GitHub from '@lucide/svelte/icons/github';
     import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';
 
@@ -117,22 +117,22 @@
             <div class="auto-cols-2 grid grid-flow-col grid-rows-2 gap-4">
                 {#if microsoftClientId}
                     <Button aria-label="Login with Microsoft" onclick={() => liveLogin(redirectUrl)}>
-                        <img alt="Microsoft" src={Microsoft} /> Microsoft
+                        <MicrosoftIcon class="size-4" /> Microsoft
                     </Button>
                 {/if}
                 {#if googleClientId}
                     <Button aria-label="Login with Google" onclick={() => googleLogin(redirectUrl)}>
-                        <img alt="Google" src={Google} /> Google
+                        <GoogleIcon class="size-4" /> Google
                     </Button>
                 {/if}
                 {#if facebookClientId}
                     <Button aria-label="Login with Facebook" onclick={() => facebookLogin(redirectUrl)}>
-                        <Facebook /> Facebook
+                        <Facebook class="size-4" /> Facebook
                     </Button>
                 {/if}
                 {#if gitHubClientId}
                     <Button aria-label="Login with GitHub" onclick={() => githubLogin(redirectUrl)}>
-                        <GitHub /> GitHub
+                        <GitHub class="size-4" /> GitHub
                     </Button>
                 {/if}
             </div>

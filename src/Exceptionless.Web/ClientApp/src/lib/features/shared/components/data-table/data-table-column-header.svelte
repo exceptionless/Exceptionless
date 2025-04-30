@@ -9,10 +9,10 @@
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { cn } from '$lib/utils';
-    import ArrowDown from 'lucide-svelte/icons/arrow-down';
-    import ArrowUp from 'lucide-svelte/icons/arrow-up';
-    import ChevronsUpDown from 'lucide-svelte/icons/chevrons-up-down';
-    import EyeOff from 'lucide-svelte/icons/eye-off';
+    import ArrowDown from '@lucide/svelte/icons/arrow-down';
+    import ArrowUp from '@lucide/svelte/icons/arrow-up';
+    import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
+    import EyeOff from '@lucide/svelte/icons/eye-off';
 
     type Props = HTMLAttributes<HTMLDivElement> & {
         column: Column<TData, unknown>;

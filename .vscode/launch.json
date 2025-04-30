@@ -2,11 +2,27 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Aspire",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/Exceptionless.AppHost/bin/Debug/net9.0/Exceptionless.AppHost.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/Exceptionless.AppHost",
+      "stopAtEntry": false,
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      },
+      "env": {
+        "AppMode": "Development"
+      }
+    },
+    {
       "name": "Web",
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
-      // If you have changed target frameworks, make sure to update the program path.
       "program": "${workspaceFolder}/src/Exceptionless.Web/bin/Debug/net9.0/Exceptionless.Web.dll",
       "args": [],
       "cwd": "${workspaceFolder}/src/Exceptionless.Web",
@@ -24,7 +40,6 @@
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
-      // If you have changed target frameworks, make sure to update the program path.
       "program": "${workspaceFolder}/src/Exceptionless.Job/bin/Debug/net9.0/Exceptionless.Job.dll",
       "args": [],
       "cwd": "${workspaceFolder}",

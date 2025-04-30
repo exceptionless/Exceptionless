@@ -1,10 +1,10 @@
+import type { ClientConfiguration, NewProject, NotificationSettings, UpdateProject, ViewProject } from '$features/projects/models';
 import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
-import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { ValueFromBody } from '$features/shared/models';
+import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
-
-import type { ViewProject } from './models';
 
 export async function invalidateProjectQueries(queryClient: QueryClient, message: WebSocketMessageValue<'ProjectChanged'>) {
     const { id, organization_id } = message;
@@ -21,30 +21,83 @@ export async function invalidateProjectQueries(queryClient: QueryClient, message
     }
 }
 
+// TODO: Do we need to scope these all by organization?
 export const queryKeys = {
+    config: (id: string | undefined) => [...queryKeys.id(id), 'config'] as const,
+    deleteConfig: (id: string | undefined) => [...queryKeys.id(id), 'delete-config'] as const,
+    deleteProject: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'delete'] as const,
     deletePromotedTab: (id: string | undefined) => [...queryKeys.id(id), 'demote-tab'] as const,
+    deleteSlack: (id: string | undefined) => [...queryKeys.id(id), 'delete-slack'] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
+    ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
+    integrationNotificationSettings: (id: string | undefined, integration: string) => [...queryKeys.id(id), integration, 'notification-settings'] as const,
     organization: (id: string | undefined) => [...queryKeys.type, 'organization', id] as const,
+    postConfig: (id: string | undefined) => [...queryKeys.id(id), 'post-config'] as const,
+    postProject: () => [...queryKeys.type, 'post-project'] as const,
     postPromotedTab: (id: string | undefined) => [...queryKeys.id(id), 'promote-tab'] as const,
+    postSlack: (id: string | undefined) => [...queryKeys.id(id), 'post-slack'] as const,
+    putIntegrationNotificationSettings: (id: string | undefined, integration: string) =>
+        [...queryKeys.id(id), integration, 'put-notification-settings'] as const,
+    resetData: (id: string | undefined) => [...queryKeys.id(id), 'reset-data'] as const,
     type: ['Project'] as const
 };
+export interface DeleteConfigParams {
+    key: string;
+}
 
-export interface deletePromotedTabRequest {
+export interface DeleteConfigRequest {
+    route: {
+        id: string | undefined;
+    };
+}
+
+export interface DeleteProjectRequest {
+    route: {
+        ids: string[];
+    };
+}
+
+export interface DeletePromotedTabParams {
+    name: string;
+}
+
+export interface DeletePromotedTabRequest {
     route: {
         id: string;
     };
 }
 
-export interface GetOrganizationProjectsRequest {
-    params?: {
-        filter?: string;
-        limit?: number;
-        mode?: 'stats';
-        page?: number;
-        sort?: string;
+export interface DeleteSlackRequest {
+    route: {
+        id: string;
     };
+}
+
+export interface GetOrganizationProjectsParams {
+    filter?: string;
+    limit?: number;
+    mode?: GetProjectsMode;
+    page?: number;
+    sort?: string;
+}
+
+export interface GetOrganizationProjectsRequest {
+    params?: GetOrganizationProjectsParams;
     route: {
         organizationId: string | undefined;
+    };
+}
+
+export interface GetProjectConfigRequest {
+    route: {
+        id: string | undefined;
+    };
+}
+
+export interface GetProjectIntegrationNotificationSettingsRequest {
+    route: {
+        id: string | undefined;
+        integration: string;
     };
 }
 
@@ -54,19 +107,104 @@ export interface GetProjectRequest {
     };
 }
 
-export interface PostPromotedTabRequest {
+export type GetProjectsMode = 'stats' | null;
+
+export interface PostConfigParams {
+    key: string;
+    value: string;
+}
+
+export interface PostConfigRequest {
     route: {
         id: string | undefined;
     };
 }
 
-export function deletePromotedTab(request: deletePromotedTabRequest) {
+export interface PostPromotedTabParams {
+    name: string;
+}
+
+export interface PostPromotedTabRequest {
+    route: {
+        id: string;
+    };
+}
+
+export interface PostSlackRequest {
+    route: {
+        id: string | undefined;
+    };
+}
+
+export interface PutProjectIntegrationNotificationSettingsRequest {
+    route: {
+        id: string | undefined;
+        integration: string;
+    };
+}
+
+export interface ResetDataRequest {
+    route: {
+        id: string;
+    };
+}
+
+export interface UpdateProjectRequest {
+    route: {
+        id: string;
+    };
+}
+
+export function deleteProject(request: DeleteProjectRequest) {
     const queryClient = useQueryClient();
-    return createMutation<boolean, ProblemDetails, { name: string }>(() => ({
-        mutationFn: async (params: { name: string }) => {
+
+    return createMutation<FetchClientResponse<unknown>, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.ids?.length,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            const response = await client.delete(`projects/${request.route.ids?.join(',')}`, {
+                expectedStatusCodes: [202]
+            });
+
+            return response;
+        },
+        mutationKey: queryKeys.deleteProject(request.route.ids),
+        onError: () => {
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+        },
+        onSuccess: () => {
+            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+        }
+    }));
+}
+
+export function deleteProjectConfig(request: DeleteConfigRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, DeleteConfigParams>(() => ({
+        enabled: () => !!accessToken.current,
+        mutationFn: async (params: DeleteConfigParams) => {
+            const client = useFetchClient();
+            const response = await client.delete(`projects/${request.route.id}/config`, {
+                params: { key: params.key }
+            });
+
+            return response.ok;
+        },
+        mutationKey: queryKeys.deleteConfig(request.route.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.config(request.route.id) });
+        }
+    }));
+}
+
+export function deletePromotedTab(request: DeletePromotedTabRequest) {
+    const queryClient = useQueryClient();
+    return createMutation<boolean, ProblemDetails, DeletePromotedTabParams>(() => ({
+        mutationFn: async (params: DeletePromotedTabParams) => {
             const client = useFetchClient();
             const response = await client.delete(`projects/${request.route.id}/promotedtabs`, {
-                params
+                params: { ...params }
             });
 
             return response.ok;
@@ -88,10 +226,28 @@ export function deletePromotedTab(request: deletePromotedTabRequest) {
     }));
 }
 
+export function deleteSlack(request: DeleteSlackRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && request.route.id,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            const response = await client.delete(`projects/${request.route.id}/slack`);
+
+            return response.ok;
+        },
+        mutationKey: queryKeys.deleteSlack(request.route.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+        }
+    }));
+}
+
 export function getOrganizationProjectsQuery(request: GetOrganizationProjectsRequest) {
     const queryClient = useQueryClient();
 
-    return createQuery<ViewProject[], ProblemDetails>(() => ({
+    return createQuery<FetchClientResponse<ViewProject[]>, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.organizationId,
         onSuccess: (data: ViewProject[]) => {
             data.forEach((project) => {
@@ -109,9 +265,39 @@ export function getOrganizationProjectsQuery(request: GetOrganizationProjectsReq
                 signal
             });
 
+            return response;
+        },
+        queryKey: [...queryKeys.organization(request.route.organizationId), { params: request.params }]
+    }));
+}
+
+export function getProjectConfig(request: GetProjectConfigRequest) {
+    return createQuery<ClientConfiguration, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<ClientConfiguration>(`projects/${request.route.id}/config`, {
+                signal
+            });
+
             return response.data!;
         },
-        queryKey: queryKeys.organization(request.route.organizationId)
+        queryKey: queryKeys.config(request.route.id)
+    }));
+}
+
+export function getProjectIntegrationNotificationSettings(request: GetProjectIntegrationNotificationSettingsRequest) {
+    return createQuery<NotificationSettings, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<NotificationSettings>(`projects/${request.route.id}/${request.route.integration}/notifications`, {
+                signal
+            });
+
+            return response.data!;
+        },
+        queryKey: queryKeys.integrationNotificationSettings(request.route.id, request.route.integration)
     }));
 }
 
@@ -130,13 +316,50 @@ export function getProjectQuery(request: GetProjectRequest) {
     }));
 }
 
+export function postProject() {
+    const queryClient = useQueryClient();
+
+    return createMutation<ViewProject, ProblemDetails, NewProject>(() => ({
+        enabled: () => !!accessToken.current,
+        mutationFn: async (project: NewProject) => {
+            const client = useFetchClient();
+            const response = await client.postJSON<ViewProject>('projects', project);
+            return response.data!;
+        },
+        mutationKey: queryKeys.postProject(),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        }
+    }));
+}
+
+export function postProjectConfig(request: PostConfigRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, PostConfigParams>(() => ({
+        enabled: () => !!accessToken.current,
+        mutationFn: async (params: PostConfigParams) => {
+            const client = useFetchClient();
+            const response = await client.post(`projects/${request.route.id}/config`, new ValueFromBody(params.value), {
+                params: { key: params.key }
+            });
+
+            return response.ok;
+        },
+        mutationKey: queryKeys.postConfig(request.route.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.config(request.route.id) });
+        }
+    }));
+}
+
 export function postPromotedTab(request: PostPromotedTabRequest) {
     const queryClient = useQueryClient();
-    return createMutation<boolean, ProblemDetails, { name: string }>(() => ({
-        mutationFn: async (params: { name: string }) => {
+    return createMutation<boolean, ProblemDetails, PostPromotedTabParams>(() => ({
+        mutationFn: async (params: PostPromotedTabParams) => {
             const client = useFetchClient();
             const response = await client.post(`projects/${request.route.id}/promotedtabs`, undefined, {
-                params
+                params: { ...params }
             });
 
             return response.ok;
@@ -154,6 +377,73 @@ export function postPromotedTab(request: PostPromotedTabRequest) {
                     promoted_tabs: [...(previousProject?.promoted_tabs ?? []), variables.name]
                 });
             }
+        }
+    }));
+}
+
+export function postSlack(request: PostSlackRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, string>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async (code: string) => {
+            const client = useFetchClient();
+            const response = await client.post(`projects/${request.route.id}/slack`, undefined, { params: { code } });
+
+            return response.ok;
+        },
+        mutationKey: queryKeys.postSlack(request.route.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.integrationNotificationSettings(request.route.id, 'slack') });
+        }
+    }));
+}
+
+export function putProjectIntegrationNotificationSettings(request: PutProjectIntegrationNotificationSettingsRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, NotificationSettings>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async (settings: NotificationSettings) => {
+            const client = useFetchClient();
+            const response = await client.put(`projects/${request.route.id}/${request.route.integration}/notifications`, settings);
+            return response.ok;
+        },
+        mutationKey: queryKeys.putIntegrationNotificationSettings(request.route.id, request.route.integration),
+        onSuccess: (_: boolean, variables: NotificationSettings) => {
+            queryClient.setQueryData(queryKeys.integrationNotificationSettings(request.route.id, request.route.integration), variables);
+        }
+    }));
+}
+
+export function resetData(request: ResetDataRequest) {
+    return createMutation<void, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            await client.post(`projects/${request.route.id}/reset-data`, undefined, {
+                expectedStatusCodes: [202]
+            });
+        },
+        mutationKey: queryKeys.resetData(request.route.id)
+    }));
+}
+
+export function updateProject(request: UpdateProjectRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<ViewProject, ProblemDetails, UpdateProject>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async (data: UpdateProject) => {
+            const client = useFetchClient();
+            const response = await client.patchJSON<ViewProject>(`projects/${request.route.id}`, data);
+            return response.data!;
+        },
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+        },
+        onSuccess: (project: ViewProject) => {
+            queryClient.setQueryData(queryKeys.id(request.route.id), project);
         }
     }));
 }

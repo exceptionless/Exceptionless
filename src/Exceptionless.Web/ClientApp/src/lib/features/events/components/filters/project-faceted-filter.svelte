@@ -11,7 +11,7 @@
 
     // Store the organizationId to prevent loading when switching organizations.
     const organizationId = organization.current;
-    const response = getOrganizationProjectsQuery({
+    const projectsQuery = getOrganizationProjectsQuery({
         route: {
             get organizationId() {
                 return organizationId;
@@ -19,21 +19,22 @@
         }
     });
 
+    const projects = $derived(projectsQuery.data?.data ?? []);
     const options = $derived(
-        response.data?.map((project) => ({
+        projects.map((project) => ({
             label: project.name!,
             value: project.id!
         })) ?? []
     );
 
     $effect(() => {
-        if (!response.isSuccess || filter.value.length === 0) {
+        if (!projectsQuery.isSuccess || filter.value.length === 0) {
             return;
         }
 
-        const projects = response.data.filter((project) => filter.value.includes(project.id!));
-        if (filter.value.length !== projects.length) {
-            filter.value = projects.map((project) => project.id!);
+        const filteredProjects = projects.filter((project) => filter.value.includes(project.id!)) ?? [];
+        if (filter.value.length !== filteredProjects.length) {
+            filter.value = filteredProjects.map((project) => project.id!);
             filterChanged(filter);
         }
     });
@@ -44,7 +45,7 @@
         filter.value = values;
         filterChanged(filter);
     }}
-    loading={response.isLoading}
+    loading={projectsQuery.isLoading}
     noOptionsText="No projects found."
     {options}
     remove={() => {

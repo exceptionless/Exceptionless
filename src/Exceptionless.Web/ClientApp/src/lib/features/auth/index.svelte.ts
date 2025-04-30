@@ -6,6 +6,26 @@ import { PersistedState } from 'runed';
 
 import type { Login, TokenResult } from './models';
 
+export interface OAuthLoginOptions extends OAuthPopupOptions {
+    redirectUrl?: string;
+}
+
+export interface OAuthPopupOptions {
+    authUrl: string;
+    clientId: string;
+    extraParams?: Record<string, string>;
+    popupOptions?: { height: number; width: number };
+    provider: SupportedOAuthProviders;
+    scope: string;
+}
+
+export interface OAuthResponseData {
+    code: string;
+    state: string;
+}
+
+export type SupportedOAuthProviders = 'facebook' | 'github' | 'google' | 'live' | 'slack';
+
 const authSerializer = {
     deserialize: (value: null | string): null | string => {
         if (value === '') {
@@ -30,6 +50,7 @@ export const facebookClientId = env.PUBLIC_FACEBOOK_APPID;
 export const gitHubClientId = env.PUBLIC_GITHUB_APPID;
 export const googleClientId = env.PUBLIC_GOOGLE_APPID;
 export const microsoftClientId = env.PUBLIC_MICROSOFT_APPID;
+export const slackClientId = env.PUBLIC_SLACK_APPID;
 export const enableOAuthLogin = facebookClientId || gitHubClientId || googleClientId || microsoftClientId;
 
 export async function facebookLogin(redirectUrl?: string) {
@@ -128,15 +149,43 @@ export async function logout() {
     accessToken.current = null;
 }
 
-async function oauthLogin(options: {
-    authUrl: string;
-    clientId: string;
-    extraParams?: Record<string, string>;
-    popupOptions?: { height: number; width: number };
-    provider: string;
-    redirectUrl?: string;
-    scope: string;
-}) {
+export async function slackOAuthLogin(): Promise<string> {
+    if (!slackClientId) {
+        throw new Error('Slack client id not set');
+    }
+
+    const data = await openOAuthPopup({
+        authUrl: 'https://slack.com/oauth/authorize',
+        clientId: slackClientId,
+        extraParams: {
+            state: encodeURIComponent(Math.random().toString(36).substring(2))
+        },
+        popupOptions: { height: 630, width: 580 },
+        provider: 'slack',
+        scope: 'incoming-webhook'
+    });
+
+    return data.code;
+}
+
+async function oauthLogin(options: OAuthLoginOptions) {
+    const data = await openOAuthPopup(options);
+
+    const client = useFetchClient();
+    const response = await client.postJSON<TokenResult>(`auth/${options.provider}`, {
+        clientId: options.clientId,
+        code: data.code,
+        redirectUri: window.location.origin,
+        state: data.state
+    });
+
+    if (response.ok && response.data?.token) {
+        accessToken.current = response.data.token;
+        await goto(options.redirectUrl || '/');
+    }
+}
+
+async function openOAuthPopup(options: OAuthPopupOptions): Promise<OAuthResponseData> {
     const width = options.popupOptions?.width || 500;
     const height = options.popupOptions?.height || 500;
     const features = {
@@ -158,25 +207,19 @@ async function oauthLogin(options: {
     );
 
     const url = `${options.authUrl}?${new URLSearchParams(params).toString()}`;
-
     const popup = window.open(url, options.provider, stringifyOptions(features));
-    popup?.focus();
+    if (!popup) {
+        throw new Error('Failed to open popup window');
+    }
+
+    popup.focus();
 
     const data = await waitForUrl(popup!, redirectUrl);
-    if (options.extraParams?.state && data.state !== options.extraParams.state) throw new Error('Invalid state');
-
-    const client = useFetchClient();
-    const response = await client.postJSON<TokenResult>(`auth/${options.provider}`, {
-        clientId: options.clientId,
-        code: data.code,
-        redirectUri: redirectUrl,
-        state: data.state
-    });
-
-    if (response.ok && response.data?.token) {
-        accessToken.current = response.data.token;
-        await goto(options.redirectUrl || '/');
+    if (options.extraParams?.state && data.state !== options.extraParams.state) {
+        throw new Error('Invalid state');
     }
+
+    return data;
 }
 
 function stringifyOptions(options: object): string {
@@ -189,7 +232,7 @@ function stringifyOptions(options: object): string {
     return parts.join(',');
 }
 
-function waitForUrl(popup: Window, redirectUri: string): Promise<{ code: string; state: string }> {
+function waitForUrl(popup: Window, redirectUri: string): Promise<OAuthResponseData> {
     return new Promise((resolve, reject) => {
         const polling = setInterval(() => {
             if (!popup || popup.closed || popup.closed === undefined) {
@@ -210,7 +253,7 @@ function waitForUrl(popup: Window, redirectUri: string): Promise<{ code: string;
                         if ('error' in params && (params as { error: string }).error) {
                             reject(new Error((params as { error: string }).error));
                         } else {
-                            resolve(params);
+                            resolve(params as OAuthResponseData);
                         }
                     } else {
                         reject(
