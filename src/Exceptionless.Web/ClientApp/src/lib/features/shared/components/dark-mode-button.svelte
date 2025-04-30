@@ -1,8 +1,8 @@
 <script lang="ts">
     import { Button } from '$comp/ui/button';
     import * as ContextMenu from '$comp/ui/context-menu';
-    import Moon from 'lucide-svelte/icons/moon';
-    import Sun from 'lucide-svelte/icons/sun';
+    import Moon from '@lucide/svelte/icons/moon';
+    import Sun from '@lucide/svelte/icons/sun';
     import { setMode, toggleMode, userPrefersMode } from 'mode-watcher';
 
     function onUserThemePreferenceChange(mode?: string) {
@@ -19,7 +19,7 @@
         </Button>
     </ContextMenu.Trigger>
     <ContextMenu.Content>
-        <ContextMenu.RadioGroup onValueChange={onUserThemePreferenceChange} value={$userPrefersMode}>
+        <ContextMenu.RadioGroup onValueChange={onUserThemePreferenceChange} value={userPrefersMode.current}>
             <ContextMenu.RadioItem value="light">Light</ContextMenu.RadioItem>
             <ContextMenu.RadioItem value="dark">Dark</ContextMenu.RadioItem>
             <ContextMenu.RadioItem value="system">System</ContextMenu.RadioItem>

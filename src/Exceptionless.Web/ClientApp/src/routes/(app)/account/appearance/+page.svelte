@@ -24,7 +24,7 @@
             class="grid max-w-xl grid-cols-3 gap-8 pt-2"
             orientation="horizontal"
             onValueChange={onUserThemePreferenceChange}
-            value={$userPrefersMode}
+            value={userPrefersMode.current}
         >
             <Label class="[&:has([data-state=checked])>div]:border-primary" for="light">
                 <RadioGroup.Item class="sr-only" id="light" value="light" />

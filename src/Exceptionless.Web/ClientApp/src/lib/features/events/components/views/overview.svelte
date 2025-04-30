@@ -19,9 +19,9 @@
         getStackTrace,
         hasErrorOrSimpleError
     } from '$features/events/persistent-event';
-    import ExternalLink from 'lucide-svelte/icons/external-link';
-    import Filter from 'lucide-svelte/icons/filter';
-    import Email from 'lucide-svelte/icons/mail';
+    import ExternalLink from '@lucide/svelte/icons/external-link';
+    import Filter from '@lucide/svelte/icons/filter';
+    import Email from '@lucide/svelte/icons/mail';
 
     import type { PersistentEvent } from '../../models/index';
 

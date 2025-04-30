@@ -76,7 +76,7 @@
         return tabs;
     }
 
-    const eventResponse = getEventQuery({
+    const eventQuery = getEventQuery({
         route: {
             get id() {
                 return id;
@@ -84,10 +84,10 @@
         }
     });
 
-    const projectResponse = getProjectQuery({
+    const projectQuery = getProjectQuery({
         route: {
             get id() {
-                return eventResponse.data?.project_id;
+                return eventQuery.data?.project_id;
             }
         }
     });
@@ -95,7 +95,7 @@
     type TabType = 'Environment' | 'Exception' | 'Extended Data' | 'Overview' | 'Request' | 'Trace Log' | string;
 
     let activeTab = $state<TabType>('Overview');
-    let tabs = $derived<TabType[]>(getTabs(eventResponse.data, projectResponse.data));
+    let tabs = $derived<TabType[]>(getTabs(eventQuery.data, projectQuery.data));
 
     function onPromoted(title: string): void {
         activeTab = title;
@@ -106,22 +106,26 @@
     }
 
     $effect(() => {
-        if (eventResponse.isError) {
-            handleError(eventResponse.error);
+        if (projectQuery.isError) {
+            handleError(projectQuery.error);
+        }
+
+        if (eventQuery.isError) {
+            handleError(eventQuery.error);
         }
     });
 </script>
 
-<StackCard {filterChanged} id={eventResponse.data?.stack_id}></StackCard>
+<StackCard {filterChanged} id={eventQuery.data?.stack_id}></StackCard>
 
 <Table.Root class="mt-4">
     <Table.Body>
         <Table.Row class="group">
-            {#if eventResponse.isSuccess}
+            {#if eventQuery.isSuccess}
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Occurred On</Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell class="flex items-center"
-                    ><DateTime value={eventResponse.data.date}></DateTime> (<TimeAgo value={eventResponse.data.date}></TimeAgo>)</Table.Cell
+                    ><DateTime value={eventQuery.data.date}></DateTime> (<TimeAgo value={eventQuery.data.date}></TimeAgo>)</Table.Cell
                 >
             {:else}
                 <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
@@ -129,12 +133,12 @@
                 <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>{/if}
         </Table.Row>
         <Table.Row class="group">
-            {#if projectResponse.isSuccess}
+            {#if projectQuery.isSuccess}
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Project</Table.Head>
                 <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.ProjectTrigger changed={filterChanged} class="mr-0" value={[projectResponse.data.id!]} /></Table.Cell
+                    ><EventsFacetedFilter.ProjectTrigger changed={filterChanged} class="mr-0" value={[projectQuery.data.id!]} /></Table.Cell
                 >
-                <Table.Cell>{projectResponse.data.name}</Table.Cell>
+                <Table.Cell>{projectQuery.data.name}</Table.Cell>
             {:else}
                 <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
@@ -144,7 +148,7 @@
     </Table.Body>
 </Table.Root>
 
-{#if eventResponse.isSuccess}
+{#if eventQuery.isSuccess}
     <Tabs.Root class="mt-4 mb-4" value={activeTab}>
         <Tabs.List class="w-full justify-normal overflow-scroll">
             {#each tabs as tab (tab)}
@@ -155,19 +159,19 @@
         {#each tabs as tab (tab)}
             <Tabs.Content value={tab}>
                 {#if tab === 'Overview'}
-                    <Overview {filterChanged} event={eventResponse.data}></Overview>
+                    <Overview {filterChanged} event={eventQuery.data}></Overview>
                 {:else if tab === 'Exception'}
-                    <Error {filterChanged} event={eventResponse.data}></Error>
+                    <Error {filterChanged} event={eventQuery.data}></Error>
                 {:else if tab === 'Environment'}
-                    <Environment {filterChanged} event={eventResponse.data}></Environment>
+                    <Environment {filterChanged} event={eventQuery.data}></Environment>
                 {:else if tab === 'Request'}
-                    <Request {filterChanged} event={eventResponse.data}></Request>
+                    <Request {filterChanged} event={eventQuery.data}></Request>
                 {:else if tab === 'Trace Log'}
-                    <TraceLog logs={eventResponse.data.data?.['@trace']}></TraceLog>
+                    <TraceLog logs={eventQuery.data.data?.['@trace']}></TraceLog>
                 {:else if tab === 'Extended Data'}
-                    <ExtendedData event={eventResponse.data} project={projectResponse.data} promoted={onPromoted}></ExtendedData>
+                    <ExtendedData event={eventQuery.data} project={projectQuery.data} promoted={onPromoted}></ExtendedData>
                 {:else}
-                    <PromotedExtendedData demoted={onDemoted} event={eventResponse.data} title={tab + ''}></PromotedExtendedData>
+                    <PromotedExtendedData demoted={onDemoted} event={eventQuery.data} title={tab + ''}></PromotedExtendedData>
                 {/if}
             </Tabs.Content>
         {/each}

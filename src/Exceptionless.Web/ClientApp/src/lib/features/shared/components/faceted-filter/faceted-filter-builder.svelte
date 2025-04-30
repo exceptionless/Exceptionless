@@ -4,7 +4,7 @@
     import { Button } from '$comp/ui/button';
     import * as Command from '$comp/ui/command';
     import * as Popover from '$comp/ui/popover';
-    import Circle from 'lucide-svelte/icons/circle-plus';
+    import Circle from '@lucide/svelte/icons/circle-plus';
 
     import type { FacetedFilter, IFilter } from './models';
 
