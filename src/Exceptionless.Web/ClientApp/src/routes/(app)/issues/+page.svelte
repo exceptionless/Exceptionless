@@ -8,8 +8,8 @@
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
-    import { getStackEventsQuery } from '$features/events/api.svelte';
-    import EventsDrawer from '$features/events/components/events-drawer.svelte';
+    import { type GetEventsParams, getStackEventsQuery } from '$features/events/api.svelte';
+    import EventsOverview from '$features/events/components/events-overview.svelte';
     import { type DateFilter, StatusFilter, TypeFilter } from '$features/events/components/filters';
     import {
         applyTimeFilter,
@@ -24,17 +24,17 @@
     } from '$features/events/components/filters/helpers.svelte';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
-    import { getTableContext } from '$features/events/components/table/options.svelte';
+    import { getColumns } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { isTableEmpty, removeTableData, removeTableSelection } from '$shared/table';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
+    import ExternalLink from '@lucide/svelte/icons/external-link';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
-    import ExternalLink from 'lucide-svelte/icons/external-link';
     import { useEventListener, watch } from 'runed';
     import { throttle } from 'throttle-debounce';
 
@@ -45,7 +45,7 @@
     }
 
     // Load the latest event for the stack and display it in the sidebar.
-    const eventsResponse = getStackEventsQuery({
+    const eventsQuery = getStackEventsQuery({
         params: {
             limit: 1
         },
@@ -55,7 +55,7 @@
             }
         }
     });
-    const eventId = $derived(eventsResponse?.data?.[0]?.id);
+    const eventId = $derived(eventsQuery?.data?.[0]?.id);
 
     const DEFAULT_FILTERS = [new TypeFilter(['404', 'error']), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
     const DEFAULT_PARAMS = {
@@ -69,7 +69,7 @@
     }
 
     updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
-    const params = queryParamsState({
+    const queryParams = queryParamsState({
         default: DEFAULT_PARAMS,
         pushHistory: true,
         schema: {
@@ -84,14 +84,14 @@
         () => {
             updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
             //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
-            Object.assign(params, DEFAULT_PARAMS);
+            Object.assign(queryParams, DEFAULT_PARAMS);
         },
         { lazy: true }
     );
 
-    let filters = $state(applyTimeFilter(getFiltersFromCache(filterCacheKey(params.filter), params.filter), params.time));
+    let filters = $state(applyTimeFilter(getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter), queryParams.time));
     watch(
-        [() => params.filter, () => params.time, () => filterCacheVersionNumber()],
+        [() => queryParams.filter, () => queryParams.time, () => filterCacheVersionNumber()],
         ([filter, time]) => {
             filters = applyTimeFilter(getFiltersFromCache(filterCacheKey(filter), filter), time);
         },
@@ -100,14 +100,11 @@
 
     $effect(() => {
         // Handle case where pop state loses the limit
-        params.limit ??= DEFAULT_LIMIT;
+        queryParams.limit ??= DEFAULT_LIMIT;
     });
 
     function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
-        if (addedOrUpdated.type !== 'type') {
-            updateFilters(filterChanged(filters ?? [], addedOrUpdated));
-        }
-
+        updateFilters(filterChanged(filters ?? [], addedOrUpdated));
         selectedStackId = undefined;
     }
 
@@ -119,17 +116,50 @@
         const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
-        params.time = (updatedFilters.find((f) => f.type === 'date') as DateFilter)?.value as string;
-        params.filter = filter;
+        queryParams.time = (updatedFilters.find((f) => f.type === 'date') as DateFilter)?.value as string;
+        queryParams.filter = filter;
     }
 
-    const context = getTableContext<EventSummaryModel<SummaryTemplateKeys>>({ limit: params.limit!, mode: 'stack_frequent' });
-    const table = createTable(context.options);
-    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && !table.getCanPreviousPage());
+    const eventsQueryParameters: GetEventsParams = $state({
+        get filter() {
+            return queryParams.filter!;
+        },
+        set filter(value) {
+            queryParams.filter = value;
+        },
+        get limit() {
+            return queryParams.limit!;
+        },
+        set limit(value) {
+            queryParams.limit = value;
+        },
+        mode: 'stack_frequent'
+    });
 
     const client = useFetchClient();
     const clientStatus = useFetchClientStatus(client);
     let clientResponse = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
+
+    const table = createTable(
+        getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
+            columnPersistenceKey: 'issues-column-visibility',
+            get columns() {
+                return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode);
+            },
+            paginationStrategy: 'offset',
+            get queryData() {
+                return clientResponse?.data ?? [];
+            },
+            get queryMeta() {
+                return clientResponse?.meta;
+            },
+            get queryParameters() {
+                return eventsQueryParameters;
+            }
+        })
+    );
+
+    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && !table.getCanPreviousPage());
 
     async function loadData() {
         if (client.isLoading || !organization.current) {
@@ -137,18 +167,10 @@
         }
 
         clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
-            params: {
-                ...context.parameters,
-                filter: params.filter,
-                time: params.time
-            }
+            params: eventsQueryParameters as Record<string, unknown>
         });
-
-        if (clientResponse.ok) {
-            context.data = clientResponse.data || [];
-            context.meta = clientResponse.meta;
-        }
     }
+
     const throttledLoadData = throttle(5000, loadData);
 
     async function onStackChanged(message: WebSocketMessageValue<'StackChanged'>) {
@@ -165,7 +187,7 @@
         }
 
         // Do not refresh if the filter criteria doesn't match the web socket message.
-        if (!shouldRefreshPersistentEventChanged(filters, params.filter, message.organization_id, message.project_id, message.id)) {
+        if (!shouldRefreshPersistentEventChanged(filters, queryParams.filter, message.organization_id, message.project_id, message.id)) {
             return;
         }
 
@@ -186,10 +208,11 @@
 </script>
 
 <div class="flex flex-col space-y-4">
-    <Card.Root>
-        <Card.Title class="p-6 pb-0 text-2xl" level={2}>Issues <AutomaticRefreshIndicatorButton {canRefresh} refresh={loadData} /></Card.Title>
-        <Card.Content class="pt-4">
-            <EventsDataTable bind:limit={params.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
+    <Card.Root
+        ><Card.Header>
+            <Card.Title class="text-2xl" level={2}>Issues <AutomaticRefreshIndicatorButton {canRefresh} refresh={loadData} /></Card.Title>
+        </Card.Header><Card.Content class="pt-4">
+            <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
                 {#snippet toolbarChildren()}
                     <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                         <OrganizationDefaultsFacetedFilterBuilder />
@@ -202,7 +225,7 @@
                         {/if}
                     </div>
 
-                    <DataTable.PageSize bind:value={params.limit!} {table}></DataTable.PageSize>
+                    <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
                     <div class="flex items-center space-x-6 lg:space-x-8">
                         <DataTable.PageCount {table} />
                         <DataTable.Pagination {table} />
@@ -213,13 +236,13 @@
     </Card.Root>
 </div>
 
-<Sheet.Root onOpenChange={() => (selectedStackId = undefined)} open={eventsResponse.isSuccess}>
+<Sheet.Root onOpenChange={() => (selectedStackId = undefined)} open={eventsQuery.isSuccess}>
     <Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
         <Sheet.Header>
             <Sheet.Title
-                >Event Details <Button href="/event/{eventId}" size="sm" title="Open in new window" variant="ghost"><ExternalLink /></Button></Sheet.Title
+                >Event Details <Button href="/next/event/{eventId}" size="sm" title="Open in new window" variant="ghost"><ExternalLink /></Button></Sheet.Title
             >
         </Sheet.Header>
-        <EventsDrawer changed={onFilterChanged} id={eventId || ''} close={() => (selectedStackId = undefined)}></EventsDrawer>
+        <EventsOverview filterChanged={onFilterChanged} id={eventId || ''} handleError={() => (selectedStackId = undefined)}></EventsOverview>
     </Sheet.Content>
 </Sheet.Root>

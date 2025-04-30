@@ -372,6 +372,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(results);
         Assert.Equal(2, results.Count);
     }
 
@@ -392,6 +393,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(results);
         Assert.Equal(2, results.Count);
     }
 
@@ -415,6 +417,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(results);
         Assert.Equal(2, results.Count);
     }
 
@@ -436,6 +439,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(results);
         Assert.Equal(2, results.Count);
     }
 
@@ -452,6 +456,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(results);
         Assert.Equal(2, results.Count);
     }
 
@@ -469,6 +474,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(results);
         Assert.Single(results);
     }
 
@@ -492,6 +498,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(countResult);
         Assert.Equal(1, countResult.Total);
 
         var results = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
@@ -501,13 +508,14 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(results);
         Assert.Single(results);
     }
 
     [Fact]
     public async Task WillGetStackEvents()
     {
-        (var stacks, _) = await CreateDataAsync(d =>
+        var (stacks, _) = await CreateDataAsync(d =>
         {
             d.Event().TestProject();
         });
@@ -522,6 +530,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(result);
         Assert.Single(result);
     }
 
@@ -547,6 +556,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(result);
         Assert.Equal(2, result.Count);
 
         result = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
@@ -559,6 +569,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(result);
         Assert.Equal(2, result.Count);
     }
 
@@ -594,6 +605,7 @@ public class EventControllerTests : IntegrationTestsBase
                 .StatusCodeShouldBeOk()
             );
 
+            Assert.NotNull(results);
             Assert.Equal(expected, results.Count);
 
             // @! forces use of opposite of default filter inversion
@@ -605,6 +617,7 @@ public class EventControllerTests : IntegrationTestsBase
                 .StatusCodeShouldBeOk()
             );
 
+            Assert.NotNull(results);
             Assert.Equal(expected, results.Count);
         }
     }
@@ -638,6 +651,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(results);
         Assert.Equal(expected, results.Count);
 
         // @! forces use of opposite of default filter inversion
@@ -649,6 +663,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(results);
         Assert.Equal(expected, results.Count);
     }
 
@@ -692,6 +707,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(results);
         Assert.Single(results);
 
         var countResult = await SendRequestAsAsync<CountResult>(r => r
@@ -702,6 +718,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(countResult);
         var dateAgg = countResult.Aggregations.DateHistogram("date_date");
         double dateAggStackCount = dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("cardinality_stack").Value.GetValueOrDefault());
         double dateAggEventCount = dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("sum_count").Value.GetValueOrDefault());
@@ -794,6 +811,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(results);
         Assert.Equal(2, results.Count);
 
         _logger.LogInformation("Running normal count");
@@ -807,6 +825,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(countResult);
         var dateAgg = countResult.Aggregations.DateHistogram("date_date");
         double dateAggStackCount = dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("cardinality_stack").Value.GetValueOrDefault());
         double dateAggEventCount = dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("sum_count").Value.GetValueOrDefault());
@@ -855,6 +874,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(viewOrganization);
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
         Assert.Equal(12, viewOrganization.Usage.Count);
@@ -878,6 +898,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(viewOrganization);
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
         Assert.Equal(12, viewOrganization.Usage.Count);
@@ -903,6 +924,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(viewOrganization);
         Assert.True(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
         var organizationUsage = viewOrganization.GetCurrentUsage(TimeProvider);
@@ -956,6 +978,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(viewOrganization);
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
         organizationUsage = viewOrganization.GetCurrentUsage(TimeProvider);
@@ -1099,6 +1122,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(viewOrganization);
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
         Assert.Equal(12, viewOrganization.Usage.Count);
@@ -1135,6 +1159,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(viewOrganization);
         Assert.True(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
 
@@ -1162,6 +1187,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(viewOrganization);
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
 
@@ -1184,6 +1210,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(viewOrganization);
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
         var organizationUsage = viewOrganization.GetCurrentUsage(TimeProvider);
@@ -1215,6 +1242,7 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(viewOrganization);
         Assert.True(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
 

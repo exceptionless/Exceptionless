@@ -22,7 +22,13 @@ public static class RedisExtensions
 
                 return CommandResults.Success();
             },
-            context => context.ResourceSnapshot.HealthStatus is HealthStatus.Healthy ? ResourceCommandState.Enabled : ResourceCommandState.Disabled);
+            new CommandOptions
+            {
+                UpdateState = context =>
+                    context.ResourceSnapshot.HealthStatus is HealthStatus.Healthy
+                        ? ResourceCommandState.Enabled
+                        : ResourceCommandState.Disabled
+            });
         return builder;
     }
 }

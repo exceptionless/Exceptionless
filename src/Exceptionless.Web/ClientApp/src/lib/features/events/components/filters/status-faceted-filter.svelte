@@ -2,8 +2,8 @@
     import type { FacetedFilterProps } from '$comp/faceted-filter';
 
     import * as FacetedFilter from '$comp/faceted-filter';
-    import { stackStatuses } from '$features/events/components/options';
     import { StackStatus } from '$features/stacks/models';
+    import { stackStatuses } from '$features/stacks/options';
 
     import { StatusFilter } from './models.svelte';
 

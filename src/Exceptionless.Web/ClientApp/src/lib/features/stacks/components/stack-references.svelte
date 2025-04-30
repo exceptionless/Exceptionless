@@ -1,9 +1,9 @@
 <script lang="ts">
     import { A, Small } from '$comp/typography';
     import Button from '$comp/ui/button/button.svelte';
-    import ExternalLink from 'lucide-svelte/icons/external-link';
-    import Reference from 'lucide-svelte/icons/link';
-    import Delete from 'lucide-svelte/icons/trash';
+    import ExternalLink from '@lucide/svelte/icons/external-link';
+    import Reference from '@lucide/svelte/icons/link';
+    import Delete from '@lucide/svelte/icons/trash';
 
     import { postRemoveLink } from '../api.svelte';
     import { Stack } from '../models';

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { A, Muted } from '$comp/typography';
-    import ChevronRight from 'lucide-svelte/icons/chevron-right';
+    import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
     import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from './index';
 
@@ -34,8 +34,8 @@
 </div>
 
 {#if source.data.Path}
-    <Muted class="ml-6 hidden sm:block">
-        <ChevronRight class="inline" />
+    <Muted class="hidden sm:block">
+        <ChevronRight class="inline size-4" />
         <span class="line-clamp-1 inline">{source.data.Path}</span>
     </Muted>
 {/if}

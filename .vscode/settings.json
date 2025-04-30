@@ -4,21 +4,98 @@
         "**/.git": true,
         "**/.DS_Store": true,
         "build/elasticsearch-*": true,
-        "build/kibana-*": true
+        "build/kibana-*": true,
+        "src/Exceptionless.Web/ClientApp/.svelte-kit": true,
+        "src/Exceptionless.Web/ClientApp/build": true
     },
     "dotnet-test-explorer.testProjectPath": "tests/Exceptionless.Tests",
     "cSpell.words": [
-        "Exceptionless",
-        "Guid",
-        "LDAP",
-        "Serilog",
-        "Xunit",
+        "acacode",
+        "autodocs",
         "circleci",
+        "classvalidator",
+        "clsx",
+        "cmdk",
+        "colour",
+        "Contoso",
         "dockerignore",
         "editorconfig",
         "elasticsearch",
-        "gitignore"
+        "Exceptionless",
+        "fetchclient",
+        "formsnap",
+        "Foundatio",
+        "gitignore",
+        "Guid",
+        "haserror",
+        "iconify",
+        "keyof",
+        "LDAP",
+        "legos",
+        "lucene",
+        "lucide",
+        "nameof",
+        "navigatetofirstpage",
+        "oidc",
+        "promotedtabs",
+        "rowclick",
+        "runed",
+        "satellizer",
+        "Serilog",
+        "sessionend",
+        "shadcn",
+        "shiki",
+        "shikijs",
+        "sonner",
+        "standardjs",
+        "superforms",
+        "tailwindcss",
+        "tanstack",
+        "typeschema",
+        "WCAG",
+        "websockets",
+        "Writeline",
+        "Xunit"
     ],
+    "css.customData": [
+        ".vscode/tailwind.json"
+    ],
+    "css.lint.unknownAtRules": "ignore",
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[svelte]": {
+        "editor.defaultFormatter": "svelte.svelte-vscode"
+    },
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "prettier.documentSelectors": [
+        "**/*.svelte"
+    ],
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit"
+    },
+    "editor.formatOnSave": true,
+    "eslint.validate": [
+        "javascript",
+        "svelte"
+    ],
+    "svelte.plugin.svelte.defaultScriptLanguage": "ts",
+    "tailwindCSS.includeLanguages": {
+        "svelte": "html"
+    },
+    "typescript.tsdk": "\\src\\Exceptionless.Web\\ClientApp\\node_modules\\typescript\\lib",
+    "workbench.editor.customLabels.patterns": {
+        "**/lib/**/*.ts": "${dirname}/${filename}.${extname}",
+        "**/routes/**/+page.svelte": "${dirname(1)}/${dirname}",
+        "**/routes/**/+layout.svelte": "${dirname}/+layout.svelte",
+        "**/routes/**/routes.ts": "${dirname}/routes.ts",
+        "**/lib/**/index.ts": "${dirname}/index.ts"
+    },
     "powershell.codeFormatting.addWhitespaceAroundPipe": true,
     "dotnet.defaultSolution": "Exceptionless.sln"
 }

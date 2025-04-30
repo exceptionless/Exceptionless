@@ -4,7 +4,7 @@
     import * as AlertDialog from '$comp/ui/alert-dialog';
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
-    import Documentation from 'lucide-svelte/icons/help-circle';
+    import Documentation from '@lucide/svelte/icons/help-circle';
     import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';
     import { debounce } from 'throttle-debounce';
@@ -64,7 +64,7 @@
     }
 </script>
 
-<AlertDialog.Root bind:open onOpenChange={() => form.reset()}>
+<AlertDialog.Root bind:open>
     <AlertDialog.Content class="sm:max-w-[425px]">
         <form method="POST" use:enhance>
             <AlertDialog.Header>

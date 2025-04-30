@@ -13,7 +13,7 @@
     import { ModeWatcher } from 'mode-watcher';
 
     import '../app.css';
-    import { routes } from './routes';
+    import { routes } from './routes.svelte';
 
     interface Props {
         children: Snippet;
@@ -52,7 +52,7 @@
     });
 
     $effect(() => {
-        const currentRoute = routes.find((route) => page.url.pathname === route.href);
+        const currentRoute = routes().find((route) => page.url.pathname === route.href);
         if (currentRoute) {
             document.title = `${currentRoute.title} - Exceptionless`;
         } else {
@@ -70,7 +70,7 @@
 </script>
 
 <div class="bg-background text-foreground">
-    <ModeWatcher defaultMode={'dark'} />
+    <ModeWatcher defaultMode="dark" />
 
     <QueryClientProvider client={queryClient}>
         <Sidebar.Provider>

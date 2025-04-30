@@ -1,3 +1,4 @@
+// TODO: Remove this reference.
 import type { ViewProject } from '$features/projects/models';
 
 import { buildUrl } from '$shared/url';
@@ -8,7 +9,6 @@ import type { ErrorInfo, ParameterInfo, SimpleErrorInfo, StackFrameInfo } from '
 export type ErrorData = {
     data: Record<string, unknown>;
     message: string;
-    title: string;
     type: string;
 };
 
@@ -21,7 +21,7 @@ export type ExtendedDataItem = {
 export function getErrorData(event: PersistentEvent): ErrorData[] {
     const exceptions = getErrorsFromEvent(event);
     return exceptions
-        .map((ex: ErrorInfo | SimpleErrorInfo, index: number) => {
+        .map((ex: ErrorInfo | SimpleErrorInfo) => {
             const getAdditionalData = (error: ErrorInfo | SimpleErrorInfo) => {
                 if (!error.data) {
                     return;
@@ -46,7 +46,6 @@ export function getErrorData(event: PersistentEvent): ErrorData[] {
             return <ErrorData>{
                 data: data,
                 message: ex.message,
-                title: index === 0 ? 'Additional Data' : `${errorType} Additional Data`,
                 type: errorType
             };
         })

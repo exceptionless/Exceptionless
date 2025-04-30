@@ -1,7 +1,7 @@
 <script lang="ts">
     import { A, type AProps } from '$comp/typography';
     import { cn } from '$lib/utils';
-    import Filter from 'lucide-svelte/icons/filter';
+    import Filter from '@lucide/svelte/icons/filter';
 
     import { StringFilter } from './models.svelte';
 
@@ -19,6 +19,6 @@
     {#if children}
         {@render children()}
     {:else}
-        <Filter class="text-muted-foreground text-opacity-50 hover:text-primary" />
+        <Filter class="text-muted-foreground text-opacity-50 hover:text-primary size-5" />
     {/if}
 </A>

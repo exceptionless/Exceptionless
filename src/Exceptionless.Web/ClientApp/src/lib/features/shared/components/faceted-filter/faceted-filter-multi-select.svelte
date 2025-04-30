@@ -6,7 +6,7 @@
     import * as Popover from '$comp/ui/popover';
     import Separator from '$comp/ui/separator/separator.svelte';
     import { cn } from '$lib/utils';
-    import Check from 'lucide-svelte/icons/check';
+    import Check from '@lucide/svelte/icons/check';
 
     type Option = {
         label: string;
@@ -70,23 +70,21 @@
 
 <Popover.Root bind:open>
     <Popover.Trigger>
-        {#snippet children()}
-            <Button class="h-8" size="sm" variant="outline">
-                {title}
-                <Separator class="mx-2 h-4" orientation="vertical" />
-                {#if loading}
-                    <FacetedFilter.BadgeLoading />
-                {:else if values.length > 0}
-                    <FacetedFilter.BadgeValues values={displayValues}>
-                        {#snippet displayValue(value)}
-                            {value}
-                        {/snippet}
-                    </FacetedFilter.BadgeValues>
-                {:else}
-                    <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
-                {/if}
-            </Button>
-        {/snippet}
+        <Button class="gap-x-1 px-3" size="lg" variant="outline">
+            {title}
+            <Separator class="mx-2" orientation="vertical" />
+            {#if loading}
+                <FacetedFilter.BadgeLoading />
+            {:else if values.length > 0}
+                <FacetedFilter.BadgeValues values={displayValues}>
+                    {#snippet displayValue(value)}
+                        {value}
+                    {/snippet}
+                </FacetedFilter.BadgeValues>
+            {:else}
+                <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
+            {/if}
+        </Button>
     </Popover.Trigger>
     <Popover.Content align="start" class="p-0" side="bottom">
         <Command.Root {filter}>
@@ -104,7 +102,7 @@
                             <Command.Item id={option.value} onSelect={() => onValueSelected(option.value)} value={option.value}>
                                 <div
                                     class={cn(
-                                        'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                                        'border-primary mr-2 flex h-4 w-4 items-center justify-center rounded-sm border',
                                         updatedValues.includes(option.value) ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
                                     )}
                                 >

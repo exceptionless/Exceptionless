@@ -40,6 +40,8 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeCreated()
         );
 
+        Assert.NotNull(project);
+
         var updatedProject = await SendRequestAsAsync<ViewProject>(r => r
             .AsTestOrganizationUser()
             .Patch()
@@ -52,6 +54,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(updatedProject);
         Assert.NotEqual(project.Name, updatedProject.Name);
     }
 
@@ -72,6 +75,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeCreated()
         );
 
+        Assert.NotNull(project);
         project.Name = "Updated";
         var updatedProject = await SendRequestAsAsync<ViewProject>(r => r
             .AsTestOrganizationUser()
@@ -81,6 +85,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(updatedProject);
         Assert.Equal("Updated", updatedProject.Name);
     }
 
@@ -99,6 +104,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.True(response.Content.Headers.ContentLength > 0);
 
         var config = await response.DeserializeAsync<ClientConfiguration>();
+        Assert.NotNull(config);
         Assert.True(config.Settings.GetBoolean("IncludeConditionalData"));
         Assert.Equal(0, config.Version);
     }
@@ -113,12 +119,13 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(projects);
         Assert.Equal(2, projects.Count);
         var project = projects.Single(p => String.Equals(p.Id, SampleDataService.TEST_PROJECT_ID));
         Assert.Equal(0, project.StackCount);
         Assert.Equal(0, project.EventCount);
 
-        (var stacks, var events) = await CreateDataAsync(d =>
+        var (stacks, events) = await CreateDataAsync(d =>
         {
             d.Event().Message("test");
         });
@@ -130,6 +137,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(projects);
         project = projects.Single(p => String.Equals(p.Id, SampleDataService.TEST_PROJECT_ID));
         Assert.Equal(stacks.Count, project.StackCount);
         Assert.Equal(events.Count, project.EventCount);
@@ -141,6 +149,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeAccepted()
         );
 
+        Assert.NotNull(workItems);
         Assert.Single(workItems.Workers);
         var workItemJob = GetService<WorkItemJob>();
         await workItemJob.RunUntilEmptyAsync();
@@ -153,6 +162,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(projects);
         project = projects.Single(p => String.Equals(p.Id, SampleDataService.TEST_PROJECT_ID));
         // Stacks and event counts include soft deleted (performance reasons)
         Assert.Equal(stacks.Count, project.StackCount);
@@ -168,6 +178,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        Assert.NotNull(projects);
         project = projects.Single(p => String.Equals(p.Id, SampleDataService.TEST_PROJECT_ID));
         Assert.Equal(0, project.StackCount);
         Assert.Equal(0, project.EventCount);

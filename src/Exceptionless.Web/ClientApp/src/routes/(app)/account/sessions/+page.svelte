@@ -3,8 +3,8 @@
     import { H3, Muted, P } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';
-    import Laptop from 'lucide-svelte/icons/laptop';
-    import Smartphone from 'lucide-svelte/icons/smartphone';
+    import Laptop from '@lucide/svelte/icons/laptop';
+    import Smartphone from '@lucide/svelte/icons/smartphone';
 </script>
 
 <div class="space-y-6">
@@ -14,7 +14,7 @@
     </div>
     <Separator />
 
-    <ul class="divide-y divide-border">
+    <ul class="divide-border divide-y">
         <li class="pb-4">
             <div class="flex items-center space-x-4">
                 <Laptop />

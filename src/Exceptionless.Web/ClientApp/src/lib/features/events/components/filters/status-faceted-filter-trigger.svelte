@@ -3,7 +3,7 @@
 
     import { A, type AProps } from '$comp/typography';
     import { cn } from '$lib/utils';
-    import Filter from 'lucide-svelte/icons/filter';
+    import Filter from '@lucide/svelte/icons/filter';
 
     import { StatusFilter } from './models.svelte';
 
@@ -17,7 +17,5 @@
 </script>
 
 <A class={cn('cursor-pointer', className)} onclick={() => changed(new StatusFilter(value))} {title} {...props}>
-    {#snippet children()}
-        <Filter class="text-muted-foreground text-opacity-50 hover:text-primary" />
-    {/snippet}
+    <Filter class="text-muted-foreground text-opacity-50 hover:text-primary size-5" />
 </A>

@@ -34,7 +34,7 @@
     <form class="space-y-2" onsubmit={onSave}>
         <ErrorMessage message={problem.errors.general}></ErrorMessage>
 
-        <H4 class="mb-4">Email Notifications</H4>
+        <H3 class="mb-4">Email Notifications</H3>
         <div class="flex flex-row items-center justify-between rounded-lg border p-4">
             <div class="space-y-0.5">
                 <H4>Communication emails</H4>

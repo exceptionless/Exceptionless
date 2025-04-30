@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -183,7 +183,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// Remove
     /// </summary>
     /// <param name="ids">A comma-delimited list of project identifiers.</param>
-    /// <response code="204">No Content.</response>
+    /// <response code="202">Accepted</response>
     /// <response code="400">One or more validation errors occurred.</response>
     /// <response code="404">One or more projects were not found.</response>
     /// <response code="500">An error occurred while deleting one or more projects.</response>
@@ -247,7 +247,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (project is null)
             return NotFound();
 
-        if (_isOwnedByOrganization && !CanAccessOrganization(project.OrganizationId))
+        if (!CanAccessOrganization(project.OrganizationId))
             return NotFound();
 
         if (v.HasValue && v == project.Configuration.Version)
@@ -314,6 +314,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// Reset project data
     /// </summary>
     /// <param name="id">The identifier of the project.</param>
+    /// <response code="202">Accepted</response>
     /// <response code="404">The project could not be found.</response>
     [HttpGet("{id:objectid}/reset-data")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
@@ -428,7 +429,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     [HttpPost("{id:objectid}/{integration:minlength(1)}/notifications")]
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<IActionResult> SetIntegrationNotificationSettingsAsync(string id, string integration, NotificationSettings settings)
+    public async Task<IActionResult> SetIntegrationNotificationSettingsAsync(string id, string integration, NotificationSettings? settings)
     {
         if (!String.Equals(Project.NotificationIntegrations.Slack, integration))
             return NotFound();
@@ -442,7 +443,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             return NotFound();
 
         if (!organization.HasPremiumFeatures)
-            return PlanLimitReached($"Please upgrade your plan to enable {integration.TrimStart('@')} integration.");
+            return PlanLimitReached($"Please upgrade your plan to enable {integration} integration.");
 
         if (settings is null)
             project.NotificationSettings.Remove(integration);

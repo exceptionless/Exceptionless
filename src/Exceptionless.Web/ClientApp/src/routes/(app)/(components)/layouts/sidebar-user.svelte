@@ -8,15 +8,15 @@
     import { useSidebar } from '$comp/ui/sidebar/index';
     import { Skeleton } from '$comp/ui/skeleton';
     import { User } from '$features/users/models';
-    import BadgeCheck from 'lucide-svelte/icons/badge-check';
-    import BookOpen from 'lucide-svelte/icons/book-open';
-    import Braces from 'lucide-svelte/icons/braces';
-    // import Bell from 'lucide-svelte/icons/bell';
-    import ChevronsUpDown from 'lucide-svelte/icons/chevrons-up-down';
-    import Help from 'lucide-svelte/icons/circle-help';
-    import GitHub from 'lucide-svelte/icons/github';
-    // import CreditCard from 'lucide-svelte/icons/credit-card';
-    import LogOut from 'lucide-svelte/icons/log-out';
+    import BadgeCheck from '@lucide/svelte/icons/badge-check';
+    import BookOpen from '@lucide/svelte/icons/book-open';
+    import Braces from '@lucide/svelte/icons/braces';
+    // import Bell from '@lucide/svelte/icons/bell';
+    import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
+    import Help from '@lucide/svelte/icons/circle-help';
+    import GitHub from '@lucide/svelte/icons/github';
+    // import CreditCard from '@lucide/svelte/icons/credit-card';
+    import LogOut from '@lucide/svelte/icons/log-out';
 
     interface Props {
         gravatar: Gravatar;
@@ -24,8 +24,14 @@
         user: undefined | User;
     }
 
-    let { gravatar, isLoading, user, ...props }: Props = $props();
+    let { gravatar, isLoading, user }: Props = $props();
     const sidebar = useSidebar();
+
+    function onMenuClick() {
+        if (sidebar.isMobile) {
+            sidebar.toggle();
+        }
+    }
 </script>
 
 {#if isLoading}
@@ -64,7 +70,7 @@
                     {/snippet}
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content
-                    class="w-[--bits-dropdown-menu-anchor-width] min-w-56 rounded-lg"
+                    class="w-(--bits-dropdown-menu-anchor-width) min-w-56 rounded-lg"
                     side={sidebar.isMobile ? 'bottom' : 'right'}
                     align="end"
                     sideOffset={4}
@@ -90,7 +96,7 @@
                     <DropdownMenu.Group>
                         <DropdownMenu.Item>
                             <BadgeCheck />
-                            <A variant="ghost" href="/next/account/manage" class="w-full">Account</A>
+                            <A variant="ghost" href="/next/account/manage" class="w-full" onclick={onMenuClick}>Account</A>
                             <DropdownMenu.Shortcut>⇧⌘ga</DropdownMenu.Shortcut>
                         </DropdownMenu.Item>
                         <!-- <DropdownMenu.Item>

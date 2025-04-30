@@ -98,7 +98,7 @@ ENTRYPOINT ["/app/app-docker-entrypoint.sh"]
 
 # completely self-contained
 
-FROM exceptionless/elasticsearch:8.17.0 AS exceptionless
+FROM exceptionless/elasticsearch:8.17.4 AS exceptionless
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
@@ -113,17 +113,17 @@ USER root
 # install dotnet and supervisor
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
-        wget \
-        apt-transport-https \
-        supervisor \
-        dos2unix \
-        libc6 \
-        libgcc1 \
-        libgssapi-krb5-2 \
-        libicu66 \
-        libssl1.1 \
-        libstdc++6 \
-        zlib1g && \
+    wget \
+    apt-transport-https \
+    supervisor \
+    dos2unix \
+    libc6 \
+    libgcc1 \
+    libgssapi-krb5-2 \
+    libicu66 \
+    libssl1.1 \
+    libstdc++6 \
+    zlib1g && \
     dos2unix /app/docker-entrypoint.sh
 
 ENV discovery.type=single-node \
@@ -171,17 +171,17 @@ USER root
 # install dotnet and supervisor
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
-        wget \
-        apt-transport-https \
-        supervisor \
-        dos2unix \
-        libc6 \
-        libgcc1 \
-        libgssapi-krb5-2 \
-        libicu66 \
-        libssl1.1 \
-        libstdc++6 \
-        zlib1g && \
+    wget \
+    apt-transport-https \
+    supervisor \
+    dos2unix \
+    libc6 \
+    libgcc1 \
+    libgssapi-krb5-2 \
+    libicu66 \
+    libssl1.1 \
+    libstdc++6 \
+    zlib1g && \
     dos2unix /app/docker-entrypoint.sh
 
 ENV discovery.type=single-node \

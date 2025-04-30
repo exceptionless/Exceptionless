@@ -1,5 +1,4 @@
-﻿using Aspire.Hosting.Lifecycle;
-using Aspire.Hosting.Utils;
+using Aspire.Hosting.Lifecycle;
 using HealthChecks.Elasticsearch;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -16,7 +15,7 @@ public static class ElasticsearchBuilderExtensions
     private const int KibanaPort = 5601;
 
     /// <summary>
-    /// Adds a Elasticsearch container to the application model. The default image is "docker.elastic.co/elasticsearch/elasticsearch". This version the package defaults to the 8.17.0 tag of the Elasticsearch container image
+    /// Adds a Elasticsearch container to the application model. The default image is "docker.elastic.co/elasticsearch/elasticsearch". This version the package defaults to the 8.17.4 tag of the Elasticsearch container image
     /// </summary>
     /// <param name="builder">The <see cref="IDistributedApplicationBuilder"/>.</param>
     /// <param name="name">The name of the resource. This name will be used as the connection string name when referenced in a dependency.</param>
@@ -57,7 +56,8 @@ public static class ElasticsearchBuilderExtensions
             .WithImage(ElasticsearchContainerImageTags.Image, ElasticsearchContainerImageTags.Tag)
             .WithImageRegistry(ElasticsearchContainerImageTags.ElasticsearchRegistry)
             .WithHttpEndpoint(targetPort: ElasticsearchPort, port: port, name: ElasticsearchResource.PrimaryEndpointName)
-            .WithEndpoint(targetPort: ElasticsearchInternalPort, name: ElasticsearchResource.InternalEndpointName)
+            .WithUrlForEndpoint(ElasticsearchResource.PrimaryEndpointName, u => u.DisplayText = "Elasticsearch")
+            //.WithEndpoint(targetPort: ElasticsearchInternalPort, name: ElasticsearchResource.InternalEndpointName)
             .WithEnvironment("discovery.type", "single-node")
             .WithEnvironment("xpack.security.enabled", "false")
             .WithEnvironment("action.destructive_requires_name", "false")
@@ -87,6 +87,7 @@ public static class ElasticsearchBuilderExtensions
                                       .WithImage(ElasticsearchContainerImageTags.KibanaImage, ElasticsearchContainerImageTags.Tag)
                                       .WithImageRegistry(ElasticsearchContainerImageTags.KibanaRegistry)
                                       .WithHttpEndpoint(targetPort: KibanaPort, name: containerName)
+                                      .WithUrlForEndpoint(containerName, u => u.DisplayText = "Kibana")
                                       .WithEnvironment("xpack.security.enabled", "false")
                                       .ExcludeFromManifest();
 
@@ -100,7 +101,7 @@ public static class ElasticsearchBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        return builder.WithVolume(name ?? VolumeNameGenerator.CreateVolumeName(builder, "data"), "/usr/share/elasticsearch/data");
+        return builder.WithVolume(name ?? VolumeNameGenerator.Generate(builder, "data"), "/usr/share/elasticsearch/data");
     }
 
     public static IResourceBuilder<ElasticsearchResource> WithDataBindMount(this IResourceBuilder<ElasticsearchResource> builder, string source)
@@ -118,5 +119,5 @@ internal static class ElasticsearchContainerImageTags
     public const string Image = "exceptionless/elasticsearch";
     public const string KibanaRegistry = "docker.elastic.co";
     public const string KibanaImage = "kibana/kibana";
-    public const string Tag = "8.17.0";
+    public const string Tag = "8.17.4";
 }

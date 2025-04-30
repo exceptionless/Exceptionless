@@ -3,7 +3,7 @@
 
     import { Input } from '$comp/ui/input';
     import { cn } from '$lib/utils';
-    import Search from 'lucide-svelte/icons/search';
+    import Search from '@lucide/svelte/icons/search';
 
     type Props = HTMLInputAttributes;
 

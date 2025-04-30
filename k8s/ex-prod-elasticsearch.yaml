@@ -4,8 +4,8 @@ metadata:
   name: ex-prod
   namespace: ex-prod
 spec:
-  version: 8.17.0
-  image: exceptionless/elasticsearch:8.17.0 # https://github.com/exceptionless/Exceptionless/tree/main/build/docker/elasticsearch
+  version: 8.17.4
+  image: exceptionless/elasticsearch:8.17.4 # https://github.com/exceptionless/Exceptionless/tree/main/build/docker/elasticsearch
   monitoring:
     metrics:
       elasticsearchRefs:
@@ -68,7 +68,7 @@ metadata:
   name: ex-prod
   namespace: ex-prod
 spec:
-  version: 8.17.0
+  version: 8.17.4
   count: 1
   elasticsearchRef:
     name: ex-prod

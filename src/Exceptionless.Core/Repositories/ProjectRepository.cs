@@ -5,6 +5,7 @@ using Exceptionless.Core.Repositories.Queries;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Options;
 using Nest;
 
 namespace Exceptionless.Core.Repositories;
@@ -36,13 +37,13 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
         if (configCacheValue.HasValue)
             return configCacheValue.Value;
 
-        var project = await FindOneAsync(q => q.Id(projectId).Include(p => p.Configuration, p => p.OrganizationId));
-        if (project?.Document is null)
+        var project = await GetByIdAsync(projectId, o => o.ReadCache().Include(p => p.Configuration, p => p.OrganizationId));
+        if (project is null)
             return null;
 
-        await Cache.AddAsync(cacheKey, project.Document);
-
-        return project.Document;
+        // NOTE: We might read from cache, but we want to save a limited subset of data.
+        await Cache.AddAsync(cacheKey, ToCachedProjectConfig(project));
+        return project;
     }
 
     public Task<CountResult> GetCountByOrganizationIdAsync(string organizationId)
@@ -88,15 +89,40 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
         await InvalidateCacheAsync(projects);
     }
 
+    protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<Project>> findHits, ICommandOptions options, bool isDirtyRead)
+    {
+        await base.AddDocumentsToCacheAsync(findHits, options, isDirtyRead);
+
+        var cacheEntries = new Dictionary<string, Project>();
+        foreach (var project in findHits.Select(hit => hit.Document).Where(d => !String.IsNullOrEmpty(d?.Id)))
+            cacheEntries.Add(ConfigCacheKey(project.Id), ToCachedProjectConfig(project));
+
+        // NOTE: We call SetAllAsync instead of AddDocumentsToCacheWithKeyAsync due to our repo method gets the value directly from cache.
+        if (cacheEntries.Count > 0)
+            await Cache.SetAllAsync(cacheEntries, options.GetExpiresIn());
+    }
+
     protected override async Task InvalidateCacheAsync(IReadOnlyCollection<ModifiedDocument<Project>> documents, ChangeType? changeType = null)
     {
-        var organizations = documents.Select(d => d.Value.OrganizationId).Distinct().Where(id => !String.IsNullOrEmpty(id));
-        await Cache.RemoveAllAsync(organizations.Select(id => $"count:{OrganizationCacheKey(id)}"));
+        var originalAndModifiedDocuments = documents.UnionOriginalAndModified();
 
-        var configCacheKeys = documents.Select(d => ConfigCacheKey(d.Value.Id));
-        await Cache.RemoveAllAsync(configCacheKeys);
+        // Invalidate GetCountByOrganizationIdAsync
+        var organizationIds = originalAndModifiedDocuments.Select(d => d.OrganizationId).Distinct().Where(id => !String.IsNullOrEmpty(id));
+        var countByOrganizationKeysToRemove = organizationIds.Select(id => $"count:{OrganizationCacheKey(id)}");
+        await Cache.RemoveAllAsync(countByOrganizationKeysToRemove);
+
+        var configKeysToRemove = originalAndModifiedDocuments.Select(d => ConfigCacheKey(d.Id)).Distinct();
+        await Cache.RemoveAllAsync(configKeysToRemove);
 
         await base.InvalidateCacheAsync(documents, changeType);
+    }
+
+    private static Project ToCachedProjectConfig(Project project)
+    {
+        return new Project
+        {
+            Id = project.Id, OrganizationId = project.OrganizationId, Configuration = project.Configuration
+        };
     }
 
     private static string ConfigCacheKey(string projectId) => String.Concat("config:", projectId);

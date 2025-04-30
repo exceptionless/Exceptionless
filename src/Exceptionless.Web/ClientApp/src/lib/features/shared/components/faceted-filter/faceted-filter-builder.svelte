@@ -4,7 +4,7 @@
     import { Button } from '$comp/ui/button';
     import * as Command from '$comp/ui/command';
     import * as Popover from '$comp/ui/popover';
-    import Circle from 'lucide-svelte/icons/circle-plus';
+    import Circle from '@lucide/svelte/icons/circle-plus';
 
     import type { FacetedFilter, IFilter } from './models';
 
@@ -95,19 +95,17 @@
 
 <Popover.Root bind:open>
     <Popover.Trigger>
-        {#snippet children()}
-            <Button class="h-8" size="sm" variant="outline">
-                <Circle class="mr-2 size-4" /> Filter
-            </Button>
-        {/snippet}
+        <Button class="gap-x-1 px-3" size="lg" variant="outline">
+            <Circle class="mr-2 size-4" /> Filter
+        </Button>
     </Popover.Trigger>
     <Popover.Content align="start" class="w-[200px] p-0" side="bottom">
         <Command.Root>
-            <Command.Input placeholder={'Search...'} />
+            <Command.Input placeholder="Search..." />
             <Command.List>
                 <Command.Empty>No results found.</Command.Empty>
                 <Command.Group>
-                    {#each sortedBuilders as [key, builder]}
+                    {#each sortedBuilders as [key, builder] (key)}
                         <Command.Item onSelect={() => onFacetSelected(builder)} value={key}>{builder.title}</Command.Item>
                     {/each}
                 </Command.Group>

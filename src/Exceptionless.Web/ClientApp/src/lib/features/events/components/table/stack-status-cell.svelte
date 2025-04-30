@@ -1,16 +1,17 @@
 <script lang="ts">
-    import { stackStatuses } from '../options';
+    import type { StackStatus } from '$features/stacks/models';
+
+    import StackStatusBadge from '$features/stacks/components/stack-status-badge.svelte';
 
     interface Props {
-        value: string;
+        value: StackStatus;
     }
 
     let { value }: Props = $props();
-    let status = $derived(stackStatuses.find((status) => status.value === value));
 </script>
 
-{#if status}
+{#if value}
     <div class="flex w-[100px] items-center">
-        <span>{status.label}</span>
+        <StackStatusBadge status={value} />
     </div>
 {/if}

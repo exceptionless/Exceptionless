@@ -1,14 +1,17 @@
-import eslint from '@eslint/js';
+import { includeIgnoreFile } from '@eslint/compat';
+import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
 import perfectionist from 'eslint-plugin-perfectionist';
 import svelte from 'eslint-plugin-svelte';
 import globals from 'globals';
-import tseslint from 'typescript-eslint';
+import { fileURLToPath } from 'node:url';
+import ts from 'typescript-eslint';
+const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
 
-/** @type {import('eslint').Linter.FlatConfig[]} */
-export default tseslint.config(
-    eslint.configs.recommended,
-    ...tseslint.configs.recommended,
+export default ts.config(
+    includeIgnoreFile(gitignorePath),
+    js.configs.recommended,
+    ...ts.configs.recommended,
     ...svelte.configs['flat/recommended'],
     perfectionist.configs['recommended-natural'],
     prettier,
@@ -22,10 +25,10 @@ export default tseslint.config(
         }
     },
     {
-        files: ['**/*.svelte'],
+        files: ['**/*.svelte', '**/*.svelte.ts'],
         languageOptions: {
             parserOptions: {
-                parser: tseslint.parser
+                parser: ts.parser
             }
         }
     },

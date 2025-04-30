@@ -1344,7 +1344,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     /// Remove
     /// </summary>
     /// <param name="ids">A comma-delimited list of event identifiers.</param>
-    /// <response code="204">No Content.</response>
+    /// <response code="202">Accepted</response>
     /// <response code="400">One or more validation errors occurred.</response>
     /// <response code="404">One or more event occurrences were not found.</response>
     /// <response code="500">An error occurred while deleting one or more event occurrences.</response>
@@ -1440,5 +1440,18 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         totals.AddRange(aggregations);
 
         return totals;
+    }
+
+    protected override Task<IEnumerable<string>> DeleteModelsAsync(ICollection<PersistentEvent> events)
+    {
+        var user = CurrentUser;
+        foreach (var projectEvents in events.GroupBy(ev => ev.ProjectId))
+        {
+            var ev = projectEvents.First();
+            using var _ = _logger.BeginScope(new ExceptionlessState().Organization(ev.OrganizationId).Project(ev.ProjectId).Tag("Delete").Identity(user.EmailAddress).Property("User", user).SetHttpContext(HttpContext));
+            _logger.LogInformation("User {User} deleted {RemovedCount} events in project ({ProjectId})", user.Id, projectEvents.Count(), ev.ProjectId);
+        }
+
+        return base.DeleteModelsAsync(events);
     }
 }

@@ -6,6 +6,9 @@ import DateFacetedFilterTrigger from './date-faceted-filter-trigger.svelte';
 import DateFacetedFilter from './date-faceted-filter.svelte';
 import KeywordFacetedFilterBuilder from './keyword-faceted-filter-builder.svelte';
 import KeywordFacetedFilter from './keyword-faceted-filter.svelte';
+import LevelFacetedFilterBuilder from './level-faceted-filter-builder.svelte';
+import LevelFacetedFilterTrigger from './level-faceted-filter-trigger.svelte';
+import LevelFacetedFilter from './level-faceted-filter.svelte';
 import NumberFacetedFilterBuilder from './number-faceted-filter-builder.svelte';
 import NumberFacetedFilterTrigger from './number-faceted-filter-trigger.svelte';
 import NumberFacetedFilter from './number-faceted-filter.svelte';
@@ -24,6 +27,9 @@ import StatusFacetedFilter from './status-faceted-filter.svelte';
 import StringFacetedFilterBuilder from './string-faceted-filter-builder.svelte';
 import StringFacetedFilterTrigger from './string-faceted-filter-trigger.svelte';
 import StringFacetedFilter from './string-faceted-filter.svelte';
+import TagFacetedFilterBuilder from './tag-faceted-filter-builder.svelte';
+import TagFacetedFilterTrigger from './tag-faceted-filter-trigger.svelte';
+import TagFacetedFilter from './tag-faceted-filter.svelte';
 import TypeFacetedFilterBuilder from './type-faceted-filter-builder.svelte';
 import TypeFacetedFilterTrigger from './type-faceted-filter-trigger.svelte';
 import TypeFacetedFilter from './type-faceted-filter.svelte';
@@ -48,6 +54,12 @@ export {
     KeywordFacetedFilterBuilder as KeywordBuilder,
     KeywordFacetedFilter,
     KeywordFacetedFilterBuilder,
+    LevelFacetedFilter as Level,
+    LevelFacetedFilterBuilder as LevelBuilder,
+    LevelFacetedFilter,
+    LevelFacetedFilterBuilder,
+    LevelFacetedFilterTrigger,
+    LevelFacetedFilterTrigger as LevelTrigger,
     NumberFacetedFilter as Number,
     NumberFacetedFilterBuilder as NumberBuilder,
     NumberFacetedFilter,
@@ -84,6 +96,12 @@ export {
     StringFacetedFilterBuilder,
     StringFacetedFilterTrigger,
     StringFacetedFilterTrigger as StringTrigger,
+    TagFacetedFilter as Tag,
+    TagFacetedFilterBuilder as TagBuilder,
+    TagFacetedFilter,
+    TagFacetedFilterBuilder,
+    TagFacetedFilterTrigger,
+    TagFacetedFilterTrigger as TagTrigger,
     TypeFacetedFilter as Type,
     TypeFacetedFilterBuilder as TypeBuilder,
     TypeFacetedFilter,
@@ -99,15 +117,17 @@ export {
 };
 
 export {
-    type BooleanFilter,
-    type DateFilter,
+    BooleanFilter,
+    DateFilter,
     KeywordFilter,
-    type NumberFilter,
+    LevelFilter,
+    NumberFilter,
     ProjectFilter,
     ReferenceFilter,
     SessionFilter,
     StatusFilter,
-    type StringFilter,
+    StringFilter,
+    TagFilter,
     TypeFilter,
-    type VersionFilter
+    VersionFilter
 } from './models.svelte';

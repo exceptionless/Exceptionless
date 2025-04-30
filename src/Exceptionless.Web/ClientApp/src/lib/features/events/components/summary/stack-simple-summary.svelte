@@ -1,24 +1,24 @@
 <script lang="ts">
+    import type { StackStatus } from '$features/stacks/models';
+
     import { A, Muted } from '$comp/typography';
-    import { Badge } from '$comp/ui/badge';
-    import ChevronRight from 'lucide-svelte/icons/chevron-right';
+    import StackStatusBadge from '$features/stacks/components/stack-status-badge.svelte';
+    import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
     import type { StackSummaryModel, SummaryModel, SummaryTemplateKeys } from './index';
 
     interface Props {
-        badgeClass: string;
+        badgeStatus: StackStatus;
         showBadge: boolean;
         summary: SummaryModel<SummaryTemplateKeys>;
     }
 
-    let { badgeClass, showBadge, summary }: Props = $props();
+    let { badgeStatus, showBadge, summary }: Props = $props();
     let source = $derived(summary as StackSummaryModel<'stack-simple-summary'>);
 </script>
 
 {#if showBadge}
-    <Badge class={badgeClass}>
-        {source.status}
-    </Badge>
+    <StackStatusBadge status={badgeStatus} />
 {/if}
 
 <div class="line-clamp-2">
@@ -30,8 +30,8 @@
 </div>
 
 {#if source.data.Path}
-    <Muted class="ml-6 hidden sm:block">
-        <ChevronRight class="inline" />
+    <Muted class="hidden sm:block">
+        <ChevronRight class="inline size-4" />
         <span class="line-clamp-1 inline">{source.data.Path}</span>
     </Muted>
 {/if}
