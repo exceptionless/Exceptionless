@@ -27,7 +27,7 @@ public class StorageOptions
         }
         else
         {
-            var minioConnectionString = config.GetConnectionString("S3");
+            string? minioConnectionString = config.GetConnectionString("S3");
             if (!String.IsNullOrEmpty(minioConnectionString))
             {
                 options.Provider = "s3";

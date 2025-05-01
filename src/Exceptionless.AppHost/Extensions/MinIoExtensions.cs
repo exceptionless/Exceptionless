@@ -26,7 +26,7 @@ public static class MinIoExtensions
             var storage = new S3FileStorage(o => o.ConnectionString(connectionString));
             try
             {
-                storage.Client.PutBucketAsync(options.Bucket ?? "storage", ct).GetAwaiter().GetResult();
+                await storage.Client.PutBucketAsync(options.Bucket ?? "storage", ct);
             }
             catch
             {
@@ -85,10 +85,11 @@ public class MinIoResource(string name, string? accessKey = null, string? secret
 
     public ReferenceExpression ConnectionStringExpression =>
         ReferenceExpression.Create(
-            $"ServiceUrl=http://{ApiEndpoint.Property(EndpointProperty.Host)}:{ApiEndpoint.Property(EndpointProperty.Port)};" +
+            $"EndPoint=http://{ApiEndpoint.Property(EndpointProperty.Host)}:{ApiEndpoint.Property(EndpointProperty.Port)};" +
             $"AccessKey={AccessKey ?? "minioadmin"};" +
             $"SecretKey={SecretKey ?? "minioadmin"};" +
-            $"Bucket={Bucket}");
+            $"Bucket={Bucket};" +
+            $"Provider=minio;");
 
     public string? AccessKey { get; } = accessKey;
     public string? SecretKey { get; } = secretKey;
@@ -135,5 +136,5 @@ internal static class MinIoContainerImageTags
 {
     internal const string Registry = "docker.io";
     internal const string Image = "minio/minio";
-    internal const string Tag = "RELEASE.2024-12-13T22-19-12Z";
+    internal const string Tag = "RELEASE.2025-04-22T22-12-26Z";
 }
