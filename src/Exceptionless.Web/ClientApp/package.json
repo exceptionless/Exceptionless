@@ -80,7 +80,7 @@
         "dompurify": "^3.2.5",
         "formsnap": "^2.0.1",
         "kit-query-params": "^0.0.26",
-        "mode-watcher": "^1.0.2",
+        "mode-watcher": "^1.0.6",
         "oidc-client-ts": "^3.2.0",
         "pretty-ms": "^9.2.0",
         "runed": "^0.25.0",
