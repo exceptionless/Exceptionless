@@ -11,9 +11,10 @@
         children?: Snippet;
         size?: VariantProps<typeof buttonVariants>['size'];
         value?: null | string;
+        variant?: VariantProps<typeof buttonVariants>['variant'];
     };
 
-    let { children, size = 'icon', title = 'Copy to Clipboard', value }: Props = $props();
+    let { children, size = 'icon', title = 'Copy to Clipboard', value, variant = 'default' }: Props = $props();
 
     const clipboard = new UseClipboard();
 
@@ -28,7 +29,7 @@
 </script>
 
 <div>
-    <Button onclick={copyToClipboard} {size} {title}>
+    <Button onclick={copyToClipboard} {size} {title} {variant}>
         {#if children}
             {@render children()}
         {:else}
