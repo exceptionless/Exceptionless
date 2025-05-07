@@ -43,7 +43,7 @@
 {#if isEmptyValue}
     (Empty)
 {:else if Array.isArray(value)}
-    <List items={value}>
+    <List items={value} class="my-0">
         {#snippet displayValue(item)}
             <ObjectDump value={item} />
         {/snippet}

@@ -1,10 +1,16 @@
 <script lang="ts">
-    import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import ObjectDump from '$comp/object-dump.svelte';
-    import { Code, H4 } from '$comp/typography';
+    import { Code, CodeBlock, H4 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
+    import * as DropdownMenu from '$comp/ui/dropdown-menu';
+    import { isJSONString, isObject, isString, isXmlString } from '$features/shared/typing';
+    import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
     import ArrowDown from '@lucide/svelte/icons/arrow-down';
     import ArrowUp from '@lucide/svelte/icons/arrow-up';
+    import Copy from '@lucide/svelte/icons/copy';
+    import MoreVertical from '@lucide/svelte/icons/more-vertical';
+    import ToggleLeft from '@lucide/svelte/icons/toggle-left';
+    import { toast } from 'svelte-sonner';
 
     interface Props {
         canPromote?: boolean;
@@ -18,8 +24,24 @@
 
     let { canPromote = true, data, demote = async () => {}, excludedKeys = [], isPromoted = false, promote = async () => {}, title }: Props = $props();
 
-    function getData(data: unknown, exclusions: string[]): unknown {
-        if (typeof data !== 'object' || !(data instanceof Object)) {
+    function transformData(data: unknown): unknown {
+        if (isJSONString(data)) {
+            try {
+                return JSON.parse(data);
+            } catch {
+                return data;
+            }
+        }
+
+        return data;
+    }
+
+    function getFilteredData(data: unknown, exclusions: string[]): unknown {
+        if (Array.isArray(data)) {
+            return data.map((item) => getFilteredData(item, exclusions));
+        }
+
+        if (!isObject(data)) {
             return data;
         }
 
@@ -32,60 +54,107 @@
             }, {});
     }
 
-    function hasFilteredData(data: unknown): boolean {
+    function isEmpty(data: unknown): boolean {
         if (data === undefined || data === null) {
-            return false;
+            return true;
         }
 
         if (Array.isArray(data)) {
-            return data.length > 0;
+            return data.length === 0;
         }
 
-        if (Object.prototype.toString.call(data) === '[object Object]') {
-            return Object.keys(data).length > 0;
+        if (isObject(data)) {
+            return Object.keys(data).length === 0;
         }
 
-        return true;
+        if (isString(data)) {
+            return data.trim().length === 0;
+        }
+
+        return false;
     }
 
-    function onToggleView(e: Event) {
-        e.preventDefault();
+    function onToggleView() {
         showRaw = !showRaw;
     }
 
     let showRaw = $state(false);
-    let filteredData = getData(data, excludedKeys);
-    let hasData = hasFilteredData(filteredData);
-    let json = data ? JSON.stringify(data, null, 2) : null;
+    const transformedData = $derived(transformData(data));
+    const filteredData = $derived(getFilteredData(transformedData, excludedKeys));
+    const hasData = $derived(!isEmpty(transformedData));
+    const showJSONCodeEditor = $derived(isJSONString(data) || Array.isArray(transformedData) || isObject(transformedData));
+    const showXmlCodeEditor = $derived(isXmlString(filteredData));
+    const canToggle = $derived(!showXmlCodeEditor);
+
+    const clipboardData = $derived(isString(data) ? data : JSON.stringify(data, null, 2));
+    const code = $derived(isString(filteredData) ? filteredData : JSON.stringify(filteredData, null, 2));
+
+    const clipboard = new UseClipboard();
+    async function copyToClipboard() {
+        await clipboard.copy(clipboardData);
+        if (clipboard.copied) {
+            toast.success('Copy to clipboard succeeded');
+        } else {
+            toast.error('Copy to clipboard failed');
+        }
+    }
 </script>
 
 {#if hasData}
-    <div class="flex justify-between">
-        <H4 class="mb-2">{title}</H4>
-        <div class="flex justify-end gap-x-1">
-            <Button onclick={onToggleView} variant="outline">Toggle View</Button>
+    <div class="flex flex-col space-y-2">
+        <div class="flex items-center justify-between">
+            <H4>{title}</H4>
+            <DropdownMenu.Root>
+                <DropdownMenu.Trigger>
+                    <Button variant="ghost" size="icon" title="Options">
+                        <MoreVertical class="size-4" />
+                    </Button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content align="end">
+                    <DropdownMenu.Group>
+                        <DropdownMenu.GroupHeading>Actions</DropdownMenu.GroupHeading>
+                        <DropdownMenu.Separator />
+                        {#if canToggle}
+                            <DropdownMenu.Item onclick={onToggleView} title="Toggle between raw and structured view">
+                                <ToggleLeft class="mr-2 size-4" />
+                                Toggle View
+                            </DropdownMenu.Item>
+                        {/if}
+                        <DropdownMenu.Item onclick={copyToClipboard} title="Copy to clipboard">
+                            <Copy class="mr-2 size-4" />
+                            Copy to Clipboard
+                        </DropdownMenu.Item>
+                        {#if canPromote}
+                            {#if !isPromoted}
+                                <DropdownMenu.Item onclick={async () => await promote(title)} title="Promote to Tab">
+                                    <ArrowUp class="mr-2 size-4" />
+                                    Promote to Tab
+                                </DropdownMenu.Item>
+                            {:else}
+                                <DropdownMenu.Item onclick={async () => await demote(title)} title="Demote Tab">
+                                    <ArrowDown class="mr-2 size-4" />
+                                    Demote Tab
+                                </DropdownMenu.Item>
+                            {/if}
+                        {/if}
+                    </DropdownMenu.Group>
+                </DropdownMenu.Content>
+            </DropdownMenu.Root>
+        </div>
 
-            <CopyToClipboardButton value={json}></CopyToClipboardButton>
-
-            {#if canPromote}
-                {#if !isPromoted}
-                    <Button onclick={async () => await promote(title)} size="icon" title="Promote to Tab"
-                        ><ArrowUp /><span class="sr-only">Promote to Tab</span></Button
-                    >
+        <div class="grow overflow-auto text-xs">
+            {#if showRaw || !canToggle}
+                {#if showJSONCodeEditor}
+                    <CodeBlock {code} language="json" />
+                {:else if showXmlCodeEditor}
+                    <CodeBlock {code} language="xml" />
                 {:else}
-                    <Button onclick={async () => await demote(title)} size="icon" title="Demote Tab"
-                        ><ArrowDown /><span class="sr-only">Demote Tab</span></Button
-                    >
+                    <pre class="bg-muted rounded p-2 break-words whitespace-pre-wrap"><Code class="px-0"><div class="bg-inherit">{clipboardData}</div></Code
+                        ></pre>
                 {/if}
+            {:else}
+                <ObjectDump value={filteredData} />
             {/if}
         </div>
-    </div>
-
-    <div class="grow overflow-auto text-xs">
-        {#if showRaw}
-            <pre class="bg-muted rounded p-2 break-words whitespace-pre-wrap"><Code class="px-0"><div class="bg-inherit">{json}</div></Code></pre>
-        {:else}
-            <ObjectDump value={filteredData} />
-        {/if}
     </div>
 {/if}
