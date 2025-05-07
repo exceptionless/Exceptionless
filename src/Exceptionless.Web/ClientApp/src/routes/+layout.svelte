@@ -6,13 +6,15 @@
     import * as Sidebar from '$comp/ui/sidebar';
     import { Toaster } from '$comp/ui/sonner';
     import { accessToken } from '$features/auth/index.svelte';
-    import { type FetchClientContext, setAccessTokenFunc, setBaseUrl, setRequestOptions, useMiddleware } from '@exceptionless/fetchclient';
+    import { type FetchClientContext, ProblemDetails, setAccessTokenFunc, setBaseUrl, setRequestOptions, useMiddleware } from '@exceptionless/fetchclient';
     import { error } from '@sveltejs/kit';
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
     import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
-    import { ModeWatcher } from 'mode-watcher';
 
     import '../app.css';
+
+    import { ModeWatcher } from 'mode-watcher';
+
     import { routes } from './routes.svelte';
 
     interface Props {
@@ -63,6 +65,17 @@
     const queryClient = new QueryClient({
         defaultOptions: {
             queries: {
+                retry: (failureCount, error) => {
+                    if (failureCount > 2) {
+                        return false;
+                    }
+
+                    if (error instanceof ProblemDetails) {
+                        return !error.status || error.status >= 500;
+                    }
+
+                    return true;
+                },
                 staleTime: 5 * 60 * 1000
             }
         }
