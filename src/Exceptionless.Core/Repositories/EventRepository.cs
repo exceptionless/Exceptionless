@@ -1,10 +1,15 @@
-﻿using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Repositories.Options;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.DateTimeExtensions;
 using FluentValidation;
+using Foundatio.Parsers.LuceneQueries.Visitors;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.CustomFields;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Options;
 using Nest;
 
 namespace Exceptionless.Core.Repositories;
@@ -18,11 +23,12 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
     {
         _timeProvider = configuration.TimeProvider;
 
+        AutoCreateCustomFields = true;
+
         DisableCache(); // NOTE: If cache is ever enabled, then fast paths for patching/deleting with scripts will be super slow!
         BatchNotifications = true;
         DefaultPipeline = "events-pipeline";
 
-        AddDefaultExclude(e => e.Idx);
         // copy to fields
         AddDefaultExclude(EventIndex.Alias.IpAddress);
         AddDefaultExclude(EventIndex.Alias.OperatingSystem);
@@ -193,5 +199,73 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
             throw new ArgumentOutOfRangeException(nameof(stackIds));
 
         return RemoveAllAsync(q => q.Stack(stackIds));
+    }
+
+    protected override string? GetTenantKey(IRepositoryQuery query)
+    {
+        var organizations = query.GetOrganizations();
+        if (organizations.Count != 1)
+            return null;
+
+        return organizations.Single();
+    }
+
+    protected override async Task<CustomFieldDefinition?> HandleUnmappedCustomField(PersistentEvent document, string name, object value, IDictionary<string, CustomFieldDefinition> existingFields)
+    {
+        if (!AutoCreateCustomFields)
+            return null;
+
+        if (name.StartsWith('@'))
+            return null;
+
+        var tenantKey = GetDocumentTenantKey(document);
+        if (String.IsNullOrEmpty(tenantKey))
+            return null;
+
+        string fieldType = GetTermType(value);
+        if (fieldType == String.Empty)
+            return null;
+
+        return await ElasticIndex.Configuration.CustomFieldDefinitionRepository.AddFieldAsync(EntityTypeName, GetDocumentTenantKey(document), "data." + name, fieldType);
+    }
+
+    private static string GetTermType(object term)
+    {
+        if (term is string stringTerm)
+        {
+            if (Boolean.TryParse(stringTerm, out var _))
+                return BooleanFieldType.IndexType;
+
+            if (DateTime.TryParse(stringTerm, out var _))
+                return DateFieldType.IndexType;
+
+            return StringFieldType.IndexType;
+        }
+        else if (term is Int32)
+        {
+            return IntegerFieldType.IndexType;
+        }
+        else if (term is Int64)
+        {
+            return LongFieldType.IndexType;
+        }
+        else if (term is Double)
+        {
+            return DoubleFieldType.IndexType;
+        }
+        else if (term is float)
+        {
+            return FloatFieldType.IndexType;
+        }
+        else if (term is bool)
+        {
+            return BooleanFieldType.IndexType;
+        }
+        else if (term is DateTime or DateTimeOffset or DateOnly)
+        {
+            return DateFieldType.IndexType;
+        }
+
+        return String.Empty;
     }
 }

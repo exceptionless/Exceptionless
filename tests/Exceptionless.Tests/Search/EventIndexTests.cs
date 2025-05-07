@@ -1,6 +1,7 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
@@ -446,6 +447,6 @@ public sealed class EventIndexTests : IntegrationTestsBase
         var result = await _validator.ValidateQueryAsync(filter);
         Assert.True(result.IsValid);
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
-        return await _repository.FindAsync(q => q.FilterExpression(filter));
+        return await _repository.FindAsync(q => q.Organization(SampleDataService.TEST_ORG_ID).FilterExpression(filter));
     }
 }
