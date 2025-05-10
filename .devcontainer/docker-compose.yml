@@ -22,7 +22,7 @@ services:
     # (Adding the "ports" property to this file will not forward from a Codespace.)
 
   elasticsearch:
-    image: exceptionless/elasticsearch:8.17.4
+    image: exceptionless/elasticsearch:8.18.1
     environment:
       node.name: elasticsearch
       cluster.name: exceptionless
@@ -38,14 +38,14 @@ services:
   kibana:
     depends_on:
       - elasticsearch
-    image: docker.elastic.co/kibana/kibana:8.17.4
+    image: docker.elastic.co/kibana/kibana:8.18.1
     environment:
       xpack.security.enabled: "false"
     ports:
       - 5601:5601
 
   redis:
-    image: redis:7.2-alpine
+    image: redis:7.4-alpine
     ports:
       - 6379:6379
 
