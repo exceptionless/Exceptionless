@@ -74,7 +74,7 @@
         "@tanstack/svelte-query-devtools": "https://pkg.pr.new/@tanstack/svelte-query-devtools@8c9ce9",
         "@tanstack/svelte-table": "^9.0.0-alpha.10",
         "@typeschema/class-validator": "^0.3.0",
-        "bits-ui": "^1.4.7",
+        "bits-ui": "^1.4.8",
         "class-validator": "^0.14.2",
         "clsx": "^2.1.1",
         "dompurify": "^3.2.5",
