@@ -88,7 +88,7 @@
         "svelte-sonner": "^0.3.28",
         "svelte-time": "^2.0.1",
         "sveltekit-superforms": "^2.25.0",
-        "tailwind-merge": "^3.2.0",
+        "tailwind-merge": "^3.3.0",
         "tailwind-variants": "^1.0.0",
         "tailwindcss": "^4.1.6",
         "throttle-debounce": "^5.0.2"
