@@ -27,7 +27,8 @@
     setRequestOptions({
         errorCallback: (response) => {
             throw response.problem ?? response;
-        }
+        },
+        timeout: 5000
     });
     setAccessTokenFunc(() => accessToken.current);
 
@@ -43,7 +44,7 @@
             throw error(404, 'Not found');
         }
 
-        if ((status === 0 || status === 503) && !ctx.options.expectedStatusCodes?.includes(status)) {
+        if (([0, 408].includes(status) || status >= 500) && !ctx.options.expectedStatusCodes?.includes(status)) {
             const url = page.url;
             if (url.pathname.startsWith('/next/status')) {
                 return;
@@ -71,7 +72,7 @@
                     }
 
                     if (error instanceof ProblemDetails) {
-                        return !error.status || error.status >= 500;
+                        return !!error.status && error.status < 500;
                     }
 
                     return true;

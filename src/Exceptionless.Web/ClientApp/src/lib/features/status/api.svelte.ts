@@ -34,7 +34,8 @@ export function getHealthQuery() {
             return response.data! as string;
         },
         queryKey: queryKeys.health,
-        retry: false,
+        retry: true,
+        retryDelay: 30 * 1000,
         staleTime: 30 * 1000
     }));
 }
