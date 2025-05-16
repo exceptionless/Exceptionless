@@ -24,9 +24,9 @@ using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
+using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
-using Unchase.Swashbuckle.AspNetCore.Extensions.Extensions;
 
 namespace Exceptionless.Web;
 
@@ -95,78 +95,7 @@ public class Startup
             r.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
         });
 
-        services.AddSwaggerGen(c =>
-        {
-            c.SwaggerDoc("v2", new OpenApiInfo
-            {
-                Title = "Exceptionless API",
-                Version = "v2",
-                TermsOfService = new Uri("https://exceptionless.com/terms/"),
-                Contact = new OpenApiContact
-                {
-                    Name = "Exceptionless",
-                    Email = String.Empty,
-                    Url = new Uri("https://github.com/exceptionless/Exceptionless")
-                },
-                License = new OpenApiLicense
-                {
-                    Name = "Apache License 2.0",
-                    Url = new Uri("https://github.com/exceptionless/Exceptionless/blob/main/LICENSE.txt")
-                }
-            });
-
-            c.AddSecurityDefinition("Basic", new OpenApiSecurityScheme
-            {
-                Description = "Basic HTTP Authentication",
-                Scheme = "basic",
-                Type = SecuritySchemeType.Http
-            });
-            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-            {
-                Description = "Authorization token. Example: \"Bearer {apikey}\"",
-                Scheme = "bearer",
-                Type = SecuritySchemeType.Http
-            });
-            c.AddSecurityDefinition("Token", new OpenApiSecurityScheme
-            {
-                Description = "Authorization token. Example: \"Bearer {apikey}\"",
-                Name = "access_token",
-                In = ParameterLocation.Query,
-                Type = SecuritySchemeType.ApiKey
-            });
-
-            c.AddSecurityRequirement(new OpenApiSecurityRequirement {
-                    {
-                        new OpenApiSecurityScheme {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Basic" }
-                        },
-                        Array.Empty<string>()
-                    },
-                    {
-                        new OpenApiSecurityScheme {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-                        },
-                        Array.Empty<string>()
-                    },
-                    {
-                        new OpenApiSecurityScheme {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Token" }
-                        },
-                        Array.Empty<string>()
-                    }
-                });
-
-            string xmlDocPath = Path.Combine(AppContext.BaseDirectory, "Exceptionless.Web.xml");
-            if (File.Exists(xmlDocPath))
-                c.IncludeXmlComments(xmlDocPath);
-
-            c.IgnoreObsoleteActions();
-            c.OperationFilter<RequestBodyOperationFilter>();
-
-            c.AddEnumsWithValuesFixFilters();
-            c.SupportNonNullableReferenceTypes();
-        });
-        services.AddSwaggerGenNewtonsoftSupport();
+        services.AddOpenApi();
 
         var appOptions = AppOptions.ReadFromConfiguration(Configuration);
         Bootstrapper.RegisterServices(services, appOptions, Log.Logger.ToLoggerFactory());
@@ -353,14 +282,6 @@ public class Startup
         // Reject event posts in organizations over their max event limits.
         app.UseMiddleware<OverageMiddleware>();
 
-        app.UseSwagger(c => c.RouteTemplate = "docs/{documentName}/swagger.json");
-        app.UseSwaggerUI(s =>
-        {
-            s.RoutePrefix = "docs";
-            s.SwaggerEndpoint("/docs/v2/swagger.json", "Exceptionless API");
-            s.InjectStylesheet("/docs.css");
-        });
-
         if (options.EnableWebSockets)
         {
             app.UseWebSockets();
@@ -369,6 +290,27 @@ public class Startup
 
         app.UseEndpoints(endpoints =>
         {
+            endpoints.MapOpenApi();
+            endpoints.MapScalarApiReference(o =>
+            {
+                o.WithTitle("Exceptionless API")
+                    .WithTheme(ScalarTheme.Default)
+                    .AddHttpAuthentication("BasicAuth", auth =>
+                    {
+                        auth.Username = "your-username";
+                        auth.Password = "your-password";
+                    })
+                    .AddHttpAuthentication("BearerAuth", auth =>
+                    {
+                        auth.Token = "apikey";
+                    })
+                    .AddApiKeyAuthentication("ApiKey", apiKey =>
+                    {
+                        apiKey.Value = "access_token";
+                    })
+                    .AddPreferredSecuritySchemes("BearerAuth");
+            });
+
             endpoints.MapControllers();
             endpoints.MapFallback("{**slug:nonfile}", CreateRequestDelegate(endpoints, "/index.html"));
         });
