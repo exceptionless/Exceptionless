@@ -45,7 +45,7 @@
         "@testing-library/jest-dom": "^6.6.3",
         "@testing-library/svelte": "^5.2.7",
         "@types/eslint": "^9.6.1",
-        "@types/node": "^22.15.18",
+        "@types/node": "^22.15.19",
         "@types/throttle-debounce": "^5.0.2",
         "cross-env": "^7.0.3",
         "eslint": "^9.27.0",
