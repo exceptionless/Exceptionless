@@ -215,7 +215,7 @@
 
 <Card.Root
     ><Card.Header>
-        <Card.Title class="text-2xl" level={2}>Event Stream</Card.Title>
+        <Card.Title class="text-2xl">Event Stream</Card.Title>
     </Card.Header>
     <Card.Content>
         <DataTable.Root>

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import * as Tooltip from "$comp/ui/tooltip/index.js";
-	import { cn } from "$lib/utils.js";
-	import type { WithElementRef } from "bits-ui";
+	import { cn, type WithElementRef } from "$lib/utils.js";
 	import type { HTMLAttributes } from "svelte/elements";
 	import {
 		SIDEBAR_COOKIE_MAX_AGE,
@@ -40,6 +39,7 @@
 
 <Tooltip.Provider delayDuration={0}>
 	<div
+		data-slot="sidebar-wrapper"
 		style="--sidebar-width: {SIDEBAR_WIDTH}; --sidebar-width-icon: {SIDEBAR_WIDTH_ICON}; {style}"
 		class={cn(
 			"group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full",

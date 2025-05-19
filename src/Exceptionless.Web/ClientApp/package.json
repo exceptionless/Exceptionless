@@ -91,7 +91,8 @@
         "tailwind-merge": "^3.3.0",
         "tailwind-variants": "^1.0.0",
         "tailwindcss": "^4.1.7",
-        "throttle-debounce": "^5.0.2"
+        "throttle-debounce": "^5.0.2",
+        "tw-animate-css": "^1.3.0"
     },
     "type": "module"
 }

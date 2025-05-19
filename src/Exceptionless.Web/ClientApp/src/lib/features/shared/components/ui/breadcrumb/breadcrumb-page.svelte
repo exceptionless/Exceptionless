@@ -1,7 +1,6 @@
 <script lang="ts">
-	import type { WithElementRef } from "bits-ui";
 	import type { HTMLAttributes } from "svelte/elements";
-	import { cn } from "$lib/utils.js";
+	import { cn, type WithElementRef } from "$lib/utils.js";
 
 	let {
 		ref = $bindable(null),
@@ -13,6 +12,7 @@
 
 <span
 	bind:this={ref}
+	data-slot="breadcrumb-page"
 	role="link"
 	aria-disabled="true"
 	aria-current="page"

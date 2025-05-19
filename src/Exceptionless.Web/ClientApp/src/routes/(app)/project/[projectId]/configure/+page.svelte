@@ -225,7 +225,7 @@ public partial class App : Application {
                 <Select.Content>
                     {#each Object.entries(projectTypesGroupedByPlatform) as [platform, types = []], index (platform)}
                         <Select.Group>
-                            <Select.GroupHeading class="text-primary">{platform}</Select.GroupHeading>
+                            <Select.Label class="text-primary">{platform}</Select.Label>
                             {#each types as type (type.id)}
                                 <Select.Item value={type.id}>
                                     {type.label}

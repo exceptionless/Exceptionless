@@ -6,11 +6,11 @@ import Header from "./dialog-header.svelte";
 import Overlay from "./dialog-overlay.svelte";
 import Content from "./dialog-content.svelte";
 import Description from "./dialog-description.svelte";
+import Trigger from "./dialog-trigger.svelte";
+import Close from "./dialog-close.svelte";
 
-const Root: typeof DialogPrimitive.Root = DialogPrimitive.Root;
-const Trigger: typeof DialogPrimitive.Trigger = DialogPrimitive.Trigger;
-const Close: typeof DialogPrimitive.Close = DialogPrimitive.Close;
-const Portal: typeof DialogPrimitive.Portal = DialogPrimitive.Portal;
+const Root = DialogPrimitive.Root;
+const Portal = DialogPrimitive.Portal;
 
 export {
 	Root,

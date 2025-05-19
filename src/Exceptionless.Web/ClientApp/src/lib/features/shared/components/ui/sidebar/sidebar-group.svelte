@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { HTMLAttributes } from "svelte/elements";
-	import type { WithElementRef } from "bits-ui";
-	import { cn } from "$lib/utils.js";
+	import { cn, type WithElementRef } from "$lib/utils.js";
 
 	let {
 		ref = $bindable(null),
@@ -13,6 +12,7 @@
 
 <div
 	bind:this={ref}
+	data-slot="sidebar-group"
 	data-sidebar="group"
 	class={cn("relative flex w-full min-w-0 flex-col p-2", className)}
 	{...restProps}

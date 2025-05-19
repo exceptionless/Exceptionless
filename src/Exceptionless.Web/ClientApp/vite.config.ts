@@ -10,7 +10,7 @@ export default defineConfig({
         sourcemap: true,
         target: 'esnext'
     },
-    plugins: [sveltekit(), tailwindcss()],
+    plugins: [tailwindcss(), sveltekit()],
     server: {
         hmr: aspNetConfig.hmr,
         host: true,

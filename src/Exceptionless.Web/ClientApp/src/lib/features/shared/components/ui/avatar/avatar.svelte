@@ -3,16 +3,15 @@
 	import { cn } from "$lib/utils.js";
 
 	let {
-		class: className,
 		ref = $bindable(null),
-		loadingStatus = $bindable("loading"),
+		class: className,
 		...restProps
 	}: AvatarPrimitive.RootProps = $props();
 </script>
 
 <AvatarPrimitive.Root
-	bind:loadingStatus
 	bind:ref
-	class={cn("relative flex size-10 shrink-0 overflow-hidden rounded-full", className)}
+	data-slot="avatar"
+	class={cn("relative flex size-8 shrink-0 overflow-hidden rounded-full", className)}
 	{...restProps}
 />

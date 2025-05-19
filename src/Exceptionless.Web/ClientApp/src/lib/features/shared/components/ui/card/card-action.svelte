@@ -1,7 +1,6 @@
 <script lang="ts">
-	import type { WithElementRef } from "bits-ui";
+	import { cn, type WithElementRef } from "$lib/utils.js";
 	import type { HTMLAttributes } from "svelte/elements";
-	import { cn } from "$lib/utils.js";
 
 	let {
 		ref = $bindable(null),
@@ -13,7 +12,8 @@
 
 <div
 	bind:this={ref}
-	class={cn("absolute right-6 top-6 flex items-center justify-end", className)}
+	data-slot="card-action"
+	class={cn("col-start-2 row-span-2 row-start-1 self-start justify-self-end", className)}
 	{...restProps}
 >
 	{@render children?.()}

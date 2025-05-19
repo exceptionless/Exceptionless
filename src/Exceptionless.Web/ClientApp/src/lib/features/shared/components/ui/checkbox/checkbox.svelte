@@ -1,35 +1,39 @@
 <script lang="ts">
-	import { Checkbox as CheckboxPrimitive, type WithoutChildrenOrChild } from "bits-ui";
-	import Check from "@lucide/svelte/icons/check";
-	import Minus from "@lucide/svelte/icons/minus";
-	import { cn } from "$lib/utils.js";
+	import { Checkbox as CheckboxPrimitive } from "bits-ui";
+	import CheckIcon from "@lucide/svelte/icons/check";
+	import MinusIcon from "@lucide/svelte/icons/minus";
+	import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
 
 	let {
 		ref = $bindable(null),
-		class: className,
 		checked = $bindable(false),
 		indeterminate = $bindable(false),
+		class: className,
 		...restProps
 	}: WithoutChildrenOrChild<CheckboxPrimitive.RootProps> = $props();
 </script>
 
 <CheckboxPrimitive.Root
+	bind:ref
+	data-slot="checkbox"
 	class={cn(
-		"border-primary focus-visible:ring-ring data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground peer box-content size-4 shrink-0 rounded-sm border shadow-sm focus-visible:outline-hidden focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50 data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-50",
+		"border-input dark:bg-input/30 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground dark:data-[state=checked]:bg-primary data-[state=checked]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive shadow-xs peer size-4 shrink-0 rounded-[4px] border outline-none transition-shadow focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
 		className
 	)}
 	bind:checked
-	bind:ref
 	bind:indeterminate
 	{...restProps}
 >
 	{#snippet children({ checked, indeterminate })}
-		<span class="flex items-center justify-center text-current">
-			{#if indeterminate}
-				<Minus class="size-4" />
-			{:else}
-				<Check class={cn("size-4", !checked && "text-transparent")} />
+		<div
+			data-slot="checkbox-indicator"
+			class="flex items-center justify-center text-current transition-none"
+		>
+			{#if checked}
+				<CheckIcon class="size-3.5" />
+			{:else if indeterminate}
+				<MinusIcon class="size-3.5" />
 			{/if}
-		</span>
+		</div>
 	{/snippet}
 </CheckboxPrimitive.Root>
