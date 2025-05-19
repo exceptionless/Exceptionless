@@ -39,7 +39,7 @@
                     <span class="block truncate">{projectQuery.data.name}</span>
                 </div>
             {/if}
-            <span class="flex-shrink-0">Settings</span></Card.Title
+            <span class="shrink-0">Settings</span></Card.Title
         >
         <Card.Description>Manage your project settings and integrations.</Card.Description>
         <Card.Action>

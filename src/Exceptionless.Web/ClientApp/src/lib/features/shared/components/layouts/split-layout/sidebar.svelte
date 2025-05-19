@@ -16,6 +16,6 @@
     };
 </script>
 
-<aside class={['w-full flex-shrink-0', widthClasses[width], className]} {...props}>
+<aside class={['w-full shrink-0', widthClasses[width], className]} {...props}>
     {@render children()}
 </aside>

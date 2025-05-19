@@ -208,7 +208,7 @@
                 <Muted>The following web hooks will be called for this project.</Muted>
             </div>
 
-            <Button size="icon" onclick={() => (showAddWebhookDialog = true)} title="Add Webhook" class="flex-shrink-0">
+            <Button size="icon" onclick={() => (showAddWebhookDialog = true)} title="Add Webhook" class="shrink-0">
                 <Plus class="size-4" aria-hidden="true" />
                 <span class="sr-only">Add Webhook</span>
             </Button>
