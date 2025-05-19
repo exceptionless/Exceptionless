@@ -82,7 +82,7 @@
             >
         </div>
 
-        <Button size="icon" onclick={() => (showAddProjectConfigDialog = true)} title="Add Configuration Value" class="flex-shrink-0">
+        <Button size="icon" onclick={() => (showAddProjectConfigDialog = true)} title="Add Configuration Value" class="shrink-0">
             <Plus class="size-4" aria-hidden="true" />
             <span class="sr-only">Add Configuration Value</span>
         </Button>
