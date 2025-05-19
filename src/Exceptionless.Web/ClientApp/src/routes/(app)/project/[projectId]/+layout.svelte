@@ -33,7 +33,7 @@
 
 <Card.Root>
     <Card.Header>
-        <Card.Title class="flex items-center gap-1 text-2xl" level={2}
+        <Card.Title class="flex items-center gap-1 text-2xl"
             >{#if projectQuery.isSuccess}
                 <div class="max-w-[70%] overflow-hidden" title={projectQuery.data.name}>
                     <span class="block truncate">{projectQuery.data.name}</span>

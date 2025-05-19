@@ -1,11 +1,13 @@
 <script lang="ts">
-    import type { HTMLInputAttributes } from 'svelte/elements';
+    import type { HTMLInputAttributes, HTMLInputTypeAttribute } from 'svelte/elements';
 
     import { Input } from '$comp/ui/input';
-    import { cn } from '$lib/utils';
+    import { cn, type WithElementRef } from '$lib/utils.js';
     import Search from '@lucide/svelte/icons/search';
 
-    type Props = HTMLInputAttributes;
+    type InputType = Exclude<HTMLInputTypeAttribute, 'file'>;
+
+    type Props = WithElementRef<Omit<HTMLInputAttributes, 'type'> & ({ files?: FileList; type: 'file' } | { files?: undefined; type?: InputType })>;
 
     let { class: className, id = 'search', placeholder = 'Search...', value = $bindable(), ...props }: Props = $props();
 </script>

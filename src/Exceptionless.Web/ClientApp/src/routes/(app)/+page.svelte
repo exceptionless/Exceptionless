@@ -199,7 +199,7 @@
 <div class="flex flex-col space-y-4">
     <Card.Root>
         <Card.Header>
-            <Card.Title class="text-2xl" level={2}
+            <Card.Title class="text-2xl"
                 >Events
                 <AutomaticRefreshIndicatorButton {canRefresh} refresh={loadData} /></Card.Title
             ></Card.Header

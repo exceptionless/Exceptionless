@@ -55,7 +55,7 @@
 <div class="p-6">
     <Card.Root>
         <Card.Header>
-            <Card.Title class="text-2xl" level={2}>Add Project</Card.Title>
+            <Card.Title class="text-2xl">Add Project</Card.Title>
             <Card.Description>Add a new project to start tracking errors and events.</Card.Description>
         </Card.Header>
 

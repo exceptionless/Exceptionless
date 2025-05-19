@@ -11,7 +11,7 @@ import Separator from "./command-separator.svelte";
 import Shortcut from "./command-shortcut.svelte";
 import LinkItem from "./command-link-item.svelte";
 
-const Loading: typeof CommandPrimitive.Loading = CommandPrimitive.Loading;
+const Loading = CommandPrimitive.Loading;
 
 export {
 	Root,

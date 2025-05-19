@@ -1,7 +1,7 @@
 <script lang="ts">
+	import type { ComponentProps } from "svelte";
 	import { Input } from "$comp/ui/input/index.js";
 	import { cn } from "$lib/utils.js";
-	import type { ComponentProps } from "svelte";
 
 	let {
 		ref = $bindable(null),
@@ -14,10 +14,8 @@
 <Input
 	bind:ref
 	bind:value
+	data-slot="sidebar-input"
 	data-sidebar="input"
-	class={cn(
-		"bg-background focus-visible:ring-sidebar-ring h-8 w-full shadow-none focus-visible:ring-2",
-		className
-	)}
+	class={cn("bg-background h-8 w-full shadow-none", className)}
 	{...restProps}
 />

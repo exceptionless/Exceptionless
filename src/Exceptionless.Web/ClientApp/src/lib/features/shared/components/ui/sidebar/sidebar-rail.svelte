@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { cn } from "$lib/utils.js";
-	import type { WithElementRef } from "bits-ui";
+	import { cn, type WithElementRef } from "$lib/utils.js";
 	import type { HTMLAttributes } from "svelte/elements";
 	import { useSidebar } from "./context.svelte.js";
 
@@ -17,9 +16,10 @@
 <button
 	bind:this={ref}
 	data-sidebar="rail"
+	data-slot="sidebar-rail"
 	aria-label="Toggle Sidebar"
 	tabIndex={-1}
-	onclick={() => sidebar.toggle()}
+	onclick={sidebar.toggle}
 	title="Toggle Sidebar"
 	class={cn(
 		"hover:after:bg-sidebar-border absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:flex",

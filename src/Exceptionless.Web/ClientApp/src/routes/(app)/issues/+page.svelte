@@ -210,7 +210,7 @@
 <div class="flex flex-col space-y-4">
     <Card.Root
         ><Card.Header>
-            <Card.Title class="text-2xl" level={2}>Issues <AutomaticRefreshIndicatorButton {canRefresh} refresh={loadData} /></Card.Title>
+            <Card.Title class="text-2xl">Issues <AutomaticRefreshIndicatorButton {canRefresh} refresh={loadData} /></Card.Title>
         </Card.Header><Card.Content class="pt-4">
             <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
                 {#snippet toolbarChildren()}

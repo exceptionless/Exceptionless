@@ -1,6 +1,5 @@
 <script lang="ts" module>
 	import { tv, type VariantProps } from "tailwind-variants";
-
 	export const sheetVariants = tv({
 		base: "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 gap-4 p-6 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
 		variants: {
@@ -20,17 +19,17 @@
 </script>
 
 <script lang="ts">
-	import { Dialog as SheetPrimitive, type WithoutChildrenOrChild } from "bits-ui";
-	import X from "@lucide/svelte/icons/x";
+	import { Dialog as SheetPrimitive } from "bits-ui";
+	import XIcon from "@lucide/svelte/icons/x";
 	import type { Snippet } from "svelte";
 	import SheetOverlay from "./sheet-overlay.svelte";
-	import { cn } from "$lib/utils.js";
+	import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
 
 	let {
 		ref = $bindable(null),
 		class: className,
-		portalProps,
 		side = "right",
+		portalProps,
 		children,
 		...restProps
 	}: WithoutChildrenOrChild<SheetPrimitive.ContentProps> & {
@@ -42,12 +41,17 @@
 
 <SheetPrimitive.Portal {...portalProps}>
 	<SheetOverlay />
-	<SheetPrimitive.Content bind:ref class={cn(sheetVariants({ side }), className)} {...restProps}>
+	<SheetPrimitive.Content
+		bind:ref
+		data-slot="sheet-content"
+		class={cn(sheetVariants({ side }), className)}
+		{...restProps}
+	>
 		{@render children?.()}
 		<SheetPrimitive.Close
-			class="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none"
+			class="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary rounded-xs focus:outline-hidden absolute right-4 top-4 opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none"
 		>
-			<X class="size-4" />
+			<XIcon class="size-4" />
 			<span class="sr-only">Close</span>
 		</SheetPrimitive.Close>
 	</SheetPrimitive.Content>

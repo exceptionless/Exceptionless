@@ -10,7 +10,7 @@
 
 <Card.Root>
     <Card.Header>
-        <Card.Title class="text-2xl" level={2}>{title}</Card.Title>
+        <Card.Title class="text-2xl">{title}</Card.Title>
     </Card.Header>
     <Card.Content>
         <div class="w-[200px] border">

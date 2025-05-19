@@ -3,14 +3,15 @@
 	import { cn } from "$lib/utils.js";
 
 	let {
-		class: className,
 		ref = $bindable(null),
+		class: className,
 		...restProps
 	}: AvatarPrimitive.FallbackProps = $props();
 </script>
 
 <AvatarPrimitive.Fallback
 	bind:ref
-	class={cn("bg-muted flex h-full w-full items-center justify-center rounded-full", className)}
+	data-slot="avatar-fallback"
+	class={cn("bg-muted flex size-full items-center justify-center rounded-full", className)}
 	{...restProps}
 />

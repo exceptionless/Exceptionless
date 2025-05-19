@@ -22,7 +22,7 @@
 
 <Card.Root>
     <Card.Header>
-        <Card.Title class="text-2xl" level={2}>Settings</Card.Title>
+        <Card.Title class="text-2xl">Settings</Card.Title>
         <Card.Description>Manage your account settings and set e-mail preferences.</Card.Description>
     </Card.Header>
     <Separator class="mx-6 my-6 w-auto" />

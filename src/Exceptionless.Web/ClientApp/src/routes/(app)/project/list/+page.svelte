@@ -76,7 +76,7 @@
 <div class="flex flex-col space-y-4">
     <Card.Root>
         <Card.Header>
-            <Card.Title class="text-2xl" level={2}>My Projects</Card.Title>
+            <Card.Title class="text-2xl">My Projects</Card.Title>
             <Card.Description>View and manage your projects. Click on a project to view its details.</Card.Description>
             <Card.Action>
                 <Button size="icon" onclick={addProject} title="Add Project">
