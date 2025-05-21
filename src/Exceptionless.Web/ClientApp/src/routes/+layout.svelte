@@ -44,7 +44,7 @@
             throw error(404, 'Not found');
         }
 
-        if (([0, 408].includes(status) || status >= 500) && !ctx.options.expectedStatusCodes?.includes(status)) {
+        if ([0, 408, 503].includes(status) && !ctx.options.expectedStatusCodes?.includes(status)) {
             const url = page.url;
             if (url.pathname.startsWith('/next/status')) {
                 return;
