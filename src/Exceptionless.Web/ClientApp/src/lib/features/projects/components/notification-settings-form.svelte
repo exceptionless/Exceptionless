@@ -57,7 +57,7 @@
     });
 </script>
 
-{#if settings}
+{#if $formData}
     <form method="POST" use:enhance class="space-y-2">
         <ErrorMessage message={$message} />
 
