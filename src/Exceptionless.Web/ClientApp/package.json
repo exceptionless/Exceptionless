@@ -85,7 +85,7 @@
         "pretty-ms": "^9.2.0",
         "runed": "^0.28.0",
         "shiki": "^3.4.2",
-        "svelte-sonner": "^1.0.1",
+        "svelte-sonner": "^1.0.3",
         "svelte-time": "^2.0.1",
         "sveltekit-superforms": "^2.25.0",
         "tailwind-merge": "^3.3.0",
