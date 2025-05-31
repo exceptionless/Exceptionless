@@ -85,7 +85,7 @@
                 </Button>
             </Card.Action>
         </Card.Header>
-        <Card.Content class="pt-4">
+        <Card.Content>
             <ProjectsDataTable bind:limit={projectsQueryParameters.limit!} isLoading={projectsQuery.isLoading} {rowClick} {table}>
                 {#snippet toolbarChildren()}
                     <div class="min-w-fit flex-1">
