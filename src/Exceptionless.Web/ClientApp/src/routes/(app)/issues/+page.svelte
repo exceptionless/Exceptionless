@@ -211,7 +211,7 @@
     <Card.Root
         ><Card.Header>
             <Card.Title class="text-2xl">Issues <AutomaticRefreshIndicatorButton {canRefresh} refresh={loadData} /></Card.Title>
-        </Card.Header><Card.Content class="pt-4">
+        </Card.Header><Card.Content>
             <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
                 {#snippet toolbarChildren()}
                     <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>

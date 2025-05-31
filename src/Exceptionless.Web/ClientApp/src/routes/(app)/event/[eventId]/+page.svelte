@@ -44,7 +44,7 @@
         ><Card.Header>
             <Card.Title class="text-2xl">Event Details</Card.Title></Card.Header
         >
-        <Card.Content class="pt-4">
+        <Card.Content>
             <EventsOverview {filterChanged} id={page.params.eventId || ''} {handleError}></EventsOverview>
         </Card.Content>
     </Card.Root>
