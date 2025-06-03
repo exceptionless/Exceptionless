@@ -1,6 +1,6 @@
 ﻿---
 ConnectionStrings:
-  #  Redis: server="localhost,abortConnect=false"
+  #  Redis: localhost,abortConnect=false
   #  Elasticsearch: server=https://elastic:elastic@localhost:9200
   #  Cache: provider=redis;
   #  MessageBus: provider=redis;
