@@ -16,7 +16,7 @@ services:
       #EX_ConnectionStrings__Email: smtps://user:password@smtp.host.com:587
       EX_ConnectionStrings__MessageBus: provider=redis
       EX_ConnectionStrings__Queue: provider=redis
-      EX_ConnectionStrings__Redis: server=redis,abortConnect=false
+      EX_ConnectionStrings__Redis: redis,abortConnect=false
       #ASPNETCORE_URLS: http://+;https://+
       #ASPNETCORE_HTTPS_PORT: 5201
       #ASPNETCORE_Kestrel__Certificates__Default__Password: password
@@ -44,7 +44,7 @@ services:
       EX_ConnectionStrings__Email: smtp://localhost:1025
       EX_ConnectionStrings__MessageBus: provider=redis
       EX_ConnectionStrings__Queue: provider=redis
-      EX_ConnectionStrings__Redis: server=redis,abortConnect=false
+      EX_ConnectionStrings__Redis: redis,abortConnect=false
       EX_ConnectionStrings__Storage: provider=folder;path=/app/storage
     volumes:
       - appdata:/app/storage
