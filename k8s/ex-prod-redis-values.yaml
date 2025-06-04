@@ -3,7 +3,7 @@ global:
 
 # https://hub.docker.com/r/bitnami/redis/tags
 image:
-  tag: 7.2.3-debian-11-r1
+  tag: 8.0.2-debian-12-r3
 
 auth:
   enabled: true
