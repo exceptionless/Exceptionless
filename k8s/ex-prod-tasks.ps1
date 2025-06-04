@@ -123,6 +123,7 @@ helm upgrade `
     --set "config.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret" `
     --reuse-values ex-prod --namespace ex-prod .\exceptionless
 
+# NOTE any commas in helm values need to be escaped with a backslash ie server,password=pass need to be server\,password=pass
 helm upgrade --set "redis.connectionString=$REDIS_CONNECTIONSTRING" --reuse-values ex-prod --namespace ex-prod .\exceptionless
 
 # stop the entire app
