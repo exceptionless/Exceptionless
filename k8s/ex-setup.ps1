@@ -143,11 +143,12 @@ kubectl apply -f namespace-default-limits.yaml
 
 # install redis server
 # https://github.com/bitnami/charts/blob/main/bitnami/redis/README.md
+# redis sentinel connection string example: server=some-redis:26379\,password=mypass\,abortConnect=false\,serviceName=mySentinelService
 helm repo add bitnami https://charts.bitnami.com/bitnami
-helm install ex-$ENV-redis bitnami/redis --values ex-$ENV-redis-values.yaml --namespace ex-$ENV
+helm install ex-$ENV-redis bitnami/redis --values ex-$ENV-redis-values.yaml --namespace ex-$ENV --dry-run
 
 # upgrade redis server
-helm upgrade ex-$ENV-redis bitnami/redis --reset-values --values ex-$ENV-redis-values.yaml --namespace ex-$ENV
+helm upgrade ex-$ENV-redis bitnami/redis --reset-values --values ex-$ENV-redis-values.yaml --namespace ex-$ENV --set global.redis.password=$REDIS_PASSWORD --dry-run
 
 # install signoz otel collector
 helm repo add signoz https://charts.signoz.io

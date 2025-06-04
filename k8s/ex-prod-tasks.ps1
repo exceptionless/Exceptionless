@@ -124,6 +124,7 @@ helm upgrade `
     --reuse-values ex-prod --namespace ex-prod .\exceptionless
 
 # NOTE any commas in helm values need to be escaped with a backslash ie server,password=pass need to be server\,password=pass
+# redis sentinel connection string example: server=some-redis:26379\,password=mypass\,abortConnect=false\,serviceName=mySentinelService
 helm upgrade --set "redis.connectionString=$REDIS_CONNECTIONSTRING" --reuse-values ex-prod --namespace ex-prod .\exceptionless
 
 # stop the entire app
