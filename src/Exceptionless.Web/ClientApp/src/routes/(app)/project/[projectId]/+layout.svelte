@@ -4,6 +4,7 @@
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import { Separator } from '$comp/ui/separator';
+    import { organization } from '$features/organizations/context.svelte';
     import { getProjectQuery } from '$features/projects/api.svelte';
     import * as SplitLayout from '$features/shared/components/layouts/split-layout';
     import NotificationSettings from '@lucide/svelte/icons/mail';
@@ -26,6 +27,11 @@
     $effect(() => {
         if (projectQuery.isError) {
             toast.error(`The project "${projectId}" could not be found.`);
+            goto('/next/project/list');
+        }
+
+        if (projectQuery.isSuccess && projectQuery.data.organization_id !== organization.current) {
+            toast.error(`The project "${projectQuery.data.name}" does not belong to the current organization.`);
             goto('/next/project/list');
         }
     });

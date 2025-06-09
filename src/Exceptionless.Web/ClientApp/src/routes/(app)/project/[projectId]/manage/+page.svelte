@@ -136,11 +136,6 @@
         </Form.Field>
     </form>
 
-    <!-- <div>
-        <H4>Usage</H4>
-        <Muted>View your historical usage.</Muted>
-    </div> -->
-
     <div class="flex w-full items-center justify-between">
         <div class="flex gap-2">
             <Button variant="secondary" href="/issues?filter=project:{projectId}">
