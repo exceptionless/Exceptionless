@@ -71,6 +71,7 @@
         "@tanstack/svelte-query-devtools": "https://pkg.pr.new/@tanstack/svelte-query-devtools@8c9ce9",
         "@tanstack/svelte-table": "^9.0.0-alpha.10",
         "@types/d3-scale": "^4.0.9",
+        "@types/d3-shape": "^3.1.7",
         "@typeschema/class-validator": "^0.3.0",
         "bits-ui": "^2.5.0",
         "class-validator": "^0.14.2",

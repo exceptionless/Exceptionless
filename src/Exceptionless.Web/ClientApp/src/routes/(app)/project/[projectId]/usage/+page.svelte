@@ -2,7 +2,7 @@
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import { A, H4, Muted } from '$comp/typography';
+    import { A, H4, Muted, Small } from '$comp/typography';
     import * as Chart from '$comp/ui/chart/index';
     import { Separator } from '$comp/ui/separator';
     import { Skeleton } from '$comp/ui/skeleton';
@@ -153,10 +153,7 @@
                     {series}
                     props={{
                         area: {
-                            curve: curveNatural,
-                            'fill-opacity': 0.4,
-                            line: { class: 'stroke-1' },
-                            motion: 'tween'
+                            curve: curveNatural
                         },
                         yAxis: { format: 'metric' }
                     }}
@@ -167,7 +164,7 @@
                 </AreaChart>
             </Chart.Container>
 
-            <Muted class="text-xs">The usage data above is refreshed periodically and may not reflect current totals.</Muted>
+            <Small class="text-xs">The usage data above is refreshed periodically and may not reflect current totals.</Small>
         </div>
     {/if}
 </div>
