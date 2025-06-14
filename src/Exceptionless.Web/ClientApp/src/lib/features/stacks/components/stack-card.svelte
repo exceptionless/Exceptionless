@@ -78,13 +78,13 @@
     <Card.Root>
         <Card.Header>
             <Card.Title class="flex flex-row items-center justify-between text-lg font-semibold">
-                <span class="mb-2 flex flex-col lg:mb-0">
-                    <div class="flex items-center">
-                        <EventsFacetedFilter.StringTrigger changed={filterChanged} class="mr-2" term="stack" value={stack.id} />
-                        <span class="truncate">{stack.title}</span>
+                <div class="mb-2 flex flex-col lg:mb-0 w-0 flex-1 min-w-0">
+                    <div class="flex items-center min-w-0">
+                        <EventsFacetedFilter.StringTrigger changed={filterChanged} class="mr-2 shrink-0" term="stack" value={stack.id} />
+                        <span class="truncate block min-w-0 max-w-full" title={stack.title}>{stack.title}</span>
                     </div>
-                </span>
-                <div class="flex items-center space-x-2">
+                </div>
+                <div class="flex items-center space-x-2 shrink-0 ml-2">
                     <StackStatusDropdownMenu {stack} />
                     <StackOptionsDropdownMenu {stack} />
                 </div>
