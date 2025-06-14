@@ -253,6 +253,8 @@
                 ></Sheet.Title
             >
         </Sheet.Header>
-        <EventsOverview filterChanged={onFilterChanged} id={selectedEventId || ''} handleError={() => (selectedEventId = null)}></EventsOverview>
+        <div class="px-4">
+            <EventsOverview filterChanged={onFilterChanged} id={selectedEventId || ''} handleError={() => (selectedEventId = null)} />
+        </div>
     </Sheet.Content>
 </Sheet.Root>
