@@ -5,7 +5,7 @@
     import { useSidebar } from '$comp/ui/sidebar';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
-    import { getOrganizationQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
+    import { getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
     import { invalidateStackQueries } from '$features/stacks/api.svelte';
@@ -162,7 +162,7 @@
     const meQuery = getMeQuery();
     const gravatar = getGravatarFromCurrentUser(meQuery);
 
-    const organizationsQuery = getOrganizationQuery({});
+    const organizationsQuery = getOrganizationsQuery({});
     $effect(() => {
         if (!organizationsQuery.isSuccess) {
             return;

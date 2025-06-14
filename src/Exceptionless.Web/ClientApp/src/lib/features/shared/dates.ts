@@ -1,3 +1,19 @@
+export function formatDateLabel(value: Date): string {
+    return value.toLocaleDateString(undefined, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
+}
+
+export function formatLongDate(value: Date): string {
+    return value.toLocaleDateString(undefined, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
+}
+
 export function getDifferenceInSeconds(value: Date | string): number {
     return (new Date().getTime() - new Date(value).getTime()) / 1000;
 }
@@ -43,4 +59,8 @@ export function getSetIntervalTime(value: Date | string): number {
         default:
             return day * 1000; // update every day
     }
+}
+
+export function isSameUtcMonth(date: Date, other: Date = new Date()): boolean {
+    return date.getUTCFullYear() === other.getUTCFullYear() && date.getUTCMonth() === other.getUTCMonth();
 }

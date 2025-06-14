@@ -62,6 +62,13 @@
     --sidebar-accent-foreground: var(--accent-foreground);
     --sidebar-border: var(--border);
     --sidebar-ring: var(--ring);
+
+    --chart-1: #7bb662; /* Total (green, light) */
+    --chart-2: #56b4e9; /* Blocked (blue, light) */
+    --chart-3: #d47a00; /* Discarded – hsl(32 100% 42%) */
+    --chart-4: #ffd64d; /* Too Big  – hsl(46 100% 65%) */
+    --chart-5: #d9d9d9; /* Total in Organization (magenta, light) */
+    --chart-6: #c62828; /* material-red-700: deep red for light mode */
 }
 
 .dark {
@@ -102,6 +109,13 @@
     --sidebar-accent-foreground: var(--accent-foreground);
     --sidebar-border: var(--border);
     --sidebar-ring: var(--ring);
+
+    --chart-1: #a4d56f; /* Total (green, dark) */
+    --chart-2: #8fdbff; /* Blocked (blue, dark) */
+    --chart-3: #ff9e3d; /* Discarded – hsl(30 100% 62%) */
+    --chart-4: #ffea70; /* Too Big  – hsl(48 100% 70%) */
+    --chart-5: #5a5a5a; /* Total in Organization (magenta, dark) */
+    --chart-6: #ff5c5c; /* hsl(0 100% 66%): bright red for dark mode */
 }
 
 @theme inline {

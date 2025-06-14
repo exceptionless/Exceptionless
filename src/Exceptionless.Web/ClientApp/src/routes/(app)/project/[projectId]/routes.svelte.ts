@@ -1,4 +1,5 @@
 import { page } from '$app/state';
+import Usage from '@lucide/svelte/icons/bar-chart';
 import ClientConfig from '@lucide/svelte/icons/braces';
 import Configure from '@lucide/svelte/icons/cloud-download';
 import ApiKey from '@lucide/svelte/icons/key';
@@ -18,6 +19,12 @@ export function routes(): NavigationItem[] {
             href: `/next/project/${page.params.projectId}/manage`,
             icon: Settings,
             title: 'General'
+        },
+        {
+            group: 'Project Settings',
+            href: `/next/project/${page.params.projectId}/usage`,
+            icon: Usage,
+            title: 'Usage'
         },
         {
             group: 'Project Settings',
