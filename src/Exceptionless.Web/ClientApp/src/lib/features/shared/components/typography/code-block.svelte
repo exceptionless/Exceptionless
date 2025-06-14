@@ -26,6 +26,7 @@
     let theme = $derived(mode.current === 'light' ? 'github-light' : 'github-dark');
     const jsEngine = createJavaScriptRegexEngine();
 
+    // TODO: https://shiki.style/guide/dual-themes
     const highlighter = createHighlighterCoreSync({
         engine: jsEngine,
         langs: [csharpLanguage, javaScriptLanguage, jsonLanguage, powershellLanguage, shellScriptLanguage, xmlLanguage],

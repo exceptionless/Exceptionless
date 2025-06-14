@@ -243,6 +243,8 @@
                 >Event Details <Button href="/next/event/{eventId}" size="sm" title="Open in new window" variant="ghost"><ExternalLink /></Button></Sheet.Title
             >
         </Sheet.Header>
-        <EventsOverview filterChanged={onFilterChanged} id={eventId || ''} handleError={() => (selectedStackId = undefined)}></EventsOverview>
+        <div class="px-4">
+            <EventsOverview filterChanged={onFilterChanged} id={eventId || ''} handleError={() => (selectedStackId = undefined)} />
+        </div>
     </Sheet.Content>
 </Sheet.Root>

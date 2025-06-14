@@ -26,5 +26,5 @@ You can preview the production build with `npm run preview`.
 You can upgrade [shadcn-svelte components](https://www.shadcn-svelte.com/) by running the following command
 
 ```bash
-npx shadcn-svelte@next update
+npx shadcn-svelte@latest update
 ```
