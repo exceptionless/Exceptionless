@@ -197,36 +197,27 @@
 </script>
 
 <div class="flex flex-col space-y-4">
-    <Card.Root>
-        <Card.Header>
-            <Card.Title class="text-2xl"
-                >Events
-                <AutomaticRefreshIndicatorButton {canRefresh} refresh={loadData} /></Card.Title
-            ></Card.Header
-        >
-        <Card.Content>
-            <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
-                {#snippet toolbarChildren()}
-                    <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
-                        <OrganizationDefaultsFacetedFilterBuilder />
-                    </FacetedFilter.Root>
-                {/snippet}
-                {#snippet footerChildren()}
-                    <div class="h-9 min-w-[140px]">
-                        {#if table.getSelectedRowModel().flatRows.length}
-                            <EventsBulkActionsDropdownMenu {table} />
-                        {/if}
-                    </div>
+    <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
+        {#snippet toolbarChildren()}
+            <div class="text-lg font-medium pr-2">Events</div>
+            <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
+                <OrganizationDefaultsFacetedFilterBuilder />
+            </FacetedFilter.Root>
+        {/snippet}
+        {#snippet footerChildren()}
+            <div class="h-9 min-w-[140px]">
+                {#if table.getSelectedRowModel().flatRows.length}
+                    <EventsBulkActionsDropdownMenu {table} />
+                {/if}
+            </div>
 
-                    <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
-                    <div class="flex items-center space-x-6 lg:space-x-8">
-                        <DataTable.PageCount {table} />
-                        <DataTable.Pagination {table} />
-                    </div>
-                {/snippet}
-            </EventsDataTable>
-        </Card.Content>
-    </Card.Root>
+            <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
+            <div class="flex items-center space-x-6 lg:space-x-8">
+                <DataTable.PageCount {table} />
+                <DataTable.Pagination {table} />
+            </div>
+        {/snippet}
+    </EventsDataTable>
 </div>
 
 <Sheet.Root onOpenChange={() => (selectedEventId = null)} open={!!selectedEventId}>

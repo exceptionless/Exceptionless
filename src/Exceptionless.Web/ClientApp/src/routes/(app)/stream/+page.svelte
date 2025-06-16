@@ -213,37 +213,31 @@
     });
 </script>
 
-<Card.Root
-    ><Card.Header>
-        <Card.Title class="text-2xl">Event Stream</Card.Title>
-    </Card.Header>
-    <Card.Content>
-        <DataTable.Root>
-            <DataTable.Toolbar {table}>
-                <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
-                    <OrganizationDefaultsFacetedFilterBuilder includeDateFacets={false} />
-                </FacetedFilter.Root>
-            </DataTable.Toolbar>
-            <DataTable.Body rowClick={rowclick} {table}>
-                {#if clientStatus.isLoading}
-                    <DelayedRender>
-                        <DataTable.Loading {table} />
-                    </DelayedRender>
-                {:else}
-                    <DataTable.Empty {table} />
-                {/if}
-            </DataTable.Body>
-            <DataTable.Footer {table}>
-                <div class="flex w-full items-center justify-center space-x-4">
-                    <DataTable.PageSize bind:value={queryParams.limit!} {table} />
-                    <div class="text-center">
-                        <ErrorMessage message={clientResponse?.problem?.errors.general} />
-                    </div>
-                </div>
-            </DataTable.Footer>
-        </DataTable.Root>
-    </Card.Content></Card.Root
->
+<DataTable.Root>
+    <DataTable.Toolbar {table}>
+        <div class="text-lg font-medium pr-2">Event Stream</div>
+        <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
+            <OrganizationDefaultsFacetedFilterBuilder includeDateFacets={false} />
+        </FacetedFilter.Root>
+    </DataTable.Toolbar>
+    <DataTable.Body rowClick={rowclick} {table}>
+        {#if clientStatus.isLoading}
+            <DelayedRender>
+                <DataTable.Loading {table} />
+            </DelayedRender>
+        {:else}
+            <DataTable.Empty {table} />
+        {/if}
+    </DataTable.Body>
+    <DataTable.Footer {table}>
+        <div class="flex w-full items-center justify-center space-x-4">
+            <DataTable.PageSize bind:value={queryParams.limit!} {table} />
+            <div class="text-center">
+                <ErrorMessage message={clientResponse?.problem?.errors.general} />
+            </div>
+        </div>
+    </DataTable.Footer>
+</DataTable.Root>
 
 <Sheet.Root onOpenChange={() => (selectedEventId = null)} open={!!selectedEventId}>
     <Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
