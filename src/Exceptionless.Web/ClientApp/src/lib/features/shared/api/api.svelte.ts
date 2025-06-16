@@ -1,6 +1,6 @@
 import { FetchClient, FetchClientProvider, getCurrentProvider } from '@exceptionless/fetchclient';
 
-export const DEFAULT_LIMIT = 10;
+export const DEFAULT_LIMIT = 20;
 
 /**
  * Represents the default timezone offset based on the user's local time.
