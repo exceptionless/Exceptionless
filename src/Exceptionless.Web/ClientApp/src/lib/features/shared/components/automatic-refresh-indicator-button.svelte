@@ -14,10 +14,10 @@
 
 {#if canRefresh}
     <div class="inline-flex h-6">
-        <Live liveTitle={refreshButtonTitle} class="ml-3 size-3 motion-safe:animate-none" />
+        <Live liveTitle={refreshButtonTitle} class="ml-2 size-2 motion-safe:animate-none" />
     </div>
 {:else}
     <Button variant="ghost" size="icon" onclick={refresh} title={refreshButtonTitle}>
-        <Live live={false} notLiveTitle={refreshButtonTitle} class="size-3 motion-safe:animate-none" />
+        <Live live={false} notLiveTitle={refreshButtonTitle} class="size-2 motion-safe:animate-none" />
     </Button>
 {/if}

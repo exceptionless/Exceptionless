@@ -7,6 +7,7 @@
     import type { Snippet } from 'svelte';
 
     import DataTableViewOptions from './data-table-view-options.svelte';
+    import AutomaticRefreshIndicatorButton from '$comp/automatic-refresh-indicator-button.svelte';
 
     interface Props {
         children: Snippet;
@@ -20,6 +21,7 @@
     <div class="flex flex-1 flex-wrap items-center gap-x-2 gap-y-2">
         {@render children()}
         <div class="ml-auto flex">
+            <AutomaticRefreshIndicatorButton canRefresh={true} refresh={() => Promise.resolve()} />
             <DataTableViewOptions {table} />
         </div>
     </div>
