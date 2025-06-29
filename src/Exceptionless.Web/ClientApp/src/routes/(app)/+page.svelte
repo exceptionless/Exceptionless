@@ -3,11 +3,10 @@
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
     import { page } from '$app/state';
-    import AutomaticRefreshIndicatorButton from '$comp/automatic-refresh-indicator-button.svelte';
     import * as DataTable from '$comp/data-table';
     import * as FacetedFilter from '$comp/faceted-filter';
+    import StreamingIndicatorButton from '$comp/streaming-indicator-button.svelte';
     import { Button } from '$comp/ui/button';
-    import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
     import EventsOverview from '$features/events/components/events-overview.svelte';
     import { type DateFilter, StatusFilter } from '$features/events/components/filters';
@@ -72,6 +71,7 @@
             updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
             //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
             Object.assign(queryParams, DEFAULT_PARAMS);
+            reset();
         },
         { lazy: true }
     );
@@ -147,9 +147,30 @@
         })
     );
 
-    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && !table.getCanPreviousPage());
+    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.getState().pagination.pageIndex === 0);
+
+    let manualPause = $state(false);
+    let paused = $derived(manualPause || !canRefresh);
+
+    function reset() {
+        manualPause = false;
+        table.resetRowSelection();
+        table.setPageIndex(0);
+    }
+
+    function handleToggle() {
+        if (!canRefresh) {
+            reset();
+        } else {
+            manualPause = !manualPause;
+        }
+    }
 
     async function loadData() {
+        if (paused) {
+            return;
+        }
+
         if (client.isLoading || !organization.current) {
             return;
         }
@@ -166,22 +187,21 @@
 
             if (removeTableData(table, (doc) => doc.id === message.id)) {
                 // If the grid data is empty from all events being removed, we should refresh the data.
-                if (isTableEmpty(table)) {
+                if (isTableEmpty(table) && !paused) {
                     await throttledLoadData();
                     return;
                 }
             }
         }
 
+        if (paused) {
+            return;
+        }
+
         // Do not refresh if the filter criteria doesn't match the web socket message.
         if (
             !shouldRefreshPersistentEventChanged(filters ?? [], queryParams.filter, message.organization_id, message.project_id, message.stack_id, message.id)
         ) {
-            return;
-        }
-
-        // Do not refresh if the grid has selections or grid is currently paged.
-        if (!canRefresh) {
             return;
         }
 
@@ -199,10 +219,13 @@
 <div class="flex flex-col space-y-4">
     <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
         {#snippet toolbarChildren()}
-            <div class="text-lg font-medium pr-2">Events</div>
+            <div class="pr-2 text-lg font-medium">Events</div>
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <OrganizationDefaultsFacetedFilterBuilder />
             </FacetedFilter.Root>
+        {/snippet}
+        {#snippet toolbarActions()}
+            <StreamingIndicatorButton {paused} onToggle={handleToggle} />
         {/snippet}
         {#snippet footerChildren()}
             <div class="h-9 min-w-[140px]">
