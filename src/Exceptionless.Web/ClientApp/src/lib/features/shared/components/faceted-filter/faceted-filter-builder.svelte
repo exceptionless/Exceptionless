@@ -91,9 +91,15 @@
     function onClose() {
         open = false;
     }
+
+    function onOpenChange(isOpen: boolean) {
+        if (!isOpen) {
+            onClose();
+        }
+    }
 </script>
 
-<Popover.Root bind:open>
+<Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
         <Button class="gap-x-1 px-3" size="lg" variant="outline">
             <Circle class="mr-2 size-4" /> Filter
