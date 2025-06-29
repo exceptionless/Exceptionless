@@ -1,4 +1,6 @@
 <script lang="ts">
+    import type { Snippet } from 'svelte';
+
     import { A, type AProps } from '$comp/typography';
     import { cn } from '$lib/utils';
     import Filter from '@lucide/svelte/icons/filter';
@@ -7,13 +9,18 @@
 
     type Props = AProps & {
         changed: (filter: TypeFilter) => void;
+        children?: Snippet;
         value: string[];
     };
-    let { changed, class: className, value, ...props }: Props = $props();
+    let { changed, children, class: className, value, ...props }: Props = $props();
 
     const title = `Search type:${value}`;
 </script>
 
 <A class={cn('cursor-pointer', className)} onclick={() => changed(new TypeFilter(value))} {title} {...props}>
-    <Filter class="text-muted-foreground text-opacity-50 hover:text-primary size-5" />
+    {#if children}
+        {@render children()}
+    {:else}
+        <Filter class="text-muted-foreground text-opacity-50 hover:text-primary size-5" />
+    {/if}
 </A>
