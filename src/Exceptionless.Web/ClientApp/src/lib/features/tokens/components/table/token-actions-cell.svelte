@@ -6,8 +6,8 @@
     import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
     import Disable from '@lucide/svelte/icons/ban';
     import Enable from '@lucide/svelte/icons/check';
-    import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import Copy from '@lucide/svelte/icons/copy';
+    import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
     import Edit from '@lucide/svelte/icons/pen';
     import X from '@lucide/svelte/icons/x';
     import { toast } from 'svelte-sonner';
@@ -80,9 +80,12 @@
 
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
-        <Button class="h-8 w-8 p-0" variant="ghost">
-            <ChevronDown class="size-4" />
-        </Button>
+        {#snippet child({ props })}
+            <Button {...props} variant="ghost" size="icon" class="relative size-8 p-0">
+                <span class="sr-only">Open menu</span>
+                <EllipsisIcon />
+            </Button>
+        {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
         <DropdownMenu.Item onclick={copyToClipboard}>
