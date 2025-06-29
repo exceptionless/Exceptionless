@@ -32,12 +32,18 @@
         updatedValue = value;
     });
 
-    function onApplyFilter() {
+    function onClose() {
         if (updatedValue !== value) {
             changed(updatedValue);
         }
 
         open = false;
+    }
+
+    function onOpenChange(isOpen: boolean) {
+        if (!isOpen) {
+            onClose();
+        }
     }
 
     export function onValueSelected(currentValue: string) {
@@ -70,7 +76,7 @@
     }
 </script>
 
-<Popover.Root bind:open>
+<Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
         <Button class="gap-x-1 px-3" size="lg" variant="outline">
             {title}
@@ -114,13 +120,6 @@
                     </Command.Group>{/if}
             </Command.List>
         </Command.Root>
-        <FacetedFilter.Actions
-            apply={onApplyFilter}
-            clear={onClearFilter}
-            close={() => (open = false)}
-            {remove}
-            showApply={updatedValue !== value}
-            showClear={!!updatedValue?.trim()}
-        ></FacetedFilter.Actions>
+        <FacetedFilter.Actions clear={onClearFilter} close={onClose} {remove} showClear={!!updatedValue?.trim()} />
     </Popover.Content>
 </Popover.Root>
