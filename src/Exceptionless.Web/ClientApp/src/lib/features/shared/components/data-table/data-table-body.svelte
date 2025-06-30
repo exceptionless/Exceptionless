@@ -44,7 +44,7 @@
 
 <div class="rounded-md border">
     <Table.Root>
-        <Table.Header>
+        <Table.Header class="bg-card">
             {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
                 <Table.Row>
                     {#each headerGroup.headers as header (header.id)}

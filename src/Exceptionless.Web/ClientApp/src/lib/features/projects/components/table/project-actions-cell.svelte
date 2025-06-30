@@ -5,8 +5,8 @@
     import { deleteProject } from '$features/projects/api.svelte';
     import { ViewProject } from '$features/projects/models';
     import Issues from '@lucide/svelte/icons/bug';
-    import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import Configure from '@lucide/svelte/icons/cloud';
+    import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
     import Organization from '@lucide/svelte/icons/group';
     import Edit from '@lucide/svelte/icons/pen';
     import X from '@lucide/svelte/icons/x';
@@ -37,9 +37,12 @@
 
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
-        <Button class="h-8 w-8 p-0" variant="ghost">
-            <ChevronDown class="size-4" />
-        </Button>
+        {#snippet child({ props })}
+            <Button {...props} variant="ghost" size="icon" class="relative size-8 p-0">
+                <span class="sr-only">Open menu</span>
+                <EllipsisIcon />
+            </Button>
+        {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
         <DropdownMenu.Item onclick={() => goto(`/next/issues`)}>

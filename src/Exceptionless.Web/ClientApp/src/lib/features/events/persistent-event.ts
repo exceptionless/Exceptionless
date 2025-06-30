@@ -110,7 +110,7 @@ export function getExtendedDataItems(event: PersistentEvent, project?: ViewProje
         items.push({ data, promoted, title: key });
     }
 
-    return items;
+    return items.sort((a, b) => a.title.localeCompare(b.title));
 }
 
 export function getLocation(event: PersistentEvent) {

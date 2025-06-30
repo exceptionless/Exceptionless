@@ -14,10 +14,11 @@
         limit: number;
         rowClick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
         table: Table<EventSummaryModel<SummaryTemplateKeys>>;
+        toolbarActions?: Snippet;
         toolbarChildren?: Snippet;
     }
 
-    let { bodyChildren, footerChildren, isLoading, limit = $bindable(), rowClick, table, toolbarChildren }: Props = $props();
+    let { bodyChildren, footerChildren, isLoading, limit = $bindable(), rowClick, table, toolbarActions, toolbarChildren }: Props = $props();
 </script>
 
 <DataTable.Root>
@@ -25,6 +26,11 @@
         {#if toolbarChildren}
             {@render toolbarChildren()}
         {/if}
+        {#snippet actions()}
+            {#if toolbarActions}
+                {@render toolbarActions()}
+            {/if}
+        {/snippet}
     </DataTable.Toolbar>
     <DataTable.Body {rowClick} {table}>
         {#if isLoading}

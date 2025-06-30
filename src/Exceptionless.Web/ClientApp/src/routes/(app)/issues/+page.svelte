@@ -2,11 +2,10 @@
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
     import { page } from '$app/state';
-    import AutomaticRefreshIndicatorButton from '$comp/automatic-refresh-indicator-button.svelte';
     import * as DataTable from '$comp/data-table';
     import * as FacetedFilter from '$comp/faceted-filter';
+    import StreamingIndicatorButton from '$comp/streaming-indicator-button.svelte';
     import { Button } from '$comp/ui/button';
-    import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
     import { type GetEventsParams, getStackEventsQuery } from '$features/events/api.svelte';
     import EventsOverview from '$features/events/components/events-overview.svelte';
@@ -85,6 +84,7 @@
             updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
             //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
             Object.assign(queryParams, DEFAULT_PARAMS);
+            reset();
         },
         { lazy: true }
     );
@@ -159,9 +159,30 @@
         })
     );
 
-    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && !table.getCanPreviousPage());
+    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.getState().pagination.pageIndex === 0);
+
+    let manualPause = $state(false);
+    let paused = $derived(manualPause || !canRefresh);
+
+    function reset() {
+        manualPause = false;
+        table.resetRowSelection();
+        table.setPageIndex(0);
+    }
+
+    function handleToggle() {
+        if (!canRefresh) {
+            reset();
+        } else {
+            manualPause = !manualPause;
+        }
+    }
 
     async function loadData() {
+        if (paused) {
+            return;
+        }
+
         if (client.isLoading || !organization.current) {
             return;
         }
@@ -179,20 +200,19 @@
 
             if (removeTableData(table, (doc) => doc.id === message.id)) {
                 // If the grid data is empty from all events being removed, we should refresh the data.
-                if (isTableEmpty(table)) {
+                if (isTableEmpty(table) && !paused) {
                     await throttledLoadData();
                     return;
                 }
             }
         }
 
-        // Do not refresh if the filter criteria doesn't match the web socket message.
-        if (!shouldRefreshPersistentEventChanged(filters, queryParams.filter, message.organization_id, message.project_id, message.id)) {
+        if (paused) {
             return;
         }
 
-        // Do not refresh if the grid has selections or grid is currently paged.
-        if (!canRefresh) {
+        // Do not refresh if the filter criteria doesn't match the web socket message.
+        if (!shouldRefreshPersistentEventChanged(filters, queryParams.filter, message.organization_id, message.project_id, message.id)) {
             return;
         }
 
@@ -208,32 +228,28 @@
 </script>
 
 <div class="flex flex-col space-y-4">
-    <Card.Root
-        ><Card.Header>
-            <Card.Title class="text-2xl">Issues <AutomaticRefreshIndicatorButton {canRefresh} refresh={loadData} /></Card.Title>
-        </Card.Header><Card.Content>
-            <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
-                {#snippet toolbarChildren()}
-                    <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
-                        <OrganizationDefaultsFacetedFilterBuilder />
-                    </FacetedFilter.Root>
-                {/snippet}
-                {#snippet footerChildren()}
-                    <div class="h-9 min-w-[140px]">
-                        {#if table.getSelectedRowModel().flatRows.length}
-                            <TableStacksBulkActionsDropdownMenu {table} />
-                        {/if}
-                    </div>
+    <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
+        {#snippet toolbarChildren()}
+            <div class="pr-2 text-lg font-medium">Issues</div>
+            <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
+                <OrganizationDefaultsFacetedFilterBuilder />
+            </FacetedFilter.Root>
+        {/snippet}
+        {#snippet toolbarActions()}
+            <StreamingIndicatorButton {paused} onToggle={handleToggle} />
+        {/snippet}
+        {#snippet footerChildren()}
+            <div class="h-9 min-w-[140px]">
+                <TableStacksBulkActionsDropdownMenu {table} />
+            </div>
 
-                    <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
-                    <div class="flex items-center space-x-6 lg:space-x-8">
-                        <DataTable.PageCount {table} />
-                        <DataTable.Pagination {table} />
-                    </div>
-                {/snippet}
-            </EventsDataTable>
-        </Card.Content>
-    </Card.Root>
+            <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
+            <div class="flex items-center space-x-6 lg:space-x-8">
+                <DataTable.PageCount {table} />
+                <DataTable.Pagination {table} />
+            </div>
+        {/snippet}
+    </EventsDataTable>
 </div>
 
 <Sheet.Root onOpenChange={() => (selectedStackId = undefined)} open={eventsQuery.isSuccess}>
