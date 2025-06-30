@@ -160,7 +160,7 @@
                     {#each stack.tags as tag (tag)}
                         <Badge color="dark"
                             ><EventsFacetedFilter.TagTrigger changed={filterChanged} class="mr-1" value={[tag]}
-                                ><Filter class="text-muted-foreground text-opacity-80 hover:text-secondary size-5" /></EventsFacetedFilter.TagTrigger
+                                ><Filter class="text-muted-foreground text-opacity-50 hover:text-secondary size-5" /></EventsFacetedFilter.TagTrigger
                             >{tag}</Badge
                         >
                     {/each}

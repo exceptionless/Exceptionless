@@ -3,7 +3,7 @@
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { deleteWebhook } from '$features/webhooks/api.svelte';
     import { Webhook } from '$features/webhooks/models';
-    import ChevronDown from '@lucide/svelte/icons/chevron-down';
+    import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
     import X from '@lucide/svelte/icons/x';
     import { toast } from 'svelte-sonner';
 
@@ -32,9 +32,12 @@
 
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
-        <Button class="h-8 w-8 p-0" variant="ghost">
-            <ChevronDown class="size-4" />
-        </Button>
+        {#snippet child({ props })}
+            <Button {...props} variant="ghost" size="icon" class="relative size-8 p-0">
+                <span class="sr-only">Open menu</span>
+                <EllipsisIcon />
+            </Button>
+        {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
         <DropdownMenu.Item onclick={() => (showRemoveWebhookDialog = true)} disabled={removeWebhook.isPending}>

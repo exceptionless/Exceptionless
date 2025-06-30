@@ -7,8 +7,8 @@
     import DelayedRender from '$comp/delayed-render.svelte';
     import ErrorMessage from '$comp/error-message.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
+    import StreamingIndicatorButton from '$comp/streaming-indicator-button.svelte';
     import { Button } from '$comp/ui/button';
-    import * as Card from '$comp/ui/card';
     import * as Sheet from '$comp/ui/sheet';
     import EventsOverview from '$features/events/components/events-overview.svelte';
     import { StatusFilter } from '$features/events/components/filters';
@@ -67,6 +67,7 @@
             updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
             //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
             Object.assign(queryParams, DEFAULT_PARAMS);
+            paused = false;
         },
         { lazy: true }
     );
@@ -146,7 +147,16 @@
         })
     );
 
+    let paused = $state(false);
+    function handleToggle() {
+        paused = !paused;
+    }
+
     async function loadData(filterChanged: boolean = false) {
+        if (paused) {
+            return;
+        }
+
         if (!organization.current) {
             return;
         }
@@ -185,11 +195,15 @@
         if (message.id && message.change_type === ChangeType.Removed) {
             if (removeTableData(table, (doc) => doc.id === message.id)) {
                 // If the grid data is empty from all events being removed, we should refresh the data.
-                if (isTableEmpty(table)) {
+                if (isTableEmpty(table) && !paused) {
                     await debouncedLoadData();
                     return;
                 }
             }
+        }
+
+        if (paused) {
+            return;
         }
 
         // Do not refresh if the filter criteria doesn't match the web socket message.
@@ -213,37 +227,35 @@
     });
 </script>
 
-<Card.Root
-    ><Card.Header>
-        <Card.Title class="text-2xl">Event Stream</Card.Title>
-    </Card.Header>
-    <Card.Content>
-        <DataTable.Root>
-            <DataTable.Toolbar {table}>
-                <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
-                    <OrganizationDefaultsFacetedFilterBuilder includeDateFacets={false} />
-                </FacetedFilter.Root>
-            </DataTable.Toolbar>
-            <DataTable.Body rowClick={rowclick} {table}>
-                {#if clientStatus.isLoading}
-                    <DelayedRender>
-                        <DataTable.Loading {table} />
-                    </DelayedRender>
-                {:else}
-                    <DataTable.Empty {table} />
-                {/if}
-            </DataTable.Body>
-            <DataTable.Footer {table}>
-                <div class="flex w-full items-center justify-center space-x-4">
-                    <DataTable.PageSize bind:value={queryParams.limit!} {table} />
-                    <div class="text-center">
-                        <ErrorMessage message={clientResponse?.problem?.errors.general} />
-                    </div>
-                </div>
-            </DataTable.Footer>
-        </DataTable.Root>
-    </Card.Content></Card.Root
->
+<DataTable.Root>
+    <DataTable.Toolbar {table}>
+        <div class="pr-2 text-lg font-medium">Event Stream</div>
+        <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
+            <OrganizationDefaultsFacetedFilterBuilder includeDateFacets={false} />
+        </FacetedFilter.Root>
+
+        {#snippet actions()}
+            <StreamingIndicatorButton {paused} onToggle={handleToggle} />
+        {/snippet}
+    </DataTable.Toolbar>
+    <DataTable.Body rowClick={rowclick} {table}>
+        {#if clientStatus.isLoading}
+            <DelayedRender>
+                <DataTable.Loading {table} />
+            </DelayedRender>
+        {:else}
+            <DataTable.Empty {table} />
+        {/if}
+    </DataTable.Body>
+    <DataTable.Footer {table}>
+        <div class="flex w-full items-center justify-center space-x-4">
+            <DataTable.PageSize bind:value={queryParams.limit!} {table} />
+            <div class="text-center">
+                <ErrorMessage message={clientResponse?.problem?.errors.general} />
+            </div>
+        </div>
+    </DataTable.Footer>
+</DataTable.Root>
 
 <Sheet.Root onOpenChange={() => (selectedEventId = null)} open={!!selectedEventId}>
     <Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
