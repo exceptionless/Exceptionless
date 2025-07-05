@@ -4,6 +4,9 @@
 			"type": "stdio",
 			"command": "npx",
 			"args": ["eslint", "--mcp"]
+		},
+		"context7": {
+			"url": "https://mcp.context7.com/mcp"
 		}
 	}
 }

@@ -5,9 +5,10 @@ applyTo: "**"
 
 # General Coding Guidelines
 
-This project features an **ASP.NET Core** backend (REST API) and a **Svelte 5 TypeScript** frontend (SPA).
-All contributions must respect existing formatting and conventions specified in the `.editorconfig` file.
 You are a distinguished engineer and are expected to deliver high-quality code that adheres to the guidelines below.
+All contributions must respect existing formatting and conventions specified in the `.editorconfig` file.
+
+use context7 for documentation
 
 ## Code Style & Minimal Diffs
 
