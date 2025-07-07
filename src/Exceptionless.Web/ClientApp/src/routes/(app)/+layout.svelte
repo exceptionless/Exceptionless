@@ -168,14 +168,14 @@
             return;
         }
 
-        if (organizationsQuery.data.length === 0) {
+        if (!organizationsQuery.data.data || organizationsQuery.data.data.length === 0) {
             // TODO: Redirect to create organization page.
             organization.current = undefined;
             return;
         }
 
-        if (!organizationsQuery.data.find((org) => org.id === organization.current)) {
-            organization.current = organizationsQuery.data[0]!.id;
+        if (!organizationsQuery.data.data.find((org) => org.id === organization.current)) {
+            organization.current = organizationsQuery.data.data[0]!.id;
         }
     });
 
@@ -192,7 +192,7 @@
             <SidebarOrganizationSwitcher
                 class="pt-2"
                 isLoading={organizationsQuery.isLoading}
-                organizations={organizationsQuery.data}
+                organizations={organizationsQuery.data?.data ?? []}
                 bind:selected={organization.current}
             />
         {/snippet}

@@ -9,13 +9,11 @@
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
     import { Separator } from '$comp/ui/separator';
-    import { deleteProject, getProjectQuery, resetData, updateProject } from '$features/projects/api.svelte';
-    import RemoveProjectDialog from '$features/projects/components/dialogs/remove-project-dialog.svelte';
-    import ResetProjectDataDialog from '$features/projects/components/dialogs/reset-project-data-dialog.svelte';
-    import { UpdateProject } from '$features/projects/models';
+    import { deleteOrganization, getOrganizationQuery, updateOrganization } from '$features/organizations/api.svelte';
+    import RemoveOrganizationDialog from '$features/organizations/components/dialogs/remove-organization-dialog.svelte';
+    import { NewOrganization } from '$features/organizations/models';
     import { applyServerSideErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
-    import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import Issues from '@lucide/svelte/icons/bug';
     import X from '@lucide/svelte/icons/x';
     import { toast } from 'svelte-sonner';
@@ -25,58 +23,42 @@
 
     let toastId = $state<number | string>();
 
-    const projectId = page.params.projectId || '';
-    const projectQuery = getProjectQuery({
+    const organizationId = page.params.organizationId || '';
+    const organizationQuery = getOrganizationQuery({
         route: {
             get id() {
-                return projectId;
+                return organizationId;
             }
         }
     });
 
-    const update = updateProject({
+    const update = updateOrganization({
         route: {
             get id() {
-                return projectId;
+                return organizationId;
             }
         }
     });
 
     let showRemoveDialog = $state(false);
-    const removeProject = deleteProject({
+    const removeOrganization = deleteOrganization({
         route: {
             get ids() {
-                return [projectId];
+                return [organizationId];
             }
         }
     });
 
     async function remove() {
-        await removeProject.mutateAsync();
+        await removeOrganization.mutateAsync();
 
         toast.dismiss(toastId);
-        toastId = toast.success('Successfully queued the project for deletion.');
+        toastId = toast.success('Successfully queued the organization for deletion.');
 
-        await goto('/next/project/list');
+        await goto('/next/organization/list');
     }
 
-    let showResetDialog = $state(false);
-    const resetProject = resetData({
-        route: {
-            get id() {
-                return projectId;
-            }
-        }
-    });
-
-    async function reset() {
-        await resetProject.mutateAsync();
-
-        toast.dismiss(toastId);
-        toastId = toast.success('Successfully queued the project for data reset.');
-    }
-
-    const form = superForm(defaults(projectQuery.data ?? new UpdateProject(), classvalidatorClient(UpdateProject)), {
+    const form = superForm(defaults(organizationQuery.data ?? new NewOrganization(), classvalidatorClient(NewOrganization)), {
         dataType: 'json',
         async onUpdate({ form, result }) {
             if (!form.valid) {
@@ -87,28 +69,28 @@
                 await update.mutateAsync(form.data);
 
                 toast.dismiss(toastId);
-                toastId = toast.success('Successfully updated Project name');
+                toastId = toast.success('Successfully updated Organization name');
             } catch (ex) {
                 const problem = ex as ProblemDetails;
                 applyServerSideErrors(form, problem);
                 result.status = problem.status ?? 500;
-                toastId = toast.error(form.message ?? 'Error saving project name. Please try again.');
+                toastId = toast.error(form.message ?? 'Error saving organization name. Please try again.');
             }
         },
         SPA: true,
-        validators: classvalidatorClient(UpdateProject)
+        validators: classvalidatorClient(NewOrganization)
     });
 
     const { enhance, form: formData, message, submit, submitting, tainted } = form;
     const debouncedFormSubmit = debounce(1000, submit);
 
     $effect(() => {
-        if (!projectQuery.isSuccess) {
+        if (!organizationQuery.isSuccess) {
             return;
         }
 
         if (!$submitting && !$tainted) {
-            form.reset({ data: projectQuery.data, keepMessage: true });
+            form.reset({ data: organizationQuery.data, keepMessage: true });
         }
     });
 
@@ -117,8 +99,8 @@
 
 <div class="space-y-6">
     <div>
-        <H3>Manage Project</H3>
-        <Muted>Manage your project name.</Muted>
+        <H3>Manage Organization</H3>
+        <Muted>Manage your organization name.</Muted>
     </div>
     <Separator />
 
@@ -127,8 +109,8 @@
         <Form.Field {form} name="name">
             <Form.Control>
                 {#snippet children({ props })}
-                    <Form.Label>Project name</Form.Label>
-                    <Input {...props} bind:value={$formData.name} type="text" placeholder="Enter project name" required oninput={debouncedFormSubmit} />
+                    <Form.Label>Organization name</Form.Label>
+                    <Input {...props} bind:value={$formData.name} type="text" placeholder="Enter organization name" required oninput={debouncedFormSubmit} />
                 {/snippet}
             </Form.Control>
             <Form.Description />
@@ -138,7 +120,7 @@
 
     <div class="flex w-full items-center justify-between">
         <div class="flex gap-2">
-            <Button variant="secondary" href="/issues?filter=project:{projectId}">
+            <Button variant="secondary" href="/issues?filter=organization:{organizationId}">
                 <Issues class="mr-2 size-4" /> Go To Issues
             </Button>
         </div>
@@ -152,22 +134,13 @@
                     <DropdownMenu.Group>
                         <DropdownMenu.GroupHeading>Actions</DropdownMenu.GroupHeading>
                         <DropdownMenu.Separator />
-                        <DropdownMenu.Item onclick={() => (showResetDialog = true)} disabled={resetProject.isPending}>
-                            {#if resetProject.isPending}
+                        <DropdownMenu.Item onclick={() => (showRemoveDialog = true)} disabled={removeOrganization.isPending}>
+                            {#if removeOrganization.isPending}
                                 <Loading class="mr-2" variant="secondary"></Loading>
-                                <span>Resetting...</span>
-                            {:else}
-                                <AlertTriangle class="mr-2 size-4" />
-                                <span>Reset Project Data</span>
-                            {/if}
-                        </DropdownMenu.Item>
-                        <DropdownMenu.Item onclick={() => (showRemoveDialog = true)} disabled={removeProject.isPending}>
-                            {#if removeProject.isPending}
-                                <Loading class="mr-2" variant="secondary"></Loading>
-                                <span>Deleting Project...</span>
+                                <span>Deleting Organization...</span>
                             {:else}
                                 <X class="mr-2 size-4" />
-                                <span>Delete Project</span>
+                                <span>Delete Organization</span>
                             {/if}
                         </DropdownMenu.Item>
                     </DropdownMenu.Group>
@@ -177,7 +150,6 @@
     </div>
 </div>
 
-{#if projectQuery.isSuccess}
-    <ResetProjectDataDialog bind:open={showResetDialog} name={projectQuery.data.name} {reset} />
-    <RemoveProjectDialog bind:open={showRemoveDialog} name={projectQuery.data.name} {remove} />
+{#if organizationQuery.isSuccess}
+    <RemoveOrganizationDialog bind:open={showRemoveDialog} name={organizationQuery.data.name} {remove} />
 {/if}
