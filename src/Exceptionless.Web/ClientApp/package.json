@@ -84,7 +84,7 @@
         "mode-watcher": "^1.1.0",
         "oidc-client-ts": "^3.3.0",
         "pretty-ms": "^9.2.0",
-        "runed": "^0.29.1",
+        "runed": "^0.29.2",
         "shiki": "^3.7.0",
         "svelte-sonner": "^1.0.5",
         "svelte-time": "^2.0.1",
