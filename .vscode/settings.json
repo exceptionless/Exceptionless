@@ -98,5 +98,5 @@
         "**/lib/**/index.ts": "${dirname}/index.ts"
     },
     "powershell.codeFormatting.addWhitespaceAroundPipe": true,
-    "dotnet.defaultSolution": "Exceptionless.sln"
+    "dotnet.defaultSolution": "Exceptionless.slnx"
 }
