@@ -1,0 +1,32 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".github/workflows/build.yaml" />
+    <File Path="CONTRIBUTING.md" />
+    <File Path="Dockerfile" />
+    <File Path="exceptionless.http" />
+    <File Path="global.json" />
+    <File Path="LICENSE.txt" />
+    <File Path="NuGet.Config" />
+    <File Path="README.md" />
+    <File Path="src/Directory.Build.props" />
+  </Folder>
+  <Folder Name="/Solution Items/http/">
+    <File Path="tests/http/admin.http" />
+    <File Path="tests/http/auth.http" />
+    <File Path="tests/http/events.http" />
+    <File Path="tests/http/organizations.http" />
+    <File Path="tests/http/projects.http" />
+    <File Path="tests/http/stacks.http" />
+    <File Path="tests/http/status.http" />
+    <File Path="tests/http/tokens.http" />
+    <File Path="tests/http/users.http" />
+    <File Path="tests/http/webhooks.http" />
+  </Folder>
+  <Project Path="src/Exceptionless.AppHost/Exceptionless.AppHost.csproj" />
+  <Project Path="src/Exceptionless.Core/Exceptionless.Core.csproj" />
+  <Project Path="src/Exceptionless.Insulation/Exceptionless.Insulation.csproj" />
+  <Project Path="src/Exceptionless.Job/Exceptionless.Job.csproj" />
+  <Project Path="src/Exceptionless.Web/Exceptionless.Web.csproj" />
+  <Project Path="tests/Exceptionless.Tests/Exceptionless.Tests.csproj" />
+</Solution>

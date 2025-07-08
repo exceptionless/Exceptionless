@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /app
 
-COPY ./*.sln ./NuGet.Config ./
+COPY ./*.slnx ./NuGet.Config ./
 COPY ./src/*.props ./src/
 COPY ./tests/*.props ./tests/
 COPY ./build/packages/* ./build/packages/

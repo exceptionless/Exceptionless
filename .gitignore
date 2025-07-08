@@ -6,7 +6,7 @@
 # User-specific files
 *.suo
 *.user
-*.sln.docstates
+*.slnx.docstates
 *.ide
 
 # Build results

@@ -41,7 +41,7 @@ _In appreciation for anyone who submits a non-trivial pull request, we will give
   - A browser window should be automatically opened to `https://localhost:5100/`
   - When running locally in `Development` mode, a global administrator user `test@localhost` is automatically created with password `tester`. You can also click the `Signup` button to create a new account
 - Visual Studio
-  - Open Visual Studio and then open the `Exceptionless.sln` solution in the root folder
+  - Open Visual Studio and then open the `Exceptionless.slnx` solution in the root folder
   - Start Elasticsearch by either configuring multiple startup projects for the `docker-compose` and `Exceptionless.Web` projects or by running the `start-services.ps1` script in the root folder
   - Run the `Exceptionless.Web` project
   - A browser window should be automatically opened to `https://localhost:5100/`
