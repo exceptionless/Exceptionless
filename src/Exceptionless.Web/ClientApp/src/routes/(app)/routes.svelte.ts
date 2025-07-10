@@ -10,6 +10,7 @@ import type { NavigationItem } from '../routes.svelte';
 
 import { routes as accountRoutes } from './account/routes.svelte';
 import { routes as eventRoutes } from './event/routes.svelte';
+import { routes as organizationRoutes } from './organization/routes.svelte';
 import { routes as projectRoutes } from './project/routes.svelte';
 
 export function routes(): NavigationItem[] {
@@ -62,6 +63,7 @@ export function routes(): NavigationItem[] {
         },
         ...accountRoutes(),
         ...eventRoutes(),
+        ...organizationRoutes(),
         ...projectRoutes()
     ];
 
