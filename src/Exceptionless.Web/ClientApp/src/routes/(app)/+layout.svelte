@@ -41,11 +41,6 @@
     useMiddleware(async (ctx, next) => {
         await next();
 
-        if (ctx.response && ctx.response.status === 401) {
-            accessToken.current = null;
-            return;
-        }
-
         if (ctx.response?.headers.has('X-Result-Count') && ctx.response?.data !== null) {
             const resultCountHeaderValue = parseInt(ctx.response.headers.get('X-Result-Count') || '');
 
