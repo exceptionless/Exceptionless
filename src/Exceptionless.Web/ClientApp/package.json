@@ -74,7 +74,7 @@
         "@types/d3-shape": "^3.1.7",
         "@typeschema/class-validator": "^0.3.0",
         "bits-ui": "^2.8.10",
-        "class-validator": "0.14.1",
+        "class-validator": "0.14.2",
         "clsx": "^2.1.1",
         "d3-scale": "^4.0.2",
         "dompurify": "^3.2.6",
