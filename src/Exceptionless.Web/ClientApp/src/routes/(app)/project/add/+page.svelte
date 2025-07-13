@@ -41,8 +41,11 @@
                 if (error instanceof ProblemDetails) {
                     applyServerSideErrors(form, error);
                     result.status = error.status ?? 500;
-                    toastId = toast.error(form.message ?? 'Error creating project. Please try again.');
+                } else {
+                    result.status = 500;
                 }
+
+                toastId = toast.error(form.message ?? 'Error creating project. Please try again.');
             }
         },
         SPA: true,

@@ -50,12 +50,16 @@
     });
 
     async function remove() {
-        await removeOrganization.mutateAsync();
-
         toast.dismiss(toastId);
-        toastId = toast.success('Successfully queued the organization for deletion.');
+        try {
+            await removeOrganization.mutateAsync();
+            toastId = toast.success('Successfully queued the organization for deletion.');
 
-        await goto('/next/organization/list');
+            await goto('/next/organization/list');
+        } catch (error: unknown) {
+            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
+            toastId = toast.error(`An error occurred while trying to delete the organization: ${message}`);
+        }
     }
 
     const form = superForm(defaults(organizationQuery.data ?? new NewOrganization(), classvalidatorClient(NewOrganization)), {
@@ -70,10 +74,14 @@
 
                 toast.dismiss(toastId);
                 toastId = toast.success('Successfully updated Organization name');
-            } catch (ex) {
-                const problem = ex as ProblemDetails;
-                applyServerSideErrors(form, problem);
-                result.status = problem.status ?? 500;
+            } catch (error: unknown) {
+                if (error instanceof ProblemDetails) {
+                    applyServerSideErrors(form, error);
+                    result.status = error.status ?? 500;
+                } else {
+                    result.status = 500;
+                }
+
                 toastId = toast.error(form.message ?? 'Error saving organization name. Please try again.');
             }
         },

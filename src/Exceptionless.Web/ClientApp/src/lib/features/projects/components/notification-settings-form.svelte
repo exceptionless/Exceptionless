@@ -37,8 +37,11 @@
                     if (error instanceof ProblemDetails) {
                         applyServerSideErrors(form, error);
                         result.status = error.status ?? 500;
-                        toastId = toast.error(form.message ?? 'Error saving notification settings. Please try again.');
+                    } else {
+                        result.status = 500;
                     }
+
+                    toastId = toast.error(form.message ?? 'Error saving notification settings. Please try again.');
                 }
             }
         },

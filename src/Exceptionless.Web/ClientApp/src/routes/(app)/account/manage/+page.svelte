@@ -54,8 +54,11 @@
                 if (error instanceof ProblemDetails) {
                     applyServerSideErrors(form, error);
                     result.status = error.status ?? 500;
-                    toastId = toast.error(form.message ?? 'Error saving email address. Please try again.');
+                } else {
+                    result.status = 500;
                 }
+
+                toastId = toast.error(form.message ?? 'Error saving email address. Please try again.');
             }
         },
         SPA: true,
@@ -81,8 +84,11 @@
                 if (error instanceof ProblemDetails) {
                     applyServerSideErrors(form, error);
                     result.status = error.status ?? 500;
-                    toastId = toast.error(form.message ?? 'Error saving full name. Please try again.');
+                } else {
+                    result.status = 500;
                 }
+
+                toastId = toast.error(form.message ?? 'Error saving full name. Please try again.');
             }
         },
         SPA: true,

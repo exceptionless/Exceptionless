@@ -2,6 +2,7 @@
     import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';
+    import { addOrganizationUser } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
     import { type GetOrganizationUsersParams, getOrganizationUsersQuery } from '$features/users/api.svelte';
@@ -9,9 +10,11 @@
     import { getTableOptions } from '$features/users/components/table/options.svelte';
     import UsersDataTable from '$features/users/components/table/users-data-table.svelte';
     import { ViewUser } from '$features/users/models';
+    import { ProblemDetails } from '@exceptionless/fetchclient';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
+    import { toast } from 'svelte-sonner';
 
     const organizationId = organization.current!;
 
@@ -54,9 +57,29 @@
     });
 
     let showInviteDialog = $state(false);
+    let toastId = $state<number | string>();
 
     function handleInviteUser() {
         showInviteDialog = true;
+    }
+
+    async function inviteUser(email: string): Promise<void> {
+        toast.dismiss(toastId);
+
+        try {
+            const mutation = addOrganizationUser({
+                route: {
+                    email,
+                    organizationId
+                }
+            });
+            await mutation.mutateAsync();
+            toastId = toast.success('User invited successfully');
+        } catch (error: unknown) {
+            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
+            toastId = toast.error(`An error occurred while trying to invite the user: ${message}`);
+            throw error;
+        }
     }
 </script>
 
@@ -76,4 +99,4 @@
     <UsersDataTable bind:limit={usersQueryParameters.limit!} isLoading={usersQuery.isLoading} {table} />
 </div>
 
-<InviteUserDialog {organizationId} open={showInviteDialog} onOpenChange={(open) => (showInviteDialog = open)} />
+<InviteUserDialog bind:open={showInviteDialog} {inviteUser} />

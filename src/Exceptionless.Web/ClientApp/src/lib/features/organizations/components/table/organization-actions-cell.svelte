@@ -3,9 +3,9 @@
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { deleteOrganization, removeOrganizationUser } from '$features/organizations/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
     import { ViewOrganization } from '$features/organizations/models';
     import { getMeQuery } from '$features/users/api.svelte';
+    import { ProblemDetails } from '@exceptionless/fetchclient';
     import ChangePlan from '@lucide/svelte/icons/credit-card';
     import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
     import ViewInvoices from '@lucide/svelte/icons/file-text';
@@ -22,8 +22,10 @@
     }
 
     let { organization: org }: Props = $props();
+
     let showRemoveOrganizationDialog = $state(false);
     let showLeaveOrganizationDialog = $state(false);
+    let toastId = $state<number | string>();
 
     const meQuery = getMeQuery();
 
@@ -47,21 +49,26 @@
     });
 
     async function remove() {
-        await removeOrganization.mutateAsync();
-        toast.success('Successfully queued the organization for deletion.');
+        toast.dismiss(toastId);
+        try {
+            await removeOrganization.mutateAsync();
+            toastId = toast.success('Successfully queued the organization for deletion.');
+        } catch (error: unknown) {
+            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
+            toastId = toast.error(`An error occurred while trying to delete the organization: ${message}`);
+        }
     }
 
     async function leave() {
-        await leaveOrganization.mutateAsync();
-        toast.success('Successfully removed the user from the organization.');
-
-        // If leaving the current organization, clear it from context
-        if (organization.current === org.id) {
-            organization.current = undefined;
+        toast.dismiss(toastId);
+        try {
+            await leaveOrganization.mutateAsync();
+            toastId = toast.success('Successfully removed the user from the organization.');
+        } catch (error: unknown) {
+            console.log(error);
+            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
+            toastId = toast.error(`An error occurred while trying to leave the organization: ${message}`);
         }
-
-        // Redirect to organization list
-        await goto('/organization/list');
     }
 </script>
 

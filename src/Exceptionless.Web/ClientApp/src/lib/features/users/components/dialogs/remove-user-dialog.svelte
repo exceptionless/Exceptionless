@@ -19,14 +19,14 @@
 <AlertDialog.Root bind:open>
     <AlertDialog.Content>
         <AlertDialog.Header>
-            <AlertDialog.Title>Delete User</AlertDialog.Title>
+            <AlertDialog.Title>Remove User</AlertDialog.Title>
             <AlertDialog.Description>
-                Are you sure you want to delete "<span class="inline-block max-w-[200px] truncate align-bottom" title={name}>{name}</span>"?
+                Are you sure you want to remove "<span class="inline-block max-w-[200px] truncate align-bottom" title={name}>{name}</span>"?
             </AlertDialog.Description>
         </AlertDialog.Header>
         <AlertDialog.Footer>
             <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-            <AlertDialog.Action class={buttonVariants({ variant: 'destructive' })} onclick={onSubmit}>Delete User</AlertDialog.Action>
+            <AlertDialog.Action class={buttonVariants({ variant: 'destructive' })} onclick={onSubmit}>Remove User</AlertDialog.Action>
         </AlertDialog.Footer>
     </AlertDialog.Content>
 </AlertDialog.Root>

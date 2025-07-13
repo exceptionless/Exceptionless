@@ -161,6 +161,7 @@ export function getInvoicesQuery(request: GetInvoicesRequest) {
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<InvoiceGridModel[]>(`organizations/${request.route.organizationId}/invoices`, {
+                expectedStatusCodes: [200, 404],
                 params: { ...request.params },
                 signal
             });

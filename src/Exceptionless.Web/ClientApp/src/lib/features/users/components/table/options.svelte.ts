@@ -32,16 +32,6 @@ export function getColumns<TUser extends ViewUser>(organizationId: string): Colu
             }
         },
         {
-            accessorKey: 'is_active',
-            cell: (info) => renderComponent(BooleanFormatter, { value: info.getValue() as boolean }),
-            enableHiding: true,
-            enableSorting: false,
-            header: 'Active',
-            meta: {
-                class: 'w-[100px]'
-            }
-        },
-        {
             accessorKey: 'is_invite',
             cell: (info) => renderComponent(BooleanFormatter, { value: info.getValue() as boolean }),
             enableHiding: true,

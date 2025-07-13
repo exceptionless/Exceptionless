@@ -1,103 +1,62 @@
 <script lang="ts">
-    import { Button } from '$comp/ui/button';
-    import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '$comp/ui/dialog';
+    import { P } from '$comp/typography';
+    import * as AlertDialog from '$comp/ui/alert-dialog';
+    import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
-    import { Label } from '$comp/ui/label';
-    import { addOrganizationUser } from '$features/organizations/api.svelte';
-    import LoaderCircle from '@lucide/svelte/icons/loader-circle';
-    import { toast } from 'svelte-sonner';
-    import { z } from 'zod';
+    import { defaults, superForm } from 'sveltekit-superforms';
+    import { classvalidatorClient } from 'sveltekit-superforms/adapters';
 
-    interface InviteUserDialogProps {
-        onOpenChange: (open: boolean) => void;
+    import { InviteUserForm } from '../models';
+
+    interface Props {
+        inviteUser: (email: string) => Promise<void>;
         open: boolean;
-        organizationId: string;
     }
 
-    const { onOpenChange, open, organizationId }: InviteUserDialogProps = $props();
+    let { inviteUser, open = $bindable() }: Props = $props();
 
-    let email = $state('');
-    let emailError = $state('');
-
-    const emailSchema = z.string().email('Please enter a valid email address');
-
-    const inviteUserMutation = addOrganizationUser({
-        route: {
-            get email() {
-                return email;
-            },
-            get organizationId() {
-                return organizationId;
+    const form = superForm(defaults(new InviteUserForm(), classvalidatorClient(InviteUserForm)), {
+        dataType: 'json',
+        async onUpdate({ form }) {
+            if (!form.valid) {
+                return;
             }
-        }
+
+            await inviteUser(form.data.email);
+            open = false;
+        },
+        SPA: true,
+        validators: classvalidatorClient(InviteUserForm)
     });
 
-    function validateEmail() {
-        const result = emailSchema.safeParse(email);
-        if (!result.success) {
-            emailError = result.error.errors[0]?.message || 'Invalid email';
-            return false;
-        }
-        emailError = '';
-        return true;
-    }
-
-    async function handleInviteUser() {
-        if (!validateEmail()) {
-            return;
-        }
-
-        try {
-            await inviteUserMutation.mutateAsync();
-            toast.success('User invited successfully');
-            onOpenChange(false);
-            email = '';
-            emailError = '';
-        } catch (error) {
-            console.error('Error inviting user:', error);
-            toast.error('Failed to invite user. Please try again.');
-        }
-    }
-
-    function handleClose() {
-        onOpenChange(false);
-        email = '';
-        emailError = '';
-    }
+    const { enhance, form: formData } = form;
 </script>
 
-<Dialog {open} onOpenChange={handleClose}>
-    <DialogContent class="sm:max-w-md">
-        <DialogHeader>
-            <DialogTitle>Invite User</DialogTitle>
-            <DialogDescription>Enter the email address of the user you want to invite to this organization.</DialogDescription>
-        </DialogHeader>
-        <div class="space-y-4">
-            <div class="space-y-2">
-                <Label for="email">Email Address</Label>
-                <Input
-                    id="email"
-                    type="email"
-                    placeholder="user@example.com"
-                    bind:value={email}
-                    onblur={validateEmail}
-                    class={emailError ? 'border-destructive' : ''}
-                />
-                {#if emailError}
-                    <p class="text-destructive text-sm" role="alert">{emailError}</p>
-                {/if}
-            </div>
-        </div>
-        <DialogFooter>
-            <Button variant="outline" onclick={handleClose}>Cancel</Button>
-            <Button onclick={handleInviteUser} disabled={!email || !!emailError || inviteUserMutation.isPending}>
-                {#if inviteUserMutation.isPending}
-                    <LoaderCircle class="mr-2 size-4 animate-spin" />
-                    Inviting...
-                {:else}
-                    Invite User
-                {/if}
-            </Button>
-        </DialogFooter>
-    </DialogContent>
-</Dialog>
+<AlertDialog.Root bind:open>
+    <AlertDialog.Content class="sm:max-w-[425px]">
+        <form method="POST" use:enhance>
+            <AlertDialog.Header>
+                <AlertDialog.Title>Invite User</AlertDialog.Title>
+                <AlertDialog.Description>Enter the email address of the user you want to invite to this organization.</AlertDialog.Description>
+            </AlertDialog.Header>
+
+            <P class="pb-4">
+                <Form.Field {form} name="email">
+                    <Form.Control>
+                        {#snippet children({ props })}
+                            <Form.Label>Email Address</Form.Label>
+                            <Input {...props} bind:value={$formData.email} type="email" placeholder="user@example.com" autocomplete="email" required />
+                        {/snippet}
+                    </Form.Control>
+                    <Form.Description />
+                    <Form.FieldErrors />
+                </Form.Field>
+            </P>
+
+            <AlertDialog.Footer>
+                <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+                <AlertDialog.Action>Invite User</AlertDialog.Action>
+            </AlertDialog.Footer>
+        </form>
+    </AlertDialog.Content>
+</AlertDialog.Root>

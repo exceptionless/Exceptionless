@@ -1,9 +1,9 @@
 <script lang="ts">
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { removeOrganizationUser } from '$features/organizations/api.svelte';
-    import { resendVerificationEmail } from '$features/users/api.svelte';
+    import { addOrganizationUser, removeOrganizationUser } from '$features/organizations/api.svelte';
     import { ViewUser } from '$features/users/models';
+    import { ProblemDetails } from '@exceptionless/fetchclient';
     import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
     import Mail from '@lucide/svelte/icons/mail';
     import X from '@lucide/svelte/icons/x';
@@ -18,6 +18,7 @@
 
     let { organizationId, user }: Props = $props();
     let showRemoveUserDialog = $state(false);
+    let toastId = $state<number | string | undefined>();
 
     const removeUser = removeOrganizationUser({
         route: {
@@ -26,22 +27,37 @@
         }
     });
 
-    const resendEmail = resendVerificationEmail({
+    const addUser = addOrganizationUser({
         route: {
-            get id() {
-                return user.id!;
-            }
+            email: user.email_address,
+            organizationId
         }
     });
 
     async function remove() {
-        await removeUser.mutateAsync();
-        toast.success('Successfully removed the user from the organization.');
+        toast.dismiss(toastId);
+
+        try {
+            await removeUser.mutateAsync();
+            toastId = toast.success('Successfully removed the user from the organization.');
+        } catch (error: unknown) {
+            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
+            toastId = toast.error(`An error occurred while trying to remove the user: ${message}`);
+            throw error;
+        }
     }
 
     async function resendInviteEmail() {
-        await resendEmail.mutateAsync();
-        toast.success('Successfully resent the invite email.');
+        toast.dismiss(toastId);
+
+        try {
+            await addUser.mutateAsync();
+            toastId = toast.success('Successfully resent the invite email.');
+        } catch (error: unknown) {
+            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
+            toastId = toast.error(`An error occurred while trying to resend the invite: ${message}`);
+            throw error;
+        }
     }
 </script>
 
@@ -56,18 +72,22 @@
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
         {#if user.is_invite}
-            <DropdownMenu.Item onclick={() => resendInviteEmail()} disabled={resendEmail.isPending}>
+            <DropdownMenu.Item onclick={() => resendInviteEmail()} disabled={addUser.isPending}>
                 <Mail />
                 Resend Invite Email
             </DropdownMenu.Item>
         {/if}
         <DropdownMenu.Item onclick={() => (showRemoveUserDialog = true)} disabled={removeUser.isPending}>
             <X />
-            Remove User
+            {#if user.is_invite}
+                Revoke Invite
+            {:else}
+                Remove User
+            {/if}
         </DropdownMenu.Item>
     </DropdownMenu.Content>
 </DropdownMenu.Root>
 
 {#if showRemoveUserDialog}
-    <RemoveUserDialog bind:open={showRemoveUserDialog} name={user.full_name} {remove} />
+    <RemoveUserDialog bind:open={showRemoveUserDialog} name={user.full_name ?? user.email_address} {remove} />
 {/if}

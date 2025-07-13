@@ -88,10 +88,14 @@
 
                 toast.dismiss(toastId);
                 toastId = toast.success('Successfully updated Project name');
-            } catch (ex) {
-                const problem = ex as ProblemDetails;
-                applyServerSideErrors(form, problem);
-                result.status = problem.status ?? 500;
+            } catch (error) {
+                if (error instanceof ProblemDetails) {
+                    applyServerSideErrors(form, error);
+                    result.status = error.status ?? 500;
+                } else {
+                    result.status = 500;
+                }
+
                 toastId = toast.error(form.message ?? 'Error saving project name. Please try again.');
             }
         },
