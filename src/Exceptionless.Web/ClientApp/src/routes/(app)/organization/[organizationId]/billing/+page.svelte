@@ -14,6 +14,7 @@
     import CreditCard from '@lucide/svelte/icons/credit-card';
     import File from '@lucide/svelte/icons/file';
     import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
+    import GlobalUser from '$features/users/components/global-user.svelte';
 
     const organizationQuery = getOrganizationQuery({
         route: {
@@ -22,8 +23,6 @@
             }
         }
     });
-
-    const userQuery = getMeQuery();
 
     const invoicesQuery = getInvoicesQuery({
         route: {
@@ -34,7 +33,6 @@
     });
 
     const canChangePlan = $derived(organizationQuery.isSuccess && !!env.PUBLIC_STRIPE_PUBLISHABLE_KEY);
-    const hasAdminRole = $derived(userQuery.data?.roles?.includes('GlobalAdmin') ?? false);
 
     function handleChangePlan() {
         // Navigate to plan change page or open modal
@@ -127,12 +125,12 @@
                                                         <File class="mr-2 size-4" />
                                                         View Payment
                                                     </DropdownMenu.Item>
-                                                    {#if hasAdminRole}
+                                                    <GlobalUser>
                                                         <DropdownMenu.Item onclick={() => handleViewStripeInvoice(invoice.id)}>
                                                             <CreditCard class="mr-2 size-4" />
                                                             View Stripe Invoice
                                                         </DropdownMenu.Item>
-                                                    {/if}
+                                                    </GlobalUser>
                                                 </DropdownMenu.Content>
                                             </DropdownMenu.Root>
                                         </Table.Cell>
