@@ -38,7 +38,7 @@
     <Card.Root>
         <Card.Header>
             <Card.Title class="text-2xl">My Organizations</Card.Title>
-            <Card.Description>View and manage your organizations. Click on a organization to view its details.</Card.Description>
+            <Card.Description>View and manage your organizations. Click on an organization to view its details.</Card.Description>
             <Card.Action>
                 <Button size="icon" onclick={addOrganization} title="Add Organization">
                     <Plus class="size-4" aria-hidden="true" />
