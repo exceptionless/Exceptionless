@@ -26,10 +26,12 @@
         if (organizationQuery.isError) {
             toast.error(`The organization "${organizationId}" could not be found.`);
             goto('/next/organization/list');
+            return;
         }
 
-        if (organizationQuery.isSuccess && organizationQuery.data.id !== organization.current) {
-            organization.current = organizationQuery.data.id;
+        if (organizationQuery.isSuccess && organizationId !== organization.current) {
+            goto(page.url.pathname.replace(`/organization/${organizationId}`, `/organization/${organization.current}`));
+            return;
         }
     });
 </script>
