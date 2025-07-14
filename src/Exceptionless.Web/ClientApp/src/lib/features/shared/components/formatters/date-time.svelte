@@ -13,13 +13,13 @@
         const date = typeof input === 'string' ? new Date(input) : input;
 
         return date.toLocaleString(undefined, {
-            month: 'short',
             day: 'numeric',
-            year: 'numeric',
             hour: 'numeric',
+            hour12: true,
             minute: '2-digit',
+            month: 'short',
             second: '2-digit',
-            hour12: true
+            year: 'numeric'
         });
     }
 </script>

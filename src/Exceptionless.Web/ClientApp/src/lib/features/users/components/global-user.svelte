@@ -1,15 +1,16 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
+
     import { getMeQuery } from '$features/users/api.svelte';
 
     let {
         children,
-        loading,
-        disabled
+        disabled,
+        loading
     }: {
         children: Snippet;
-        loading?: Snippet;
         disabled?: Snippet;
+        loading?: Snippet;
     } = $props();
 
     const userQuery = getMeQuery();
