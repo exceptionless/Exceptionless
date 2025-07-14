@@ -28,17 +28,19 @@ export function getColumns<TProject extends ViewProject>(mode: GetProjectsMode =
             {
                 accessorKey: 'stack_count',
                 cell: (info) => renderComponent(NumberFormatter, { value: info.getValue<number>() }),
+                enableSorting: false,
                 header: 'Stacks',
                 meta: {
-                    class: 'text-right w-24'
+                    class: 'w-24'
                 }
             },
             {
                 accessorKey: 'event_count',
                 cell: (info) => renderComponent(NumberFormatter, { value: info.getValue<number>() }),
+                enableSorting: false,
                 header: 'Events',
                 meta: {
-                    class: 'text-right w-24'
+                    class: 'w-24'
                 }
             }
         );

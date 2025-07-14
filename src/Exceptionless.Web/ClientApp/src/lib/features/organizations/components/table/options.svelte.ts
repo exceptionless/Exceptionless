@@ -24,6 +24,7 @@ export function getColumns<TOrganizations extends ViewOrganization>(mode: GetOrg
             accessorKey: 'plan_name',
             cell: (info) => info.getValue(),
             enableHiding: false,
+            enableSorting: false,
             header: 'Plan',
             meta: {
                 class: 'w-[200px]'
@@ -37,25 +38,28 @@ export function getColumns<TOrganizations extends ViewOrganization>(mode: GetOrg
             {
                 accessorKey: 'project_count',
                 cell: (info) => renderComponent(NumberFormatter, { value: info.getValue<number>() }),
+                enableSorting: false,
                 header: 'Projects',
                 meta: {
-                    class: 'text-right w-24'
+                    class: 'w-24'
                 }
             },
             {
                 accessorKey: 'stack_count',
                 cell: (info) => renderComponent(NumberFormatter, { value: info.getValue<number>() }),
+                enableSorting: false,
                 header: 'Stacks',
                 meta: {
-                    class: 'text-right w-24'
+                    class: 'w-24'
                 }
             },
             {
                 accessorKey: 'event_count',
                 cell: (info) => renderComponent(NumberFormatter, { value: info.getValue<number>() }),
+                enableSorting: false,
                 header: 'Events',
                 meta: {
-                    class: 'text-right w-24'
+                    class: 'w-24'
                 }
             }
         );
