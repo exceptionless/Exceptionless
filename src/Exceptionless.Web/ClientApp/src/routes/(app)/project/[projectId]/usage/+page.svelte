@@ -1,6 +1,7 @@
 <script lang="ts">
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
+    import Number from '$comp/formatters/number.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
     import { A, H4, Muted, Small } from '$comp/typography';
     import * as Chart from '$comp/ui/chart/index';
@@ -132,7 +133,7 @@
                     {/if}
                     with
                     <span class={remainingEventLimit === 0 ? 'text-destructive font-bold' : 'font-bold'}>
-                        {remainingEventLimit.toLocaleString()}
+                        <Number value={remainingEventLimit} />
                     </span>
                     events remaining until this billing period's limit is reset on
                     <span class="font-bold">{formatLongDate(nextBillingDate)}</span>
