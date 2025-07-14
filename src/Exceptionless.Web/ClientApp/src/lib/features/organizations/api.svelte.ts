@@ -202,8 +202,8 @@ export function getOrganizationsQuery(request: GetOrganizationsRequest) {
 
     return createQuery<FetchClientResponse<ViewOrganization[]>, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current,
-        onSuccess: (data: ViewOrganization[]) => {
-            data.forEach((organization) => {
+        onSuccess: (data: FetchClientResponse<ViewOrganization[]>) => {
+            data.data?.forEach((organization) => {
                 if (request.params?.mode) {
                     queryClient.setQueryData(queryKeys.id(organization.id!, request.params.mode), organization);
                 }

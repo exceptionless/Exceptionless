@@ -87,8 +87,8 @@ export function getOrganizationUsersQuery(request: GetOrganizationUsersRequest) 
 
     return createQuery<FetchClientResponse<ViewUser[]>, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.organizationId,
-        onSuccess: (data: ViewUser[]) => {
-            data.forEach((user) => {
+        onSuccess: (data: FetchClientResponse<ViewUser[]>) => {
+            data.data?.forEach((user) => {
                 queryClient.setQueryData(queryKeys.id(user.id!), user);
             });
         },

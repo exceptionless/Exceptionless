@@ -10,7 +10,6 @@
     import { env } from '$env/dynamic/public';
     import { getInvoicesQuery, getOrganizationQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
-    import { getMeQuery } from '$features/users/api.svelte';
     import GlobalUser from '$features/users/components/global-user.svelte';
     import CreditCard from '@lucide/svelte/icons/credit-card';
     import File from '@lucide/svelte/icons/file';

@@ -121,8 +121,8 @@ export function getProjectTokensQuery(request: GetProjectTokensRequest) {
 
     return createQuery<FetchClientResponse<ViewToken[]>, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.projectId,
-        onSuccess: (data: ViewToken[]) => {
-            data.forEach((token) => {
+        onSuccess: (data: FetchClientResponse<ViewToken[]>) => {
+            data.data?.forEach((token) => {
                 queryClient.setQueryData(queryKeys.id(token.id!), token);
             });
         },
