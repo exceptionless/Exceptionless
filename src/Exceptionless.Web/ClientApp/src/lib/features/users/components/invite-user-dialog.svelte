@@ -45,7 +45,7 @@
                     <Form.Control>
                         {#snippet children({ props })}
                             <Form.Label>Email Address</Form.Label>
-                            <Input {...props} bind:value={$formData.email} type="email" placeholder="user@example.com" autocomplete="email" required />
+                            <Input {...props} bind:value={$formData.email} type="email" placeholder="Email Address" autocomplete="email" required />
                         {/snippet}
                     </Form.Control>
                     <Form.Description />

@@ -49,10 +49,10 @@
             return [];
         }
 
-        return organization.usage.map((o) => {
+        return organization.usage.map((usage) => {
             return {
-                ...o,
-                date: new Date(o.date)
+                ...usage,
+                date: new Date(usage.date)
             };
         });
     });
@@ -80,13 +80,13 @@
     </div>
     <Separator />
 
-    {#if organizationQuery.isLoading || organizationQuery.isLoading}
+    {#if organizationQuery.isLoading}
         <div class="space-y-4">
             <Skeleton class="h-12 w-3/4" />
             <Skeleton class="h-[200px] w-full" />
             <Skeleton class="h-6 w-1/3" />
         </div>
-    {:else if organizationQuery.error || organizationQuery.error}
+    {:else if organizationQuery.error}
         <ErrorMessage message="Unable to load usage data." />
     {:else if !hasMonthlyUsage}
         <Muted>Monthly usage is not available for this organization. Please contact support for more information.</Muted>
