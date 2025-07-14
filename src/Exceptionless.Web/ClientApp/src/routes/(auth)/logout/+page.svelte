@@ -37,7 +37,7 @@
 </script>
 
 <Card.Root class="mx-auto max-w-sm">
-    <Card.Header>
+    <Card.Header class="min-w-[382px]">
         <Logo />
         <Card.Title class="text-center text-2xl">Log out?</Card.Title>
     </Card.Header>
