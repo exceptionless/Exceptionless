@@ -128,7 +128,7 @@
 
     <div class="flex w-full items-center justify-between">
         <div class="flex gap-2">
-            <Button variant="secondary" href="/issues?filter=organization:{organizationId}">
+            <Button variant="secondary" href="/next/issues">
                 <Issues class="mr-2 size-4" /> Go To Issues
             </Button>
         </div>
