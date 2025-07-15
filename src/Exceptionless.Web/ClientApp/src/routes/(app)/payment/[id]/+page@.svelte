@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { goto } from '$app/navigation';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import DateTime from '$comp/formatters/date-time.svelte';
@@ -6,7 +7,9 @@
     import { A, H4 } from '$comp/typography';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
+    import { accessToken } from '$features/auth/index.svelte';
     import { getInvoiceQuery } from '$features/organizations/api.svelte';
+    import { organization } from '$features/organizations/context.svelte';
     import Currency from '$features/shared/components/formatters/currency.svelte';
     import File from '@lucide/svelte/icons/file';
 
@@ -17,6 +20,16 @@
             get id() {
                 return invoiceId;
             }
+        }
+    });
+
+    $effect(() => {
+        if (!accessToken.current || !organization.current || invoiceQuery.isError) {
+            goto('/next/');
+        }
+
+        if (invoiceQuery.isSuccess && invoiceQuery.data?.organization_id !== organization.current) {
+            goto('/next/');
         }
     });
 </script>
