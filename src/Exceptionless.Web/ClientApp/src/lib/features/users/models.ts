@@ -1,6 +1,11 @@
 import { IsEmail, IsOptional } from 'class-validator';
 
-export { UpdateEmailAddressResult, User } from '$generated/api';
+export { UpdateEmailAddressResult, User, ViewUser } from '$generated/api';
+
+export class InviteUserForm {
+    @IsEmail({ require_tld: false }, { message: 'Please enter a valid email address.' })
+    email!: string;
+}
 
 export class UpdateUser {
     @IsOptional() email_notifications_enabled?: boolean;

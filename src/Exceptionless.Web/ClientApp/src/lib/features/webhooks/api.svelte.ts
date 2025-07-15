@@ -81,8 +81,8 @@ export function getProjectWebhooksQuery(request: GetProjectWebhooksRequest) {
 
     return createQuery<FetchClientResponse<Webhook[]>, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.projectId,
-        onSuccess: (data: Webhook[]) => {
-            data.forEach((webhook) => {
+        onSuccess: (data: FetchClientResponse<Webhook[]>) => {
+            data.data?.forEach((webhook) => {
                 queryClient.setQueryData(queryKeys.id(webhook.id!), webhook);
             });
         },

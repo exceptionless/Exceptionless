@@ -9,21 +9,16 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import { env } from '$env/dynamic/public';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
     import { getNextBillingDateUtc, getRemainingEventLimit } from '$features/organizations/utils';
-    import { getProjectQuery } from '$features/projects/api.svelte';
     import { formatDateLabel, formatLongDate } from '$shared/dates';
     import { scaleUtc } from 'd3-scale';
     import { curveNatural } from 'd3-shape';
     import { AreaChart } from 'layerchart';
 
     const organizationQuery = getOrganizationQuery({
-        params: {
-            mode: 'stats'
-        },
         route: {
             get id() {
-                return organization.current;
+                return page.params.organizationId || '';
             }
         }
     });
@@ -32,14 +27,6 @@
     const canChangePlan = $derived(organizationQuery.isSuccess && !!env.PUBLIC_STRIPE_PUBLISHABLE_KEY);
     const remainingEventLimit = $derived(getRemainingEventLimit(organizationQuery.data));
     const nextBillingDate = $derived(getNextBillingDateUtc(organizationQuery.data));
-
-    const projectQuery = getProjectQuery({
-        route: {
-            get id() {
-                return page.params.projectId || '';
-            }
-        }
-    });
 
     function handleChangePlan() {
         // Navigate to plan change page or open modal
@@ -51,42 +38,27 @@
         blocked: { color: 'var(--chart-2)', label: 'Blocked' },
         discarded: { color: 'var(--chart-3)', label: 'Discarded' },
         limit: { color: 'var(--chart-6)', label: 'Limit' },
-        org_total: { color: 'var(--chart-5)', label: 'Total in Organization' },
         too_big: { color: 'var(--chart-4)', label: 'Too Big' },
         total: { color: 'var(--chart-1)', label: 'Total' }
     } satisfies Chart.ChartConfig;
 
     const chartData = $derived.by(() => {
-        const project = projectQuery.data;
+        const organization = organizationQuery.data;
         const org = organizationQuery.data;
 
-        if (!project?.usage || !org?.usage) {
+        if (!organization?.usage || !org?.usage) {
             return [];
         }
 
-        // Filter org usage to only dates that exist in project usage
-        const filteredOrgUsage = org.usage.filter((orgItem) =>
-            project.usage!.some((projItem) => new Date(orgItem.date).toDateString() === new Date(projItem.date).toDateString())
-        );
-
-        // Merge project and org data by date
-        return project.usage.map((projItem) => {
-            const orgItem = filteredOrgUsage.find((o) => new Date(o.date).toDateString() === new Date(projItem.date).toDateString());
-
+        return organization.usage.map((usage) => {
             return {
-                blocked: projItem.blocked,
-                date: new Date(projItem.date),
-                discarded: projItem.discarded,
-                limit: orgItem?.limit || 0,
-                org_total: orgItem?.total || 0,
-                too_big: projItem.too_big,
-                total: projItem.total
+                ...usage,
+                date: new Date(usage.date)
             };
         });
     });
 
     const series = [
-        { key: 'org_total', ...chartConfig.org_total },
         { key: 'total', ...chartConfig.total },
         { key: 'discarded', ...chartConfig.discarded },
         { key: 'blocked', ...chartConfig.blocked },
@@ -109,13 +81,13 @@
     </div>
     <Separator />
 
-    {#if projectQuery.isLoading || organizationQuery.isLoading}
+    {#if organizationQuery.isLoading}
         <div class="space-y-4">
             <Skeleton class="h-12 w-3/4" />
             <Skeleton class="h-[200px] w-full" />
             <Skeleton class="h-6 w-1/3" />
         </div>
-    {:else if projectQuery.error || organizationQuery.error}
+    {:else if organizationQuery.error}
         <ErrorMessage message="Unable to load usage data." />
     {:else if !hasMonthlyUsage}
         <Muted>Monthly usage is not available for this organization. Please contact support for more information.</Muted>

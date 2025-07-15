@@ -249,8 +249,8 @@ export function getOrganizationProjectsQuery(request: GetOrganizationProjectsReq
 
     return createQuery<FetchClientResponse<ViewProject[]>, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.organizationId,
-        onSuccess: (data: ViewProject[]) => {
-            data.forEach((project) => {
+        onSuccess: (data: FetchClientResponse<ViewProject[]>) => {
+            data.data?.forEach((project) => {
                 queryClient.setQueryData(queryKeys.id(project.id!), project);
             });
         },

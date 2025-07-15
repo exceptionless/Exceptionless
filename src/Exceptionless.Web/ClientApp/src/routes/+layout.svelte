@@ -40,6 +40,11 @@
             return;
         }
 
+        if (status === 401 && !ctx.options.expectedStatusCodes?.includes(401)) {
+            accessToken.current = '';
+            return;
+        }
+
         if (status === 404 && !ctx.options.expectedStatusCodes?.includes(404)) {
             throw error(404, 'Not found');
         }
@@ -72,6 +77,10 @@
                     }
 
                     if (error instanceof ProblemDetails) {
+                        if (error.status === 401) {
+                            return false;
+                        }
+
                         return !!error.status && error.status < 500;
                     }
 

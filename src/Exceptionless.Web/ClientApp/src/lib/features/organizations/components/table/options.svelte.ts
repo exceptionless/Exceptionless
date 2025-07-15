@@ -2,20 +2,30 @@ import type { FetchClientResponse, ProblemDetails } from '@exceptionless/fetchcl
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import NumberFormatter from '$comp/formatters/number.svelte';
-import ProjectActionsCell from '$features/projects/components/table/project-actions-cell.svelte';
-import { ViewProject } from '$features/projects/models';
-import { getSharedTableOptions } from '$features/shared/table.svelte';
+import OrganizationsActionsCell from '$features/organizations/components/table/organization-actions-cell.svelte';
+import { ViewOrganization } from '$features/organizations/models';
+import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
 import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
 
-import type { GetOrganizationProjectsParams, GetProjectsMode } from '../../api.svelte';
+import type { GetOrganizationsMode, GetOrganizationsParams } from '../../api.svelte';
 
-export function getColumns<TProject extends ViewProject>(mode: GetProjectsMode = 'stats'): ColumnDef<TProject>[] {
-    const columns: ColumnDef<TProject>[] = [
+export function getColumns<TOrganizations extends ViewOrganization>(mode: GetOrganizationsMode = 'stats'): ColumnDef<TOrganizations>[] {
+    const columns: ColumnDef<TOrganizations>[] = [
         {
             accessorKey: 'name',
             cell: (info) => info.getValue(),
             enableHiding: false,
             header: 'Name',
+            meta: {
+                class: 'w-[200px]'
+            }
+        },
+        {
+            accessorKey: 'plan_name',
+            cell: (info) => info.getValue(),
+            enableHiding: false,
+            enableSorting: false,
+            header: 'Plan',
             meta: {
                 class: 'w-[200px]'
             }
@@ -25,6 +35,15 @@ export function getColumns<TProject extends ViewProject>(mode: GetProjectsMode =
     const isStatsMode = mode === 'stats';
     if (isStatsMode) {
         columns.push(
+            {
+                accessorKey: 'project_count',
+                cell: (info) => renderComponent(NumberFormatter, { value: info.getValue<number>() }),
+                enableSorting: false,
+                header: 'Projects',
+                meta: {
+                    class: 'w-24'
+                }
+            },
             {
                 accessorKey: 'stack_count',
                 cell: (info) => renderComponent(NumberFormatter, { value: info.getValue<number>() }),
@@ -47,7 +66,7 @@ export function getColumns<TProject extends ViewProject>(mode: GetProjectsMode =
     }
 
     columns.push({
-        cell: (info) => renderComponent(ProjectActionsCell, { project: info.row.original }),
+        cell: (info) => renderComponent(OrganizationsActionsCell, { organization: info.row.original }),
         enableHiding: false,
         enableSorting: false,
         header: 'Actions',
@@ -60,16 +79,16 @@ export function getColumns<TProject extends ViewProject>(mode: GetProjectsMode =
     return columns;
 }
 
-export function getTableOptions<TProject extends ViewProject>(
-    queryParameters: GetOrganizationProjectsParams,
-    queryResponse: CreateQueryResult<FetchClientResponse<TProject[]>, ProblemDetails>
+export function getTableOptions<TOrganizations extends ViewOrganization>(
+    queryParameters: GetOrganizationsParams & TableMemoryPagingParameters,
+    queryResponse: CreateQueryResult<FetchClientResponse<TOrganizations[]>, ProblemDetails>
 ) {
-    return getSharedTableOptions<TProject>({
-        columnPersistenceKey: 'projects-column-visibility',
+    return getSharedTableOptions<TOrganizations>({
+        columnPersistenceKey: 'organizations-column-visibility',
         get columns() {
-            return getColumns<TProject>(queryParameters.mode);
+            return getColumns<TOrganizations>(queryParameters.mode);
         },
-        paginationStrategy: 'offset',
+        paginationStrategy: 'memory',
         get queryData() {
             return queryResponse.data?.data ?? [];
         },
