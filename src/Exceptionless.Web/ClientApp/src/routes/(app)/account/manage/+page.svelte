@@ -5,11 +5,11 @@
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
     import { Separator } from '$comp/ui/separator';
-    import { getMeQuery, patchUser, postEmailAddress } from '$features/users/api.svelte';
+    import { getMeQuery, patchUser, postEmailAddress, resendVerificationEmail } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { UpdateUser, UpdateUserEmailAddress } from '$features/users/models';
     import { applyServerSideErrors } from '$shared/validation';
-    import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@exceptionless/fetchclient';
     import { toast } from 'svelte-sonner';
     import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';
@@ -20,6 +20,14 @@
     const isEmailAddressVerified = $derived(meQuery.data?.is_email_address_verified ?? false);
     const gravatar = getGravatarFromCurrentUser(meQuery);
     const updateUser = patchUser({
+        route: {
+            get id() {
+                return meQuery.data?.id;
+            }
+        }
+    });
+
+    const resendVerificationEmailMutation = resendVerificationEmail({
         route: {
             get id() {
                 return meQuery.data?.id;
@@ -54,8 +62,11 @@
                 if (error instanceof ProblemDetails) {
                     applyServerSideErrors(form, error);
                     result.status = error.status ?? 500;
-                    toastId = toast.error(form.message ?? 'Error saving email address. Please try again.');
+                } else {
+                    result.status = 500;
                 }
+
+                toastId = toast.error(form.message ?? 'Error saving email address. Please try again.');
             }
         },
         SPA: true,
@@ -81,8 +92,11 @@
                 if (error instanceof ProblemDetails) {
                     applyServerSideErrors(form, error);
                     result.status = error.status ?? 500;
-                    toastId = toast.error(form.message ?? 'Error saving full name. Please try again.');
+                } else {
+                    result.status = 500;
                 }
+
+                toastId = toast.error(form.message ?? 'Error saving full name. Please try again.');
             }
         },
         SPA: true,
@@ -129,11 +143,10 @@
     } = updateUserForm;
     const debouncedUpdatedUserFormSubmit = debounce(1000, updateUserFormSubmit);
 
-    async function resendVerificationEmail() {
+    async function handleResendVerificationEmail() {
         toast.dismiss(toastId);
-        const client = useFetchClient();
         try {
-            await client.get(`users/${meQuery.data?.id}/resend-verification-email`);
+            await resendVerificationEmailMutation.mutateAsync();
             toastId = toast.success('Please check your inbox for the verification email.');
         } catch {
             toastId = toast.error('Error sending verification email. Please try again.');
@@ -200,7 +213,7 @@
     </form>
     {#if !isEmailAddressVerified}
         <Small>
-            Email not verified. <A class="cursor-pointer" onclick={resendVerificationEmail}>Resend</A> verification email.
+            Email not verified. <A class="cursor-pointer" onclick={handleResendVerificationEmail}>Resend</A> verification email.
         </Small>
     {/if}
 </div>

@@ -121,7 +121,13 @@
         set limit(value) {
             queryParams.limit = value;
         },
-        mode: 'summary'
+        mode: 'summary',
+        get time() {
+            return queryParams.time!;
+        },
+        set time(value) {
+            queryParams.time = value;
+        }
     });
 
     const client = useFetchClient();

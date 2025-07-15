@@ -1,10 +1,10 @@
 import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
-import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
-import { UpdateEmailAddressResult, type UpdateUser, UpdateUserEmailAddress, User } from './models';
+import { UpdateEmailAddressResult, type UpdateUser, UpdateUserEmailAddress, User, ViewUser } from './models';
 
 export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>) {
     const { id } = message;
@@ -23,18 +23,39 @@ export async function invalidateUserQueries(queryClient: QueryClient, message: W
 export const queryKeys = {
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     idEmailAddress: (id?: string) => [...queryKeys.id(id), 'email-address'] as const,
+    ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
     me: () => [...queryKeys.type, 'me'] as const,
+    organization: (id: string | undefined) => [...queryKeys.type, 'organization', id] as const,
     patchUser: (id: string | undefined) => [...queryKeys.id(id), 'patch'] as const,
     postEmailAddress: (id: string | undefined) => [...queryKeys.idEmailAddress(id), 'update'] as const,
     type: ['User'] as const
 };
+
+export interface GetOrganizationUsersParams {
+    limit?: number;
+    page?: number;
+}
+
+export interface GetOrganizationUsersRequest {
+    params?: GetOrganizationUsersParams;
+    route: {
+        organizationId: string | undefined;
+    };
+}
 
 export interface PatchUserRequest {
     route: {
         id: string | undefined;
     };
 }
+
 export interface PostEmailAddressRequest {
+    route: {
+        id: string | undefined;
+    };
+}
+
+export interface ResendVerificationEmailRequest {
     route: {
         id: string | undefined;
     };
@@ -58,6 +79,33 @@ export function getMeQuery() {
             return response.data!;
         },
         queryKey: queryKeys.me()
+    }));
+}
+
+export function getOrganizationUsersQuery(request: GetOrganizationUsersRequest) {
+    const queryClient = useQueryClient();
+
+    return createQuery<FetchClientResponse<ViewUser[]>, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.organizationId,
+        onSuccess: (data: FetchClientResponse<ViewUser[]>) => {
+            data.data?.forEach((user) => {
+                queryClient.setQueryData(queryKeys.id(user.id!), user);
+            });
+        },
+        queryClient,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<ViewUser[]>(`organizations/${request.route.organizationId}/users`, {
+                params: {
+                    ...request.params,
+                    limit: request.params?.limit ?? 1000
+                },
+                signal
+            });
+
+            return response;
+        },
+        queryKey: [...queryKeys.organization(request.route.organizationId), { params: request.params }]
     }));
 }
 
@@ -108,5 +156,16 @@ export function postEmailAddress(request: PostEmailAddressRequest) {
                 queryClient.setQueryData(queryKeys.me(), <User>{ ...currentUser, ...partialUserData });
             }
         }
+    }));
+}
+
+export function resendVerificationEmail(request: ResendVerificationEmailRequest) {
+    return createMutation<void, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            await client.getJSON<void>(`users/${request.route.id}/resend-verification-email`);
+        },
+        mutationKey: [...queryKeys.id(request.route.id), 'resend-verification-email']
     }));
 }

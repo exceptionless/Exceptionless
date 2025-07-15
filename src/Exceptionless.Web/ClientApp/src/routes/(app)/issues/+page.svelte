@@ -133,7 +133,13 @@
         set limit(value) {
             queryParams.limit = value;
         },
-        mode: 'stack_frequent'
+        mode: 'stack_frequent',
+        get time() {
+            return queryParams.time!;
+        },
+        set time(value) {
+            queryParams.time = value;
+        }
     });
 
     const client = useFetchClient();

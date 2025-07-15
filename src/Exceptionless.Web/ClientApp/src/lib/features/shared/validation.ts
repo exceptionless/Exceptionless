@@ -23,7 +23,7 @@ export async function validate(data: null | object): Promise<null | ProblemDetai
         return null;
     }
 
-    const validationErrors = await classValidate(data);
+    const validationErrors = await classValidate(data, { forbidUnknownValues: false });
     if (validationErrors.length === 0) {
         return null;
     }
