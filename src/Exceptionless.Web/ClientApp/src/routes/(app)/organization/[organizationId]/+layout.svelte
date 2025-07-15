@@ -22,6 +22,11 @@
         }
     });
 
+    // Set the current organization based on the current organization param on page load.
+    if (organizationId !== organization.current) {
+        organization.current = organizationId;
+    }
+
     $effect(() => {
         if (organizationQuery.isError) {
             toast.error(`The organization "${organizationId}" could not be found.`);
