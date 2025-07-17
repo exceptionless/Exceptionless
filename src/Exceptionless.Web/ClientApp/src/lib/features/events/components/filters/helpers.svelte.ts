@@ -82,14 +82,26 @@ export function quote(value?: null | string): string | undefined {
 }
 
 export function quoteIfSpecialCharacters(value?: null | string): null | string | undefined {
-    // Check for lucene special characters or whitespace
-    const regex = /[+\-&|!(){}\[\]^"~*?:\\/\\s]/;
-    
-    if (value && regex.test(value) {
-        return quote(value);
+    if (!value) {
+        return value;
     }
 
-    return value;
+    const trimmed = value.trim();
+    if (!trimmed) {
+        return trimmed;
+    }
+
+    if (trimmed.length > 1 && trimmed.startsWith('"') && trimmed.endsWith('"')) {
+        return trimmed;
+    }
+
+    // Check for lucene special characters or whitespace
+    const regex = /[+\-&|!(){}[\]^"~*?:\\/\s]/;
+    if (trimmed && regex.test(trimmed)) {
+        return quote(trimmed);
+    }
+
+    return trimmed;
 }
 
 export function shouldRefreshPersistentEventChanged(
