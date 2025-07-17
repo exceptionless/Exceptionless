@@ -33,7 +33,7 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseSolutionRelativeContentRoot("src/Exceptionless.Web");
+        builder.UseSolutionRelativeContentRoot("src/Exceptionless.Web", "*.slnx");
     }
 
     protected override IHostBuilder CreateHostBuilder()
