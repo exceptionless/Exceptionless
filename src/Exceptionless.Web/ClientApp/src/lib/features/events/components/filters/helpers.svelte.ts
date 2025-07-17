@@ -83,9 +83,9 @@ export function quote(value?: null | string): string | undefined {
 
 export function quoteIfSpecialCharacters(value?: null | string): null | string | undefined {
     // Check for lucene special characters or whitespace
-    const regex = new RegExp('\\+|\\-|\\&|\\||\\!|\\(|\\)|\\{|\\}|\\[|\\]|\\^|\\"|\\~|\\*|\\?|\\:|\\\\|\\/|\\s', 'g');
-
-    if (value && value.match(regex)) {
+    const regex = /[+\-&|!(){}\[\]^"~*?:\\/\\s]/;
+    
+    if (value && regex.test(value) {
         return quote(value);
     }
 
