@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { HTMLAttributes } from 'svelte/elements';
 
+    import { goto } from '$app/navigation';
     import DelayedRender from '$comp/delayed-render.svelte';
     import * as Avatar from '$comp/ui/avatar/index';
     import * as DropdownMenu from '$comp/ui/dropdown-menu/index';
@@ -11,6 +12,7 @@
     import { getInitials } from '$shared/strings';
     import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
     import Plus from '@lucide/svelte/icons/plus';
+    import Settings from '@lucide/svelte/icons/settings';
 
     type Props = HTMLAttributes<HTMLUListElement> & {
         isLoading: boolean;
@@ -33,6 +35,16 @@
         }
 
         selected = organization.id;
+    }
+
+    function goToManageOrganization() {
+        if (activeOrganization?.id) {
+            goto(`/next/organization/${activeOrganization.id}/manage`);
+        }
+    }
+
+    function goToAddOrganization() {
+        goto('/next/organization/add');
     }
 </script>
 
@@ -57,7 +69,7 @@
                     {/snippet}
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content
-                    class="w-(--bits-dropdown-menu-anchor-width) min-w-56 rounded-lg"
+                    class="w-(--bits-dropdown-menu-anchor-width) min-w-64 rounded-lg"
                     align="start"
                     side={sidebar.isMobile ? 'bottom' : 'right'}
                     sideOffset={4}
@@ -79,11 +91,25 @@
                         {/each}
                     {/if}
                     <DropdownMenu.Separator />
-                    <DropdownMenu.Item class="gap-2 p-2">
+                    {#if activeOrganization?.id}
+                        <DropdownMenu.Item
+                            onSelect={goToManageOrganization}
+                            class="gap-2 p-2"
+                        >
+                            <div class="bg-background flex size-6 items-center justify-center rounded-md border">
+                                <Settings class="size-4" aria-hidden="true" />
+                            </div>
+                            <span class="text-muted-foreground font-medium">Manage organization</span>
+                            <DropdownMenu.Shortcut>⇧⌘go</DropdownMenu.Shortcut>
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Separator />
+                    {/if}
+                    <DropdownMenu.Item onSelect={goToAddOrganization} class="gap-2 p-2">
                         <div class="bg-background flex size-6 items-center justify-center rounded-md border">
                             <Plus class="size-4" aria-hidden="true" />
                         </div>
                         <span class="text-muted-foreground font-medium">Add organization</span>
+                        <DropdownMenu.Shortcut>⇧⌘gn</DropdownMenu.Shortcut>
                     </DropdownMenu.Item>
                 </DropdownMenu.Content>
             </DropdownMenu.Root>
