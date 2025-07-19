@@ -10,13 +10,13 @@
     import { organization } from '$features/organizations/context.svelte';
     import { User } from '$features/users/models';
     import BadgeCheck from '@lucide/svelte/icons/badge-check';
+    import Bell from '@lucide/svelte/icons/bell';
     import BookOpen from '@lucide/svelte/icons/book-open';
     import Braces from '@lucide/svelte/icons/braces';
-    import Bell from '@lucide/svelte/icons/bell';
     import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
     import Help from '@lucide/svelte/icons/circle-help';
-    import GitHub from '@lucide/svelte/icons/github';
     import CreditCard from '@lucide/svelte/icons/credit-card';
+    import GitHub from '@lucide/svelte/icons/github';
     import LogOut from '@lucide/svelte/icons/log-out';
     import Plus from '@lucide/svelte/icons/plus';
     import Settings from '@lucide/svelte/icons/settings';
@@ -109,20 +109,26 @@
                         </DropdownMenu.Item>
                         {#if organization.current}
                             <DropdownMenu.Item>
-                                <CreditCard />
-                                <A variant="ghost" href={`/next/organization/${organization.current}/billing`} class="w-full" onclick={onMenuClick}>Billing</A>
-                                <DropdownMenu.Shortcut>⇧⌘gb</DropdownMenu.Shortcut>
+                                <Settings />
+                                <A variant="ghost" href={`/next/organization/${organization.current}/manage`} class="w-full gap-2 flex items-center" onclick={onMenuClick}>
+                                    Manage organization
+                                    <DropdownMenu.Shortcut>⇧⌘go</DropdownMenu.Shortcut>
+                                </A>
                             </DropdownMenu.Item>
                             <DropdownMenu.Item>
-                                <Settings />
-                                <A variant="ghost" href={`/next/organization/${organization.current}/manage`} class="w-full" onclick={onMenuClick}>Manage organization</A>
-                                <DropdownMenu.Shortcut>⇧⌘go</DropdownMenu.Shortcut>
+                                <CreditCard />
+                                <A variant="ghost" href={`/next/organization/${organization.current}/billing`} class="w-full gap-2 flex items-center" onclick={onMenuClick}>
+                                    Billing
+                                    <DropdownMenu.Shortcut>⇧⌘gb</DropdownMenu.Shortcut>
+                                </A>
                             </DropdownMenu.Item>
                         {:else}
                             <DropdownMenu.Item>
                                 <Plus />
-                                <A variant="ghost" href="/next/organization/add" class="w-full" onclick={onMenuClick}>Add organization</A>
-                                <DropdownMenu.Shortcut>⇧⌘ga</DropdownMenu.Shortcut>
+                                <A variant="ghost" href="/next/organization/add" class="w-full gap-2 flex items-center" onclick={onMenuClick}>
+                                    Add organization
+                                    <DropdownMenu.Shortcut>⇧⌘gn</DropdownMenu.Shortcut>
+                                </A>
                             </DropdownMenu.Item>
                         {/if}
                     </DropdownMenu.Group>

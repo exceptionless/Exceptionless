@@ -1,8 +1,8 @@
 <script lang="ts">
     import type { HTMLAttributes } from 'svelte/elements';
 
-    import { goto } from '$app/navigation';
     import DelayedRender from '$comp/delayed-render.svelte';
+    import { A } from '$comp/typography';
     import * as Avatar from '$comp/ui/avatar/index';
     import * as DropdownMenu from '$comp/ui/dropdown-menu/index';
     import * as Sidebar from '$comp/ui/sidebar/index';
@@ -35,16 +35,6 @@
         }
 
         selected = organization.id;
-    }
-
-    function goToManageOrganization() {
-        if (activeOrganization?.id) {
-            goto(`/next/organization/${activeOrganization.id}/manage`);
-        }
-    }
-
-    function goToAddOrganization() {
-        goto('/next/organization/add');
     }
 </script>
 
@@ -92,24 +82,25 @@
                     {/if}
                     <DropdownMenu.Separator />
                     {#if activeOrganization?.id}
-                        <DropdownMenu.Item
-                            onSelect={goToManageOrganization}
-                            class="gap-2 p-2"
-                        >
-                            <div class="bg-background flex size-6 items-center justify-center rounded-md border">
-                                <Settings class="size-4" aria-hidden="true" />
-                            </div>
-                            <span class="text-muted-foreground font-medium">Manage organization</span>
-                            <DropdownMenu.Shortcut>⇧⌘go</DropdownMenu.Shortcut>
+                        <DropdownMenu.Item>
+                            <A variant="ghost" href={`/next/organization/${activeOrganization.id}/manage`} class="flex items-center gap-2 w-full">
+                                <div class="bg-background flex size-6 items-center justify-center rounded-md border">
+                                    <Settings class="size-4" aria-hidden="true" />
+                                </div>
+                                <span class="text-muted-foreground font-medium">Manage organization</span>
+                                <DropdownMenu.Shortcut>⇧⌘go</DropdownMenu.Shortcut>
+                            </A>
                         </DropdownMenu.Item>
                         <DropdownMenu.Separator />
                     {/if}
-                    <DropdownMenu.Item onSelect={goToAddOrganization} class="gap-2 p-2">
-                        <div class="bg-background flex size-6 items-center justify-center rounded-md border">
-                            <Plus class="size-4" aria-hidden="true" />
-                        </div>
-                        <span class="text-muted-foreground font-medium">Add organization</span>
-                        <DropdownMenu.Shortcut>⇧⌘gn</DropdownMenu.Shortcut>
+                    <DropdownMenu.Item>
+                        <A variant="ghost" href="/next/organization/add" class="flex items-center gap-2 w-full">
+                            <div class="bg-background flex size-6 items-center justify-center rounded-md border">
+                                <Plus class="size-4" aria-hidden="true" />
+                            </div>
+                            <span class="text-muted-foreground font-medium">Add organization</span>
+                            <DropdownMenu.Shortcut>⇧⌘gn</DropdownMenu.Shortcut>
+                        </A>
                     </DropdownMenu.Item>
                 </DropdownMenu.Content>
             </DropdownMenu.Root>
