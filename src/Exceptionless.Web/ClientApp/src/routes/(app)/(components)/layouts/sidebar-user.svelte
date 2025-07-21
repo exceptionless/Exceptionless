@@ -110,14 +110,24 @@
                         {#if organization.current}
                             <DropdownMenu.Item>
                                 <Settings />
-                                <A variant="ghost" href={`/next/organization/${organization.current}/manage`} class="w-full gap-2 flex items-center" onclick={onMenuClick}>
+                                <A
+                                    variant="ghost"
+                                    href={`/next/organization/${organization.current}/manage`}
+                                    class="flex w-full items-center gap-2"
+                                    onclick={onMenuClick}
+                                >
                                     Manage organization
                                     <DropdownMenu.Shortcut>⇧⌘go</DropdownMenu.Shortcut>
                                 </A>
                             </DropdownMenu.Item>
                             <DropdownMenu.Item>
                                 <CreditCard />
-                                <A variant="ghost" href={`/next/organization/${organization.current}/billing`} class="w-full gap-2 flex items-center" onclick={onMenuClick}>
+                                <A
+                                    variant="ghost"
+                                    href={`/next/organization/${organization.current}/billing`}
+                                    class="flex w-full items-center gap-2"
+                                    onclick={onMenuClick}
+                                >
                                     Billing
                                     <DropdownMenu.Shortcut>⇧⌘gb</DropdownMenu.Shortcut>
                                 </A>
@@ -125,7 +135,7 @@
                         {:else}
                             <DropdownMenu.Item>
                                 <Plus />
-                                <A variant="ghost" href="/next/organization/add" class="w-full gap-2 flex items-center" onclick={onMenuClick}>
+                                <A variant="ghost" href="/next/organization/add" class="flex w-full items-center gap-2" onclick={onMenuClick}>
                                     Add organization
                                     <DropdownMenu.Shortcut>⇧⌘gn</DropdownMenu.Shortcut>
                                 </A>

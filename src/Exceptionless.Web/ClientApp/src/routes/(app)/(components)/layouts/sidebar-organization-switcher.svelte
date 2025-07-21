@@ -83,7 +83,7 @@
                     <DropdownMenu.Separator />
                     {#if activeOrganization?.id}
                         <DropdownMenu.Item>
-                            <A variant="ghost" href={`/next/organization/${activeOrganization.id}/manage`} class="flex items-center gap-2 w-full">
+                            <A variant="ghost" href={`/next/organization/${activeOrganization.id}/manage`} class="flex w-full items-center gap-2">
                                 <div class="bg-background flex size-6 items-center justify-center rounded-md border">
                                     <Settings class="size-4" aria-hidden="true" />
                                 </div>
@@ -94,7 +94,7 @@
                         <DropdownMenu.Separator />
                     {/if}
                     <DropdownMenu.Item>
-                        <A variant="ghost" href="/next/organization/add" class="flex items-center gap-2 w-full">
+                        <A variant="ghost" href="/next/organization/add" class="flex w-full items-center gap-2">
                             <div class="bg-background flex size-6 items-center justify-center rounded-md border">
                                 <Plus class="size-4" aria-hidden="true" />
                             </div>
