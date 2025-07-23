@@ -141,7 +141,7 @@ public class DataMigrationJob : JobBase
                 {
                     _logger.LogWarning(taskStatus?.OriginalException, "Error getting task status for {TargetIndex} {TaskId}: {Message}", workItem.TargetIndex, workItem.TaskId, taskStatus.GetErrorMessage());
                     if (taskStatus?.ServerError?.Status == 429)
-                        await Task.Delay(TimeSpan.FromSeconds(1));
+                        await Task.Delay(TimeSpan.FromSeconds(1), _timeProvider);
 
                     continue;
                 }
@@ -166,7 +166,7 @@ public class DataMigrationJob : JobBase
                             workItemQueue.Enqueue(workItem);
                             totalTasks++;
                             retriesCount++;
-                            await Task.Delay(TimeSpan.FromSeconds(15));
+                            await Task.Delay(TimeSpan.FromSeconds(15), _timeProvider);
                         }
                         else
                         {
@@ -193,10 +193,10 @@ public class DataMigrationJob : JobBase
                 _logger.LogInformation("STATUS - I:{Completed}/{Total} P:{Progress:F0}% T:{Duration:d\\.hh\\:mm} W:{Working} F:{Failed} R:{Retries}", completedTasks.Count, totalTasks, highestProgress * 100, _timeProvider.GetUtcNow().UtcDateTime.Subtract(started), workingTasks.Count, failedTasks.Count, retriesCount);
                 lastProgress = _timeProvider.GetUtcNow().UtcDateTime;
             }
-            await Task.Delay(TimeSpan.FromSeconds(2));
+            await Task.Delay(TimeSpan.FromSeconds(2), _timeProvider);
         }
 
-        _logger.LogInformation("----- REINDEX COMPLETE", completedTasks.Count, totalTasks, _timeProvider.GetUtcNow().UtcDateTime.Subtract(started), failedTasks.Count, retriesCount);
+        _logger.LogInformation("----- REINDEX COMPLETE - I:{Completed}/{Total} T:{Duration:d\\.hh\\:mm} F:{Failed} R:{Retries}", completedTasks.Count, totalTasks, _timeProvider.GetUtcNow().UtcDateTime.Subtract(started), failedTasks.Count, retriesCount);
         foreach (var task in completedTasks)
         {
             var status = task.LastTaskInfo.Status;
@@ -204,7 +204,7 @@ public class DataMigrationJob : JobBase
             double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
 
             var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex));
-            _logger.LogInformation("SUCCESS - {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
+            _logger.LogInformation("SUCCESS - {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} P:{Progress:F0}% C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.TargetIndex, targetCount.Count, duration, progress, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
         }
 
         foreach (var task in failedTasks)
@@ -214,8 +214,9 @@ public class DataMigrationJob : JobBase
             double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
 
             var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex));
-            _logger.LogCritical("FAILED - {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
+            _logger.LogCritical("FAILED - {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} P:{Progress:F0}% C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.TargetIndex, targetCount.Count, duration, progress, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
         }
+
         _logger.LogInformation("----- SUMMARY - I:{Completed}/{Total} T:{Duration:d\\.hh\\:mm} F:{Failed} R:{Retries}", completedTasks.Count, totalTasks, _timeProvider.GetUtcNow().UtcDateTime.Subtract(started), failedTasks.Count, retriesCount);
 
         _logger.LogInformation("Updating aliases");

@@ -89,7 +89,7 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
             _logger.LogInformation("Closing {SessionClosedCount} of {SessionCount} sessions", sessionsToUpdate.Count, results.Documents.Count);
 
             // Sleep so we are not hammering the backend.
-            await Task.Delay(TimeSpan.FromSeconds(2.5));
+            await Task.Delay(TimeSpan.FromSeconds(2.5), _timeProvider);
 
             if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
                 break;
