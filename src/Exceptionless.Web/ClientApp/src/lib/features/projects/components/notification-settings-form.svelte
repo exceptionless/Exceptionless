@@ -60,7 +60,7 @@
     });
 </script>
 
-{#if $formData}
+{#if $formData.send_daily_summary !== undefined}
     <form method="POST" use:enhance class="space-y-2">
         <ErrorMessage message={$message} />
 
