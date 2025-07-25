@@ -2,7 +2,7 @@
     import type { Snippet } from "svelte";
 
     import ErrorMessage from '$comp/error-message.svelte';
-    import { H3, H4, Muted } from '$comp/typography';
+    import { H4, Muted } from '$comp/typography';
     import { Skeleton } from '$comp/ui/skeleton';
     import { Switch } from '$comp/ui/switch';
     import { NotificationSettings } from '$features/projects/models';
@@ -115,11 +115,14 @@
             </div>
         </form>
 {:else}
-    <div class="space-y-4">
+    <div class="rounded-lg border p-4 flex flex-col divide-y divide-border bg-card">
         {#each { length: 6 } as name, index (`${name}-${index}`)}
-            <div class="flex items-center space-x-2">
-                <Skeleton class="size-5 rounded-sm" />
-                <Skeleton class="size-5 w-64 rounded-md" />
+            <div class="flex flex-row items-center justify-between py-2">
+                <div class="space-y-1">
+                    <Skeleton class="h-6 w-40 rounded-md" />
+                    <Skeleton class="h-5 w-64 rounded" />
+                </div>
+                <Skeleton class="h-[1.15rem] w-8 rounded-full" />
             </div>
         {/each}
     </div>
