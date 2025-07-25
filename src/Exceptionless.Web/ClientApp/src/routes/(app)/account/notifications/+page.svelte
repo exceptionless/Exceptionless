@@ -7,7 +7,7 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import { Switch } from '$comp/ui/switch';
     import { getProjectsQuery, getProjectUserNotificationSettings, postProjectUserNotificationSettings } from '$features/projects/api.svelte';
-    import NotificationSettingsForm from '$features/projects/components/notification-settings-form.svelte';
+    import UserNotificationSettingsForm from '$features/projects/components/user-notification-settings-form.svelte';
     import { getMeQuery } from '$features/users/api.svelte';
     import { patchUser } from '$features/users/api.svelte';
     import { queryParamsState } from 'kit-query-params';
@@ -115,6 +115,7 @@
     {#if selectedProject}
         <Separator />
 
+        <div class="space-y-2">
         <H3>Project Notification Settings</H3>
         <Muted>Choose how often you want to receive notifications for event occurrences in this project.</Muted>
         <Select.Root bind:value={queryParams.project!} type="single">
@@ -133,6 +134,8 @@
             </Select.Content>
         </Select.Root>
 
-        <NotificationSettingsForm settings={selectedProjectNotificationSettings?.data} save={handleProjectNotificationSave} />
+        </div>
+
+        <UserNotificationSettingsForm settings={selectedProjectNotificationSettings?.data} save={handleProjectNotificationSave} />
     {/if}
 </div>
