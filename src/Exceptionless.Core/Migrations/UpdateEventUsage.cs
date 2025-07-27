@@ -102,7 +102,7 @@ public sealed class UpdateEventUsage : MigrationBase
             }
 
             // Sleep so we are not hammering the backend.
-            await Task.Delay(TimeSpan.FromSeconds(2.5));
+            await Task.Delay(TimeSpan.FromSeconds(2.5), _timeProvider);
             if (context.CancellationToken.IsCancellationRequested || !await organizationResults.NextPageAsync())
                 break;
         }

@@ -60,7 +60,7 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase
                 await _organizationRepository.SaveAsync(results.Documents);
 
             // Sleep so we are not hammering the backend.
-            await Task.Delay(TimeSpan.FromSeconds(2.5));
+            await Task.Delay(TimeSpan.FromSeconds(2.5), _timeProvider);
 
             if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
                 break;
@@ -68,7 +68,6 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase
             if (results.Documents.Count > 0)
                 await context.RenewLockAsync();
         }
-
     }
 
     private void UpgradePlan(Organization organization)

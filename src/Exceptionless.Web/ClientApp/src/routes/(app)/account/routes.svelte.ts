@@ -25,7 +25,6 @@ export function routes(): NavigationItem[] {
             group: 'My Account',
             href: '/next/account/notifications',
             icon: Notifications,
-            show: () => false,
             title: 'Notifications'
         },
         {
