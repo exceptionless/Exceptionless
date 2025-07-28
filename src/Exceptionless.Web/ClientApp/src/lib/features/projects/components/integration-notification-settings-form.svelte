@@ -1,6 +1,6 @@
 <script lang="ts">
     import ErrorMessage from '$comp/error-message.svelte';
-    import { Label } from '$comp/ui/label';
+    import { Muted } from '$comp/typography';
     import { Skeleton } from '$comp/ui/skeleton';
     import { Switch } from '$comp/ui/switch';
     import { NotificationSettings } from '$features/projects/models';
@@ -49,7 +49,6 @@
         validators: classvalidatorClient(NotificationSettings)
     });
 
-    // TODO: Use the Switch primitive component?
     const { enhance, form: formData, message, submit, submitting, tainted } = form;
     const debouncedFormSubmit = debounce(500, () => submit());
 
@@ -61,47 +60,70 @@
 </script>
 
 {#if $formData.send_daily_summary !== undefined}
-    <form method="POST" use:enhance class="space-y-2">
+    <form method="POST" use:enhance class="space-y-3">
         <ErrorMessage message={$message} />
 
-        <div class="flex items-center space-x-2">
-            <Switch id="send_daily_summary" bind:checked={$formData.send_daily_summary} onCheckedChange={debouncedFormSubmit} />
-            <Label for="send_daily_summary">
-                Send daily project summary <strong>(Coming soon!)</strong>
-            </Label>
+        <div class="rounded-lg border p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm font-medium">New Errors</div>
+                    <Muted class="text-xs">Notify me when new errors occur in this project.</Muted>
+                </div>
+                <Switch id="report_new_errors" bind:checked={$formData.report_new_errors} onclick={debouncedFormSubmit} />
+            </div>
         </div>
 
-        <div class="flex items-center space-x-2">
-            <Switch id="report_new_errors" bind:checked={$formData.report_new_errors} onCheckedChange={debouncedFormSubmit} />
-            <Label for="report_new_errors">Notify me on new errors</Label>
+        <div class="rounded-lg border p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm font-medium">Critical Errors</div>
+                    <Muted class="text-xs">Notify me when critical errors occur in this project.</Muted>
+                </div>
+                <Switch id="report_critical_errors" bind:checked={$formData.report_critical_errors} onclick={debouncedFormSubmit} />
+            </div>
         </div>
 
-        <div class="flex items-center space-x-2">
-            <Switch id="report_critical_errors" bind:checked={$formData.report_critical_errors} onCheckedChange={debouncedFormSubmit} />
-            <Label for="report_critical_errors">Notify me on critical errors</Label>
+        <div class="rounded-lg border p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm font-medium">Error Regressions</div>
+                    <Muted class="text-xs">Notify me when errors regress in this project.</Muted>
+                </div>
+                <Switch id="report_event_regressions" bind:checked={$formData.report_event_regressions} onclick={debouncedFormSubmit} />
+            </div>
         </div>
 
-        <div class="flex items-center space-x-2">
-            <Switch id="report_event_regressions" bind:checked={$formData.report_event_regressions} onCheckedChange={debouncedFormSubmit} />
-            <Label for="report_event_regressions">Notify me on error regressions</Label>
+        <div class="rounded-lg border p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm font-medium">New Events</div>
+                    <Muted class="text-xs">Notify me when new events occur in this project.</Muted>
+                </div>
+                <Switch id="report_new_events" bind:checked={$formData.report_new_events} onclick={debouncedFormSubmit} />
+            </div>
         </div>
 
-        <div class="flex items-center space-x-2">
-            <Switch id="report_new_events" bind:checked={$formData.report_new_events} onCheckedChange={debouncedFormSubmit} />
-            <Label for="report_new_events">Notify me on new events</Label>
-        </div>
-
-        <div class="flex items-center space-x-2">
-            <Switch id="report_critical_events" bind:checked={$formData.report_critical_events} onCheckedChange={debouncedFormSubmit} />
-            <Label for="report_critical_events">Notify me on critical events</Label>
+        <div class="rounded-lg border p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm font-medium">Critical Events</div>
+                    <Muted class="text-xs">Notify me when critical events occur in this project.</Muted>
+                </div>
+                <Switch id="report_critical_events" bind:checked={$formData.report_critical_events} onclick={debouncedFormSubmit} />
+            </div>
         </div>
     </form>
 {:else}
-    <div class="space-y-4">
-        {#each { length: 6 } as name, index (`${name}-${index}`)}
-            <div class="flex items-center space-x-2">
-                <Skeleton class="size-5 rounded-sm" />
-                <Skeleton class="size-5 w-64 rounded-md" />
+    <div class="space-y-3">
+        {#each { length: 5 } as name, index (`${name}-${index}`)}
+            <div class="rounded-lg border p-4">
+                <div class="flex items-center justify-between">
+                    <div class="space-y-1">
+                        <Skeleton class="h-5 w-32 rounded" />
+                        <Skeleton class="h-4 w-48 rounded" />
+                    </div>
+                    <Skeleton class="h-[1.15rem] w-8 rounded-full" />
+                </div>
             </div>
         {/each}
     </div>
