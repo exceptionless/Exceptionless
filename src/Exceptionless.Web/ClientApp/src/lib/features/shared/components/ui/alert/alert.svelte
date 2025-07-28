@@ -8,6 +8,10 @@
 				default: "bg-card text-card-foreground",
 				destructive:
 					"text-destructive bg-card *:data-[slot=alert-description]:text-destructive/90 [&>svg]:text-current",
+				information:
+					"border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-900/30 dark:bg-blue-900/10 dark:text-blue-100 *:data-[slot=alert-description]:text-blue-800 dark:*:data-[slot=alert-description]:text-blue-200 [&>svg]:text-blue-600 dark:[&>svg]:text-blue-400",
+				success:
+					"border-green-200 bg-green-50 text-green-900 dark:border-green-900/30 dark:bg-green-900/10 dark:text-green-100 *:data-[slot=alert-description]:text-green-800 dark:*:data-[slot=alert-description]:text-green-200 [&>svg]:text-green-600 dark:[&>svg]:text-green-400",
 			},
 		},
 		defaultVariants: {

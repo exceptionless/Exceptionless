@@ -87,9 +87,9 @@
             <H4>Event Notifications</H4>
             <div class="space-y-3">
                 {#if !hasPremiumFeatures}
-                    <Alert.Root class="border-blue-200 bg-blue-50 dark:border-blue-900/30 dark:bg-blue-900/10">
-                        <InfoIcon class="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        <Alert.Title class="text-blue-900 dark:text-blue-100">
+                    <Alert.Root variant="information">
+                        <InfoIcon />
+                        <Alert.Title>
                             <A onclick={upgrade}>Upgrade now</A> to enable occurrence level notifications!
                         </Alert.Title>
                     </Alert.Root>
