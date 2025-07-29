@@ -83,9 +83,15 @@
         }
     }
 
-    async function handleProjectNotificationSave(settings: NotificationSettings) {
-        if (!updateProjectNotificationSettings) return;
-        await updateProjectNotificationSettings.mutateAsync(settings);
+    async function onProjectNotificationChanged(settings: NotificationSettings) {
+        toast.dismiss(toastId);
+
+        try {
+            await updateProjectNotificationSettings.mutateAsync(settings);
+            toastId = toast.success('Project notification preference saved.');
+        } catch {
+            toastId = toast.error('An error occurred while saving your project notification preferences.');
+        }
     }
 
     const isEmailAddressVerified = $derived(meQuery.data?.is_email_address_verified ?? false);
@@ -106,6 +112,10 @@
         } catch {
             toastId = toast.error('Error sending verification email. Please try again.');
         }
+    }
+
+    async function handleUpgrade() {
+        console.log('TODO: Upgrade to premium features');
     }
 </script>
 
@@ -181,8 +191,9 @@
         </div>
 
         <UserNotificationSettingsForm
+            upgrade={handleUpgrade}
             settings={selectedProjectNotificationSettings?.data}
-            save={handleProjectNotificationSave}
+            save={onProjectNotificationChanged}
             {emailNotificationsEnabled}
             hasPremiumFeatures={selectedProject.has_premium_features}
         />

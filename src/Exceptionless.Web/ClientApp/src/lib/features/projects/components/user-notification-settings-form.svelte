@@ -18,7 +18,7 @@
         hasPremiumFeatures?: boolean;
         save: (settings: NotificationSettings) => Promise<void>;
         settings?: NotificationSettings;
-        upgrade?: () => Promise<void>;
+        upgrade: () => Promise<void>;
     }
 
     let { emailNotificationsEnabled = true, hasPremiumFeatures = false, save, settings, upgrade }: Props = $props();
@@ -77,7 +77,7 @@
                 <Switch
                     id="send_daily_summary"
                     bind:checked={$formData.send_daily_summary}
-                    onclick={debouncedFormSubmit}
+                    onCheckedChange={debouncedFormSubmit}
                     disabled={!emailNotificationsEnabled}
                 />
             </div>
@@ -103,7 +103,7 @@
                         <Switch
                             id="report_new_errors"
                             bind:checked={$formData.report_new_errors}
-                            onclick={debouncedFormSubmit}
+                            onCheckedChange={debouncedFormSubmit}
                             disabled={!emailNotificationsEnabled || !hasPremiumFeatures}
                         />
                     </div>
@@ -118,7 +118,7 @@
                         <Switch
                             id="report_critical_errors"
                             bind:checked={$formData.report_critical_errors}
-                            onclick={debouncedFormSubmit}
+                            onCheckedChange={debouncedFormSubmit}
                             disabled={!emailNotificationsEnabled || !hasPremiumFeatures}
                         />
                     </div>
@@ -133,7 +133,7 @@
                         <Switch
                             id="report_event_regressions"
                             bind:checked={$formData.report_event_regressions}
-                            onclick={debouncedFormSubmit}
+                            onCheckedChange={debouncedFormSubmit}
                             disabled={!emailNotificationsEnabled || !hasPremiumFeatures}
                         />
                     </div>
@@ -148,7 +148,7 @@
                         <Switch
                             id="report_new_events"
                             bind:checked={$formData.report_new_events}
-                            onclick={debouncedFormSubmit}
+                            onCheckedChange={debouncedFormSubmit}
                             disabled={!emailNotificationsEnabled || !hasPremiumFeatures}
                         />
                     </div>
@@ -163,7 +163,7 @@
                         <Switch
                             id="report_critical_events"
                             bind:checked={$formData.report_critical_events}
-                            onclick={debouncedFormSubmit}
+                            onCheckedChange={debouncedFormSubmit}
                             disabled={!emailNotificationsEnabled || !hasPremiumFeatures}
                         />
                     </div>

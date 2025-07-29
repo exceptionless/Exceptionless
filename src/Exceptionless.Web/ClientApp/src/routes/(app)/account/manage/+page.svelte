@@ -17,7 +17,6 @@
 
     let toastId = $state<number | string>();
     const meQuery = getMeQuery();
-    const isEmailAddressVerified = $derived(meQuery.data?.is_email_address_verified ?? false);
     const gravatar = getGravatarFromCurrentUser(meQuery);
     const updateUser = patchUser({
         route: {
@@ -27,6 +26,7 @@
         }
     });
 
+    const isEmailAddressVerified = $derived(meQuery.data?.is_email_address_verified ?? false);
     const resendVerificationEmailMutation = resendVerificationEmail({
         route: {
             get id() {
