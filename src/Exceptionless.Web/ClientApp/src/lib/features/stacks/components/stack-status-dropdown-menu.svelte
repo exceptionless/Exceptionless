@@ -4,6 +4,7 @@
     import Button from '$comp/ui/button/button.svelte';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
+    import { SvelteDate } from 'svelte/reactivity';
 
     import { postChangeStatus, postMarkFixed, postMarkSnoozed } from '../api.svelte';
     import { Stack, StackStatus } from '../models';
@@ -60,7 +61,7 @@
     }
 
     async function markSnoozed(timePeriod?: '6hours' | 'day' | 'month' | 'week') {
-        let snoozeUntilUtc = new Date();
+        let snoozeUntilUtc = new SvelteDate();
         switch (timePeriod) {
             case '6hours':
                 snoozeUntilUtc.setHours(snoozeUntilUtc.getHours() + 6);
