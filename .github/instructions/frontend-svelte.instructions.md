@@ -13,6 +13,15 @@ applyTo: "src/Exceptionless.Web/ClientApp/**/*.svelte"
 - Use `import { page } from '$app/state'` instead of `'$app/stores'`
 - Use snippets `{#snippet ...}` and `{@render ...}` instead of `<slot>` for content projection.
 
+## Asynchronous Components (Experimental)
+
+**Available in Svelte 5.36+ with experimental.async compiler option**
+
+You can now use `await` directly in three places:
+- At the top level of a component `<script>`
+- In a `$derived` expression
+- In template expressions (markup)
+
 ## Form Handling with Superforms
 
 ### Safe Data Cloning Pattern
