@@ -12,6 +12,7 @@
     import { deleteOrganization, getOrganizationQuery, updateOrganization } from '$features/organizations/api.svelte';
     import RemoveOrganizationDialog from '$features/organizations/components/dialogs/remove-organization-dialog.svelte';
     import { NewOrganization } from '$features/organizations/models';
+    import { structuredCloneState } from '$features/shared/utils/state.svelte';
     import { applyServerSideErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import Issues from '@lucide/svelte/icons/bug';
@@ -22,6 +23,7 @@
     import { debounce } from 'throttle-debounce';
 
     let toastId = $state<number | string>();
+    let previousOrganizationRef = $state<NewOrganization>();
 
     const organizationId = page.params.organizationId || '';
     const organizationQuery = getOrganizationQuery({
@@ -62,7 +64,7 @@
         }
     }
 
-    const form = superForm(defaults(organizationQuery.data ?? new NewOrganization(), classvalidatorClient(NewOrganization)), {
+    const form = superForm(defaults(structuredCloneState(organizationQuery.data) ?? new NewOrganization(), classvalidatorClient(NewOrganization)), {
         dataType: 'json',
         async onUpdate({ form, result }) {
             if (!form.valid) {
@@ -97,8 +99,10 @@
             return;
         }
 
-        if (!$submitting && !$tainted) {
-            form.reset({ data: organizationQuery.data, keepMessage: true });
+        if (!$submitting && !$tainted && organizationQuery.data !== previousOrganizationRef) {
+            const clonedData = structuredCloneState(organizationQuery.data);
+            form.reset({ data: clonedData, keepMessage: true });
+            previousOrganizationRef = organizationQuery.data;
         }
     });
 

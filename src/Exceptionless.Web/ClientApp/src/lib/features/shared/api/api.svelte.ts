@@ -1,4 +1,5 @@
 import { FetchClient, FetchClientProvider, getCurrentProvider } from '@exceptionless/fetchclient';
+import { SvelteDate } from 'svelte/reactivity';
 
 export const DEFAULT_LIMIT = 20;
 
@@ -7,7 +8,7 @@ export const DEFAULT_LIMIT = 20;
  * If the user's timezone offset is not 0 (UTC), returns the offset in minutes with a 'm' suffix.
  * If the user's timezone offset is 0, returns undefined.
  */
-export const DEFAULT_OFFSET = new Date().getTimezoneOffset() !== 0 ? new Date().getTimezoneOffset() * -1 + 'm' : undefined;
+export const DEFAULT_OFFSET = new SvelteDate().getTimezoneOffset() !== 0 ? new SvelteDate().getTimezoneOffset() * -1 + 'm' : undefined;
 
 export class FetchClientStatus {
     isLoading = $state(false);

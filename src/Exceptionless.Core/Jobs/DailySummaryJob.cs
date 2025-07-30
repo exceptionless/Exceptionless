@@ -87,10 +87,10 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
                     bool summarySent = await SendSummaryNotificationAsync(project, notification);
                     if (summarySent)
                     {
-                        await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project });
+                        await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync([project]);
 
                         // Sleep so we are not hammering the backend as we just generated a report.
-                        await Task.Delay(TimeSpan.FromSeconds(2.5));
+                        await Task.Delay(TimeSpan.FromSeconds(2.5), _timeProvider);
                     }
                     else
                     {
@@ -104,7 +104,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
                 await _projectRepository.IncrementNextSummaryEndOfDayTicksAsync(projectsToBulkUpdate);
 
                 // Sleep so we are not hammering the backend
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                await Task.Delay(TimeSpan.FromSeconds(1), _timeProvider);
             }
 
             if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
