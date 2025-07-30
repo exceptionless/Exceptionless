@@ -13,6 +13,72 @@ applyTo: "src/Exceptionless.Web/ClientApp/**/*.svelte"
 - Use `import { page } from '$app/state'` instead of `'$app/stores'`
 - Use snippets `{#snippet ...}` and `{@render ...}` instead of `<slot>` for content projection.
 
+## Form Handling with Superforms
+
+### Safe Data Cloning Pattern
+Always use the `structuredCloneState()` utility when initializing forms and resetting form data to prevent cache mutation and reactive entanglement:
+
+```svelte
+import { structuredCloneState } from '$features/shared/utils/state';
+
+// Form initialization - use structuredCloneState utility
+const form = superForm(defaults(structuredCloneState(settings) || new NotificationSettings(), classvalidatorClient(NotificationSettings)), {
+    // form options...
+});
+
+// Form reset in $effect - use structuredCloneState utility
+$effect(() => {
+    if (!$submitting && !$tainted && settings !== previousSettingsRef) {
+        const clonedSettings = structuredCloneState(settings);
+        form.reset({ data: clonedSettings, keepMessage: true });
+        previousSettingsRef = settings;
+    }
+});
+```
+
+### Reactive Binding Pattern
+For simple reactive bindings to query data, you can override derived values for binding:
+
+```svelte
+// Derived value that can be temporarily overridden for binding
+let emailNotificationsEnabled = $derived(meQuery.data?.email_notifications_enabled ?? false);
+
+// Sync the derived value when source data changes
+$effect(() => {
+    emailNotificationsEnabled = meQuery.data?.email_notifications_enabled ?? false;
+});
+```
+
+```svelte
+<!-- Direct binding works - temporarily overrides derived value -->
+<Switch bind:checked={emailNotificationsEnabled} />
+```
+
+**Note:** This pattern uses Svelte 5's ability to override derived values (available since v5.25). The derived value automatically recalculates when dependencies change, but can be temporarily overridden for UI binding. The `$effect` ensures the local state resyncs when the source data changes.
+
+### Why These Patterns?
+- **Prevents Cache Mutation**: `structuredCloneState()` creates independent copies that don't affect cached data
+- **Reactive Safety**: Uses `$state.snapshot()` internally for non-reactive snapshots, preventing unintended dependencies
+- **Form Isolation**: Each form gets its own copy of data, preventing cross-contamination
+- **Auto-Reset**: Local state automatically resets when source data changes
+- **Bindable**: Creates writable state for form controls and UI components
+- **Predictable Behavior**: Ensures consistent form state management across all scenarios
+- **Type Safety**: Utility provides proper TypeScript types and handles undefined/null gracefully
+
+### Reference Comparison for Resets
+Use object reference comparison instead of JSON stringification for performance:
+```svelte
+// ✅ Good - Reference comparison
+if (settings !== previousSettingsRef) {
+    // reset logic
+}
+
+// ❌ Avoid - JSON comparison (slower)
+if (JSON.stringify(settings) !== JSON.stringify(previousSettings)) {
+    // reset logic
+}
+```
+
 ## Event Handling
 
 - All single-line control statements must be enclosed in curly braces

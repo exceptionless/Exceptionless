@@ -13,6 +13,7 @@
     import RemoveProjectDialog from '$features/projects/components/dialogs/remove-project-dialog.svelte';
     import ResetProjectDataDialog from '$features/projects/components/dialogs/reset-project-data-dialog.svelte';
     import { UpdateProject } from '$features/projects/models';
+    import { structuredCloneState } from '$features/shared/utils/state.svelte';
     import { applyServerSideErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
@@ -24,6 +25,7 @@
     import { debounce } from 'throttle-debounce';
 
     let toastId = $state<number | string>();
+    let previousProjectRef = $state<UpdateProject>();
 
     const projectId = page.params.projectId || '';
     const projectQuery = getProjectQuery({
@@ -76,7 +78,7 @@
         toastId = toast.success('Successfully queued the project for data reset.');
     }
 
-    const form = superForm(defaults(projectQuery.data ?? new UpdateProject(), classvalidatorClient(UpdateProject)), {
+    const form = superForm(defaults(structuredCloneState(projectQuery.data) ?? new UpdateProject(), classvalidatorClient(UpdateProject)), {
         dataType: 'json',
         async onUpdate({ form, result }) {
             if (!form.valid) {
@@ -111,8 +113,10 @@
             return;
         }
 
-        if (!$submitting && !$tainted) {
-            form.reset({ data: projectQuery.data, keepMessage: true });
+        if (!$submitting && !$tainted && projectQuery.data !== previousProjectRef) {
+            const clonedData = structuredCloneState(projectQuery.data);
+            form.reset({ data: clonedData, keepMessage: true });
+            previousProjectRef = projectQuery.data;
         }
     });
 

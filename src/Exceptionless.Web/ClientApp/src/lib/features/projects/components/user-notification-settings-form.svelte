@@ -5,6 +5,7 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import { Switch } from '$comp/ui/switch';
     import { NotificationSettings } from '$features/projects/models';
+    import { structuredCloneState } from '$features/shared/utils/state.svelte';
     import { applyServerSideErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import InfoIcon from '@lucide/svelte/icons/info';
@@ -23,8 +24,9 @@
 
     let { emailNotificationsEnabled = true, hasPremiumFeatures = false, save, settings, upgrade }: Props = $props();
     let toastId = $state<number | string>();
+    let currentSettingsRef = $state<NotificationSettings>();
 
-    const form = superForm(defaults(settings || new NotificationSettings(), classvalidatorClient(NotificationSettings)), {
+    const form = superForm(defaults(structuredCloneState(settings) || new NotificationSettings(), classvalidatorClient(NotificationSettings)), {
         dataType: 'json',
         async onUpdate({ form, result }) {
             if (!form.valid) {
@@ -58,8 +60,10 @@
     const debouncedFormSubmit = debounce(500, () => submit());
 
     $effect(() => {
-        if (settings && !$submitting && !$tainted) {
-            form.reset({ data: settings, keepMessage: true });
+        if (!$submitting && !$tainted && settings !== currentSettingsRef) {
+            const clonedSettings = structuredCloneState(settings);
+            form.reset({ data: clonedSettings, keepMessage: true });
+            currentSettingsRef = settings;
         }
     });
 </script>

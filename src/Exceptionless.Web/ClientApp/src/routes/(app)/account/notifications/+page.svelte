@@ -95,7 +95,11 @@
     }
 
     const isEmailAddressVerified = $derived(meQuery.data?.is_email_address_verified ?? false);
-    const emailNotificationsEnabled = $derived(meQuery.data?.email_notifications_enabled ?? false);
+    let emailNotificationsEnabled = $derived(meQuery.data?.email_notifications_enabled ?? false);
+    $effect(() => {
+        emailNotificationsEnabled = meQuery.data?.email_notifications_enabled ?? false;
+    });
+
     const resendVerificationEmailMutation = resendVerificationEmail({
         route: {
             get id() {
@@ -157,7 +161,7 @@
                 </div>
                 {#if meQuery.data}
                     <Switch
-                        bind:checked={meQuery.data.email_notifications_enabled}
+                        bind:checked={emailNotificationsEnabled}
                         id="email_notifications_enabled"
                         disabled={updateUser.isPending}
                         onCheckedChange={debouncedOnEmailNotificationChanged}
