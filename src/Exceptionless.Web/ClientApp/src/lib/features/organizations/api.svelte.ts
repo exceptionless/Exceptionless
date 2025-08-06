@@ -5,7 +5,7 @@ import { accessToken } from '$features/auth/index.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
-import type { Invoice, InvoiceGridModel, NewOrganization, ViewOrganization } from './models';
+import type { Invoice, InvoiceGridModel, NewOrganization, SuspensionCode, ViewOrganization } from './models';
 
 export async function invalidateOrganizationQueries(queryClient: QueryClient, message: WebSocketMessageValue<'OrganizationChanged'>) {
     const { id } = message;
@@ -28,7 +28,10 @@ export const queryKeys = {
     invoices: (id: string | undefined) => [...queryKeys.type, id, 'invoices'] as const,
     list: (mode: 'stats' | undefined) => (mode ? ([...queryKeys.type, 'list', { mode }] as const) : ([...queryKeys.type, 'list'] as const)),
     postOrganization: () => [...queryKeys.type, 'post-organization'] as const,
-    type: ['Organization'] as const
+    setBonusOrganization: (id: string | undefined) => [...queryKeys.type, id, 'set-bonus'] as const,
+    suspendOrganization: (id: string | undefined) => [...queryKeys.type, id, 'suspend'] as const,
+    type: ['Organization'] as const,
+    unsuspendOrganization: (id: string | undefined) => [...queryKeys.type, id, 'unsuspend'] as const
 };
 
 export interface AddOrganizationUserRequest {
@@ -112,28 +115,38 @@ export interface PatchOrganizationRequest {
         id: string;
     };
 }
+
+export interface PostSetBonusOrganizationParams {
+    bonusEvents: number;
+    expires?: Date;
+    organizationId: string;
 }
 
-export interface UpdateOrganizationRequest {
+export interface PostSuspendOrganizationParams {
+    code: SuspensionCode;
+    notes?: string;
+}
+
+export interface PostSuspendOrganizationRequest {
     route: {
-        id: string;
+        id: string | undefined;
     };
 }
 
 export function addOrganizationUser(request: AddOrganizationUserRequest) {
     const queryClient = useQueryClient();
     return createMutation<{ emailAddress: string }, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.id && !!request.route.email,
+        enabled: () => !!accessToken.current && !!request.route.organizationId && !!request.route.email,
         mutationFn: async () => {
             const client = useFetchClient();
             const response = await client.postJSON<{ emailAddress: string }>(
-                `organizations/${request.route.id}/users/${encodeURIComponent(request.route.email)}`
+                `organizations/${request.route.organizationId}/users/${encodeURIComponent(request.route.email)}`
             );
             return response.data!;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
-            queryClient.invalidateQueries({ queryKey: ['User', 'organization', request.route.id] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, undefined) });
+            queryClient.invalidateQueries({ queryKey: ['User', 'organization', request.route.organizationId] });
         }
     }));
 }
@@ -164,17 +177,39 @@ export function deleteOrganization(request: DeleteOrganizationRequest) {
 export function deleteOrganizationUser(request: DeleteOrganizationUserRequest) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.id && !!request.route.email,
+        enabled: () => !!accessToken.current && !!request.route.organizationId && !!request.route.email,
         mutationFn: async () => {
             const client = useFetchClient();
-            await client.deleteJSON<void>(`organizations/${request.route.id}/users/${encodeURIComponent(request.route.email)}`);
+            await client.deleteJSON<void>(`organizations/${request.route.organizationId}/users/${encodeURIComponent(request.route.email)}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, undefined) });
+            queryClient.invalidateQueries({ queryKey: ['User', 'organization', request.route.organizationId] });
+        }
+    }));
+}
+
+export function deleteSuspendOrganization(request: DeleteSuspendOrganizationRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            const response = await client.delete(`organizations/${request.route.id}/suspend`);
+            return response.ok;
+        },
+        mutationKey: queryKeys.unsuspendOrganization(request.route.id),
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
-            queryClient.invalidateQueries({ queryKey: ['User', 'organization', request.route.id] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, 'stats') });
+            queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
         }
     }));
-        }
+}
 
 export function getInvoiceQuery(request: GetInvoiceRequest) {
     const queryClient = useQueryClient();
@@ -304,37 +339,53 @@ export function postOrganization() {
     }));
 }
 
-export function removeOrganizationUser(request: RemoveOrganizationUserRequest) {
+export function postSetBonusOrganization() {
     const queryClient = useQueryClient();
-    return createMutation<void, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.organizationId && !!request.route.email,
-        mutationFn: async () => {
+
+    return createMutation<boolean, ProblemDetails, PostSetBonusOrganizationParams>(() => ({
+        enabled: () => !!accessToken.current,
+        mutationFn: async (params: PostSetBonusOrganizationParams) => {
             const client = useFetchClient();
-            await client.deleteJSON<void>(`organizations/${request.route.organizationId}/users/${encodeURIComponent(request.route.email)}`);
+            const requestData = {
+                bonusEvents: params.bonusEvents,
+                expires: params.expires?.toISOString(),
+                organizationId: params.organizationId
+            };
+            const response = await client.postJSON('admin/set-bonus', requestData);
+            return response.ok;
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, undefined) });
-            queryClient.invalidateQueries({ queryKey: ['User', 'organization', request.route.organizationId] });
+        mutationKey: queryKeys.setBonusOrganization(undefined),
+        onError: (error, params) => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(params.organizationId, undefined) });
+        },
+        onSuccess: (data, params) => {
+            // TODO: Normalize all this invalidation.
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(params.organizationId, undefined) });
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(params.organizationId, 'stats') });
+            queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
         }
     }));
 }
 
-export function updateOrganization(request: UpdateOrganizationRequest) {
+export function postSuspendOrganization(request: PostSuspendOrganizationRequest) {
     const queryClient = useQueryClient();
 
-    return createMutation<ViewOrganization, ProblemDetails, NewOrganization>(() => ({
+    return createMutation<boolean, ProblemDetails, PostSuspendOrganizationParams>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
-        mutationFn: async (data: NewOrganization) => {
+        mutationFn: async (params: PostSuspendOrganizationParams) => {
             const client = useFetchClient();
-            const response = await client.patchJSON<ViewOrganization>(`organizations/${request.route.id}`, data);
-            return response.data!;
+            const response = await client.postJSON(`organizations/${request.route.id}/suspend`, params);
+            return response.ok;
         },
+        mutationKey: queryKeys.suspendOrganization(request.route.id),
         onError: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
         },
-        onSuccess: (organization: ViewOrganization) => {
-            queryClient.setQueryData(queryKeys.id(request.route.id, 'stats'), organization);
-            queryClient.setQueryData(queryKeys.id(request.route.id, undefined), organization);
+        onSuccess: () => {
+            // TODO: Normalize all this invalidation.
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, 'stats') });
+            queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
         }
     }));
 }
