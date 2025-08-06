@@ -2,7 +2,7 @@
     import { goto } from '$app/navigation';
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { deleteOrganization, removeOrganizationUser } from '$features/organizations/api.svelte';
+    import { deleteOrganization, deleteOrganizationUser } from '$features/organizations/api.svelte';
     import { ViewOrganization } from '$features/organizations/models';
     import { getMeQuery } from '$features/users/api.svelte';
     import { ProblemDetails } from '@exceptionless/fetchclient';
@@ -37,7 +37,7 @@
         }
     });
 
-    const leaveOrganization = removeOrganizationUser({
+    const leaveOrganization = deleteOrganizationUser({
         route: {
             get email() {
                 return meQuery.data?.email_address ?? '';

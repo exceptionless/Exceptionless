@@ -25,7 +25,7 @@ export const queryKeys = {
     id: (id: string | undefined, mode: 'stats' | undefined) => (mode ? ([...queryKeys.type, id, { mode }] as const) : ([...queryKeys.type, id] as const)),
     ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
     invoice: (id: string | undefined) => [...queryKeys.type, 'invoice', id] as const,
-    invoices: (organizationId: string | undefined) => [...queryKeys.type, organizationId, 'invoices'] as const,
+    invoices: (id: string | undefined) => [...queryKeys.type, id, 'invoices'] as const,
     list: (mode: 'stats' | undefined) => (mode ? ([...queryKeys.type, 'list', { mode }] as const) : ([...queryKeys.type, 'list'] as const)),
     postOrganization: () => [...queryKeys.type, 'post-organization'] as const,
     type: ['Organization'] as const
@@ -41,6 +41,32 @@ export interface AddOrganizationUserRequest {
 export interface DeleteOrganizationRequest {
     route: {
         ids: string[];
+    };
+}
+
+export interface DeleteOrganizationUserRequest {
+    route: {
+        email: string;
+        organizationId: string;
+    };
+}
+
+export interface DeleteOrganizationUserRequest {
+    route: {
+        email: string;
+        organizationId: string;
+    };
+}
+
+export interface DeleteSuspendOrganizationRequest {
+    route: {
+        id: string | undefined;
+    };
+}
+
+export interface DeleteSuspendOrganizationRequest {
+    route: {
+        id: string | undefined;
     };
 }
 
@@ -61,6 +87,7 @@ export interface GetInvoicesRequest {
     };
 }
 
+// TODO: Look at params:?
 export interface GetOrganizationRequest {
     params?: {
         mode: 'stats' | undefined;
@@ -80,11 +107,11 @@ export interface GetOrganizationsRequest {
     params?: GetOrganizationsParams;
 }
 
-export interface RemoveOrganizationUserRequest {
+export interface PatchOrganizationRequest {
     route: {
-        email: string;
-        organizationId: string;
+        id: string;
     };
+}
 }
 
 export interface UpdateOrganizationRequest {
@@ -96,17 +123,17 @@ export interface UpdateOrganizationRequest {
 export function addOrganizationUser(request: AddOrganizationUserRequest) {
     const queryClient = useQueryClient();
     return createMutation<{ emailAddress: string }, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.organizationId && !!request.route.email,
+        enabled: () => !!accessToken.current && !!request.route.id && !!request.route.email,
         mutationFn: async () => {
             const client = useFetchClient();
             const response = await client.postJSON<{ emailAddress: string }>(
-                `organizations/${request.route.organizationId}/users/${encodeURIComponent(request.route.email)}`
+                `organizations/${request.route.id}/users/${encodeURIComponent(request.route.email)}`
             );
             return response.data!;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, undefined) });
-            queryClient.invalidateQueries({ queryKey: ['User', 'organization', request.route.organizationId] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+            queryClient.invalidateQueries({ queryKey: ['User', 'organization', request.route.id] });
         }
     }));
 }
@@ -133,6 +160,21 @@ export function deleteOrganization(request: DeleteOrganizationRequest) {
         }
     }));
 }
+
+export function deleteOrganizationUser(request: DeleteOrganizationUserRequest) {
+    const queryClient = useQueryClient();
+    return createMutation<void, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id && !!request.route.email,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            await client.deleteJSON<void>(`organizations/${request.route.id}/users/${encodeURIComponent(request.route.email)}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+            queryClient.invalidateQueries({ queryKey: ['User', 'organization', request.route.id] });
+        }
+    }));
+        }
 
 export function getInvoiceQuery(request: GetInvoiceRequest) {
     const queryClient = useQueryClient();
@@ -222,6 +264,26 @@ export function getOrganizationsQuery(request: GetOrganizationsRequest) {
             return response;
         },
         queryKey: [...queryKeys.list(request.params?.mode ?? undefined), { params: request.params }]
+    }));
+}
+
+export function patchOrganization(request: PatchOrganizationRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<ViewOrganization, ProblemDetails, NewOrganization>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async (data: NewOrganization) => {
+            const client = useFetchClient();
+            const response = await client.patchJSON<ViewOrganization>(`organizations/${request.route.id}`, data);
+            return response.data!;
+        },
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+        },
+        onSuccess: (organization: ViewOrganization) => {
+            queryClient.setQueryData(queryKeys.id(request.route.id, 'stats'), organization);
+            queryClient.setQueryData(queryKeys.id(request.route.id, undefined), organization);
+        }
     }));
 }
 

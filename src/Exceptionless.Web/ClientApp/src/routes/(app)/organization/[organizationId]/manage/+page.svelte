@@ -9,7 +9,7 @@
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
     import { Separator } from '$comp/ui/separator';
-    import { deleteOrganization, getOrganizationQuery, updateOrganization } from '$features/organizations/api.svelte';
+    import { deleteOrganization, getOrganizationQuery, patchOrganization } from '$features/organizations/api.svelte';
     import RemoveOrganizationDialog from '$features/organizations/components/dialogs/remove-organization-dialog.svelte';
     import { NewOrganization } from '$features/organizations/models';
     import { structuredCloneState } from '$features/shared/utils/state.svelte';
@@ -34,7 +34,7 @@
         }
     });
 
-    const update = updateOrganization({
+    const update = patchOrganization({
         route: {
             get id() {
                 return organizationId;
