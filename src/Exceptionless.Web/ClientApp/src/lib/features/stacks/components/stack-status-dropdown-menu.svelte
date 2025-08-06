@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { DropDownItem } from '$features/shared/options';
+    import type { DropdownItem } from '$features/shared/options';
 
     import Button from '$comp/ui/button/button.svelte';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
@@ -21,7 +21,7 @@
     let openMarkStackDiscardedDialog = $state<boolean>(false);
     let openMarkStackFixedInVersionDialog = $state<boolean>(false);
     let selected = $derived(
-        (stackStatuses.find((option) => option.value === stack?.status) || stackStatuses[stackStatuses.length - 1]) as DropDownItem<StackStatus>
+        (stackStatuses.find((option) => option.value === stack?.status) || stackStatuses[stackStatuses.length - 1]) as DropdownItem<StackStatus>
     );
 
     const updateMarkFixed = postMarkFixed({
