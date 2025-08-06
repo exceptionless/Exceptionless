@@ -99,6 +99,48 @@ if (JSON.stringify(settings) !== JSON.stringify(previousSettings)) {
 - Use the Composite Component Pattern
 - Organize components within vertical slices aligned with API controllers
 
+## Dialog Component Patterns
+
+### Naming Conventions
+- Dialog state variables should use `open[ComponentName]Dialog` pattern (e.g., `openSuspendOrganizationDialog`, `openMarkStackDiscardedDialog`)
+- Avoid generic names like `showDialog` or `isOpen`
+
+### Event Handlers
+- Use inline arrow functions for opening dialogs: `onclick={() => (openDialogName = true)}`
+- Avoid creating separate handler functions just to set state to true
+- Create separate async functions only for complex operations (API calls, validation, etc.)
+
+### Conditional Rendering
+- Always wrap dialogs in `{#if}` blocks: `{#if openDialogName} <Dialog /> {/if}`
+- This prevents unnecessary DOM creation and improves performance
+
+### API Integration
+- Import and use existing interface types from API files (e.g., `SuspendOrganizationParams`)
+- Don't create inline types when proper interfaces exist
+- Create options files following the `DropdownItem<EnumType>[]` pattern in `options.ts`
+
+### Example Pattern
+```svelte
+<script lang="ts">
+    import type { ApiParamsInterface } from '$features/module/api.svelte';
+    import { optionsArray } from '$features/module/options';
+
+    let openMyActionDialog = $state(false);
+
+    async function performAction(params: ApiParamsInterface) {
+        // API call logic here
+    }
+</script>
+
+<Button onclick={() => (openMyActionDialog = true)}>
+    Action Label
+</Button>
+
+{#if openMyActionDialog}
+    <MyActionDialog bind:open={openMyActionDialog} action={performAction} />
+{/if}
+```
+
 ## Accessibility
 
 - Ensure excellent keyboard navigation for all interactions
