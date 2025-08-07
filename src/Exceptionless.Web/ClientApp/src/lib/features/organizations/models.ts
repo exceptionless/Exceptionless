@@ -5,7 +5,6 @@ import { IsDate, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 export enum SuspensionCode {
     Billing = 0,
     Overage = 1,
-    // eslint-disable-next-line perfectionist/sort-enums
     Abuse = 2,
     Other = 100
 }
