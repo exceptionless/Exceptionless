@@ -98,7 +98,14 @@
                     <Form.Control>
                         {#snippet children({ props })}
                             <Form.Label>Bonus Events</Form.Label>
-                            <Input {...props} type="number" min="0" step="1" bind:value={$formData.bonusEvents} placeholder="Enter number of bonus events to add" />
+                            <Input
+                                {...props}
+                                type="number"
+                                min="0"
+                                step="1"
+                                bind:value={$formData.bonusEvents}
+                                placeholder="Enter number of bonus events to add"
+                            />
                         {/snippet}
                     </Form.Control>
                     <Form.Description>

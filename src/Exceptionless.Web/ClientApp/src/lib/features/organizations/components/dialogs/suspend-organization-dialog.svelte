@@ -94,7 +94,7 @@
                     <Form.Control>
                         {#snippet children({ props })}
                             <Form.Label>Additional Details (Optional)</Form.Label>
-                            <Textarea {...props} bind:value={$formData.notes} placeholder="Add any relevant context or details (optional)..." rows={3} />
+                            <Textarea {...props} bind:value={$formData.notes} placeholder="Add any relevant context or details..." rows={3} />
                         {/snippet}
                     </Form.Control>
                     <Form.Description>Provide any relevant context or notes about this suspension.</Form.Description>
