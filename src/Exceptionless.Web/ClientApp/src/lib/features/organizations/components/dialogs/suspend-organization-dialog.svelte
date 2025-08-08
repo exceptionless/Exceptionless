@@ -10,6 +10,8 @@
     import { Textarea } from '$comp/ui/textarea';
     import { SuspendOrganizationForm, SuspensionCode } from '$features/organizations/models';
     import { suspensionCodeOptions } from '$features/organizations/options';
+    import { applyServerSideErrors } from '$features/shared/validation';
+    import { ProblemDetails } from '@exceptionless/fetchclient';
     import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';
 
@@ -24,16 +26,29 @@
     const form = superForm(defaults(new SuspendOrganizationForm(), classvalidatorClient(SuspendOrganizationForm)), {
         dataType: 'json',
         id: 'suspend-organization-form',
-        async onUpdate({ form }) {
+        async onUpdate({ form, result }) {
             if (!form.valid) {
                 return;
             }
 
-            await suspend({
-                code: Number(form.data.code) as SuspensionCode,
-                notes: form.data.notes
-            });
-            open = false;
+            try {
+                await suspend({
+                    code: Number(form.data.code) as SuspensionCode,
+                    notes: form.data.notes
+                });
+
+                open = false;
+
+                // HACK: This is to prevent sveltekit from stealing focus
+                result.type = 'failure';
+            } catch (error: unknown) {
+                if (error instanceof ProblemDetails) {
+                    applyServerSideErrors(form, error);
+                    result.status = error.status ?? 500;
+                } else {
+                    result.status = 500;
+                }
+            }
         },
         SPA: true,
         validators: classvalidatorClient(SuspendOrganizationForm)

@@ -87,8 +87,9 @@
         try {
             await newWebhook.mutateAsync(webhook);
             toastId = toast.success('Webhook added successfully');
-        } catch {
+        } catch (error) {
             toastId = toast.error('Error adding webhook. Please try again.');
+            throw error;
         }
     }
 

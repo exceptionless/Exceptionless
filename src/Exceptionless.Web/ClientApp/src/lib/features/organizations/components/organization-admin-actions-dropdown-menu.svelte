@@ -51,6 +51,7 @@
         } catch (error: unknown) {
             const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
             toastId = toast.error(`An error occurred while trying to suspend the organization: ${message}`);
+            throw error;
         }
     }
 
@@ -63,6 +64,7 @@
         } catch (error: unknown) {
             const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
             toastId = toast.error(`An error occurred while trying to set the organization bonus: ${message}`);
+            throw error;
         }
     }
 
