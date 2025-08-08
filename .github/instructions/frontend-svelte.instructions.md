@@ -65,6 +65,65 @@ $effect(() => {
 
 **Note:** This pattern uses Svelte 5's ability to override derived values (available since v5.25). The derived value automatically recalculates when dependencies change, but can be temporarily overridden for UI binding. The `$effect` ensures the local state resyncs when the source data changes.
 
+### Superforms onUpdate Pattern for Dialogs
+
+When using `superForm` inside dialogs, always use the following `onUpdate` pattern to ensure server-side validation errors are applied and dialogs don't close prematurely. This also prevents SvelteKit from stealing focus on success.
+
+```svelte
+const form = superForm(defaults(new MyForm(), classvalidatorClient(MyForm)), {
+    dataType: 'json',
+    id: 'my-form-id',
+    async onUpdate({ form, result }) {
+        if (!form.valid) {
+            return;
+        }
+
+        try {
+            await doAction(form.data);
+
+            open = false;
+
+            // HACK: Prevent SvelteKit from stealing focus
+            result.type = 'failure';
+        } catch (error: unknown) {
+            if (error instanceof ProblemDetails) {
+                applyServerSideErrors(form, error);
+                result.status = error.status ?? 500;
+            } else {
+                result.status = 500;
+            }
+        }
+    },
+    SPA: true,
+    validators: classvalidatorClient(MyForm)
+});
+```
+
+Requirements:
+- Import and use `ProblemDetails` from `@exceptionless/fetchclient` and `applyServerSideErrors` from `$features/shared/validation`.
+- Close the dialog with `open = false` only after the action succeeds.
+- Set `result.type = 'failure'` after success to avoid focus theft.
+
+### Dialog Action Functions Must Rethrow
+
+When passing action functions into dialogs (e.g., `save`, `suspend`, `setBonus`), if you display a toast in a `catch` block, you must rethrow the error so the dialog’s `onUpdate` handler can catch it and apply server-side validation errors.
+
+Example:
+
+```ts
+async function setBonus(params: PostSetBonusOrganizationParams) {
+    toast.dismiss(toastId);
+    try {
+        await setOrganizationBonus.mutateAsync(params);
+        toast.success('Successfully set the organization bonus.');
+    } catch (error) {
+        const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
+        toast.error(`An error occurred while trying to set the organization bonus: ${message}`);
+        throw error; // critical: propagate to form
+    }
+}
+```
+
 ### Why These Patterns?
 - **Prevents Cache Mutation**: `structuredCloneState()` creates independent copies that don't affect cached data
 - **Reactive Safety**: Uses `$state.snapshot()` internally for non-reactive snapshots, preventing unintended dependencies
