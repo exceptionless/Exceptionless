@@ -346,12 +346,13 @@ export function postSetBonusOrganization() {
         enabled: () => !!accessToken.current,
         mutationFn: async (params: PostSetBonusOrganizationParams) => {
             const client = useFetchClient();
-            const requestData = {
-                bonusEvents: params.bonusEvents,
-                expires: params.expires?.toISOString(),
-                organizationId: params.organizationId
-            };
-            const response = await client.postJSON('admin/set-bonus', requestData);
+
+            const response = await client.post('admin/set-bonus', undefined, {
+                params: {
+                    ...params,
+                    expires: params.expires ? params.expires.toISOString() : undefined
+                }
+            });
             return response.ok;
         },
         mutationKey: queryKeys.setBonusOrganization(undefined),

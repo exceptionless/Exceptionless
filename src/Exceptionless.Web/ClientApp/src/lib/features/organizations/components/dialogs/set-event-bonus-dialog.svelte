@@ -12,6 +12,8 @@
     import { SetBonusOrganizationForm } from '$features/organizations/models';
     import Number from '$features/shared/components/formatters/number.svelte';
     import { formatDateLabel } from '$features/shared/dates';
+    import { applyServerSideErrors } from "$features/shared/validation";
+    import { ProblemDetails } from "@exceptionless/fetchclient";
     import { CalendarDate } from '@internationalized/date';
     import CalendarIcon from '@lucide/svelte/icons/calendar';
     import { SvelteDate } from 'svelte/reactivity';
@@ -29,17 +31,30 @@
     const form = superForm(defaults(new SetBonusOrganizationForm(), classvalidatorClient(SetBonusOrganizationForm)), {
         dataType: 'json',
         id: 'set-bonus-organization-form',
-        async onUpdate({ form }) {
+        async onUpdate({ form, result }) {
             if (!form.valid) {
                 return;
             }
 
-            await setBonus({
-                bonusEvents: form.data.bonusEvents,
-                expires: form.data.expires,
-                organizationId: organization.id
-            });
-            open = false;
+            try {
+                await setBonus({
+                    bonusEvents: form.data.bonusEvents,
+                    expires: form.data.expires,
+                    organizationId: organization.id
+                });
+
+                open = false;
+
+                // HACK: This is to prevent sveltekit from stealing focus
+                result.type = 'failure';
+            } catch (error: unknown) {
+                if (error instanceof ProblemDetails) {
+                    applyServerSideErrors(form, error);
+                    result.status = error.status ?? 500;
+                } else {
+                    result.status = 500;
+                }
+            }
         },
         SPA: true,
         validators: classvalidatorClient(SetBonusOrganizationForm)
@@ -53,7 +68,6 @@
     $effect(() => {
         if (open) {
             if (organization.bonus_events_per_month > 0) {
-                // Set to current bonus values
                 $formData.bonusEvents = organization.bonus_events_per_month;
                 if (organization.bonus_expiration) {
                     const expirationDate = new Date(organization.bonus_expiration);
@@ -78,7 +92,7 @@
 
     $effect(() => {
         if (calendarValue) {
-            $formData.expires = new Date(calendarValue.year, calendarValue.month - 1, calendarValue.day);
+            $formData.expires = new Date(Date.UTC(calendarValue.year, calendarValue.month - 1, calendarValue.day));
         }
     });
 </script>
