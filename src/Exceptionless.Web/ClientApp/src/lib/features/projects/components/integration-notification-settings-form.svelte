@@ -23,6 +23,7 @@
 
     const form = superForm(defaults(structuredCloneState(settings) || new NotificationSettings(), classvalidatorClient(NotificationSettings)), {
         dataType: 'json',
+        id: 'integration-notification-settings',
         async onUpdate({ form, result }) {
             if (!form.valid) {
                 return;

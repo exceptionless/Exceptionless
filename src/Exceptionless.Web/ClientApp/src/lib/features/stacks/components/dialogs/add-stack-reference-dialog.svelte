@@ -19,6 +19,7 @@
 
     const form = superForm(defaults(new ReferenceLinkForm(), classvalidatorClient(ReferenceLinkForm)), {
         dataType: 'json',
+        id: 'add-stack-reference',
         async onUpdate({ form, result }) {
             if (!form.valid) {
                 return;

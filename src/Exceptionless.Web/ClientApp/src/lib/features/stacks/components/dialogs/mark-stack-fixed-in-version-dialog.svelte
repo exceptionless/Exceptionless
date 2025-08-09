@@ -23,6 +23,7 @@
 
     const form = superForm(defaults(new FixedInVersionForm(), classvalidatorClient(FixedInVersionForm)), {
         dataType: 'json',
+        id: 'mark-stack-fixed-in-version',
         onChange() {
             debouncedUpdateVersionToSemanticVersion();
         },

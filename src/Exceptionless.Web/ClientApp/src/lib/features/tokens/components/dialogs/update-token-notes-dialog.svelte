@@ -24,6 +24,7 @@
 
     const form = superForm(defaults(defaultToken, classvalidatorClient(UpdateToken)), {
         dataType: 'json',
+        id: 'update-token-notes',
         async onUpdate({ form, result }) {
             if (!form.valid) {
                 return;

@@ -27,6 +27,7 @@
 
     const form = superForm(defaults(defaultValue, classvalidatorClient(NewWebhook)), {
         dataType: 'json',
+        id: 'add-webhook',
         async onUpdate({ form, result }) {
             if (!form.valid) {
                 return;
