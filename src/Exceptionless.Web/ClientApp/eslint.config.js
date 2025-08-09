@@ -39,6 +39,12 @@ export default ts.config(
     },
     {
         rules: {
+            'perfectionist/sort-enums': [
+                'error',
+                {
+                    forceNumericSort: true
+                }
+            ],
             'perfectionist/sort-svelte-attributes': 'off'
         }
     },

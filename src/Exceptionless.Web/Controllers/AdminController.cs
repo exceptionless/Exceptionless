@@ -81,7 +81,6 @@ public class AdminController : ExceptionlessApiController
         return Ok(details);
     }
 
-    [Consumes("application/json")]
     [HttpPost("change-plan")]
     public async Task<IActionResult> ChangePlanAsync(string organizationId, string planId)
     {
@@ -109,21 +108,33 @@ public class AdminController : ExceptionlessApiController
         return Ok(new { Success = true });
     }
 
-    [Consumes("application/json")]
+    /// <summary>
+    /// Applies a bonus event count to the specified organization, optionally with an expiration date.
+    /// </summary>
+    /// <param name="organizationId">The unique identifier of the organization to receive the bonus.</param>
+    /// <param name="bonusEvents">The number of bonus events to apply.</param>
+    /// <param name="expires">The optional expiration date for the bonus events.</param>
+    /// <response code="200">Bonus was applied successfully.</response>
+    /// <response code="422">Validation error occurred.</response>
     [HttpPost("set-bonus")]
     public async Task<IActionResult> SetBonusAsync(string organizationId, int bonusEvents, DateTime? expires = null)
     {
         if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
-            return Ok(new { Success = false, Message = "Invalid Organization Id." });
+        {
+            ModelState.AddModelError(nameof(organizationId), "Invalid Organization Id");
+            return ValidationProblem(ModelState);
+        }
 
         var organization = await _organizationRepository.GetByIdAsync(organizationId);
-        if (organization is null)
-            return Ok(new { Success = false, Message = "Invalid Organization Id." });
+        if (organization is null) {
+            ModelState.AddModelError(nameof(organizationId), "Invalid Organization Id");
+            return ValidationProblem(ModelState);
+        }
 
         _billingManager.ApplyBonus(organization, bonusEvents, expires);
         await _organizationRepository.SaveAsync(organization, o => o.Cache().Originals());
 
-        return Ok(new { Success = true });
+        return Ok();
     }
 
     [HttpGet("requeue")]

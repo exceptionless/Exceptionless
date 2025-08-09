@@ -32,7 +32,7 @@
     }
 </script>
 
-<FacetedFilter.DropDown
+<FacetedFilter.Dropdown
     changed={(value) => {
         filter.value = value;
         filterChanged(filter);
@@ -45,4 +45,4 @@
     {title}
     value={filter.value as string}
     {...props}
-></FacetedFilter.DropDown>
+></FacetedFilter.Dropdown>

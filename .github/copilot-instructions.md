@@ -2,6 +2,12 @@
 
 This project features an **ASP.NET Core** backend (REST API) and a **Svelte 5 TypeScript** frontend (SPA).
 
+## Key Principles
+
+All contributions must respect existing formatting and conventions specified in the `.editorconfig` file. You are a distinguished engineer and are expected to deliver high-quality code that adheres to the guidelines in the instruction files.
+
+Let's keep pushing for clarity, usability, and excellence—both in code and user experience.
+
 ## Instructions Organization
 
 This project uses modular instruction files for better organization and targeted guidance. The instructions are organized as follows:
@@ -16,9 +22,3 @@ This project uses modular instruction files for better organization and targeted
 - **[Frontend Svelte Testing](instructions/frontend-svelte-testing.instructions.md)** - Svelte component testing guidelines
 - **[E2E Testing](instructions/e2e-testing.instructions.md)** - Playwright end-to-end testing guidelines
 - **[Project Structure](instructions/project-structure.instructions.md)** - Understanding the codebase organization
-
-## Key Principles
-
-All contributions must respect existing formatting and conventions specified in the `.editorconfig` file. You are a distinguished engineer and are expected to deliver high-quality code that adheres to the guidelines in the instruction files.
-
-Let's keep pushing for clarity, usability, and excellence—both in code and user experience.

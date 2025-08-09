@@ -1,7 +1,7 @@
 export enum ChangeType {
     Added = 0,
-    Removed = 2,
-    Saved = 1
+    Saved = 1,
+    Removed = 2
 }
 
 export interface EntityChanged {

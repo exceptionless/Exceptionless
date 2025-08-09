@@ -9,10 +9,13 @@
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
     import { Separator } from '$comp/ui/separator';
-    import { deleteOrganization, getOrganizationQuery, updateOrganization } from '$features/organizations/api.svelte';
+    import { deleteOrganization, getOrganizationQuery, patchOrganization } from '$features/organizations/api.svelte';
     import RemoveOrganizationDialog from '$features/organizations/components/dialogs/remove-organization-dialog.svelte';
+    import OrganizationAdminActionsDropdownMenu from '$features/organizations/components/organization-admin-actions-dropdown-menu.svelte';
     import { NewOrganization } from '$features/organizations/models';
+    import { structuredCloneState } from '$features/shared/utils/state.svelte';
     import { applyServerSideErrors } from '$features/shared/validation';
+    import GlobalUser from '$features/users/components/global-user.svelte';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import Issues from '@lucide/svelte/icons/bug';
     import X from '@lucide/svelte/icons/x';
@@ -22,6 +25,7 @@
     import { debounce } from 'throttle-debounce';
 
     let toastId = $state<number | string>();
+    let previousOrganizationRef = $state<NewOrganization>();
 
     const organizationId = page.params.organizationId || '';
     const organizationQuery = getOrganizationQuery({
@@ -32,7 +36,7 @@
         }
     });
 
-    const update = updateOrganization({
+    const update = patchOrganization({
         route: {
             get id() {
                 return organizationId;
@@ -62,8 +66,9 @@
         }
     }
 
-    const form = superForm(defaults(organizationQuery.data ?? new NewOrganization(), classvalidatorClient(NewOrganization)), {
+    const form = superForm(defaults(structuredCloneState(organizationQuery.data) ?? new NewOrganization(), classvalidatorClient(NewOrganization)), {
         dataType: 'json',
+        id: 'manage-organization',
         async onUpdate({ form, result }) {
             if (!form.valid) {
                 return;
@@ -97,8 +102,10 @@
             return;
         }
 
-        if (!$submitting && !$tainted) {
-            form.reset({ data: organizationQuery.data, keepMessage: true });
+        if (!$submitting && !$tainted && organizationQuery.data !== previousOrganizationRef) {
+            const clonedData = structuredCloneState(organizationQuery.data);
+            form.reset({ data: clonedData, keepMessage: true });
+            previousOrganizationRef = organizationQuery.data;
         }
     });
 
@@ -127,13 +134,14 @@
     </form>
 
     <div class="flex w-full items-center justify-between">
-        <div class="flex gap-2">
-            <Button variant="secondary" href="/next/issues">
-                <Issues class="mr-2 size-4" /> Go To Issues
-            </Button>
-        </div>
+        <Button variant="secondary" href="/next/issues">
+            <Issues class="mr-2 size-4" /> Go To Issues
+        </Button>
 
-        <div>
+        <div class="flex gap-2">
+            <GlobalUser>
+                <OrganizationAdminActionsDropdownMenu organization={organizationQuery.data} />
+            </GlobalUser>
             <DropdownMenu.Root>
                 <DropdownMenu.Trigger class={buttonVariants({ variant: 'destructive' })}>
                     <X class="size-4" />

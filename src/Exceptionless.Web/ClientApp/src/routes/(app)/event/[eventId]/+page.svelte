@@ -4,7 +4,7 @@
     import { goto } from '$app/navigation';
     import { page } from '$app/state';
     import * as FacetedFilter from '$comp/faceted-filter';
-    import * as Card from '$comp/ui/card';
+    import { H3 } from '$comp/typography';
     import EventsOverview from '$features/events/components/events-overview.svelte';
     import { buildFilterCacheKey, toFilter, updateFilterCache } from '$features/events/components/filters/helpers.svelte';
     import { organization } from '$features/organizations/context.svelte';
@@ -39,13 +39,7 @@
     }
 </script>
 
-<div class="flex flex-col space-y-4">
-    <Card.Root
-        ><Card.Header>
-            <Card.Title class="text-2xl">Event Details</Card.Title></Card.Header
-        >
-        <Card.Content>
-            <EventsOverview {filterChanged} id={page.params.eventId || ''} {handleError}></EventsOverview>
-        </Card.Content>
-    </Card.Root>
+<div class="flex flex-col gap-4">
+    <H3>Event Details</H3>
+    <EventsOverview {filterChanged} id={page.params.eventId || ''} {handleError}></EventsOverview>
 </div>

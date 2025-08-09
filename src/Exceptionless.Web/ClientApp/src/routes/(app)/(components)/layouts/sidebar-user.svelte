@@ -7,16 +7,19 @@
     import * as Sidebar from '$comp/ui/sidebar/index';
     import { useSidebar } from '$comp/ui/sidebar/index';
     import { Skeleton } from '$comp/ui/skeleton';
+    import { organization } from '$features/organizations/context.svelte';
     import { User } from '$features/users/models';
     import BadgeCheck from '@lucide/svelte/icons/badge-check';
+    import Bell from '@lucide/svelte/icons/bell';
     import BookOpen from '@lucide/svelte/icons/book-open';
     import Braces from '@lucide/svelte/icons/braces';
-    // import Bell from '@lucide/svelte/icons/bell';
     import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
     import Help from '@lucide/svelte/icons/circle-help';
+    import CreditCard from '@lucide/svelte/icons/credit-card';
     import GitHub from '@lucide/svelte/icons/github';
-    // import CreditCard from '@lucide/svelte/icons/credit-card';
     import LogOut from '@lucide/svelte/icons/log-out';
+    import Plus from '@lucide/svelte/icons/plus';
+    import Settings from '@lucide/svelte/icons/settings';
 
     interface Props {
         gravatar: Gravatar;
@@ -99,17 +102,45 @@
                             <A variant="ghost" href="/next/account/manage" class="w-full" onclick={onMenuClick}>Account</A>
                             <DropdownMenu.Shortcut>⇧⌘ga</DropdownMenu.Shortcut>
                         </DropdownMenu.Item>
-                        <!-- <DropdownMenu.Item>
-                        <CreditCard />
-                        <A variant="ghost" href="/account/manage" class="w-full">
-                            Billing</A>
-                            <DropdownMenu.Shortcut>⌘B</DropdownMenu.Shortcut>
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Item>
-                        <Bell />
-                        <A variant="ghost" href="/next/account/notifications" class="w-full">Notifications</A>
-                        <DropdownMenu.Shortcut>⇧⌘N</DropdownMenu.Shortcut>
-                    </DropdownMenu.Item> -->
+                        <DropdownMenu.Item>
+                            <Bell />
+                            <A variant="ghost" href="/next/account/notifications" class="w-full" onclick={onMenuClick}>Notifications</A>
+                            <DropdownMenu.Shortcut>⇧⌘gn</DropdownMenu.Shortcut>
+                        </DropdownMenu.Item>
+                        {#if organization.current}
+                            <DropdownMenu.Item>
+                                <Settings />
+                                <A
+                                    variant="ghost"
+                                    href={`/next/organization/${organization.current}/manage`}
+                                    class="flex w-full items-center gap-2"
+                                    onclick={onMenuClick}
+                                >
+                                    Manage organization
+                                    <DropdownMenu.Shortcut>⇧⌘go</DropdownMenu.Shortcut>
+                                </A>
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item>
+                                <CreditCard />
+                                <A
+                                    variant="ghost"
+                                    href={`/next/organization/${organization.current}/billing`}
+                                    class="flex w-full items-center gap-2"
+                                    onclick={onMenuClick}
+                                >
+                                    Billing
+                                    <DropdownMenu.Shortcut>⇧⌘gb</DropdownMenu.Shortcut>
+                                </A>
+                            </DropdownMenu.Item>
+                        {:else}
+                            <DropdownMenu.Item>
+                                <Plus />
+                                <A variant="ghost" href="/next/organization/add" class="flex w-full items-center gap-2" onclick={onMenuClick}>
+                                    Add organization
+                                    <DropdownMenu.Shortcut>⇧⌘gn</DropdownMenu.Shortcut>
+                                </A>
+                            </DropdownMenu.Item>
+                        {/if}
                     </DropdownMenu.Group>
                     <DropdownMenu.Sub>
                         <DropdownMenu.SubTrigger>

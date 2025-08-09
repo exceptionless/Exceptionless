@@ -5,7 +5,9 @@
     import { Checkbox } from '$comp/ui/checkbox';
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
+    import { applyServerSideErrors } from '$features/shared/validation';
     import { webhookEventTypes } from '$features/webhooks/options';
+    import { ProblemDetails } from '@exceptionless/fetchclient';
     import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';
 
@@ -25,13 +27,26 @@
 
     const form = superForm(defaults(defaultValue, classvalidatorClient(NewWebhook)), {
         dataType: 'json',
-        async onUpdate({ form }) {
+        id: 'add-webhook',
+        async onUpdate({ form, result }) {
             if (!form.valid) {
                 return;
             }
 
-            await save(form.data);
-            open = false;
+            try {
+                await save(form.data);
+                open = false;
+
+                // HACK: This is to prevent sveltekit from stealing focus
+                result.type = 'failure';
+            } catch (error: unknown) {
+                if (error instanceof ProblemDetails) {
+                    applyServerSideErrors(form, error);
+                    result.status = error.status ?? 500;
+                } else {
+                    result.status = 500;
+                }
+            }
         },
         SPA: true,
         validators: classvalidatorClient(NewWebhook)

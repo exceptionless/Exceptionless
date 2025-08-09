@@ -5,6 +5,7 @@
     import * as DataTable from '$comp/data-table';
     import * as FacetedFilter from '$comp/faceted-filter';
     import StreamingIndicatorButton from '$comp/streaming-indicator-button.svelte';
+    import { H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
     import { type GetEventsParams, getStackEventsQuery } from '$features/events/api.svelte';
@@ -236,7 +237,7 @@
 <div class="flex flex-col space-y-4">
     <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
         {#snippet toolbarChildren()}
-            <div class="pr-2 text-lg font-medium">Issues</div>
+            <H3 class="pr-2">Issues</H3>
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <OrganizationDefaultsFacetedFilterBuilder />
             </FacetedFilter.Root>

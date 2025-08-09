@@ -435,7 +435,6 @@ public class AuthController : ExceptionlessApiController
                 _logger.LogError("Change password failed for {EmailAddress}: The current password is incorrect", user.EmailAddress);
                 ModelState.AddModelError<ChangePasswordModel>(m => m.CurrentPassword, "The current password is incorrect.");
                 return ValidationProblem(ModelState);
-
             }
 
             string newPasswordHash = model.Password!.ToSaltedHash(user.Salt!);

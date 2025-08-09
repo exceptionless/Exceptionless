@@ -8,6 +8,7 @@
     import ErrorMessage from '$comp/error-message.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
     import StreamingIndicatorButton from '$comp/streaming-indicator-button.svelte';
+    import { H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
     import EventsOverview from '$features/events/components/events-overview.svelte';
@@ -229,7 +230,7 @@
 
 <DataTable.Root>
     <DataTable.Toolbar {table}>
-        <div class="pr-2 text-lg font-medium">Event Stream</div>
+        <H3 class="pr-2">Event Stream</H3>
         <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
             <OrganizationDefaultsFacetedFilterBuilder includeDateFacets={false} />
         </FacetedFilter.Root>

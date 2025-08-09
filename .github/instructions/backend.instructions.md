@@ -13,7 +13,6 @@ applyTo: "**/*.cs"
 ## Conventions & Best Practices
 
 - Adhere to the `.editorconfig` file and Microsoft's [coding conventions](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions).
-- Follow Microsoft's [unit testing best practices](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices).
 
 ## Architectural Considerations
 

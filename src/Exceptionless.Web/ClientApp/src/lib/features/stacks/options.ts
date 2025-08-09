@@ -1,8 +1,8 @@
-import type { DropDownItem } from '$features/shared/options';
+import type { DropdownItem } from '$features/shared/options';
 
 import { StackStatus } from '$features/stacks/models';
 
-export const stackStatuses: DropDownItem<StackStatus>[] = [
+export const stackStatuses: DropdownItem<StackStatus>[] = [
     {
         label: 'Open',
         value: StackStatus.Open

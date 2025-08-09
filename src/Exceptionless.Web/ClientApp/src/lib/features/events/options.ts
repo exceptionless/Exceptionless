@@ -1,9 +1,9 @@
-import type { DropDownItem } from '$features/shared/options';
+import type { DropdownItem } from '$features/shared/options';
 
 import type { LogLevel } from './models/event-data';
 import type { PersistentEventKnownTypes } from './models/index';
 
-export const eventTypes: DropDownItem<PersistentEventKnownTypes>[] = [
+export const eventTypes: DropdownItem<PersistentEventKnownTypes>[] = [
     {
         label: 'Not Found',
         value: '404'
@@ -34,7 +34,7 @@ export const eventTypes: DropDownItem<PersistentEventKnownTypes>[] = [
     }
 ];
 
-export const logLevels: DropDownItem<LogLevel>[] = [
+export const logLevels: DropdownItem<LogLevel>[] = [
     {
         label: 'Trace',
         value: 'trace'
