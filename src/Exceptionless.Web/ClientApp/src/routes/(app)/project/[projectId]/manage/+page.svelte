@@ -80,6 +80,7 @@
 
     const form = superForm(defaults(structuredCloneState(projectQuery.data) ?? new UpdateProject(), classvalidatorClient(UpdateProject)), {
         dataType: 'json',
+        id: 'update-project',
         async onUpdate({ form, result }) {
             if (!form.valid) {
                 return;

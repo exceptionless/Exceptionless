@@ -68,6 +68,7 @@
 
     const form = superForm(defaults(structuredCloneState(organizationQuery.data) ?? new NewOrganization(), classvalidatorClient(NewOrganization)), {
         dataType: 'json',
+        id: 'manage-organization',
         async onUpdate({ form, result }) {
             if (!form.valid) {
                 return;

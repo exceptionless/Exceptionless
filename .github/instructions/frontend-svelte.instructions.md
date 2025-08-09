@@ -24,6 +24,8 @@ You can now use `await` directly in three places:
 
 ## Form Handling with Superforms
 
+Always supply a unique, stable `id` option for every `superForm` instance (e.g. `id: 'login'`, `id: 'update-user'`, `id: 'invite-user'`). Missing ids lead to duplicate form data warnings when multiple forms (including dialogs) are present. Use short, kebab-case resource-action names and never reuse the same id on the same page.
+
 ### Safe Data Cloning Pattern
 Always use the `structuredCloneState()` utility when initializing forms and resetting form data to prevent cache mutation and reactive entanglement:
 

@@ -19,6 +19,7 @@
 
     const form = superForm(defaults(new InviteUserForm(), classvalidatorClient(InviteUserForm)), {
         dataType: 'json',
+        id: 'invite-user',
         async onUpdate({ form, result }) {
             if (!form.valid) {
                 return;

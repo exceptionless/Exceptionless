@@ -18,6 +18,7 @@
 
     const form = superForm(defaults(new ClientConfigurationSetting(), classvalidatorClient(ClientConfigurationSetting)), {
         dataType: 'json',
+        id: 'add-project-config',
         async onUpdate({ form, result }) {
             if (!form.valid) {
                 return;
