@@ -1,5 +1,5 @@
 <script lang="ts">
-    import * as Card from '$comp/ui/card';
+    import { H3, Muted } from '$comp/typography';
     import { Separator } from '$comp/ui/separator';
     import { accessToken } from '$features/auth/index.svelte';
     import * as SplitLayout from '$features/shared/components/layouts/split-layout';
@@ -20,21 +20,16 @@
     });
 </script>
 
-<Card.Root>
-    <Card.Header>
-        <Card.Title class="text-2xl">Settings</Card.Title>
-        <Card.Description>Manage your account settings and set e-mail preferences.</Card.Description>
-    </Card.Header>
-    <Separator class="mx-6 my-6 w-auto" />
+<H3>Settings</H3>
+<Muted>Manage your account settings and set e-mail preferences.</Muted>
 
-    <Card.Content>
-        <SplitLayout.Root>
-            <SplitLayout.Sidebar>
-                <SidebarNav routes={filteredRoutes} />
-            </SplitLayout.Sidebar>
-            <SplitLayout.Content>
-                {@render children()}
-            </SplitLayout.Content>
-        </SplitLayout.Root>
-    </Card.Content>
-</Card.Root>
+<Separator class="mx-6 my-6 w-auto" />
+
+<SplitLayout.Root>
+    <SplitLayout.Sidebar>
+        <SidebarNav routes={filteredRoutes} />
+    </SplitLayout.Sidebar>
+    <SplitLayout.Content>
+        {@render children()}
+    </SplitLayout.Content>
+</SplitLayout.Root>
