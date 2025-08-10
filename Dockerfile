@@ -69,7 +69,7 @@ FROM build AS app-publish
 WORKDIR /app/src/Exceptionless.Web
 
 RUN apt-get update -yq
-RUN curl -sL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -yq nodejs
+RUN curl -sL https://deb.nodesource.com/setup_24.x | bash - && apt-get install -yq nodejs
 
 RUN dotnet publish -c Release -o out
 
