@@ -85,7 +85,7 @@
         "oidc-client-ts": "^3.3.0",
         "pretty-ms": "^9.2.0",
         "runed": "^0.31.0",
-        "shiki": "^3.8.1",
+        "shiki": "^3.9.2",
         "svelte-sonner": "^1.0.5",
         "svelte-time": "^2.0.1",
         "sveltekit-superforms": "^2.27.1",
