@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { addOrganizationUser, removeOrganizationUser } from '$features/organizations/api.svelte';
+    import { addOrganizationUser, deleteOrganizationUser } from '$features/organizations/api.svelte';
     import { ViewUser } from '$features/users/models';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
@@ -20,7 +20,7 @@
     let showRemoveUserDialog = $state(false);
     let toastId = $state<number | string | undefined>();
 
-    const removeUser = removeOrganizationUser({
+    const removeUser = deleteOrganizationUser({
         route: {
             email: user.email_address,
             organizationId

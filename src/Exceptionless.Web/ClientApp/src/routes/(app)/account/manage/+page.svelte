@@ -5,6 +5,7 @@
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
     import { Separator } from '$comp/ui/separator';
+    import { structuredCloneState } from '$features/shared/utils/state.svelte';
     import { getMeQuery, patchUser, postEmailAddress, resendVerificationEmail } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { UpdateUser, UpdateUserEmailAddress } from '$features/users/models';
@@ -16,8 +17,9 @@
     import { debounce } from 'throttle-debounce';
 
     let toastId = $state<number | string>();
+    let previousEmailSettingsRef = $state<UpdateUserEmailAddress>();
+    let previousUserSettingsRef = $state<UpdateUser>();
     const meQuery = getMeQuery();
-    const isEmailAddressVerified = $derived(meQuery.data?.is_email_address_verified ?? false);
     const gravatar = getGravatarFromCurrentUser(meQuery);
     const updateUser = patchUser({
         route: {
@@ -27,6 +29,7 @@
         }
     });
 
+    const isEmailAddressVerified = $derived(meQuery.data?.is_email_address_verified ?? false);
     const resendVerificationEmailMutation = resendVerificationEmail({
         route: {
             get id() {
@@ -43,37 +46,40 @@
         }
     });
 
-    const updateEmailAddressForm = superForm(defaults(meQuery.data ?? new UpdateUserEmailAddress(), classvalidatorClient(UpdateUserEmailAddress)), {
-        dataType: 'json',
-        id: 'update-email-address',
-        async onUpdate({ form, result }) {
-            if (!form.valid) {
-                return;
-            }
-
-            toast.dismiss(toastId);
-            try {
-                await updateEmailAddress.mutateAsync(form.data);
-                toastId = toast.success('Successfully updated Account');
-
-                // HACK: This is to prevent sveltekit from stealing focus
-                result.type = 'failure';
-            } catch (error: unknown) {
-                if (error instanceof ProblemDetails) {
-                    applyServerSideErrors(form, error);
-                    result.status = error.status ?? 500;
-                } else {
-                    result.status = 500;
+    const updateEmailAddressForm = superForm(
+        defaults(structuredCloneState(meQuery.data) ?? new UpdateUserEmailAddress(), classvalidatorClient(UpdateUserEmailAddress)),
+        {
+            dataType: 'json',
+            id: 'update-email-address',
+            async onUpdate({ form, result }) {
+                if (!form.valid) {
+                    return;
                 }
 
-                toastId = toast.error(form.message ?? 'Error saving email address. Please try again.');
-            }
-        },
-        SPA: true,
-        validators: classvalidatorClient(UpdateUserEmailAddress)
-    });
+                toast.dismiss(toastId);
+                try {
+                    await updateEmailAddress.mutateAsync(form.data);
+                    toastId = toast.success('Successfully updated Account');
 
-    const updateUserForm = superForm(defaults(meQuery.data ?? new UpdateUser(), classvalidatorClient(UpdateUser)), {
+                    // HACK: This is to prevent sveltekit from stealing focus
+                    result.type = 'failure';
+                } catch (error: unknown) {
+                    if (error instanceof ProblemDetails) {
+                        applyServerSideErrors(form, error);
+                        result.status = error.status ?? 500;
+                    } else {
+                        result.status = 500;
+                    }
+
+                    toastId = toast.error(form.message ?? 'Error saving email address. Please try again.');
+                }
+            },
+            SPA: true,
+            validators: classvalidatorClient(UpdateUserEmailAddress)
+        }
+    );
+
+    const updateUserForm = superForm(defaults(structuredCloneState(meQuery.data) ?? new UpdateUser(), classvalidatorClient(UpdateUser)), {
         dataType: 'json',
         id: 'update-user',
         async onUpdate({ form, result }) {
@@ -108,8 +114,10 @@
             return;
         }
 
-        if (!$updateEmailAddressFormSubmitting && !$updateEmailAddressFormTainted) {
-            updateEmailAddressForm.reset({ data: meQuery.data, keepMessage: true });
+        if (!$updateEmailAddressFormSubmitting && !$updateEmailAddressFormTainted && meQuery.data !== previousEmailSettingsRef) {
+            const clonedData = structuredCloneState(meQuery.data);
+            updateEmailAddressForm.reset({ data: clonedData, keepMessage: true });
+            previousEmailSettingsRef = meQuery.data;
         }
     });
 
@@ -118,8 +126,10 @@
             return;
         }
 
-        if (!$updateUserFormSubmitting && !$updateUserFormTainted) {
-            updateUserForm.reset({ data: meQuery.data, keepMessage: true });
+        if (!$updateUserFormSubmitting && !$updateUserFormTainted && meQuery.data !== previousUserSettingsRef) {
+            const clonedData = structuredCloneState(meQuery.data);
+            updateUserForm.reset({ data: clonedData, keepMessage: true });
+            previousUserSettingsRef = meQuery.data;
         }
     });
 

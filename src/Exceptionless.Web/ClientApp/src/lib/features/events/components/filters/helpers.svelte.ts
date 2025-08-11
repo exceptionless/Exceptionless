@@ -1,6 +1,7 @@
 import type { IFilter } from '$comp/faceted-filter';
 
 import { organization } from '$features/organizations/context.svelte';
+import { SvelteMap } from 'svelte/reactivity';
 
 import { DateFilter, KeywordFilter, type ProjectFilter, type StringFilter } from './models.svelte';
 
@@ -8,7 +9,7 @@ let filterCacheVersion = $state(1);
 export function filterCacheVersionNumber() {
     return filterCacheVersion;
 }
-const filterCache = new Map<null | string, IFilter[]>();
+const filterCache = new SvelteMap<null | string, IFilter[]>();
 
 export function applyTimeFilter(filters: IFilter[], time: null | string): IFilter[] {
     const dateFilterIndex = filters.findIndex((f) => f.key === 'date-date');
@@ -168,7 +169,7 @@ export function updateFilterCache(cacheKey: string, filters: IFilter[]) {
 }
 
 function processFilterRules(filters: IFilter[]): IFilter[] {
-    const uniqueFilters = new Map<string, IFilter>();
+    const uniqueFilters = new SvelteMap<string, IFilter>();
     for (const filter of filters) {
         const singletonFilterKeys = ['date-date', 'level', 'project', 'string-stack', 'tag', 'type'];
         if (singletonFilterKeys.includes(filter.key)) {

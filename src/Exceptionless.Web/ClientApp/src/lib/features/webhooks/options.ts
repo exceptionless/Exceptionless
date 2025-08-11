@@ -1,8 +1,8 @@
-import type { DropDownItem } from '$features/shared/options';
+import type { DropdownItem } from '$features/shared/options';
 
 import type { WebhookKnownEventTypes } from './models';
 
-export const webhookEventTypes: DropDownItem<WebhookKnownEventTypes>[] = [
+export const webhookEventTypes: DropdownItem<WebhookKnownEventTypes>[] = [
     {
         description: 'Occurs when a new error that has never been seen before is reported to your project.',
         label: 'New Error',

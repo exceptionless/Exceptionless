@@ -1,26 +1,125 @@
 <script lang="ts">
-    import ErrorMessage from '$comp/error-message.svelte';
-    import Loading from '$comp/loading.svelte';
-    import Switch from '$comp/primitives/switch.svelte';
-    import { H3, H4, Muted } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
+    import type { NotificationSettings } from '$features/projects/models';
+
+    import { A, H3, Muted } from '$comp/typography';
+    import { Badge } from '$comp/ui/badge';
+    import * as Select from '$comp/ui/select';
     import { Separator } from '$comp/ui/separator';
-    import { User } from '$features/users/models';
-    import { useFetchClientStatus } from '$shared/api/api.svelte';
-    import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+    import { Skeleton } from '$comp/ui/skeleton';
+    import { Switch } from '$comp/ui/switch';
+    import { getProjectsQuery, getProjectUserNotificationSettings, postProjectUserNotificationSettings } from '$features/projects/api.svelte';
+    import UserNotificationSettingsForm from '$features/projects/components/user-notification-settings-form.svelte';
+    import AlertDescription from '$features/shared/components/ui/alert/alert-description.svelte';
+    import AlertTitle from '$features/shared/components/ui/alert/alert-title.svelte';
+    import Alert from '$features/shared/components/ui/alert/alert.svelte';
+    import { getMeQuery, patchUser, resendVerificationEmail } from '$features/users/api.svelte';
+    import AlertCircleIcon from '@lucide/svelte/icons/alert-circle';
+    import { queryParamsState } from 'kit-query-params';
+    import { toast } from 'svelte-sonner';
+    import { debounce } from 'throttle-debounce';
 
-    const data = $state(new User());
-    data.email_notifications_enabled = true;
+    let toastId = $state<number | string>();
 
-    const client = useFetchClient();
-    const clientStatus = useFetchClientStatus(client);
+    const meQuery = getMeQuery();
+    const queryParams = queryParamsState({
+        default: { project: '' },
+        pushHistory: true,
+        schema: { project: 'string' }
+    });
 
-    let problem = $state(new ProblemDetails());
-
-    async function onSave() {
-        if (client.isLoading) {
-            return;
+    const updateUser = patchUser({
+        route: {
+            get id() {
+                return meQuery.data?.id;
+            }
         }
+    });
+
+    const projectsQuery = getProjectsQuery({});
+    const allProjects = $derived(projectsQuery.data?.data ?? []);
+
+    const projectsByOrganization = $derived.by(() => {
+        const groups = Object.groupBy(allProjects, (project) => project.organization_name);
+        return Object.entries(groups)
+            .map(([organizationName, projects]) => ({
+                organizationName: organizationName,
+                projects: (projects || []).sort((a, b) => a.name.localeCompare(b.name))
+            }))
+            .sort((a, b) => a.organizationName.localeCompare(b.organizationName));
+    });
+
+    const selectedProject = $derived(allProjects.find((p) => p.id === queryParams.project) ?? allProjects[0]);
+    const selectedProjectNotificationSettings = getProjectUserNotificationSettings({
+        route: {
+            get id() {
+                return selectedProject?.id;
+            },
+            get userId() {
+                return meQuery.data?.id;
+            }
+        }
+    });
+
+    const updateProjectNotificationSettings = postProjectUserNotificationSettings({
+        route: {
+            get id() {
+                return selectedProject?.id;
+            },
+            get userId() {
+                return meQuery.data?.id;
+            }
+        }
+    });
+
+    const debouncedOnEmailNotificationChanged = debounce(500, onEmailNotificationChanged);
+    async function onEmailNotificationChanged(checked: boolean) {
+        toast.dismiss(toastId);
+
+        try {
+            await updateUser.mutateAsync({ email_notifications_enabled: checked });
+            toastId = toast.success('Email notification preference saved.');
+        } catch {
+            toastId = toast.error('An error occurred while saving your email notification preferences.');
+        }
+    }
+
+    async function onProjectNotificationChanged(settings: NotificationSettings) {
+        toast.dismiss(toastId);
+
+        try {
+            await updateProjectNotificationSettings.mutateAsync(settings);
+            toastId = toast.success('Project notification preference saved.');
+        } catch {
+            toastId = toast.error('An error occurred while saving your project notification preferences.');
+        }
+    }
+
+    const isEmailAddressVerified = $derived(meQuery.data?.is_email_address_verified ?? false);
+    let emailNotificationsEnabled = $derived(meQuery.data?.email_notifications_enabled ?? false);
+    $effect(() => {
+        emailNotificationsEnabled = meQuery.data?.email_notifications_enabled ?? false;
+    });
+
+    const resendVerificationEmailMutation = resendVerificationEmail({
+        route: {
+            get id() {
+                return meQuery.data?.id;
+            }
+        }
+    });
+
+    async function handleResendVerificationEmail() {
+        toast.dismiss(toastId);
+        try {
+            await resendVerificationEmailMutation.mutateAsync();
+            toastId = toast.success('Please check your inbox for the verification email.');
+        } catch {
+            toastId = toast.error('Error sending verification email. Please try again.');
+        }
+    }
+
+    async function handleUpgrade() {
+        console.log('TODO: Upgrade to premium features');
     }
 </script>
 
@@ -31,26 +130,76 @@
     </div>
     <Separator />
 
-    <form class="space-y-2" onsubmit={onSave}>
-        <ErrorMessage message={problem.errors.general}></ErrorMessage>
+    {#if meQuery.isSuccess && (!isEmailAddressVerified || !emailNotificationsEnabled)}
+        <Alert variant="destructive" class="mb-4">
+            <AlertCircleIcon />
+            <AlertTitle>Email notifications are currently disabled</AlertTitle>
+            {#if !isEmailAddressVerified}
+                <AlertDescription>
+                    <span
+                        >To enable email notifications you must first verify your email address. <A class="inline" onclick={handleResendVerificationEmail}
+                            >Resend verification email.</A
+                        ></span
+                    >
+                </AlertDescription>
+            {/if}
+        </Alert>
+    {/if}
 
-        <H3 class="mb-4">Email Notifications</H3>
-        <div class="flex flex-row items-center justify-between rounded-lg border p-4">
-            <div class="space-y-0.5">
-                <H4>Communication emails</H4>
-                <Muted>Receive emails about your account activity.</Muted>
-            </div>
-            <Switch bind:checked={data.email_notifications_enabled} id="email_notifications_enabled"></Switch>
-        </div>
-
-        <div class="pt-2">
-            <Button type="submit">
-                {#if clientStatus.isLoading}
-                    <Loading class="mr-2" variant="secondary"></Loading> Saving...
+    <div class="space-y-2">
+        <H3>Email Notifications</H3>
+        <div class="rounded-lg border p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <div class="text-sm font-medium">Enable Email Notifications</div>
+                        {#if !isEmailAddressVerified}
+                            <Badge variant="secondary" class="text-xs">Requires verification</Badge>
+                        {/if}
+                    </div>
+                    <Muted class="text-xs">Receive updates about activity in your organization and projects.</Muted>
+                </div>
+                {#if meQuery.data}
+                    <Switch
+                        bind:checked={emailNotificationsEnabled}
+                        id="email_notifications_enabled"
+                        disabled={updateUser.isPending}
+                        onCheckedChange={debouncedOnEmailNotificationChanged}
+                    />
                 {:else}
-                    Save
+                    <Skeleton class="h-[1.15rem] w-8 rounded-full" />
                 {/if}
-            </Button>
+            </div>
         </div>
-    </form>
+    </div>
+
+    {#if selectedProject}
+        <div class="space-y-2">
+            <H3>Project Notifications</H3>
+            <Muted>Choose how often you want to receive notifications for event occurrences in this project.</Muted>
+            <Select.Root bind:value={queryParams.project!} type="single">
+                <Select.Trigger class="w-full">
+                    {selectedProject.name}
+                </Select.Trigger>
+                <Select.Content>
+                    {#each projectsByOrganization as { organizationName, projects } (organizationName)}
+                        <Select.Group>
+                            <Select.Label>{organizationName}</Select.Label>
+                            {#each projects as project (project.id)}
+                                <Select.Item value={project.id}>{project.name}</Select.Item>
+                            {/each}
+                        </Select.Group>
+                    {/each}
+                </Select.Content>
+            </Select.Root>
+        </div>
+
+        <UserNotificationSettingsForm
+            upgrade={handleUpgrade}
+            settings={selectedProjectNotificationSettings?.data}
+            save={onProjectNotificationChanged}
+            {emailNotificationsEnabled}
+            hasPremiumFeatures={selectedProject.has_premium_features}
+        />
+    {/if}
 </div>

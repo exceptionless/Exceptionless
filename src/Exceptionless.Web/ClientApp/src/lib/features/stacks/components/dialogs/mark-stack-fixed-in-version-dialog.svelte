@@ -4,6 +4,8 @@
     import * as AlertDialog from '$comp/ui/alert-dialog';
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
+    import { applyServerSideErrors } from '$features/shared/validation';
+    import { ProblemDetails } from '@exceptionless/fetchclient';
     import Documentation from '@lucide/svelte/icons/help-circle';
     import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';
@@ -21,19 +23,32 @@
 
     const form = superForm(defaults(new FixedInVersionForm(), classvalidatorClient(FixedInVersionForm)), {
         dataType: 'json',
+        id: 'mark-stack-fixed-in-version',
         onChange() {
             debouncedUpdateVersionToSemanticVersion();
         },
         onSubmit() {
             updateVersionToSemanticVersion();
         },
-        async onUpdate({ form }) {
+        async onUpdate({ form, result }) {
             if (!form.valid) {
                 return;
             }
 
-            await save(form.data.version);
-            open = false;
+            try {
+                await save(form.data.version);
+                open = false;
+
+                // HACK: This is to prevent sveltekit from stealing focus
+                result.type = 'failure';
+            } catch (error: unknown) {
+                if (error instanceof ProblemDetails) {
+                    applyServerSideErrors(form, error);
+                    result.status = error.status ?? 500;
+                } else {
+                    result.status = 500;
+                }
+            }
         },
         SPA: true,
         validators: classvalidatorClient(FixedInVersionForm)

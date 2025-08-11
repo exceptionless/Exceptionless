@@ -200,11 +200,9 @@
         <div class="text-secondary-foreground w-full">
             <main class="px-4 pt-4">
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
-                {#key page.url.pathname}
-                    <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>
-                        {@render children()}
-                    </div>
-                {/key}
+                <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>
+                    {@render children()}
+                </div>
             </main>
 
             <Footer></Footer>

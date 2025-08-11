@@ -26,17 +26,17 @@
             onValueChange={onUserThemePreferenceChange}
             value={userPrefersMode.current}
         >
-            <Label class="[&:has([data-state=checked])>div]:border-primary" for="light">
+            <Label class="[&:has([data-state=checked])>div]:border-primary flex flex-col items-center" for="light">
                 <RadioGroup.Item class="sr-only" id="light" value="light" />
                 <ThemePreview mode="light" />
                 <div class="pt-2 text-center">Light</div>
             </Label>
-            <Label class="[&:has([data-state=checked])>div]:border-primary" for="dark">
+            <Label class="[&:has([data-state=checked])>div]:border-primary flex flex-col items-center" for="dark">
                 <RadioGroup.Item class="sr-only" id="dark" value="dark" />
                 <ThemePreview mode="dark" />
                 <div class="pt-2 text-center">Dark</div>
             </Label>
-            <Label class="[&:has([data-state=checked])>div]:border-primary" for="system">
+            <Label class="[&:has([data-state=checked])>div]:border-primary flex flex-col items-center" for="system">
                 <RadioGroup.Item class="sr-only" id="system" value="system" />
                 <ThemePreview mode="system" />
                 <div class="pt-2 text-center">System</div>

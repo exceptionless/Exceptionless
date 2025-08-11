@@ -1,8 +1,8 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { page } from '$app/state';
+    import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
-    import * as Card from '$comp/ui/card';
     import { Separator } from '$comp/ui/separator';
     import { organization } from '$features/organizations/context.svelte';
     import { getProjectQuery } from '$features/projects/api.svelte';
@@ -37,33 +37,32 @@
     });
 </script>
 
-<Card.Root>
-    <Card.Header>
-        <Card.Title class="flex items-center gap-1 text-2xl"
-            >{#if projectQuery.isSuccess}
-                <div class="max-w-[70%] overflow-hidden" title={projectQuery.data.name}>
-                    <span class="block truncate">{projectQuery.data.name}</span>
-                </div>
-            {/if}
-            <span class="shrink-0">Settings</span></Card.Title
-        >
-        <Card.Description>Manage your project settings and integrations.</Card.Description>
-        <Card.Action>
+<div>
+    <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="flex flex-col gap-1">
+            <H3 class="flex items-center gap-1">
+                {#if projectQuery.isSuccess}
+                    <div class="max-w-[70%] overflow-hidden" title={projectQuery.data.name}>
+                        <span class="block truncate">{projectQuery.data.name}</span>
+                    </div>
+                {/if}
+                <span class="shrink-0">Settings</span>
+            </H3>
+            <Muted>Manage your project settings and integrations.</Muted>
+        </div>
+        <div class="flex items-center gap-2">
             <Button variant="secondary" size="icon" href="/account/manage?tab=notifications&projectId={projectId}" title="Notification Settings">
                 <NotificationSettings class="size-4" />
             </Button>
-        </Card.Action>
-    </Card.Header>
+        </div>
+    </div>
     <Separator class="mx-6 my-6 w-auto" />
-
-    <Card.Content>
-        <SplitLayout.Root>
-            <SplitLayout.Sidebar>
-                <SidebarNav routes={routes()} />
-            </SplitLayout.Sidebar>
-            <SplitLayout.Content>
-                {@render children()}
-            </SplitLayout.Content>
-        </SplitLayout.Root>
-    </Card.Content>
-</Card.Root>
+    <SplitLayout.Root>
+        <SplitLayout.Sidebar>
+            <SidebarNav routes={routes()} />
+        </SplitLayout.Sidebar>
+        <SplitLayout.Content>
+            {@render children()}
+        </SplitLayout.Content>
+    </SplitLayout.Root>
+</div>

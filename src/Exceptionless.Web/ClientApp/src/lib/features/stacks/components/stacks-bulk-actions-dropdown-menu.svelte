@@ -8,6 +8,7 @@
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import { type Table as SvelteTable } from '@tanstack/svelte-table';
     import { toast } from 'svelte-sonner';
+    import { SvelteDate } from 'svelte/reactivity';
 
     import { deleteStack, postChangeStatus, postMarkFixed, postMarkSnoozed } from '../api.svelte';
     import { StackStatus } from '../models';
@@ -83,7 +84,7 @@
     }
 
     async function markSnoozed(timePeriod?: '6hours' | 'day' | 'month' | 'week') {
-        let snoozeUntilUtc = new Date();
+        let snoozeUntilUtc = new SvelteDate();
         switch (timePeriod) {
             case '6hours':
                 snoozeUntilUtc.setHours(snoozeUntilUtc.getHours() + 6);

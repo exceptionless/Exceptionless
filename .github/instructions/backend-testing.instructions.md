@@ -20,8 +20,7 @@ applyTo: "tests/**/*.cs"
 
 - Write complete, runnable tests—no placeholders or TODOs.
 - Use clear, descriptive naming conventions for test methods:
-  - `MethodName_StateUnderTest_ExpectedBehavior`
-  - `Should_ExpectedBehavior_When_StateUnderTest`
+    - `MethodName_StateUnderTest_ExpectedBehavior`
 - Follow AAA pattern (Arrange, Act, Assert).
 
 ## Test Organization

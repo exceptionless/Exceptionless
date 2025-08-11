@@ -103,8 +103,9 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
             }));
         }
 
+        long total = results.Total + organization.Invites.Count;
         var pagedUsers = users.Skip(skip).Take(limit).ToList();
-        return OkWithResourceLinks(pagedUsers, users.Count > GetSkip(page + 1, limit), page);
+        return OkWithResourceLinks(pagedUsers, total > GetSkip(page + 1, limit), page, total);
     }
 
     /// <summary>

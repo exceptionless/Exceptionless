@@ -319,7 +319,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                             else if (attempts > 5)
                                 delay = TimeSpan.FromMilliseconds(250);
 
-                            await Task.Delay(delay);
+                            await Task.Delay(delay, _timeProvider);
                         } while (true);
 
                         _logger.LogInformation("Migrated stack events: Target={TargetId} Events={UpdatedEvents} Dupes={DuplicateIds}", targetStack.Id, affectedRecords, duplicateStacks.Select(s => s.Id));

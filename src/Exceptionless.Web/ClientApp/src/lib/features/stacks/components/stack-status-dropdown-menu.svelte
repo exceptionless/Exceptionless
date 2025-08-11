@@ -1,9 +1,10 @@
 <script lang="ts">
-    import type { DropDownItem } from '$features/shared/options';
+    import type { DropdownItem } from '$features/shared/options';
 
     import Button from '$comp/ui/button/button.svelte';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
+    import { SvelteDate } from 'svelte/reactivity';
 
     import { postChangeStatus, postMarkFixed, postMarkSnoozed } from '../api.svelte';
     import { Stack, StackStatus } from '../models';
@@ -20,7 +21,7 @@
     let openMarkStackDiscardedDialog = $state<boolean>(false);
     let openMarkStackFixedInVersionDialog = $state<boolean>(false);
     let selected = $derived(
-        (stackStatuses.find((option) => option.value === stack?.status) || stackStatuses[stackStatuses.length - 1]) as DropDownItem<StackStatus>
+        (stackStatuses.find((option) => option.value === stack?.status) || stackStatuses[stackStatuses.length - 1]) as DropdownItem<StackStatus>
     );
 
     const updateMarkFixed = postMarkFixed({
@@ -60,7 +61,7 @@
     }
 
     async function markSnoozed(timePeriod?: '6hours' | 'day' | 'month' | 'week') {
-        let snoozeUntilUtc = new Date();
+        let snoozeUntilUtc = new SvelteDate();
         switch (timePeriod) {
             case '6hours':
                 snoozeUntilUtc.setHours(snoozeUntilUtc.getHours() + 6);

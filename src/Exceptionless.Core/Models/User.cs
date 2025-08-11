@@ -14,7 +14,7 @@ public record User : IIdentity, IHaveDates, IValidatableObject
     /// <summary>
     /// The organizations that the user has access to.
     /// </summary>
-    public ICollection<string> OrganizationIds { get; } = new Collection<string>();
+    public ISet<string> OrganizationIds { get; } = new HashSet<string>();
 
     public string? Password { get; set; }
     public string? Salt { get; set; }
@@ -41,7 +41,7 @@ public record User : IIdentity, IHaveDates, IValidatableObject
     /// </summary>
     public bool IsActive { get; init; } = true;
 
-    public ICollection<string> Roles { get; init; } = new Collection<string>();
+    public ISet<string> Roles { get; init; } = new HashSet<string>();
 
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }
