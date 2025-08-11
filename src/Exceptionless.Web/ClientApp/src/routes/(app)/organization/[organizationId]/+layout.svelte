@@ -1,7 +1,7 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { page } from '$app/state';
-    import * as Card from '$comp/ui/card';
+    import { H3, Muted } from '$comp/typography';
     import { Separator } from '$comp/ui/separator';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
@@ -41,28 +41,25 @@
     });
 </script>
 
-<Card.Root>
-    <Card.Header>
-        <Card.Title class="flex items-center gap-1 text-2xl"
-            >{#if organizationQuery.isSuccess}
+<div>
+    <div class="flex flex-col gap-1">
+        <H3 class="flex items-center gap-1">
+            {#if organizationQuery.isSuccess}
                 <div class="max-w-[70%] overflow-hidden" title={organizationQuery.data.name}>
                     <span class="block truncate">{organizationQuery.data.name}</span>
                 </div>
             {/if}
-            <span class="shrink-0">Settings</span></Card.Title
-        >
-        <Card.Description>Manage your organization's settings, users, and billing information.</Card.Description>
-    </Card.Header>
+            <span class="shrink-0">Settings</span>
+        </H3>
+        <Muted>Manage your organization's settings, users, and billing information.</Muted>
+    </div>
     <Separator class="mx-6 my-6 w-auto" />
-
-    <Card.Content>
-        <SplitLayout.Root>
-            <SplitLayout.Sidebar>
-                <SidebarNav routes={routes()} />
-            </SplitLayout.Sidebar>
-            <SplitLayout.Content>
-                {@render children()}
-            </SplitLayout.Content>
-        </SplitLayout.Root>
-    </Card.Content>
-</Card.Root>
+    <SplitLayout.Root>
+        <SplitLayout.Sidebar>
+            <SidebarNav routes={routes()} />
+        </SplitLayout.Sidebar>
+        <SplitLayout.Content>
+            {@render children()}
+        </SplitLayout.Content>
+    </SplitLayout.Root>
+</div>

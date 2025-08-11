@@ -117,7 +117,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
                 }
 
                 // Sleep so we are not hammering the backend.
-                await Task.Delay(TimeSpan.FromSeconds(2.5));
+                await Task.Delay(TimeSpan.FromSeconds(2.5), _timeProvider);
             }
 
             if (context.CancellationToken.IsCancellationRequested || !await organizationResults.NextPageAsync())
@@ -145,7 +145,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
                 }
 
                 // Sleep so we are not hammering the backend.
-                await Task.Delay(TimeSpan.FromSeconds(2.5));
+                await Task.Delay(TimeSpan.FromSeconds(2.5), _timeProvider);
             }
 
             if (context.CancellationToken.IsCancellationRequested || !await projectResults.NextPageAsync())
@@ -250,7 +250,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
                 }
 
                 // Sleep so we are not hammering the backend.
-                await Task.Delay(TimeSpan.FromSeconds(2.5));
+                await Task.Delay(TimeSpan.FromSeconds(2.5), _timeProvider);
             }
 
             if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())

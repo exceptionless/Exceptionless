@@ -2,8 +2,8 @@
     import type { ViewProject } from '$features/projects/models';
 
     import { goto } from '$app/navigation';
+    import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
-    import * as Card from '$comp/ui/card';
     import { Input } from '$comp/ui/input';
     import { organization } from '$features/organizations/context.svelte';
     import { type GetOrganizationProjectsParams, getOrganizationProjectsQuery } from '$features/projects/api.svelte';
@@ -73,26 +73,24 @@
     });
 </script>
 
-<div class="flex flex-col space-y-4">
-    <Card.Root>
-        <Card.Header>
-            <Card.Title class="text-2xl">My Projects</Card.Title>
-            <Card.Description>View and manage your projects. Click on a project to view its details.</Card.Description>
-            <Card.Action>
-                <Button size="icon" onclick={addProject} title="Add Project">
-                    <Plus class="size-4" aria-hidden="true" />
-                    <span class="sr-only">Add Project</span>
-                </Button>
-            </Card.Action>
-        </Card.Header>
-        <Card.Content>
-            <ProjectsDataTable bind:limit={projectsQueryParameters.limit!} isLoading={projectsQuery.isLoading} {rowClick} {table}>
-                {#snippet toolbarChildren()}
-                    <div class="min-w-fit flex-1">
-                        <Input type="search" placeholder="Filter projects..." class="w-full" bind:value={projectsQueryParameters.filter} />
-                    </div>
-                {/snippet}
-            </ProjectsDataTable>
-        </Card.Content>
-    </Card.Root>
+<div class="flex flex-col gap-4">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="flex flex-col gap-1">
+            <H3>My Projects</H3>
+            <Muted>View and manage your projects. Click on a project to view its details.</Muted>
+        </div>
+        <div class="flex items-center gap-2">
+            <Button size="icon" onclick={addProject} title="Add Project">
+                <Plus class="size-4" aria-hidden="true" />
+                <span class="sr-only">Add Project</span>
+            </Button>
+        </div>
+    </div>
+    <ProjectsDataTable bind:limit={projectsQueryParameters.limit!} isLoading={projectsQuery.isLoading} {rowClick} {table}>
+        {#snippet toolbarChildren()}
+            <div class="min-w-fit flex-1">
+                <Input type="search" placeholder="Filter projects..." class="w-full" bind:value={projectsQueryParameters.filter} />
+            </div>
+        {/snippet}
+    </ProjectsDataTable>
 </div>

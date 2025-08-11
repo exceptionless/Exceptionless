@@ -2,6 +2,7 @@
     import type { HTMLAttributes } from 'svelte/elements';
 
     import DelayedRender from '$comp/delayed-render.svelte';
+    import { A } from '$comp/typography';
     import * as Avatar from '$comp/ui/avatar/index';
     import * as DropdownMenu from '$comp/ui/dropdown-menu/index';
     import * as Sidebar from '$comp/ui/sidebar/index';
@@ -11,6 +12,7 @@
     import { getInitials } from '$shared/strings';
     import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
     import Plus from '@lucide/svelte/icons/plus';
+    import Settings from '@lucide/svelte/icons/settings';
 
     type Props = HTMLAttributes<HTMLUListElement> & {
         isLoading: boolean;
@@ -57,7 +59,7 @@
                     {/snippet}
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content
-                    class="w-(--bits-dropdown-menu-anchor-width) min-w-56 rounded-lg"
+                    class="w-(--bits-dropdown-menu-anchor-width) min-w-64 rounded-lg"
                     align="start"
                     side={sidebar.isMobile ? 'bottom' : 'right'}
                     sideOffset={4}
@@ -79,11 +81,26 @@
                         {/each}
                     {/if}
                     <DropdownMenu.Separator />
-                    <DropdownMenu.Item class="gap-2 p-2">
-                        <div class="bg-background flex size-6 items-center justify-center rounded-md border">
-                            <Plus class="size-4" aria-hidden="true" />
-                        </div>
-                        <span class="text-muted-foreground font-medium">Add organization</span>
+                    {#if activeOrganization?.id}
+                        <DropdownMenu.Item>
+                            <A variant="ghost" href={`/next/organization/${activeOrganization.id}/manage`} class="flex w-full items-center gap-2">
+                                <div class="bg-background flex size-6 items-center justify-center rounded-md border">
+                                    <Settings class="size-4" aria-hidden="true" />
+                                </div>
+                                <span class="text-muted-foreground font-medium">Manage organization</span>
+                                <DropdownMenu.Shortcut>⇧⌘go</DropdownMenu.Shortcut>
+                            </A>
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Separator />
+                    {/if}
+                    <DropdownMenu.Item>
+                        <A variant="ghost" href="/next/organization/add" class="flex w-full items-center gap-2">
+                            <div class="bg-background flex size-6 items-center justify-center rounded-md border">
+                                <Plus class="size-4" aria-hidden="true" />
+                            </div>
+                            <span class="text-muted-foreground font-medium">Add organization</span>
+                            <DropdownMenu.Shortcut>⇧⌘gn</DropdownMenu.Shortcut>
+                        </A>
                     </DropdownMenu.Item>
                 </DropdownMenu.Content>
             </DropdownMenu.Root>

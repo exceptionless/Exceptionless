@@ -17,7 +17,7 @@
         putProjectIntegrationNotificationSettings
     } from '$features/projects/api.svelte';
     import RemoveSlackDialog from '$features/projects/components/dialogs/remove-slack-dialog.svelte';
-    import NotificationSettingsForm from '$features/projects/components/notification-settings-form.svelte';
+    import IntegrationNotificationSettingsForm from '$features/projects/components/integration-notification-settings-form.svelte';
     import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
     import { type GetProjectWebhooksParams, postWebhook } from '$features/webhooks/api.svelte';
     import { getProjectWebhooksQuery } from '$features/webhooks/api.svelte';
@@ -87,8 +87,9 @@
         try {
             await newWebhook.mutateAsync(webhook);
             toastId = toast.success('Webhook added successfully');
-        } catch {
+        } catch (error) {
             toastId = toast.error('Error adding webhook. Please try again.');
+            throw error;
         }
     }
 
@@ -192,7 +193,7 @@
             >
 
             {#if hasSlackIntegration}
-                <NotificationSettingsForm settings={slackNotificationSettingsQuery.data} save={updateSlackNotificationSettings} />
+                <IntegrationNotificationSettingsForm settings={slackNotificationSettingsQuery.data} save={updateSlackNotificationSettings} />
 
                 <Button onclick={() => (showRemoveSlackDialog = true)}><SlackIcon class="mr-2 size-4" /> Remove Slack</Button>
             {:else}

@@ -45,8 +45,9 @@
         try {
             await updateProjectConfig.mutateAsync({ key: setting.key, value });
             toastId = toast.success(`Successfully updated ${setting.key} setting.`);
-        } catch {
+        } catch (error) {
             toastId = toast.error(`Error updating ${setting.key}'s setting. Please try again.`);
+            throw error;
         }
     }
 
@@ -56,8 +57,9 @@
         try {
             await removeProjectConfig.mutateAsync({ key: setting.key });
             toastId = toast.success(`Successfully removed ${setting.key} setting.`);
-        } catch {
+        } catch (error) {
             toastId = toast.error(`Error removing ${setting.key}'s setting. Please try again.`);
+            throw error;
         }
     }
 </script>

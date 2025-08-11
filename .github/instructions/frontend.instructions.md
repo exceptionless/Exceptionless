@@ -20,6 +20,10 @@ Located in the `src/Exceptionless.Web/ClientApp` directory.
 - Organize code into vertical slices (e.g., features aligned with API controllers) and maintain shared components in a central folder.
 - Reexport generated code `src/Exceptionless.Web/ClientApp/src/lib/generated` from the respective feature models folder.
   - Always look for models in generated code before creating new models.
+- **CRITICAL**: Always examine existing similar components and follow their exact patterns before creating new components.
+  - Study naming conventions, state management, and file organization from existing examples.
+  - For dialogs, examine `/components/dialogs/` folders for established patterns.
+  - For options/dropdowns, check for existing `options.ts` files following the `DropdownItem<EnumType>[]` pattern.
 
 ## UI & Accessibility
 
@@ -37,3 +41,12 @@ Located in the `src/Exceptionless.Web/ClientApp` directory.
 
 - Use TanStack Query for all API calls centralized in an `api.svelte.ts` file.
 - Leverage `@exceptionless/fetchclient` for network operations.
+- **API function naming**: Prefix function names with HTTP verbs (e.g., `postOrganization`, `patchOrganization`, `deleteOrganization`)
+- **API interfaces**: Follow the pattern `[HttpVerb][Resource][Params|Request]` (e.g., `PostOrganizationParams`, `DeleteOrganizationRequest`)
+
+## Type Safety & Interfaces
+
+- **Always use existing API interfaces** instead of creating inline types (e.g., use `SuspendOrganizationParams` from `api.svelte.ts`)
+- Import type definitions from their proper modules (`api.svelte.ts`, `models.ts`, `options.ts`)
+- Create `options.ts` files for dropdown/select data following the `DropdownItem<EnumType>[]` pattern
+- Check existing type definitions before creating new ones to avoid duplication

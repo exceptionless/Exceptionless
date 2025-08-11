@@ -29,20 +29,22 @@
             return [];
         }
 
-        return filters.map((filter) => {
-            const builder = builderContext.get(filter.key);
-            if (!builder) {
-                throw new Error(`Facet filter builder not found for key: ${filter.key}`);
-            }
+        return filters
+            .map((filter) => {
+                const builder = builderContext.get(filter.key);
+                if (!builder) {
+                    return;
+                }
 
-            const f = builder.create(filter);
-            return {
-                component: builder.component,
-                filter: f,
-                open: lastOpenFilterId === f.id,
-                title: builder.title
-            };
-        });
+                const f = builder.create(filter);
+                return {
+                    component: builder.component,
+                    filter: f,
+                    open: lastOpenFilterId === f.id,
+                    title: builder.title
+                };
+            })
+            .filter((f): f is FacetedFilter<IFilter> => !!f);
     });
 
     const sortedBuilders = $derived(

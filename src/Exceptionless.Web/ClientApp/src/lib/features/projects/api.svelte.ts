@@ -18,6 +18,8 @@ export async function invalidateProjectQueries(queryClient: QueryClient, message
 
     if (!id && !organization_id) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+    } else {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.projects() });
     }
 }
 
@@ -36,10 +38,13 @@ export const queryKeys = {
     postProject: () => [...queryKeys.type, 'post-project'] as const,
     postPromotedTab: (id: string | undefined) => [...queryKeys.id(id), 'promote-tab'] as const,
     postSlack: (id: string | undefined) => [...queryKeys.id(id), 'post-slack'] as const,
+    postUserNotificationSettings: (id: string | undefined, userId: string | undefined) => [...queryKeys.id(id), userId, 'post-notification-settings'] as const,
+    projects: () => [...queryKeys.type, 'projects'] as const,
     putIntegrationNotificationSettings: (id: string | undefined, integration: string) =>
         [...queryKeys.id(id), integration, 'put-notification-settings'] as const,
     resetData: (id: string | undefined) => [...queryKeys.id(id), 'reset-data'] as const,
-    type: ['Project'] as const
+    type: ['Project'] as const,
+    userNotificationSettings: (id: string | undefined, userId: string | undefined) => [...queryKeys.id(id), userId, 'notification-settings'] as const
 };
 export interface DeleteConfigParams {
     key: string;
@@ -109,6 +114,25 @@ export interface GetProjectRequest {
 
 export type GetProjectsMode = 'stats' | null;
 
+export interface GetProjectsParams {
+    filter?: string;
+    limit?: number;
+    mode?: GetProjectsMode;
+    page?: number;
+    sort?: string;
+}
+
+export interface GetProjectsRequest {
+    params?: GetProjectsParams;
+}
+
+export interface GetProjectUserNotificationSettingsRequest {
+    route: {
+        id: string | undefined;
+        userId: string | undefined;
+    };
+}
+
 export interface PostConfigParams {
     key: string;
     value: string;
@@ -117,6 +141,13 @@ export interface PostConfigParams {
 export interface PostConfigRequest {
     route: {
         id: string | undefined;
+    };
+}
+
+export interface PostProjectUserNotificationSettingsRequest {
+    route: {
+        id: string | undefined;
+        userId: string | undefined;
     };
 }
 
@@ -316,6 +347,48 @@ export function getProjectQuery(request: GetProjectRequest) {
     }));
 }
 
+export function getProjectsQuery(request: GetProjectsRequest) {
+    const queryClient = useQueryClient();
+
+    return createQuery<FetchClientResponse<ViewProject[]>, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current,
+        onSuccess: (data: FetchClientResponse<ViewProject[]>) => {
+            data.data?.forEach((project) => {
+                queryClient.setQueryData(queryKeys.id(project.id!), project);
+            });
+        },
+        queryClient,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<ViewProject[]>('projects', {
+                params: {
+                    ...request.params,
+                    limit: request.params?.limit ?? 1000
+                },
+                signal
+            });
+
+            return response;
+        },
+        queryKey: [queryKeys.projects(), { params: request.params }]
+    }));
+}
+
+export function getProjectUserNotificationSettings(request: GetProjectUserNotificationSettingsRequest) {
+    return createQuery<NotificationSettings, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id && !!request.route.userId,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<NotificationSettings>(`users/${request.route.userId}/projects/${request.route.id}/notifications`, {
+                signal
+            });
+
+            return response.data!;
+        },
+        queryKey: queryKeys.userNotificationSettings(request.route.id, request.route.userId)
+    }));
+}
+
 export function postProject() {
     const queryClient = useQueryClient();
 
@@ -349,6 +422,23 @@ export function postProjectConfig(request: PostConfigRequest) {
         mutationKey: queryKeys.postConfig(request.route.id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.config(request.route.id) });
+        }
+    }));
+}
+
+export function postProjectUserNotificationSettings(request: PostProjectUserNotificationSettingsRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, NotificationSettings>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id && !!request.route.userId,
+        mutationFn: async (settings: NotificationSettings) => {
+            const client = useFetchClient();
+            const response = await client.post(`users/${request.route.userId}/projects/${request.route.id}/notifications`, settings);
+            return response.ok;
+        },
+        mutationKey: queryKeys.postUserNotificationSettings(request.route.id, request.route.userId),
+        onSuccess: (_: boolean, variables: NotificationSettings) => {
+            queryClient.setQueryData(queryKeys.userNotificationSettings(request.route.id, request.route.userId), variables);
         }
     }));
 }
