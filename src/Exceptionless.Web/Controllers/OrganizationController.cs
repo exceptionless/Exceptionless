@@ -246,10 +246,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         foreach (var line in stripeInvoice.Lines.Data)
         {
             var item = new InvoiceLineItem { Amount = line.Amount / 100.0m, Description = line.Description };
-            if (line.Plan is not null)
+            if (line.Price is not null)
             {
-                string planName = line.Plan.Nickname ?? _billingManager.GetBillingPlan(line.Plan.Id)?.Name ?? line.Plan.Id;
-                item.Description = $"Exceptionless - {planName} Plan ({(line.Plan.Amount / 100.0):c}/{line.Plan.Interval})";
+                string planName = line.Price.Nickname ?? _billingManager.GetBillingPlan(line.Price.Id)?.Name ?? line.Price.Id;
+                var intervalText = line.Price.Recurring?.Interval ?? "one-time";
+                item.Description = $"Exceptionless - {planName} Plan ({(line.Price.UnitAmount / 100.0):c}/{intervalText})";
             }
 
             var periodStart = line.Period.Start >= DateTime.MinValue ? line.Period.Start : stripeInvoice.PeriodStart;
@@ -429,7 +430,6 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 var createCustomer = new CustomerCreateOptions
                 {
                     Source = stripeToken,
-                    Plan = planId,
                     Description = organization.Name,
                     Email = CurrentUser.EmailAddress
                 };
@@ -438,6 +438,18 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                     createCustomer.Coupon = couponId;
 
                 var customer = await customerService.CreateAsync(createCustomer);
+
+                // Create subscription separately since Plan is deprecated in CustomerCreateOptions
+                var subscriptionCreateOptions = new SubscriptionCreateOptions
+                {
+                    Customer = customer.Id,
+                    Items = [new SubscriptionItemOptions { Price = planId }]
+                };
+
+                if (!String.IsNullOrWhiteSpace(couponId))
+                    subscriptionCreateOptions.Coupon = couponId;
+
+                await subscriptionService.CreateAsync(subscriptionCreateOptions);
 
                 organization.BillingStatus = BillingStatus.Active;
                 organization.RemoveSuspension();
@@ -466,12 +478,12 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 var subscription = subscriptionList.FirstOrDefault(s => !s.CanceledAt.HasValue);
                 if (subscription is not null)
                 {
-                    update.Items.Add(new SubscriptionItemOptions { Id = subscription.Items.Data[0].Id, Plan = planId });
+                    update.Items.Add(new SubscriptionItemOptions { Id = subscription.Items.Data[0].Id, Price = planId });
                     await subscriptionService.UpdateAsync(subscription.Id, update);
                 }
                 else
                 {
-                    create.Items.Add(new SubscriptionItemOptions { Plan = planId });
+                    create.Items.Add(new SubscriptionItemOptions { Price = planId });
                     await subscriptionService.CreateAsync(create);
                 }
 
