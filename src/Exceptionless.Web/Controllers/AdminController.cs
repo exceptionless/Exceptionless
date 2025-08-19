@@ -126,7 +126,8 @@ public class AdminController : ExceptionlessApiController
         }
 
         var organization = await _organizationRepository.GetByIdAsync(organizationId);
-        if (organization is null) {
+        if (organization is null)
+        {
             ModelState.AddModelError(nameof(organizationId), "Invalid Organization Id");
             return ValidationProblem(ModelState);
         }

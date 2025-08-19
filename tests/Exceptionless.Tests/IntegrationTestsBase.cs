@@ -42,7 +42,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
     public IntegrationTestsBase(ITestOutputHelper output, AppWebHostFactory factory) : base(output)
     {
-        Log.DefaultMinimumLevel = LogLevel.Information;
+        Log.DefaultLogLevel = LogLevel.Information;
         Log.SetLogLevel<ScheduledTimer>(LogLevel.Warning);
         Log.SetLogLevel<InMemoryMessageBus>(LogLevel.Warning);
         Log.SetLogLevel<InMemoryCacheClient>(LogLevel.Warning);
@@ -79,7 +79,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
     {
         Log.SetLogLevel("Microsoft.AspNetCore.Hosting.Internal.WebHost", LogLevel.Warning);
         Log.SetLogLevel("Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService", LogLevel.None);
-        await _server.WaitForReadyAsync();
+        await _server.WaitForReadyAsync(_timeProvider);
         Log.SetLogLevel("Microsoft.AspNetCore.Hosting.Internal.WebHost", LogLevel.Information);
         Log.SetLogLevel("Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService", LogLevel.Information);
 
@@ -148,8 +148,8 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         await _semaphoreSlim.WaitAsync();
         try
         {
-            var oldLoggingLevel = Log.DefaultMinimumLevel;
-            Log.DefaultMinimumLevel = LogLevel.Warning;
+            var oldLoggingLevel = Log.DefaultLogLevel;
+            Log.DefaultLogLevel = LogLevel.Warning;
 
             await RefreshDataAsync();
             if (!_indexesHaveBeenConfigured)
@@ -182,7 +182,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
             await GetService<IQueue<WorkItemData>>().DeleteQueueAsync();
 
-            Log.DefaultMinimumLevel = oldLoggingLevel;
+            Log.DefaultLogLevel = oldLoggingLevel;
         }
         finally
         {

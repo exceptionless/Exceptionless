@@ -52,14 +52,14 @@ public sealed class UsageServiceTests : IntegrationTestsBase
 
         int totalToIncrement = eventsLeftInBucket - 1;
         await _usageService.IncrementTotalAsync(organization.Id, project.Id, totalToIncrement);
-        await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
+        await countdown.WaitAsync(TimeSpan.FromMilliseconds(150), TimeProvider);
         Assert.Equal(2, countdown.CurrentCount);
 
         int eventsLeft = await _usageService.GetEventsLeftAsync(organization.Id);
         Assert.Equal(1, eventsLeft);
 
         await _usageService.IncrementTotalAsync(organization.Id, project.Id, eventsLeft);
-        await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
+        await countdown.WaitAsync(TimeSpan.FromMilliseconds(150), TimeProvider);
         Assert.Equal(0, countdown.CurrentCount);
 
         eventsLeft = await _usageService.GetEventsLeftAsync(organization.Id);
@@ -127,7 +127,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Empty(organization.UsageHours);
 
         await _usageService.IncrementTotalAsync(organization.Id, project.Id, eventsLeftInBucket + 1);
-        await countdown.WaitAsync(TimeSpan.FromSeconds(5));
+        await countdown.WaitAsync(TimeSpan.FromSeconds(5), TimeProvider);
         Assert.Equal(0, countdown.CurrentCount);
 
         await _usageService.IncrementBlockedAsync(organization.Id, project.Id, 1);

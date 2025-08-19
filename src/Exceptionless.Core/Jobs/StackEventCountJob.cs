@@ -2,6 +2,7 @@
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
+using Foundatio.Resilience;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
@@ -11,15 +12,17 @@ namespace Exceptionless.Core.Jobs;
 public class StackEventCountJob : JobWithLockBase, IHealthCheck
 {
     private readonly StackService _stackService;
-    private readonly TimeProvider _timeProvider;
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public StackEventCountJob(StackService stackService, ICacheClient cacheClient, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public StackEventCountJob(StackService stackService, ICacheClient cacheClient,
+        TimeProvider timeProvider,
+        IResiliencePolicyProvider resiliencePolicyProvider,
+        ILoggerFactory loggerFactory
+    ) : base(timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _stackService = stackService;
-        _timeProvider = timeProvider;
-        _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromSeconds(5));
+        _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromSeconds(5), timeProvider, resiliencePolicyProvider, loggerFactory);
     }
 
     protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)

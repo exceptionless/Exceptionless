@@ -11,6 +11,7 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Foundatio.Resilience;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
@@ -27,12 +28,17 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
     private readonly IEventRepository _eventRepository;
     private readonly IMailer _mailer;
     private readonly BillingPlans _plans;
-    private readonly TimeProvider _timeProvider;
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastRun;
 
-    public DailySummaryJob(EmailOptions emailOptions, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient, BillingPlans plans,
-        TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public DailySummaryJob(EmailOptions emailOptions, IProjectRepository projectRepository,
+        IOrganizationRepository organizationRepository, IUserRepository userRepository,
+        IStackRepository stackRepository, IEventRepository eventRepository, IMailer mailer, ICacheClient cacheClient,
+        BillingPlans plans,
+        TimeProvider timeProvider,
+        IResiliencePolicyProvider resiliencePolicyProvider,
+        ILoggerFactory loggerFactory
+    ) : base(timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _emailOptions = emailOptions;
         _projectRepository = projectRepository;
@@ -42,8 +48,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
         _eventRepository = eventRepository;
         _mailer = mailer;
         _plans = plans;
-        _timeProvider = timeProvider;
-        _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(1));
+        _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(1), timeProvider, resiliencePolicyProvider, loggerFactory);
     }
 
     protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)

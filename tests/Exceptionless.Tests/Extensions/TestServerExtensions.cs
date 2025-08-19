@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Exceptionless.Tests.Utility;
 using Foundatio.Extensions.Hosting.Startup;
 using Microsoft.AspNetCore.TestHost;
 
@@ -8,7 +9,7 @@ public static class TestServerExtensions
 {
     private static bool _alreadyWaited;
 
-    public static async Task WaitForReadyAsync(this TestServer server)
+    public static async Task WaitForReadyAsync(this TestServer server, ProxyTimeProvider timeProvider)
     {
         var startupContext = server.Services.GetService<StartupActionsContext>();
         var maxWaitTime = !_alreadyWaited ? TimeSpan.FromSeconds(30) : TimeSpan.FromSeconds(2);
@@ -31,7 +32,7 @@ public static class TestServerExtensions
             if (DateTime.UtcNow.Subtract(startTime) > maxWaitTime)
                 throw new TimeoutException("Failed waiting for server to be ready.");
 
-            await Task.Delay(TimeSpan.FromMilliseconds(100));
+            await Task.Delay(TimeSpan.FromMilliseconds(100), timeProvider);
         } while (true);
     }
 }

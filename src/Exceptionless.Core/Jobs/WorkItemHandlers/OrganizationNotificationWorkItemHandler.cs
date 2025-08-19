@@ -10,6 +10,7 @@ using Foundatio.Lock;
 using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Resilience;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers;
@@ -50,12 +51,12 @@ public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
     private readonly IMailer _mailer;
     private readonly ILockProvider _lockProvider;
 
-    public OrganizationNotificationWorkItemHandler(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer, ICacheClient cacheClient, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public OrganizationNotificationWorkItemHandler(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer, ICacheClient cacheClient, TimeProvider timeProvider, IResiliencePolicyProvider resiliencePolicyProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _userRepository = userRepository;
         _mailer = mailer;
-        _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(1));
+        _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromHours(1), timeProvider, resiliencePolicyProvider, loggerFactory);
     }
 
     public override Task HandleItemAsync(WorkItemContext context)
