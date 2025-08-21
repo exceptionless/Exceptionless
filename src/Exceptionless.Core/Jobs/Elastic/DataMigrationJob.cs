@@ -6,6 +6,7 @@ using Foundatio.Jobs;
 using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Resilience;
 using Microsoft.Extensions.Logging;
 using Nest;
 
@@ -20,8 +21,9 @@ public class DataMigrationJob : JobBase
     public DataMigrationJob(
         ExceptionlessElasticConfiguration configuration,
         TimeProvider timeProvider,
+        IResiliencePolicyProvider resiliencePolicyProvider,
         ILoggerFactory loggerFactory
-    ) : base(timeProvider, loggerFactory)
+    ) : base(timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _configuration = configuration;
     }

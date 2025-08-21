@@ -11,6 +11,7 @@ using Foundatio.Queues;
 using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Resilience;
 using Microsoft.Extensions.Logging;
 using Nest;
 using Newtonsoft.Json;
@@ -30,8 +31,9 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
         IMessageBus messageBus,
         IServiceProvider serviceProvider,
         TimeProvider timeProvider,
+        IResiliencePolicyProvider resiliencePolicyProvider,
         ILoggerFactory loggerFactory
-    ) : base(workItemQueue, cacheClient, messageBus, timeProvider, loggerFactory)
+    ) : base(workItemQueue, cacheClient, messageBus, timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _appOptions = appOptions;
         _serializerSettings = serializerSettings;

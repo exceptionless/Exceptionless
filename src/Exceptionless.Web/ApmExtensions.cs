@@ -1,9 +1,5 @@
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Text.RegularExpressions;
-using Microsoft.Extensions.Options;
-using OpenTelemetry.Exporter;
-using OpenTelemetry.Extensions.Hosting.Implementation;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;

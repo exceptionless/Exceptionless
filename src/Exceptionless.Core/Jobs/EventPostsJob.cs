@@ -12,6 +12,7 @@ using FluentValidation;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Resilience;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -32,7 +33,8 @@ public class EventPostsJob : QueueJobBase<EventPost>
     private readonly JsonSerializerSettings _jsonSerializerSettings;
     private readonly AppOptions _appOptions;
 
-    public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, JsonSerializerSettings jsonSerializerSettings, AppOptions appOptions, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(queue, timeProvider, loggerFactory)
+    public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, JsonSerializerSettings jsonSerializerSettings, AppOptions appOptions, TimeProvider timeProvider,
+        IResiliencePolicyProvider resiliencePolicyProvider, ILoggerFactory loggerFactory) : base(queue, timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _eventPostService = eventPostService;
         _eventParserPluginManager = eventParserPluginManager;

@@ -5,6 +5,7 @@ using Exceptionless.Core.Repositories.Base;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories.Extensions;
+using Foundatio.Resilience;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs;
@@ -14,7 +15,8 @@ public class EventUserDescriptionsJob : QueueJobBase<EventUserDescription>
 {
     private readonly IEventRepository _eventRepository;
 
-    public EventUserDescriptionsJob(IQueue<EventUserDescription> queue, IEventRepository eventRepository, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(queue, timeProvider, loggerFactory)
+    public EventUserDescriptionsJob(IQueue<EventUserDescription> queue, IEventRepository eventRepository, TimeProvider timeProvider,
+        IResiliencePolicyProvider resiliencePolicyProvider, ILoggerFactory loggerFactory) : base(queue, timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _eventRepository = eventRepository;
     }

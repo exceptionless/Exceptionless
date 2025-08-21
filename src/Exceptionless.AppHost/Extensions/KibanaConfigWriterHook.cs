@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using Aspire.Hosting.Lifecycle;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Aspire.Hosting;
 

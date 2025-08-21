@@ -11,6 +11,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
+using Foundatio.Resilience;
 using Foundatio.Storage;
 using Xunit;
 using Xunit.Abstractions;
@@ -55,7 +56,7 @@ public sealed class GeoTests : TestWithServices
 
         if (!await storage.ExistsAsync(DownloadGeoIPDatabaseJob.GEO_IP_DATABASE_PATH))
         {
-            var job = new DownloadGeoIPDatabaseJob(_options, GetService<ICacheClient>(), storage, TimeProvider, loggerFactory);
+            var job = new DownloadGeoIPDatabaseJob(_options, GetService<ICacheClient>(), storage, TimeProvider, GetService<IResiliencePolicyProvider>(), loggerFactory);
             var result = await job.RunAsync();
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);

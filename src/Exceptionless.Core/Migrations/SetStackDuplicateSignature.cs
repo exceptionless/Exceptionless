@@ -14,12 +14,14 @@ public sealed class SetStackDuplicateSignature : MigrationBase
     private readonly IElasticClient _client;
     private readonly ExceptionlessElasticConfiguration _config;
     private readonly ICacheClient _cache;
+    private readonly TimeProvider _timeProvider;
 
-    public SetStackDuplicateSignature(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public SetStackDuplicateSignature(ExceptionlessElasticConfiguration configuration, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _config = configuration;
         _client = configuration.Client;
         _cache = configuration.Cache;
+        _timeProvider = timeProvider;
 
         MigrationType = MigrationType.Repeatable;
     }
@@ -69,7 +71,7 @@ public sealed class SetStackDuplicateSignature : MigrationBase
 
             _logger.LogInformation("Checking script operation task ({TaskId}) status: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
             var delay = TimeSpan.FromSeconds(attempts <= 5 ? 1 : 5);
-            await Task.Delay(delay);
+            await Task.Delay(delay, _timeProvider);
         } while (true);
 
         _logger.LogInformation("Finished adding stack duplicate signature: Time={Duration:d\\.hh\\:mm} Completed={Completed:N0} Total={Total:N0} Errors={Errors:N0}", sw.Elapsed, affectedRecords, stackResponse.Total, stackResponse.Failures.Count);

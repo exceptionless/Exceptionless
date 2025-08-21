@@ -11,8 +11,8 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Resilience;
 using Microsoft.Extensions.Logging;
-
 
 namespace Exceptionless.Core.Jobs;
 
@@ -40,7 +40,8 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
         ICacheClient cacheClient,
         UserAgentParser parser,
         TimeProvider timeProvider,
-        ILoggerFactory loggerFactory) : base(queue, timeProvider, loggerFactory)
+        IResiliencePolicyProvider resiliencePolicyProvider,
+        ILoggerFactory loggerFactory) : base(queue, timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _slackService = slackService;
         _mailer = mailer;

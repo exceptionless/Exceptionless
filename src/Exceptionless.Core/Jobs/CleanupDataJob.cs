@@ -9,6 +9,7 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Foundatio.Resilience;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
@@ -26,7 +27,6 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
     private readonly IWebHookRepository _webHookRepository;
     private readonly BillingManager _billingManager;
     private readonly AppOptions _appOptions;
-    private readonly TimeProvider _timeProvider;
     private readonly ILockProvider _lockProvider;
     private readonly ICacheClient _cacheClient;
     private DateTime? _lastRun;
@@ -44,8 +44,9 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         BillingManager billingManager,
         AppOptions appOptions,
         TimeProvider timeProvider,
+        IResiliencePolicyProvider resiliencePolicyProvider,
         ILoggerFactory loggerFactory
-    ) : base(loggerFactory)
+    ) : base(timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _organizationService = organizationService;
@@ -56,7 +57,6 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         _webHookRepository = webHookRepository;
         _billingManager = billingManager;
         _appOptions = appOptions;
-        _timeProvider = timeProvider;
         _lockProvider = lockProvider;
         _cacheClient = cacheClient;
     }

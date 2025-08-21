@@ -2,6 +2,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Jobs;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Migrations;
+using Foundatio.Resilience;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.Elastic;
@@ -12,10 +13,14 @@ public class MigrationJob : JobBase
     private readonly MigrationManager _migrationManager;
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public MigrationJob(MigrationManager migrationManager, ExceptionlessElasticConfiguration configuration, TimeProvider timeProvider, ILoggerFactory loggerFactory)
-        : base(timeProvider, loggerFactory)
+    public MigrationJob(
+        MigrationManager migrationManager,
+        ExceptionlessElasticConfiguration configuration,
+        TimeProvider timeProvider,
+        IResiliencePolicyProvider resiliencePolicyProvider,
+        ILoggerFactory loggerFactory
+    ) : base(timeProvider, resiliencePolicyProvider, loggerFactory)
     {
-
         _migrationManager = migrationManager;
         _configuration = configuration;
     }

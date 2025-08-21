@@ -8,6 +8,7 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
+using Foundatio.Resilience;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Nest;
@@ -24,10 +25,14 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
     private readonly IEventRepository _eventRepository;
     private readonly ICacheClient _cacheClient;
     private readonly ILockProvider _lockProvider;
-    private readonly TimeProvider _timeProvider;
     private DateTime? _lastRun;
 
-    public CleanupOrphanedDataJob(ExceptionlessElasticConfiguration config, IStackRepository stackRepository, IEventRepository eventRepository, ICacheClient cacheClient, ILockProvider lockProvider, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public CleanupOrphanedDataJob(ExceptionlessElasticConfiguration config, IStackRepository stackRepository,
+        IEventRepository eventRepository, ICacheClient cacheClient, ILockProvider lockProvider,
+        TimeProvider timeProvider,
+        IResiliencePolicyProvider resiliencePolicyProvider,
+        ILoggerFactory loggerFactory
+    ) : base(timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _config = config;
         _elasticClient = config.Client;
@@ -35,7 +40,6 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         _eventRepository = eventRepository;
         _cacheClient = cacheClient;
         _lockProvider = lockProvider;
-        _timeProvider = timeProvider;
     }
 
     protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)

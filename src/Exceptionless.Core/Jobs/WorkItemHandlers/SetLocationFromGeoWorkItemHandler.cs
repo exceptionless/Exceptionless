@@ -5,7 +5,6 @@ using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Messaging;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers;
@@ -17,12 +16,12 @@ public class SetLocationFromGeoWorkItemHandler : WorkItemHandlerBase
     private readonly IGeocodeService _geocodeService;
     private readonly ILockProvider _lockProvider;
 
-    public SetLocationFromGeoWorkItemHandler(ICacheClient cacheClient, IEventRepository eventRepository, IGeocodeService geocodeService, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public SetLocationFromGeoWorkItemHandler(ICacheClient cacheClient, IEventRepository eventRepository, IGeocodeService geocodeService, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _cache = new ScopedCacheClient(cacheClient, "Geo");
         _eventRepository = eventRepository;
         _geocodeService = geocodeService;
-        _lockProvider = new CacheLockProvider(cacheClient, messageBus);
+        _lockProvider = lockProvider;
     }
 
     public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())

@@ -1,5 +1,6 @@
 using Amazon;
 using Amazon.Runtime;
+using Amazon.Runtime.Credentials;
 using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
@@ -18,6 +19,7 @@ using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Foundatio.Queues;
+using Foundatio.Resilience;
 using Foundatio.Serializer;
 using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
@@ -129,6 +131,7 @@ public class Bootstrapper
                 Topic = options.Topic,
                 Serializer = s.GetRequiredService<ISerializer>(),
                 TimeProvider = s.GetRequiredService<TimeProvider>(),
+                ResiliencePolicyProvider = s.GetRequiredService<IResiliencePolicyProvider>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
@@ -140,6 +143,7 @@ public class Bootstrapper
                 Topic = options.Topic,
                 Serializer = s.GetRequiredService<ISerializer>(),
                 TimeProvider = s.GetRequiredService<TimeProvider>(),
+                ResiliencePolicyProvider = s.GetRequiredService<IResiliencePolicyProvider>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
@@ -191,6 +195,7 @@ public class Bootstrapper
                 ContainerName = $"{options.ScopePrefix}ex-events",
                 Serializer = s.GetRequiredService<ITextSerializer>(),
                 TimeProvider = s.GetRequiredService<TimeProvider>(),
+                ResiliencePolicyProvider = s.GetRequiredService<IResiliencePolicyProvider>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
@@ -201,6 +206,7 @@ public class Bootstrapper
                 ConnectionString = options.ConnectionString,
                 Serializer = s.GetRequiredService<ITextSerializer>(),
                 TimeProvider = s.GetRequiredService<TimeProvider>(),
+                ResiliencePolicyProvider = s.GetRequiredService<IResiliencePolicyProvider>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
@@ -214,6 +220,7 @@ public class Bootstrapper
                     Folder = PathHelper.ExpandPath(path),
                     Serializer = s.GetRequiredService<ITextSerializer>(),
                     TimeProvider = s.GetRequiredService<TimeProvider>(),
+                    ResiliencePolicyProvider = s.GetRequiredService<IResiliencePolicyProvider>(),
                     LoggerFactory = s.GetRequiredService<ILoggerFactory>()
                 });
 
@@ -230,6 +237,7 @@ public class Bootstrapper
                 ConnectionString = options.ConnectionString,
                 Serializer = s.GetRequiredService<ITextSerializer>(),
                 TimeProvider = s.GetRequiredService<TimeProvider>(),
+                ResiliencePolicyProvider = s.GetRequiredService<IResiliencePolicyProvider>(),
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
@@ -242,6 +250,7 @@ public class Bootstrapper
                     .Bucket(options.Data.GetString("bucket", $"{options.ScopePrefix}ex-events"))
                     .Serializer(s.GetRequiredService<ITextSerializer>())
                     .TimeProvider(s.GetRequiredService<TimeProvider>())
+                    .ResiliencePolicyProvider(s.GetRequiredService<IResiliencePolicyProvider>())
                     .LoggerFactory(s.GetRequiredService<ILoggerFactory>())));
         }
     }
@@ -257,6 +266,7 @@ public class Bootstrapper
             WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
             Serializer = container.GetRequiredService<ISerializer>(),
             TimeProvider = container.GetRequiredService<TimeProvider>(),
+            ResiliencePolicyProvider = container.GetRequiredService<IResiliencePolicyProvider>(),
             LoggerFactory = container.GetRequiredService<ILoggerFactory>(),
             MetricsPollingEnabled = options.MetricsPollingEnabled,
             MetricsPollingInterval = options.MetricsPollingInterval
@@ -275,6 +285,7 @@ public class Bootstrapper
             RunMaintenanceTasks = runMaintenanceTasks,
             Serializer = container.GetRequiredService<ISerializer>(),
             TimeProvider = container.GetRequiredService<TimeProvider>(),
+            ResiliencePolicyProvider = container.GetRequiredService<IResiliencePolicyProvider>(),
             LoggerFactory = container.GetRequiredService<ILoggerFactory>(),
             MetricsPollingEnabled = options.MetricsPollingEnabled,
             MetricsPollingInterval = options.MetricsPollingInterval
@@ -288,6 +299,7 @@ public class Bootstrapper
             ConnectionMultiplexer = container.GetRequiredService<IConnectionMultiplexer>(),
             Serializer = container.GetRequiredService<ISerializer>(),
             TimeProvider = container.GetRequiredService<TimeProvider>(),
+            ResiliencePolicyProvider = container.GetRequiredService<IResiliencePolicyProvider>(),
             LoggerFactory = container.GetRequiredService<ILoggerFactory>()
         });
     }
@@ -305,6 +317,7 @@ public class Bootstrapper
             WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
             Serializer = container.GetRequiredService<ISerializer>(),
             TimeProvider = container.GetRequiredService<TimeProvider>(),
+            ResiliencePolicyProvider = container.GetRequiredService<IResiliencePolicyProvider>(),
             LoggerFactory = container.GetRequiredService<ILoggerFactory>(),
             MetricsPollingEnabled = options.MetricsPollingEnabled,
             MetricsPollingInterval = options.MetricsPollingInterval
@@ -326,10 +339,9 @@ public class Bootstrapper
     {
         string accessKey = data.GetString("accesskey");
         string secretKey = data.GetString("secretkey");
-        if (String.IsNullOrEmpty(accessKey)
-            || String.IsNullOrEmpty(secretKey))
-            return FallbackCredentialsFactory.GetCredentials();
+        if (!String.IsNullOrEmpty(accessKey) && !String.IsNullOrEmpty(secretKey))
+            return new BasicAWSCredentials(accessKey, secretKey);
 
-        return new BasicAWSCredentials(accessKey, secretKey);
+        return DefaultAWSCredentialsIdentityResolver.GetCredentials();
     }
 }
