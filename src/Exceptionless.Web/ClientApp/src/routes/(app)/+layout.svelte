@@ -6,6 +6,7 @@
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
     import { getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
+    import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
     import { invalidateStackQueries } from '$features/stacks/api.svelte';
@@ -199,6 +200,7 @@
     <div class="flex w-full overflow-hidden pt-16">
         <div class="text-secondary-foreground w-full">
             <main class="px-4 pt-4">
+                <OrganizationNotifications />
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
                 <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>
                     {@render children()}
