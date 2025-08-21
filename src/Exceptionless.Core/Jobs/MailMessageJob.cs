@@ -2,6 +2,7 @@
 using Exceptionless.Core.Queues.Models;
 using Foundatio.Jobs;
 using Foundatio.Queues;
+using Foundatio.Resilience;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs;
@@ -11,7 +12,8 @@ public class MailMessageJob : QueueJobBase<MailMessage>
 {
     private readonly IMailSender _mailSender;
 
-    public MailMessageJob(IQueue<MailMessage> queue, IMailSender mailSender, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(queue, timeProvider, loggerFactory)
+    public MailMessageJob(IQueue<MailMessage> queue, IMailSender mailSender, TimeProvider timeProvider,
+        IResiliencePolicyProvider resiliencePolicyProvider, ILoggerFactory loggerFactory) : base(queue, timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _mailSender = mailSender;
     }

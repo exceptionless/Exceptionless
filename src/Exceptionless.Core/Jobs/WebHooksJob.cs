@@ -9,6 +9,7 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Resilience;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -20,7 +21,9 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
     private const string ConsecutiveErrorsCacheKey = "errors";
     private const string FirstAttemptCacheKey = "first-attempt";
     private const string LastAttemptCacheKey = "last-attempt";
-    private static readonly string[] _cacheKeys = [ConsecutiveErrorsCacheKey,
+    private static readonly string[] _cacheKeys =
+    [
+        ConsecutiveErrorsCacheKey,
         FirstAttemptCacheKey,
         LastAttemptCacheKey
     ];
@@ -39,7 +42,8 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
         get => _client ??= new HttpClient();
     }
 
-    public WebHooksJob(IQueue<WebHookNotification> queue, IProjectRepository projectRepository, SlackService slackService, IWebHookRepository webHookRepository, ICacheClient cacheClient, JsonSerializerSettings settings, AppOptions appOptions, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(queue, timeProvider, loggerFactory)
+    public WebHooksJob(IQueue<WebHookNotification> queue, IProjectRepository projectRepository, SlackService slackService, IWebHookRepository webHookRepository, ICacheClient cacheClient, JsonSerializerSettings settings, AppOptions appOptions, TimeProvider timeProvider,
+        IResiliencePolicyProvider resiliencePolicyProvider, ILoggerFactory loggerFactory) : base(queue, timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _projectRepository = projectRepository;
         _slackService = slackService;

@@ -1,6 +1,7 @@
 ﻿using Exceptionless.Core.Services;
 using Foundatio.Jobs;
 using Foundatio.Lock;
+using Foundatio.Resilience;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
@@ -11,14 +12,16 @@ public class EventUsageJob : JobWithLockBase, IHealthCheck
 {
     private readonly UsageService _usageService;
     private readonly ILockProvider _lockProvider;
-    private readonly TimeProvider _timeProvider;
     private DateTime? _lastRun;
 
-    public EventUsageJob(UsageService usageService, ILockProvider lockProvider, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public EventUsageJob(UsageService usageService, ILockProvider lockProvider,
+        TimeProvider timeProvider,
+        IResiliencePolicyProvider resiliencePolicyProvider,
+        ILoggerFactory loggerFactory
+    ) : base(timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _usageService = usageService;
         _lockProvider = lockProvider;
-        _timeProvider = timeProvider;
     }
 
     protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)

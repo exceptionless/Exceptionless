@@ -3,7 +3,6 @@ using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Messaging;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers;
@@ -14,11 +13,11 @@ public class RemoveStacksWorkItemHandler : WorkItemHandlerBase
     private readonly ILockProvider _lockProvider;
     private readonly ICacheClient _cacheClient;
 
-    public RemoveStacksWorkItemHandler(IStackRepository stackRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public RemoveStacksWorkItemHandler(IStackRepository stackRepository, ICacheClient cacheClient, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _stackRepository = stackRepository;
         _cacheClient = cacheClient;
-        _lockProvider = new CacheLockProvider(cacheClient, messageBus);
+        _lockProvider = lockProvider;
     }
 
     public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
