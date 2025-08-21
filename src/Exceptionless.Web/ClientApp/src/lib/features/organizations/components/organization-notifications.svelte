@@ -26,9 +26,9 @@
     const organizationsQuery = getOrganizationsQuery({});
     const projectsQuery = getProjectsQuery({});
 
-    const org = $derived(organizationsQuery.data?.data ?? []).find((o) => o.id === currentOrganizationId.current));
-    const orgProjects = $derived(projectsQuery.data?.data ?? []).filter((p) => p.organization_id === org?.id));
-    const projectsNeedingConfig = $derived(orgProjects.filter((p) => p.is_configured === false));
+    const org = $derived((organizationsQuery.data?.data ?? []).find((o) => o.id === currentOrganizationId.current));
+    const orgProjects = $derived((projectsQuery.data?.data ?? []).filter((p) => p.organization_id === org?.id));
+    const projectsNeedingConfig = $derived((orgProjects.filter((p) => p.is_configured === false)));
 
     // Status booleans
     const suspensionCode: SuspensionCode | undefined = $derived(
