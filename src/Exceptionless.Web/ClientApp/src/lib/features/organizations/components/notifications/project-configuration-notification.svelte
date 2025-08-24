@@ -1,17 +1,18 @@
 <script lang="ts">
+    import type { NotificationProps } from '$comp/notification';
     import type { ViewProject } from '$features/projects/models';
 
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
     import { A } from '$comp/typography';
 
-    interface Props {
+    interface Props extends NotificationProps {
         projects: ViewProject[];
     }
 
-    let { projects }: Props = $props();
+    let { projects, ...restProps }: Props = $props();
 </script>
 
-<Notification variant="information">
+<Notification variant="information" {...restProps}>
     <NotificationTitle>We haven't received any data!</NotificationTitle>
     <NotificationDescription>
         Please configure your clients for

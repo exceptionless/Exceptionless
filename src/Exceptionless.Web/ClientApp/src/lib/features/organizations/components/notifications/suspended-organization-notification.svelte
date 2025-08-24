@@ -1,9 +1,11 @@
 <script lang="ts">
+    import type { NotificationProps } from '$comp/notification';
+
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
     import { A } from '$comp/typography';
     import { SuspensionCode } from '$features/organizations/models';
 
-    interface Props {
+    interface Props extends NotificationProps {
         isChatEnabled: boolean;
         name: string;
         openChat: () => void;
@@ -11,12 +13,12 @@
         suspensionCode?: SuspensionCode;
     }
 
-    let { isChatEnabled, name, openChat, organizationId, suspensionCode }: Props = $props();
+    let { isChatEnabled, name, openChat, organizationId, suspensionCode, ...restProps }: Props = $props();
 
     const changePlanHref = `/next/organization/${organizationId}/billing?changePlan=true`;
 </script>
 
-<Notification variant="destructive">
+<Notification variant="destructive" {...restProps}>
     <NotificationTitle>{name} has been suspended.</NotificationTitle>
     <NotificationDescription>
         <em>Please note that while your account is suspended all new client events will be discarded.</em>

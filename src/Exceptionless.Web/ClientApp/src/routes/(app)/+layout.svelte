@@ -3,6 +3,7 @@
 
     import { page } from '$app/state';
     import { useSidebar } from '$comp/ui/sidebar';
+    import { env } from '$env/dynamic/public';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
     import { getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
@@ -179,6 +180,11 @@
         const context: NavigationItemContext = { authenticated: isAuthenticated, user: meQuery.data };
         return routes().filter((route) => (route.show ? route.show(context) : true));
     });
+
+    const isChatEnabled = $derived(!!env.PUBLIC_INTERCOM_APPID);
+    function openChat() {
+        // TODO: Implement chat opening logic
+    }
 </script>
 
 {#if isAuthenticated}
@@ -200,8 +206,10 @@
     <div class="flex w-full overflow-hidden pt-16">
         <div class="text-secondary-foreground w-full">
             <main class="px-4 pt-4">
-                <OrganizationNotifications />
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
+
+                <OrganizationNotifications {isChatEnabled} {openChat} class="mb-4" />
+
                 <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>
                     {@render children()}
                 </div>

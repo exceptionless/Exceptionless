@@ -1,8 +1,10 @@
 <script lang="ts">
+    import type { NotificationProps } from '$comp/notification';
+
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { organization as currentOrganizationId } from '$features/organizations/context.svelte';
     import { SuspensionCode } from '$features/organizations/models';
-    import { type GetOrganizationProjectsParams, getOrganizationProjectsQuery } from '$features/projects/api.svelte';
+    import { getOrganizationProjectsQuery } from '$features/projects/api.svelte';
 
     import FreePlanNotification from './notifications/free-plan-notification.svelte';
     import HourlyOverageNotification from './notifications/hourly-overage-notification.svelte';
@@ -13,7 +15,7 @@
     import SetupFirstProjectNotification from './notifications/setup-first-project-notification.svelte';
     import SuspendedOrganizationNotification from './notifications/suspended-organization-notification.svelte';
 
-    interface Props {
+    interface Props extends NotificationProps {
         ignoreConfigureProjects?: boolean;
         ignoreFree?: boolean;
         isChatEnabled: boolean;
@@ -21,7 +23,7 @@
         requiresPremium?: boolean;
     }
 
-    let { ignoreConfigureProjects = false, ignoreFree = false, isChatEnabled, openChat, requiresPremium = false }: Props = $props();
+    let { ignoreConfigureProjects = false, ignoreFree = false, isChatEnabled, openChat, requiresPremium = false, ...restProps }: Props = $props();
 
     // Store the organizationId to prevent loading when switching organizations.
     const organizationId = currentOrganizationId.current;
@@ -70,20 +72,27 @@
 
 {#if organization}
     {#if isSuspended}
-        <SuspendedOrganizationNotification name={organization.name} {suspensionCode} {isChatEnabled} {openChat} organizationId={organization.id} />
+        <SuspendedOrganizationNotification
+            name={organization.name}
+            {suspensionCode}
+            {isChatEnabled}
+            {openChat}
+            organizationId={organization.id}
+            {...restProps}
+        />
     {:else if isMonthlyOverage}
-        <MonthlyOverageNotification name={organization.name} organizationId={organization.id} />
+        <MonthlyOverageNotification name={organization.name} organizationId={organization.id} {...restProps} />
     {:else if isHourlyOverage}
-        <HourlyOverageNotification name={organization.name} organizationId={organization.id} />
+        <HourlyOverageNotification name={organization.name} organizationId={organization.id} {...restProps} />
     {:else if isExceededRequestLimit}
-        <RequestLimitNotification name={organization.name} {isChatEnabled} {openChat} />
+        <RequestLimitNotification name={organization.name} {isChatEnabled} {openChat} {...restProps} />
     {:else if needsProjectConfiguration}
-        <ProjectConfigurationNotification projects={projectsNeedingConfig} />
+        <ProjectConfigurationNotification projects={projectsNeedingConfig} {...restProps} />
     {:else if requiresPremiumUpgrade}
-        <PremiumUpgradeNotification name={organization.name} organizationId={organization.id} />
+        <PremiumUpgradeNotification name={organization.name} organizationId={organization.id} {...restProps} />
     {:else if isFreePlan}
-        <FreePlanNotification name={organization.name} organizationId={organization.id} />
+        <FreePlanNotification name={organization.name} organizationId={organization.id} {...restProps} />
     {:else if hasNoProjects}
-        <SetupFirstProjectNotification />
+        <SetupFirstProjectNotification {...restProps} />
     {/if}
 {/if}
