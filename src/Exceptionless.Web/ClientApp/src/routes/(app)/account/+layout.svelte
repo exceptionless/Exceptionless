@@ -2,6 +2,7 @@
     import { H3, Muted } from '$comp/typography';
     import { Separator } from '$comp/ui/separator';
     import { accessToken } from '$features/auth/index.svelte';
+    import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
     import * as SplitLayout from '$features/shared/components/layouts/split-layout';
     import { getMeQuery } from '$features/users/api.svelte';
 
@@ -18,6 +19,8 @@
         const context: NavigationItemContext = { authenticated: isAuthenticated, user: meQuery.data };
         return routes().filter((route) => (route.show ? route.show(context) : true));
     });
+
+    useHideOrganizationNotifications();
 </script>
 
 <H3>Settings</H3>

@@ -6,6 +6,7 @@
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
     import { postOrganization } from '$features/organizations/api.svelte';
+    import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
     import { applyServerSideErrors } from '$features/shared/validation';
     import { NewOrganization } from '$generated/api';
     import { ProblemDetails } from '@exceptionless/fetchclient';
@@ -15,6 +16,8 @@
 
     let toastId = $state<number | string>();
     const createOrganization = postOrganization();
+
+    useHideOrganizationNotifications();
 
     const form = superForm(defaults(new NewOrganization(), classvalidatorClient(NewOrganization)), {
         dataType: 'json',
