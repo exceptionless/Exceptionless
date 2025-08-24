@@ -1,22 +1,19 @@
 <script lang="ts">
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
+    import { A } from '$comp/typography';
 
     interface Props {
-        changePlan?: () => void; // navigate to plan change / billing
         name: string;
+        organizationId: string;
     }
 
-    let { changePlan, name }: Props = $props();
+    let { name, organizationId }: Props = $props();
 </script>
 
 <Notification variant="destructive">
     <NotificationTitle>{name} has reached its monthly plan limit.</NotificationTitle>
     <NotificationDescription>
-        {#if changePlan}
-            <button onclick={changePlan}>Upgrade now</button>
-        {:else}
-            Upgrade now
-        {/if}
+        <A href={`/next/organization/${organizationId}/billing?changePlan=true`}>Upgrade now</A>
         to continue receiving events.
     </NotificationDescription>
 </Notification>

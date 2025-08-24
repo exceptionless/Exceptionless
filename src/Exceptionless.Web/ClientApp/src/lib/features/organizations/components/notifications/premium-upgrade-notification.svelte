@@ -1,22 +1,19 @@
 <script lang="ts">
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
+    import { A } from '$comp/typography';
 
     interface Props {
         name: string;
-        upgradePlan?: () => void; // navigate to upgrade path
+        organizationId: string;
     }
 
-    let { name, upgradePlan }: Props = $props();
+    let { name, organizationId }: Props = $props();
 </script>
 
 <Notification variant="information">
     <NotificationTitle>{name} is attempting to use a premium feature.</NotificationTitle>
     <NotificationDescription>
-        {#if upgradePlan}
-            <button onclick={upgradePlan}>Upgrade now</button>
-        {:else}
-            Upgrade now
-        {/if}
+        <A href={`/next/organization/${organizationId}/billing?changePlan=true`}>Upgrade now</A>
         to enable search and other premium features!
     </NotificationDescription>
 </Notification>

@@ -6,16 +6,13 @@
 
     import FreePlanNotification from './free-plan-notification.svelte';
     import HourlyOverageNotification from './hourly-overage-notification.svelte';
-    import LoadingOrganizationNotification from './loading-organization-notification.svelte';
     import MonthlyOverageNotification from './monthly-overage-notification.svelte';
-    import NoProjectsNotification from './no-projects-notification.svelte';
     import PremiumUpgradeNotification from './premium-upgrade-notification.svelte';
     import ProjectConfigurationNotification from './project-configuration-notification.svelte';
     import RequestLimitNotification from './request-limit-notification.svelte';
     import SetupFirstProjectNotification from './setup-first-project-notification.svelte';
     import SuspendedOrganizationNotification from './suspended-organization-notification.svelte';
 
-    // Mock project data
     const mockProjects: ViewProject[] = [
         {
             created_utc: '2024-01-01T00:00:00Z',
@@ -42,66 +39,78 @@
     });
 </script>
 
-<!-- Free Plan Notification -->
 <Story name="Free Plan">
-    <FreePlanNotification name="Acme Corporation" changePlan={() => console.log('Navigate to billing')} />
+    <FreePlanNotification name="Acme Corporation" organizationId="org1" />
 </Story>
-
-<!-- Monthly Overage Notification -->
 <Story name="Monthly Overage">
-    <MonthlyOverageNotification name="Tech Startup Inc" changePlan={() => console.log('Navigate to billing')} />
+    <MonthlyOverageNotification name="Tech Startup Inc" organizationId="org1" />
 </Story>
-
-<!-- Hourly Overage Notification -->
 <Story name="Hourly Overage">
-    <HourlyOverageNotification name="High Traffic Corp" viewPlan={() => console.log('Navigate to usage')} />
+    <HourlyOverageNotification name="High Traffic Corp" organizationId="org1" />
 </Story>
 
-<!-- Request Limit Notification -->
 <Story name="Request Limit Exceeded">
-    <RequestLimitNotification name="API Heavy Organization" />
+    <RequestLimitNotification name="API Heavy Organization" isChatEnabled={false} openChat={() => {}} />
 </Story>
 
-<!-- Suspended Organization Notifications -->
 <Story name="Suspended - Billing">
     <SuspendedOrganizationNotification
         name="Overdue Payment Corp"
-        isBilling={true}
         suspensionCode={SuspensionCode.Billing}
-        manageBilling={() => console.log('Navigate to billing')}
+        isChatEnabled={false}
+        openChat={() => {}}
+        organizationId="org1"
+    />
+</Story>
+
+<Story name="Suspended - Billing (Chat Enabled)">
+    <SuspendedOrganizationNotification
+        name="Overdue Payment Corp"
+        suspensionCode={SuspensionCode.Billing}
+        isChatEnabled={true}
+        openChat={() => console.log('Chat opened for billing suspension')}
+        organizationId="org1"
     />
 </Story>
 
 <Story name="Suspended - Abuse">
-    <SuspendedOrganizationNotification name="Violation Corp" suspensionCode={SuspensionCode.Abuse} />
+    <SuspendedOrganizationNotification
+        name="Violation Corp"
+        suspensionCode={SuspensionCode.Abuse}
+        isChatEnabled={false}
+        openChat={() => {}}
+        organizationId="org1"
+    />
 </Story>
 
 <Story name="Suspended - Overage">
-    <SuspendedOrganizationNotification name="Exceeded Limits Corp" suspensionCode={SuspensionCode.Overage} />
+    <SuspendedOrganizationNotification
+        name="Exceeded Limits Corp"
+        suspensionCode={SuspensionCode.Overage}
+        isChatEnabled={false}
+        openChat={() => {}}
+        organizationId="org1"
+    />
 </Story>
 
 <Story name="Suspended - Other">
-    <SuspendedOrganizationNotification name="Generic Suspension Corp" suspensionCode={SuspensionCode.Other} />
+    <SuspendedOrganizationNotification
+        name="Generic Suspension Corp"
+        suspensionCode={SuspensionCode.Other}
+        isChatEnabled={false}
+        openChat={() => {}}
+        organizationId="org1"
+    />
 </Story>
 
-<!-- Premium Upgrade Notification -->
 <Story name="Premium Upgrade">
-    <PremiumUpgradeNotification name="Feature Seeker Corp" upgradePlan={() => console.log('Navigate to upgrade')} />
+    <PremiumUpgradeNotification name="Feature Seeker Corp" organizationId="org1" />
 </Story>
 
-<!-- Other Notifications -->
 <Story name="Setup First Project">
     <SetupFirstProjectNotification />
 </Story>
 
-<Story name="No Projects">
-    <NoProjectsNotification name="Fresh Start Organization" />
-</Story>
-
 <Story name="Project Configuration">
     <ProjectConfigurationNotification projects={mockProjects} />
-</Story>
-
-<Story name="Loading State">
-    <LoadingOrganizationNotification />
 </Story>

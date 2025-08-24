@@ -1,22 +1,13 @@
 <script lang="ts">
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
-
-    interface Props {
-        addProject?: () => void; // navigate to add project
-    }
-
-    let { addProject }: Props = $props();
+    import { A } from '$comp/typography';
 </script>
 
 <Notification variant="information">
     <NotificationTitle>Setup your first project</NotificationTitle>
     <NotificationDescription>
         Please
-        {#if addProject}
-            <button onclick={addProject}>add a new project</button>
-        {:else}
-            add a new project
-        {/if}
+        <A href="/next/project/add">add a new project</A>
         and start becoming exceptionless in less than 60 seconds!
     </NotificationDescription>
 </Notification>

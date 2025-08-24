@@ -2,6 +2,7 @@
     import type { ViewProject } from '$features/projects/models';
 
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
+    import { A } from '$comp/typography';
 
     interface Props {
         projects: ViewProject[];
@@ -16,8 +17,12 @@
         Please configure your clients for
         {#each projects as project, index (project.id)}
             {#if index > 0},
-            {/if}<strong>{project.name}</strong>
+            {/if}<A href="/next/project/{project.id}/configure">{project.name}</A>
         {/each}
-        projects and start becoming exceptionless in less than 60 seconds!
+        {#if projects.length === 1}
+            project
+        {:else}
+            projects
+        {/if} and start becoming exceptionless in less than 60 seconds!
     </NotificationDescription>
 </Notification>

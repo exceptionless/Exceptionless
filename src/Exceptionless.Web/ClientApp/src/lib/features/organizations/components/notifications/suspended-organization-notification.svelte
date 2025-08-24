@@ -1,18 +1,19 @@
 <script lang="ts">
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
-    import { env } from '$env/dynamic/public';
+    import { A } from '$comp/typography';
     import { SuspensionCode } from '$features/organizations/models';
 
     interface Props {
-        isBilling?: boolean;
-        manageBilling?: () => void; // navigate to billing management
+        isChatEnabled: boolean;
         name: string;
+        openChat: () => void;
+        organizationId: string;
         suspensionCode?: SuspensionCode;
     }
 
-    let { isBilling = false, manageBilling, name, suspensionCode }: Props = $props();
+    let { isChatEnabled, name, openChat, organizationId, suspensionCode }: Props = $props();
 
-    const isIntercomEnabled = !!env.PUBLIC_INTERCOM_APPID;
+    const changePlanHref = `/next/organization/${organizationId}/billing?changePlan=true`;
 </script>
 
 <Notification variant="destructive">
@@ -20,28 +21,22 @@
     <NotificationDescription>
         <em>Please note that while your account is suspended all new client events will be discarded.</em>
 
-        {#if isBilling}
+        {#if suspensionCode === SuspensionCode.Billing}
             <p>
                 To unsuspend <strong>{name}</strong>, please
-                {#if manageBilling}
-                    <button onclick={manageBilling}>update your billing information</button>.
-                {:else}
-                    update your billing information.
-                {/if}
+                <A href={changePlanHref}>update your billing information</A>.
             </p>
         {:else if suspensionCode === SuspensionCode.Abuse || suspensionCode === SuspensionCode.Overage}
             <p>
                 <strong>{name}</strong> has exceeded the plan limits. To unsuspend your account, please
-                {#if manageBilling}
-                    <button onclick={manageBilling}>upgrade your plan</button>.
-                {:else}
-                    upgrade your plan.
-                {/if}
+                <A href={changePlanHref}>upgrade your plan</A>.
             </p>
         {/if}
 
-        {#if isIntercomEnabled}
-            <p>Please contact us for more information on why your account was suspended.</p>
+        {#if isChatEnabled}
+            <p>
+                Please <A onclick={openChat}>contact us</A> for more information on why your account was suspended.
+            </p>
         {/if}
     </NotificationDescription>
 </Notification>
