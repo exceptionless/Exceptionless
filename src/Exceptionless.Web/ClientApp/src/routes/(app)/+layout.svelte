@@ -8,7 +8,7 @@
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
     import { getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
     import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
-    import { organization } from '$features/organizations/context.svelte';
+    import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
     import { invalidateStackQueries } from '$features/stacks/api.svelte';
     import { invalidateTokenQueries } from '$features/tokens/api.svelte';
@@ -208,7 +208,9 @@
             <main class="px-4 pt-4">
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
 
-                <OrganizationNotifications {isChatEnabled} {openChat} class="mb-4" />
+                {#if showOrganizationNotifications.current}
+                    <OrganizationNotifications {isChatEnabled} {openChat} class="mb-4" />
+                {/if}
 
                 <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>
                     {@render children()}

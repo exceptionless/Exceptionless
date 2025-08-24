@@ -8,6 +8,7 @@
     import { type GetOrganizationsParams, getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { getTableOptions } from '$features/organizations/components/table/options.svelte';
     import OrganizationsDataTable from '$features/organizations/components/table/organizations-data-table.svelte';
+    import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
 
@@ -32,6 +33,8 @@
     async function addOrganization() {
         await goto('/next/organization/add');
     }
+
+    useHideOrganizationNotifications();
 </script>
 
 <div class="flex flex-col gap-4">
