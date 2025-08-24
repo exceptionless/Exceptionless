@@ -36,6 +36,9 @@ Located in the `src/Exceptionless.Web/ClientApp` directory.
 - Ensure semantic HTML, mobile-first design, and WCAG 2.2 Level AA compliance.
 - Use shadcn-svelte components (based on [bits-ui](https://bits-ui.com/docs/llms.txt)).
   - Look for new components in the shadcn-svelte documentation
+- **Navigation**: Prefer `href` over `onclick` with `goto()` for better linkability, SEO, and accessibility.
+  - Users can right-click to open in new tabs, copy links, and screen readers work better
+  - Use `onclick` with `goto()` only for complex navigation logic or when additional processing is needed
 
 ## API Calls
 

@@ -1,4 +1,5 @@
 import type { StorybookConfig } from '@storybook/sveltekit';
+
 import { mergeConfig } from 'vite';
 
 const config: StorybookConfig = {
