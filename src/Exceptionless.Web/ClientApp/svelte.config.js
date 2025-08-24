@@ -5,7 +5,7 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 const config = {
     compilerOptions: {
         experimental: {
-            async: true
+            async: false
         }
     },
     kit: {
