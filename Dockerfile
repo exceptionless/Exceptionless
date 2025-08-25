@@ -49,7 +49,7 @@ FROM build AS api-publish
 WORKDIR /app/src/Exceptionless.Web
 
 RUN apt-get update -yq
-RUN curl -sL https://deb.nodesource.com/setup_24.x | bash - && apt-get install -yq nodejs
+RUN curl -sL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -yq nodejs
 
 RUN dotnet publish -c Release -o out /p:SkipSpaPublish=true
 
@@ -69,7 +69,7 @@ FROM build AS app-publish
 WORKDIR /app/src/Exceptionless.Web
 
 RUN apt-get update -yq
-RUN curl -sL https://deb.nodesource.com/setup_24.x | bash - && apt-get install -yq nodejs
+RUN curl -sL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -yq nodejs
 
 RUN dotnet publish -c Release -o out
 
@@ -98,7 +98,7 @@ ENTRYPOINT ["/app/app-docker-entrypoint.sh"]
 
 # completely self-contained
 
-FROM exceptionless/elasticsearch:8.18.1 AS exceptionless
+FROM exceptionless/elasticsearch:8.19.2 AS exceptionless
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./

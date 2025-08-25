@@ -1,7 +1,6 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Validation;
 using Exceptionless.Plugins;
-using Exceptionless.Web.Utility.Results;
 using FluentValidation;
 
 namespace Exceptionless.Web.Utility.Handlers;

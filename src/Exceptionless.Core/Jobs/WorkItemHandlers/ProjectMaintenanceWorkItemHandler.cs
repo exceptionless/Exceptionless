@@ -1,10 +1,8 @@
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
-using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Microsoft.Extensions.Logging;
 
@@ -16,12 +14,12 @@ public class ProjectMaintenanceWorkItemHandler : WorkItemHandlerBase
     private readonly TimeProvider _timeProvider;
     private readonly ILockProvider _lockProvider;
 
-    public ProjectMaintenanceWorkItemHandler(IProjectRepository projectRepository, ICacheClient cacheClient, IMessageBus messageBus,
+    public ProjectMaintenanceWorkItemHandler(IProjectRepository projectRepository, ILockProvider lockProvider,
         TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _projectRepository = projectRepository;
         _timeProvider = timeProvider;
-        _lockProvider = new CacheLockProvider(cacheClient, messageBus);
+        _lockProvider = lockProvider;
     }
 
     public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())

@@ -7,6 +7,7 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
+using Foundatio.Resilience;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
@@ -17,16 +18,18 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
 {
     private readonly IEventRepository _eventRepository;
     private readonly ICacheClient _cache;
-    private readonly TimeProvider _timeProvider;
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastActivity;
 
-    public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient,
+        TimeProvider timeProvider,
+        IResiliencePolicyProvider resiliencePolicyProvider,
+        ILoggerFactory loggerFactory
+    ) : base(timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _eventRepository = eventRepository;
         _cache = cacheClient;
-        _timeProvider = timeProvider;
-        _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(1));
+        _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(1), timeProvider, resiliencePolicyProvider, loggerFactory);
     }
 
     protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)

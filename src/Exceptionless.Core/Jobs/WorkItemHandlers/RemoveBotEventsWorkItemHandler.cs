@@ -1,9 +1,7 @@
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
-using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
-using Foundatio.Messaging;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers;
@@ -13,10 +11,10 @@ public class RemoveBotEventsWorkItemHandler : WorkItemHandlerBase
     private readonly IEventRepository _eventRepository;
     private readonly ILockProvider _lockProvider;
 
-    public RemoveBotEventsWorkItemHandler(IEventRepository eventRepository, ICacheClient cacheClient, IMessageBus messageBus, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public RemoveBotEventsWorkItemHandler(IEventRepository eventRepository, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _eventRepository = eventRepository;
-        _lockProvider = new CacheLockProvider(cacheClient, messageBus);
+        _lockProvider = lockProvider;
     }
 
     public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())

@@ -9,12 +9,10 @@ using Exceptionless.Tests.Authentication;
 using Exceptionless.Tests.Mail;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
-using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Messaging;
 using Foundatio.Utility;
 using Foundatio.Xunit;
 using Xunit.Abstractions;
-using IAsyncLifetime = Xunit.IAsyncLifetime;
 
 namespace Exceptionless.Tests;
 
@@ -25,7 +23,7 @@ public class TestWithServices : TestWithLoggingBase, IDisposable
 
     public TestWithServices(ITestOutputHelper output) : base(output)
     {
-        Log.DefaultMinimumLevel = LogLevel.Information;
+        Log.DefaultLogLevel = LogLevel.Information;
         Log.SetLogLevel<ScheduledTimer>(LogLevel.Warning);
         Log.SetLogLevel<InMemoryMessageBus>(LogLevel.Warning);
         Log.SetLogLevel<InMemoryCacheClient>(LogLevel.Warning);

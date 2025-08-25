@@ -121,7 +121,9 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
     {
         return new Project
         {
-            Id = project.Id, OrganizationId = project.OrganizationId, Configuration = project.Configuration
+            Id = project.Id,
+            OrganizationId = project.OrganizationId,
+            Configuration = project.Configuration
         };
     }
 

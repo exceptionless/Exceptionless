@@ -27,7 +27,6 @@ using Exceptionless.Core.Validation;
 using Exceptionless.Serializer;
 using FluentValidation;
 using Foundatio.Caching;
-using Foundatio.Extensions.Hosting.Cronos;
 using Foundatio.Extensions.Hosting.Jobs;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
@@ -40,6 +39,7 @@ using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Jobs;
 using Foundatio.Repositories.Migrations;
+using Foundatio.Resilience;
 using Foundatio.Serializer;
 using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
@@ -76,11 +76,19 @@ public class Bootstrapper
         });
 
         services.ReplaceSingleton<TimeProvider>(_ => TimeProvider.System);
+        services.AddSingleton<IResiliencePolicyProvider, ResiliencePolicyProvider>();
         services.AddSingleton<JsonSerializer>(s => JsonSerializer.Create(s.GetRequiredService<JsonSerializerSettings>()));
         services.AddSingleton<ISerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
         services.AddSingleton<ITextSerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
 
-        services.AddSingleton<ICacheClient>(s => new InMemoryCacheClient(new InMemoryCacheClientOptions { CloneValues = true, Serializer = s.GetRequiredService<ISerializer>(), TimeProvider = s.GetRequiredService<TimeProvider>(), LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
+        services.AddSingleton<ICacheClient>(s => new InMemoryCacheClient(new InMemoryCacheClientOptions
+        {
+            CloneValues = true,
+            Serializer = s.GetRequiredService<ISerializer>(),
+            TimeProvider = s.GetRequiredService<TimeProvider>(),
+            ResiliencePolicyProvider = s.GetRequiredService<IResiliencePolicyProvider>(),
+            LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+        }));
 
         services.AddSingleton<ExceptionlessElasticConfiguration>();
         services.AddSingleton<Nest.IElasticClient>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Client);
@@ -115,7 +123,13 @@ public class Bootstrapper
         services.AddSingleton<IConnectionMapping, ConnectionMapping>();
         services.AddSingleton<MessageService>();
         services.AddStartupAction<MessageService>();
-        services.AddSingleton<IMessageBus>(s => new InMemoryMessageBus(new InMemoryMessageBusOptions { Serializer = s.GetRequiredService<ISerializer>(), TimeProvider = s.GetRequiredService<TimeProvider>(), LoggerFactory = s.GetRequiredService<ILoggerFactory>() }));
+        services.AddSingleton<IMessageBus>(s => new InMemoryMessageBus(new InMemoryMessageBusOptions
+        {
+            Serializer = s.GetRequiredService<ISerializer>(),
+            TimeProvider = s.GetRequiredService<TimeProvider>(),
+            ResiliencePolicyProvider = s.GetRequiredService<IResiliencePolicyProvider>(),
+            LoggerFactory = s.GetRequiredService<ILoggerFactory>()
+        }));
         services.AddSingleton<IMessagePublisher>(s => s.GetRequiredService<IMessageBus>());
         services.AddSingleton<IMessageSubscriber>(s => s.GetRequiredService<IMessageBus>());
 
@@ -123,6 +137,7 @@ public class Bootstrapper
         {
             Serializer = s.GetRequiredService<ITextSerializer>(),
             TimeProvider = s.GetRequiredService<TimeProvider>(),
+            ResiliencePolicyProvider = s.GetRequiredService<IResiliencePolicyProvider>(),
             LoggerFactory = s.GetRequiredService<ILoggerFactory>()
         }));
 
@@ -157,7 +172,7 @@ public class Bootstrapper
         services.AddSingleton<IMailer, Mailer>();
         services.AddSingleton<IMailSender>(s => new InMemoryMailSender());
 
-        services.AddSingleton<CacheLockProvider>(s => new CacheLockProvider(s.GetRequiredService<ICacheClient>(), s.GetRequiredService<IMessageBus>(), s.GetRequiredService<ILoggerFactory>()));
+        services.AddSingleton<CacheLockProvider>(s => new CacheLockProvider(s.GetRequiredService<ICacheClient>(), s.GetRequiredService<IMessageBus>(), s.GetRequiredService<TimeProvider>(), s.GetRequiredService<IResiliencePolicyProvider>(), s.GetRequiredService<ILoggerFactory>()));
         services.AddSingleton<ILockProvider>(s => s.GetRequiredService<CacheLockProvider>());
         services.AddTransient<StripeEventHandler>();
         services.AddSingleton<BillingManager>();
@@ -292,6 +307,7 @@ public class Bootstrapper
             WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
             Serializer = container.GetRequiredService<ISerializer>(),
             TimeProvider = container.GetRequiredService<TimeProvider>(),
+            ResiliencePolicyProvider = container.GetRequiredService<IResiliencePolicyProvider>(),
             LoggerFactory = loggerFactory
         });
     }

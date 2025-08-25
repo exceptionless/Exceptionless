@@ -3,10 +3,12 @@
 
     import { page } from '$app/state';
     import { useSidebar } from '$comp/ui/sidebar';
+    import { env } from '$env/dynamic/public';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
     import { getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
+    import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
+    import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
     import { invalidateStackQueries } from '$features/stacks/api.svelte';
     import { invalidateTokenQueries } from '$features/tokens/api.svelte';
@@ -178,6 +180,11 @@
         const context: NavigationItemContext = { authenticated: isAuthenticated, user: meQuery.data };
         return routes().filter((route) => (route.show ? route.show(context) : true));
     });
+
+    const isChatEnabled = $derived(!!env.PUBLIC_INTERCOM_APPID);
+    function openChat() {
+        // TODO: Implement chat opening logic
+    }
 </script>
 
 {#if isAuthenticated}
@@ -200,6 +207,11 @@
         <div class="text-secondary-foreground w-full">
             <main class="px-4 pt-4">
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
+
+                {#if showOrganizationNotifications.current}
+                    <OrganizationNotifications {isChatEnabled} {openChat} class="mb-4" />
+                {/if}
+
                 <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>
                     {@render children()}
                 </div>
