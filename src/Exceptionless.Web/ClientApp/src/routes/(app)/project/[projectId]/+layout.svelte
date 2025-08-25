@@ -27,12 +27,12 @@
     $effect(() => {
         if (projectQuery.isError) {
             toast.error(`The project "${projectId}" could not be found.`);
-            goto('/next/project/list');
+            goto(`/next/organization/${organization.current}/projects`);
         }
 
         if (projectQuery.isSuccess && projectQuery.data.organization_id !== organization.current) {
             toast.error(`The project "${projectQuery.data.name}" does not belong to the current organization.`);
-            goto('/next/project/list');
+            goto(`/next/organization/${organization.current}/projects`);
         }
     });
 </script>
