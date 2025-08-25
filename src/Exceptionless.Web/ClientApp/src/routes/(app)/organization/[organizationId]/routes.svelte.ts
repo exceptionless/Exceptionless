@@ -3,6 +3,7 @@ import Usage from '@lucide/svelte/icons/bar-chart';
 import Billing from '@lucide/svelte/icons/credit-card';
 import Settings from '@lucide/svelte/icons/settings';
 import Users from '@lucide/svelte/icons/users';
+import Folder from '@lucide/svelte/icons/folder';
 
 import type { NavigationItem } from '../../../routes.svelte';
 
@@ -23,6 +24,12 @@ export function routes(): NavigationItem[] {
             href: `/next/organization/${page.params.organizationId}/usage`,
             icon: Usage,
             title: 'Usage'
+        },
+        {
+            group: 'Organization Settings',
+            href: `/next/organization/${page.params.organizationId}/projects`,
+            icon: Folder,
+            title: 'Projects'
         },
         {
             group: 'Organization Settings',
