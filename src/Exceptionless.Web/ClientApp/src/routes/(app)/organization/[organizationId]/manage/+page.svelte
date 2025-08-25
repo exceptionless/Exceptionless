@@ -112,7 +112,7 @@
 
 <div class="space-y-6">
     <div>
-        <H3>Manage Organization</H3>
+        <H3>General</H3>
         <Muted>Manage your organization name.</Muted>
     </div>
     <Separator />
