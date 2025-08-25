@@ -9,11 +9,13 @@
     import * as Table from '$comp/ui/table';
     import { env } from '$env/dynamic/public';
     import { getInvoicesQuery, getOrganizationQuery } from '$features/organizations/api.svelte';
+    import ChangePlanDialog from '$features/organizations/components/dialogs/change-plan-dialog.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import GlobalUser from '$features/users/components/global-user.svelte';
     import CreditCard from '@lucide/svelte/icons/credit-card';
     import File from '@lucide/svelte/icons/file';
     import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
+    import { queryParamsState } from 'kit-query-params';
 
     const organizationQuery = getOrganizationQuery({
         route: {
@@ -33,19 +35,21 @@
 
     const canChangePlan = $derived(organizationQuery.isSuccess && !!env.PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
+    const params = queryParamsState({
+        default: { changePlan: false },
+        pushHistory: true,
+        schema: { changePlan: 'boolean' }
+    });
+
     function handleChangePlan() {
-        // Navigate to plan change page or open modal
-        // This is a placeholder for future implementation
-        console.log('Change plan clicked');
+        params.changePlan = true;
     }
 
     function handleOpenInvoice(invoiceId: string) {
-        // Open invoice in new window
         window.open(`/next/payment/${invoiceId}`, '_blank');
     }
 
     function handleViewStripeInvoice(invoiceId: string) {
-        // Open Stripe invoice in new window
         window.open(`https://manage.stripe.com/invoices/in_${invoiceId}`, '_blank');
     }
 </script>
@@ -149,3 +153,7 @@
         </div>
     {/if}
 </div>
+
+{#if params.changePlan}
+    <ChangePlanDialog bind:open={params.changePlan} />
+{/if}
