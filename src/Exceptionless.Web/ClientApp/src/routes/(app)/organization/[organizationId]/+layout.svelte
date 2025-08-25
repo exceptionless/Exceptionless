@@ -29,6 +29,8 @@
         organization.current = organizationId;
     }
 
+    const filteredRoutes = $derived(routes().filter((route) => route.group === 'Organization Settings'));
+
     $effect(() => {
         if (organizationQuery.isError) {
             toast.error(`The organization "${organizationId}" could not be found.`);
@@ -65,7 +67,7 @@
     <Separator class="mx-6 my-6 w-auto" />
     <SplitLayout.Root>
         <SplitLayout.Sidebar>
-            <SidebarNav routes={routes()} />
+            <SidebarNav routes={filteredRoutes} />
         </SplitLayout.Sidebar>
         <SplitLayout.Content>
             {@render children()}
