@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
+    import { goto } from '$app/navigation';
     import { page } from '$app/state';
     import { useSidebar } from '$comp/ui/sidebar';
     import { env } from '$env/dynamic/public';
@@ -166,8 +167,8 @@
         }
 
         if (!organizationsQuery.data.data || organizationsQuery.data.data.length === 0) {
-            // TODO: Redirect to create organization page.
             organization.current = undefined;
+            goto('/next/organization/add');
             return;
         }
 
