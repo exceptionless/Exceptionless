@@ -1,10 +1,12 @@
 <script lang="ts">
+    import type { KeywordFilter } from '$features/events/components/filters';
     import type { Snippet } from 'svelte';
 
     import { Button } from '$comp/ui/button';
     import * as Command from '$comp/ui/command';
     import * as Popover from '$comp/ui/popover';
     import Circle from '@lucide/svelte/icons/circle-plus';
+    import { computeCommandScore } from 'bits-ui';
 
     import type { FacetedFilter, IFilter } from './models';
 
@@ -19,8 +21,10 @@
 
     let { changed, children, filters, remove }: Props = $props();
 
+    const CREATE_KEYWORD_FILTER_COMMAND_ITEM = 'CREATE_KEYWORD_FILTER_COMMAND_ITEM';
     let open = $state(false);
     let lastOpenFilterId = $state<string>();
+    let search = $state('');
 
     // Clear the builder context because multiple builders will be loaded during page navigation.
     builderContext.clear();
@@ -99,6 +103,42 @@
             onClose();
         }
     }
+
+    function onCreateKeywordFromSearch() {
+        const value = search.trim();
+        if (!value) {
+            return;
+        }
+
+        // If an existing keyword filter matches exactly, open it instead of creating a new one.
+        const existingKeywordFilter = filters.find((f) => f.key === 'keyword' && (f as KeywordFilter).value === value) as KeywordFilter | undefined;
+
+        if (existingKeywordFilter) {
+            open = false;
+            search = '';
+            lastOpenFilterId = existingKeywordFilter.id;
+            return;
+        }
+
+        const keywordBuilder = builderContext.get('keyword');
+        if (keywordBuilder) {
+            const filter = keywordBuilder.create() as KeywordFilter;
+            filter.value = value;
+            changed(filter);
+
+            open = false;
+            search = '';
+            lastOpenFilterId = filter.id;
+        }
+    }
+
+    function filterCommand(commandValue: string, searchInput: string, commandKeywords?: string[]) {
+        if (commandValue === CREATE_KEYWORD_FILTER_COMMAND_ITEM) {
+            return 1; // Always visible
+        }
+
+        return computeCommandScore(commandValue, searchInput, commandKeywords);
+    }
 </script>
 
 <Popover.Root bind:open {onOpenChange}>
@@ -108,15 +148,19 @@
         </Button>
     </Popover.Trigger>
     <Popover.Content align="start" class="w-[200px] p-0" side="bottom">
-        <Command.Root>
-            <Command.Input placeholder="Search..." />
+        <Command.Root filter={filterCommand}>
+            <Command.Input placeholder="Search..." bind:value={search} />
             <Command.List>
-                <Command.Empty>No results found.</Command.Empty>
                 <Command.Group>
                     {#each sortedBuilders as [key, builder] (key)}
                         <Command.Item onSelect={() => onFacetSelected(builder)} value={key}>{builder.title}</Command.Item>
                     {/each}
                 </Command.Group>
+                {#if !!search}
+                    <Command.Item value={CREATE_KEYWORD_FILTER_COMMAND_ITEM} onSelect={onCreateKeywordFromSearch}>
+                        Create keyword filter: "{search}"
+                    </Command.Item>
+                {/if}
             </Command.List>
         </Command.Root>
         <Command.Root>
