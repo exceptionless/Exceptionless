@@ -250,7 +250,8 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             {
                 string planName = line.Price.Nickname ?? _billingManager.GetBillingPlan(line.Price.Id)?.Name ?? line.Price.Id;
                 var intervalText = line.Price.Recurring?.Interval ?? "one-time";
-                item.Description = $"Exceptionless - {planName} Plan ({(line.Price.UnitAmount / 100.0):c}/{intervalText})";
+                var priceAmount = line.Price.UnitAmount.HasValue ? (line.Price.UnitAmount.Value / 100.0) : 0.0;
+                item.Description = $"Exceptionless - {planName} Plan ({priceAmount:c}/{intervalText})";
             }
 
             var periodStart = line.Period.Start >= DateTime.MinValue ? line.Period.Start : stripeInvoice.PeriodStart;
@@ -443,7 +444,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 var subscriptionCreateOptions = new SubscriptionCreateOptions
                 {
                     Customer = customer.Id,
-                    Items = [new SubscriptionItemOptions { Price = planId }]
+                    Items = new List<SubscriptionItemOptions> { new SubscriptionItemOptions { Price = planId } }
                 };
 
                 if (!String.IsNullOrWhiteSpace(couponId))
@@ -458,8 +459,8 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             }
             else
             {
-                var update = new SubscriptionUpdateOptions { Items = [] };
-                var create = new SubscriptionCreateOptions { Customer = organization.StripeCustomerId, Items = [] };
+                var update = new SubscriptionUpdateOptions { Items = new List<SubscriptionItemOptions>() };
+                var create = new SubscriptionCreateOptions { Customer = organization.StripeCustomerId, Items = new List<SubscriptionItemOptions>() };
                 bool cardUpdated = false;
 
                 var customerUpdateOptions = new CustomerUpdateOptions { Description = organization.Name };
