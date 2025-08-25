@@ -4,8 +4,10 @@
     import { H3, Muted } from '$comp/typography';
     import { Separator } from '$comp/ui/separator';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
+    import OrganizationAdminActionsDropdownMenu from '$features/organizations/components/organization-admin-actions-dropdown-menu.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import * as SplitLayout from '$features/shared/components/layouts/split-layout';
+    import GlobalUser from '$features/users/components/global-user.svelte';
     import { toast } from 'svelte-sonner';
 
     import SidebarNav from '../../(components)/sidebar-nav.svelte';
@@ -42,16 +44,23 @@
 </script>
 
 <div>
-    <div class="flex flex-col gap-1">
-        <H3 class="flex items-center gap-1">
-            {#if organizationQuery.isSuccess}
-                <div class="max-w-[70%] overflow-hidden" title={organizationQuery.data.name}>
-                    <span class="block truncate">{organizationQuery.data.name}</span>
-                </div>
-            {/if}
-            <span class="shrink-0">Settings</span>
-        </H3>
-        <Muted>Manage your organization's settings, users, and billing information.</Muted>
+    <div class="flex items-start justify-between">
+        <div class="flex flex-col gap-1">
+            <H3 class="flex items-center gap-1">
+                {#if organizationQuery.isSuccess}
+                    <div class="max-w-[70%] overflow-hidden" title={organizationQuery.data.name}>
+                        <span class="block truncate">{organizationQuery.data.name}</span>
+                    </div>
+                {/if}
+                <span class="shrink-0">Settings</span>
+            </H3>
+            <Muted>Manage your organization's settings, users, and billing information.</Muted>
+        </div>
+        {#if organizationQuery.isSuccess}
+            <GlobalUser>
+                <OrganizationAdminActionsDropdownMenu organization={organizationQuery.data} />
+            </GlobalUser>
+        {/if}
     </div>
     <Separator class="mx-6 my-6 w-auto" />
     <SplitLayout.Root>
