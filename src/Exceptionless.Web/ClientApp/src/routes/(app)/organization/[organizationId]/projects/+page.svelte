@@ -76,7 +76,7 @@
 <div class="flex flex-col gap-4">
     <div class="flex flex-wrap items-start justify-between gap-4">
         <div class="flex flex-col gap-1">
-            <H3>My Projects</H3>
+            <H3>Projects</H3>
             <Muted>View and manage your projects. Click on a project to view its details.</Muted>
         </div>
         <div class="flex items-center gap-2">

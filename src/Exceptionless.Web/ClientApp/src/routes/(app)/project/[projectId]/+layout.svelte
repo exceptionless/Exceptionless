@@ -4,9 +4,12 @@
     import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';
+    import { getOrganizationQuery } from '$features/organizations/api.svelte';
+    import OrganizationAdminActionsDropdownMenu from '$features/organizations/components/organization-admin-actions-dropdown-menu.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { getProjectQuery } from '$features/projects/api.svelte';
     import * as SplitLayout from '$features/shared/components/layouts/split-layout';
+    import GlobalUser from '$features/users/components/global-user.svelte';
     import NotificationSettings from '@lucide/svelte/icons/mail';
     import { toast } from 'svelte-sonner';
 
@@ -24,15 +27,23 @@
         }
     });
 
+    const organizationQuery = getOrganizationQuery({
+        route: {
+            get id() {
+                return organization.current;
+            }
+        }
+    });
+
     $effect(() => {
         if (projectQuery.isError) {
             toast.error(`The project "${projectId}" could not be found.`);
-            goto('/next/project/list');
+            goto(`/next/organization/${organization.current}/projects`);
         }
 
         if (projectQuery.isSuccess && projectQuery.data.organization_id !== organization.current) {
             toast.error(`The project "${projectQuery.data.name}" does not belong to the current organization.`);
-            goto('/next/project/list');
+            goto(`/next/organization/${organization.current}/projects`);
         }
     });
 </script>
@@ -51,6 +62,11 @@
             <Muted>Manage your project settings and integrations.</Muted>
         </div>
         <div class="flex items-center gap-2">
+            {#if organizationQuery.isSuccess}
+                <GlobalUser>
+                    <OrganizationAdminActionsDropdownMenu organization={organizationQuery.data} />
+                </GlobalUser>
+            {/if}
             <Button variant="secondary" size="icon" href="/account/manage?tab=notifications&projectId={projectId}" title="Notification Settings">
                 <NotificationSettings class="size-4" />
             </Button>

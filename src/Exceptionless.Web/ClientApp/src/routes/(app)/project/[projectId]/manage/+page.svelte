@@ -9,6 +9,7 @@
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
     import { Separator } from '$comp/ui/separator';
+    import { organization } from '$features/organizations/context.svelte';
     import { deleteProject, getProjectQuery, resetData, updateProject } from '$features/projects/api.svelte';
     import RemoveProjectDialog from '$features/projects/components/dialogs/remove-project-dialog.svelte';
     import ResetProjectDataDialog from '$features/projects/components/dialogs/reset-project-data-dialog.svelte';
@@ -59,7 +60,7 @@
         toast.dismiss(toastId);
         toastId = toast.success('Successfully queued the project for deletion.');
 
-        await goto('/next/project/list');
+        await goto(`/next/organization/${organization.current}/projects`);
     }
 
     let showResetDialog = $state(false);
@@ -126,7 +127,7 @@
 
 <div class="space-y-6">
     <div>
-        <H3>Manage Project</H3>
+        <H3>General</H3>
         <Muted>Manage your project name.</Muted>
     </div>
     <Separator />

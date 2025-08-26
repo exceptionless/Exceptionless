@@ -92,9 +92,7 @@
     </Popover.Trigger>
     <Popover.Content align="start" class="p-0" side="bottom">
         <Command.Root {filter}>
-            {#if options.length > 10}
-                <Command.Input placeholder={title} />
-            {/if}
+            <Command.Input placeholder={title} autofocus={open} />
             <Command.List>
                 <Command.Empty>{noOptionsText}</Command.Empty>
                 {#if loading}
@@ -117,7 +115,8 @@
                                 </span>
                             </Command.Item>
                         {/each}
-                    </Command.Group>{/if}
+                    </Command.Group>
+                {/if}
             </Command.List>
         </Command.Root>
         <FacetedFilter.Actions clear={onClearFilter} close={onClose} {remove} showClear={!!updatedValue?.trim()} />

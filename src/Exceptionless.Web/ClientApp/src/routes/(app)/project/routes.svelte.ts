@@ -7,10 +7,10 @@ import { routes as projectSettingsRoutes } from './[projectId]/routes.svelte';
 export function routes(): NavigationItem[] {
     return [
         {
-            group: 'Settings',
-            href: '/next/project/list',
+            group: 'Projects',
+            href: '/next/project/add',
             icon: Settings,
-            title: 'Projects'
+            title: 'Add Project'
         },
         ...projectSettingsRoutes()
     ];
