@@ -10,7 +10,7 @@
     import * as Sheet from '$comp/ui/sheet';
     import { type GetEventsParams, getStackEventsQuery } from '$features/events/api.svelte';
     import EventsOverview from '$features/events/components/events-overview.svelte';
-    import { type DateFilter, StatusFilter, TypeFilter } from '$features/events/components/filters';
+    import { type DateFilter, ProjectFilter, StatusFilter, TypeFilter } from '$features/events/components/filters';
     import {
         applyTimeFilter,
         buildFilterCacheKey,
@@ -57,7 +57,7 @@
     });
     const eventId = $derived(eventsQuery?.data?.[0]?.id);
 
-    const DEFAULT_FILTERS = [new TypeFilter(['404', 'error']), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
+    const DEFAULT_FILTERS = [new ProjectFilter([]), new TypeFilter(['404', 'error']), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
     const DEFAULT_PARAMS = {
         filter: '(type:404 OR type:error) (status:open OR status:regressed)',
         limit: DEFAULT_LIMIT,

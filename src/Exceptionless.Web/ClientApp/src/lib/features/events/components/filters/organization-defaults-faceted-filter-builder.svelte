@@ -91,7 +91,7 @@
     <FacetedFilter.NumberBuilder {priority} {term} {title} />
 {/each}
 
-<FacetedFilter.ProjectBuilder />
+<FacetedFilter.ProjectBuilder priority={10} />
 <FacetedFilter.ReferenceBuilder />
 <FacetedFilter.SessionBuilder />
 <FacetedFilter.StatusBuilder priority={50} />

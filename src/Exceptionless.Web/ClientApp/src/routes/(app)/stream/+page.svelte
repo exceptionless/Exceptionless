@@ -12,7 +12,7 @@
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
     import EventsOverview from '$features/events/components/events-overview.svelte';
-    import { StatusFilter } from '$features/events/components/filters';
+    import { ProjectFilter, StatusFilter } from '$features/events/components/filters';
     import {
         buildFilterCacheKey,
         filterCacheVersionNumber,
@@ -42,7 +42,7 @@
         selectedEventId = row.id;
     }
 
-    const DEFAULT_FILTERS = [new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
+    const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
     const DEFAULT_PARAMS = {
         filter: '(status:open OR status:regressed)',
         limit: DEFAULT_LIMIT
