@@ -239,7 +239,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             OrganizationId = organization.Id,
             OrganizationName = organization.Name,
             Date = stripeInvoice.Created,
-            Paid = stripeInvoice.Status == "paid",
+            Paid = String.Equals(stripeInvoice.Status, "paid"),
             Total = stripeInvoice.Total / 100.0m
         };
 
@@ -260,7 +260,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             invoice.Items.Add(item);
         }
 
-        var coupon = stripeInvoice.Discounts?.FirstOrDefault()?.Coupon;
+        var coupon = stripeInvoice.Discounts?.FirstOrDefault(d => d.Deleted is false)?.Coupon;
         if (coupon is not null)
         {
             if (coupon.AmountOff.HasValue)
