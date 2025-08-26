@@ -16,6 +16,7 @@
     }
 
     let { changed, open = $bindable(), remove, title, value }: Props = $props();
+
     // eslint-disable-next-line svelte/prefer-writable-derived
     let updatedValue = $state(value);
 

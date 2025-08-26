@@ -5,6 +5,7 @@
     import { Button } from '$comp/ui/button';
     import * as Command from '$comp/ui/command';
     import * as Popover from '$comp/ui/popover';
+    import Separator from '$comp/ui/separator/separator.svelte';
     import Circle from '@lucide/svelte/icons/circle-plus';
     import { computeCommandScore } from 'bits-ui';
 
@@ -137,7 +138,11 @@
             return 1; // Always visible
         }
 
-        return computeCommandScore(commandValue, searchInput, commandKeywords);
+        // For builder keys, include the builder title as keywords for better searchability
+        const builder = builderContext.get(commandValue);
+        const keywords = builder ? [builder.title, ...(commandKeywords ?? [])] : commandKeywords;
+
+        return computeCommandScore(commandValue, searchInput, keywords);
     }
 </script>
 
@@ -147,31 +152,33 @@
             <Circle class="mr-2 size-4" /> Filter
         </Button>
     </Popover.Trigger>
-    <Popover.Content align="start" class="w-[200px] p-0" side="bottom">
+    <Popover.Content align="start" class="w-[260px] p-0" side="bottom">
         <Command.Root filter={filterCommand}>
             <Command.Input placeholder="Search..." bind:value={search} />
             <Command.List>
                 <Command.Group>
                     {#each sortedBuilders as [key, builder] (key)}
-                        <Command.Item onSelect={() => onFacetSelected(builder)} value={key}>{builder.title}</Command.Item>
+                        <Command.Item value={key} onSelect={() => onFacetSelected(builder)}>
+                            {builder.title}
+                        </Command.Item>
                     {/each}
                 </Command.Group>
-                {#if !!search}
-                    <Command.Item value={CREATE_KEYWORD_FILTER_COMMAND_ITEM} onSelect={onCreateKeywordFromSearch}>
-                        Create keyword filter: "{search}"
-                    </Command.Item>
+                {#if search}
+                    <Command.Group>
+                        <Command.Item value={CREATE_KEYWORD_FILTER_COMMAND_ITEM} onSelect={onCreateKeywordFromSearch}>
+                            Create keyword filter: "{search}"
+                        </Command.Item>
+                    </Command.Group>
                 {/if}
             </Command.List>
         </Command.Root>
-        <Command.Root>
-            <Command.List>
-                <Command.Separator />
-                {#if facets.length > 0}
-                    <Command.Item class="justify-center text-center" onSelect={onRemoveAll}>Clear filters</Command.Item>
-                {/if}
-                <Command.Item class="justify-center text-center" onSelect={onClose}>Close</Command.Item>
-            </Command.List>
-        </Command.Root>
+        <div class="flex flex-col">
+            <Separator />
+            {#if facets.length > 0}
+                <Button class="justify-center text-center" variant="ghost" onclick={onRemoveAll}>Clear filters</Button>
+            {/if}
+            <Button class="justify-center text-center" variant="ghost" onclick={onClose}>Close</Button>
+        </div>
     </Popover.Content>
 </Popover.Root>
 

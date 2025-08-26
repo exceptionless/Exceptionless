@@ -95,9 +95,7 @@
     </Popover.Trigger>
     <Popover.Content align="start" class="p-0" side="bottom">
         <Command.Root {filter}>
-            {#if options.length > 10}
-                <Command.Input placeholder={title} />
-            {/if}
+            <Command.Input placeholder={title} autofocus={open} />
             <Command.List>
                 <Command.Empty>{noOptionsText}</Command.Empty>
                 {#if loading}
