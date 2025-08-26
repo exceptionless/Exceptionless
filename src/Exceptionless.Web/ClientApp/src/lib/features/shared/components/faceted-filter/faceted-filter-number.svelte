@@ -21,11 +21,26 @@
         updatedValue = value;
     });
 
+    function handleKeyDown(event: KeyboardEvent) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            onClose();
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            onCancel();
+        }
+    }
+
     function onClose() {
         if (updatedValue !== value) {
             changed(updatedValue);
         }
 
+        open = false;
+    }
+
+    function onCancel() {
+        updatedValue = value;
         open = false;
     }
 
@@ -42,7 +57,7 @@
 
 <Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
-        <Button class="gap-x-1 px-3" size="lg" variant="outline">
+        <Button class="gap-x-1 px-3" size="lg" variant="outline" aria-describedby={`${title}-help`}>
             {title}
             <Separator class="mx-2" orientation="vertical" />
             {#if value !== undefined && !isNaN(value)}
@@ -54,8 +69,17 @@
     </Popover.Trigger>
     <Popover.Content align="start" class="p-0" side="bottom">
         <div class="flex items-center border-b">
-            <Input bind:value={updatedValue} placeholder={title} type="number" />
+            <Input
+                bind:value={updatedValue}
+                placeholder={title}
+                type="number"
+                aria-label={`Filter by ${title}`}
+                aria-describedby={`${title}-help`}
+                onkeydown={handleKeyDown}
+                autofocus={open}
+            />
         </div>
+        <div id={`${title}-help`} class="sr-only">Press Enter to apply filter, Escape to cancel</div>
         <FacetedFilter.Actions clear={onClearFilter} close={onClose} {remove} showClear={updatedValue !== undefined} />
     </Popover.Content>
 </Popover.Root>
