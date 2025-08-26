@@ -239,7 +239,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             OrganizationId = organization.Id,
             OrganizationName = organization.Name,
             Date = stripeInvoice.Created,
-            Paid = stripeInvoice.Paid,
+            Paid = stripeInvoice.Status == "paid",
             Total = stripeInvoice.Total / 100.0m
         };
 
@@ -260,7 +260,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             invoice.Items.Add(item);
         }
 
-        var coupon = stripeInvoice.Discount?.Coupon;
+        var coupon = stripeInvoice.Discounts?.FirstOrDefault()?.Coupon;
         if (coupon is not null)
         {
             if (coupon.AmountOff.HasValue)
@@ -435,9 +435,6 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                     Email = CurrentUser.EmailAddress
                 };
 
-                if (!String.IsNullOrWhiteSpace(couponId))
-                    createCustomer.Coupon = couponId;
-
                 var customer = await customerService.CreateAsync(createCustomer);
 
                 // Create subscription separately since Plan is deprecated in CustomerCreateOptions
@@ -447,8 +444,14 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                     Items = new List<SubscriptionItemOptions> { new SubscriptionItemOptions { Price = planId } }
                 };
 
+                // Apply coupon as discount if provided
                 if (!String.IsNullOrWhiteSpace(couponId))
-                    subscriptionCreateOptions.Coupon = couponId;
+                {
+                    subscriptionCreateOptions.Discounts = new List<SubscriptionDiscountOptions>
+                    {
+                        new SubscriptionDiscountOptions { Coupon = couponId }
+                    };
+                }
 
                 await subscriptionService.CreateAsync(subscriptionCreateOptions);
 
@@ -485,6 +488,16 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 else
                 {
                     create.Items.Add(new SubscriptionItemOptions { Price = planId });
+                    
+                    // Apply coupon as discount if provided
+                    if (!String.IsNullOrWhiteSpace(couponId))
+                    {
+                        create.Discounts = new List<SubscriptionDiscountOptions>
+                        {
+                            new SubscriptionDiscountOptions { Coupon = couponId }
+                        };
+                    }
+                    
                     await subscriptionService.CreateAsync(create);
                 }
 
