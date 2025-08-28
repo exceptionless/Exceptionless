@@ -247,14 +247,8 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         {
             var item = new InvoiceLineItem { Amount = line.Amount / 100.0m, Description = line.Description };
             // Note: In Stripe.net v48, Price property was removed from InvoiceLineItem
-            // We'll use available properties and fallback to basic information
-            if (!String.IsNullOrEmpty(line.PriceId))
-            {
-                string planName = _billingManager.GetBillingPlan(line.PriceId)?.Name ?? line.PriceId;
-                var intervalText = "one-time"; // Default since Recurring info is not directly available on line item
-                var priceAmount = line.UnitAmount.HasValue ? (line.UnitAmount.Value / 100.0) : 0.0;
-                item.Description = $"Exceptionless - {planName} Plan ({priceAmount:c}/{intervalText})";
-            }
+            // We'll use basic properties and avoid complex price details that are no longer available
+            // The line.Description already contains the necessary information
 
             var periodStart = line.Period.Start >= DateTime.MinValue ? line.Period.Start : stripeInvoice.PeriodStart;
             var periodEnd = line.Period.End >= DateTime.MinValue ? line.Period.End : stripeInvoice.PeriodEnd;
