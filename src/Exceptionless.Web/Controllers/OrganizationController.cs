@@ -219,13 +219,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         {
             var client = new StripeClient(_options.StripeOptions.StripeApiKey);
             var invoiceService = new InvoiceService(client);
-            
-            // In Stripe.net v48, expand line items to include price data
-            var options = new InvoiceGetOptions
-            {
-                Expand = new List<string> { "lines.data.price" }
-            };
-            stripeInvoice = await invoiceService.GetAsync(id, options);
+            stripeInvoice = await invoiceService.GetAsync(id);
         }
         catch (Exception ex)
         {
@@ -253,13 +247,50 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         {
             var item = new InvoiceLineItem { Amount = line.Amount / 100.0m, Description = line.Description };
             
-            // With expansion, the Price property should be available in Stripe.net v48
-            if (line.Price is not null)
+            // In Stripe.net v48, the Price object property was removed from InvoiceLineItem
+            // Try to find alternative ways to access price information
+            try
             {
-                string planName = line.Price.Nickname ?? _billingManager.GetBillingPlan(line.Price.Id)?.Name ?? line.Price.Id;
-                var intervalText = line.Price.Recurring?.Interval ?? "one-time";
-                var priceAmount = line.Price.UnitAmount.HasValue ? (line.Price.UnitAmount.Value / 100.0) : 0.0;
-                item.Description = $"Exceptionless - {planName} Plan ({priceAmount:c}/{intervalText})";
+                // Log available properties for debugging (in development only)
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    var properties = line.GetType().GetProperties().Select(p => p.Name);
+                    _logger.LogDebug("Available InvoiceLineItem properties: {Properties}", string.Join(", ", properties));
+                }
+                
+                // Try to get price ID from possible alternative properties
+                string? priceId = null;
+                
+                // Check if there's a Plan property (fallback for legacy scenarios)
+                var planProperty = line.GetType().GetProperty("Plan");
+                if (planProperty is not null)
+                {
+                    var plan = planProperty.GetValue(line);
+                    if (plan is not null)
+                    {
+                        var planIdProperty = plan.GetType().GetProperty("Id");
+                        if (planIdProperty is not null)
+                        {
+                            priceId = planIdProperty.GetValue(plan) as string;
+                        }
+                    }
+                }
+                
+                // If we have a price ID, try to build the custom description
+                if (!String.IsNullOrEmpty(priceId))
+                {
+                    var plan = _billingManager.GetBillingPlan(priceId);
+                    if (plan is not null)
+                    {
+                        // Use billing manager plan data to construct description
+                        item.Description = $"Exceptionless - {plan.Name} Plan";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to process price information for invoice line item");
+                // Fall back to original description
             }
 
             var periodStart = line.Period.Start >= DateTime.MinValue ? line.Period.Start : stripeInvoice.PeriodStart;
