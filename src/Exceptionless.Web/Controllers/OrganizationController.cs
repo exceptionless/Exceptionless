@@ -219,7 +219,13 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         {
             var client = new StripeClient(_options.StripeOptions.StripeApiKey);
             var invoiceService = new InvoiceService(client);
-            stripeInvoice = await invoiceService.GetAsync(id);
+            
+            // In Stripe.net v48, expand to include all necessary price information
+            var options = new InvoiceGetOptions
+            {
+                Expand = new List<string> { "lines", "lines.data.price" }
+            };
+            stripeInvoice = await invoiceService.GetAsync(id, options);
         }
         catch (Exception ex)
         {
@@ -247,43 +253,72 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         {
             var item = new InvoiceLineItem { Amount = line.Amount / 100.0m, Description = line.Description };
             
-            // In Stripe.net v48, the Price object property was removed from InvoiceLineItem
-            // Try to find alternative ways to access price information
+            // Try to access price information in multiple ways for Stripe.net v48 compatibility
             try
             {
-                // Log available properties for debugging (in development only)
-                if (_logger.IsEnabled(LogLevel.Debug))
+                // First, try the expanded Price property using reflection (safe for v48)
+                var priceProperty = line.GetType().GetProperty("Price");
+                if (priceProperty is not null)
                 {
-                    var properties = line.GetType().GetProperties().Select(p => p.Name);
-                    _logger.LogDebug("Available InvoiceLineItem properties: {Properties}", string.Join(", ", properties));
-                }
-                
-                // Try to get price ID from possible alternative properties
-                string? priceId = null;
-                
-                // Check if there's a Plan property (fallback for legacy scenarios)
-                var planProperty = line.GetType().GetProperty("Plan");
-                if (planProperty is not null)
-                {
-                    var plan = planProperty.GetValue(line);
-                    if (plan is not null)
+                    var price = priceProperty.GetValue(line);
+                    if (price is not null)
                     {
-                        var planIdProperty = plan.GetType().GetProperty("Id");
-                        if (planIdProperty is not null)
+                        var priceIdProperty = price.GetType().GetProperty("Id");
+                        var nicknameProperty = price.GetType().GetProperty("Nickname");
+                        var unitAmountProperty = price.GetType().GetProperty("UnitAmount");
+                        var recurringProperty = price.GetType().GetProperty("Recurring");
+                        
+                        if (priceIdProperty is not null)
                         {
-                            priceId = planIdProperty.GetValue(plan) as string;
+                            var priceId = priceIdProperty.GetValue(price) as string;
+                            var nickname = nicknameProperty?.GetValue(price) as string;
+                            var unitAmount = unitAmountProperty?.GetValue(price) as long?;
+                            
+                            string planName = nickname ?? _billingManager.GetBillingPlan(priceId)?.Name ?? priceId ?? "Unknown";
+                            
+                            // Get interval from recurring property
+                            string intervalText = "one-time";
+                            if (recurringProperty is not null)
+                            {
+                                var recurring = recurringProperty.GetValue(price);
+                                if (recurring is not null)
+                                {
+                                    var intervalProperty = recurring.GetType().GetProperty("Interval");
+                                    if (intervalProperty is not null)
+                                    {
+                                        intervalText = intervalProperty.GetValue(recurring) as string ?? "one-time";
+                                    }
+                                }
+                            }
+                            
+                            var priceAmount = unitAmount.HasValue ? (unitAmount.Value / 100.0) : 0.0;
+                            item.Description = $"Exceptionless - {planName} Plan ({priceAmount:c}/{intervalText})";
                         }
                     }
                 }
-                
-                // If we have a price ID, try to build the custom description
-                if (!String.IsNullOrEmpty(priceId))
+                else
                 {
-                    var plan = _billingManager.GetBillingPlan(priceId);
-                    if (plan is not null)
+                    // Fallback: Try to access through Plan property (legacy support)
+                    var planProperty = line.GetType().GetProperty("Plan");
+                    if (planProperty is not null)
                     {
-                        // Use billing manager plan data to construct description
-                        item.Description = $"Exceptionless - {plan.Name} Plan";
+                        var plan = planProperty.GetValue(line);
+                        if (plan is not null)
+                        {
+                            var planIdProperty = plan.GetType().GetProperty("Id");
+                            if (planIdProperty is not null)
+                            {
+                                var priceId = planIdProperty.GetValue(plan) as string;
+                                if (!String.IsNullOrEmpty(priceId))
+                                {
+                                    var billingPlan = _billingManager.GetBillingPlan(priceId);
+                                    if (billingPlan is not null)
+                                    {
+                                        item.Description = $"Exceptionless - {billingPlan.Name} Plan";
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
