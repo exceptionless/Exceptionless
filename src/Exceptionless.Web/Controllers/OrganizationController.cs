@@ -252,87 +252,13 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         foreach (var line in stripeInvoice.Lines.Data)
         {
             var item = new InvoiceLineItem { Amount = line.Amount / 100.0m, Description = line.Description };
-            
-            // Try to access price information in multiple ways for Stripe.net v48 compatibility
-            try
+            if (line.Price is not null)
             {
-                // First, try the expanded Price property using reflection (safe for v48)
-                var priceProperty = line.GetType().GetProperty("Price");
-                if (priceProperty is not null)
-                {
-                    var price = priceProperty.GetValue(line);
-                    if (price is not null)
-                    {
-                        var priceIdProperty = price.GetType().GetProperty("Id");
-                        var nicknameProperty = price.GetType().GetProperty("Nickname");
-                        var unitAmountProperty = price.GetType().GetProperty("UnitAmount");
-                        var recurringProperty = price.GetType().GetProperty("Recurring");
-                        
-                        if (priceIdProperty is not null)
-                        {
-                            var priceId = priceIdProperty.GetValue(price) as string;
-                            var nickname = nicknameProperty?.GetValue(price) as string;
-                            var unitAmount = unitAmountProperty?.GetValue(price) as long?;
-                            
-                            string planName = nickname ?? _billingManager.GetBillingPlan(priceId)?.Name ?? priceId ?? "Unknown";
-                            
-                            // Get interval from recurring property
-                            string intervalText = "one-time";
-                            if (recurringProperty is not null)
-                            {
-                                var recurring = recurringProperty.GetValue(price);
-                                if (recurring is not null)
-                                {
-                                    var intervalProperty = recurring.GetType().GetProperty("Interval");
-                                    if (intervalProperty is not null)
-                                    {
-                                        intervalText = intervalProperty.GetValue(recurring) as string ?? "one-time";
-                                    }
-                                }
-                            }
-                            
-                            var priceAmount = unitAmount.HasValue ? (unitAmount.Value / 100.0) : 0.0;
-                            item.Description = $"Exceptionless - {planName} Plan ({priceAmount:c}/{intervalText})";
-                        }
-                    }
-                }
-                else
-                {
-                    // Fallback: Try to access through Plan property (legacy support)
-                    var planProperty = line.GetType().GetProperty("Plan");
-                    if (planProperty is not null)
-                    {
-                        var plan = planProperty.GetValue(line);
-                        if (plan is not null)
-                        {
-                            var planIdProperty = plan.GetType().GetProperty("Id");
-                            if (planIdProperty is not null)
-                            {
-                                var priceId = planIdProperty.GetValue(plan) as string;
-                                if (!String.IsNullOrEmpty(priceId))
-                                {
-                                    var billingPlan = _billingManager.GetBillingPlan(priceId);
-                                    if (billingPlan is not null)
-                                    {
-                                        item.Description = $"Exceptionless - {billingPlan.Name} Plan";
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                string planName = line.Price.Nickname ?? _billingManager.GetBillingPlan(line.Price.Id)?.Name ?? line.Price.Id;
+                var intervalText = line.Price.Recurring?.Interval ?? "one-time";
+                var priceAmount = line.Price.UnitAmount.HasValue ? (line.Price.UnitAmount.Value / 100.0) : 0.0;
+                item.Description = $"Exceptionless - {planName} Plan ({priceAmount:c}/{intervalText})";
             }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to process price information for invoice line item");
-                // Fall back to original description
-            }
-
-            var periodStart = line.Period.Start >= DateTime.MinValue ? line.Period.Start : stripeInvoice.PeriodStart;
-            var periodEnd = line.Period.End >= DateTime.MinValue ? line.Period.End : stripeInvoice.PeriodEnd;
-            item.Date = $"{periodStart.ToShortDateString()} - {periodEnd.ToShortDateString()}";
-            invoice.Items.Add(item);
-        }
 
             var periodStart = line.Period.Start >= DateTime.MinValue ? line.Period.Start : stripeInvoice.PeriodStart;
             var periodEnd = line.Period.End >= DateTime.MinValue ? line.Period.End : stripeInvoice.PeriodEnd;
@@ -524,7 +450,6 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                     Items = new List<SubscriptionItemOptions> { new SubscriptionItemOptions { Price = planId } }
                 };
 
-                // Apply coupon as discount if provided
                 if (!String.IsNullOrWhiteSpace(couponId))
                 {
                     subscriptionCreateOptions.Discounts = new List<SubscriptionDiscountOptions>
@@ -568,16 +493,6 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 else
                 {
                     create.Items.Add(new SubscriptionItemOptions { Price = planId });
-                    
-                    // Apply coupon as discount if provided
-                    if (!String.IsNullOrWhiteSpace(couponId))
-                    {
-                        create.Discounts = new List<SubscriptionDiscountOptions>
-                        {
-                            new SubscriptionDiscountOptions { Coupon = couponId }
-                        };
-                    }
-                    
                     await subscriptionService.CreateAsync(create);
                 }
 
