@@ -215,13 +215,17 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             id = "in_" + id;
 
         Stripe.Invoice? stripeInvoice = null;
-        PriceService? priceService = null;
         try
         {
             var client = new StripeClient(_options.StripeOptions.StripeApiKey);
             var invoiceService = new InvoiceService(client);
-            priceService = new PriceService(client);
-            stripeInvoice = await invoiceService.GetAsync(id);
+            
+            // In Stripe.net v48, expand line items to include price data
+            var options = new InvoiceGetOptions
+            {
+                Expand = new List<string> { "lines.data.price" }
+            };
+            stripeInvoice = await invoiceService.GetAsync(id, options);
         }
         catch (Exception ex)
         {
@@ -249,24 +253,20 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         {
             var item = new InvoiceLineItem { Amount = line.Amount / 100.0m, Description = line.Description };
             
-            // In Stripe.net v48, the Price object property was removed from InvoiceLineItem
-            // but the price ID should be available as a direct string property
-            if (priceService is not null && !String.IsNullOrEmpty(line.Price))
+            // With expansion, the Price property should be available in Stripe.net v48
+            if (line.Price is not null)
             {
-                try
-                {
-                    var price = await priceService.GetAsync(line.Price);
-                    string planName = price.Nickname ?? _billingManager.GetBillingPlan(price.Id)?.Name ?? price.Id;
-                    var intervalText = price.Recurring?.Interval ?? "one-time";
-                    var priceAmount = price.UnitAmount.HasValue ? (price.UnitAmount.Value / 100.0) : 0.0;
-                    item.Description = $"Exceptionless - {planName} Plan ({priceAmount:c}/{intervalText})";
-                }
-                catch (StripeException ex)
-                {
-                    _logger.LogWarning(ex, "Failed to get price details for price ID: {PriceId}", line.Price);
-                    // Fall back to original description if price lookup fails
-                }
+                string planName = line.Price.Nickname ?? _billingManager.GetBillingPlan(line.Price.Id)?.Name ?? line.Price.Id;
+                var intervalText = line.Price.Recurring?.Interval ?? "one-time";
+                var priceAmount = line.Price.UnitAmount.HasValue ? (line.Price.UnitAmount.Value / 100.0) : 0.0;
+                item.Description = $"Exceptionless - {planName} Plan ({priceAmount:c}/{intervalText})";
             }
+
+            var periodStart = line.Period.Start >= DateTime.MinValue ? line.Period.Start : stripeInvoice.PeriodStart;
+            var periodEnd = line.Period.End >= DateTime.MinValue ? line.Period.End : stripeInvoice.PeriodEnd;
+            item.Date = $"{periodStart.ToShortDateString()} - {periodEnd.ToShortDateString()}";
+            invoice.Items.Add(item);
+        }
 
             var periodStart = line.Period.Start >= DateTime.MinValue ? line.Period.Start : stripeInvoice.PeriodStart;
             var periodEnd = line.Period.End >= DateTime.MinValue ? line.Period.End : stripeInvoice.PeriodEnd;
