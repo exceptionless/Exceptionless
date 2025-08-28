@@ -215,10 +215,12 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             id = "in_" + id;
 
         Stripe.Invoice? stripeInvoice = null;
+        PriceService? priceService = null;
         try
         {
             var client = new StripeClient(_options.StripeOptions.StripeApiKey);
             var invoiceService = new InvoiceService(client);
+            priceService = new PriceService(client);
             stripeInvoice = await invoiceService.GetAsync(id);
         }
         catch (Exception ex)
@@ -246,9 +248,25 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         foreach (var line in stripeInvoice.Lines.Data)
         {
             var item = new InvoiceLineItem { Amount = line.Amount / 100.0m, Description = line.Description };
-            // Note: In Stripe.net v48, Price property was removed from InvoiceLineItem
-            // We'll use basic properties and avoid complex price details that are no longer available
-            // The line.Description already contains the necessary information
+            
+            // In Stripe.net v48, the Price object property was removed from InvoiceLineItem
+            // but the price ID should be available as a direct string property
+            if (priceService is not null && !String.IsNullOrEmpty(line.Price))
+            {
+                try
+                {
+                    var price = await priceService.GetAsync(line.Price);
+                    string planName = price.Nickname ?? _billingManager.GetBillingPlan(price.Id)?.Name ?? price.Id;
+                    var intervalText = price.Recurring?.Interval ?? "one-time";
+                    var priceAmount = price.UnitAmount.HasValue ? (price.UnitAmount.Value / 100.0) : 0.0;
+                    item.Description = $"Exceptionless - {planName} Plan ({priceAmount:c}/{intervalText})";
+                }
+                catch (StripeException ex)
+                {
+                    _logger.LogWarning(ex, "Failed to get price details for price ID: {PriceId}", line.Price);
+                    // Fall back to original description if price lookup fails
+                }
+            }
 
             var periodStart = line.Period.Start >= DateTime.MinValue ? line.Period.Start : stripeInvoice.PeriodStart;
             var periodEnd = line.Period.End >= DateTime.MinValue ? line.Period.End : stripeInvoice.PeriodEnd;
