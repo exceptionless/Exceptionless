@@ -87,7 +87,7 @@
     const isDotNetLegacy = $derived(selectedProjectType?.platform === '.NET Legacy');
     const isJavaScript = $derived(selectedProjectType?.platform === 'JavaScript');
     const isNode = $derived(selectedProjectType?.package === 'Exceptionless.Node');
-    const isBashShell = $derived(selectedProjectType?.package === 'Bash Shell');
+    const isBashShell = $derived(selectedProjectType?.id === 'bash');
     const clientDocumentationUrl = $derived.by(() => {
         if (isDotNet || isDotNetLegacy) {
             return 'https://exceptionless.com/docs/clients/dotnet/';
