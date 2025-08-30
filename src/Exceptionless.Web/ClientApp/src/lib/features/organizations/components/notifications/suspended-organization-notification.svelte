@@ -37,7 +37,7 @@
 
         {#if isChatEnabled}
             <p>
-                Please <A onclick={openChat}>contact us</A> for more information on why your account was suspended.
+                Please <A onclick={openChat}>contact support</A> for more information on why your account was suspended.
             </p>
         {/if}
     </NotificationDescription>

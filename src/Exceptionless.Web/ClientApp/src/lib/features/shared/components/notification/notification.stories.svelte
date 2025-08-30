@@ -1,4 +1,5 @@
 <script module lang="ts">
+    import { A } from '$comp/typography';
     import { defineMeta } from '@storybook/addon-svelte-csf';
 
     import NotificationDescription from './notification-description.svelte';
@@ -23,7 +24,7 @@
     <Notification variant="destructive">
         <NotificationTitle>Something went wrong</NotificationTitle>
         <NotificationDescription>
-            An error occurred while processing your request. Please try again or contact support if the issue persists.
+            An error occurred while processing your request. Please try again or <A onclick={() => {}}>contact support</A> if the issue persists.
         </NotificationDescription>
     </Notification>
 </Story>
