@@ -6,10 +6,11 @@
     import * as FacetedFilter from '$comp/faceted-filter';
     import { H3 } from '$comp/typography';
     import EventsOverview from '$features/events/components/events-overview.svelte';
-    import { buildFilterCacheKey, toFilter, updateFilterCache } from '$features/events/components/filters/helpers.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { watch } from 'runed';
     import { toast } from 'svelte-sonner';
+
+    import { redirectToEventsWithFilter } from '../../redirect-to-events.svelte.js';
 
     // TODO: Have this happen automatically when the organization changes.
     watch(
@@ -21,12 +22,7 @@
     );
 
     async function filterChanged(addedOrUpdated: FacetedFilter.IFilter) {
-        // Prime the default page cache so that the filter is preserved and not a keyword filter.
-        const filter = toFilter([addedOrUpdated]);
-        const filterCacheKey = buildFilterCacheKey(organization.current, '/next/', filter);
-        updateFilterCache(filterCacheKey, [addedOrUpdated]);
-
-        await goto(`/next/?filter=${encodeURIComponent(filter)}`);
+        await redirectToEventsWithFilter(organization.current, addedOrUpdated);
     }
 
     async function handleError(problem: ProblemDetails) {

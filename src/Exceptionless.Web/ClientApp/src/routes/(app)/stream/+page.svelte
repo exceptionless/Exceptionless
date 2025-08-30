@@ -37,6 +37,8 @@
     import { useEventListener, watch } from 'runed';
     import { debounce } from 'throttle-debounce';
 
+    import { redirectToEventsWithFilter } from '../redirect-to-events.svelte';
+
     let selectedEventId: null | string = $state(null);
     function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
         selectedEventId = row.id;
@@ -82,7 +84,15 @@
         { lazy: true }
     );
 
-    function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
+    async function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
+        // If this is a stack filter, redirect to the Events page
+        if (addedOrUpdated.type === 'string' && addedOrUpdated.key === 'string-stack') {
+            await redirectToEventsWithFilter(organization.current, addedOrUpdated);
+            return;
+        }
+
+
+        // For all other filters (skipping date filters), apply them to the current page
         if (addedOrUpdated.type !== 'date') {
             updateFilters(filterChanged(filters ?? [], addedOrUpdated));
         }
