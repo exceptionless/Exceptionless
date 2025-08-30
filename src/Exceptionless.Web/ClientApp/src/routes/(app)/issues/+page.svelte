@@ -38,6 +38,8 @@
     import { useEventListener, watch } from 'runed';
     import { throttle } from 'throttle-debounce';
 
+    import { redirectToEventsWithFilter } from '../redirect-to-events.svelte';
+
     // TODO: Update this page to use StackSummaryModel instead of EventSummaryModel.
     let selectedStackId = $state<string>();
     function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
@@ -104,7 +106,14 @@
         queryParams.limit ??= DEFAULT_LIMIT;
     });
 
-    function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
+    async function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
+        // If this is a stack filter, redirect to the Events page
+        if (addedOrUpdated.type === 'string' && addedOrUpdated.key === 'string-stack') {
+            await redirectToEventsWithFilter(organization.current, addedOrUpdated);
+            return;
+        }
+
+        // For all other filters, apply them to the current page
         updateFilters(filterChanged(filters ?? [], addedOrUpdated));
         selectedStackId = undefined;
     }
