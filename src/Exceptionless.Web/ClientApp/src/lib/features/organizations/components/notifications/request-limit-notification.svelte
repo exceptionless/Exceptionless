@@ -17,7 +17,7 @@
     <NotificationTitle>API requests are currently being throttled for {name}</NotificationTitle>
     {#if isChatEnabled}
         <NotificationDescription>
-            Please <A onclick={openChat}>contact us</A> for more information.
+            Please <A onclick={openChat}>contact support</A> for more information.
         </NotificationDescription>
     {/if}
 </Notification>
