@@ -27,10 +27,10 @@ public class StorageOptions
         }
         else
         {
-            string? minioConnectionString = config.GetConnectionString("S3");
+            string? minioConnectionString = config.GetConnectionString("MinIO");
             if (!String.IsNullOrEmpty(minioConnectionString))
             {
-                options.Provider = "s3";
+                options.Provider = "minio";
             }
         }
 
