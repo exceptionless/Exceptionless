@@ -91,7 +91,6 @@
             return;
         }
 
-
         // For all other filters (skipping date filters), apply them to the current page
         if (addedOrUpdated.type !== 'date') {
             updateFilters(filterChanged(filters ?? [], addedOrUpdated));
