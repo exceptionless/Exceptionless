@@ -6,6 +6,7 @@ import { defineConfig } from 'vite';
 const aspNetConfig = getAspNetConfig();
 
 export default defineConfig({
+    base: '/next/',
     build: {
         sourcemap: true,
         target: 'esnext'
