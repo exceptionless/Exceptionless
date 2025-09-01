@@ -111,20 +111,23 @@ COPY ./build/supervisord.conf /etc/
 USER root
 
 # install dotnet and supervisor
-RUN apt-get update -y && \
-    apt-get install -y --no-install-recommends \
-    wget \
-    apt-transport-https \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
     supervisor \
+    wget \
     dos2unix \
+    ca-certificates \
+    \
+    # .NET dependencies
     libc6 \
-    libgcc1 \
-    libgssapi-krb5-2 \
-    libicu66 \
-    libssl1.1 \
+    libgcc-s1 \
+    libicu74 \
+    libssl3t64 \
     libstdc++6 \
-    zlib1g && \
-    dos2unix /app/docker-entrypoint.sh
+    tzdata \
+    tzdata-legacy \
+    && rm -rf /var/lib/apt/lists/* \
+    && dos2unix /app/docker-entrypoint.sh
 
 ENV discovery.type=single-node \
     xpack.security.enabled=false \
@@ -169,20 +172,23 @@ COPY ./build/supervisord.conf /etc/
 USER root
 
 # install dotnet and supervisor
-RUN apt-get update -y && \
-    apt-get install -y --no-install-recommends \
-    wget \
-    apt-transport-https \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
     supervisor \
+    wget \
     dos2unix \
+    ca-certificates \
+    \
+    # .NET dependencies
     libc6 \
-    libgcc1 \
-    libgssapi-krb5-2 \
-    libicu66 \
-    libssl1.1 \
+    libgcc-s1 \
+    libicu74 \
+    libssl3t64 \
     libstdc++6 \
-    zlib1g && \
-    dos2unix /app/docker-entrypoint.sh
+    tzdata \
+    tzdata-legacy \
+    && rm -rf /var/lib/apt/lists/* \
+    && dos2unix /app/docker-entrypoint.sh
 
 ENV discovery.type=single-node \
     xpack.security.enabled=false \
