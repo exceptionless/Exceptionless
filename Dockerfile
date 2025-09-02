@@ -122,10 +122,9 @@ RUN apt-get update \
     libc6 \
     libgcc-s1 \
     libicu74 \
-    libssl3t64 \
+    libssl3 \
     libstdc++6 \
     tzdata \
-    tzdata-legacy \
     && rm -rf /var/lib/apt/lists/* \
     && dos2unix /app/docker-entrypoint.sh
 
@@ -182,11 +181,10 @@ RUN apt-get update \
     # .NET dependencies
     libc6 \
     libgcc-s1 \
-    libicu74 \
-    libssl3t64 \
+    libicu66 \
+    libssl1.1 \
     libstdc++6 \
     tzdata \
-    tzdata-legacy \
     && rm -rf /var/lib/apt/lists/* \
     && dos2unix /app/docker-entrypoint.sh
 
