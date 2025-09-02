@@ -5,7 +5,7 @@
     "scripts": {
         "dev": "cross-env NODE_OPTIONS=--trace-warnings vite dev",
         "dev:api": "cross-env ASPNETCORE_URLS=https://be.exceptionless.io/ vite dev",
-        "build": "vite build",
+        "build": "cross-env NODE_OPTIONS=--max-old-space-size=16384 vite build",
         "preview": "vite preview",
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
         "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
