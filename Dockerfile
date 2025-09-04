@@ -63,7 +63,6 @@ ENTRYPOINT [ "dotnet", "Exceptionless.Web.dll" ]
 # app-publish
 
 FROM build AS app-publish
-ENV NODE_OPTIONS=--max_old_space_size=8192
 WORKDIR /app/src/Exceptionless.Web
 
 RUN apt-get update -yq
