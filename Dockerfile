@@ -48,9 +48,6 @@ ENTRYPOINT [ "dotnet", "Exceptionless.Job.dll" ]
 FROM build AS api-publish
 WORKDIR /app/src/Exceptionless.Web
 
-RUN apt-get update -yq
-RUN curl -sL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -yq nodejs
-
 RUN dotnet publish -c Release -o out /p:SkipSpaPublish=true
 
 # api
@@ -66,6 +63,7 @@ ENTRYPOINT [ "dotnet", "Exceptionless.Web.dll" ]
 # app-publish
 
 FROM build AS app-publish
+ENV NODE_OPTIONS=--max_old_space_size=8192
 WORKDIR /app/src/Exceptionless.Web
 
 RUN apt-get update -yq
