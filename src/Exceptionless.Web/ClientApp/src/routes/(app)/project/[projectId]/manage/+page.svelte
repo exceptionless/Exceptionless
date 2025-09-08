@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import Loading from '$comp/loading.svelte';
@@ -60,7 +61,11 @@
         toast.dismiss(toastId);
         toastId = toast.success('Successfully queued the project for deletion.');
 
-        await goto(`/next/organization/${organization.current}/projects`);
+        if (organization.current) {
+            await goto(resolve('/(app)/organization/[organizationId]/projects', { organizationId: organization.current }));
+        } else {
+            goto(resolve('/(app)/organization/list'));
+        }
     }
 
     let showResetDialog = $state(false);

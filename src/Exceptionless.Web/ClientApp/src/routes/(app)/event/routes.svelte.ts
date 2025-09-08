@@ -1,3 +1,4 @@
+import { resolve } from '$app/paths';
 import { page } from '$app/state';
 import Events from '@lucide/svelte/icons/calendar-days';
 
@@ -11,7 +12,7 @@ export function routes(): NavigationItem[] {
     return [
         {
             group: 'Event',
-            href: `/next/event/${page.params.eventId}`,
+            href: resolve('/(app)/event/[eventId]', { eventId: page.params.eventId }),
             icon: Events,
             show: () => false,
             title: 'Event Details'

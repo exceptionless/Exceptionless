@@ -2,6 +2,7 @@
     import type { Snippet } from 'svelte';
 
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as Sidebar from '$comp/ui/sidebar';
     import { Toaster } from '$comp/ui/sonner';
@@ -55,7 +56,7 @@
                 return;
             }
 
-            await goto(`/next/status?redirect=${url.pathname}`, { replaceState: true });
+            await goto(`${resolve('/status/')}?redirect=${url.pathname}`, { replaceState: true });
         }
     });
 

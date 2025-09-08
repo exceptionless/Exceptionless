@@ -1,6 +1,7 @@
 import type { IFilter } from '$comp/faceted-filter';
 
 import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
 import { buildFilterCacheKey, toFilter, updateFilterCache } from '$features/events/components/filters/helpers.svelte';
 
 /**
@@ -12,5 +13,5 @@ export async function redirectToEventsWithFilter(organizationId: string | undefi
     const filterCacheKey = buildFilterCacheKey(organizationId, '/next/', filter);
     updateFilterCache(filterCacheKey, [addedOrUpdated]);
 
-    await goto(`/next/?filter=${encodeURIComponent(filter)}`);
+    await goto(`${resolve('/(app)')}?filter=${encodeURIComponent(filter)}`);
 }

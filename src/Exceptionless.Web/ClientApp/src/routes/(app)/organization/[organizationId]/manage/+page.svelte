@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import Loading from '$comp/loading.svelte';
@@ -57,7 +58,7 @@
             await removeOrganization.mutateAsync();
             toastId = toast.success('Successfully queued the organization for deletion.');
 
-            await goto('/next/organization/list');
+            await goto(resolve('/(app)/organization/list'));
         } catch (error: unknown) {
             const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
             toastId = toast.error(`An error occurred while trying to delete the organization: ${message}`);

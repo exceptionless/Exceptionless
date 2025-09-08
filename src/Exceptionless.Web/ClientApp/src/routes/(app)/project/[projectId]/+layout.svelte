@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
@@ -38,12 +39,20 @@
     $effect(() => {
         if (projectQuery.isError) {
             toast.error(`The project "${projectId}" could not be found.`);
-            goto(`/next/organization/${organization.current}/projects`);
+            if (organization.current) {
+                goto(resolve('/(app)/organization/[organizationId]/projects', { organizationId: organization.current }));
+            } else {
+                goto(resolve('/(app)/organization/list'));
+            }
         }
 
         if (projectQuery.isSuccess && projectQuery.data.organization_id !== organization.current) {
             toast.error(`The project "${projectQuery.data.name}" does not belong to the current organization.`);
-            goto(`/next/organization/${organization.current}/projects`);
+            if (organization.current) {
+                goto(resolve('/(app)/organization/[organizationId]/projects', { organizationId: organization.current }));
+            } else {
+                goto(resolve('/(app)/organization/list'));
+            }
         }
     });
 </script>

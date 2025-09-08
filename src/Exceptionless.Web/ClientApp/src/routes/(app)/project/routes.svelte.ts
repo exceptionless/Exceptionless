@@ -1,3 +1,4 @@
+import { resolve } from '$app/paths';
 import Settings from '@lucide/svelte/icons/settings';
 
 import type { NavigationItem } from '../../routes.svelte';
@@ -8,7 +9,7 @@ export function routes(): NavigationItem[] {
     return [
         {
             group: 'Projects',
-            href: '/next/project/add',
+            href: resolve('/(app)/project/add'),
             icon: Settings,
             title: 'Add Project'
         },

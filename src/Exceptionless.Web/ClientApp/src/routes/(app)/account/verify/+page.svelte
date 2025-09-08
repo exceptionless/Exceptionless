@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { useFetchClient } from '@exceptionless/fetchclient';
     import { toast } from 'svelte-sonner';
@@ -19,7 +20,7 @@
             }
         }
 
-        await goto('/next/account/manage');
+        await goto(resolve('/(app)/account/manage'));
     }
 
     verifyAccount();

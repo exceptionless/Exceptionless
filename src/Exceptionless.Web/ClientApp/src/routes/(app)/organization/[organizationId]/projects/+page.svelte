@@ -2,6 +2,7 @@
     import type { ViewProject } from '$features/projects/models';
 
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Input } from '$comp/ui/input';
@@ -59,12 +60,12 @@
 
     async function rowClick(project: ViewProject) {
         if (project.id) {
-            await goto(`/next/project/${project.id}/manage`);
+            await goto(resolve('/(app)/project/[projectId]/manage', { projectId: project.id }));
         }
     }
 
     async function addProject() {
-        await goto('/next/project/add');
+        await goto(resolve('/(app)/project/add'));
     }
 
     $effect(() => {

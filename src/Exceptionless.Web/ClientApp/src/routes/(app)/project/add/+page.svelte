@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import ErrorMessage from '$comp/error-message.svelte';
     import Loading from '$comp/loading.svelte';
     import { H3, Muted } from '$comp/typography';
@@ -33,7 +34,7 @@
             try {
                 const { id } = await createProject.mutateAsync(form.data);
                 toastId = toast.success('Project added successfully');
-                await goto(`/next/project/${id}/configure?redirect=true`);
+                await goto(resolve('/(app)/project/[projectId]/configure', { projectId: id }) + '?redirect=true');
 
                 // HACK: This is to prevent sveltekit from stealing focus
                 result.type = 'failure';

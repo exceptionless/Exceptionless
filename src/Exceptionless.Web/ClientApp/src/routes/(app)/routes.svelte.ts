@@ -1,3 +1,4 @@
+import { resolve } from '$app/paths';
 import Documentation from '@lucide/svelte/icons/book-open';
 import ApiDocumentations from '@lucide/svelte/icons/braces';
 import Issues from '@lucide/svelte/icons/bug';
@@ -17,19 +18,19 @@ export function routes(): NavigationItem[] {
     const items = [
         {
             group: 'Dashboards',
-            href: '/next/',
+            href: resolve('/(app)'),
             icon: Events,
             title: 'Events'
         },
         {
             group: 'Dashboards',
-            href: '/next/issues',
+            href: resolve('/(app)/issues'),
             icon: Issues,
             title: 'Issues'
         },
         {
             group: 'Dashboards',
-            href: '/next/stream',
+            href: resolve('/(app)/stream'),
             icon: EventStream,
             title: 'Event Stream'
         },

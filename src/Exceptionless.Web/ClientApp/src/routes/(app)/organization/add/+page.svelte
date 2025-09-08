@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import ErrorMessage from '$comp/error-message.svelte';
     import Loading from '$comp/loading.svelte';
     import { H3, Muted } from '$comp/typography';
@@ -31,7 +32,7 @@
             try {
                 const { id } = await createOrganization.mutateAsync(form.data);
                 toastId = toast.success('Organization added successfully');
-                await goto(`/next/organization/${id}/manage`);
+                await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: id }));
 
                 // HACK: This is to prevent sveltekit from stealing focus
                 result.type = 'failure';
