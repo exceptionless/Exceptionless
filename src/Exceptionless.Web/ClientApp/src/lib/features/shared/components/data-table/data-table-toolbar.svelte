@@ -23,8 +23,9 @@
         <div class="ml-auto flex gap-x-2">
             {#if actions}
                 {@render actions()}
+            {:else}
+                <DataTableViewOptions {table} />
             {/if}
-            <DataTableViewOptions {table} />
         </div>
     </div>
 </div>

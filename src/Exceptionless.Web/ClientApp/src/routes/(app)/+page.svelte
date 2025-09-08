@@ -4,11 +4,13 @@
 
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
+    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
     import StreamingIndicatorButton from '$comp/streaming-indicator-button.svelte';
     import { H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
+    import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
     import EventsOverview from '$features/events/components/events-overview.svelte';
     import { type DateFilter, ProjectFilter, StatusFilter } from '$features/events/components/filters';
     import {
@@ -221,19 +223,36 @@
     $effect(() => {
         loadData();
     });
+
+    // Mock chart data - will be replaced with real API data
+    const mockChartData = [
+        { date: new Date('2025-09-01'), events: 412, stacks: 89 },
+        { date: new Date('2025-09-02'), events: 287, stacks: 124 },
+        { date: new Date('2025-09-03'), events: 543, stacks: 76 },
+        { date: new Date('2025-09-04'), events: 298, stacks: 158 },
+        { date: new Date('2025-09-05'), events: 689, stacks: 92 },
+        { date: new Date('2025-09-06'), events: 421, stacks: 203 },
+        { date: new Date('2025-09-07'), events: 756, stacks: 87 }
+    ];
 </script>
 
-<div class="flex flex-col space-y-4">
-    <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
-        {#snippet toolbarChildren()}
+<div class="flex flex-col">
+    <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center">
             <H3 class="pr-2">Events</H3>
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <OrganizationDefaultsFacetedFilterBuilder />
             </FacetedFilter.Root>
-        {/snippet}
-        {#snippet toolbarActions()}
+        </div>
+        <div class="flex items-center space-x-2">
             <StreamingIndicatorButton {paused} onToggle={handleToggle} />
-        {/snippet}
+            <DataTableViewOptions {table} />
+        </div>
+    </div>
+
+    <EventsDashboardChart data={mockChartData} isLoading={clientStatus.isLoading} />
+
+    <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
         {#snippet footerChildren()}
             <div class="h-9 min-w-[140px]">
                 {#if table.getSelectedRowModel().flatRows.length}
