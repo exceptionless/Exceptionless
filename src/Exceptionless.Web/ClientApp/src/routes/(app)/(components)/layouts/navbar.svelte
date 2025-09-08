@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
     import DarkModeButton from '$comp/dark-mode-button.svelte';
     import Logo from '$comp/logo.svelte';
     import { Button } from '$comp/ui/button';
@@ -27,7 +28,7 @@
             <div class="flex items-center justify-start">
                 <Sidebar.Trigger variant="outline" class="size-9" />
 
-                <a class="mr-14 ml-2 flex md:min-w-[250px] lg:ml-3 dark:text-white" href="./">
+                <a class="mr-14 ml-2 flex md:min-w-[250px] lg:ml-3 dark:text-white" href={resolve('/(app)')}>
                     {#if isMediumScreenQuery.current}
                         <Logo class="absolute top-[9px] mr-3 h-[45px]" />
                     {:else}

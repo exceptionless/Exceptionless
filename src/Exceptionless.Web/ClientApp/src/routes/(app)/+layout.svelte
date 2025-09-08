@@ -2,6 +2,7 @@
     import type { Snippet } from 'svelte';
 
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { useSidebar } from '$comp/ui/sidebar';
     import { env } from '$env/dynamic/public';
@@ -168,7 +169,7 @@
 
         if (!organizationsQuery.data.data || organizationsQuery.data.data.length === 0) {
             organization.current = undefined;
-            goto('/next/organization/add');
+            goto(resolve(`/(app)/organization/add`));
             return;
         }
 

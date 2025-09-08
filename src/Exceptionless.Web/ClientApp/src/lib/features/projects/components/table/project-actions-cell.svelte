@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { deleteProject } from '$features/projects/api.svelte';
@@ -45,15 +46,15 @@
         {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
-        <DropdownMenu.Item onclick={() => goto(`/next/issues`)}>
+        <DropdownMenu.Item onclick={() => goto(resolve('/(app)/issues'))}>
             <Issues />
             Issues
         </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => goto(`/next/project/${project.id}/manage`)}>
+        <DropdownMenu.Item onclick={() => goto(resolve('/(app)/project/[projectId]/manage', { projectId: project.id }))}>
             <Edit />
             Edit
         </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => goto(`/next/project/${project.id}/configure`)}>
+        <DropdownMenu.Item onclick={() => goto(resolve('/(app)/project/[projectId]/configure', { projectId: project.id }))}>
             <Configure />
             Download & Configure Client
         </DropdownMenu.Item>
@@ -62,7 +63,7 @@
             Delete
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
-        <DropdownMenu.Item onclick={() => goto(`/organization/${project.organization_id}/manage`)}>
+        <DropdownMenu.Item onclick={() => goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: project.organization_id }))}>
             <Organization />
             View Organization
         </DropdownMenu.Item>

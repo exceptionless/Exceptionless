@@ -2,6 +2,7 @@
     import type { ProblemDetails } from '@exceptionless/fetchclient';
 
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as FacetedFilter from '$comp/faceted-filter';
     import { H3 } from '$comp/typography';
@@ -16,7 +17,7 @@
     watch(
         () => organization.current,
         () => {
-            goto('/next/');
+            goto(resolve('/(app)'));
         },
         { lazy: true }
     );
@@ -31,7 +32,7 @@
         }
 
         toast.error(`The event "${page.params.eventId}" could not be found.`);
-        await goto('/next/');
+        await goto(resolve('/(app)'));
     }
 </script>
 

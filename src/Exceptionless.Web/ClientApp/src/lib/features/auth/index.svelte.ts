@@ -1,4 +1,5 @@
 import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
 import { page } from '$app/state';
 import { env } from '$env/dynamic/public';
 import { useFetchClient } from '@exceptionless/fetchclient';
@@ -106,7 +107,7 @@ export async function googleLogin(redirectUrl?: string) {
 export async function gotoLogin() {
     const url = page.url;
     const isAuthPath = url.pathname.startsWith('/next/login') || url.pathname.startsWith('/next/logout');
-    const redirect = url.pathname === '/next/' || isAuthPath ? '/next/login' : `/next/login?redirect=${url.pathname}`;
+    const redirect = url.pathname === resolve('/') || isAuthPath ? resolve('/(auth)/login') : `${resolve('/(auth)/login')}?redirect=${url.pathname}`;
     await goto(redirect, { replaceState: true });
 }
 
@@ -181,7 +182,7 @@ async function oauthLogin(options: OAuthLoginOptions) {
 
     if (response.ok && response.data?.token) {
         accessToken.current = response.data.token;
-        await goto(options.redirectUrl || '/');
+        await goto(options.redirectUrl || resolve('/'));
     }
 }
 

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import GoogleIcon from '$comp/icons/GoogleIcon.svelte';
@@ -31,7 +32,7 @@
     import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';
 
-    const redirectUrl = page.url.searchParams.get('redirect') ?? '/next';
+    const redirectUrl = page.url.searchParams.get('redirect') ?? resolve('/(app)');
 
     const defaultFormData = new Login();
     defaultFormData.invite_token = page.url.searchParams.get('token');

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { deleteOrganization, deleteOrganizationUser } from '$features/organizations/api.svelte';
@@ -82,15 +83,15 @@
         {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
-        <DropdownMenu.Item onclick={() => goto(`/next/organization/${org.id}/manage`)}>
+        <DropdownMenu.Item onclick={() => goto(resolve(`/(app)/organization/[organizationId]/manage`, { organizationId: org.id }))}>
             <Edit />
             Edit
         </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => goto(`/next/organization/${org.id}/billing`)}>
+        <DropdownMenu.Item onclick={() => goto(resolve(`/(app)/organization/[organizationId]/billing`, { organizationId: org.id }))}>
             <ChangePlan />
             Change Plan
         </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => goto(`/next/organization/${org.id}/billing`)}>
+        <DropdownMenu.Item onclick={() => goto(resolve(`/(app)/organization/[organizationId]/billing`, { organizationId: org.id }))}>
             <ViewInvoices />
             View Invoices
         </DropdownMenu.Item>

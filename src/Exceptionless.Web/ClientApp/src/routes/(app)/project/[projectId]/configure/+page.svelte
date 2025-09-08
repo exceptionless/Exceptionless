@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
@@ -217,7 +218,7 @@ public partial class App : Application {
 
     useEventListener(document, 'PersistentEventChanged', async () => {
         if (queryParams.redirect) {
-            await goto('/next/issues');
+            await goto(resolve('/(app)/issues'));
         }
     });
 

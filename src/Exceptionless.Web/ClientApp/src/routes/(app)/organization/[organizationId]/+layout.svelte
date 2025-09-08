@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { H3, Muted } from '$comp/typography';
     import { Separator } from '$comp/ui/separator';
@@ -34,7 +35,7 @@
     $effect(() => {
         if (organizationQuery.isError) {
             toast.error(`The organization "${organizationId}" could not be found.`);
-            goto('/next/organization/list');
+            goto(resolve('/(app)/organization/list'));
             return;
         }
 

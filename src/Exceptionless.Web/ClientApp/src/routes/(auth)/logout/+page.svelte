@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import ErrorMessage from '$comp/error-message.svelte';
     import Loading from '$comp/loading.svelte';
     import Logo from '$comp/logo.svelte';
@@ -13,7 +14,7 @@
 
     $effect(() => {
         if (!isAuthenticated) {
-            goto('/next/login', { replaceState: true });
+            goto(resolve('/(auth)/login'), { replaceState: true });
         }
     });
 
@@ -29,7 +30,7 @@
         const response = await client.get('auth/logout');
         if (response.ok) {
             await logout();
-            await goto('/next/login');
+            await goto(resolve('/(auth)/login'));
         } else {
             message = 'An error occurred while logging out, please try again.';
         }
