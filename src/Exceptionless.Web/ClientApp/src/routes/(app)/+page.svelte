@@ -10,9 +10,11 @@
     import { H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
+    import { getOrganizationCountQuery } from '$features/events/api.svelte';
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
     import EventsOverview from '$features/events/components/events-overview.svelte';
-    import { type DateFilter, ProjectFilter, StatusFilter } from '$features/events/components/filters';
+    import { DateFilter, ProjectFilter, StatusFilter } from '$features/events/components/filters';
+    import { parseTimeParameter } from '$features/events/components/filters/date-filter-utils.js';
     import {
         applyTimeFilter,
         buildFilterCacheKey,
@@ -29,10 +31,12 @@
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { getColumns } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import * as agg from '$features/shared/api/aggregations';
     import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
+    import { fillDateSeries } from '$features/shared/utils/charts.js';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { DEFAULT_LIMIT, useFetchClientStatus } from '$shared/api/api.svelte';
+    import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import { createTable } from '@tanstack/svelte-table';
@@ -47,10 +51,11 @@
     }
 
     const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
+    const DEFAULT_TIME = 'last week';
     const DEFAULT_PARAMS = {
         filter: '(status:open OR status:regressed)',
         limit: DEFAULT_LIMIT,
-        time: 'last week'
+        time: DEFAULT_TIME
     };
 
     function filterCacheKey(filter: null | string): string {
@@ -110,7 +115,6 @@
         queryParams.filter = filter;
     }
 
-    // TODO: Update all the query params as part of the query key.
     const eventsQueryParameters: GetEventsParams = $state({
         get filter() {
             return queryParams.filter!;
@@ -125,6 +129,7 @@
             queryParams.limit = value;
         },
         mode: 'summary',
+        offset: DEFAULT_OFFSET,
         get time() {
             return queryParams.time!;
         },
@@ -225,20 +230,51 @@
     });
 
     // Mock chart data - will be replaced with real API data
-    const mockChartData = [
-        { date: new Date('2025-09-01'), events: 412, stacks: 89 },
-        { date: new Date('2025-09-02'), events: 287, stacks: 124 },
-        { date: new Date('2025-09-03'), events: 543, stacks: 76 },
-        { date: new Date('2025-09-04'), events: 298, stacks: 158 },
-        { date: new Date('2025-09-05'), events: 689, stacks: 92 },
-        { date: new Date('2025-09-06'), events: 421, stacks: 203 },
-        { date: new Date('2025-09-07'), events: 756, stacks: 87 }
-    ];
+    const chartDataQuery = getOrganizationCountQuery({
+        params: {
+            get aggregations() {
+                return `date:(date${DEFAULT_OFFSET ? `^${DEFAULT_OFFSET}` : ''} cardinality:stack sum:count~1) cardinality:stack terms:(first @include:true) sum:count~1`;
+            },
+            get filter() {
+                return eventsQueryParameters.filter;
+            },
+            get time() {
+                return eventsQueryParameters.time;
+            }
+        },
+        route: { organizationId: organization.current }
+    });
+
+    const chartData = $derived(() => {
+        if (!chartDataQuery.data?.aggregations) {
+            return [];
+        }
+
+        const dateHistogramBuckets = agg.dateHistogram(chartDataQuery.data.aggregations, 'date_date')?.buckets ?? [];
+        if (dateHistogramBuckets.length === 0) {
+            const timeRange = parseTimeParameter(queryParams.time ?? 'all');
+            return fillDateSeries(timeRange.start, timeRange.end, (date: Date) => ({
+                date,
+                events: 0,
+                stacks: 0
+            }));
+        }
+
+        return dateHistogramBuckets.map((bucket) => ({
+            date: new Date(bucket.key),
+            events: agg.sum(bucket.aggregations, 'sum_count')?.value ?? 0,
+            stacks: agg.cardinality(bucket.aggregations, 'cardinality_stack')?.value ?? 0
+        }));
+    });
+
+    function onRangeSelect(start: Date, end: Date) {
+        onFilterChanged(new DateFilter('date', `${start.toISOString().slice(0, 19)}-${end.toISOString().slice(0, 19)}`));
+    }
 </script>
 
 <div class="flex flex-col">
-    <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center">
+    <div class="mb-4 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
             <H3 class="pr-2">Events</H3>
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <OrganizationDefaultsFacetedFilterBuilder />
@@ -250,7 +286,7 @@
         </div>
     </div>
 
-    <EventsDashboardChart data={mockChartData} isLoading={clientStatus.isLoading} />
+    <EventsDashboardChart data={chartData()} isLoading={clientStatus.isLoading || chartDataQuery.isLoading} {onRangeSelect} />
 
     <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
         {#snippet footerChildren()}

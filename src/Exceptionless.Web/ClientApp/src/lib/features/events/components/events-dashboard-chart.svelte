@@ -1,7 +1,8 @@
 <script lang="ts">
     import * as Chart from '$comp/ui/chart/index';
+    import { formatDateLabel } from '$features/shared/dates';
     import { scaleUtc } from 'd3-scale';
-    import { curveNatural } from 'd3-shape';
+    import { curveLinear } from 'd3-shape';
     import { AreaChart } from 'layerchart';
 
     type ChartDataPoint = {
@@ -13,11 +14,13 @@
     let {
         class: className = '',
         data,
-        isLoading = false
+        isLoading = false,
+        onRangeSelect
     }: {
         class?: string;
         data: ChartDataPoint[];
         isLoading?: boolean;
+        onRangeSelect?: (start: Date, end: Date) => void;
     } = $props();
 
     const chartConfig = {
@@ -45,11 +48,11 @@
     ];
 </script>
 
-<div class="rounded-lg border bg-card text-card-foreground shadow-sm {className}">
+<div class="bg-card text-card-foreground rounded-lg border shadow-sm {className}">
     {#if isLoading}
-        <div class="bg-muted aspect-auto h-[90px] w-full animate-pulse rounded"></div>
+        <div class="bg-muted h-16 w-full animate-pulse rounded"></div>
     {:else}
-        <Chart.Container config={chartConfig} class="aspect-auto h-[90px] w-full p-0">
+        <Chart.Container config={chartConfig} class="h-16 w-full">
             <AreaChart
                 {data}
                 x="date"
@@ -57,23 +60,28 @@
                 {series}
                 axis={false}
                 grid={false}
+                brush={{
+                    onBrushEnd: (detail) => {
+                        const [start, end] = detail.xDomain ?? [];
+                        if (start instanceof Date && end instanceof Date) {
+                            onRangeSelect?.(start, end);
+                        }
+                    }
+                }}
                 props={{
                     area: {
-                        curve: curveNatural
+                        curve: curveLinear
+                    },
+                    canvas: {
+                        class: 'cursor-crosshair'
+                    },
+                    svg: {
+                        class: 'cursor-crosshair'
                     }
                 }}
             >
                 {#snippet tooltip()}
-                    <Chart.Tooltip
-                        class="min-w-[250px]"
-                        indicator="line"
-                        labelFormatter={(v: Date) => {
-                            return v.toLocaleDateString('en-US', {
-                                day: 'numeric',
-                                month: 'short'
-                            });
-                        }}
-                    />
+                    <Chart.Tooltip class="min-w-[250px]" indicator="line" labelFormatter={(v: Date) => formatDateLabel(v)} />
                 {/snippet}
             </AreaChart>
         </Chart.Container>

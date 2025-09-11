@@ -2,7 +2,9 @@
     import type { FacetedFilterProps } from '$comp/faceted-filter';
 
     import * as FacetedFilter from '$comp/faceted-filter';
+    import { formatDateLabel } from '$features/shared/dates';
 
+    import { parseTimeParameter } from './date-filter-utils';
     import { DateFilter } from './models.svelte';
 
     let { filter, filterChanged, filterRemoved, title = 'Date Range', ...props }: FacetedFilterProps<DateFilter> = $props();
@@ -16,7 +18,9 @@
     ];
 
     if (isCustomDate(filter)) {
-        options.push({ label: filter.value as string, value: filter.value as string });
+        const timeRange = parseTimeParameter(filter.value as string);
+        const label = `${formatDateLabel(timeRange.start)} to ${formatDateLabel(timeRange.end)}`;
+        options.push({ label, value: filter.value as string });
     }
 
     function isCustomDate(filter: DateFilter) {

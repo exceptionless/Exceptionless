@@ -30,7 +30,7 @@
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { DEFAULT_LIMIT, useFetchClientStatus } from '$shared/api/api.svelte';
+    import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import { createTable } from '@tanstack/svelte-table';
@@ -144,6 +144,7 @@
             queryParams.limit = value;
         },
         mode: 'stack_frequent',
+        offset: DEFAULT_OFFSET,
         get time() {
             return queryParams.time!;
         },
