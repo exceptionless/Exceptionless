@@ -15,7 +15,7 @@
   <ItemGroup>
     <PackageReference Include="Exceptionless.AspNetCore" Version="6.1.0" />
     <PackageReference Include="Joonasw.AspNetCore.SecurityHeaders" Version="6.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="9.0.8" />
     <PackageReference Include="MiniValidation" Version="0.9.2" />
     <PackageReference Include="NEST.JsonNetSerializer" Version="7.17.5" />
