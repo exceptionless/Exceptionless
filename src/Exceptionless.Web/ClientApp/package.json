@@ -49,7 +49,7 @@
         "eslint-plugin-perfectionist": "^4.15.0",
         "eslint-plugin-storybook": "^9.1.5",
         "eslint-plugin-svelte": "^3.12.2",
-        "jsdom": "^26.1.0",
+        "jsdom": "^27.0.0",
         "prettier": "^3.6.2",
         "prettier-plugin-svelte": "^3.4.0",
         "prettier-plugin-tailwindcss": "^0.6.14",
