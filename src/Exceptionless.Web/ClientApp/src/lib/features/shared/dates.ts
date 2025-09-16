@@ -99,12 +99,33 @@ export function formatDateLabel(date: Date, currentDate: Date = new Date(), opti
     return `${datePart}${joiner}${timeStr}`;
 }
 
+/**
+ * Formats a date to ISO-like format (YYYY-MM-DDTHH:mm:ss) in local time
+ * @param date - The date to format
+ * @returns ISO-like string in local time
+ */
+export function formatLocalDateTime(date: Date): string {
+    const offset = date.getTimezoneOffset() * 60000;
+    const localDate = new Date(date.getTime() - offset);
+    return localDate.toISOString().slice(0, 19);
+}
+
 export function formatLongDate(value: Date): string {
     return value.toLocaleDateString(undefined, {
         day: 'numeric',
         month: 'long',
         year: 'numeric'
     });
+}
+
+/**
+ * Formats a time range as "start-end" in local time
+ * @param start - Start date
+ * @param end - End date
+ * @returns Formatted time range string
+ */
+export function formatTimeRange(start: Date, end: Date): string {
+    return `${formatLocalDateTime(start)}-${formatLocalDateTime(end)}`;
 }
 
 export function getDifferenceInSeconds(value: Date | string): number {

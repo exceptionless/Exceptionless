@@ -32,6 +32,7 @@
     import { getColumns } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import * as agg from '$features/shared/api/aggregations';
+    import { formatTimeRange } from '$features/shared/dates.js';
     import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts.js';
     import { StackStatus } from '$features/stacks/models';
@@ -268,7 +269,7 @@
     });
 
     function onRangeSelect(start: Date, end: Date) {
-        onFilterChanged(new DateFilter('date', `${start.toISOString().slice(0, 19)}-${end.toISOString().slice(0, 19)}`));
+        onFilterChanged(new DateFilter('date', formatTimeRange(start, end)));
     }
 </script>
 
