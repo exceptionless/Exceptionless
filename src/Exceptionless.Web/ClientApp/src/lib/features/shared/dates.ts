@@ -118,16 +118,6 @@ export function formatLongDate(value: Date): string {
     });
 }
 
-/**
- * Formats a time range as "start-end" in local time
- * @param start - Start date
- * @param end - End date
- * @returns Formatted time range string
- */
-export function formatTimeRange(start: Date, end: Date): string {
-    return `${formatLocalDateTime(start)}-${formatLocalDateTime(end)}`;
-}
-
 export function getDifferenceInSeconds(value: Date | string): number {
     return (new Date().getTime() - new Date(value).getTime()) / 1000;
 }
