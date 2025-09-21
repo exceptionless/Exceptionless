@@ -14,7 +14,6 @@
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
     import EventsOverview from '$features/events/components/events-overview.svelte';
     import { DateFilter, ProjectFilter, StatusFilter } from '$features/events/components/filters';
-    import { parseTimeParameter } from '$features/events/components/filters/date-filter-utils.js';
     import {
         applyTimeFilter,
         buildFilterCacheKey,
@@ -32,9 +31,10 @@
     import { getColumns } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import * as agg from '$features/shared/api/aggregations';
-    import { formatTimeRange } from '$features/shared/dates.js';
     import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts.js';
+    import { formatDateRangeString } from '$features/shared/utils/datemath';
+    import { parseDateMathRange } from '$features/shared/utils/datemath.js';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
@@ -253,7 +253,7 @@
 
         const dateHistogramBuckets = agg.dateHistogram(chartDataQuery.data.aggregations, 'date_date')?.buckets ?? [];
         if (dateHistogramBuckets.length === 0) {
-            const timeRange = parseTimeParameter(queryParams.time ?? 'all');
+            const timeRange = parseDateMathRange(queryParams.time ?? 'all');
             return fillDateSeries(timeRange.start, timeRange.end, (date: Date) => ({
                 date,
                 events: 0,
@@ -269,7 +269,7 @@
     });
 
     function onRangeSelect(start: Date, end: Date) {
-        onFilterChanged(new DateFilter('date', formatTimeRange(start, end)));
+        onFilterChanged(new DateFilter('date', formatDateRangeString(start, end)));
     }
 </script>
 
