@@ -11,6 +11,7 @@ Located in the `src/Exceptionless.Web/ClientApp` directory.
 
 - Use Svelte 5 in SPA mode with TypeScript and Tailwind CSS.
 - Code can be formatted and linted with `npm run format` and checked for errors with `npm run check` tasks.
+- When there is a linting error, always try to run `npm run format` first.
 - Limit use of $effect as there is usually a better way to solve the problem like using $derived.
 - **Do NOT** use any server-side Svelte features.
 
