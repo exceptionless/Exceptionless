@@ -31,7 +31,7 @@
         "@iconify-json/lucide": "^1.2.66",
         "@playwright/test": "^1.55.0",
         "@storybook/addon-a11y": "^9.1.5",
-        "@storybook/addon-docs": "^9.1.5",
+        "@storybook/addon-docs": "^9.1.7",
         "@storybook/addon-svelte-csf": "^5.0.8",
         "@storybook/sveltekit": "^9.1.5",
         "@sveltejs/adapter-static": "^3.0.9",
