@@ -24,7 +24,7 @@ type TimeUnit = (typeof TIME_UNITS)[number];
 
 // TDOO: There are duplicates of this
 /** Mapping of time units to their human-readable names */
-const TIME_UNIT_NAMES: Record<TimeUnit, string> = {
+export const TIME_UNIT_NAMES: Record<TimeUnit, string> = {
     d: 'days',
     h: 'hours',
     m: 'minutes',
@@ -112,16 +112,6 @@ export function extractRangeExpressions(input: Date | string): null | { end: str
     };
 }
 
-/**
- * Formats a date range as "start TO end" in local time
- * @param start - Start date
- * @param end - End date
- * @returns Formatted date range string
- */
-export function formatDateRangeString(start: Date, end: Date): string {
-    return `${formatLocalDateTime(start)} TO ${formatLocalDateTime(end)}`;
-}
-
 /** Get validation error message (for form validation) */
 export function getDateMathValidationError(input: string): null | string {
     const result = parseDateMath(input);
@@ -157,7 +147,8 @@ export function isPointInTime(result: DateMathResult): boolean {
  */
 export function parseDateMath(input: string): DateMathResult {
     if (!input || !input.trim()) {
-        return { error: 'Please enter a time. Try "now-5m" for 5 minutes ago or "2025-09-20T14:30:00" for a specific time.' };
+        const today = new Date().toISOString().split('T')[0];
+        return { error: `Please enter a time. Try "now-5m" for 5 minutes ago or "${today}T14:30:00" for a specific time.` };
     }
 
     const trimmed = input.trim();
@@ -180,6 +171,16 @@ export function rangeToElasticsearchQuery(rangeExpression: string, fieldName: st
     }
 
     return toElasticsearchRangeQuery(parsed, fieldName, timezone);
+}
+
+/**
+ * Formats a date range as "start TO end" in local time
+ * @param start - Start date
+ * @param end - End date
+ * @returns Formatted date range string
+ */
+export function toDateMathRange(start: Date, end: Date): string {
+    return `[${formatLocalDateTime(start)} TO ${formatLocalDateTime(end)}]`;
 }
 
 /**

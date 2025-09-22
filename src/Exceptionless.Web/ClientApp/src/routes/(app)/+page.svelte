@@ -33,7 +33,7 @@
     import * as agg from '$features/shared/api/aggregations';
     import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts.js';
-    import { formatDateRangeString } from '$features/shared/utils/datemath';
+    import { toDateMathRange } from '$features/shared/utils/datemath';
     import { parseDateMathRange } from '$features/shared/utils/datemath.js';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
@@ -269,7 +269,7 @@
     });
 
     function onRangeSelect(start: Date, end: Date) {
-        onFilterChanged(new DateFilter('date', formatDateRangeString(start, end)));
+        onFilterChanged(new DateFilter('date', toDateMathRange(start, end)));
     }
 </script>
 

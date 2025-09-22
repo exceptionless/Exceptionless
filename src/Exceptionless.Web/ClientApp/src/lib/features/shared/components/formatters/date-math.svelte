@@ -1,7 +1,7 @@
 <script lang="ts">
     import { type QuickRangeOption, quickRanges } from '$features/shared/components/date-range-picker/quick-ranges';
     import { formatDateLabel } from '$features/shared/dates';
-    import { extractRangeExpressions } from '$features/shared/utils/datemath';
+    import { extractRangeExpressions, TIME_UNIT_NAMES } from '$features/shared/utils/datemath';
     import { parseDateMathRange } from '$features/shared/utils/datemath';
 
     interface Props {
@@ -11,18 +11,6 @@
     let { value }: Props = $props();
 
     const quickRangeOptions: QuickRangeOption[] = quickRanges.flatMap((section) => section.options);
-
-    // Mapping of time units to their human-readable names
-    const TIME_UNIT_NAMES: Record<string, string> = {
-        d: 'days',
-        h: 'hours',
-        m: 'minutes',
-        M: 'months',
-        Q: 'quarters',
-        s: 'seconds',
-        w: 'weeks',
-        y: 'years'
-    } as const;
 
     function getQuickRangeLabel(value: string) {
         const normalized = value.trim();
