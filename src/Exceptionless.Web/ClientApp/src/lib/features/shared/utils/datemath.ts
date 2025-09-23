@@ -356,20 +356,6 @@ export function toDateMathRange(start: Date, end: Date): string {
 }
 
 /**
- * Convert a Date to ISO string format using local time (without timezone)
- */
-function toLocalISOString(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
-    const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${milliseconds}`;
-}
-
-/**
  * Validate and resolve a time expression to an actual date
  * Returns null if the expression is invalid, otherwise returns the resolved Date
  */
@@ -377,8 +363,6 @@ export function validateAndResolveTime(expression: string, referenceTime?: Date)
     const result = parseDateMath(expression, referenceTime);
     return result.success ? result.date : null;
 }
-
-// ===== INTERNAL PARSING FUNCTIONS =====
 
 /** Validate any date math input (single or range) */
 export function validateDateMath(input: string): { error?: string; valid: boolean } {
@@ -595,8 +579,6 @@ function parseExplicitDate(dateStr: string): DateMathResult {
     };
 }
 
-// ===== LEGACY COMPATIBILITY FUNCTIONS =====
-
 /**
  * Round a Date to a time unit (matches backend behavior exactly) - uses UTC for consistency
  */
@@ -665,4 +647,18 @@ function roundToUnit(date: Date, unit: TimeUnit, isUpperLimit = false): Date {
     }
 
     return result;
+}
+
+/**
+ * Convert a Date to ISO string format using local time (without timezone)
+ */
+function toLocalISOString(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${milliseconds}`;
 }

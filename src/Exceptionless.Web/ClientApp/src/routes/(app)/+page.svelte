@@ -52,11 +52,10 @@
     }
 
     const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
-    const DEFAULT_TIME = 'last week';
     const DEFAULT_PARAMS = {
         filter: '(status:open OR status:regressed)',
         limit: DEFAULT_LIMIT,
-        time: DEFAULT_TIME
+        time: '[now-1w/w TO now-1w/w]'
     };
 
     function filterCacheKey(filter: null | string): string {
@@ -230,7 +229,6 @@
         loadData();
     });
 
-    // Mock chart data - will be replaced with real API data
     const chartDataQuery = getOrganizationCountQuery({
         params: {
             get aggregations() {
