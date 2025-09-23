@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/sveltekit';
 
 import CustomRangeForm from './custom-range-form.svelte';
-import { CustomDateRange } from './models';
+import type { CustomDateRange } from "$features/shared/models";
 
 const meta = {
     args: {

@@ -4,25 +4,13 @@
  * Based on Elasticsearch date math syntax: https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#date-math
  */
 
+import type { CustomDateRange } from "../models";
+
 /** Time units supported by Elasticsearch date math */
 const TIME_UNITS = ['s', 'm', 'h', 'd', 'w', 'M', 'Q', 'y'] as const;
 
-interface ElasticsearchRangeQuery {
-    range: Record<
-        string,
-        {
-            gt?: string;
-            gte?: string;
-            lt?: string;
-            lte?: string;
-            time_zone?: string;
-        }
-    >;
-}
-
 type TimeUnit = (typeof TIME_UNITS)[number];
 
-// TDOO: There are duplicates of this
 /** Mapping of time units to their human-readable names */
 export const TIME_UNIT_NAMES: Record<TimeUnit, string> = {
     d: 'days',
@@ -75,7 +63,7 @@ export interface RelativeTimeExpression {
 }
 
 /** Simple time range interface for parseTimeParameter */
-export interface TimeRange {
+export interface DateRange {
     end: Date;
     start: Date;
 }
@@ -85,7 +73,7 @@ export interface TimeRange {
  * Returns null when the input is not a range, resolves to a single point in time,
  * or uses unsupported wildcards.
  */
-export function extractRangeExpressions(input: Date | string): null | { end: string; start: string } {
+export function extractRangeExpressions(input: Date | string): null | CustomDateRange {
     if (!input) {
         return null;
     }
@@ -97,7 +85,7 @@ export function extractRangeExpressions(input: Date | string): null | { end: str
         };
     }
 
-    if (input.trim() || input.includes('*')) {
+    if (!input.trim() || input.includes('*')) {
         return null;
     }
 
@@ -162,62 +150,6 @@ export function parseDateMath(input: string): DateMathResult {
 }
 
 /**
- * Parse a range expression and convert directly to Elasticsearch query
- */
-export function rangeToElasticsearchQuery(rangeExpression: string, fieldName: string, timezone?: string): ElasticsearchRangeQuery | null {
-    const parsed = parseDateMath(rangeExpression);
-    if (isDateMathError(parsed)) {
-        return null;
-    }
-
-    return toElasticsearchRangeQuery(parsed, fieldName, timezone);
-}
-
-/**
- * Formats a date range as "start TO end" in local time
- * @param start - Start date
- * @param end - End date
- * @returns Formatted date range string
- */
-export function toDateMathRange(start: Date, end: Date): string {
-    return `[${formatLocalDateTime(start)} TO ${formatLocalDateTime(end)}]`;
-}
-
-/**
- * Convert a resolved date math range to an Elasticsearch range query object
- */
-export function toElasticsearchRangeQuery(range: DateMathRange, fieldName: string, timezone?: string): ElasticsearchRangeQuery {
-    const rangeQuery: {
-        gt?: string;
-        gte?: string;
-        lt?: string;
-        lte?: string;
-        time_zone?: string;
-    } = {};
-
-    // Add start condition
-    if (range.startBoundary === 'inclusive') {
-        rangeQuery.gte = range.start.expression;
-    } else {
-        rangeQuery.gt = range.start.expression;
-    }
-
-    // Add end condition
-    if (range.endBoundary === 'inclusive') {
-        rangeQuery.lte = range.end.expression;
-    } else {
-        rangeQuery.lt = range.end.expression;
-    }
-
-    // Add timezone if provided
-    if (timezone) {
-        rangeQuery.time_zone = timezone;
-    }
-
-    return { range: { [fieldName]: rangeQuery } };
-}
-
-/**
  * Validate and resolve a time expression to an actual date
  * Returns null if the expression is invalid, otherwise returns the resolved Date
  */
@@ -237,19 +169,12 @@ export function validateDateMath(input: string): { error?: string; valid: boolea
 }
 
 /**
- * Formats a date as a local date-time string
- * @param date - Date to format
- * @returns Formatted date-time string
+ * Convert two Date objects to a date math range string
  */
-function formatLocalDateTime(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
-
-    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+export function toDateMathRange(start: Date, end: Date): string {
+    const startISO = start.toISOString();
+    const endISO = end.toISOString();
+    return `[${startISO} TO ${endISO}]`;
 }
 
 /**
@@ -636,9 +561,9 @@ const DATE_RANGE_REGEX = /(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2})?(?:[+-]\d{
  * This is a legacy function for compatibility - prefer using parseDateMath() for Elasticsearch date math expressions.
  *
  * @param time The human-readable time string (e.g., "last week", "last 30 days", "today so far")
- * @returns A TimeRange object with start and end dates
+ * @returns A DateRange object with start and end dates
  */
-export function parseDateMathRange(time: string): TimeRange {
+export function parseDateMathRange(time: string): DateRange {
     const trimmedTime = time?.trim() ?? '';
     const normalizedTime = trimmedTime.toLowerCase();
 
@@ -883,7 +808,7 @@ function parseDateString(value: string) {
     return new Date(`${value}Z`);
 }
 
-function parseExplicitDelimiterRange(value: string): null | TimeRange {
+function parseExplicitDelimiterRange(value: string): null | DateRange {
     if (!value.includes('..')) {
         return null;
     }

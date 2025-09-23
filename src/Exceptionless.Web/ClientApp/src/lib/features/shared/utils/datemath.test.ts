@@ -9,8 +9,6 @@ import {
     isPointInTime,
     parseDateMath,
     parseDateMathRange,
-    rangeToElasticsearchQuery,
-    toElasticsearchRangeQuery,
     validateAndResolveTime,
     validateDateMath
 } from './datemath';
@@ -177,69 +175,6 @@ describe('DateMath Library', () => {
         it('should return null for invalid expressions', () => {
             const result = validateAndResolveTime('invalid');
             expect(result).toBeNull();
-        });
-    });
-
-    describe('Elasticsearch query generation', () => {
-        it('should generate inclusive range queries', () => {
-            const range = parseDateMath('[now-5m TO now]');
-            expect(isDateMathRange(range)).toBe(true);
-
-            if (isDateMathRange(range)) {
-                const query = toElasticsearchRangeQuery(range, 'timestamp');
-                expect(query).toEqual({
-                    range: {
-                        timestamp: {
-                            gte: 'now-5m',
-                            lte: 'now'
-                        }
-                    }
-                });
-            }
-        });
-
-        it('should generate exclusive range queries', () => {
-            const range = parseDateMath('{now-5m TO now}');
-            expect(isDateMathRange(range)).toBe(true);
-
-            if (isDateMathRange(range)) {
-                const query = toElasticsearchRangeQuery(range, 'date');
-                expect(query).toEqual({
-                    range: {
-                        date: {
-                            gt: 'now-5m',
-                            lt: 'now'
-                        }
-                    }
-                });
-            }
-        });
-
-        it('should include timezone in queries', () => {
-            const range = parseDateMath('[now-5m TO now]');
-            expect(isDateMathRange(range)).toBe(true);
-
-            if (isDateMathRange(range)) {
-                const query = toElasticsearchRangeQuery(range, 'timestamp', 'America/New_York');
-                expect(query.range.timestamp?.time_zone).toBe('America/New_York');
-            }
-        });
-
-        it('should convert range expressions directly to queries', () => {
-            const query = rangeToElasticsearchQuery('[now-1h TO now]', 'created_at');
-            expect(query).toEqual({
-                range: {
-                    created_at: {
-                        gte: 'now-1h',
-                        lte: 'now'
-                    }
-                }
-            });
-        });
-
-        it('should return null for invalid range expressions', () => {
-            const query = rangeToElasticsearchQuery('invalid', 'field');
-            expect(query).toBeNull();
         });
     });
 

@@ -3,12 +3,11 @@
     import { Button } from '$comp/ui/button';
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
+    import { CustomDateRange } from "$features/shared/models";
     import { validateAndResolveTime, validateDateMath } from '$features/shared/utils/datemath';
     import { structuredCloneState } from '$features/shared/utils/state.svelte';
     import { defaults, superForm } from 'sveltekit-superforms';
     import { classvalidatorClient } from 'sveltekit-superforms/adapters';
-
-    import { CustomDateRange } from './models';
 
     interface Props {
         apply?: (range: CustomDateRange) => void;

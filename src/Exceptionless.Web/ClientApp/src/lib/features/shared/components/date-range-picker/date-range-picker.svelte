@@ -1,9 +1,10 @@
 <script lang="ts">
+    import type { CustomDateRange } from "$features/shared/models";
+
     import * as Tabs from '$comp/ui/tabs';
     import { extractRangeExpressions } from '$features/shared/utils/datemath';
 
     import CustomRangeForm from './custom-range-form.svelte';
-    import { CustomDateRange } from './models';
     import QuickRangeSelector from './quick-range-selector.svelte';
     import { quickRanges as defaultQuickRanges, type QuickRangeSection } from './quick-ranges';
 

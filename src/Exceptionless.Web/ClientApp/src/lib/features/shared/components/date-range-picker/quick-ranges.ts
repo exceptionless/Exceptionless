@@ -1,7 +1,7 @@
 export interface QuickRangeOption {
     description?: string;
     label: string;
-    value: string; // Elasticsearch date math range: [start TO end]
+    value: string;
 }
 
 export interface QuickRangeSection {
