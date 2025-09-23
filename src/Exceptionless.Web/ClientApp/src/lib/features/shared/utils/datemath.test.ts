@@ -4,11 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     extractRangeExpressions,
     getDateMathValidationError,
-    isDateMathError,
-    isDateMathRange,
-    isPointInTime,
+    isValidDateMath,
+    parseDate,
     parseDateMath,
     parseDateMathRange,
+    toDateMathRange,
     validateAndResolveTime,
     validateDateMath
 } from './datemath';
@@ -24,560 +24,484 @@ describe('DateMath Library', () => {
         vi.useRealTimers();
     });
 
-    describe('Single time expressions (point in time)', () => {
-        it('should parse "now" as a point in time', () => {
+    describe('Core date math parsing', () => {
+        it('should parse "now" expression', () => {
             const result = parseDateMath('now');
-            expect(isDateMathError(result)).toBe(false);
-
-            if (isDateMathRange(result)) {
-                expect(result.isPointInTime).toBe(true);
-                expect(result.start).toEqual(result.end);
-                expect(result.start.type).toBe('relative');
-                expect(result.start.expression).toBe('now');
-            }
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-09-20T14:30:00Z'));
+            expect(result.expression).toBe('now');
         });
 
-        it('should parse "now-5m" as a point in time', () => {
+        it('should parse "now-5m" expression', () => {
             const result = parseDateMath('now-5m');
-            expect(isDateMathError(result)).toBe(false);
-
-            if (isDateMathRange(result)) {
-                expect(result.isPointInTime).toBe(true);
-                expect(result.start).toEqual(result.end);
-                expect(result.start.type).toBe('relative');
-                expect(result.start.expression).toBe('now-5m');
-            }
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-09-20T14:25:00Z'));
+            expect(result.expression).toBe('now-5m');
         });
 
-        it('should parse absolute time as a point in time', () => {
-            const result = parseDateMath('2025-09-20T14:30:00');
-            expect(isDateMathError(result)).toBe(false);
-
-            if (isDateMathRange(result)) {
-                expect(result.isPointInTime).toBe(true);
-                expect(result.start).toEqual(result.end);
-                expect(result.start.type).toBe('absolute');
-            }
-        });
-    });
-
-    describe('Range expressions', () => {
-        it('should parse simple range "now-5m TO now"', () => {
-            const result = parseDateMath('now-5m TO now');
-            expect(isDateMathError(result)).toBe(false);
-
-            if (isDateMathRange(result)) {
-                expect(result.isPointInTime).toBe(false);
-                expect(result.start.expression).toBe('now-5m');
-                expect(result.end.expression).toBe('now');
-                expect(result.startBoundary).toBe('inclusive');
-                expect(result.endBoundary).toBe('inclusive');
-            }
+        it('should parse "now+1h" expression', () => {
+            const result = parseDateMath('now+1h');
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-09-20T15:30:00Z'));
+            expect(result.expression).toBe('now+1h');
         });
 
-        it('should parse Elasticsearch range "[now-5m TO now]"', () => {
-            const result = parseDateMath('[now-5m TO now]');
-            expect(isDateMathError(result)).toBe(false);
-
-            if (isDateMathRange(result)) {
-                expect(result.isPointInTime).toBe(false);
-                expect(result.start.expression).toBe('now-5m');
-                expect(result.end.expression).toBe('now');
-                expect(result.startBoundary).toBe('inclusive');
-                expect(result.endBoundary).toBe('inclusive');
-            }
+        it('should parse "now/d" rounding expression', () => {
+            const result = parseDateMath('now/d');
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-09-20T00:00:00Z'));
+            expect(result.expression).toBe('now/d');
         });
 
-        it('should parse exclusive boundaries "{now-5m TO now}"', () => {
-            const result = parseDateMath('{now-5m TO now}');
-            expect(isDateMathError(result)).toBe(false);
-
-            if (isDateMathRange(result)) {
-                expect(result.startBoundary).toBe('exclusive');
-                expect(result.endBoundary).toBe('exclusive');
-            }
-        });
-    });
-
-    describe('Validation helpers', () => {
-        it('should validate correct expressions', () => {
-            expect(validateDateMath('now').valid).toBe(true);
-            expect(validateDateMath('now-5m TO now').valid).toBe(true);
-            expect(validateDateMath('2025-09-20T14:30:00').valid).toBe(true);
+        it('should parse "now-1d/d" complex expression', () => {
+            const result = parseDateMath('now-1d/d');
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-09-19T00:00:00Z'));
+            expect(result.expression).toBe('now-1d/d');
         });
 
-        it('should reject invalid expressions', () => {
-            expect(validateDateMath('').valid).toBe(false);
-            expect(validateDateMath('invalid').valid).toBe(false);
-            expect(getDateMathValidationError('')).toContain('Please enter a time');
+        it('should handle upper limit rounding', () => {
+            const result = parseDateMath('now/d', undefined, true);
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-09-20T23:59:59.999Z'));
         });
 
-        it('should use current date in error messages', () => {
-            const today = new Date().toISOString().split('T')[0];
-            const error = getDateMathValidationError('');
-            expect(error).toContain(today);
-            expect(error).toContain(`${today}T14:30:00`);
+        it('should parse explicit date with || operations', () => {
+            const result = parseDateMath('2025-09-20||+1d');
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-09-21T00:00:00Z'));
+        });
+
+        it('should handle invalid expressions', () => {
+            const result = parseDateMath('invalid');
+            expect(result.success).toBe(false);
+            expect(result.error).toBeDefined();
+        });
+
+        it('should handle empty expressions', () => {
+            const result = parseDateMath('');
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Expression cannot be empty');
+        });
+
+        it('should parse wildcard (*) expression', () => {
+            const result = parseDateMath('*');
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('1970-01-01T00:00:00.000Z'));
+            expect(result.expression).toBe('*');
+        });
+
+        it('should parse wildcard (*) expression for upper limit', () => {
+            const result = parseDateMath('*', undefined, true);
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('9999-12-31T23:59:59.999Z'));
+            expect(result.expression).toBe('*');
         });
     });
 
-    describe('Type guards', () => {
-        it('should correctly identify point in time expressions', () => {
-            const nowResult = parseDateMath('now');
-            const rangeResult = parseDateMath('now-5m TO now');
+    describe('Local datetime formats', () => {
+        it('should support local datetime without Z suffix', () => {
+            const result = parseDateMath('2025-01-01T00:00:00');
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-01-01T00:00:00'));
+        });
 
-            expect(isPointInTime(nowResult)).toBe(true);
-            expect(isPointInTime(rangeResult)).toBe(false);
+        it('should support local datetime with seconds', () => {
+            const result = parseDateMath('2025-01-01T10:30:45');
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-01-01T10:30:45'));
+        });
+
+        it('should support local datetime with milliseconds', () => {
+            const result = parseDateMath('2025-01-01T10:30:45.123');
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-01-01T10:30:45.123'));
+        });
+
+        it('should support date without time component', () => {
+            const result = parseDateMath('2025-01-01');
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('Invalid date math expression');
+        });
+
+        it('should support UTC datetime with Z suffix', () => {
+            const result = parseDateMath('2025-01-01T00:00:00Z');
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-01-01T00:00:00Z'));
+        });
+
+        it('should support timezone offsets', () => {
+            const result = parseDateMath('2025-01-01T00:00:00-08:00');
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-01-01T00:00:00-08:00'));
         });
     });
 
-    describe('extractRangeExpressions', () => {
-        it('should return start and end expressions for a simple range', () => {
-            const result = extractRangeExpressions('now-5m TO now');
-            expect(result).toEqual({ end: 'now', start: 'now-5m' });
+    describe('Utility functions', () => {
+        it('should validate expressions', () => {
+            expect(isValidDateMath('now')).toBe(true);
+            expect(isValidDateMath('now-5m')).toBe(true);
+            expect(isValidDateMath('*')).toBe(true);
+            expect(isValidDateMath('invalid')).toBe(false);
         });
 
-        it('should handle bracketed ranges', () => {
-            const result = extractRangeExpressions('[2025-01-01T00:00:00 TO 2025-01-02T00:00:00]');
-            expect(result).toEqual({
-                end: '2025-01-02T00:00:00',
-                start: '2025-01-01T00:00:00'
+        it('should parse date (throwing version)', () => {
+            expect(parseDate('now')).toEqual(new Date('2025-09-20T14:30:00Z'));
+            expect(() => parseDate('invalid')).toThrow();
+        });
+
+        it('should validate and resolve time', () => {
+            expect(validateAndResolveTime('now')).toEqual(new Date('2025-09-20T14:30:00Z'));
+            expect(validateAndResolveTime('*')).toEqual(new Date('1970-01-01T00:00:00.000Z'));
+            expect(validateAndResolveTime('invalid')).toBeNull();
+        });
+
+        it('should get validation errors', () => {
+            expect(getDateMathValidationError('now')).toBeNull();
+            expect(getDateMathValidationError('*')).toBeNull();
+            expect(getDateMathValidationError('invalid')).toBeTruthy();
+        });
+
+        it('should validate date math input', () => {
+            expect(validateDateMath('now')).toEqual({ valid: true });
+            expect(validateDateMath('*')).toEqual({ valid: true });
+            expect(validateDateMath('invalid')).toEqual({ error: expect.any(String), valid: false });
+        });
+
+        it('should convert dates to range string', () => {
+            const start = new Date('2025-09-20T00:00:00Z');
+            const end = new Date('2025-09-20T23:59:59Z');
+            expect(toDateMathRange(start, end)).toBe('2025-09-20T00:00:00.000Z 2025-09-20T23:59:59.000Z');
+        });
+    });
+
+    describe('Time units support', () => {
+        it('should support all time units', () => {
+            const testCases = [
+                { expr: 'now+1s', unit: 'seconds' },
+                { expr: 'now+1m', unit: 'minutes' },
+                { expr: 'now+1h', unit: 'hours' },
+                { expr: 'now+1H', unit: 'hours' }, // Backend supports both h and H
+                { expr: 'now+1d', unit: 'days' },
+                { expr: 'now+1w', unit: 'weeks' },
+                { expr: 'now+1M', unit: 'months' },
+                { expr: 'now+1y', unit: 'years' }
+            ];
+
+            testCases.forEach(({ expr }) => {
+                const result = parseDateMath(expr);
+                expect(result.success).toBe(true);
             });
         });
 
-        it('should return null for non-range values', () => {
-            expect(extractRangeExpressions('now')).toBeNull();
-            expect(extractRangeExpressions('last 24 hours')).toBeNull();
-        });
+        it('should handle rounding for all units', () => {
+            const testCases = [
+                'now/s',
+                'now/m',
+                'now/h',
+                'now/H', // Backend supports both h and H
+                'now/d',
+                'now/w',
+                'now/M',
+                'now/y'
+            ];
 
-        it('should return null for wildcard ranges', () => {
-            expect(extractRangeExpressions('[* TO now]')).toBeNull();
-            expect(extractRangeExpressions('now TO *')).toBeNull();
+            testCases.forEach((expr) => {
+                const result = parseDateMath(expr);
+                expect(result.success).toBe(true);
+            });
         });
     });
 
-    describe('validateAndResolveTime', () => {
-        it('should resolve relative time expressions', () => {
-            const result = validateAndResolveTime('now-5m');
-            expect(result).toBeInstanceOf(Date);
-            expect(result!.getTime()).toBeLessThan(Date.now());
+    describe('Operation validation', () => {
+        it('should allow multiple operations in correct order', () => {
+            const result = parseDateMath('now+1d-2h');
+            expect(result.success).toBe(true);
         });
 
-        it('should resolve absolute time expressions', () => {
-            const result = validateAndResolveTime('2025-09-20T14:30:00');
-            expect(result).toBeInstanceOf(Date);
-            expect(result!.getFullYear()).toBe(2025);
-            expect(result!.getMonth()).toBe(8); // September (0-indexed)
-            expect(result!.getDate()).toBe(20);
-            expect(result!.getHours()).toBe(14);
-            expect(result!.getMinutes()).toBe(30);
+        it('should require rounding to be last operation', () => {
+            const result = parseDateMath('now/d+1h');
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('Rounding operation must be the final operation');
         });
 
-        it('should return null for invalid expressions', () => {
-            const result = validateAndResolveTime('invalid');
+        it('should not allow multiple rounding operations', () => {
+            const result = parseDateMath('now/d/h');
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('Multiple rounding operations are not allowed');
+        });
+
+        it('should validate invalid operations', () => {
+            const result = parseDateMath('now+invalid');
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('Invalid operations');
+        });
+    });
+
+    describe('Range parsing', () => {
+        it('should parse simple range expressions', () => {
+            const range = parseDateMathRange('now-1h to now');
+            expect(range.start).toEqual(new Date('2025-09-20T13:30:00Z'));
+            expect(range.end).toEqual(new Date('2025-09-20T14:30:00Z'));
+        });
+
+        it('should parse range expressions with TO keyword', () => {
+            const range = parseDateMathRange('now-5m to now+5m');
+            expect(range.start).toEqual(new Date('2025-09-20T14:25:00Z'));
+            expect(range.end).toEqual(new Date('2025-09-20T14:35:00Z'));
+        });
+
+        it('should parse exact date range with TO keyword', () => {
+            const range = parseDateMathRange('2025-09-20T00:00:00Z to 2025-09-20T23:59:59Z');
+            expect(range.start).toEqual(new Date('2025-09-20T00:00:00Z'));
+            expect(range.end).toEqual(new Date('2025-09-20T23:59:59Z'));
+        });
+
+        it('should parse mixed range with operators', () => {
+            const range = parseDateMathRange('2025-09-20||+1d to now');
+            expect(range.start).toEqual(new Date('2025-09-21T00:00:00Z'));
+            expect(range.end).toEqual(new Date('2025-09-20T14:30:00Z'));
+        });
+    });
+
+    describe('Extract range expressions', () => {
+        it('should extract simple range', () => {
+            const result = extractRangeExpressions('now-1h TO now');
+            expect(result).not.toBeNull();
+            expect(result!.start).toBe('now-1h');
+            expect(result!.end).toBe('now');
+        });
+
+        it('should extract range with various separators', () => {
+            const result = extractRangeExpressions('now-5m TO now+5m');
+            expect(result).not.toBeNull();
+            expect(result!.start).toBe('now-5m');
+            expect(result!.end).toBe('now+5m');
+        });
+
+        it('should handle single expression', () => {
+            const result = extractRangeExpressions('now');
             expect(result).toBeNull();
         });
     });
 
-    describe('Default quick ranges', () => {
-        it('should have valid quick ranges', () => {
-            // Collect all range values from the nested structure
-            const allRangeValues: string[] = [];
+    describe('Quick ranges compatibility', () => {
+        it('should handle all quick range options', () => {
             quickRanges.forEach((section) => {
-                section.options.forEach((item: QuickRangeOption) => {
-                    allRangeValues.push(item.value);
-                });
-            });
+                section.options.forEach((range: QuickRangeOption) => {
+                    const result = extractRangeExpressions(range.value);
+                    expect(result).not.toBeNull();
+                    expect(result!.start).toBeTruthy();
+                    expect(result!.end).toBeTruthy();
 
-            // Test that all default ranges are valid
-            allRangeValues.forEach((range) => {
-                const result = parseDateMath(range);
-                if (isDateMathError(result)) {
-                    console.error(`Invalid range: ${range}`, result.error);
-                }
-                expect(isDateMathError(result)).toBe(false);
-                expect(isDateMathRange(result)).toBe(true);
-            });
-        });
-
-        it('should have proper Elasticsearch range format', () => {
-            // Collect all range values from the nested structure
-            const allRangeValues: string[] = [];
-            quickRanges.forEach((section) => {
-                section.options.forEach((item: QuickRangeOption) => {
-                    allRangeValues.push(item.value);
-                });
-            });
-
-            // Test that all ranges use proper [x TO y] format
-            allRangeValues.forEach((range) => {
-                expect(range).toMatch(/^\[[^\]]+\s+TO\s+[^\]]+\]$/);
-            });
-        });
-
-        it('should have expected structure', () => {
-            expect(Array.isArray(quickRanges)).toBe(true);
-            expect(quickRanges.length).toBeGreaterThan(0);
-
-            // Check that each section has required properties
-            quickRanges.forEach((section) => {
-                expect(typeof section.label).toBe('string');
-                expect(Array.isArray(section.options)).toBe(true);
-                expect(section.options.length).toBeGreaterThan(0);
-
-                // Check that each item has required properties
-                section.options.forEach((item: QuickRangeOption) => {
-                    expect(typeof item.label).toBe('string');
-                    expect(typeof item.value).toBe('string');
+                    const parsedRange = parseDateMathRange(range.value);
+                    expect(parsedRange.start).toBeInstanceOf(Date);
+                    expect(parsedRange.end).toBeInstanceOf(Date);
                 });
             });
         });
     });
-});
 
-// ===== TESTS FOR parseDateMathRange (legacy function) =====
+    describe('Timezone handling', () => {
+        it('should handle various timezone formats', () => {
+            const testCases = ['2025-09-20T10:00:00Z||', '2025-09-20T10:00:00+05:00||', '2025-09-20T10:00:00-08:00||', '2025-09-20||+1d'];
 
-describe('parseDateMathRange', () => {
-    const mockNow = new Date('2024-01-15T12:00:00Z');
-
-    beforeEach(() => {
-        vi.useRealTimers();
-        vi.useFakeTimers();
-        vi.setSystemTime(mockNow);
+            testCases.forEach((expr) => {
+                const result = parseDateMath(expr);
+                expect(result.success).toBe(true);
+                expect(result.date).toBeInstanceOf(Date);
+            });
+        });
     });
 
-    afterEach(() => {
-        vi.useRealTimers();
+    describe('Week rounding (Sunday start)', () => {
+        it('should round to start of week (Sunday)', () => {
+            // 2025-09-20 is a Saturday, so start of week should be Sunday 2025-09-14
+            const result = parseDateMath('now/w');
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-09-14T00:00:00Z'));
+        });
+
+        it('should round to end of week (Saturday) for upper limit', () => {
+            // 2025-09-20 is a Saturday, so end of week should be Saturday 2025-09-20 23:59:59.999
+            const result = parseDateMath('now/w', undefined, true);
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-09-20T23:59:59.999Z'));
+        });
     });
 
-    const dayInMs = 24 * 60 * 60 * 1000;
+    describe('|| operations support', () => {
+        it('should handle simple || operations', () => {
+            const result = parseDateMath('2025-09-20||+1d');
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-09-21T00:00:00Z'));
+        });
 
-    function startOfDay(date: Date) {
-        const result = new Date(date);
-        result.setHours(0, 0, 0, 0);
-        return result;
-    }
+        it('should handle complex || operations', () => {
+            const result = parseDateMath('2025-09-20T10:00:00Z||+1d/d');
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-09-21T00:00:00Z'));
+        });
 
-    function endOfDay(date: Date) {
-        const result = startOfDay(date);
-        result.setHours(23, 59, 59, 999);
-        return result;
-    }
-
-    function startOfWeek(date: Date) {
-        const result = startOfDay(date);
-        const diffToMonday = (result.getDay() + 6) % 7;
-        result.setDate(result.getDate() - diffToMonday);
-        return result;
-    }
-
-    function startOfMonth(date: Date) {
-        return new Date(date.getFullYear(), date.getMonth(), 1);
-    }
-
-    function endOfMonth(date: Date) {
-        const start = startOfMonth(date);
-        const nextMonth = new Date(start.getFullYear(), start.getMonth() + 1, 1);
-        return new Date(nextMonth.getTime() - 1);
-    }
-
-    function startOfQuarter(date: Date) {
-        const quarter = Math.floor(date.getMonth() / 3);
-        const startMonth = quarter * 3;
-        return new Date(date.getFullYear(), startMonth, 1);
-    }
-
-    function endOfQuarter(date: Date) {
-        const start = startOfQuarter(date);
-        const nextQuarter = new Date(start.getFullYear(), start.getMonth() + 3, 1);
-        return new Date(nextQuarter.getTime() - 1);
-    }
-
-    function startOfYear(date: Date) {
-        return new Date(date.getFullYear(), 0, 1);
-    }
-
-    function endOfYear(date: Date) {
-        const start = startOfYear(date);
-        const nextYear = new Date(start.getFullYear() + 1, 0, 1);
-        return new Date(nextYear.getTime() - 1);
-    }
-
-    it('should return fallback range for empty input', () => {
-        const result = parseDateMathRange('all');
-        expect(result.start).toEqual(new Date('1900-01-01'));
-        expect(result.end).toEqual(mockNow);
+        it('should handle || with upper limit rounding', () => {
+            const result = parseDateMath('2025-09-20||+1d/d', undefined, true);
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-09-21T23:59:59.999Z'));
+        });
     });
 
-    it('should return fallback range for empty string', () => {
-        const result = parseDateMathRange('');
-        expect(result.start).toEqual(new Date('1900-01-01'));
-        expect(result.end).toEqual(mockNow);
+    describe('Range expressions with bracket notation', () => {
+        it('should extract range with curly braces and TO keyword', () => {
+            const result = extractRangeExpressions('{now-1h to now+1h}');
+            expect(result).not.toBeNull();
+            expect(result!.start).toBe('now-1h');
+            expect(result!.end).toBe('now+1h');
+        });
+
+        it('should extract range with square brackets and TO keyword', () => {
+            const result = extractRangeExpressions('[2025-01-01||/d to 2025-12-31||/d]');
+            expect(result).not.toBeNull();
+            expect(result!.start).toBe('2025-01-01||/d');
+            expect(result!.end).toBe('2025-12-31||/d');
+        });
+
+        it('should parse range with curly braces', () => {
+            const range = parseDateMathRange('{now-1h to now}');
+            expect(range.start).toEqual(new Date('2025-09-20T13:30:00Z'));
+            expect(range.end).toEqual(new Date('2025-09-20T14:30:00Z'));
+        });
+
+        it('should parse range with square brackets', () => {
+            const range = parseDateMathRange('[now-2h to now-1h]');
+            expect(range.start).toEqual(new Date('2025-09-20T12:30:00Z'));
+            expect(range.end).toEqual(new Date('2025-09-20T13:30:00Z'));
+        });
     });
 
-    it('should parse "last 24 hours"', () => {
-        const result = parseDateMathRange('last 24 hours');
-        const expectedStart = new Date(mockNow.getTime() - 24 * 60 * 60 * 1000);
+    describe('Wildcard support (*)', () => {
+        it('should handle * as a valid character in range expressions', () => {
+            const result = extractRangeExpressions('* to now');
+            expect(result).not.toBeNull();
+            expect(result!.start).toBe('*');
+            expect(result!.end).toBe('now');
+        });
 
-        expect(result.start).toEqual(expectedStart);
-        expect(result.end).toEqual(mockNow);
+        it('should handle * in bracket notation', () => {
+            const result = extractRangeExpressions('[* to 2025-12-31||/d]');
+            expect(result).not.toBeNull();
+            expect(result!.start).toBe('*');
+            expect(result!.end).toBe('2025-12-31||/d');
+        });
+
+        it('should handle * in curly braces', () => {
+            const result = extractRangeExpressions('{* to now/d}');
+            expect(result).not.toBeNull();
+            expect(result!.start).toBe('*');
+            expect(result!.end).toBe('now/d');
+        });
+
+        it('should handle ranges ending with *', () => {
+            const result = extractRangeExpressions('now-1d to *');
+            expect(result).not.toBeNull();
+            expect(result!.start).toBe('now-1d');
+            expect(result!.end).toBe('*');
+        });
+
+        it('should handle * to * range', () => {
+            const result = extractRangeExpressions('* to *');
+            expect(result).not.toBeNull();
+            expect(result!.start).toBe('*');
+            expect(result!.end).toBe('*');
+        });
     });
 
-    it('should parse "last hour"', () => {
-        const result = parseDateMathRange('last hour');
-        const expectedStart = new Date(mockNow.getTime() - 60 * 60 * 1000);
+    describe('Complex range patterns', () => {
+        it('should handle standard Elasticsearch range patterns', () => {
+            const patterns = ['now-1h to now', '[now-1h to now]', '{now-1h to now}'];
 
-        expect(result.start).toEqual(expectedStart);
-        expect(result.end).toEqual(mockNow);
+            patterns.forEach((pattern) => {
+                const result = extractRangeExpressions(pattern);
+                expect(result).not.toBeNull();
+                expect(result!.start).toBe('now-1h');
+                expect(result!.end).toBe('now');
+            });
+        });
+
+        it('should handle complex date math in ranges', () => {
+            const result = extractRangeExpressions('[2025-01-01||+1M/M to 2025-12-31||/y]');
+            expect(result).not.toBeNull();
+            expect(result!.start).toBe('2025-01-01||+1M/M');
+            expect(result!.end).toBe('2025-12-31||/y');
+        });
+
+        it('should handle ranges with timezone information', () => {
+            const result = extractRangeExpressions('2025-09-20T00:00:00-08:00||/d to 2025-09-20T23:59:59-08:00||/d');
+            expect(result).not.toBeNull();
+            expect(result!.start).toBe('2025-09-20T00:00:00-08:00||/d');
+            expect(result!.end).toBe('2025-09-20T23:59:59-08:00||/d');
+        });
+
+        it('should parse complex ranges with timezone and operations', () => {
+            const range = parseDateMathRange('2025-09-20T00:00:00Z||+1d to 2025-09-20T00:00:00Z||+2d');
+            expect(range.start).toEqual(new Date('2025-09-21T00:00:00Z'));
+            expect(range.end).toEqual(new Date('2025-09-22T00:00:00Z'));
+        });
+
+        it('should handle very complex nested operations in ranges', () => {
+            const result = extractRangeExpressions('{2025-01-01||+1M-2d/d to now+1y-6M/M}');
+            expect(result).not.toBeNull();
+            expect(result!.start).toBe('2025-01-01||+1M-2d/d');
+            expect(result!.end).toBe('now+1y-6M/M');
+        });
     });
 
-    it('should parse "last week"', () => {
-        const result = parseDateMathRange('last week');
-        const expectedStart = new Date(mockNow.getTime() - 7 * dayInMs);
+    describe('Edge cases and validation', () => {
+        it('should return null for invalid bracket notation', () => {
+            const invalidPatterns = [
+                '{now-1h', // Missing closing brace
+                'now-1h}', // Missing opening brace
+                '[now-1h to', // Incomplete range
+                '{}', // Empty braces
+                '[]', // Empty brackets
+                '{   }', // Only spaces in braces
+                '[   ]' // Only spaces in brackets
+            ];
 
-        expect(result.start).toEqual(expectedStart);
-        expect(result.end).toEqual(mockNow);
-    });
+            invalidPatterns.forEach((pattern) => {
+                const result = extractRangeExpressions(pattern);
+                expect(result).toBeNull();
+            });
+        });
 
-    it('should parse "last 30 days"', () => {
-        const result = parseDateMathRange('last 30 days');
-        const expectedStart = new Date(mockNow.getTime() - 30 * dayInMs);
+        it('should handle ranges with wildcard validation', () => {
+            // Test that * is accepted as a valid range component with proper TO separator
+            const validWildcardPatterns = ['* to now', 'now to *', '[* to *]', '{* to 2025-12-31}'];
 
-        expect(result.start).toEqual(expectedStart);
-        expect(result.end).toEqual(mockNow);
-    });
+            validWildcardPatterns.forEach((pattern) => {
+                const result = extractRangeExpressions(pattern);
+                expect(result).not.toBeNull();
+            });
+        });
 
-    it('should parse "last 5 minutes"', () => {
-        const result = parseDateMathRange('last 5 minutes');
-        const expectedStart = new Date(mockNow.getTime() - 5 * 60 * 1000);
+        it('should preserve exact formatting in extracted expressions', () => {
+            const result = extractRangeExpressions('[  now-1h   to   now+1h  ]');
+            expect(result).not.toBeNull();
+            expect(result!.start).toBe('now-1h');
+            expect(result!.end).toBe('now+1h');
+        });
 
-        expect(result.start).toEqual(expectedStart);
-        expect(result.end).toEqual(mockNow);
-    });
+        it('should reject non-compliant patterns (spaces without TO)', () => {
+            const invalidPatterns = [
+                'now-1h now', // Space without TO
+                '[now-1h now]', // Bracket with space but no TO
+                '{now-1h now}', // Curly brace with space but no TO
+                'now-1h   now+1h' // Multiple spaces without TO
+            ];
 
-    it('should parse "last 15 minutes"', () => {
-        const result = parseDateMathRange('last 15 minutes');
-        const expectedStart = new Date(mockNow.getTime() - 15 * 60 * 1000);
-
-        expect(result.start).toEqual(expectedStart);
-        expect(result.end).toEqual(mockNow);
-    });
-
-    it('should parse "last 30 minutes"', () => {
-        const result = parseDateMathRange('last 30 minutes');
-        const expectedStart = new Date(mockNow.getTime() - 30 * 60 * 1000);
-
-        expect(result.start).toEqual(expectedStart);
-        expect(result.end).toEqual(mockNow);
-    });
-
-    it('should parse "last 48 hours"', () => {
-        const result = parseDateMathRange('last 48 hours');
-        const expectedStart = new Date(mockNow.getTime() - 48 * 60 * 60 * 1000);
-
-        expect(result.start).toEqual(expectedStart);
-        expect(result.end).toEqual(mockNow);
-    });
-
-    it('should parse "last 90 days"', () => {
-        const result = parseDateMathRange('last 90 days');
-        const expectedStart = new Date(mockNow.getTime() - 90 * dayInMs);
-
-        expect(result.start).toEqual(expectedStart);
-        expect(result.end).toEqual(mockNow);
-    });
-
-    it('should parse "today so far"', () => {
-        const result = parseDateMathRange('today so far');
-        const expectedStart = startOfDay(mockNow);
-
-        expect(result.start).toEqual(expectedStart);
-        expect(result.end).toEqual(mockNow);
-    });
-
-    it('should parse "this week so far"', () => {
-        const result = parseDateMathRange('this week so far');
-        const expectedStart = startOfWeek(mockNow);
-
-        expect(result.start).toEqual(expectedStart);
-        expect(result.end).toEqual(mockNow);
-    });
-
-    it('should parse "this month so far"', () => {
-        const result = parseDateMathRange('this month so far');
-        const expectedStart = startOfMonth(mockNow);
-
-        expect(result.start).toEqual(expectedStart);
-        expect(result.end).toEqual(mockNow);
-    });
-
-    it('should parse "this year so far"', () => {
-        const result = parseDateMathRange('this year so far');
-        const expectedStart = startOfYear(mockNow);
-
-        expect(result.start).toEqual(expectedStart);
-        expect(result.end).toEqual(mockNow);
-    });
-
-    it('should parse "this quarter so far"', () => {
-        const result = parseDateMathRange('this quarter so far');
-        const expectedStart = startOfQuarter(mockNow);
-
-        expect(result.start).toEqual(expectedStart);
-        expect(result.end).toEqual(mockNow);
-    });
-
-    it('should parse "previous day"', () => {
-        const result = parseDateMathRange('previous day');
-        const start = startOfDay(new Date(startOfDay(mockNow).getTime() - dayInMs));
-        const end = endOfDay(start);
-
-        expect(result.start).toEqual(start);
-        expect(result.end).toEqual(end);
-    });
-
-    it('should parse "previous week"', () => {
-        const result = parseDateMathRange('previous week');
-        const currentWeekStart = startOfWeek(mockNow);
-        const previousWeekEnd = new Date(currentWeekStart.getTime() - 1);
-        const start = startOfWeek(previousWeekEnd);
-
-        expect(result.start).toEqual(start);
-        expect(result.end).toEqual(previousWeekEnd);
-    });
-
-    it('should parse "previous month"', () => {
-        const result = parseDateMathRange('previous month');
-        const currentMonthStart = startOfMonth(mockNow);
-        const previousMonthEnd = new Date(currentMonthStart.getTime() - 1);
-        const start = startOfMonth(previousMonthEnd);
-        const end = endOfMonth(previousMonthEnd);
-
-        expect(result.start).toEqual(start);
-        expect(result.end).toEqual(end);
-    });
-
-    it('should parse "previous quarter"', () => {
-        const result = parseDateMathRange('previous quarter');
-        const currentQuarterStart = startOfQuarter(mockNow);
-        const previousQuarterEnd = new Date(currentQuarterStart.getTime() - 1);
-        const start = startOfQuarter(previousQuarterEnd);
-        const end = endOfQuarter(previousQuarterEnd);
-
-        expect(result.start).toEqual(start);
-        expect(result.end).toEqual(end);
-    });
-
-    it('should parse "previous year"', () => {
-        const result = parseDateMathRange('previous year');
-        const start = startOfYear(new Date(mockNow.getFullYear() - 1, 0, 1));
-        const end = endOfYear(start);
-
-        expect(result.start).toEqual(start);
-        expect(result.end).toEqual(end);
-    });
-
-    it('should parse custom date range with TO delimiter', () => {
-        const customRange = '2024-01-01T00:00:00 TO 2024-01-31T23:59:59';
-        const result = parseDateMathRange(customRange);
-
-        expect(result.start).toEqual(new Date('2024-01-01T00:00:00'));
-        expect(result.end).toEqual(new Date('2024-01-31T23:59:59'));
-    });
-
-    it('should parse custom range with incomplete seconds', () => {
-        const customRange = '2024-01-01T00:00 TO 2024-01-31T23:59';
-        const result = parseDateMathRange(customRange);
-
-        expect(result.start).toEqual(new Date('2024-01-01T00:00:00'));
-        expect(result.end).toEqual(new Date('2024-01-31T23:59:00'));
-    });
-
-    it('should parse date-only range', () => {
-        const customRange = '2024-01-01 TO 2024-01-31';
-        const result = parseDateMathRange(customRange);
-
-        expect(result.start).toEqual(new Date('2024-01-01'));
-        expect(result.end).toEqual(new Date('2024-01-31'));
-    });
-
-    it('should return fallback for malformed range', () => {
-        const result = parseDateMathRange('invalid-range');
-        const expectedStart = new Date(mockNow.getTime() - 7 * dayInMs);
-
-        expect(result.start).toEqual(expectedStart);
-        expect(result.end).toEqual(mockNow);
-    });
-
-    it('should parse single date as fallback', () => {
-        const result = parseDateMathRange('2024-01-01');
-        const expectedStart = new Date(mockNow.getTime() - 7 * dayInMs);
-
-        expect(result.start).toEqual(expectedStart);
-        expect(result.end).toEqual(mockNow);
-    });
-
-    it('should return fallback for unrecognized format', () => {
-        const result = parseDateMathRange('unknown');
-        const expectedStart = new Date(mockNow.getTime() - 7 * dayInMs);
-
-        expect(result.start).toEqual(expectedStart);
-        expect(result.end).toEqual(mockNow);
-    });
-
-    it('should parse range with explicit delimiter', () => {
-        const customRange = '2024-01-01T00:00:00..2024-01-31T23:59:59';
-        const result = parseDateMathRange(customRange);
-
-        expect(result.start).toEqual(new Date('2024-01-01T00:00:00'));
-        expect(result.end).toEqual(new Date('2024-01-31T23:59:59'));
-    });
-
-    it('should parse date range with timezone information', () => {
-        const customRange = '2024-01-01T00:00:00Z..2024-01-31T23:59:59Z';
-        const result = parseDateMathRange(customRange);
-
-        expect(result.start).toEqual(new Date('2024-01-01T00:00:00Z'));
-        expect(result.end).toEqual(new Date('2024-01-31T23:59:59Z'));
-    });
-
-    it('should parse date range with positive timezone offset', () => {
-        const customRange = '2024-01-01T00:00:00+05:00..2024-01-31T23:59:59+05:00';
-        const result = parseDateMathRange(customRange);
-
-        expect(result.start).toEqual(new Date('2024-01-01T00:00:00+05:00'));
-        expect(result.end).toEqual(new Date('2024-01-31T23:59:59+05:00'));
-    });
-
-    it('should parse date range with negative timezone offset', () => {
-        const customRange = '2024-01-01T00:00:00-08:00..2024-01-31T23:59:59-08:00';
-        const result = parseDateMathRange(customRange);
-
-        expect(result.start).toEqual(new Date('2024-01-01T00:00:00-08:00'));
-        expect(result.end).toEqual(new Date('2024-01-31T23:59:59-08:00'));
-    });
-
-    it('should handle timezone offset without colon', () => {
-        const customRange = '2024-01-01T00:00:00-0800..2024-01-31T23:59:59-0800';
-        const result = parseDateMathRange(customRange);
-
-        expect(result.start).toEqual(new Date('2024-01-01T00:00:00-08:00'));
-        expect(result.end).toEqual(new Date('2024-01-31T23:59:59-08:00'));
-    });
-
-    it('should parse mixed timezone formats', () => {
-        const customRange = '2024-01-01T00:00:00Z 2024-01-31T23:59:59+05:00';
-        const result = parseDateMathRange(customRange);
-
-        expect(result.start).toEqual(new Date('2024-01-01T00:00:00Z'));
-        expect(result.end).toEqual(new Date('2024-01-31T23:59:59+05:00'));
-    });
-
-    it('should parse yesterday', () => {
-        const result = parseDateMathRange('yesterday');
-        const start = startOfDay(new Date(mockNow.getTime() - dayInMs));
-        const end = endOfDay(start);
-
-        expect(result.start).toEqual(start);
-        expect(result.end).toEqual(end);
+            invalidPatterns.forEach((pattern) => {
+                const result = extractRangeExpressions(pattern);
+                expect(result).toBeNull();
+            });
+        });
     });
 });

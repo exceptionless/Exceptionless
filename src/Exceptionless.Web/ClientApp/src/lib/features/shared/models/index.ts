@@ -4,15 +4,15 @@ export { CountResult, type IAggregate, WorkInProgressResult } from '$generated/a
 
 export * from './aggregations';
 
-// TODO: Fix api code gen
-export class ValueFromBody<T> {
-    constructor(public value: T) {}
-}
-
 export class CustomDateRange {
     @IsString()
     end?: string;
 
     @IsString()
     start?: string;
+}
+
+// TODO: Fix api code gen
+export class ValueFromBody<T> {
+    constructor(public value: T) {}
 }

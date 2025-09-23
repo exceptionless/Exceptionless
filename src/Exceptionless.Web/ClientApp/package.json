@@ -18,7 +18,7 @@
         "generate-models": "swagger-typescript-api -p http://localhost:5200/docs/v2/swagger.json -o ./src/lib/generated -n api.ts --no-client --templates api-templates",
         "generate-templates": "swagger-typescript-api generate-templates -o api-templates",
         "test:e2e": "playwright test",
-        "test:unit": "vitest",
+        "test:unit": "vitest run",
         "test": "npm run test:unit -- --run && npm run test:e2e",
         "storybook": "storybook dev -p 6006",
         "build-storybook": "storybook build",

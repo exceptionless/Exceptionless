@@ -81,7 +81,7 @@
 
             // Try to extract range expressions for relative time detection
             const rangeExpressions = extractRangeExpressions(trimmed);
-            if (rangeExpressions) {
+            if (rangeExpressions && rangeExpressions.start && rangeExpressions.end) {
                 const relativeLabel = getRelativeTimeLabel(rangeExpressions.start, rangeExpressions.end);
                 if (relativeLabel) {
                     return relativeLabel;

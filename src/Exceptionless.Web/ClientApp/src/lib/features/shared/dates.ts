@@ -99,7 +99,6 @@ export function formatDateLabel(date: Date, currentDate: Date = new Date(), opti
     return `${datePart}${joiner}${timeStr}`;
 }
 
-
 export function formatLongDate(value: Date): string {
     return value.toLocaleDateString(undefined, {
         day: 'numeric',

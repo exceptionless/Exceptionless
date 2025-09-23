@@ -3,7 +3,7 @@
     import { Button } from '$comp/ui/button';
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
-    import { CustomDateRange } from "$features/shared/models";
+    import { CustomDateRange } from '$features/shared/models';
     import { validateAndResolveTime, validateDateMath } from '$features/shared/utils/datemath';
     import { structuredCloneState } from '$features/shared/utils/state.svelte';
     import { defaults, superForm } from 'sveltekit-superforms';
@@ -56,8 +56,7 @@
     // Date examples using current date with reasonable example times
     const currentDateString = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
     const isoExample = `${currentDateString}T10:00:00Z`;
-    const localExample = `${currentDateString} 10:00:00`;
-    const unixExample = Math.floor(new Date(`${currentDateString}T10:00:00Z`).getTime() / 1000).toString();
+    const localExample = `${currentDateString}T10:00:00`;
 
     // Placeholders using today's date with example times
     const startPlaceholder = `e.g., now-2h, ${currentDateString}T10:00:00, now-1d`;
@@ -93,7 +92,6 @@
                         <li>now/d (start of today)</li>
                         <li>{isoExample} (ISO datetime)</li>
                         <li>{localExample} (local datetime)</li>
-                        <li>{unixExample} (unix timestamp)</li>
                     </ul>
                 </div>
             </Form.Description>
@@ -120,7 +118,6 @@
                         <li>now/d+1d (end of today)</li>
                         <li>{isoExample} (ISO datetime)</li>
                         <li>{localExample} (local datetime)</li>
-                        <li>{unixExample} (unix timestamp)</li>
                     </ul>
                 </div>
             </Form.Description>

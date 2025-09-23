@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/svelte';
+import type { Meta, StoryObj } from '@storybook/sveltekit';
 
 import DateRangePicker from './date-range-picker.svelte';
 import { quickRanges } from './quick-ranges';

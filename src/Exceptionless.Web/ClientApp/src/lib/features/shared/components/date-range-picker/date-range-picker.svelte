@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { CustomDateRange } from "$features/shared/models";
+    import type { CustomDateRange } from '$features/shared/models';
 
     import * as Tabs from '$comp/ui/tabs';
     import { extractRangeExpressions } from '$features/shared/utils/datemath';
