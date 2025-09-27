@@ -219,7 +219,13 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         {
             var client = new StripeClient(_options.StripeOptions.StripeApiKey);
             var invoiceService = new InvoiceService(client);
-            stripeInvoice = await invoiceService.GetAsync(id);
+            
+            // In Stripe.net v48, expand to include all necessary price information
+            var options = new InvoiceGetOptions
+            {
+                Expand = new List<string> { "lines", "lines.data.price" }
+            };
+            stripeInvoice = await invoiceService.GetAsync(id, options);
         }
         catch (Exception ex)
         {
@@ -239,17 +245,19 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             OrganizationId = organization.Id,
             OrganizationName = organization.Name,
             Date = stripeInvoice.Created,
-            Paid = stripeInvoice.Paid,
+            Paid = String.Equals(stripeInvoice.Status, "paid"),
             Total = stripeInvoice.Total / 100.0m
         };
 
         foreach (var line in stripeInvoice.Lines.Data)
         {
             var item = new InvoiceLineItem { Amount = line.Amount / 100.0m, Description = line.Description };
-            if (line.Plan is not null)
+            if (line.Price is not null)
             {
-                string planName = line.Plan.Nickname ?? _billingManager.GetBillingPlan(line.Plan.Id)?.Name ?? line.Plan.Id;
-                item.Description = $"Exceptionless - {planName} Plan ({(line.Plan.Amount / 100.0):c}/{line.Plan.Interval})";
+                string planName = line.Price.Nickname ?? _billingManager.GetBillingPlan(line.Price.Id)?.Name ?? line.Price.Id;
+                var intervalText = line.Price.Recurring?.Interval ?? "one-time";
+                var priceAmount = line.Price.UnitAmount.HasValue ? (line.Price.UnitAmount.Value / 100.0) : 0.0;
+                item.Description = $"Exceptionless - {planName} Plan ({priceAmount:c}/{intervalText})";
             }
 
             var periodStart = line.Period.Start >= DateTime.MinValue ? line.Period.Start : stripeInvoice.PeriodStart;
@@ -258,7 +266,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             invoice.Items.Add(item);
         }
 
-        var coupon = stripeInvoice.Discount?.Coupon;
+        var coupon = stripeInvoice.Discounts?.FirstOrDefault(d => d.Deleted is false)?.Coupon;
         if (coupon is not null)
         {
             if (coupon.AmountOff.HasValue)
@@ -429,15 +437,28 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 var createCustomer = new CustomerCreateOptions
                 {
                     Source = stripeToken,
-                    Plan = planId,
                     Description = organization.Name,
                     Email = CurrentUser.EmailAddress
                 };
 
-                if (!String.IsNullOrWhiteSpace(couponId))
-                    createCustomer.Coupon = couponId;
-
                 var customer = await customerService.CreateAsync(createCustomer);
+
+                // Create subscription separately since Plan is deprecated in CustomerCreateOptions
+                var subscriptionCreateOptions = new SubscriptionCreateOptions
+                {
+                    Customer = customer.Id,
+                    Items = new List<SubscriptionItemOptions> { new SubscriptionItemOptions { Price = planId } }
+                };
+
+                if (!String.IsNullOrWhiteSpace(couponId))
+                {
+                    subscriptionCreateOptions.Discounts = new List<SubscriptionDiscountOptions>
+                    {
+                        new SubscriptionDiscountOptions { Coupon = couponId }
+                    };
+                }
+
+                await subscriptionService.CreateAsync(subscriptionCreateOptions);
 
                 organization.BillingStatus = BillingStatus.Active;
                 organization.RemoveSuspension();
@@ -446,8 +467,8 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             }
             else
             {
-                var update = new SubscriptionUpdateOptions { Items = [] };
-                var create = new SubscriptionCreateOptions { Customer = organization.StripeCustomerId, Items = [] };
+                var update = new SubscriptionUpdateOptions { Items = new List<SubscriptionItemOptions>() };
+                var create = new SubscriptionCreateOptions { Customer = organization.StripeCustomerId, Items = new List<SubscriptionItemOptions>() };
                 bool cardUpdated = false;
 
                 var customerUpdateOptions = new CustomerUpdateOptions { Description = organization.Name };
@@ -466,12 +487,12 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 var subscription = subscriptionList.FirstOrDefault(s => !s.CanceledAt.HasValue);
                 if (subscription is not null)
                 {
-                    update.Items.Add(new SubscriptionItemOptions { Id = subscription.Items.Data[0].Id, Plan = planId });
+                    update.Items.Add(new SubscriptionItemOptions { Id = subscription.Items.Data[0].Id, Price = planId });
                     await subscriptionService.UpdateAsync(subscription.Id, update);
                 }
                 else
                 {
-                    create.Items.Add(new SubscriptionItemOptions { Plan = planId });
+                    create.Items.Add(new SubscriptionItemOptions { Price = planId });
                     await subscriptionService.CreateAsync(create);
                 }
 
