@@ -36,7 +36,7 @@
         validators: false
     });
 
-    const { enhance, form: formData } = form;
+    const { enhance, form: formData, submit } = form;
 
     // Reset form when range prop changes
     $effect(() => {
@@ -50,6 +50,23 @@
     // Validation using datemath
     const startValidation = $derived(validateDateMath($formData.start || ''));
     const endValidation = $derived(validateDateMath($formData.end || ''));
+    const isValid = $derived(startValidation.valid && endValidation.valid && $formData.start && $formData.end);
+
+    function handleKeyDown(event: KeyboardEvent) {
+        if (event.key === 'Enter' && !cancel && isValid) {
+            event.preventDefault();
+            submit();
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            cancel?.();
+        }
+    }
+
+    export function submitIfValid() {
+        if (!cancel && isValid) {
+            submit();
+        }
+    }
 
     // Resolved time previews using datemath
     const startResolved = $derived(startValidation.valid ? validateAndResolveTime($formData.start || '') : null);
@@ -99,6 +116,7 @@
                             placeholder={startPlaceholder}
                             class="font-mono text-sm"
                             aria-invalid={!startValidation.valid}
+                            onkeydown={handleKeyDown}
                         />
                     {/snippet}
                 </Form.Control>
@@ -142,6 +160,7 @@
                             placeholder={endPlaceholder}
                             class="font-mono text-sm"
                             aria-invalid={!endValidation.valid}
+                            onkeydown={handleKeyDown}
                         />
                     {/snippet}
                 </Form.Control>
@@ -154,10 +173,12 @@
                 </Form.Description>
             </Form.Field>
 
-            <div class="flex justify-between">
-                <Button type="button" variant="outline" onclick={() => cancel?.()}>Cancel</Button>
-                <Button type="submit" disabled={!startValidation.valid || !endValidation.valid}>Apply</Button>
-            </div>
+            {#if cancel}
+                <div class="flex justify-between">
+                    <Button type="button" variant="outline" onclick={() => cancel?.()}>Cancel</Button>
+                    <Button type="submit" disabled={!startValidation.valid || !endValidation.valid}>Apply</Button>
+                </div>
+            {/if}
         </form>
     </Tooltip.Provider>
 </div>

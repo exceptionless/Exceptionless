@@ -19,6 +19,8 @@
     let { cancel, class: className, onselect, quickRanges = defaultQuickRanges, value = $bindable() }: Props = $props();
 
     let activeTab = $state<'custom' | 'quick'>('quick');
+    let customFormRef: CustomRangeForm | undefined = $state();
+
     const parsedCustomRange = $derived(() => {
         if (!value) {
             return null;
@@ -54,10 +56,13 @@
 
     function handleCustomApply(range: CustomDateRange) {
         if (range.start && range.end) {
-            // TODO: Format this using a shared function?
-            value = `${range.start} TO ${range.end}`;
+            value = `[${range.start} TO ${range.end}]`;
             onselect?.(value);
         }
+    }
+
+    export function apply() {
+        customFormRef?.submitIfValid();
     }
 </script>
 
@@ -71,7 +76,7 @@
             <QuickRangeSelector {quickRanges} bind:value {onselect} />
         </Tabs.Content>
         <Tabs.Content value="custom">
-            <CustomRangeForm range={parsedCustomRange()} {cancel} apply={handleCustomApply} />
+            <CustomRangeForm bind:this={customFormRef} range={parsedCustomRange()} {cancel} apply={handleCustomApply} />
         </Tabs.Content>
     </Tabs.Root>
 </div>
