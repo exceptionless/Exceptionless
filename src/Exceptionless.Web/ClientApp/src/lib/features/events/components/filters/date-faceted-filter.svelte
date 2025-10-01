@@ -53,13 +53,15 @@
 
 <Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
-        <Button class="gap-x-1 px-3" size="lg" variant="outline">
-            {title}
-            <Separator class="mx-2" orientation="vertical" />
-            <FacetedFilter.BadgeValue>
-                <DateMath value={filter.value} />
-            </FacetedFilter.BadgeValue>
-        </Button>
+        {#snippet child({ props })}
+            <Button {...props} class="gap-x-1 px-3" size="lg" variant="outline">
+                {title}
+                <Separator class="mx-2" orientation="vertical" />
+                <FacetedFilter.BadgeValue>
+                    <DateMath value={filter.value} />
+                </FacetedFilter.BadgeValue>
+            </Button>
+        {/snippet}
     </Popover.Trigger>
     <Popover.Content align="start" class="w-auto p-0" side="bottom" onkeydown={handleKeyDown}>
         <div class="flex flex-col">

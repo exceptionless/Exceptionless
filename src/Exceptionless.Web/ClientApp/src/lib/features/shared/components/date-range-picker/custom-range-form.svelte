@@ -92,9 +92,11 @@
                             Start
                             <Tooltip.Root>
                                 <Tooltip.Trigger>
-                                    <Button size="icon" variant="ghost" aria-label="Start examples">
-                                        <HelpCircle />
-                                    </Button>
+                                    {#snippet child({ props })}
+                                        <Button {...props} size="icon" variant="ghost" aria-label="Start examples">
+                                            <HelpCircle />
+                                        </Button>
+                                    {/snippet}
                                 </Tooltip.Trigger>
                                 <Tooltip.Content side="top" align="start">
                                     <div class="max-w-sm">
@@ -136,9 +138,11 @@
                             End
                             <Tooltip.Root>
                                 <Tooltip.Trigger>
-                                    <Button size="icon" variant="ghost" aria-label="End examples">
-                                        <HelpCircle />
-                                    </Button>
+                                    {#snippet child({ props })}
+                                        <Button {...props} size="icon" variant="ghost" aria-label="End examples">
+                                            <HelpCircle />
+                                        </Button>
+                                    {/snippet}
                                 </Tooltip.Trigger>
                                 <Tooltip.Content side="top" align="start">
                                     <div class="max-w-sm">

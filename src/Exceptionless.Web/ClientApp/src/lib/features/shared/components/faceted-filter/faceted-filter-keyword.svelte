@@ -57,15 +57,17 @@
 
 <Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
-        <Button class="gap-x-1 px-3" size="lg" variant="outline" aria-describedby={`${title}-help`}>
-            {title}
-            <Separator class="mx-2" orientation="vertical" />
-            {#if value}
-                <FacetedFilter.BadgeValue>{value}</FacetedFilter.BadgeValue>
-            {:else}
-                <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
-            {/if}
-        </Button>
+        {#snippet child({ props })}
+            <Button {...props} class="gap-x-1 px-3" size="lg" variant="outline" aria-describedby={`${title}-help`}>
+                {title}
+                <Separator class="mx-2" orientation="vertical" />
+                {#if value}
+                    <FacetedFilter.BadgeValue>{value}</FacetedFilter.BadgeValue>
+                {:else}
+                    <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
+                {/if}
+            </Button>
+        {/snippet}
     </Popover.Trigger>
     <Popover.Content align="start" class="p-0" side="bottom">
         <div class="flex items-center border-b">

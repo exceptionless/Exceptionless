@@ -106,9 +106,11 @@
             <H4>{title}</H4>
             <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
-                    <Button variant="ghost" size="icon" title="Options">
-                        <MoreVertical class="size-4" />
-                    </Button>
+                    {#snippet child({ props })}
+                        <Button {...props} variant="ghost" size="icon" title="Options">
+                            <MoreVertical class="size-4" />
+                        </Button>
+                    {/snippet}
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content align="end">
                     <DropdownMenu.Group>

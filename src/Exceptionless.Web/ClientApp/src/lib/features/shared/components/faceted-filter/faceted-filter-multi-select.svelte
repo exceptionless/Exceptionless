@@ -77,21 +77,23 @@
 
 <Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
-        <Button class="gap-x-1 px-3" size="lg" variant="outline">
-            {title}
-            <Separator class="mx-2" orientation="vertical" />
-            {#if loading}
-                <FacetedFilter.BadgeLoading />
-            {:else if values.length > 0}
-                <FacetedFilter.BadgeValues values={displayValues}>
-                    {#snippet displayValue(value)}
-                        {value}
-                    {/snippet}
-                </FacetedFilter.BadgeValues>
-            {:else}
-                <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
-            {/if}
-        </Button>
+        {#snippet child({ props })}
+            <Button {...props} class="gap-x-1 px-3" size="lg" variant="outline">
+                {title}
+                <Separator class="mx-2" orientation="vertical" />
+                {#if loading}
+                    <FacetedFilter.BadgeLoading />
+                {:else if values.length > 0}
+                    <FacetedFilter.BadgeValues values={displayValues}>
+                        {#snippet displayValue(value)}
+                            {value}
+                        {/snippet}
+                    </FacetedFilter.BadgeValues>
+                {:else}
+                    <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
+                {/if}
+            </Button>
+        {/snippet}
     </Popover.Trigger>
     <Popover.Content align="start" class="p-0" side="bottom">
         <Command.Root {filter}>
