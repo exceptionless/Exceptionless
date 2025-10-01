@@ -32,7 +32,7 @@
         updatedValue = value;
     });
 
-    function onClose() {
+    function applyAndClose() {
         if (updatedValue !== value) {
             changed(updatedValue);
         }
@@ -40,10 +40,20 @@
         open = false;
     }
 
+    function cancelAndClose() {
+        updatedValue = value;
+        open = false;
+    }
+
     function onOpenChange(isOpen: boolean) {
         if (!isOpen) {
-            onClose();
+            applyAndClose();
         }
+    }
+
+    function onEscapeKeydown(e: KeyboardEvent) {
+        e.preventDefault();
+        cancelAndClose();
     }
 
     export function onValueSelected(currentValue: string) {
@@ -92,7 +102,7 @@
             </Button>
         {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="p-0" side="bottom">
+    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={applyAndClose}>
         <Command.Root {filter}>
             <Command.Input placeholder={title} autofocus={open} aria-describedby={`${title}-help`} />
             <Command.List>
@@ -121,7 +131,7 @@
                 {/if}
             </Command.List>
         </Command.Root>
-        <div id={`${title}-help`} class="sr-only">Press Enter to apply filter, Escape to cancel</div>
+        <div id={`${title}-help`} class="sr-only">Arrow keys navigate. Space or Enter toggles selection. Escape cancels without saving.</div>
         <FacetedFilter.Actions clear={onClearFilter} {remove} showClear={!!updatedValue?.trim()} />
     </Popover.Content>
 </Popover.Root>

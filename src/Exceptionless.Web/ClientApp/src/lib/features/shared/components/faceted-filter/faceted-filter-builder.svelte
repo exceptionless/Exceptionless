@@ -154,7 +154,7 @@
             </Button>
         {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="w-[260px] p-0" side="bottom">
+    <Popover.Content align="start" class="w-[260px] p-0" side="bottom" trapFocus={false}>
         <Command.Root filter={filterCommand}>
             <Command.Input placeholder="Search..." bind:value={search} />
             <Command.List>

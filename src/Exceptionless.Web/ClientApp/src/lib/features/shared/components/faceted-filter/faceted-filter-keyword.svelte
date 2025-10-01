@@ -24,14 +24,14 @@
     function handleKeyDown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
             event.preventDefault();
-            onClose();
+            applyAndClose();
         } else if (event.key === 'Escape') {
             event.preventDefault();
-            onCancel();
+            cancelAndClose();
         }
     }
 
-    function onClose() {
+    function applyAndClose() {
         if (updatedValue !== value) {
             changed(updatedValue);
         }
@@ -39,15 +39,20 @@
         open = false;
     }
 
-    function onCancel() {
+    function cancelAndClose() {
         updatedValue = value;
         open = false;
     }
 
     function onOpenChange(isOpen: boolean) {
         if (!isOpen) {
-            onClose();
+            applyAndClose();
         }
+    }
+
+    function onEscapeKeydown(e: KeyboardEvent) {
+        e.preventDefault();
+        cancelAndClose();
     }
 
     export function onClearFilter() {
@@ -69,7 +74,7 @@
             </Button>
         {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="p-0" side="bottom">
+    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={applyAndClose}>
         <div class="flex items-center border-b">
             <Input
                 bind:value={updatedValue}
@@ -81,7 +86,7 @@
                 autofocus={open}
             />
         </div>
-        <div id={`${title}-help`} class="sr-only">Press Enter to apply filter, Escape to cancel</div>
+        <div id={`${title}-help`} class="sr-only">Type keywords. Enter applies, Escape cancels.</div>
         <FacetedFilter.Actions clear={onClearFilter} {remove} showClear={!!updatedValue?.trim()} />
     </Popover.Content>
 </Popover.Root>
