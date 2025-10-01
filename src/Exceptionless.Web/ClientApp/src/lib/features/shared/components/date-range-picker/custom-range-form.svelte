@@ -18,7 +18,7 @@
     }
 
     let { apply, cancel, range = null }: Props = $props();
-    let previousRange = $state<CustomDateRange | null>();
+    let previousRange: CustomDateRange | null | undefined;
 
     const initialData = structuredCloneState(range) || new CustomDateRange();
 

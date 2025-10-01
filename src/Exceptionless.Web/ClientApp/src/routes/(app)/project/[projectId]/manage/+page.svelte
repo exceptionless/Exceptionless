@@ -27,7 +27,7 @@
     import { debounce } from 'throttle-debounce';
 
     let toastId = $state<number | string>();
-    let previousProjectRef = $state<UpdateProject>();
+    let previousProjectRef: undefined | UpdateProject;
 
     const projectId = page.params.projectId || '';
     const projectQuery = getProjectQuery({
