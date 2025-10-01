@@ -106,6 +106,6 @@
             </RadioGroup.Root>
         </div>
         <div id="{title}-help" class="sr-only">Press Enter to apply filter, Escape to cancel</div>
-        <FacetedFilter.Actions clear={onClearFilter} close={onClose} {remove} showClear={updatedValue !== undefined} />
+        <FacetedFilter.Actions clear={onClearFilter} {remove} showClear={updatedValue !== undefined} />
     </Popover.Content>
 </Popover.Root>

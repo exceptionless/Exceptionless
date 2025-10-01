@@ -80,6 +80,6 @@
             />
         </div>
         <div id={`${title}-help`} class="sr-only">Press Enter to apply filter, Escape to cancel</div>
-        <FacetedFilter.Actions clear={onClearFilter} close={onClose} {remove} showClear={!!updatedValue?.trim()} />
+        <FacetedFilter.Actions clear={onClearFilter} {remove} showClear={!!updatedValue?.trim()} />
     </Popover.Content>
 </Popover.Root>

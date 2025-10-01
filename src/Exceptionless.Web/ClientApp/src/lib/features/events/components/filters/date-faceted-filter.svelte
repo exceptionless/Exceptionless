@@ -46,7 +46,7 @@
     <Popover.Content align="start" class="w-auto p-0" side="bottom">
         <div class="flex flex-col">
             <DateRangePicker {quickRanges} value={filter.value} onselect={handleCustomApply} />
-            <FacetedFilter.Actions clear={handleClear} close={() => (open = false)} remove={handleRemove} {showClear} />
+            <FacetedFilter.Actions clear={handleClear} remove={handleRemove} {showClear} />
         </div>
     </Popover.Content>
 </Popover.Root>

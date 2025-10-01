@@ -119,6 +119,6 @@
                 {/if}
             </Command.List>
         </Command.Root>
-        <FacetedFilter.Actions clear={onClearFilter} close={onClose} {remove} showClear={!!updatedValue?.trim()} />
+        <FacetedFilter.Actions clear={onClearFilter} {remove} showClear={!!updatedValue?.trim()} />
     </Popover.Content>
 </Popover.Root>
