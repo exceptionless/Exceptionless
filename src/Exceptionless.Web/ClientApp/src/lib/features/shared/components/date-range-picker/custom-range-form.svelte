@@ -48,8 +48,26 @@
     });
 
     // Validation using datemath
+    // TODO: Can we move this into class-validator.
     const startValidation = $derived(validateDateMath($formData.start || ''));
-    const endValidation = $derived(validateDateMath($formData.end || ''));
+    const startResolved = $derived(startValidation.valid ? validateAndResolveTime($formData.start || '') : null);
+
+    const endValidation = $derived.by(() => {
+        const basicValidation = validateDateMath($formData.end || '');
+        if (!basicValidation.valid) {
+            return basicValidation;
+        }
+
+        const endTime = validateAndResolveTime($formData.end || '');
+        if (startResolved && endTime && startResolved > endTime) {
+            return { error: 'End date must be after start date', valid: false };
+        }
+
+        return basicValidation;
+    });
+
+    const endResolved = $derived(endValidation.valid ? validateAndResolveTime($formData.end || '') : null);
+
     const isValid = $derived(startValidation.valid && endValidation.valid && $formData.start && $formData.end);
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -67,10 +85,6 @@
             submit();
         }
     }
-
-    // Resolved time previews using datemath
-    const startResolved = $derived(startValidation.valid ? validateAndResolveTime($formData.start || '') : null);
-    const endResolved = $derived(endValidation.valid ? validateAndResolveTime($formData.end || '') : null);
 
     // Date examples using current date with reasonable example times
     const currentDateString = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
@@ -182,7 +196,7 @@
             {#if cancel}
                 <div class="flex justify-between">
                     <Button type="button" variant="outline" onclick={() => cancel?.()}>Cancel</Button>
-                    <Button type="submit" disabled={!startValidation.valid || !endValidation.valid}>Apply</Button>
+                    <Button type="submit" disabled={!isValid}>Apply</Button>
                 </div>
             {/if}
         </form>
