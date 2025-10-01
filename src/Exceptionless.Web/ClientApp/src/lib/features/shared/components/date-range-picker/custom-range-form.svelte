@@ -118,6 +118,7 @@
                             placeholder={startPlaceholder}
                             class="font-mono text-sm"
                             aria-invalid={!startValidation.valid}
+                            aria-describedby="custom-range-form-help"
                             onkeydown={handleKeyDown}
                         />
                     {/snippet}
@@ -164,6 +165,7 @@
                             placeholder={endPlaceholder}
                             class="font-mono text-sm"
                             aria-invalid={!endValidation.valid}
+                            aria-describedby="custom-range-form-help"
                             onkeydown={handleKeyDown}
                         />
                     {/snippet}
@@ -184,5 +186,6 @@
                 </div>
             {/if}
         </form>
+        <div id="custom-range-form-help" class="sr-only">Press Enter to apply filter, Escape to cancel</div>
     </Tooltip.Provider>
 </div>

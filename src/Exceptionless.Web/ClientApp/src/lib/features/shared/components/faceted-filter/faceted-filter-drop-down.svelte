@@ -79,7 +79,7 @@
 <Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="gap-x-1 px-3" size="lg" variant="outline">
+            <Button {...props} class="gap-x-1 px-3" size="lg" variant="outline" aria-describedby={`${title}-help`}>
                 {title}
                 <Separator class="mx-2" orientation="vertical" />
                 {#if loading}
@@ -94,7 +94,7 @@
     </Popover.Trigger>
     <Popover.Content align="start" class="p-0" side="bottom">
         <Command.Root {filter}>
-            <Command.Input placeholder={title} autofocus={open} />
+            <Command.Input placeholder={title} autofocus={open} aria-describedby={`${title}-help`} />
             <Command.List>
                 <Command.Empty>{noOptionsText}</Command.Empty>
                 {#if loading}
@@ -121,6 +121,7 @@
                 {/if}
             </Command.List>
         </Command.Root>
+        <div id={`${title}-help`} class="sr-only">Press Enter to apply filter, Escape to cancel</div>
         <FacetedFilter.Actions clear={onClearFilter} {remove} showClear={!!updatedValue?.trim()} />
     </Popover.Content>
 </Popover.Root>
