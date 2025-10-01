@@ -68,7 +68,7 @@
     const DEFAULT_PARAMS = {
         filter: '(type:404 OR type:error) (status:open OR status:regressed)',
         limit: DEFAULT_LIMIT,
-        time: '[now-1w/w TO now-1w/w]'
+        time: '[now-7d TO now]'
     };
 
     function filterCacheKey(filter: null | string): string {
@@ -264,18 +264,24 @@
     });
 
     const chartData = $derived(() => {
-        if (!chartDataQuery.data?.aggregations) {
-            return [];
-        }
+        const timeRange = parseDateMathRange(queryParams.time);
 
-        const dateHistogramBuckets = agg.dateHistogram(chartDataQuery.data.aggregations, 'date_date')?.buckets ?? [];
-        if (dateHistogramBuckets.length === 0) {
-            const timeRange = parseDateMathRange(queryParams.time ?? 'all');
-            return fillDateSeries(timeRange.start, timeRange.end, (date: Date) => ({
+        const buildZeroFilledSeries = () => {
+            const series = fillDateSeries(timeRange.start, timeRange.end, (date: Date) => ({
                 date,
                 events: 0,
                 stacks: 0
             }));
+            return series;
+        };
+
+        if (!chartDataQuery.data?.aggregations) {
+            return buildZeroFilledSeries();
+        }
+
+        const dateHistogramBuckets = agg.dateHistogram(chartDataQuery.data.aggregations, 'date_date')?.buckets ?? [];
+        if (dateHistogramBuckets.length === 0) {
+            return buildZeroFilledSeries();
         }
 
         return dateHistogramBuckets.map((bucket) => ({

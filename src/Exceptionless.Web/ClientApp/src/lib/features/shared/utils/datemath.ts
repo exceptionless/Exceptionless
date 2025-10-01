@@ -258,14 +258,12 @@ export function parseDateMath(expression: string, relativeBaseTime?: Date, isUpp
  * Parse a human-readable time string and return a time range with start and end dates.
  * This is a legacy function for compatibility - prefer using parseDateMath() for Elasticsearch date math expressions.
  */
-export function parseDateMathRange(time: string): DateRange {
-    const trimmedTime = time?.trim() ?? '';
-    const normalizedTime = trimmedTime.toLowerCase();
-
-    if (trimmedTime === '' || normalizedTime === 'all' || normalizedTime === 'all time') {
+export function parseDateMathRange(time?: null | string): DateRange {
+    const trimmedTime = time?.trim();
+    if (!trimmedTime) {
         return {
             end: new Date(),
-            start: new Date('1900-01-01')
+            start: new Date('2012-02-01')
         };
     }
 
@@ -295,54 +293,10 @@ export function parseDateMathRange(time: string): DateRange {
         }
     }
 
-    const now = new Date();
-    const dayInMs = 24 * 60 * 60 * 1000;
-
-    // Handle "last X" patterns
-    const lastMatch = normalizedTime.match(/^last\s+(?:(\d+)\s+)?(minute|minutes|hour|hours|day|days|week|weeks|month|months|year|years)$/);
-    if (lastMatch) {
-        const amount = parseInt(lastMatch[1] ?? '1', 10);
-        const unit = lastMatch[2];
-
-        switch (unit) {
-            case 'day':
-            case 'days':
-                return { end: now, start: new Date(now.getTime() - amount * dayInMs) };
-            case 'hour':
-            case 'hours':
-                return { end: now, start: new Date(now.getTime() - amount * 60 * 60 * 1000) };
-            case 'minute':
-            case 'minutes':
-                return { end: now, start: new Date(now.getTime() - amount * 60 * 1000) };
-            case 'month':
-            case 'months': {
-                const start = new Date(now);
-                start.setMonth(start.getMonth() - amount);
-                return { end: now, start };
-            }
-            case 'week':
-            case 'weeks':
-                return { end: now, start: new Date(now.getTime() - amount * 7 * dayInMs) };
-            case 'year':
-            case 'years': {
-                const start = new Date(now);
-                start.setFullYear(start.getFullYear() - amount);
-                return { end: now, start };
-            }
-        }
-    }
-
-    // Handle "today so far" and similar patterns
-    if (normalizedTime === 'today so far' || normalizedTime === 'this day so far') {
-        const start = new Date(now);
-        start.setHours(0, 0, 0, 0);
-        return { end: now, start };
-    }
-
-    // Fallback to 'last week'
+    // Fallback to organization minimum date range
     return {
-        end: now,
-        start: new Date(now.getTime() - 7 * dayInMs)
+        end: new Date(),
+        start: new Date('2012-02-01')
     };
 }
 
