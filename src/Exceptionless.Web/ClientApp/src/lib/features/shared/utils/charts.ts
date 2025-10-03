@@ -1,11 +1,21 @@
 /**
  * Fills date series with evenly spaced data points for chart visualization.
  *
+ * @template T - The type of the value returned by the map function for each date.
  * @param startDate Start date for the series
  * @param endDate End date for the series
  * @param map Callback function that gets called for each date
  * @param bucketCount Number of buckets to create between start and end (default: 20)
  * @returns Array of whatever the callback returns
+ *
+ * @example
+ * // Example: Create a series of date strings
+ * const result = fillDateSeries(
+ *   new Date('2024-01-01'),
+ *   new Date('2024-01-02'),
+ *   date => date.toISOString()
+ * );
+ * // result: [ '2024-01-01T00:00:00.000Z', ... ]
  */
 export function fillDateSeries<T>(startDate: Date, endDate: Date, map: (date: Date) => T, bucketCount: number = 20): T[] {
     const series: T[] = [];
