@@ -160,6 +160,88 @@ if (JSON.stringify(settings) !== JSON.stringify(previousSettings)) {
 - Use the Composite Component Pattern
 - Organize components within vertical slices aligned with API controllers
 
+## shadcn-svelte Trigger Components
+
+When using shadcn-svelte trigger components (Tooltip.Trigger, Popover.Trigger, DropdownMenu.Trigger, etc.) with custom components like Button, **always use the `child` snippet pattern** to avoid double-tab issues and ensure proper accessibility.
+
+### Correct Pattern
+
+```svelte
+<Tooltip.Root>
+    <Tooltip.Trigger>
+        {#snippet child({ props })}
+            <Button {...props} variant="ghost" size="icon">
+                <Icon />
+            </Button>
+        {/snippet}
+    </Tooltip.Trigger>
+    <Tooltip.Content>Tooltip text</Tooltip.Content>
+</Tooltip.Root>
+```
+
+### Why This Pattern?
+
+- **Single Tab Stop**: Creates only one focusable element in the tab order
+- **Proper Props Delegation**: The `props` from the trigger are properly spread to the Button
+- **Accessibility**: Maintains ARIA attributes and keyboard navigation
+- **Official Pattern**: This is the documented shadcn-svelte/bits-ui pattern
+
+### Wrong Patterns
+
+```svelte
+<!-- ❌ Wrong: Creates two focusable elements (double-tab issue) -->
+<Tooltip.Trigger>
+    <Button>Content</Button>
+</Tooltip.Trigger>
+
+<!-- ❌ Wrong: Manual styling replicates button styles (maintenance burden) -->
+<Tooltip.Trigger class="hover:bg-accent inline-flex...">
+    <Icon />
+</Tooltip.Trigger>
+```
+
+### When to Use
+
+Apply this pattern for **all trigger components** when wrapping custom interactive elements:
+- `Tooltip.Trigger`
+- `Popover.Trigger`
+- `DropdownMenu.Trigger`
+- `Dialog.Trigger`
+- Any other component with a `.Trigger` that wraps interactive elements
+
+### When NOT to Use
+
+You don't need the `child` snippet when:
+- Trigger content is simple text or non-interactive elements
+- The trigger itself has no nested focusable elements
+- You're using the trigger's native button functionality directly
+
+### Additional Examples
+
+**DropdownMenu with Button:**
+```svelte
+<DropdownMenu.Trigger>
+    {#snippet child({ props })}
+        <Button {...props} variant="outline">
+            Open Menu
+            <ChevronDown />
+        </Button>
+    {/snippet}
+</DropdownMenu.Trigger>
+```
+
+**Popover with Button:**
+```svelte
+<Popover.Trigger>
+    {#snippet child({ props })}
+        <Button {...props} variant="outline" class="w-[280px]">
+            Select Date
+            <CalendarIcon />
+        </Button>
+    {/snippet}
+</Popover.Trigger>
+```
+
 ## Dialog Component Patterns
 
 ### Naming Conventions

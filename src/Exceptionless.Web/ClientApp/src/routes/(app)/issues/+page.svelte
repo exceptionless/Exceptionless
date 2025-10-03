@@ -3,14 +3,16 @@
 
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
+    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
     import StreamingIndicatorButton from '$comp/streaming-indicator-button.svelte';
     import { H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
-    import { type GetEventsParams, getStackEventsQuery } from '$features/events/api.svelte';
+    import { type GetEventsParams, getOrganizationCountQuery, getStackEventsQuery } from '$features/events/api.svelte';
+    import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
     import EventsOverview from '$features/events/components/events-overview.svelte';
-    import { type DateFilter, ProjectFilter, StatusFilter, TypeFilter } from '$features/events/components/filters';
+    import { DateFilter, ProjectFilter, StatusFilter, TypeFilter } from '$features/events/components/filters';
     import {
         applyTimeFilter,
         buildFilterCacheKey,
@@ -26,11 +28,14 @@
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { getColumns } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import * as agg from '$features/shared/api/aggregations';
     import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
+    import { fillDateSeries } from '$features/shared/utils/charts';
+    import { parseDateMathRange, toDateMathRange } from '$features/shared/utils/datemath';
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { DEFAULT_LIMIT, useFetchClientStatus } from '$shared/api/api.svelte';
+    import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import { createTable } from '@tanstack/svelte-table';
@@ -63,7 +68,7 @@
     const DEFAULT_PARAMS = {
         filter: '(type:404 OR type:error) (status:open OR status:regressed)',
         limit: DEFAULT_LIMIT,
-        time: 'last week'
+        time: '[now-7d TO now]'
     };
 
     function filterCacheKey(filter: null | string): string {
@@ -144,6 +149,7 @@
             queryParams.limit = value;
         },
         mode: 'stack_frequent',
+        offset: DEFAULT_OFFSET,
         get time() {
             return queryParams.time!;
         },
@@ -241,19 +247,72 @@
     $effect(() => {
         loadData();
     });
+
+    const chartDataQuery = getOrganizationCountQuery({
+        params: {
+            get aggregations() {
+                return `date:(date${DEFAULT_OFFSET ? `^${DEFAULT_OFFSET}` : ''} cardinality:stack sum:count~1) cardinality:stack terms:(first @include:true) sum:count~1`;
+            },
+            get filter() {
+                return eventsQueryParameters.filter;
+            },
+            get time() {
+                return eventsQueryParameters.time;
+            }
+        },
+        route: { organizationId: organization.current }
+    });
+
+    const chartData = $derived(() => {
+        const timeRange = parseDateMathRange(queryParams.time);
+
+        const buildZeroFilledSeries = () => {
+            const series = fillDateSeries(timeRange.start, timeRange.end, (date: Date) => ({
+                date,
+                events: 0,
+                stacks: 0
+            }));
+            return series;
+        };
+
+        if (!chartDataQuery.data?.aggregations) {
+            return buildZeroFilledSeries();
+        }
+
+        const dateHistogramBuckets = agg.dateHistogram(chartDataQuery.data.aggregations, 'date_date')?.buckets ?? [];
+        if (dateHistogramBuckets.length === 0) {
+            return buildZeroFilledSeries();
+        }
+
+        return dateHistogramBuckets.map((bucket) => ({
+            date: new Date(bucket.key),
+            events: agg.sum(bucket.aggregations, 'sum_count')?.value ?? 0,
+            stacks: agg.cardinality(bucket.aggregations, 'cardinality_stack')?.value ?? 0
+        }));
+    });
+
+    function onRangeSelect(start: Date, end: Date) {
+        onFilterChanged(new DateFilter('date', toDateMathRange(start, end)));
+    }
 </script>
 
-<div class="flex flex-col space-y-4">
-    <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
-        {#snippet toolbarChildren()}
+<div class="flex flex-col">
+    <div class="mb-4 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
             <H3 class="pr-2">Issues</H3>
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <OrganizationDefaultsFacetedFilterBuilder />
             </FacetedFilter.Root>
-        {/snippet}
-        {#snippet toolbarActions()}
+        </div>
+        <div class="flex items-center space-x-2">
             <StreamingIndicatorButton {paused} onToggle={handleToggle} />
-        {/snippet}
+            <DataTableViewOptions {table} />
+        </div>
+    </div>
+
+    <EventsDashboardChart data={chartData()} isLoading={clientStatus.isLoading || chartDataQuery.isLoading} {onRangeSelect} />
+
+    <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
         {#snippet footerChildren()}
             <div class="h-9 min-w-[140px]">
                 <TableStacksBulkActionsDropdownMenu {table} />

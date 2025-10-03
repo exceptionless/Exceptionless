@@ -87,9 +87,11 @@
 
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
-        <Button variant="outline" size="icon" aria-label="Admin Actions" title="Admin Actions">
-            <Shield class="size-4" />
-        </Button>
+        {#snippet child({ props })}
+            <Button {...props} variant="outline" size="icon" aria-label="Admin Actions" title="Admin Actions">
+                <Shield class="size-4" />
+            </Button>
+        {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end" class="w-56">
         <DropdownMenu.Group>

@@ -39,14 +39,14 @@
     function handleKeyDown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
             event.preventDefault();
-            onClose();
+            applyAndClose();
         } else if (event.key === 'Escape') {
             event.preventDefault();
-            onCancel();
+            cancelAndClose();
         }
     }
 
-    function onClose() {
+    function applyAndClose() {
         if (updatedValue !== value) {
             changed(updatedValue);
         }
@@ -54,15 +54,20 @@
         open = false;
     }
 
-    function onCancel() {
+    function cancelAndClose() {
         updatedValue = value;
         open = false;
     }
 
     function onOpenChange(isOpen: boolean) {
         if (!isOpen) {
-            onClose();
+            applyAndClose();
         }
+    }
+
+    function onEscapeKeydown(e: KeyboardEvent) {
+        e.preventDefault();
+        cancelAndClose();
     }
 
     export function onClearFilter() {
@@ -72,17 +77,19 @@
 
 <Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
-        <Button class="gap-x-1 px-3" size="lg" variant="outline">
-            {title}
-            <Separator class="mx-2" orientation="vertical" />
-            {#if value !== undefined}
-                <FacetedFilter.BadgeValue><Boolean {value} /></FacetedFilter.BadgeValue>
-            {:else}
-                <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
-            {/if}
-        </Button>
+        {#snippet child({ props })}
+            <Button {...props} class="gap-x-1 px-3" size="lg" variant="outline" aria-describedby={`${title}-help`}>
+                {title}
+                <Separator class="mx-2" orientation="vertical" />
+                {#if value !== undefined}
+                    <FacetedFilter.BadgeValue><Boolean {value} /></FacetedFilter.BadgeValue>
+                {:else}
+                    <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
+                {/if}
+            </Button>
+        {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="p-0" side="bottom">
+    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={applyAndClose}>
         <div class="border-b p-4">
             <RadioGroup.Root
                 value={radioValue}
@@ -105,7 +112,7 @@
                 </div>
             </RadioGroup.Root>
         </div>
-        <div id="{title}-help" class="sr-only">Press Enter to apply filter, Escape to cancel</div>
-        <FacetedFilter.Actions clear={onClearFilter} close={onClose} {remove} showClear={updatedValue !== undefined} />
+        <div id={`${title}-help`} class="sr-only">Arrow keys select. Enter applies, Escape cancels.</div>
+        <FacetedFilter.Actions clear={onClearFilter} {remove} showClear={updatedValue !== undefined} />
     </Popover.Content>
 </Popover.Root>

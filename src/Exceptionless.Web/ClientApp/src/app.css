@@ -188,3 +188,12 @@
         opacity: 0;
     }
 }
+
+/* HACK: Need to figure out why this is needed for range selection. */
+.lc-brush-range {
+    @apply bg-primary/10 border-primary border-2;
+}
+
+.lc-brush-handle {
+    @apply bg-primary border-primary border-2;
+}

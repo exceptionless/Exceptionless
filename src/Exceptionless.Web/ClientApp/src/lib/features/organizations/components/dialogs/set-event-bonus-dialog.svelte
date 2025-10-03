@@ -134,10 +134,12 @@
                             <Form.Label>Expiration Date</Form.Label>
                             <Popover.Root bind:open={calendarOpen}>
                                 <Popover.Trigger>
-                                    <Button {...props} variant="outline" class="w-full justify-start text-left font-normal" type="button">
-                                        <CalendarIcon class="mr-2 size-4" />
-                                        {$formData.expires ? formatDateLabel($formData.expires) : 'Select a date...'}
-                                    </Button>
+                                    {#snippet child({ props: triggerProps })}
+                                        <Button {...props} {...triggerProps} variant="outline" class="w-full justify-start text-left font-normal" type="button">
+                                            <CalendarIcon class="mr-2 size-4" />
+                                            {$formData.expires ? formatDateLabel($formData.expires) : 'Select a date...'}
+                                        </Button>
+                                    {/snippet}
                                 </Popover.Trigger>
                                 <Popover.Content class="w-auto p-0">
                                     <Calendar.Calendar bind:value={calendarValue} type="single" calendarLabel="Select an expiration date" locale="en-US" />

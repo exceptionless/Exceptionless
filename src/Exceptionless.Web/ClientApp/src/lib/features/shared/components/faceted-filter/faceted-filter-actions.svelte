@@ -4,12 +4,11 @@
 
     interface Props {
         clear: () => void;
-        close: () => void;
         remove: () => void;
         showClear: boolean;
     }
 
-    let { clear, close, remove, showClear }: Props = $props();
+    let { clear, remove, showClear }: Props = $props();
 </script>
 
 <div class="flex flex-col">
@@ -18,5 +17,4 @@
         <Button class="justify-center text-center" variant="ghost" onclick={clear}>Clear filter</Button>
     {/if}
     <Button class="justify-center text-center" variant="ghost" onclick={remove}>Remove filter</Button>
-    <Button class="justify-center text-center" variant="ghost" onclick={close}>Close</Button>
 </div>

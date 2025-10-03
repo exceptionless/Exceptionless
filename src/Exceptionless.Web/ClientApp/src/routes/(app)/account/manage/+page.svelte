@@ -17,8 +17,8 @@
     import { debounce } from 'throttle-debounce';
 
     let toastId = $state<number | string>();
-    let previousEmailSettingsRef = $state<UpdateUserEmailAddress>();
-    let previousUserSettingsRef = $state<UpdateUser>();
+    let previousEmailSettingsRef: undefined | UpdateUserEmailAddress;
+    let previousUserSettingsRef: undefined | UpdateUser;
     const meQuery = getMeQuery();
     const gravatar = getGravatarFromCurrentUser(meQuery);
     const updateUser = patchUser({

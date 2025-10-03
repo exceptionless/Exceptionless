@@ -24,7 +24,7 @@
     import { debounce } from 'throttle-debounce';
 
     let toastId = $state<number | string>();
-    let previousOrganizationRef = $state<NewOrganization>();
+    let previousOrganizationRef: NewOrganization | undefined;
 
     const organizationId = page.params.organizationId || '';
     const organizationQuery = getOrganizationQuery({

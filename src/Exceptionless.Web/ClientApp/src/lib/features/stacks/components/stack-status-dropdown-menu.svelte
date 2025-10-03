@@ -100,10 +100,12 @@
 
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
-        <Button variant="outline">
-            {selected.label}
-            <ChevronDown class="size-4" />
-        </Button>
+        {#snippet child({ props })}
+            <Button {...props} variant="outline">
+                {selected.label}
+                <ChevronDown class="size-4" />
+            </Button>
+        {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content>
         <DropdownMenu.Group>

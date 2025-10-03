@@ -18,9 +18,11 @@
 
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
-        <Button size="icon" variant="outline" title="Toggle columns">
-            <ViewColumn class="size-4" />
-        </Button>
+        {#snippet child({ props })}
+            <Button {...props} size="icon" variant="outline" title="Toggle columns">
+                <ViewColumn class="size-4" />
+            </Button>
+        {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content>
         <DropdownMenu.Group>

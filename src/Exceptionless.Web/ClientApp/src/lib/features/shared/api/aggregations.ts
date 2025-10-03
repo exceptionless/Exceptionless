@@ -83,7 +83,7 @@ export function terms<TKey = string>(aggregations: Record<string, IAggregate> | 
     }
 
     return <TermsAggregate<TKey>>{
-        buckets: getKeyedBuckets<TKey>(bucket.items),
+        buckets: bucket.items ? getKeyedBuckets<TKey>(bucket.items) : [],
         data: bucket.data
     };
 }
@@ -113,7 +113,7 @@ function getMultiBucketAggregate<TBucket extends IBucket>(
     }
 
     return <MultiBucketAggregate<TBucket>>{
-        buckets: bucket.items,
+        buckets: bucket.items ?? [],
         data: bucket.data
     };
 }
@@ -128,7 +128,7 @@ function getMultiKeyedBucketAggregate<TKey>(
     }
 
     return <MultiBucketAggregate<KeyedBucket<TKey>>>{
-        buckets: getKeyedBuckets<TKey>(bucket.items),
+        buckets: bucket.items ? getKeyedBuckets<TKey>(bucket.items) : [],
         data: bucket.data
     };
 }

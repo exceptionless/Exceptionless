@@ -24,7 +24,7 @@
 
     let { emailNotificationsEnabled = true, hasPremiumFeatures = false, save, settings, upgrade }: Props = $props();
     let toastId = $state<number | string>();
-    let currentSettingsRef = $state<NotificationSettings>();
+    let currentSettingsRef: NotificationSettings | undefined;
 
     const form = superForm(defaults(structuredCloneState(settings) || new NotificationSettings(), classvalidatorClient(NotificationSettings)), {
         dataType: 'json',
