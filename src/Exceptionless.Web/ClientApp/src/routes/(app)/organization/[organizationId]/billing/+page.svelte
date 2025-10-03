@@ -118,10 +118,12 @@
                                         <Table.Cell>
                                             <DropdownMenu.Root>
                                                 <DropdownMenu.Trigger>
-                                                    <Button variant="outline" size="sm">
-                                                        <MoreHorizontal class="size-4" />
-                                                        <span class="sr-only">Actions</span>
-                                                    </Button>
+                                                    {#snippet child({ props })}
+                                                        <Button {...props} variant="outline" size="sm">
+                                                            <MoreHorizontal class="size-4" />
+                                                            <span class="sr-only">Actions</span>
+                                                        </Button>
+                                                    {/snippet}
                                                 </DropdownMenu.Trigger>
                                                 <DropdownMenu.Content align="end">
                                                     <DropdownMenu.Item onclick={() => handleOpenInvoice(invoice.id)}>

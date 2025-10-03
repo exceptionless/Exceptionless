@@ -131,16 +131,18 @@
 {#if projectConfigQuery.isSuccess}
     <DropdownMenu.Root>
         <DropdownMenu.Trigger>
-            <Button variant="outline">
-                {#if level}
-                    Log Level: {getLogLevelDisplayName(level)}
-                {:else if defaultLevel}
-                    Log Level: {defaultLevelDisplayName} (Default)
-                {:else}
-                    Select a Default Log Level
-                {/if}
-                <ChevronDown class="size-4" />
-            </Button>
+            {#snippet child({ props })}
+                <Button {...props} variant="outline">
+                    {#if level}
+                        Log Level: {getLogLevelDisplayName(level)}
+                    {:else if defaultLevel}
+                        Log Level: {defaultLevelDisplayName} (Default)
+                    {:else}
+                        Select a Default Log Level
+                    {/if}
+                    <ChevronDown class="size-4" />
+                </Button>
+            {/snippet}
         </DropdownMenu.Trigger>
         <DropdownMenu.Content>
             <DropdownMenu.Group>

@@ -112,9 +112,11 @@
 
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
-        <Button variant="ghost" size="icon">
-            <Settings class="size-4" />
-        </Button>
+        {#snippet child({ props })}
+            <Button {...props} variant="ghost" size="icon">
+                <Settings class="size-4" />
+            </Button>
+        {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
         <DropdownMenu.Group>

@@ -19,7 +19,7 @@
 
     let { save, settings }: Props = $props();
     let toastId = $state<number | string>();
-    let previousSettingsRef = $state<NotificationSettings>();
+    let previousSettingsRef: NotificationSettings | undefined;
 
     const form = superForm(defaults(structuredCloneState(settings) || new NotificationSettings(), classvalidatorClient(NotificationSettings)), {
         dataType: 'json',

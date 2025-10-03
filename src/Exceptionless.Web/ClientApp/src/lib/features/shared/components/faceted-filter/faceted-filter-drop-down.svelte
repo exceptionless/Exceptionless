@@ -32,7 +32,7 @@
         updatedValue = value;
     });
 
-    function onClose() {
+    function applyAndClose() {
         if (updatedValue !== value) {
             changed(updatedValue);
         }
@@ -40,10 +40,20 @@
         open = false;
     }
 
+    function cancelAndClose() {
+        updatedValue = value;
+        open = false;
+    }
+
     function onOpenChange(isOpen: boolean) {
         if (!isOpen) {
-            onClose();
+            applyAndClose();
         }
+    }
+
+    function onEscapeKeydown(e: KeyboardEvent) {
+        e.preventDefault();
+        cancelAndClose();
     }
 
     export function onValueSelected(currentValue: string) {
@@ -78,21 +88,23 @@
 
 <Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
-        <Button class="gap-x-1 px-3" size="lg" variant="outline">
-            {title}
-            <Separator class="mx-2" orientation="vertical" />
-            {#if loading}
-                <FacetedFilter.BadgeLoading />
-            {:else if value !== undefined}
-                <FacetedFilter.BadgeValue>{displayValue(value)}</FacetedFilter.BadgeValue>
-            {:else}
-                <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
-            {/if}
-        </Button>
+        {#snippet child({ props })}
+            <Button {...props} class="gap-x-1 px-3" size="lg" variant="outline" aria-describedby={`${title}-help`}>
+                {title}
+                <Separator class="mx-2" orientation="vertical" />
+                {#if loading}
+                    <FacetedFilter.BadgeLoading />
+                {:else if value !== undefined}
+                    <FacetedFilter.BadgeValue>{displayValue(value)}</FacetedFilter.BadgeValue>
+                {:else}
+                    <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
+                {/if}
+            </Button>
+        {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="p-0" side="bottom">
+    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={applyAndClose}>
         <Command.Root {filter}>
-            <Command.Input placeholder={title} autofocus={open} />
+            <Command.Input placeholder={title} autofocus={open} aria-describedby={`${title}-help`} />
             <Command.List>
                 <Command.Empty>{noOptionsText}</Command.Empty>
                 {#if loading}
@@ -119,6 +131,7 @@
                 {/if}
             </Command.List>
         </Command.Root>
-        <FacetedFilter.Actions clear={onClearFilter} close={onClose} {remove} showClear={!!updatedValue?.trim()} />
+        <div id={`${title}-help`} class="sr-only">Arrow keys navigate. Space or Enter toggles selection. Escape cancels without saving.</div>
+        <FacetedFilter.Actions clear={onClearFilter} {remove} showClear={!!updatedValue?.trim()} />
     </Popover.Content>
 </Popover.Root>
