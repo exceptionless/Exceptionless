@@ -9,7 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" Version="9.5.0" />
-    <PackageReference Include="Aspire.Hosting.NodeJs" Version="9.5.0" />
+    <PackageReference Include="Aspire.Hosting.NodeJs" Version="9.5.1" />
     <PackageReference Include="Aspire.Hosting.Redis" Version="9.5.0" />
     <PackageReference Include="AspNetCore.HealthChecks.Elasticsearch" Version="9.0.0" />
     <PackageReference Include="Foundatio.Minio" Version="12.0.0" />
