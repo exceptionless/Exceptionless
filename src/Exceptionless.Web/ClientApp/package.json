@@ -32,7 +32,7 @@
         "@playwright/test": "^1.55.1",
         "@storybook/addon-a11y": "^9.1.10",
         "@storybook/addon-docs": "^9.1.10",
-        "@storybook/addon-svelte-csf": "^5.0.9",
+        "@storybook/addon-svelte-csf": "^5.0.10",
         "@storybook/sveltekit": "^9.1.10",
         "@sveltejs/adapter-static": "^3.0.10",
         "@sveltejs/kit": "^2.43.7",
