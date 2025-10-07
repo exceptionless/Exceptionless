@@ -40,6 +40,19 @@
                     oauthType: "2.0",
                     popupOptions: { width: 580, height: 400 },
                 },
+                oauth2: {
+                    name: 'aad', // whatever you want to call it
+                    clientId:
+                        ‘clientID’, // this must be an app registered inside the Office 365 account, not a personal account – add Id here
+                    url: '/auth/aad',
+                    authorizationEndpoint:
+                        'https://login.microsoftonline.com/tenantID/oauth2/authorize',
+                    redirectUri: window.location.origin + '/', //for Cordova apps
+                    requiredUrlParams: ['scope'],
+                    //scope: ['user.read'],
+                    scopeDelimiter: ' ',
+                    oauthType: '2.0'
+                },
                 google: {
                     name: "google",
                     url: "/auth/google",
