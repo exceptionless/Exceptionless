@@ -8,11 +8,60 @@ services:
       xpack.security.enabled: "false"
       action.destructive_requires_name: false
       ES_JAVA_OPTS: -Xms1g -Xmx1g
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    networks:
+      - app_net
     ports:
       - 9200:9200
     volumes:
-      - esdata:/usr/share/elasticsearch/data
+      - /home/syncfusion/esdata:/usr/share/elasticsearch/data
+    restart: unless-stopped
 
+  exceptionless:
+    build:
+      context: ../
+      dockerfile: Dockerfile
+      target: app
+    image: exceptionless
+    container_name: exp
+    depends_on:
+      - elasticsearch
+    environment:
+      EX_ConnectionStrings__Elasticsearch: http://elasticsearch:9200
+    ports:
+      - "5200:8080"
+    networks:
+      - app_net
+    volumes:
+      - /home/syncfusion/appdata:/app/storage
+    restart: unless-stopped
+    
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /home/syncfusion/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - /home/syncfusion/ssl/certs:/etc/ssl/certs
+      - /home/syncfusion/ssl/private:/etc/ssl/private
+    networks:
+      - app_net
+    depends_on:
+      - exceptionless
+
+  networks:
+    app_net:
+      driver: bridge
+      
+  volumes:
+    esdata:
+      driver: local
+    appdata:
+      driver: local
   kibana:
     depends_on:
       - elasticsearch
@@ -32,7 +81,3 @@ services:
     ports:
       - 8025:8025
       - 1025:1025
-
-volumes:
-  esdata:
-    driver: local
