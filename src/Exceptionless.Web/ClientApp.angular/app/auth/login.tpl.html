@@ -19,10 +19,17 @@
                                 autocomplete="on"
                             >
                                 <div class="form-horizontal col-sm-offset-2">
-                                    <h4>
-                                        {{::'Log in' | translate}}
-                                        <span ng-if="vm.isExternalLoginEnabled()">{{::'with' | translate}}</span>
-                                    </h4>
+                                    <h4><span>Login with Syncfusion account</span></h4>
+                                    <div class="form-group"
+                                         style="margin-left: 0px"
+                                         ng-if="vm.isExternalLoginEnabled('oauth2')">
+                                         <button type="button"
+                                                role="button"
+                                                ng-click="vm.authenticate('oauth2')"
+                                                ng-if="vm.isExternalLoginEnabled('oauth2')"
+                                                class="btn btn-large image-button icon-login-microsoft"
+                                                title="Log in using your Syncfusion account"></button>
+                                    </div>
 
                                     <div
                                         class="form-group"
