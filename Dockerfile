@@ -38,6 +38,7 @@ RUN dotnet publish -c Release -o out
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS job
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
+COPY src/Exceptionless.Core/Mail/Templates /app/src/Exceptionless.Core/Mail/Templates
 
 EXPOSE 8080
 
@@ -55,6 +56,7 @@ RUN dotnet publish -c Release -o out /p:SkipSpaPublish=true
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS api
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
+COPY src/Exceptionless.Core/Mail/Templates /app/src/Exceptionless.Core/Mail/Templates
 
 EXPOSE 8080
 
