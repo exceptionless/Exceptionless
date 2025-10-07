@@ -70,6 +70,21 @@ public class AuthController : ExceptionlessApiController
     /// <response code="422">Validation error</response>
     [AllowAnonymous]
     [Consumes("application/json")]
+    [HttpPost("aad")]
+    public Task<ActionResult<TokenResult>> AADAsync(ExternalAuthInfo value)
+    {
+        return ExternalLoginAsync(value,
+            _authOptions.AADAppId,
+            _authOptions.AADAppSecret,
+            (f, c) =>
+            {
+                c.Scope = "openid email profile";
+                return new AADClient(f, c);
+            }
+        );
+    }
+    [AllowAnonymous]
+    [Consumes("application/json")]
     [HttpPost("login")]
     public async Task<ActionResult<TokenResult>> LoginAsync(Login model)
     {
