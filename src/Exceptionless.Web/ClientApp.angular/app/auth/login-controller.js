@@ -71,6 +71,8 @@
                             return !!GOOGLE_APPID;
                         case "live":
                             return !!LIVE_APPID;
+                        case 'oauth2':
+                            return true;
                         default:
                             return false;
                     }
