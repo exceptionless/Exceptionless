@@ -27,6 +27,10 @@ public class AuthOptions
 
     public string? LdapConnectionString { get; internal set; }
 
+    public string? AADAppId { get; private set; }
+    
+    public string? AADAppSecret { get; private set; }
+
     public static AuthOptions ReadFromConfiguration(IConfiguration config)
     {
         var options = new AuthOptions();
@@ -45,6 +49,8 @@ public class AuthOptions
         options.FacebookSecret = oAuth.GetString(nameof(options.FacebookSecret));
         options.GitHubId = oAuth.GetString(nameof(options.GitHubId));
         options.GitHubSecret = oAuth.GetString(nameof(options.GitHubSecret));
+        options.AADAppId = oAuth.GetString(nameof(options.AADAppId));
+        options.AADAppSecret = oAuth.GetString(nameof(options.AADAppSecret));
 
         return options;
     }
