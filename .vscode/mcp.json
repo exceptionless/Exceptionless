@@ -1,6 +1,5 @@
 {
 	"servers": {
-
         "chrome-devtools": {
             "command": "npx",
             "args": [
@@ -24,6 +23,9 @@
                 "@playwright/mcp@latest"
             ],
             "type": "stdio"
-        }
+        },
+        "svelte": {
+            "url": "https://mcp.svelte.dev/mcp"
+        },
 	}
 }
