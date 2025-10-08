@@ -6,6 +6,9 @@ COPY ./src/*.props ./src/
 COPY ./tests/*.props ./tests/
 COPY ./build/packages/* ./build/packages/
 
+# Copy the Mail Templates
+COPY src/Exceptionless.Core/Mail/Templates /app/src/Exceptionless.Core/Mail/Templates
+
 # Copy the main source project files
 COPY src/*/*.csproj ./
 RUN for file in $(ls *.csproj); do mkdir -p src/${file%.*}/ && mv $file src/${file%.*}/; done
@@ -38,7 +41,6 @@ RUN dotnet publish -c Release -o out
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS job
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
-COPY src/Exceptionless.Core/Mail/Templates /app/src/Exceptionless.Core/Mail/Templates
 
 EXPOSE 8080
 
@@ -56,7 +58,6 @@ RUN dotnet publish -c Release -o out /p:SkipSpaPublish=true
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS api
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
-COPY src/Exceptionless.Core/Mail/Templates /app/src/Exceptionless.Core/Mail/Templates
 
 EXPOSE 8080
 
