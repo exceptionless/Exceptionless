@@ -6,6 +6,7 @@
     import TimeAgo from '$comp/formatters/time-ago.svelte';
     import Muted from '$comp/typography/muted.svelte';
     import { Badge } from '$comp/ui/badge';
+    import * as ButtonGroup from '$comp/ui/button-group';
     import * as Card from '$comp/ui/card';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Tooltip from '$comp/ui/tooltip';
@@ -84,9 +85,11 @@
                         <span class="block max-w-full min-w-0 truncate" title={stack.title}>{stack.title}</span>
                     </div>
                 </div>
-                <div class="ml-2 flex shrink-0 items-center space-x-2">
-                    <StackStatusDropdownMenu {stack} />
-                    <StackOptionsDropdownMenu {stack} />
+                <div class="ml-2 flex shrink-0">
+                    <ButtonGroup.Root>
+                        <StackStatusDropdownMenu {stack} />
+                        <StackOptionsDropdownMenu {stack} />
+                    </ButtonGroup.Root>
                 </div>
             </Card.Title>
         </Card.Header>
