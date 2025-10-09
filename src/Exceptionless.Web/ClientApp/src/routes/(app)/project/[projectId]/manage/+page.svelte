@@ -3,13 +3,13 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
-    import Loading from '$comp/loading.svelte';
     import { H3, Muted } from '$comp/typography';
     import { Button, buttonVariants } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
     import { Separator } from '$comp/ui/separator';
+    import { Spinner } from '$comp/ui/spinner';
     import { organization } from '$features/organizations/context.svelte';
     import { deleteProject, getProjectQuery, resetData, updateProject } from '$features/projects/api.svelte';
     import RemoveProjectDialog from '$features/projects/components/dialogs/remove-project-dialog.svelte';
@@ -169,7 +169,7 @@
                         <DropdownMenu.Separator />
                         <DropdownMenu.Item onclick={() => (showResetDialog = true)} disabled={resetProject.isPending}>
                             {#if resetProject.isPending}
-                                <Loading class="mr-2" variant="secondary"></Loading>
+                                <Spinner />
                                 <span>Resetting...</span>
                             {:else}
                                 <AlertTriangle class="mr-2 size-4" />
@@ -178,7 +178,7 @@
                         </DropdownMenu.Item>
                         <DropdownMenu.Item onclick={() => (showRemoveDialog = true)} disabled={removeProject.isPending}>
                             {#if removeProject.isPending}
-                                <Loading class="mr-2" variant="secondary"></Loading>
+                                <Spinner />
                                 <span>Deleting Project...</span>
                             {:else}
                                 <X class="mr-2 size-4" />
