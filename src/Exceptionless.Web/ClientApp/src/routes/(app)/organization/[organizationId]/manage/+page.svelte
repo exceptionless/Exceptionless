@@ -26,7 +26,7 @@
     let toastId = $state<number | string>();
     let previousOrganizationRef: NewOrganization | undefined;
 
-    const organizationId = page.params.organizationId || '';
+    const organizationId = $derived(page.params.organizationId || '');
     const organizationQuery = getOrganizationQuery({
         route: {
             get id() {

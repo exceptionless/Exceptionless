@@ -15,7 +15,7 @@
     import { toast } from 'svelte-sonner';
 
     // Project ID from route params
-    const projectId = page.params.projectId || '';
+    const projectId = $derived(page.params.projectId || '');
 
     const defaultTokenQuery = getProjectDefaultTokenQuery({
         route: {

@@ -19,7 +19,7 @@
 
     let { children } = $props();
 
-    const projectId = page.params.projectId || '';
+    const projectId = $derived(page.params.projectId || '');
     const projectQuery = getProjectQuery({
         route: {
             get id() {
