@@ -288,7 +288,7 @@
         </div>
     </div>
 
-    <EventsDashboardChart data={chartData()} isLoading={clientStatus.isLoading || chartDataQuery.isLoading} {onRangeSelect} />
+    <EventsDashboardChart data={chartData()} isLoading={chartDataQuery.isLoading && !chartDataQuery.isSuccess} {onRangeSelect} />
 
     <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
         {#snippet footerChildren()}
