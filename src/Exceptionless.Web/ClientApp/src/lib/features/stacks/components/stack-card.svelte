@@ -11,10 +11,12 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Tooltip from '$comp/ui/tooltip';
     import { getProjectCountQuery, getStackCountQuery } from '$features/events/api.svelte';
+    import EventsStackChart, { type EventsStackChartPoint } from '$features/events/components/events-stack-chart.svelte';
     import * as EventsFacetedFilter from '$features/events/components/filters';
     import { StringFilter } from '$features/events/components/filters';
+    import * as agg from '$features/shared/api/aggregations';
+    import { fillDateSeries } from '$features/shared/utils/charts';
     import { getStackQuery } from '$features/stacks/api.svelte';
-    import { cardinality, max, min, sum } from '$shared/api/aggregations';
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
     import FirstOccurrence from '@lucide/svelte/icons/arrow-left-circle';
     import LastOccurrence from '@lucide/svelte/icons/arrow-right-circle';
@@ -53,10 +55,14 @@
         }
     });
 
+    // TODO: Log Level
+    const stack = $derived(stackQuery.data!);
+
     // TODO: Add stack charts for Occurrences, Average Value, Value Sum
     const stackCountQuery = getStackCountQuery({
         params: {
-            aggregations: `date:(date${DEFAULT_OFFSET ? '^' + DEFAULT_OFFSET : ''} cardinality:user sum:count~1) min:date max:date cardinality:user sum:count~1`
+            aggregations: `date:(date${DEFAULT_OFFSET ? '^' + DEFAULT_OFFSET : ''} cardinality:user sum:count~1) min:date max:date cardinality:user sum:count~1`,
+            time: '[now-7d TO now]'
         },
         route: {
             get stackId() {
@@ -65,14 +71,45 @@
         }
     });
 
-    // TODO: Log Level
-    const stack = $derived(stackQuery.data!);
-    const eventOccurrences = $derived(sum(stackCountQuery?.data?.aggregations, 'sum_count')?.value ?? 0);
+    const eventOccurrences = $derived(agg.sum(stackCountQuery?.data?.aggregations, 'sum_count')?.value ?? 0);
     const totalOccurrences = $derived(stack && stack.total_occurrences > eventOccurrences ? stack.total_occurrences : eventOccurrences);
-    const userCount = $derived(sum(stackCountQuery?.data?.aggregations, 'cardinality_user')?.value ?? 0);
-    const totalUserCount = $derived(cardinality(projectCountQuery?.data?.aggregations, 'cardinality_user')?.value ?? 0);
-    const firstOccurrence = $derived(min<string>(stackCountQuery?.data?.aggregations, 'min_date')?.value ?? stack?.first_occurrence);
-    const lastOccurrence = $derived(max<string>(stackCountQuery?.data?.aggregations, 'max_date')?.value ?? stack?.last_occurrence);
+    const userCount = $derived(agg.sum(stackCountQuery?.data?.aggregations, 'cardinality_user')?.value ?? 0);
+    const totalUserCount = $derived(agg.cardinality(projectCountQuery?.data?.aggregations, 'cardinality_user')?.value ?? 0);
+    const firstOccurrence = $derived(agg.min<string>(stackCountQuery?.data?.aggregations, 'min_date')?.value ?? stack?.first_occurrence);
+    const lastOccurrence = $derived(agg.max<string>(stackCountQuery?.data?.aggregations, 'max_date')?.value ?? stack?.last_occurrence);
+
+    const chartData = $derived(() => {
+        const now = new Date();
+        const SEVEN_DAYS_IN_MS = 7 * 24 * 60 * 60 * 1000;
+        const sevenDaysAgo = new Date(now.getTime() - SEVEN_DAYS_IN_MS);
+        const buildZeroFilledSeries = () =>
+            fillDateSeries(
+                sevenDaysAgo,
+                now,
+                (date: Date) =>
+                    ({
+                        date,
+                        occurrences: 0
+                    }) as EventsStackChartPoint
+            );
+
+        const dateHistogramBuckets = agg.dateHistogram(stackCountQuery.data?.aggregations, 'date_date')?.buckets ?? [];
+        const recentBuckets = dateHistogramBuckets
+            .map(
+                (bucket) =>
+                    ({
+                        date: new Date(bucket.key),
+                        occurrences: agg.sum(bucket.aggregations, 'sum_count')?.value ?? 0
+                    }) as EventsStackChartPoint
+            )
+            .filter((bucket) => bucket.date >= sevenDaysAgo);
+
+        if (recentBuckets.length === 0) {
+            return buildZeroFilledSeries();
+        }
+
+        return recentBuckets;
+    });
 </script>
 
 {#if stackQuery.isSuccess}
@@ -138,7 +175,7 @@
                 </Tooltip.Root>
             </div>
 
-            <!-- Line Chart -->
+            <EventsStackChart class="h-12 w-full" data={chartData()} isLoading={stackCountQuery.isLoading} />
 
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {#if (stack.status === 'fixed' || stack.status === 'regressed') && stack.date_fixed}
