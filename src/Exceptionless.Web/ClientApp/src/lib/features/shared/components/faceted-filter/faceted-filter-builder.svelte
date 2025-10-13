@@ -176,7 +176,7 @@
         </Command.Root>
         <div class="flex flex-col">
             <Separator />
-            {#if facets.length > 0}
+            {#if filters.some(f => f.type !== 'date')}
                 <Button class="justify-center text-center" variant="ghost" onclick={onRemoveAll}>Clear filters</Button>
             {/if}
             <Button class="justify-center text-center" variant="ghost" onclick={onClose}>Close</Button>

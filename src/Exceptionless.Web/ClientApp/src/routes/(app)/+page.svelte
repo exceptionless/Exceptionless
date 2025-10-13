@@ -49,11 +49,12 @@
         selectedEventId = row.id;
     }
 
-    const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
+    const DEFAULT_TIME_RANGE = '[now-7d TO now]';
+    const DEFAULT_FILTERS = [new DateFilter('date', DEFAULT_TIME_RANGE), new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
     const DEFAULT_PARAMS = {
         filter: '(status:open OR status:regressed)',
         limit: DEFAULT_LIMIT,
-        time: '[now-7d TO now]'
+        time: DEFAULT_TIME_RANGE
     };
 
     function filterCacheKey(filter: null | string): string {

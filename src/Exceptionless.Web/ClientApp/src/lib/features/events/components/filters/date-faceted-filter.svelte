@@ -67,7 +67,6 @@
         <div id={`${title}-help`} class="sr-only">Press Enter to apply filter, Escape to cancel</div>
         <div class="flex flex-col">
             <DateRangePicker bind:this={dateRangePickerRef} {quickRanges} value={filter.value} onselect={handleSelect} />
-            <FacetedFilter.Actions clear={handleClear} remove={handleRemove} {showClear} />
         </div>
     </Popover.Content>
 </Popover.Root>
