@@ -5,7 +5,7 @@
     import * as DataTable from '$comp/data-table';
     import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
-    import StreamingIndicatorButton from '$comp/streaming-indicator-button.svelte';
+    import RefreshButton from '$comp/refresh-button.svelte';
     import { H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
@@ -20,7 +20,6 @@
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
-        shouldRefreshPersistentEventChanged,
         toFilter,
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
@@ -183,28 +182,20 @@
 
     const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.getState().pagination.pageIndex === 0);
 
-    let manualPause = $state(false);
-    let paused = $derived(manualPause || !canRefresh);
-
     function reset() {
-        manualPause = false;
         table.resetRowSelection();
         table.setPageIndex(0);
     }
 
-    function handleToggle() {
+    async function handleRefresh() {
         if (!canRefresh) {
             reset();
-        } else {
-            manualPause = !manualPause;
         }
+
+        await loadData();
     }
 
     async function loadData() {
-        if (paused) {
-            return;
-        }
-
         if (client.isLoading || !organization.current) {
             return;
         }
@@ -222,26 +213,14 @@
 
             if (removeTableData(table, (doc) => doc.id === message.id)) {
                 // If the grid data is empty from all events being removed, we should refresh the data.
-                if (isTableEmpty(table) && !paused) {
+                if (isTableEmpty(table)) {
                     await throttledLoadData();
                     return;
                 }
             }
         }
-
-        if (paused) {
-            return;
-        }
-
-        // Do not refresh if the filter criteria doesn't match the web socket message.
-        if (!shouldRefreshPersistentEventChanged(filters, queryParams.filter, message.organization_id, message.project_id, message.id)) {
-            return;
-        }
-
-        await throttledLoadData();
     }
 
-    useEventListener(document, 'refresh', async () => await loadData());
     useEventListener(document, 'StackChanged', async (event) => await onStackChanged((event as CustomEvent).detail));
 
     $effect(() => {
@@ -305,7 +284,11 @@
             </FacetedFilter.Root>
         </div>
         <div class="flex items-center space-x-2">
-            <StreamingIndicatorButton {paused} onToggle={handleToggle} />
+            <RefreshButton
+                onRefresh={handleRefresh}
+                isRefreshing={clientStatus.isLoading}
+                title={canRefresh ? 'Refresh results' : 'Return to the first page to refresh results'}
+            />
             <DataTableViewOptions {table} />
         </div>
     </div>
