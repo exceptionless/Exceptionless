@@ -5,6 +5,8 @@
 <script generics="TData" lang="ts">
     import type { Table } from '@tanstack/svelte-table';
 
+    import Number from '$comp/formatters/number.svelte';
+
     interface Props {
         table: Table<TData>;
     }
@@ -12,9 +14,8 @@
     let { table }: Props = $props();
 </script>
 
-<div class="text-muted-foreground flex text-sm text-pretty">
+<div class="text-muted-foreground flex text-sm text-pretty min-w-0">
     {#if table.getSelectedRowModel().rows.length > 0}
-        {Object.keys(table.getSelectedRowModel().rows).length} of&nbsp;
-        {table.getRowModel().rows.length} row(s) selected.
+        <span class="truncate"><Number value={Object.keys(table.getSelectedRowModel().rows).length} /> selected</span>
     {/if}
 </div>

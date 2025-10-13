@@ -280,6 +280,7 @@
                 {/if}
             </div>
 
+            <DataTable.Selection {table} />
             <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
             <div class="flex items-center space-x-6 lg:space-x-8">
                 <DataTable.PageCount {table} />

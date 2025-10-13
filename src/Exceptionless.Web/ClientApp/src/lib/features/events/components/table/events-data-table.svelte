@@ -44,15 +44,23 @@
             {@render bodyChildren()}
         {/if}
     </DataTable.Body>
-    <DataTable.Footer {table} class="space-x-6 lg:space-x-8">
+    <DataTable.Footer {table} class="w-full">
         {#if footerChildren}
             {@render footerChildren()}
         {:else}
-            <DataTable.Selection {table} />
-            <DataTable.PageSize bind:value={limit} {table}></DataTable.PageSize>
-            <div class="flex items-center space-x-6 lg:space-x-8">
-                <DataTable.PageCount {table} />
-                <DataTable.Pagination {table} />
+            <div class="w-full grid grid-cols-1 sm:grid-cols-3 gap-2 items-center">
+                <div class="flex items-center gap-2 min-w-0">
+                    <DataTable.Selection {table} />
+                </div>
+
+                <div class="flex items-center justify-center min-w-0">
+                    <DataTable.PageCount {table} />
+                </div>
+
+                <div class="flex items-center justify-end gap-4 min-w-0">
+                    <DataTable.PageSize bind:value={limit} {table} />
+                    <DataTable.Pagination {table} />
+                </div>
             </div>
         {/if}
     </DataTable.Footer>

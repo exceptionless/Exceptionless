@@ -14,6 +14,14 @@
     let { table }: Props = $props();
 </script>
 
-<div class="flex w-[100px] items-center justify-center text-sm font-medium">
-    Page <Number value={table.getState().pagination.pageIndex + 1} /> of <Number value={table.getPageCount()} />
+<div class="min-w-0 text-sm font-medium">
+    <div class="hidden sm:flex items-center justify-center">
+        <span class="truncate">Page <Number value={table.getState().pagination.pageIndex + 1} /> of <Number value={table.getPageCount()} /></span>
+    </div>
+
+    <div class="flex sm:hidden items-center justify-center">
+        <span aria-hidden="true" class="truncate"><Number value={table.getState().pagination.pageIndex + 1} /> / <Number value={table.getPageCount()} /></span>
+    </div>
+
+    <span class="sr-only">Page <Number value={table.getState().pagination.pageIndex + 1} /> of <Number value={table.getPageCount()} /></span>
 </div>
