@@ -33,8 +33,8 @@
     }
 </script>
 
-<div class="flex items-center gap-2 min-w-0">
-    <p class="text-sm font-medium truncate hidden sm:inline">Rows per page</p>
+<div class="flex min-w-0 items-center gap-2">
+    <p class="hidden truncate text-sm font-medium sm:inline">Rows per page</p>
     <Select.Root type="single" {items} value={valueString} {onValueChange}>
         <Select.Trigger class="h-8 w-[70px] min-w-[46px]">
             {selected.label}

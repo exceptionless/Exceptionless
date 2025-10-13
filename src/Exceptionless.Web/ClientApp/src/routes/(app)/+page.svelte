@@ -253,20 +253,21 @@
 </script>
 
 <div class="flex flex-col">
-    <div class="mb-4 flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-            <H3 class="pr-2">Events</H3>
+    <div class="mb-4 flex flex-wrap items-start gap-2">
+        <H3 class="my-0 shrink-0">Events</H3>
+        <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <OrganizationDefaultsFacetedFilterBuilder />
             </FacetedFilter.Root>
         </div>
-        <div class="flex items-center space-x-2">
+        <div class="ml-auto flex shrink-0 items-start gap-2">
             <RefreshButton
                 onRefresh={handleRefresh}
                 isRefreshing={clientStatus.isLoading}
+                size="icon-lg"
                 title={canRefresh ? 'Refresh results' : 'Return to the first page to refresh results'}
             />
-            <DataTableViewOptions {table} />
+            <DataTableViewOptions size="icon-lg" {table} />
         </div>
     </div>
 

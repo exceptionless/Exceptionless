@@ -48,16 +48,16 @@
         {#if footerChildren}
             {@render footerChildren()}
         {:else}
-            <div class="w-full grid grid-cols-1 sm:grid-cols-3 gap-2 items-center">
-                <div class="flex items-center gap-2 min-w-0">
+            <div class="grid w-full grid-cols-1 items-center gap-2 sm:grid-cols-3">
+                <div class="flex min-w-0 items-center gap-2">
                     <DataTable.Selection {table} />
                 </div>
 
-                <div class="flex items-center justify-center min-w-0">
+                <div class="flex min-w-0 items-center justify-center">
                     <DataTable.PageCount {table} />
                 </div>
 
-                <div class="flex items-center justify-end gap-4 min-w-0">
+                <div class="flex min-w-0 items-center justify-end gap-4">
                     <DataTable.PageSize bind:value={limit} {table} />
                     <DataTable.Pagination {table} />
                 </div>

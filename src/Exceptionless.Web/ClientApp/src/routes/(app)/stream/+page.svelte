@@ -239,16 +239,17 @@
 </script>
 
 <DataTable.Root>
-    <DataTable.Toolbar {table}>
-        <H3 class="pr-2">Event Stream</H3>
-        <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
-            <OrganizationDefaultsFacetedFilterBuilder includeDateFacets={false} />
-        </FacetedFilter.Root>
-
-        {#snippet actions()}
-            <StreamingIndicatorButton {paused} onToggle={handleToggle} />
-        {/snippet}
-    </DataTable.Toolbar>
+    <div class="mb-4 flex flex-wrap items-start gap-2">
+        <H3 class="my-0 shrink-0">Event Stream</H3>
+        <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
+            <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
+                <OrganizationDefaultsFacetedFilterBuilder />
+            </FacetedFilter.Root>
+        </div>
+        <div class="ml-auto flex shrink-0 items-start gap-2">
+            <StreamingIndicatorButton onToggle={handleToggle} {paused} size="icon-lg" />
+        </div>
+    </div>
     <DataTable.Body rowClick={rowclick} {table}>
         {#if clientStatus.isLoading}
             <DelayedRender>

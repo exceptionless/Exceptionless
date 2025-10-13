@@ -3,6 +3,7 @@
 </script>
 
 <script generics="TData" lang="ts">
+    import type { ButtonSize } from '$comp/ui/button';
     import type { Table } from '@tanstack/svelte-table';
 
     import { Button } from '$comp/ui/button';
@@ -10,16 +11,17 @@
     import ViewColumn from '@lucide/svelte/icons/columns-3';
 
     interface Props {
+        size?: ButtonSize;
         table: Table<TData>;
     }
 
-    let { table }: Props = $props();
+    let { size = 'icon', table }: Props = $props();
 </script>
 
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
         {#snippet child({ props })}
-            <Button {...props} size="icon" variant="outline" title="Toggle columns">
+            <Button {...props} {size} variant="outline" title="Toggle columns">
                 <ViewColumn class="size-4" />
             </Button>
         {/snippet}

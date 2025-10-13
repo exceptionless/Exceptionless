@@ -15,11 +15,11 @@
 </script>
 
 <div class="min-w-0 text-sm font-medium">
-    <div class="hidden sm:flex items-center justify-center">
+    <div class="hidden items-center justify-center sm:flex">
         <span class="truncate">Page <Number value={table.getState().pagination.pageIndex + 1} /> of <Number value={table.getPageCount()} /></span>
     </div>
 
-    <div class="flex sm:hidden items-center justify-center">
+    <div class="flex items-center justify-center sm:hidden">
         <span aria-hidden="true" class="truncate"><Number value={table.getState().pagination.pageIndex + 1} /> / <Number value={table.getPageCount()} /></span>
     </div>
 
