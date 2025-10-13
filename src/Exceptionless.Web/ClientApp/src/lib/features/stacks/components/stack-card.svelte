@@ -175,6 +175,10 @@
                 </Tooltip.Root>
             </div>
 
+            <div class="flex justify-end">
+                <Muted class="text-xs uppercase">Last 7 days</Muted>
+            </div>
+
             <EventsStackChart class="h-12 w-full" data={chartData()} isLoading={stackCountQuery.isLoading} />
 
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
