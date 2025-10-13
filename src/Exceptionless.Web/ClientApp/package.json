@@ -81,7 +81,7 @@
         "dompurify": "^3.2.7",
         "formsnap": "^2.0.1",
         "kit-query-params": "^0.0.26",
-        "layerchart": "^2.0.0-next.40",
+        "layerchart": "^2.0.0-next.41",
         "mode-watcher": "^1.1.0",
         "oidc-client-ts": "^3.3.0",
         "pretty-ms": "^9.3.0",
