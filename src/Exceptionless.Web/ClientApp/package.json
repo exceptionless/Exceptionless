@@ -89,7 +89,7 @@
         "shiki": "^3.13.0",
         "svelte-sonner": "^1.0.5",
         "svelte-time": "^2.0.1",
-        "sveltekit-superforms": "^2.27.2",
+        "sveltekit-superforms": "^2.27.4",
         "tailwind-merge": "^3.3.1",
         "tailwind-variants": "^3.1.1",
         "tailwindcss": "^4.1.14",
