@@ -119,5 +119,5 @@ internal static class ElasticsearchContainerImageTags
     public const string Image = "exceptionless/elasticsearch";
     public const string KibanaRegistry = "docker.elastic.co";
     public const string KibanaImage = "kibana/kibana";
-    public const string Tag = "8.19.2";
+    public const string Tag = "8.19.5";
 }
