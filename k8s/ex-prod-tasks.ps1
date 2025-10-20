@@ -22,8 +22,10 @@ curl -k https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cluster/health
 curl -k https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cat/allocation?v
 curl -k https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cluster/allocation/explain?pretty
 curl -k "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cat/indices/*traces*?v=true&s=index"
+curl -X PUT -H "Content-Type: application/json" -g -k -d '{ "index": { "number_of_replicas": 0, "number_of_shards": 1 } }' https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/*/_settings
 curl -X PUT -H "Content-Type: application/json" -g -k -d '{ "transient": { "action.destructive_requires_name": false } }' https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_cluster/settings
-curl -k -X DELETE "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/.ds-traces-apm-default-2022.09.01-000108"
+curl -X PUT -H "Content-Type: application/json" -g -k -d '{ "index_patterns": ["*"], "order": 0, "settings": { "number_of_replicas": 0, "number_of_shards": 1 } }' https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/_template/replicas
+curl -k -X DELETE "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/.ds-metrics-elastic_agent.filebeat_input-default-2024.12.03-000001"
 
 # connect to redis OR use k9s to shell into a redis pod
 $REDIS_PASSWORD = $(kubectl get secret --namespace ex-prod ex-prod-redis -o go-template='{{index .data "redis-password" | base64decode }}')
@@ -88,9 +90,9 @@ helm upgrade --reset-values signoz-collector signoz/k8s-infra -f signoz.yaml --s
 # upgrade elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl replace -f https://download.elastic.co/downloads/eck/2.16.1/crds.yaml
-kubectl create -f https://download.elastic.co/downloads/eck/2.16.1/crds.yaml
-kubectl apply -f https://download.elastic.co/downloads/eck/2.16.1/operator.yaml
+kubectl replace -f https://download.elastic.co/downloads/eck/3.1.0/crds.yaml
+kubectl create -f https://download.elastic.co/downloads/eck/3.1.0/crds.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/3.1.0/operator.yaml
 
 # upgrade elasticsearch
 kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml

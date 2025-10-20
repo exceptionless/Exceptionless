@@ -1,9 +1,11 @@
 global:
+  imageRegistry:
   storageClass: managed-csi-premium
 
-# https://hub.docker.com/r/bitnami/redis/tags
+# https://hub.docker.com/r/bitnamilegacy/redis/tags
 image:
-  tag: 8.0.2-debian-12-r3
+  repository: bitnamilegacy/redis
+  tag: 8.0.3-debian-12-r3
 
 auth:
   enabled: true
@@ -19,6 +21,9 @@ replica:
       cpu: 600m
 
 sentinel:
+  image:
+    repository: bitnamilegacy/redis
+    tag: 8.0.3-debian-12-r3
   enabled: true
   masterSet: ex-prod
   downAfterMilliseconds: 5000
