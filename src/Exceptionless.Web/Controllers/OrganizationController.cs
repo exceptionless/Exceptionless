@@ -476,8 +476,8 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             }
             else
             {
-                var update = new SubscriptionUpdateOptions { Items = new List<SubscriptionItemOptions>() };
-                var create = new SubscriptionCreateOptions { Customer = organization.StripeCustomerId, Items = new List<SubscriptionItemOptions>() };
+                var update = new SubscriptionUpdateOptions { Items = [] };
+                var create = new SubscriptionCreateOptions { Customer = organization.StripeCustomerId, Items = [] };
                 bool cardUpdated = false;
 
                 var customerUpdateOptions = new CustomerUpdateOptions { Description = organization.Name };
