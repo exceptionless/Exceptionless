@@ -1,27 +1,30 @@
 <script lang="ts">
-    import type { Snippet } from 'svelte';
-
-    import { A, type AProps } from '$comp/typography';
-    import { cn } from '$lib/utils';
+    import { Button, type ButtonProps } from '$comp/ui/button';
     import Filter from '@lucide/svelte/icons/filter';
 
     import { DateFilter } from './models.svelte';
 
-    type Props = AProps & {
+    type Props = ButtonProps & {
         changed: (filter: DateFilter) => void;
-        children?: Snippet;
         term: string;
-        value?: Date | string;
+        value?: string;
     };
     let { changed, children, class: className, term, value, ...props }: Props = $props();
 
     const title = `Search ${term}:${value}`;
 </script>
 
-<A class={cn('cursor-pointer', className)} onclick={() => changed(new DateFilter(term, value))} {title} {...props}>
+<Button
+    variant="ghost"
+    size={children ? 'xs' : 'icon-xs'}
+    onclick={() => changed(new DateFilter(term, value))}
+    {title}
+    class={[children ? '' : 'opacity-50 hover:opacity-100 focus-visible:opacity-100', className]}
+    {...props}
+>
     {#if children}
         {@render children()}
     {:else}
-        <Filter class="text-muted-foreground text-opacity-50 hover:text-primary size-5" />
+        <Filter class="text-muted-foreground" />
     {/if}
-</A>
+</Button>
