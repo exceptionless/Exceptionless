@@ -17,13 +17,6 @@
         "microsoft-docs": {
             "url": "https://learn.microsoft.com/api/mcp"
         },
-        "playwright": {
-            "command": "npx",
-            "args": [
-                "@playwright/mcp@latest"
-            ],
-            "type": "stdio"
-        },
         "svelte": {
             "url": "https://mcp.svelte.dev/mcp"
         },
