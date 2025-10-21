@@ -15,7 +15,6 @@
         rowClick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
         rowHref?: (row: EventSummaryModel<SummaryTemplateKeys>) => string;
         table: Table<EventSummaryModel<SummaryTemplateKeys>>;
-        toolbarActions?: Snippet;
         toolbarChildren?: Snippet;
     }
 
@@ -23,17 +22,12 @@
 </script>
 
 <DataTable.Root>
-    <DataTable.Toolbar {table}>
-        {#if toolbarChildren}
+    {#if toolbarChildren}
+        <DataTable.Toolbar {table}>
             {@render toolbarChildren()}
-        {/if}
+        </DataTable.Toolbar>
+    {/if}
     <DataTable.Body {rowClick} {rowHref} {table}>
-            {#if toolbarActions}
-                {@render toolbarActions()}
-            {/if}
-        {/snippet}
-    </DataTable.Toolbar>
-    <DataTable.Body {rowClick} {table}>
         {#if isLoading}
             <DelayedRender>
                 <DataTable.Loading {table} />

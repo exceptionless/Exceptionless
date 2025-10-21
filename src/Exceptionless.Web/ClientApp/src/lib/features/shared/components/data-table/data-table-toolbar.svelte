@@ -10,24 +10,19 @@
     import DataTableViewOptions from './data-table-view-options.svelte';
 
     interface Props {
-        actions?: Snippet;
-        children: Snippet;
+        children?: Snippet;
         size?: ButtonSize;
         table: Table<TData>;
     }
 
-    let { actions, children, size = 'icon', table }: Props = $props();
+    let { children, size = 'icon', table }: Props = $props();
 </script>
 
-<div class="flex flex-col gap-2">
-    <div class="flex items-center gap-2">
-        {#if actions}
-            {@render actions()}
-        {:else}
-            <DataTableViewOptions {size} {table} />
-        {/if}
-    </div>
-    <div class="flex flex-wrap items-center gap-2">
+<div class="flex items-center gap-2">
+    {#if children}
         {@render children()}
-    </div>
+    {:else}
+        <div class="flex-1"></div>
+        <DataTableViewOptions {size} {table} />
+    {/if}
 </div>
