@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
     import { A, Muted } from '$comp/typography';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
@@ -14,7 +15,7 @@
 
 <div class="line-clamp-2">
     <strong><abbr title={source.data.TypeFullName}>{source.data.Type}</abbr>: </strong>
-    <A class="inline" href={`/next/event/${source.id}`}>{source.data.Message}</A>
+    <A class="inline" href={resolve('/(app)/event/[eventId]', { eventId: source.id })}>{source.data.Message}</A>
 </div>
 
 {#if source.data.Path}
