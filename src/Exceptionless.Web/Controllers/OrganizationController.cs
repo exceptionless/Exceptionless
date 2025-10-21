@@ -219,13 +219,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         {
             var client = new StripeClient(_options.StripeOptions.StripeApiKey);
             var invoiceService = new InvoiceService(client);
-            
-            // In Stripe.net v48, expand to include all necessary price information
-            var options = new InvoiceGetOptions
-            {
-                Expand = new List<string> { "lines", "lines.data.price" }
-            };
-            stripeInvoice = await invoiceService.GetAsync(id, options);
+            stripeInvoice = await invoiceService.GetAsync(id);
         }
         catch (Exception ex)
         {
@@ -249,15 +243,30 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             Total = stripeInvoice.Total / 100.0m
         };
 
+        // In Stripe.net v49, Price information needs to be fetched separately
+        var client2 = new StripeClient(_options.StripeOptions.StripeApiKey);
+        var priceService = new PriceService(client2);
+
         foreach (var line in stripeInvoice.Lines.Data)
         {
             var item = new InvoiceLineItem { Amount = line.Amount / 100.0m, Description = line.Description };
-            if (line.Price is not null)
+            
+            // In v49, access price ID from Pricing.PriceDetails.Price
+            var priceId = line.Pricing?.PriceDetails?.Price;
+            if (!String.IsNullOrEmpty(priceId))
             {
-                string planName = line.Price.Nickname ?? _billingManager.GetBillingPlan(line.Price.Id)?.Name ?? line.Price.Id;
-                var intervalText = line.Price.Recurring?.Interval ?? "one-time";
-                var priceAmount = line.Price.UnitAmount.HasValue ? (line.Price.UnitAmount.Value / 100.0) : 0.0;
-                item.Description = $"Exceptionless - {planName} Plan ({priceAmount:c}/{intervalText})";
+                try
+                {
+                    var price = await priceService.GetAsync(priceId);
+                    string planName = price.Nickname ?? _billingManager.GetBillingPlan(price.Id)?.Name ?? price.Id;
+                    var intervalText = price.Recurring?.Interval ?? "one-time";
+                    var priceAmount = line.Pricing?.UnitAmountDecimal.HasValue == true ? (line.Pricing.UnitAmountDecimal.Value / 100.0m) : 0.0m;
+                    item.Description = $"Exceptionless - {planName} Plan ({priceAmount:c}/{intervalText})";
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to fetch price details for price ID: {PriceId}", priceId);
+                }
             }
 
             var periodStart = line.Period.Start >= DateTime.MinValue ? line.Period.Start : stripeInvoice.PeriodStart;
