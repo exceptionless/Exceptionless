@@ -17,7 +17,8 @@ var cache = builder.AddRedis("Redis", port: 6379)
     .WithClearCommand()
     .WithRedisInsight(b => b.WithLifetime(ContainerLifetime.Persistent).WithContainerName("Exceptionless-RedisInsight").WithUrlForEndpoint("http", u => u.DisplayText = "Cache"));
 
-var mail = builder.AddContainer("Mail", "mailhog/mailhog")
+var mail = builder.AddContainer("Mail", "axllent/mailpit")
+    .WithImageTag("v1.27.10")
     .WithLifetime(ContainerLifetime.Persistent)
     .WithContainerName("Exceptionless-Mail")
     .WithEndpoint(8025, 8025, "http")
