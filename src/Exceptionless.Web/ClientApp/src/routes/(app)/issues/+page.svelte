@@ -306,22 +306,24 @@
         </div>
     </div>
 
-    <EventsDashboardChart data={chartData()} isLoading={clientStatus.isLoading || chartDataQuery.isLoading} {onRangeSelect} />
+    <div class="flex flex-col gap-y-4">
+        <EventsDashboardChart data={chartData()} isLoading={clientStatus.isLoading || chartDataQuery.isLoading} {onRangeSelect} />
 
         <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} {rowClick} {rowHref} {table}>
-        {#snippet footerChildren()}
-            <div class="h-9 min-w-[140px]">
-                <TableStacksBulkActionsDropdownMenu {table} />
-            </div>
+            {#snippet footerChildren()}
+                <div class="h-9 min-w-[140px]">
+                    <TableStacksBulkActionsDropdownMenu {table} />
+                </div>
 
-            <DataTable.Selection {table} />
-            <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
-            <div class="flex items-center space-x-6 lg:space-x-8">
-                <DataTable.PageCount {table} />
-                <DataTable.Pagination {table} />
-            </div>
-        {/snippet}
-    </EventsDataTable>
+                <DataTable.Selection {table} />
+                <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
+                <div class="flex items-center space-x-6 lg:space-x-8">
+                    <DataTable.PageCount {table} />
+                    <DataTable.Pagination {table} />
+                </div>
+            {/snippet}
+        </EventsDataTable>
+    </div>
 </div>
 
 <Sheet.Root onOpenChange={() => (selectedStackId = undefined)} open={eventsQuery.isSuccess}>
