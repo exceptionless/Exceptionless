@@ -6,7 +6,6 @@
     import TimeAgo from '$comp/formatters/time-ago.svelte';
     import Live from '$comp/live.svelte';
     import { A, H3 } from '$comp/typography';
-    import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
     import * as Table from '$comp/ui/table';
     import * as EventsFacetedFilter from '$features/events/components/filters';
@@ -186,11 +185,10 @@
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell class="flex flex-wrap items-center justify-start gap-2 overflow-auto">
                     {#each event.tags as tag (tag)}
-                        <Badge color="dark"
-                            ><EventsFacetedFilter.TagTrigger changed={filterChanged} class="mr-1" value={[tag]}
-                                ><Filter class="text-muted-foreground text-opacity-50 hover:text-secondary size-5" /></EventsFacetedFilter.TagTrigger
-                            >{tag}</Badge
-                        >
+                        <EventsFacetedFilter.TagTrigger changed={filterChanged} value={[tag]}>
+                            <Filter class="size-3" />
+                            {tag}
+                        </EventsFacetedFilter.TagTrigger>
                     {/each}
                 </Table.Cell>
             </Table.Row>
