@@ -13,26 +13,21 @@
         isLoading: boolean;
         limit: number;
         rowClick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
+        rowHref?: (row: EventSummaryModel<SummaryTemplateKeys>) => string;
         table: Table<EventSummaryModel<SummaryTemplateKeys>>;
-        toolbarActions?: Snippet;
         toolbarChildren?: Snippet;
     }
 
-    let { bodyChildren, footerChildren, isLoading, limit = $bindable(), rowClick, table, toolbarActions, toolbarChildren }: Props = $props();
+    let { bodyChildren, footerChildren, isLoading, limit = $bindable(), rowClick, rowHref, table, toolbarChildren }: Props = $props();
 </script>
 
 <DataTable.Root>
-    <DataTable.Toolbar {table}>
-        {#if toolbarChildren}
+    {#if toolbarChildren}
+        <DataTable.Toolbar {table}>
             {@render toolbarChildren()}
-        {/if}
-        {#snippet actions()}
-            {#if toolbarActions}
-                {@render toolbarActions()}
-            {/if}
-        {/snippet}
-    </DataTable.Toolbar>
-    <DataTable.Body {rowClick} {table}>
+        </DataTable.Toolbar>
+    {/if}
+    <DataTable.Body {rowClick} {rowHref} {table}>
         {#if isLoading}
             <DelayedRender>
                 <DataTable.Loading {table} />
@@ -44,15 +39,23 @@
             {@render bodyChildren()}
         {/if}
     </DataTable.Body>
-    <DataTable.Footer {table} class="space-x-6 lg:space-x-8">
+    <DataTable.Footer {table} class="w-full">
         {#if footerChildren}
             {@render footerChildren()}
         {:else}
-            <DataTable.Selection {table} />
-            <DataTable.PageSize bind:value={limit} {table}></DataTable.PageSize>
-            <div class="flex items-center space-x-6 lg:space-x-8">
-                <DataTable.PageCount {table} />
-                <DataTable.Pagination {table} />
+            <div class="grid w-full grid-cols-1 items-center gap-2 sm:grid-cols-3">
+                <div class="flex min-w-0 items-center gap-2">
+                    <DataTable.Selection {table} />
+                </div>
+
+                <div class="flex min-w-0 items-center justify-center">
+                    <DataTable.PageCount {table} />
+                </div>
+
+                <div class="flex min-w-0 items-center justify-end gap-4">
+                    <DataTable.PageSize bind:value={limit} {table} />
+                    <DataTable.Pagination {table} />
+                </div>
             </div>
         {/if}
     </DataTable.Footer>

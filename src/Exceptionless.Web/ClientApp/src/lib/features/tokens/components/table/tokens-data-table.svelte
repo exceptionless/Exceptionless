@@ -20,11 +20,13 @@
 </script>
 
 <DataTable.Root>
-    <DataTable.Toolbar {table}>
-        {#if toolbarChildren}
+    {#if toolbarChildren}
+        <DataTable.Toolbar {table}>
             {@render toolbarChildren()}
-        {/if}
-    </DataTable.Toolbar>
+        </DataTable.Toolbar>
+    {:else}
+        <DataTable.Toolbar {table} />
+    {/if}
     <DataTable.Body {rowClick} {table}>
         {#if isLoading}
             <DelayedRender>

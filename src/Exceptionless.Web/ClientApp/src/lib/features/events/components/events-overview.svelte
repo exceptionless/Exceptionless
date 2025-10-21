@@ -135,7 +135,7 @@
         <Table.Row class="group">
             {#if projectQuery.isSuccess}
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Project</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                <Table.Cell class="w-4 pr-0"
                     ><EventsFacetedFilter.ProjectTrigger changed={filterChanged} class="mr-0" value={[projectQuery.data.id!]} /></Table.Cell
                 >
                 <Table.Cell>{projectQuery.data.name}</Table.Cell>

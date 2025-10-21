@@ -3,6 +3,7 @@
 
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
+    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Input } from '$comp/ui/input';
@@ -64,6 +65,10 @@
         }
     }
 
+    function rowHref(project: ViewProject): string {
+        return resolve('/(app)/project/[projectId]/manage', { projectId: project.id });
+    }
+
     async function addProject() {
         await goto(resolve('/(app)/project/add'));
     }
@@ -87,11 +92,10 @@
             </Button>
         </div>
     </div>
-    <ProjectsDataTable bind:limit={projectsQueryParameters.limit!} isLoading={projectsQuery.isLoading} {rowClick} {table}>
+    <ProjectsDataTable bind:limit={projectsQueryParameters.limit!} isLoading={projectsQuery.isLoading} {rowClick} {rowHref} {table}>
         {#snippet toolbarChildren()}
-            <div class="min-w-fit flex-1">
-                <Input type="search" placeholder="Filter projects..." class="w-full" bind:value={projectsQueryParameters.filter} />
-            </div>
+            <Input type="search" placeholder="Filter projects..." class="flex-1" bind:value={projectsQueryParameters.filter} />
+            <DataTableViewOptions size="icon-lg" {table} />
         {/snippet}
     </ProjectsDataTable>
 </div>

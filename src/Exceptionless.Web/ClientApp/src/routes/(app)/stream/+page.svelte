@@ -2,8 +2,10 @@
     import type { GetEventsParams } from '$features/events/api.svelte';
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
+    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import DelayedRender from '$comp/delayed-render.svelte';
     import ErrorMessage from '$comp/error-message.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
@@ -42,6 +44,10 @@
     let selectedEventId: null | string = $state(null);
     function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
         selectedEventId = row.id;
+    }
+
+    function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
+        return resolve('/(app)/event/[eventId]', { eventId: row.id });
     }
 
     const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
@@ -239,17 +245,19 @@
 </script>
 
 <DataTable.Root>
-    <DataTable.Toolbar {table}>
-        <H3 class="pr-2">Event Stream</H3>
-        <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
-            <OrganizationDefaultsFacetedFilterBuilder includeDateFacets={false} />
-        </FacetedFilter.Root>
-
-        {#snippet actions()}
-            <StreamingIndicatorButton {paused} onToggle={handleToggle} />
-        {/snippet}
-    </DataTable.Toolbar>
-    <DataTable.Body rowClick={rowclick} {table}>
+    <div class="mb-4 flex flex-wrap items-start gap-2">
+        <H3 class="my-0 shrink-0">Event Stream</H3>
+        <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
+            <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
+                <OrganizationDefaultsFacetedFilterBuilder />
+            </FacetedFilter.Root>
+        </div>
+        <div class="ml-auto flex shrink-0 items-start gap-2">
+            <DataTableViewOptions size="icon-lg" {table} />
+            <StreamingIndicatorButton onToggle={handleToggle} {paused} size="icon-lg" />
+        </div>
+    </div>
+    <DataTable.Body rowClick={rowclick} {rowHref} {table}>
         {#if clientStatus.isLoading}
             <DelayedRender>
                 <DataTable.Loading {table} />

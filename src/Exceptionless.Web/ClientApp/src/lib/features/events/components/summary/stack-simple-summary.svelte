@@ -26,7 +26,7 @@
         <abbr title={source.data.TypeFullName}>{source.data.Type}</abbr>:
     </strong>
 
-    <A class="inline">{source.title}</A>
+    <A class="inline" href={`/next?filter=stack:${source.id}`}>{source.title}</A>
 </div>
 
 {#if source.data.Path}

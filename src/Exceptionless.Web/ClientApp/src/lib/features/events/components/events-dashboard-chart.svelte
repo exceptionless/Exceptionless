@@ -1,5 +1,6 @@
 <script lang="ts">
     import * as Chart from '$comp/ui/chart/index';
+    import { Skeleton } from '$comp/ui/skeleton';
     import { formatDateLabel } from '$features/shared/dates';
     import { scaleUtc } from 'd3-scale';
     import { curveLinear } from 'd3-shape';
@@ -50,13 +51,14 @@
 
 <div class="bg-card text-card-foreground rounded-lg border shadow-sm {className}">
     {#if isLoading}
-        <div class="bg-muted h-16 w-full animate-pulse rounded"></div>
+        <Skeleton class="h-16 w-full rounded" />
     {:else}
         <Chart.Container config={chartConfig} class="h-16 w-full">
             <AreaChart
                 {data}
                 x="date"
                 xScale={scaleUtc()}
+                yDomain={[0, Math.max(1, Math.max(...data.map((d) => d.events)))]}
                 {series}
                 axis={false}
                 grid={false}

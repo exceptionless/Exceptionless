@@ -3,29 +3,26 @@
 </script>
 
 <script generics="TData" lang="ts">
+    import type { ButtonSize } from '$comp/ui/button';
     import type { Table } from '@tanstack/svelte-table';
     import type { Snippet } from 'svelte';
 
     import DataTableViewOptions from './data-table-view-options.svelte';
 
     interface Props {
-        actions?: Snippet;
-        children: Snippet;
+        children?: Snippet;
+        size?: ButtonSize;
         table: Table<TData>;
     }
 
-    let { actions, children, table }: Props = $props();
+    let { children, size = 'icon', table }: Props = $props();
 </script>
 
-<div class="flex items-center justify-between gap-x-2">
-    <div class="flex flex-1 flex-wrap items-center gap-x-2 gap-y-2">
+<div class="flex items-center gap-2">
+    {#if children}
         {@render children()}
-        <div class="ml-auto flex gap-x-2">
-            {#if actions}
-                {@render actions()}
-            {:else}
-                <DataTableViewOptions {table} />
-            {/if}
-        </div>
-    </div>
+    {:else}
+        <div class="flex-1"></div>
+        <DataTableViewOptions {size} {table} />
+    {/if}
 </div>

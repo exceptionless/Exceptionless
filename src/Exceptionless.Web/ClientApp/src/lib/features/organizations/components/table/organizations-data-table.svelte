@@ -10,21 +10,24 @@
         bodyChildren?: Snippet;
         footerChildren?: Snippet;
         isLoading: boolean;
-        rowClick?: (row: ViewOrganization) => void;
+        rowClick?: (row: ViewOrganization, event?: MouseEvent) => void;
+        rowHref?: (row: ViewOrganization) => string;
         table: Table<ViewOrganization>;
         toolbarChildren?: Snippet;
     }
 
-    let { bodyChildren, footerChildren, isLoading, rowClick, table, toolbarChildren }: Props = $props();
+    let { bodyChildren, footerChildren, isLoading, rowClick, rowHref, table, toolbarChildren }: Props = $props();
 </script>
 
 <DataTable.Root>
-    <DataTable.Toolbar {table}>
-        {#if toolbarChildren}
+    {#if toolbarChildren}
+        <DataTable.Toolbar {table}>
             {@render toolbarChildren()}
-        {/if}
-    </DataTable.Toolbar>
-    <DataTable.Body {rowClick} {table}>
+        </DataTable.Toolbar>
+    {:else}
+        <DataTable.Toolbar {table} />
+    {/if}
+    <DataTable.Body {rowClick} {rowHref} {table}>
         {#if isLoading}
             <DelayedRender>
                 <DataTable.Loading {table} />

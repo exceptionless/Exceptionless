@@ -2,11 +2,12 @@
     import type { GetEventsParams } from '$features/events/api.svelte';
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
     import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
-    import StreamingIndicatorButton from '$comp/streaming-indicator-button.svelte';
+    import RefreshButton from '$comp/refresh-button.svelte';
     import { H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
@@ -21,7 +22,6 @@
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
-        shouldRefreshPersistentEventChanged,
         toFilter,
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
@@ -42,8 +42,7 @@
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
-    import { watch } from 'runed';
-    import { useEventListener } from 'runed';
+    import { useEventListener, watch } from 'runed';
     import { throttle } from 'throttle-debounce';
 
     let selectedEventId: null | string = $state(null);
@@ -51,11 +50,16 @@
         selectedEventId = row.id;
     }
 
-    const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
+    function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
+        return resolve('/(app)/event/[eventId]', { eventId: row.id });
+    }
+
+    const DEFAULT_TIME_RANGE = '[now-7d TO now]';
+    const DEFAULT_FILTERS = [new DateFilter('date', DEFAULT_TIME_RANGE), new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
     const DEFAULT_PARAMS = {
         filter: '(status:open OR status:regressed)',
         limit: DEFAULT_LIMIT,
-        time: '[now-7d TO now]'
+        time: DEFAULT_TIME_RANGE
     };
 
     function filterCacheKey(filter: null | string): string {
@@ -163,28 +167,20 @@
 
     const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.getState().pagination.pageIndex === 0);
 
-    let manualPause = $state(false);
-    let paused = $derived(manualPause || !canRefresh);
-
     function reset() {
-        manualPause = false;
         table.resetRowSelection();
         table.setPageIndex(0);
     }
 
-    function handleToggle() {
+    async function handleRefresh() {
         if (!canRefresh) {
             reset();
-        } else {
-            manualPause = !manualPause;
         }
+
+        await loadData();
     }
 
     async function loadData() {
-        if (paused) {
-            return;
-        }
-
         if (client.isLoading || !organization.current) {
             return;
         }
@@ -193,6 +189,7 @@
             params: eventsQueryParameters as Record<string, unknown>
         });
     }
+
     const throttledLoadData = throttle(10000, loadData);
 
     async function onPersistentEventChanged(message: WebSocketMessageValue<'PersistentEventChanged'>) {
@@ -201,28 +198,14 @@
 
             if (removeTableData(table, (doc) => doc.id === message.id)) {
                 // If the grid data is empty from all events being removed, we should refresh the data.
-                if (isTableEmpty(table) && !paused) {
+                if (isTableEmpty(table)) {
                     await throttledLoadData();
                     return;
                 }
             }
         }
-
-        if (paused) {
-            return;
-        }
-
-        // Do not refresh if the filter criteria doesn't match the web socket message.
-        if (
-            !shouldRefreshPersistentEventChanged(filters ?? [], queryParams.filter, message.organization_id, message.project_id, message.stack_id, message.id)
-        ) {
-            return;
-        }
-
-        await throttledLoadData();
     }
 
-    useEventListener(document, 'refresh', () => loadData());
     useEventListener(document, 'PersistentEventChanged', async (event) => await onPersistentEventChanged((event as CustomEvent).detail));
 
     $effect(() => {
@@ -275,36 +258,44 @@
 </script>
 
 <div class="flex flex-col">
-    <div class="mb-4 flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-            <H3 class="pr-2">Events</H3>
+    <div class="mb-4 flex flex-wrap items-start gap-2">
+        <H3 class="my-0 shrink-0">Events</H3>
+        <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <OrganizationDefaultsFacetedFilterBuilder />
             </FacetedFilter.Root>
         </div>
-        <div class="flex items-center space-x-2">
-            <StreamingIndicatorButton {paused} onToggle={handleToggle} />
-            <DataTableViewOptions {table} />
+        <div class="ml-auto flex shrink-0 items-start gap-2">
+            <RefreshButton
+                onRefresh={handleRefresh}
+                isRefreshing={clientStatus.isLoading}
+                size="icon-lg"
+                title={canRefresh ? 'Refresh results' : 'Return to the first page to refresh results'}
+            />
+            <DataTableViewOptions size="icon-lg" {table} />
         </div>
     </div>
 
-    <EventsDashboardChart data={chartData()} isLoading={clientStatus.isLoading || chartDataQuery.isLoading} {onRangeSelect} />
+    <div class="flex flex-col gap-y-4">
+        <EventsDashboardChart data={chartData()} isLoading={chartDataQuery.isLoading && !chartDataQuery.isSuccess} {onRangeSelect} />
 
-    <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
-        {#snippet footerChildren()}
-            <div class="h-9 min-w-[140px]">
-                {#if table.getSelectedRowModel().flatRows.length}
-                    <EventsBulkActionsDropdownMenu {table} />
-                {/if}
-            </div>
+        <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {rowHref} {table}>
+            {#snippet footerChildren()}
+                <div class="h-9 min-w-[140px]">
+                    {#if table.getSelectedRowModel().flatRows.length}
+                        <EventsBulkActionsDropdownMenu {table} />
+                    {/if}
+                </div>
 
-            <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
-            <div class="flex items-center space-x-6 lg:space-x-8">
-                <DataTable.PageCount {table} />
-                <DataTable.Pagination {table} />
-            </div>
-        {/snippet}
-    </EventsDataTable>
+                <DataTable.Selection {table} />
+                <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
+                <div class="flex items-center space-x-6 lg:space-x-8">
+                    <DataTable.PageCount {table} />
+                    <DataTable.Pagination {table} />
+                </div>
+            {/snippet}
+        </EventsDataTable>
+    </div>
 </div>
 
 <Sheet.Root onOpenChange={() => (selectedEventId = null)} open={!!selectedEventId}>
