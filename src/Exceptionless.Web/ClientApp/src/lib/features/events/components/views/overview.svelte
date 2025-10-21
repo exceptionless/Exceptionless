@@ -104,14 +104,10 @@
             <Table.Row class="group">
                 {#if isSessionStart}
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">Session</Table.Head>
-                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><EventsFacetedFilter.SessionTrigger changed={filterChanged} value={event.reference_id} /></Table.Cell
-                    >
+                    <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.SessionTrigger changed={filterChanged} value={event.reference_id} /></Table.Cell>
                 {:else}
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">Reference</Table.Head>
-                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><EventsFacetedFilter.ReferenceTrigger changed={filterChanged} value={event.reference_id} /></Table.Cell
-                    >
+                    <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.ReferenceTrigger changed={filterChanged} value={event.reference_id} /></Table.Cell>
                 {/if}
                 <Table.Cell>{event.reference_id}</Table.Cell>
             </Table.Row>
@@ -120,14 +116,10 @@
             <Table.Row class="group">
                 {#if reference.name === 'session'}
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">Session</Table.Head>
-                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><EventsFacetedFilter.SessionTrigger changed={filterChanged} value={reference.id} /></Table.Cell
-                    >
+                    <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.SessionTrigger changed={filterChanged} value={reference.id} /></Table.Cell>
                 {:else}
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">{reference.name}</Table.Head>
-                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><EventsFacetedFilter.ReferenceTrigger changed={filterChanged} value={reference.id} /></Table.Cell
-                    >
+                    <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.ReferenceTrigger changed={filterChanged} value={reference.id} /></Table.Cell>
                 {/if}
                 <Table.Cell>{reference.id}</Table.Cell>
             </Table.Row>
@@ -135,63 +127,49 @@
         {#if level}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Level</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.LevelTrigger changed={filterChanged} value={[level]} /></Table.Cell
-                >
+                <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.LevelTrigger changed={filterChanged} value={[level]} /></Table.Cell>
                 <Table.Cell class="flex items-center"><LogLevel {level}></LogLevel></Table.Cell>
             </Table.Row>
         {/if}
         {#if event.type !== 'error'}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Event Type</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.TypeTrigger changed={filterChanged} value={[event.type as string]} /></Table.Cell
-                >
+                <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.TypeTrigger changed={filterChanged} value={[event.type as string]} /></Table.Cell>
                 <Table.Cell>{event.type}</Table.Cell>
             </Table.Row>
         {/if}
         {#if hasError}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Error Type</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="error.type" value={errorType} /></Table.Cell
-                >
+                <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.StringTrigger changed={filterChanged} term="error.type" value={errorType} /></Table.Cell>
                 <Table.Cell>{errorType}</Table.Cell>
             </Table.Row>
         {/if}
         {#if event.source}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Source</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="source" value={event.source} /></Table.Cell
-                >
+                <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.StringTrigger changed={filterChanged} term="source" value={event.source} /></Table.Cell>
                 <Table.Cell>{event.source}</Table.Cell>
             </Table.Row>
         {/if}
         {#if !isSessionStart && event.value}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Value</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.NumberTrigger changed={filterChanged} term="value" value={event.value} /></Table.Cell
-                >
+                <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.NumberTrigger changed={filterChanged} term="value" value={event.value} /></Table.Cell>
                 <Table.Cell>{event.value}</Table.Cell>
             </Table.Row>
         {/if}
         {#if message}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Message</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="message" value={message} /></Table.Cell
-                >
+                <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.StringTrigger changed={filterChanged} term="message" value={message} /></Table.Cell>
                 <Table.Cell>{message}</Table.Cell>
             </Table.Row>
         {/if}
         {#if version}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Version</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.VersionTrigger changed={filterChanged} term="version" value={version} /></Table.Cell
-                >
+                <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.VersionTrigger changed={filterChanged} term="version" value={version} /></Table.Cell>
                 <Table.Cell>{version}</Table.Cell>
             </Table.Row>
         {/if}
@@ -220,9 +198,7 @@
         {#if requestUrl}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">URL</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="path" value={requestUrlPath} /></Table.Cell
-                >
+                <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.StringTrigger changed={filterChanged} term="path" value={requestUrlPath} /></Table.Cell>
                 <Table.Cell class="flex items-center gap-x-1"
                     >{requestUrl}<Button href={requestUrl} rel="noopener noreferrer" size="sm" target="_blank" title="Open in new window" variant="ghost"
                         ><ExternalLink /></Button
@@ -240,34 +216,28 @@
             {#if userEmail}
                 <Table.Row class="group">
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">User Email</Table.Head>
-                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="user.email" value={userEmail} /></Table.Cell
-                    >
+                    <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.StringTrigger changed={filterChanged} term="user.email" value={userEmail} /></Table.Cell>
                     <Table.Cell class="flex items-center">{userEmail}<A href="mailto:{userEmail}" title="Send email to {userEmail}"><Email /></A></Table.Cell>
                 </Table.Row>
             {/if}
             {#if userIdentity}
                 <Table.Row class="group">
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">User Identity</Table.Head>
-                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="user" value={userIdentity} /></Table.Cell
-                    >
+                    <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.StringTrigger changed={filterChanged} term="user" value={userIdentity} /></Table.Cell>
                     <Table.Cell>{userIdentity}</Table.Cell>
                 </Table.Row>
             {/if}
             {#if userName}
                 <Table.Row class="group">
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">User Name</Table.Head>
-                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                        ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="user.name" value={userName} /></Table.Cell
-                    >
+                    <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.StringTrigger changed={filterChanged} term="user.name" value={userName} /></Table.Cell>
                     <Table.Cell>{userName}</Table.Cell>
                 </Table.Row>
             {/if}
             {#if userDescription}
                 <Table.Row class="group">
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">User Description</Table.Head>
-                    <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                    <Table.Cell class="w-4 pr-0"
                         ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="user.description" value={userDescription} /></Table.Cell
                     >
                     <Table.Cell>{userDescription}</Table.Cell>

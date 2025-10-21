@@ -14,6 +14,7 @@
 
     interface Props {
         canPromote?: boolean;
+        class?: string;
         data: unknown;
         demote?: (title: string) => Promise<void>;
         excludedKeys?: string[];
@@ -22,7 +23,16 @@
         title: string;
     }
 
-    let { canPromote = true, data, demote = async () => {}, excludedKeys = [], isPromoted = false, promote = async () => {}, title }: Props = $props();
+    let {
+        canPromote = true,
+        class: className,
+        data,
+        demote = async () => {},
+        excludedKeys = [],
+        isPromoted = false,
+        promote = async () => {},
+        title
+    }: Props = $props();
 
     function transformData(data: unknown): unknown {
         if (isJSONString(data)) {
@@ -101,7 +111,7 @@
 </script>
 
 {#if hasData}
-    <div class="flex flex-col space-y-2">
+    <div class={['flex flex-col space-y-2', className]}>
         <div class="flex items-center justify-between">
             <H4>{title}</H4>
             <DropdownMenu.Root>
