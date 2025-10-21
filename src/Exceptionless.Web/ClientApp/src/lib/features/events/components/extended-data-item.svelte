@@ -81,7 +81,7 @@
     let showRaw = $state(false);
     const transformedData = $derived(transformData(data));
     const filteredData = $derived(getFilteredData(transformedData, excludedKeys));
-    const hasData = $derived(!isEmpty(transformedData));
+    const hasData = $derived(!isEmpty(filteredData));
     const showJSONCodeEditor = $derived(isJSONString(data) || Array.isArray(transformedData) || isObject(transformedData));
     const showXmlCodeEditor = $derived(isXmlString(filteredData));
     const canToggle = $derived(!showXmlCodeEditor);
