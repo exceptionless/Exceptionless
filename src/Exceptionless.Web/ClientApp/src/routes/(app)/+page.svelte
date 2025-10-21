@@ -2,6 +2,7 @@
     import type { GetEventsParams } from '$features/events/api.svelte';
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
     import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
@@ -47,6 +48,10 @@
     let selectedEventId: null | string = $state(null);
     function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
         selectedEventId = row.id;
+    }
+
+    function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
+        return resolve('/(app)/event/[eventId]', { eventId: row.id });
     }
 
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
@@ -273,7 +278,7 @@
 
     <EventsDashboardChart data={chartData()} isLoading={chartDataQuery.isLoading && !chartDataQuery.isSuccess} {onRangeSelect} />
 
-    <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
+        <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {rowHref} {table}>
         {#snippet footerChildren()}
             <div class="h-9 min-w-[140px]">
                 {#if table.getSelectedRowModel().flatRows.length}

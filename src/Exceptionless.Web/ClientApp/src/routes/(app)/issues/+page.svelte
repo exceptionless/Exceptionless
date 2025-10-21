@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
     import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
@@ -46,7 +47,7 @@
 
     // TODO: Update this page to use StackSummaryModel instead of EventSummaryModel.
     let selectedStackId = $state<string>();
-    function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
+    function rowClick(row: EventSummaryModel<SummaryTemplateKeys>) {
         selectedStackId = row.id;
     }
 
@@ -62,6 +63,11 @@
         }
     });
     const eventId = $derived(eventsQuery?.data?.[0]?.id);
+
+    function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
+        const stackFilter = `stack:${row.id}`;
+        return resolve('/(app)') + `?filter=${encodeURIComponent(stackFilter)}`;
+    }
 
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
     const DEFAULT_FILTERS = [
@@ -302,7 +308,7 @@
 
     <EventsDashboardChart data={chartData()} isLoading={clientStatus.isLoading || chartDataQuery.isLoading} {onRangeSelect} />
 
-    <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {table}>
+        <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} {rowClick} {rowHref} {table}>
         {#snippet footerChildren()}
             <div class="h-9 min-w-[140px]">
                 <TableStacksBulkActionsDropdownMenu {table} />

@@ -31,6 +31,10 @@
         }
     }
 
+    function rowHref(organization: ViewOrganization): string {
+        return resolve('/(app)/organization/[organizationId]/manage', { organizationId: organization.id });
+    }
+
     async function addOrganization() {
         await goto(resolve('/(app)/organization/add'));
     }
@@ -51,5 +55,5 @@
             </Button>
         </div>
     </div>
-    <OrganizationsDataTable isLoading={organizationsQuery.isLoading} {rowClick} {table} />
+    <OrganizationsDataTable isLoading={organizationsQuery.isLoading} {rowClick} {rowHref} {table} />
 </div>

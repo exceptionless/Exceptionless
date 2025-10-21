@@ -64,6 +64,10 @@
         }
     }
 
+    function rowHref(project: ViewProject): string {
+        return resolve('/(app)/project/[projectId]/manage', { projectId: project.id });
+    }
+
     async function addProject() {
         await goto(resolve('/(app)/project/add'));
     }
@@ -87,7 +91,7 @@
             </Button>
         </div>
     </div>
-    <ProjectsDataTable bind:limit={projectsQueryParameters.limit!} isLoading={projectsQuery.isLoading} {rowClick} {table}>
+    <ProjectsDataTable bind:limit={projectsQueryParameters.limit!} isLoading={projectsQuery.isLoading} {rowClick} {rowHref} {table}>
         {#snippet toolbarChildren()}
             <div class="min-w-fit flex-1">
                 <Input type="search" placeholder="Filter projects..." class="w-full" bind:value={projectsQueryParameters.filter} />
