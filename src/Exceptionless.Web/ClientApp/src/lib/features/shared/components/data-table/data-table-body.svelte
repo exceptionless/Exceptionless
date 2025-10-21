@@ -44,15 +44,7 @@
 
         // If we have an href and modifier keys are pressed, let the browser handle it
         if (rowHref && (event.ctrlKey || event.metaKey || event.shiftKey)) {
-            const href = rowHref(cell.row.original);
-            window.open(href, '_blank');
-            event.preventDefault();
             return;
-        }
-
-        // For regular clicks with href, prevent default navigation
-        if (rowHref) {
-            event.preventDefault();
         }
 
         // Call the row click handler, passing the event so consumer can override if needed
