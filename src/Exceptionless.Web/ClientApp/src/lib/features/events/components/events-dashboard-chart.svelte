@@ -58,7 +58,7 @@
                 {data}
                 x="date"
                 xScale={scaleUtc()}
-                yDomain={[0, Math.max(1, Math.max(...data.map(d => d.events)))]}
+                yDomain={[0, Math.max(1, Math.max(...data.map((d) => d.events)))]}
                 {series}
                 axis={false}
                 grid={false}
