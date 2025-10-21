@@ -2,6 +2,7 @@
     import type { ButtonSize } from '$comp/ui/button';
 
     import { Button } from '$comp/ui/button';
+    import Pause from '@lucide/svelte/icons/pause';
     import Play from '@lucide/svelte/icons/play';
 
     interface Props {
@@ -19,6 +20,6 @@
     {#if paused}
         <Play class="text-primary fill-primary size-4" />
     {:else}
-        <span class="inline-flex size-2 animate-pulse items-center rounded-full bg-red-500"></span>
+        <Pause class="size-4" />
     {/if}
 </Button>
