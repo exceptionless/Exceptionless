@@ -25,7 +25,7 @@
         </strong>:&nbsp;
     {/if}
 
-    <A class="inline">
+    <A class="inline" href={`/next/event/${source.id}`}>
         {#if source.data.Name || source.data.Identity || source.data.SessionId}
             {source.data.Name || source.data.Identity || source.data.SessionId}
             {#if source.data.Name && source.data.Identity}

@@ -28,7 +28,7 @@
         </strong>
     {/if}
 
-    <A class="inline">
+    <A class="inline" href={`/next/event/${source.id}`}>
         {source.data.Message}
     </A>
 </div>

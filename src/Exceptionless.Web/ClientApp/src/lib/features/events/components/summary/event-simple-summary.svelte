@@ -14,7 +14,7 @@
 
 <div class="line-clamp-2">
     <strong><abbr title={source.data.TypeFullName}>{source.data.Type}</abbr>: </strong>
-    <A class="inline">{source.data.Message}</A>
+    <A class="inline" href={`/next/event/${source.id}`}>{source.data.Message}</A>
 </div>
 
 {#if source.data.Path}

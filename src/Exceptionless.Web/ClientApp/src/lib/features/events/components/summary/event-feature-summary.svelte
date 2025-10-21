@@ -16,5 +16,5 @@
     {#if showType}
         <strong>Feature:&nbsp;</strong>
     {/if}
-    <A class="inline">{source.data.Source}</A>
+    <A class="inline" href={`/next/event/${source.id}`}>{source.data.Source}</A>
 </div>
