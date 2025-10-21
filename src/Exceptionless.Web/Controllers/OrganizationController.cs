@@ -275,7 +275,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             invoice.Items.Add(item);
         }
 
-        var coupon = stripeInvoice.Discounts?.FirstOrDefault(d => d.Deleted is false)?.Coupon;
+        var coupon = stripeInvoice.Discounts?.FirstOrDefault(d => d.Deleted is false)?.Source?.Coupon;
         if (coupon is not null)
         {
             if (coupon.AmountOff.HasValue)
