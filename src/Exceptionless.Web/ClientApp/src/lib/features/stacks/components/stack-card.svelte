@@ -5,7 +5,6 @@
     import Percentage from '$comp/formatters/percentage.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
     import Muted from '$comp/typography/muted.svelte';
-    import { Badge } from '$comp/ui/badge';
     import * as ButtonGroup from '$comp/ui/button-group';
     import * as Card from '$comp/ui/card';
     import { Skeleton } from '$comp/ui/skeleton';
@@ -130,8 +129,8 @@
                 </div>
             </Card.Title>
         </Card.Header>
-        <Card.Content class="space-y-4 pt-2">
-            <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Card.Content class="space-y-2">
+            <div class="grid auto-rows-min grid-cols-2 gap-2 lg:grid-cols-4">
                 <Tooltip.Root>
                     <Tooltip.Trigger
                         class="bg-muted flex flex-col items-center rounded-lg p-2"
@@ -181,7 +180,7 @@
 
             <EventsStackChart class="h-12 w-full" data={chartData()} isLoading={stackCountQuery.isLoading} />
 
-            <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div class="grid grid-cols-1 gap-x-4 lg:grid-cols-2">
                 {#if (stack.status === 'fixed' || stack.status === 'regressed') && stack.date_fixed}
                     <div class="flex items-center gap-2 text-sm">
                         <Calendar class="size-4 text-green-500" />
@@ -202,11 +201,10 @@
             {#if stack.tags && stack.tags.length > 0}
                 <div class="flex flex-wrap gap-2">
                     {#each stack.tags as tag (tag)}
-                        <Badge color="dark"
-                            ><EventsFacetedFilter.TagTrigger changed={filterChanged} class="mr-1" value={[tag]}
-                                ><Filter class="text-muted-foreground text-opacity-50 hover:text-secondary size-5" /></EventsFacetedFilter.TagTrigger
-                            >{tag}</Badge
-                        >
+                        <EventsFacetedFilter.TagTrigger changed={filterChanged} value={[tag]}>
+                            <Filter class="size-3" />
+                            {tag}
+                        </EventsFacetedFilter.TagTrigger>
                     {/each}
                 </div>
             {/if}
@@ -230,8 +228,8 @@
                 </div>
             </Card.Title>
         </Card.Header>
-        <Card.Content class="space-y-4 pt-2">
-            <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Card.Content class="space-y-2">
+            <div class="grid auto-rows-min grid-cols-2 gap-2 lg:grid-cols-4">
                 {#each { length: 4 } as name, index (`${name}-${index}`)}
                     <div class="bg-muted flex flex-col items-center rounded-lg p-2">
                         <Skeleton class="mb-1 size-6" />
