@@ -22,11 +22,11 @@
 </script>
 
 {#if column.getCanSort()}
-    <div class={cn('flex items-center', className)} {...restProps}>
+    <div class={cn('flex items-center space-x-2', className)} {...restProps}>
         <DropdownMenu.Root>
             <DropdownMenu.Trigger>
                 {#snippet child({ props })}
-                    <Button class="data-[state=open]:bg-accent -ml-3 h-8" variant="ghost" {...props}>
+                    <Button class="data-[state=open]:bg-accent h-8" variant="ghost" {...props}>
                         {#if children}
                             {@render children()}
                         {/if}

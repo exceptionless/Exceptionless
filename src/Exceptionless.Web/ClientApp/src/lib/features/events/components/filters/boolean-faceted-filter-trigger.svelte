@@ -1,15 +1,11 @@
 <script lang="ts">
-    import type { Snippet } from 'svelte';
-
-    import { A, type AProps } from '$comp/typography';
-    import { cn } from '$lib/utils';
+    import { Button, type ButtonProps } from '$comp/ui/button';
     import Filter from '@lucide/svelte/icons/filter';
 
     import { BooleanFilter } from './models.svelte';
 
-    type Props = AProps & {
+    type Props = ButtonProps & {
         changed: (filter: BooleanFilter) => void;
-        children?: Snippet;
         term: string;
         value?: boolean;
     };
@@ -18,10 +14,17 @@
     const title = `Search ${term}:${value}`;
 </script>
 
-<A class={cn('cursor-pointer', className)} onclick={() => changed(new BooleanFilter(term, value))} {title} {...props}>
+<Button
+    variant="ghost"
+    size={children ? 'xs' : 'icon-xs'}
+    onclick={() => changed(new BooleanFilter(term, value))}
+    {title}
+    class={[children ? '' : 'opacity-50 hover:opacity-100 focus-visible:opacity-100', className]}
+    {...props}
+>
     {#if children}
         {@render children()}
     {:else}
-        <Filter class="text-muted-foreground text-opacity-50 hover:text-primary size-5" />
+        <Filter class="text-muted-foreground" />
     {/if}
-</A>
+</Button>

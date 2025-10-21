@@ -3,13 +3,13 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
-    import Loading from '$comp/loading.svelte';
     import { H3, Muted } from '$comp/typography';
     import { Button, buttonVariants } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
     import { Separator } from '$comp/ui/separator';
+    import { Spinner } from '$comp/ui/spinner';
     import { deleteOrganization, getOrganizationQuery, patchOrganization } from '$features/organizations/api.svelte';
     import RemoveOrganizationDialog from '$features/organizations/components/dialogs/remove-organization-dialog.svelte';
     import { NewOrganization } from '$features/organizations/models';
@@ -26,7 +26,7 @@
     let toastId = $state<number | string>();
     let previousOrganizationRef: NewOrganization | undefined;
 
-    const organizationId = page.params.organizationId || '';
+    const organizationId = $derived(page.params.organizationId || '');
     const organizationQuery = getOrganizationQuery({
         route: {
             get id() {
@@ -147,7 +147,7 @@
                     <DropdownMenu.Separator />
                     <DropdownMenu.Item onclick={() => (showRemoveDialog = true)} disabled={removeOrganization.isPending}>
                         {#if removeOrganization.isPending}
-                            <Loading class="mr-2" variant="secondary"></Loading>
+                            <Spinner />
                             <span>Deleting Organization...</span>
                         {:else}
                             <X class="mr-2 size-4" />

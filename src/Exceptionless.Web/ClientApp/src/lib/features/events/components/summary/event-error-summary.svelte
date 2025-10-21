@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
     import { A, Muted } from '$comp/typography';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
@@ -28,7 +29,7 @@
         </strong>
     {/if}
 
-    <A class="inline">
+    <A class="inline" href={resolve('/(app)/event/[eventId]', { eventId: source.id })}>
         {source.data.Message}
     </A>
 </div>

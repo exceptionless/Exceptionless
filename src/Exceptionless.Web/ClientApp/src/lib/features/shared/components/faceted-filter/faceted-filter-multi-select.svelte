@@ -1,10 +1,10 @@
 <script lang="ts">
     import * as FacetedFilter from '$comp/faceted-filter';
-    import Loading from '$comp/loading.svelte';
     import { Button } from '$comp/ui/button';
     import * as Command from '$comp/ui/command';
     import * as Popover from '$comp/ui/popover';
     import Separator from '$comp/ui/separator/separator.svelte';
+    import { Spinner } from '$comp/ui/spinner';
     import { cn } from '$lib/utils';
     import Check from '@lucide/svelte/icons/check';
 
@@ -111,7 +111,7 @@
             <Command.List>
                 <Command.Empty>{noOptionsText}</Command.Empty>
                 {#if loading}
-                    <Command.Loading><div class="flex p-2"><Loading class="mr-2 h-4 w-4" /> Loading...</div></Command.Loading>
+                    <Command.Loading><div class="flex p-2"><Spinner /> Loading...</div></Command.Loading>
                 {/if}
                 {#if options.length > 0}
                     <Command.Group>

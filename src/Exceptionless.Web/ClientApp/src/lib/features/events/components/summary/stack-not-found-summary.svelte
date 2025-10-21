@@ -25,7 +25,7 @@
     {#if showType}
         <strong>404</strong>:&nbsp;
     {/if}
-    <A class="inline">
+    <A class="inline" href={`/next?filter=stack:${source.id}`}>
         {source.title}
     </A>
 </div>

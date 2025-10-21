@@ -123,6 +123,7 @@
                     data={chartData}
                     x="date"
                     xScale={scaleUtc()}
+                    yDomain={[0, Math.max(1, ...chartData.map((d) => Math.max(d.total, d.limit, d.blocked, d.discarded, d.too_big)))]}
                     {series}
                     props={{
                         area: {

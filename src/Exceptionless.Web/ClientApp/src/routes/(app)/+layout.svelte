@@ -205,8 +205,8 @@
             <SidebarUser isLoading={meQuery.isLoading} user={meQuery.data} {gravatar} />
         {/snippet}
     </Sidebar>
-    <div class="flex w-full overflow-hidden pt-16">
-        <div class="text-secondary-foreground w-full">
+    <div class="flex w-full pt-16">
+        <div class="text-secondary-foreground w-full overflow-y-auto">
             <main class="px-4 pt-4">
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
 

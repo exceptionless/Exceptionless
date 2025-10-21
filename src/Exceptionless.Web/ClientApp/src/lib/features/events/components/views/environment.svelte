@@ -24,7 +24,7 @@
         {#if environment.machine_name}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Machine Name</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                <Table.Cell class="w-4 pr-0"
                     ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="machine" value={environment.machine_name} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center">{environment.machine_name}</Table.Cell>
@@ -33,9 +33,7 @@
         {#if environment.ip_address}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">IP Address</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="ip" value={environment.ip_address} /></Table.Cell
-                >
+                <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.StringTrigger changed={filterChanged} term="ip" value={environment.ip_address} /></Table.Cell>
                 <Table.Cell>{environment.ip_address}</Table.Cell>
             </Table.Row>
         {/if}
@@ -70,16 +68,14 @@
         {#if environment.o_s_name}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">OS Name</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="os" value={environment.o_s_name} /></Table.Cell
-                >
+                <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.StringTrigger changed={filterChanged} term="os" value={environment.o_s_name} /></Table.Cell>
                 <Table.Cell>{environment.o_s_name}</Table.Cell>
             </Table.Row>
         {/if}
         {#if environment.o_s_version}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">OS Version</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                <Table.Cell class="w-4 pr-0"
                     ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="os.version" value={environment.o_s_version} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center">{environment.o_s_version}</Table.Cell>
@@ -88,7 +84,7 @@
         {#if environment.architecture}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Architecture</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                <Table.Cell class="w-4 pr-0"
                     ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="architecture" value={environment.architecture} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center">{environment.architecture}</Table.Cell>
@@ -126,7 +122,5 @@
 </Table.Root>
 
 {#if environment.data}
-    <div class="mt-2">
-        <ExtendedDataItem canPromote={false} data={environment.data} title="Additional Data"></ExtendedDataItem>
-    </div>
+    <ExtendedDataItem canPromote={false} class="mt-2" data={environment.data} title="Additional Data"></ExtendedDataItem>
 {/if}

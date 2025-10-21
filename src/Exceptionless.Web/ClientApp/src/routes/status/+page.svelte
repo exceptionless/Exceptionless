@@ -1,10 +1,10 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { page } from '$app/state';
-    import Loading from '$comp/loading.svelte';
     import Logo from '$comp/logo.svelte';
     import { P } from '$comp/typography';
     import * as Card from '$comp/ui/card';
+    import { Spinner } from '$comp/ui/spinner';
     import { getHealthQuery } from '$features/status/api.svelte';
 
     let redirect = page.url.searchParams.get('redirect');
@@ -26,7 +26,7 @@
         <Card.Content>
             <P class="text-center text-sm">
                 {#if healthQuery.isLoading}
-                    <Loading /> Checking service status...
+                    <Spinner /> Checking service status...
                 {:else if healthQuery.isSuccess}
                     Service is healthy.
                 {:else}

@@ -44,9 +44,9 @@ export function filterChanged(filters: IFilter[], addedOrUpdated: IFilter): IFil
 }
 
 export function filterRemoved(filters: IFilter[], removed?: IFilter): IFilter[] {
-    // If detail is undefined, remove all filters.
+    // If removed is undefined, keep only date filters and remove all others.
     if (!removed) {
-        return [];
+        return filters.filter((f) => f.type === 'date');
     }
 
     return filters.filter((f) => f.id !== removed.id);

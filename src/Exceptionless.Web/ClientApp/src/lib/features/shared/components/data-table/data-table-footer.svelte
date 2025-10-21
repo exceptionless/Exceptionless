@@ -20,12 +20,12 @@
     let { children, class: className, table }: Props = $props();
 </script>
 
-<div class={['flex items-center justify-between', className]}>
+<div class={['flex w-full items-center justify-between gap-2', className]}>
     {#if children}
         {@render children()}
     {:else}
         <DataTableSelection {table} />
-        <div class="flex items-center space-x-6 lg:space-x-8">
+        <div class="flex items-center gap-4">
             <DataTablePageCount {table} />
             <DataTablePagination {table} />
         </div>

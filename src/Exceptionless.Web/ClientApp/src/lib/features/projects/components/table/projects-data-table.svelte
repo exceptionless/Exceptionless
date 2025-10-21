@@ -11,21 +11,24 @@
         footerChildren?: Snippet;
         isLoading: boolean;
         limit: number;
-        rowClick?: (row: ViewProject) => void;
+        rowClick?: (row: ViewProject, event?: MouseEvent) => void;
+        rowHref?: (row: ViewProject) => string;
         table: Table<ViewProject>;
         toolbarChildren?: Snippet;
     }
 
-    let { bodyChildren, footerChildren, isLoading, limit = $bindable(), rowClick, table, toolbarChildren }: Props = $props();
+    let { bodyChildren, footerChildren, isLoading, limit = $bindable(), rowClick, rowHref, table, toolbarChildren }: Props = $props();
 </script>
 
 <DataTable.Root>
-    <DataTable.Toolbar {table}>
-        {#if toolbarChildren}
+    {#if toolbarChildren}
+        <DataTable.Toolbar {table}>
             {@render toolbarChildren()}
-        {/if}
-    </DataTable.Toolbar>
-    <DataTable.Body {rowClick} {table}>
+        </DataTable.Toolbar>
+    {:else}
+        <DataTable.Toolbar {table} />
+    {/if}
+    <DataTable.Body {rowClick} {rowHref} {table}>
         {#if isLoading}
             <DelayedRender>
                 <DataTable.Loading {table} />

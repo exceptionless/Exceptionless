@@ -113,7 +113,7 @@
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
         {#snippet child({ props })}
-            <Button {...props} variant="ghost" size="icon">
+            <Button {...props} variant="outline" size="icon">
                 <Settings class="size-4" />
             </Button>
         {/snippet}

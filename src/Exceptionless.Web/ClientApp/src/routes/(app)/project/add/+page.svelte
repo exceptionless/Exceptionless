@@ -2,10 +2,10 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import ErrorMessage from '$comp/error-message.svelte';
-    import Loading from '$comp/loading.svelte';
     import { H3, Muted } from '$comp/typography';
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
+    import { Spinner } from '$comp/ui/spinner';
     import { organization } from '$features/organizations/context.svelte';
     import { postProject } from '$features/projects/api.svelte';
     import { applyServerSideErrors } from '$features/shared/validation';
@@ -75,7 +75,7 @@
 
         <Form.Button>
             {#if $submitting}
-                <Loading class="mr-2" variant="secondary"></Loading> Adding Project...
+                <Spinner /> Adding Project...
             {:else}
                 Add Project
             {/if}</Form.Button

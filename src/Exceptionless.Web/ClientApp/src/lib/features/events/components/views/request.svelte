@@ -59,9 +59,7 @@
         {#if requestUrl}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">URL</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="path" value={requestUrlPath} /></Table.Cell
-                >
+                <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.StringTrigger changed={filterChanged} term="path" value={requestUrlPath} /></Table.Cell>
                 <Table.Cell class="flex items-center gap-x-1"
                     >{requestUrl}<Button href={requestUrl} rel="noopener noreferrer" size="sm" target="_blank" title="Open in new window" variant="ghost"
                         ><ExternalLink /></Button
@@ -71,9 +69,7 @@
         {:else if requestUrlPath}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">URL</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="path" value={requestUrlPath} /></Table.Cell
-                >
+                <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.StringTrigger changed={filterChanged} term="path" value={requestUrlPath} /></Table.Cell>
                 <Table.Cell>{requestUrlPath}</Table.Cell>
             </Table.Row>
         {/if}
@@ -96,7 +92,7 @@
         {#if request.client_ip_address}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Client IP Address</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                <Table.Cell class="w-4 pr-0"
                     ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="ip" value={request.client_ip_address} /></Table.Cell
                 >
                 <Table.Cell class="flex items-center">{request.client_ip_address}</Table.Cell>
@@ -105,7 +101,7 @@
         {#if request.user_agent}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">User Agent</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
+                <Table.Cell class="w-4 pr-0"
                     ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="useragent" value={request.user_agent} /></Table.Cell
                 >
                 <Table.Cell>{request.user_agent}</Table.Cell>
@@ -114,18 +110,14 @@
         {#if device}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Device</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="device" value={device} /></Table.Cell
-                >
+                <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.StringTrigger changed={filterChanged} term="device" value={device} /></Table.Cell>
                 <Table.Cell>{device}</Table.Cell>
             </Table.Row>
         {/if}
         {#if browser}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Browser</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="browser" value={browser} /></Table.Cell
-                >
+                <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.StringTrigger changed={filterChanged} term="browser" value={browser} /></Table.Cell>
                 <Table.Cell class="flex items-center"
                     >{browser}
                     {#if browserMajorVersion}&nbsp;
@@ -139,9 +131,7 @@
         {#if os}
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Browser OS</Table.Head>
-                <Table.Cell class="w-4 pr-0 opacity-0 group-hover:opacity-100"
-                    ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="os" value={os} /></Table.Cell
-                >
+                <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.StringTrigger changed={filterChanged} term="os" value={os} /></Table.Cell>
                 <Table.Cell class="flex items-center"
                     >{os}
                     {#if osMajorVersion}&nbsp;
@@ -156,9 +146,7 @@
 </Table.Root>
 
 {#if request.post_data}
-    <div class="mt-2">
-        <ExtendedDataItem canPromote={false} data={request.post_data} title="Post Data"></ExtendedDataItem>
-    </div>
+    <ExtendedDataItem canPromote={false} class="mt-2" data={request.post_data} title="Post Data"></ExtendedDataItem>
 {/if}
 
 {#if hasHeaders}
@@ -202,7 +190,5 @@
 {/if}
 
 {#if request.data}
-    <div class="mt-2">
-        <ExtendedDataItem canPromote={false} data={request.data} excludedKeys={excludedAdditionalData} title="Additional Data"></ExtendedDataItem>
-    </div>
+    <ExtendedDataItem canPromote={false} class="mt-2" data={request.data} excludedKeys={excludedAdditionalData} title="Additional Data"></ExtendedDataItem>
 {/if}

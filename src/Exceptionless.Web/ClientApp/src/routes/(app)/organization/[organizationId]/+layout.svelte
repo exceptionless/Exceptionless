@@ -16,7 +16,7 @@
 
     let { children } = $props();
 
-    const organizationId = page.params.organizationId || '';
+    const organizationId = $derived(page.params.organizationId || '');
     const organizationQuery = getOrganizationQuery({
         route: {
             get id() {
@@ -24,11 +24,6 @@
             }
         }
     });
-
-    // Set the current organization based on the current organization param on page load.
-    if (organizationId !== organization.current) {
-        organization.current = organizationId;
-    }
 
     const filteredRoutes = $derived(routes().filter((route) => route.group === 'Organization Settings'));
 

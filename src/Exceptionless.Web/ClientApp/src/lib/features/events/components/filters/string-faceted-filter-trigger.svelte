@@ -1,11 +1,10 @@
 <script lang="ts">
-    import { A, type AProps } from '$comp/typography';
-    import { cn } from '$lib/utils';
+    import { Button, type ButtonProps } from '$comp/ui/button';
     import Filter from '@lucide/svelte/icons/filter';
 
     import { StringFilter } from './models.svelte';
 
-    type Props = AProps & {
+    type Props = ButtonProps & {
         changed: (filter: StringFilter) => void;
         term: string;
         value?: null | string;
@@ -15,10 +14,17 @@
     const title = `Search ${term}:${value}`;
 </script>
 
-<A class={cn('cursor-pointer', className)} onclick={() => changed(new StringFilter(term, value ?? undefined))} {title} {...props}>
+<Button
+    variant="ghost"
+    size={children ? 'xs' : 'icon-xs'}
+    onclick={() => changed(new StringFilter(term, value ?? undefined))}
+    {title}
+    class={[children ? '' : 'opacity-50 hover:opacity-100 focus-visible:opacity-100', className]}
+    {...props}
+>
     {#if children}
         {@render children()}
     {:else}
-        <Filter class="text-muted-foreground text-opacity-50 hover:text-primary size-5" />
+        <Filter class="text-muted-foreground" />
     {/if}
-</A>
+</Button>

@@ -3,10 +3,10 @@
     import PasswordInput from '$comp/form/password-input.svelte';
     import GoogleIcon from '$comp/icons/GoogleIcon.svelte';
     import MicrosoftIcon from '$comp/icons/MicrosoftIcon.svelte';
-    import Loading from '$comp/loading.svelte';
     import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';
+    import { Spinner } from '$comp/ui/spinner';
     import {
         enableOAuthLogin,
         facebookClientId,
@@ -96,7 +96,7 @@
         <div class="pt-2">
             <Button type="submit">
                 {#if clientStatus.isLoading}
-                    <Loading class="mr-2" variant="secondary"></Loading> Updating password...
+                    <Spinner /> Updating password...
                 {:else}
                     Update password
                 {/if}

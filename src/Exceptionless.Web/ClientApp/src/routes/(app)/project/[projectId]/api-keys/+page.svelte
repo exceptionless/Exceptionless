@@ -14,7 +14,7 @@
     import { queryParamsState } from 'kit-query-params';
     import { toast } from 'svelte-sonner';
 
-    const projectId = page.params.projectId || '';
+    const projectId = $derived(page.params.projectId || '');
 
     const newToken = postProjectToken({
         route: {

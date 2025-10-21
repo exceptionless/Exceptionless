@@ -5,13 +5,13 @@
     import ErrorMessage from '$comp/error-message.svelte';
     import GoogleIcon from '$comp/icons/GoogleIcon.svelte';
     import MicrosoftIcon from '$comp/icons/MicrosoftIcon.svelte';
-    import Loading from '$comp/loading.svelte';
     import Logo from '$comp/logo.svelte';
     import { A, Muted, P } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
+    import { Spinner } from '$comp/ui/spinner';
     import {
         enableAccountCreation,
         enableOAuthLogin,
@@ -103,7 +103,7 @@
             </Form.Field>
             <Form.Button>
                 {#if $submitting}
-                    <Loading class="mr-2" variant="secondary"></Loading> Logging in...
+                    <Spinner /> Logging in...
                 {:else}
                     Login
                 {/if}</Form.Button
