@@ -47,6 +47,11 @@
             return;
         }
 
+        // For regular clicks with href, prevent default navigation
+        if (rowHref) {
+            event.preventDefault();
+        }
+
         // Call the row click handler, passing the event so consumer can override if needed
         rowClick(cell.row.original, event);
     }
