@@ -42,7 +42,7 @@
         }
 
         if (status === 401 && !ctx.options.expectedStatusCodes?.includes(401)) {
-            accessToken.current = '';
+            accessToken.current = null;
             return;
         }
 

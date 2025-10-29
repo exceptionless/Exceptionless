@@ -37,7 +37,7 @@
     }
 
     let { children }: Props = $props();
-    let isAuthenticated = $derived(accessToken.current !== null);
+    let isAuthenticated = $derived(!!accessToken.current);
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
 
