@@ -1,7 +1,7 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { svelteTesting } from '@testing-library/svelte/vite';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 const aspNetConfig = getAspNetConfig();
 
@@ -63,7 +63,7 @@ export default defineConfig({
         strictPort: true
     },
     test: {
-        workspace: [
+        projects: [
             {
                 extends: './vite.config.ts',
                 plugins: [svelteTesting()],
