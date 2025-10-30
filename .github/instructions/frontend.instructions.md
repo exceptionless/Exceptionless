@@ -14,6 +14,7 @@ Located in the `src/Exceptionless.Web/ClientApp` directory.
 - When there is a linting error, always try to run `npm run format` first.
 - Limit use of $effect as there is usually a better way to solve the problem like using $derived.
 - **Do NOT** use any server-side Svelte features.
+- Always use the chrome mcp to verify visual and functional correctness, default to using the new site /next path.
 
 ## Architecture & Components
 
