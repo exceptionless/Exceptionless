@@ -6,21 +6,19 @@
 
     import { StatusFilter } from './models.svelte';
 
-    type Props = ButtonProps & {
+    type Props = Omit<ButtonProps, 'value'> & {
         changed: (filter: StatusFilter) => void;
         value: StackStatus[];
     };
     let { changed, children, class: className, value, ...props }: Props = $props();
-
-    const title = `Search status:${value}`;
 </script>
 
 <Button
     variant="ghost"
     size={children ? 'xs' : 'icon-xs'}
     onclick={() => changed(new StatusFilter(value))}
-    {title}
-    class={[children ? '' : 'opacity-50 hover:opacity-100 focus-visible:opacity-100', className]}
+    title={`Search status:${value}`}
+    class={['cursor-pointer', children ? '' : 'opacity-50 hover:opacity-100 focus-visible:opacity-100', className]}
     {...props}
 >
     {#if children}

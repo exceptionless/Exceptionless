@@ -4,21 +4,19 @@
 
     import { LevelFilter } from './models.svelte';
 
-    type Props = ButtonProps & {
+    type Props = Omit<ButtonProps, 'value'> & {
         changed: (filter: LevelFilter) => void;
         value: string[];
     };
     let { changed, children, class: className, value, ...props }: Props = $props();
-
-    const title = `Search level:${value}`;
 </script>
 
 <Button
     variant="ghost"
     size={children ? 'xs' : 'icon-xs'}
     onclick={() => changed(new LevelFilter(value))}
-    {title}
-    class={[children ? '' : 'opacity-50 hover:opacity-100 focus-visible:opacity-100', className]}
+    title={`Search level:${value}`}
+    class={['cursor-pointer', children ? '' : 'opacity-50 hover:opacity-100 focus-visible:opacity-100', className]}
     {...props}
 >
     {#if children}
