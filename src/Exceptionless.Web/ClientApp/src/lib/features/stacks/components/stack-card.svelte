@@ -24,6 +24,7 @@
     import Filter from '@lucide/svelte/icons/filter';
     import Users from '@lucide/svelte/icons/users';
 
+    import StackLogLevel from './stack-log-level.svelte';
     import StackOptionsDropdownMenu from './stack-options-dropdown-menu.svelte';
     import StackReferences from './stack-references.svelte';
     import StackStatusDropdownMenu from './stack-status-dropdown-menu.svelte';
@@ -121,7 +122,8 @@
                         <span class="block max-w-full min-w-0 truncate" title={stack.title}>{stack.title}</span>
                     </div>
                 </div>
-                <div class="ml-2 flex shrink-0">
+                <div class="ml-2 flex shrink-0 items-center gap-2">
+                    <StackLogLevel {stack} />
                     <ButtonGroup.Root>
                         <StackStatusDropdownMenu {stack} />
                         <StackOptionsDropdownMenu {stack} />
