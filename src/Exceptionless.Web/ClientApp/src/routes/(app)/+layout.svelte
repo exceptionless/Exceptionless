@@ -121,6 +121,11 @@
     });
 
     $effect(() => {
+        // Direct read of accessToken.current establishes reactive dependency, working around PersistedState reactivity bug
+        const currentToken = accessToken.current;
+        // Track page.url to ensure effect re-runs on navigation
+        void page.url.pathname;
+
         function handleKeydown(e: KeyboardEvent) {
             if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
@@ -128,7 +133,8 @@
             }
         }
 
-        if (!isAuthenticated) {
+        // Check token directly instead of using derived isAuthenticated
+        if (!currentToken) {
             queryClient.cancelQueries();
             queryClient.invalidateQueries();
 
