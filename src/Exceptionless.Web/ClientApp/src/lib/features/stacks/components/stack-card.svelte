@@ -135,8 +135,11 @@
             <div class="grid auto-rows-min grid-cols-2 gap-2 lg:grid-cols-4">
                 <Tooltip.Root>
                     <Tooltip.Trigger
-                        class="bg-muted flex flex-col items-center rounded-lg p-2"
+                        class="bg-muted hover:bg-muted/80 flex cursor-pointer flex-col items-center rounded-lg p-2 transition-colors"
                         onclick={() => filterChanged(new StringFilter('stack', stack.id))}
+                        aria-label="Filter by this stack"
+                        role="button"
+                        tabindex={0}
                     >
                         <Calendar class="text-primary mb-1 size-6" />
                         <span class="text-lg font-bold"><Number value={totalOccurrences} /></span>
