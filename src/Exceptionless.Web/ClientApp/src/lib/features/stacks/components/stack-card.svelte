@@ -243,6 +243,12 @@
                     </div>
                 {/each}
             </div>
+
+            <div class="flex justify-end">
+                <Muted class="text-xs uppercase">Last 7 days</Muted>
+            </div>
+
+            <Skeleton class="h-12 w-full rounded-md" />
         </Card.Content>
     </Card.Root>
 {/if}
