@@ -61,7 +61,8 @@
         "typescript": "^5.9.3",
         "typescript-eslint": "^8.46.2",
         "vite": "^7.1.12",
-        "vitest": "4.0.4"
+        "vitest": "4.0.4",
+        "vitest-websocket-mock": "^0.5.0"
     },
     "dependencies": {
         "@exceptionless/browser": "^3.1.0",
