@@ -25,7 +25,7 @@
         "upgrade": "ncu -i"
     },
     "devDependencies": {
-        "@chromatic-com/storybook": "^4.1.1",
+        "@chromatic-com/storybook": "^4.1.2",
         "@eslint/compat": "^1.4.0",
         "@eslint/js": "^9.38.0",
         "@iconify-json/lucide": "^1.2.71",
