@@ -33,7 +33,7 @@
         "@storybook/addon-a11y": "^10.0.0",
         "@storybook/addon-docs": "^10.0.0",
         "@storybook/addon-svelte-csf": "^5.0.10",
-        "@storybook/sveltekit": "^10.0.0",
+        "@storybook/sveltekit": "^10.0.6",
         "@sveltejs/adapter-static": "^3.0.10",
         "@sveltejs/kit": "^2.48.2",
         "@sveltejs/vite-plugin-svelte": "^6.2.1",
