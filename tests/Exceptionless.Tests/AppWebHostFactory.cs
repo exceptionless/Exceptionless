@@ -43,7 +43,7 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
             .AddYamlFile("appsettings.yml", optional: false, reloadOnChange: false)
             .Build();
 
-        return Program.CreateHostBuilder(config, Environments.Development);
+        return Exceptionless.Web.Program.CreateHostBuilder(config, Environments.Development);
     }
 
     async Task IAsyncLifetime.DisposeAsync()

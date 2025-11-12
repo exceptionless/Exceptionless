@@ -80,7 +80,8 @@ public static class ElasticsearchBuilderExtensions
         {
             containerName ??= $"{builder.Resource.Name}-kibana";
 
-            builder.ApplicationBuilder.Services.TryAddLifecycleHook<KibanaConfigWriterHook>();
+            // TODO: Re-enable Kibana config writer hook after updating to Aspire 13 eventing model
+            // builder.ApplicationBuilder.Services.AddHostedService<KibanaConfigWriterHook>();
 
             var resource = new KibanaResource(containerName);
             var resourceBuilder = builder.ApplicationBuilder.AddResource(resource)

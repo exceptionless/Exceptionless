@@ -5,7 +5,6 @@
 
   <ItemGroup>
     <PackageReference Include="Exceptionless.AspNetCore" Version="6.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.0" />
     <PackageReference Include="App.Metrics.AspNetCore" Version="4.3.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
     <PackageReference Include="Serilog.Enrichers.Span" Version="3.1.0" />
@@ -21,10 +20,6 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.ElasticsearchClient" Version="1.13.0-beta.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.13.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.13.0-beta.1" />
-  </ItemGroup>
-
-  <ItemGroup Label="Transitive dependency updates to resolve vulnerability warnings">
-    <PackageReference Include="System.Text.Encodings.Web" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>

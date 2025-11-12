@@ -48,16 +48,16 @@ var api = builder.AddProject<Projects.Exceptionless_Web>("Api", "Exceptionless")
     .WithUrlForEndpoint("http", u => u.DisplayText = "Api")
     .WithHttpHealthCheck("/health");
 
-builder.AddNpmApp("Web", "../../src/Exceptionless.Web/ClientApp", "dev")
+builder.AddJavaScriptApp("Web", "../../src/Exceptionless.Web/ClientApp", "dev")
     .WithReference(api)
     .WithEnvironment("ASPNETCORE_URLS", "http://localhost:5200")
     .WithUrlForEndpoint("http", u => u.DisplayText = "Web")
-    .WithEndpoint(port: 5173, targetPort: 5173, scheme: "http", env: "PORT", isProxied: false);
+    .WithHttpEndpoint(port: 5173, env: "PORT", isProxied: false);
 
-builder.AddNpmApp("AngularWeb", "../../src/Exceptionless.Web/ClientApp.angular", "serve")
+builder.AddJavaScriptApp("AngularWeb", "../../src/Exceptionless.Web/ClientApp.angular", "serve")
     .WithReference(api)
     .WithEnvironment("ASPNETCORE_URLS", "http://localhost:5200")
     .WithUrlForEndpoint("http", u => u.DisplayText = "Angular Web")
-    .WithEndpoint(port: 5100, targetPort: 5100, scheme: "http", env: "PORT", isProxied: false);
+    .WithHttpEndpoint(port: 5100, env: "PORT", isProxied: false);
 
 builder.Build().Run();
