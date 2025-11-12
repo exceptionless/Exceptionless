@@ -80,7 +80,10 @@ public static class ElasticsearchBuilderExtensions
         {
             containerName ??= $"{builder.Resource.Name}-kibana";
 
-            var elasticsearchResources = builder.ApplicationBuilder.Resources.OfType<ElasticsearchResource>();
+            // TODO: Update KibanaConfigWriterHook to use Aspire 13 eventing model (IDistributedApplicationEventingSubscriber)
+            // The IDistributedApplicationLifecycleHook interface is obsolete in Aspire 13.
+            // See: https://learn.microsoft.com/en-us/dotnet/aspire/compatibility/13.0/
+            // builder.ApplicationBuilder.Services.TryAddLifecycleHook<KibanaConfigWriterHook>();
 
             var resource = new KibanaResource(containerName);
             var resourceBuilder = builder.ApplicationBuilder.AddResource(resource)
@@ -89,8 +92,7 @@ public static class ElasticsearchBuilderExtensions
                                       .WithHttpEndpoint(targetPort: KibanaPort, name: containerName)
                                       .WithUrlForEndpoint(containerName, u => u.DisplayText = "Kibana")
                                       .WithEnvironment("xpack.security.enabled", "false")
-                                      .ExcludeFromManifest()
-                                      .ConfigureElasticsearchHosts(elasticsearchResources);
+                                      .ExcludeFromManifest();
 
             configureContainer?.Invoke(resourceBuilder);
 

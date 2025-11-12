@@ -1,42 +1,38 @@
+﻿#if FALSE  // TODO: Re-enable and update to Aspire 13 eventing model (IDistributedApplicationEventingSubscriber)
 using System.Text;
-using Aspire.Hosting.ApplicationModel;
+using Aspire.Hosting.Lifecycle;
 
 namespace Aspire.Hosting;
 
-internal static class KibanaConfigWriterExtensions
+internal class KibanaConfigWriterHook : IDistributedApplicationLifecycleHook
 {
-    public static IResourceBuilder<KibanaResource> ConfigureElasticsearchHosts(
-        this IResourceBuilder<KibanaResource> builder,
-        IEnumerable<ElasticsearchResource> elasticsearchResources)
+    public async Task AfterEndpointsAllocatedAsync(DistributedApplicationModel appModel, CancellationToken cancellationToken)
     {
-        builder.WithAnnotation(new EnvironmentCallbackAnnotation(async context =>
+        if (appModel.Resources.OfType<KibanaResource>().SingleOrDefault() is not { } kibanaResource)
+            return;
+
+        var elasticsearchInstances = appModel.Resources.OfType<ElasticsearchResource>();
+
+        if (!elasticsearchInstances.Any())
+            return;
+
+        var hostsVariableBuilder = new StringBuilder();
+
+        foreach (var elasticsearchInstance in elasticsearchInstances)
         {
-            var hostsVariableBuilder = new StringBuilder();
-
-            foreach (var elasticsearchInstance in elasticsearchResources)
+            if (elasticsearchInstance.PrimaryEndpoint.IsAllocated)
             {
-                if (elasticsearchInstance.PrimaryEndpoint.IsAllocated)
-                {
-                    if (hostsVariableBuilder.Length > 0)
-                        hostsVariableBuilder.Append(",");
-                    
-                    var endpoint = elasticsearchInstance.PrimaryEndpoint;
-                    hostsVariableBuilder.Append(endpoint.Scheme)
-                        .Append("://")
-                        .Append(endpoint.Host)
-                        .Append(":")
-                        .Append(endpoint.Port);
-                }
+                var connectionString = await elasticsearchInstance.GetConnectionStringAsync();
+                if (hostsVariableBuilder.Length > 0)
+                    hostsVariableBuilder.Append(",");
+                hostsVariableBuilder.Append(elasticsearchInstance.PrimaryEndpoint.Scheme).Append("://").Append(elasticsearchInstance.PrimaryEndpoint.Host).Append(":").Append(elasticsearchInstance.PrimaryEndpoint.Port);
             }
+        }
 
-            if (hostsVariableBuilder.Length > 0)
-            {
-                context.EnvironmentVariables["ELASTICSEARCH_HOSTS"] = hostsVariableBuilder.ToString();
-            }
-
-            await Task.CompletedTask;
+        kibanaResource.Annotations.Add(new EnvironmentCallbackAnnotation(context =>
+        {
+            context.EnvironmentVariables.Add("ELASTICSEARCH_HOSTS", hostsVariableBuilder.ToString());
         }));
-
-        return builder;
     }
 }
+#endif
