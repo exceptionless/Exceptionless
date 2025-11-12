@@ -80,8 +80,7 @@ public static class ElasticsearchBuilderExtensions
         {
             containerName ??= $"{builder.Resource.Name}-kibana";
 
-            // TODO: Re-enable Kibana config writer hook after updating to Aspire 13 eventing model
-            // builder.ApplicationBuilder.Services.AddHostedService<KibanaConfigWriterHook>();
+            var elasticsearchResources = builder.ApplicationBuilder.Resources.OfType<ElasticsearchResource>();
 
             var resource = new KibanaResource(containerName);
             var resourceBuilder = builder.ApplicationBuilder.AddResource(resource)
@@ -90,7 +89,8 @@ public static class ElasticsearchBuilderExtensions
                                       .WithHttpEndpoint(targetPort: KibanaPort, name: containerName)
                                       .WithUrlForEndpoint(containerName, u => u.DisplayText = "Kibana")
                                       .WithEnvironment("xpack.security.enabled", "false")
-                                      .ExcludeFromManifest();
+                                      .ExcludeFromManifest()
+                                      .ConfigureElasticsearchHosts(elasticsearchResources);
 
             configureContainer?.Invoke(resourceBuilder);
 
