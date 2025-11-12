@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /app
 
 COPY ./*.slnx ./NuGet.Config ./
@@ -35,7 +35,7 @@ RUN dotnet publish -c Release -o out
 
 # job
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS job
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS job
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 
@@ -52,7 +52,7 @@ RUN dotnet publish -c Release -o out /p:SkipSpaPublish=true
 
 # api
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS api
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS api
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 
@@ -72,7 +72,7 @@ RUN dotnet publish -c Release -o out
 
 # app
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS app
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS app
 
 WORKDIR /app
 COPY --from=app-publish /app/src/Exceptionless.Web/out ./
@@ -146,7 +146,7 @@ USER elasticsearch
 
 RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     chmod +x dotnet-install.sh && \
-    ./dotnet-install.sh --channel 9.0 --runtime aspnetcore && \
+    ./dotnet-install.sh --channel 10.0 --runtime aspnetcore && \
     rm dotnet-install.sh
 
 EXPOSE 8080 9200
@@ -206,7 +206,7 @@ USER elasticsearch
 
 RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     chmod +x dotnet-install.sh && \
-    ./dotnet-install.sh --channel 9.0 --runtime aspnetcore && \
+    ./dotnet-install.sh --channel 10.0 --runtime aspnetcore && \
     rm dotnet-install.sh
 
 EXPOSE 8080 9200
