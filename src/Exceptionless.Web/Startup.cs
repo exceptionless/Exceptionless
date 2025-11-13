@@ -22,7 +22,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 using Microsoft.Net.Http.Headers;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Newtonsoft.Json;
 using Serilog;
 using Serilog.Events;
@@ -135,26 +135,12 @@ public class Startup
                 Type = SecuritySchemeType.ApiKey
             });
 
-            c.AddSecurityRequirement(new OpenApiSecurityRequirement {
-                    {
-                        new OpenApiSecurityScheme {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Basic" }
-                        },
-                        Array.Empty<string>()
-                    },
-                    {
-                        new OpenApiSecurityScheme {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-                        },
-                        Array.Empty<string>()
-                    },
-                    {
-                        new OpenApiSecurityScheme {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Token" }
-                        },
-                        Array.Empty<string>()
-                    }
-                });
+            c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+            {
+                { new OpenApiSecuritySchemeReference("Basic", document), [] },
+                { new OpenApiSecuritySchemeReference("Bearer", document), [] },
+                { new OpenApiSecuritySchemeReference("Token", document), [] }
+            });
 
             string xmlDocPath = Path.Combine(AppContext.BaseDirectory, "Exceptionless.Web.xml");
             if (File.Exists(xmlDocPath))
@@ -236,7 +222,7 @@ public class Startup
             Predicate = hcr => hcr.Tags.Contains("Critical") || (options.RunJobsInProcess && hcr.Tags.Contains("AllJobs"))
         });
 
-        var readyTags = new List<string> { "Critical" };
+        List<string> readyTags = ["Critical"];
         if (!options.EventSubmissionDisabled)
             readyTags.Add("Storage");
         app.UseReadyHealthChecks(readyTags.ToArray());
