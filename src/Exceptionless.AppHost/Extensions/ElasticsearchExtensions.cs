@@ -80,7 +80,7 @@ public static class ElasticsearchBuilderExtensions
         {
             containerName ??= $"{builder.Resource.Name}-kibana";
 
-            builder.ApplicationBuilder.Services.TryAddLifecycleHook<KibanaConfigWriterHook>();
+            builder.ApplicationBuilder.Services.TryAddEventingSubscriber<KibanaConfigWriterHook>();
 
             var resource = new KibanaResource(containerName);
             var resourceBuilder = builder.ApplicationBuilder.AddResource(resource)

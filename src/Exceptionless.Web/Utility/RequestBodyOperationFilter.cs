@@ -1,9 +1,11 @@
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-public class RequestBodyContentAttribute : Attribute { }
+public class RequestBodyContentAttribute : Attribute
+{
+}
 
 public class RequestBodyOperationFilter : IOperationFilter
 {
@@ -17,12 +19,17 @@ public class RequestBodyOperationFilter : IOperationFilter
         if (consumesAttribute is null)
             return;
 
-        operation.RequestBody = new OpenApiRequestBody { Required = true };
+        operation.RequestBody = new OpenApiRequestBody
+        {
+            Required = true,
+            Content = new Dictionary<string, OpenApiMediaType>()
+        };
+
         foreach (string contentType in consumesAttribute.ContentTypes)
         {
-            operation.RequestBody.Content.Add(contentType, new OpenApiMediaType
+            operation.RequestBody.Content!.Add(contentType, new OpenApiMediaType
             {
-                Schema = new OpenApiSchema { Type = "string", Example = new OpenApiString(String.Empty) }
+                Schema = new OpenApiSchema { Type = JsonSchemaType.String, Example = JsonValue.Create(String.Empty) }
             });
         }
     }
