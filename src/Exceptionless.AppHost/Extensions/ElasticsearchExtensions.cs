@@ -80,10 +80,7 @@ public static class ElasticsearchBuilderExtensions
         {
             containerName ??= $"{builder.Resource.Name}-kibana";
 
-            // TODO: Update KibanaConfigWriterHook to use Aspire 13 eventing model (IDistributedApplicationEventingSubscriber)
-            // The IDistributedApplicationLifecycleHook interface is obsolete in Aspire 13.
-            // See: https://learn.microsoft.com/en-us/dotnet/aspire/compatibility/13.0/
-            // builder.ApplicationBuilder.Services.TryAddLifecycleHook<KibanaConfigWriterHook>();
+            builder.ApplicationBuilder.Services.TryAddEventingSubscriber<KibanaConfigWriterHook>();
 
             var resource = new KibanaResource(containerName);
             var resourceBuilder = builder.ApplicationBuilder.AddResource(resource)
