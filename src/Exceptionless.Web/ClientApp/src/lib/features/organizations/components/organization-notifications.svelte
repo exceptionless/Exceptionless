@@ -65,8 +65,10 @@
     const isHourlyOverage = $derived(!!organization?.is_throttled);
     const isExceededRequestLimit = $derived(!!organization?.is_over_request_limit);
     const isFreePlan = $derived(!ignoreFree && /free/i.test(organization?.plan_name ?? ''));
-    const hasNoProjects = $derived((projects?.length ?? 0) === 0);
-    const needsProjectConfiguration = $derived(!ignoreConfigureProjects && projects?.length > 0 && projectsNeedingConfig.length === projects.length);
+    const hasNoProjects = $derived(projectsQuery.isSuccess && projects.length === 0);
+    const needsProjectConfiguration = $derived(
+        projectsQuery.isSuccess && !ignoreConfigureProjects && projects.length > 0 && projectsNeedingConfig.length === projects.length
+    );
     const requiresPremiumUpgrade = $derived(requiresPremium && !organization?.has_premium_features && !needsProjectConfiguration);
 </script>
 
