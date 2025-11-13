@@ -10,7 +10,7 @@ export interface WebSocketClientOptions {
     baseUrl?: string;
     /**
      * Connection timeout in milliseconds
-     * Default: 2000ms (2 seconds)
+     * Default: 10000ms (10 seconds)
      */
     connectionTimeout?: number;
     /**
@@ -103,16 +103,21 @@ export class WebSocketClient {
         this.readyState = WebSocket.CONNECTING;
         this.forcedClose = false;
 
-        this.ws = new WebSocket(`${this.url}?access_token=${this.accessToken}`);
-        this.onConnecting(isReconnect);
+        try {
+            this.ws = new WebSocket(`${this.url}?access_token=${this.accessToken}`);
+            this.onConnecting(isReconnect);
+        } catch (error) {
+            console.error('[WebSocketClient] Failed to create WebSocket', error);
+            throw error;
+        }
 
         // Connection timeout: if we don't connect within configured timeout, force close
         clearTimeout(this.connectionTimeoutId!);
-        const timeout = this._options.connectionTimeout ?? 2000;
+        const timeout = this._options.connectionTimeout ?? 10000;
         this.connectionTimeoutId = setTimeout(() => {
             this.connectionTimeoutId = null;
             if (this.ws && this.readyState === WebSocket.CONNECTING) {
-                console.warn(`[WebSocket] Connection timeout after ${timeout}ms`);
+                console.warn(`[WebSocketClient] Connection timeout after ${timeout}ms`);
                 this.ws.close();
             }
         }, timeout);
@@ -142,8 +147,11 @@ export class WebSocketClient {
             // Code 1006 (Abnormal Closure) during handshake could be 401/403
             // Codes 4xxx are custom application codes (e.g., 4401=401, 4403=403)
             const isAuthFailure = event.code === 1008 || (event.code === 1006 && event.wasClean === false) || (event.code >= 4400 && event.code < 4500);
-
             if (isAuthFailure) {
+                console.warn('[WebSocketClient] Auth failure detected, not reconnecting', {
+                    code: event.code,
+                    reason: event.reason
+                });
                 this.readyState = WebSocket.CLOSED;
                 this.onClose(event);
                 return; // Let the auth system handle redirect to login
@@ -169,14 +177,19 @@ export class WebSocketClient {
         };
 
         this.ws.onerror = (event) => {
+            console.error('[WebSocketClient] onerror triggered', {
+                event,
+                readyState: this.readyState,
+                reconnectAttempts: this.reconnectAttempts
+            });
             this.onError(event);
         };
     }
 
     public onClose: (ev: CloseEvent) => void = () => {};
+
     public onConnecting: (isReconnect: boolean) => void = () => {};
     public onError: (ev: Event) => void = () => {};
-
     public onMessage: (ev: MessageEvent) => void = () => {};
 
     public onOpen: (ev: Event, isReconnect: boolean) => void = () => {};
