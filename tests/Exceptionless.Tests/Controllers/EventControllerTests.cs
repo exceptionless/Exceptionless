@@ -1542,4 +1542,41 @@ public class EventControllerTests : IntegrationTestsBase
 
         return result;
     }
+
+    [Fact]
+    public async Task PostEvent_WithEnvironmentAndRequestInfo_ReturnsCorrectSnakeCaseSerialization()
+    {
+        TimeProvider.SetUtcNow(new DateTime(2026, 1, 15, 12, 0, 0, DateTimeKind.Utc));
+
+        string dataPath = Path.Combine("..", "..", "..", "Controllers", "Data");
+        string eventJson = await File.ReadAllTextAsync(Path.Combine(dataPath, "event-serialization-input.json"));
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(eventJson, "application/json")
+            .StatusCodeShouldBeAccepted()
+        );
+
+        var processEventsJob = GetService<EventPostsJob>();
+        await processEventsJob.RunAsync();
+        await RefreshDataAsync();
+
+        var events = await _eventRepository.GetAllAsync();
+        var processedEvent = events.Documents.Single();
+
+        var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("events", processedEvent.Id)
+            .StatusCodeShouldBeOk()
+        );
+
+        string actualJson = await response.Content.ReadAsStringAsync();
+        string expectedJson = (await File.ReadAllTextAsync(Path.Combine(dataPath, "event-serialization-response.json")))
+            .Replace("<EVENT_ID>", processedEvent.Id)
+            .Replace("<STACK_ID>", processedEvent.StackId);
+
+        Assert.Equal(expectedJson, actualJson);
+    }
 }
