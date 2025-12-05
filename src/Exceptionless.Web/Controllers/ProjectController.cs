@@ -157,7 +157,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     [HttpPost]
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType<ViewProject>(StatusCodes.Status201Created)]
     public Task<ActionResult<ViewProject>> PostAsync(NewProject project)
     {
         return PostImplAsync(project);
@@ -189,7 +189,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <response code="500">An error occurred while deleting one or more projects.</response>
     [HttpDelete("{ids:objectids}")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType<WorkInProgressResult>(StatusCodes.Status202Accepted)]
     public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids)
     {
         return DeleteImplAsync(ids.FromDelimitedString());
@@ -318,7 +318,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// <response code="404">The project could not be found.</response>
     [HttpGet("{id:objectid}/reset-data")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType<WorkInProgressResult>(StatusCodes.Status202Accepted)]
     public async Task<ActionResult<WorkInProgressResult>> ResetDataAsync(string id)
     {
         var project = await GetModelAsync(id);

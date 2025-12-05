@@ -441,7 +441,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <response code="500">An error occurred while deleting one or more stacks.</response>
     [HttpDelete("{ids:objectids}")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType<WorkInProgressResult>(StatusCodes.Status202Accepted)]
     public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids)
     {
         return DeleteImplAsync(ids.FromDelimitedString());

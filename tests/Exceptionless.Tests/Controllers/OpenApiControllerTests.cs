@@ -11,17 +11,22 @@ public class OpenApiControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetSwaggerJson_ReturnsExpectedBaseline()
+    public async Task GetSwaggerJson_Default_ReturnsExpectedBaseline()
     {
+        // Arrange
+        string baselinePath = Path.Combine("..", "..", "..", "Controllers", "Data", "swagger.json");
+
+        // Act
         var response = await SendRequestAsync(r => r
             .BaseUri(_server.BaseAddress)
             .AppendPaths("docs", "v2", "swagger.json")
             .StatusCodeShouldBeOk()
         );
 
-        string baselinePath = Path.Combine("..", "..", "..", "Controllers", "Data", "swagger.json");
-        string expectedJson = await File.ReadAllTextAsync(baselinePath);
         string actualJson = await response.Content.ReadAsStringAsync();
+
+        // Assert
+        string expectedJson = await File.ReadAllTextAsync(baselinePath);
         Assert.Equal(expectedJson, actualJson);
     }
 }

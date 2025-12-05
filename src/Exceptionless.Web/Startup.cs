@@ -26,7 +26,6 @@ using Microsoft.OpenApi;
 using Newtonsoft.Json;
 using Serilog;
 using Serilog.Events;
-using Unchase.Swashbuckle.AspNetCore.Extensions.Extensions;
 
 namespace Exceptionless.Web;
 
@@ -148,8 +147,9 @@ public class Startup
 
             c.IgnoreObsoleteActions();
             c.OperationFilter<RequestBodyOperationFilter>();
+            c.SchemaFilter<XEnumNamesSchemaFilter>();
+            c.DocumentFilter<RemoveProblemJsonFromSuccessResponsesFilter>();
 
-            c.AddEnumsWithValuesFixFilters();
             c.SupportNonNullableReferenceTypes();
         });
         services.AddSwaggerGenNewtonsoftSupport();
