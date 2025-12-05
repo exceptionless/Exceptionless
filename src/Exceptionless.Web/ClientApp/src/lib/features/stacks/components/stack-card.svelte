@@ -218,13 +218,13 @@
             <Card.Title class="flex flex-row items-center justify-between text-lg font-semibold">
                 <span class="mb-2 flex flex-col lg:mb-0">
                     <div class="flex items-center gap-2">
-                        <Skeleton class="h-[26px] w-[32px]" />
-                        <Skeleton class="h-[26px] w-[200px]" />
+                        <Skeleton class="h-6 w-8" />
+                        <Skeleton class="h-6 w-48" />
                     </div>
                 </span>
                 <div class="flex items-center space-x-2">
-                    <Skeleton class="h-[36px] w-[135px]" />
-                    <Skeleton class="h-[36px] w-[32px]" />
+                    <Skeleton class="h-9 w-36" />
+                    <Skeleton class="h-9 w-8" />
                 </div>
             </Card.Title>
         </Card.Header>
@@ -233,8 +233,8 @@
                 {#each { length: 4 } as name, index (`${name}-${index}`)}
                     <div class="bg-muted flex flex-col items-center rounded-lg p-2">
                         <Skeleton class="mb-1 size-6" />
-                        <Skeleton class="mb-1 h-[28px] w-[60px]" />
-                        <Skeleton class="h-[24px] w-[80px]" />
+                        <Skeleton class="mb-1 h-7 w-16" />
+                        <Skeleton class="h-6 w-20" />
                     </div>
                 {/each}
             </div>

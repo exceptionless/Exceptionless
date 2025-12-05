@@ -24,7 +24,7 @@ RUN dotnet build -c Release
 
 FROM build AS testrunner
 WORKDIR /app/tests/Exceptionless.Tests
-ENTRYPOINT dotnet test --results-directory /app/artifacts --logger:trx
+ENTRYPOINT ["dotnet", "test", "--results-directory", "/app/artifacts", "--logger:trx"]
 
 # job-publish
 
