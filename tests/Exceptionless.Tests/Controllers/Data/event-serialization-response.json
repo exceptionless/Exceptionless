@@ -27,7 +27,7 @@
     },
     "@submission_client": {
       "user_agent": "fluentrest",
-      "version": "10.1.0.0"
+      "version": "11.0.0.0"
     },
     "@environment": {
       "processor_count": 8,
