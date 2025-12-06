@@ -1,6 +1,7 @@
 using System.Dynamic;
 using System.IO.Pipelines;
 using System.Security.Claims;
+using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -33,7 +34,7 @@ public class AutoValidationActionFilter : IAsyncActionFilter
                     continue;
 
                 // We don't support validating JSON Types
-                if (subject is Newtonsoft.Json.Linq.JToken or DynamicObject)
+                if (subject is JsonDocument or JsonElement or DynamicObject)
                     continue;
 
                 (bool isValid, var errors) = await MiniValidator.TryValidateAsync(subject, _serviceProvider, recurse: true);
@@ -43,7 +44,7 @@ public class AutoValidationActionFilter : IAsyncActionFilter
                 foreach (var error in errors)
                 {
                     // TODO: Verify nested object keys
-                    // NOTE: Fallback to finding model state errors where the serializer already changed the key, but differs from ModelState like ExternalAuthInfo (without NamingStrategyType) 
+                    // NOTE: Fallback to finding model state errors where the serializer already changed the key, but differs from ModelState like ExternalAuthInfo (without NamingStrategyType)
                     var modelStateEntry = context.ModelState[error.Key] ?? context.ModelState[error.Key.ToLowerUnderscoredWords()];
                     foreach (string errorMessage in error.Value)
                     {
