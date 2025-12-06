@@ -50,8 +50,14 @@ export function routes(): NavigationItem[] {
         {
             group: 'Settings',
             href: resolve('/(app)/organization/[organizationId]/projects', { organizationId }),
-            icon: Settings,
+            icon: Folder,
             title: 'Projects'
+        },
+        {
+            group: 'Settings',
+            href: resolve('/(app)/organization/[organizationId]/users', { organizationId }),
+            icon: Users,
+            title: 'Users'
         }
     ];
 }
