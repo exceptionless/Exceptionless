@@ -18,6 +18,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
 
             try
             {
+                using var __ = AppDiagnostics.StartActivity(plugin.Name);
                 var result = plugin.GetStackSummaryData(stack);
                 if (result is not null)
                     return result;
@@ -42,6 +43,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
 
             try
             {
+                using var __ = AppDiagnostics.StartActivity(plugin.Name);
                 var result = plugin.GetEventSummaryData(ev);
                 if (result is not null)
                     return result;
@@ -66,6 +68,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
 
             try
             {
+                using var __ = AppDiagnostics.StartActivity(plugin.Name);
                 string? result = plugin.GetStackTitle(ev);
                 if (!String.IsNullOrEmpty(result))
                     return result;
@@ -90,6 +93,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
 
             try
             {
+                using var __ = AppDiagnostics.StartActivity(plugin.Name);
                 var result = plugin.GetEventNotificationMailMessageData(ev, isCritical, isNew, isRegression);
                 if (result is not null)
                     return result;
@@ -114,6 +118,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
 
             try
             {
+                using var __ = AppDiagnostics.StartActivity(plugin.Name);
                 var message = plugin.GetSlackEventNotification(ev, project, isCritical, isNew, isRegression);
                 if (message is not null)
                     return message;

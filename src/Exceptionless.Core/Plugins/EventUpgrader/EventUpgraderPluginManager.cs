@@ -17,6 +17,7 @@ public class EventUpgraderPluginManager : PluginManagerBase<IEventUpgraderPlugin
             string metricName = String.Concat(metricPrefix, plugin.Name.ToLower());
             try
             {
+                using var _ = AppDiagnostics.StartActivity(plugin.Name);
                 AppDiagnostics.Time(() => plugin.Upgrade(context), metricName);
             }
             catch (Exception ex)

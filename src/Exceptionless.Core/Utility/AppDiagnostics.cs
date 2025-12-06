@@ -17,6 +17,16 @@ public static class AppDiagnostics
     private static readonly ConcurrentDictionary<string, GaugeInfo> _gauges = new();
     private static readonly ConcurrentDictionary<string, Histogram<double>> _timers = new();
 
+    /// <summary>
+    /// Starts a new Activity span with the specified name.
+    /// </summary>
+    /// <param name="name">The friendly name for the span.</param>
+    /// <returns>The started Activity, or null if no listeners are registered.</returns>
+    public static Activity? StartActivity(string name)
+    {
+        return ActivitySource.StartActivity(name, ActivityKind.Internal, Activity.Current?.Id);
+    }
+
     public static void Counter(string name, int value = 1)
     {
         if (!_counters.TryGetValue(_metricsPrefix + name, out var counter))
