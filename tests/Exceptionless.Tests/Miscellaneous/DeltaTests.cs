@@ -1,12 +1,16 @@
 ﻿using Exceptionless.Web.Utility;
+using Foundatio.Xunit;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Miscellaneous;
 
-public class DeltaTests
+public class DeltaTests : TestWithLoggingBase
 {
+    public DeltaTests(ITestOutputHelper output) : base(output) { }
+
     [Fact]
-    public void CanSetUnknownProperties()
+    public void TrySetPropertyValue_UnknownProperty_AddsToUnknownProperties()
     {
         dynamic delta = new Delta<SimpleMessageA>();
         delta.Data = "Blah";
@@ -15,7 +19,7 @@ public class DeltaTests
     }
 
     [Fact]
-    public void CanPatchUnrelatedTypes()
+    public void Patch_UnrelatedTypes_CopiesMatchingProperties()
     {
         dynamic delta = new Delta<SimpleMessageA>();
         delta.Data = "Blah";

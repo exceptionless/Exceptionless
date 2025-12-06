@@ -144,6 +144,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// <response code="409">The organization already exists.</response>
     [HttpPost]
     [Consumes("application/json")]
+    [ProducesResponseType<ViewOrganization>(StatusCodes.Status201Created)]
     public Task<ActionResult<ViewOrganization>> PostAsync(NewOrganization organization)
     {
         return PostImplAsync(organization);
@@ -175,7 +176,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// <response code="500">An error occurred while deleting one or more organizations.</response>
     [HttpDelete]
     [Route("{ids:objectids}")]
-    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType<WorkInProgressResult>(StatusCodes.Status202Accepted)]
     public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids)
     {
         return DeleteImplAsync(ids.FromDelimitedString());

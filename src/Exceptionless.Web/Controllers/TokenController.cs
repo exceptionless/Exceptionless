@@ -127,6 +127,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// <response code="409">The token already exists.</response>
     [HttpPost]
     [Consumes("application/json")]
+    [ProducesResponseType<ViewToken>(StatusCodes.Status201Created)]
     public async Task<ActionResult<ViewToken>> PostAsync(NewToken token)
     {
         if (User.IsTokenAuthType())
@@ -149,6 +150,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// <response code="409">The token already exists.</response>
     [HttpPost("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens")]
     [Consumes("application/json")]
+    [ProducesResponseType<ViewToken>(StatusCodes.Status201Created)]
     public async Task<ActionResult<ViewToken>> PostByProjectAsync(string projectId, NewToken? token = null)
     {
         if (User.IsTokenAuthType())
@@ -179,6 +181,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// <response code="409">The token already exists.</response>
     [HttpPost("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens")]
     [Consumes("application/json")]
+    [ProducesResponseType<ViewToken>(StatusCodes.Status201Created)]
     public async Task<ActionResult<ViewToken>> PostByOrganizationAsync(string organizationId, NewToken? token = null)
     {
         if (User.IsTokenAuthType())
@@ -221,7 +224,7 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     /// <response code="404">One or more tokens were not found.</response>
     /// <response code="500">An error occurred while deleting one or more tokens.</response>
     [HttpDelete("{ids:tokens}")]
-    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType<WorkInProgressResult>(StatusCodes.Status202Accepted)]
     public async Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids)
     {
         if (User.IsTokenAuthType())

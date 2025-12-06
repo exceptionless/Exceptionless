@@ -1,0 +1,48 @@
+{
+  "id": "<EVENT_ID>",
+  "organization_id": "537650f3b77efe23a47914f3",
+  "project_id": "537650f3b77efe23a47914f4",
+  "stack_id": "<STACK_ID>",
+  "is_first_occurrence": true,
+  "created_utc": "2026-01-15T12:00:00",
+  "type": "error",
+  "date": "2026-01-15T12:00:00+00:00",
+  "tags": [
+    "test",
+    "serialization"
+  ],
+  "message": "Test error for serialization verification",
+  "data": {
+    "@request": {
+      "user_agent": "TestAgent/1.0",
+      "http_method": "POST",
+      "is_secure": true,
+      "host": "test.example.com",
+      "port": 443,
+      "path": "/api/test",
+      "client_ip_address": "10.0.0.100",
+      "data": {
+        "@is_bot": false
+      }
+    },
+    "@submission_client": {
+      "user_agent": "fluentrest",
+      "version": "11.0.0.0"
+    },
+    "@environment": {
+      "processor_count": 8,
+      "total_physical_memory": 17179869184,
+      "available_physical_memory": 8589934592,
+      "command_line": "TestApp.exe --test",
+      "process_name": "TestApp",
+      "process_id": "12345",
+      "process_memory_size": 104857600,
+      "thread_id": "1",
+      "o_s_name": "Windows 11",
+      "o_s_version": "10.0.22621",
+      "ip_address": "192.168.1.100",
+      "machine_name": "TEST-MACHINE",
+      "runtime_version": ".NET 8.0.1"
+    }
+  }
+}

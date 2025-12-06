@@ -1,0 +1,29 @@
+{
+  "type": "error",
+  "message": "Test error for serialization verification",
+  "tags": ["test", "serialization"],
+  "@environment": {
+    "o_s_name": "Windows 11",
+    "o_s_version": "10.0.22621",
+    "ip_address": "192.168.1.100",
+    "machine_name": "TEST-MACHINE",
+    "runtime_version": ".NET 8.0.1",
+    "processor_count": 8,
+    "total_physical_memory": 17179869184,
+    "available_physical_memory": 8589934592,
+    "process_name": "TestApp",
+    "process_id": "12345",
+    "process_memory_size": 104857600,
+    "thread_id": "1",
+    "command_line": "TestApp.exe --test"
+  },
+  "@request": {
+    "client_ip_address": "10.0.0.100",
+    "http_method": "POST",
+    "user_agent": "TestAgent/1.0",
+    "is_secure": true,
+    "host": "test.example.com",
+    "path": "/api/test",
+    "port": 443
+  }
+}

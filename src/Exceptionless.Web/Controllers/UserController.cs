@@ -128,7 +128,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// </summary>
     /// <response code="404">The current user could not be found.</response>
     [HttpDelete("me")]
-    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType<WorkInProgressResult>(StatusCodes.Status202Accepted)]
     public Task<ActionResult<WorkInProgressResult>> DeleteCurrentUserAsync()
     {
         string[] userIds = !String.IsNullOrEmpty(CurrentUser.Id) ? [CurrentUser.Id] : [];
@@ -145,7 +145,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     /// <response code="500">An error occurred while deleting one or more users.</response>
     [HttpDelete("{ids:objectids}")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType<WorkInProgressResult>(StatusCodes.Status202Accepted)]
     public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids)
     {
         return DeleteImplAsync(ids.FromDelimitedString());

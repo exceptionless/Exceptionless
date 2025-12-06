@@ -57,6 +57,65 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
         Assert.NotNull(problemDetails);
         Assert.Single(problemDetails.Errors);
         Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "event_types[0]"));
+    }
 
+    [Fact]
+    public async Task SubscribeWithValidZapierUrlCreatesWebHook()
+    {
+        const string zapierUrl = "https://hooks.zapier.com/hooks/12345";
+        var webhook = await SendRequestAsAsync<WebHook>(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("webhooks/subscribe")
+            .Content(new Dictionary<string, string>
+            {
+                { "event", WebHook.KnownEventTypes.StackPromoted },
+                { "target_url", zapierUrl }
+            })
+            .StatusCodeShouldBeCreated());
+
+        Assert.NotNull(webhook);
+        Assert.Equal(zapierUrl, webhook.Url);
+        Assert.Single(webhook.EventTypes);
+        Assert.Contains(WebHook.KnownEventTypes.StackPromoted, webhook.EventTypes);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, webhook.OrganizationId);
+        Assert.Equal(SampleDataService.TEST_PROJECT_ID, webhook.ProjectId);
+    }
+
+    [Fact]
+    public Task SubscribeWithMissingEventReturnsBadRequest()
+    {
+        return SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("webhooks/subscribe")
+            .Content(new Dictionary<string, string> { { "target_url", "https://hooks.zapier.com/test" } })
+            .StatusCodeShouldBeBadRequest());
+    }
+
+    [Fact]
+    public Task SubscribeWithMissingUrlReturnsBadRequest()
+    {
+        return SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("webhooks/subscribe")
+            .Content(new Dictionary<string, string> { { "event", "stack_promoted" } })
+            .StatusCodeShouldBeBadRequest());
+    }
+
+    [Fact]
+    public Task SubscribeWithNonZapierUrlReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("webhooks/subscribe")
+            .Content(new Dictionary<string, string>
+            {
+                { "event", "stack_promoted" },
+                { "target_url", "https://example.com/webhook" }
+            })
+            .StatusCodeShouldBeNotFound());
     }
 }

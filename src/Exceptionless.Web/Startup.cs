@@ -22,11 +22,10 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 using Microsoft.Net.Http.Headers;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Newtonsoft.Json;
 using Serilog;
 using Serilog.Events;
-using Unchase.Swashbuckle.AspNetCore.Extensions.Extensions;
 
 namespace Exceptionless.Web;
 
@@ -49,12 +48,12 @@ public class Startup
             .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
             .WithExposedHeaders("ETag", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion, HeaderNames.Link, Headers.RateLimit, Headers.RateLimitRemaining, Headers.ResultCount)));
 
-        services.Configure<ForwardedHeadersOptions>(options =>
+        services.Configure<ForwardedHeadersOptions>(o =>
         {
-            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-            options.RequireHeaderSymmetry = false;
-            options.KnownNetworks.Clear();
-            options.KnownProxies.Clear();
+            o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            o.RequireHeaderSymmetry = false;
+            o.KnownIPNetworks.Clear();
+            o.KnownProxies.Clear();
         });
 
         services.AddControllers(o =>
@@ -76,12 +75,12 @@ public class Startup
         services.AddAutoValidation();
 
         services.AddAuthentication(ApiKeyAuthenticationOptions.ApiKeySchema).AddApiKeyAuthentication();
-        services.AddAuthorization(options =>
+        services.AddAuthorization(o =>
         {
-            options.DefaultPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
-            options.AddPolicy(AuthorizationRoles.ClientPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.Client));
-            options.AddPolicy(AuthorizationRoles.UserPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.User));
-            options.AddPolicy(AuthorizationRoles.GlobalAdminPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.GlobalAdmin));
+            o.DefaultPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+            o.AddPolicy(AuthorizationRoles.ClientPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.Client));
+            o.AddPolicy(AuthorizationRoles.UserPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.User));
+            o.AddPolicy(AuthorizationRoles.GlobalAdminPolicy, policy => policy.RequireClaim(ClaimTypes.Role, AuthorizationRoles.GlobalAdmin));
         });
 
         services.AddRouting(r =>
@@ -135,26 +134,12 @@ public class Startup
                 Type = SecuritySchemeType.ApiKey
             });
 
-            c.AddSecurityRequirement(new OpenApiSecurityRequirement {
-                    {
-                        new OpenApiSecurityScheme {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Basic" }
-                        },
-                        Array.Empty<string>()
-                    },
-                    {
-                        new OpenApiSecurityScheme {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-                        },
-                        Array.Empty<string>()
-                    },
-                    {
-                        new OpenApiSecurityScheme {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Token" }
-                        },
-                        Array.Empty<string>()
-                    }
-                });
+            c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+            {
+                { new OpenApiSecuritySchemeReference("Basic", document), [] },
+                { new OpenApiSecuritySchemeReference("Bearer", document), [] },
+                { new OpenApiSecuritySchemeReference("Token", document), [] }
+            });
 
             string xmlDocPath = Path.Combine(AppContext.BaseDirectory, "Exceptionless.Web.xml");
             if (File.Exists(xmlDocPath))
@@ -162,8 +147,9 @@ public class Startup
 
             c.IgnoreObsoleteActions();
             c.OperationFilter<RequestBodyOperationFilter>();
+            c.SchemaFilter<XEnumNamesSchemaFilter>();
+            c.DocumentFilter<RemoveProblemJsonFromSuccessResponsesFilter>();
 
-            c.AddEnumsWithValuesFixFilters();
             c.SupportNonNullableReferenceTypes();
         });
         services.AddSwaggerGenNewtonsoftSupport();
@@ -236,7 +222,7 @@ public class Startup
             Predicate = hcr => hcr.Tags.Contains("Critical") || (options.RunJobsInProcess && hcr.Tags.Contains("AllJobs"))
         });
 
-        var readyTags = new List<string> { "Critical" };
+        List<string> readyTags = ["Critical"];
         if (!options.EventSubmissionDisabled)
             readyTags.Add("Storage");
         app.UseReadyHealthChecks(readyTags.ToArray());

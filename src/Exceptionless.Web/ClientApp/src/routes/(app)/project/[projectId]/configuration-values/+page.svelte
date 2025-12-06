@@ -77,8 +77,8 @@
         <div>
             <H3>Configuration Values</H3>
             <Muted
-                >The <A href="https://exceptionless.com/docs/project-settings/#client-configuration" target="_blank">configuration value</A> will be sent to the
-                Exceptionless clients in real time. This allows you to change how your app works without redeploying your app.</Muted
+                >The <A href="https://exceptionless.com/docs/project-settings/#client-configuration" target="_blank">configuration value</A> will be sent to the Exceptionless
+                clients in real time. This allows you to change how your app works without redeploying your app.</Muted
             >
         </div>
 

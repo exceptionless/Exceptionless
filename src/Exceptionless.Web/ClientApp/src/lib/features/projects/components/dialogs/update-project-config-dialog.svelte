@@ -57,8 +57,8 @@
             <AlertDialog.Header>
                 <AlertDialog.Title>Update {setting.key} Configuration Value</AlertDialog.Title>
                 <AlertDialog.Description
-                    >The <A href="https://exceptionless.com/docs/project-settings/#client-configuration" target="_blank">configuration value</A> will be sent to
-                    the Exceptionless clients in real time.</AlertDialog.Description
+                    >The <A href="https://exceptionless.com/docs/project-settings/#client-configuration" target="_blank">configuration value</A> will be sent to the
+                    Exceptionless clients in real time.</AlertDialog.Description
                 >
             </AlertDialog.Header>
 

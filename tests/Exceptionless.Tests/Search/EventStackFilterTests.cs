@@ -11,7 +11,6 @@ namespace Exceptionless.Tests.Repositories;
 public sealed class EventStackFilterTests : IntegrationTestsBase
 {
     private readonly StackData _stackData;
-    private readonly IStackRepository _stackRepository;
     private readonly EventData _eventData;
     private readonly IEventRepository _eventRepository;
 
@@ -19,7 +18,6 @@ public sealed class EventStackFilterTests : IntegrationTestsBase
     {
         TimeProvider.SetUtcNow(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
         _stackData = GetService<StackData>();
-        _stackRepository = GetService<IStackRepository>();
         _eventData = GetService<EventData>();
         _eventRepository = GetService<IEventRepository>();
 

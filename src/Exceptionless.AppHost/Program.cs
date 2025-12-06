@@ -21,7 +21,7 @@ var mail = builder.AddContainer("Mail", "axllent/mailpit")
     .WithImageTag("v1.27.10")
     .WithLifetime(ContainerLifetime.Persistent)
     .WithContainerName("Exceptionless-Mail")
-    .WithEndpoint(8025, 8025, "http")
+    .WithHttpEndpoint(8025, 8025, "http")
     .WithUrlForEndpoint("http", u => u.DisplayText = "Mail")
     .WithEndpoint(1025, 1025);
 
@@ -48,16 +48,16 @@ var api = builder.AddProject<Projects.Exceptionless_Web>("Api", "Exceptionless")
     .WithUrlForEndpoint("http", u => u.DisplayText = "Api")
     .WithHttpHealthCheck("/health");
 
-builder.AddNpmApp("Web", "../../src/Exceptionless.Web/ClientApp", "dev")
+builder.AddViteApp("Web", "../../src/Exceptionless.Web/ClientApp")
     .WithReference(api)
     .WithEnvironment("ASPNETCORE_URLS", "http://localhost:5200")
-    .WithUrlForEndpoint("http", u => u.DisplayText = "Web")
-    .WithEndpoint(port: 5173, targetPort: 5173, scheme: "http", env: "PORT", isProxied: false);
+    .WithUrlForEndpoint("Web", u => u.DisplayText = "Web")
+    .WithHttpEndpoint(port: 5173, targetPort: 5173, name: "Web", env: "PORT", isProxied: false);
 
-builder.AddNpmApp("AngularWeb", "../../src/Exceptionless.Web/ClientApp.angular", "serve")
+builder.AddJavaScriptApp("AngularWeb", "../../src/Exceptionless.Web/ClientApp.angular", "serve")
     .WithReference(api)
     .WithEnvironment("ASPNETCORE_URLS", "http://localhost:5200")
-    .WithUrlForEndpoint("http", u => u.DisplayText = "Angular Web")
-    .WithEndpoint(port: 5100, targetPort: 5100, scheme: "http", env: "PORT", isProxied: false);
+    .WithUrlForEndpoint("AngularWeb", u => u.DisplayText = "Angular Web")
+    .WithHttpEndpoint(port: 5100, targetPort: 5100, name: "AngularWeb", env: "PORT", isProxied: false);
 
 builder.Build().Run();
