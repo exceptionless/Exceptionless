@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Helpers;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,6 +58,8 @@ public abstract class PipelineBase<TContext, TAction> where TAction : class, IPi
 
         foreach (var action in _actions)
         {
+            using var _ = AppDiagnostics.StartActivity(action.Name);
+
             string metricName = String.Concat(_metricPrefix, action.Name.ToLower());
             var contextsToProcess = contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList();
             await AppDiagnostics.TimeAsync(() => action.ProcessBatchAsync(contextsToProcess), metricName);

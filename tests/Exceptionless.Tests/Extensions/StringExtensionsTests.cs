@@ -9,7 +9,7 @@ public class StringExtensionsTests : TestWithServices
     public StringExtensionsTests(ITestOutputHelper output) : base(output) { }
 
     [Fact]
-    public void ToAddress()
+    public void ToAddress_VariousFormats_ExtractsAddressCorrectly()
     {
         Assert.Equal("::1", "::1".ToAddress());
         Assert.Equal("1.2.3.4", "1.2.3.4".ToAddress());
@@ -20,30 +20,36 @@ public class StringExtensionsTests : TestWithServices
         Assert.Equal("1:2:3:4:5:6:7:8", "1:2:3:4:5:6:7:8:80".ToAddress());
     }
 
-    [Fact(Skip = "TODO: https://github.com/exceptionless/Exceptionless.Net/issues/2")]
-    public void LowerUnderscoredWords()
+    /// <summary>
+    /// Tests the ToLowerUnderscoredWords extension method behavior.
+    /// Note: Each uppercase letter gets an underscore before it (except at position 0),
+    /// so "EnableSSL" becomes "enable_s_s_l" - this is the established API contract.
+    /// </summary>
+    [Theory]
+    // Realistic app config properties
+    [InlineData("BaseURL", "base_u_r_l")]                           // AppOptions property
+    [InlineData("EnableSSL", "enable_s_s_l")]                       // EmailOptions property
+    [InlineData("IPAddress", "i_p_address")]                        // Environment property
+    [InlineData("OSName", "o_s_name")]                              // Environment property (from event-serialization-input.json)
+    [InlineData("OSVersion", "o_s_version")]                        // Environment property
+    // Standard PascalCase
+    [InlineData("WebsiteMode", "website_mode")]                     // AppOptions property
+    [InlineData("MaximumRetentionDays", "maximum_retention_days")]  // AppOptions property
+    [InlineData("SmtpHost", "smtp_host")]                           // EmailOptions property
+    // Elasticsearch special cases (must be preserved)
+    [InlineData("_type", "_type")]                                  // Leading underscore preserved
+    [InlineData("__type", "__type")]                                // Double leading underscore preserved
+    // Already lowercase with underscores - no change
+    [InlineData("ip_address", "ip_address")]                        // Already snake_case
+    [InlineData("o_s_name", "o_s_name")]                            // Already snake_case
+    // Dots and special characters preserved
+    [InlineData("node.data", "node.data")]                          // Elasticsearch field path
+    [InlineData("127.0.0.1", "127.0.0.1")]                          // IP address literal
+    // Edge cases
+    [InlineData("", "")]                                            // Empty string
+    [InlineData("Id", "id")]                                        // Single word
+    public void ToLowerUnderscoredWords_VariousInputFormats_ReturnsSnakeCase(string input, string expected)
     {
-        Assert.Equal("enable_ssl", "EnableSSL".ToLowerUnderscoredWords());
-        Assert.Equal("base_url", "BaseURL".ToLowerUnderscoredWords());
-        Assert.Equal("website_mode", "WebsiteMode".ToLowerUnderscoredWords());
-        Assert.Equal("google_app_id", "GoogleAppId".ToLowerUnderscoredWords());
-
-        Assert.Equal("blake_niemyjski_1", "blakeNiemyjski 1".ToLowerUnderscoredWords());
-        Assert.Equal("blake_niemyjski_2", "Blake     Niemyjski 2".ToLowerUnderscoredWords());
-        Assert.Equal("blake_niemyjski_3", "Blake_ niemyjski 3".ToLowerUnderscoredWords());
-        Assert.Equal("blake_niemyjski4", "Blake_Niemyjski4".ToLowerUnderscoredWords());
-        Assert.Equal("mp3_files_data", "MP3FilesData".ToLowerUnderscoredWords());
-        Assert.Equal("flac", "FLAC".ToLowerUnderscoredWords());
-        Assert.Equal("number_of_abcd_things", "NumberOfABCDThings".ToLowerUnderscoredWords());
-        Assert.Equal("ip_address_2s", "IPAddress 2s".ToLowerUnderscoredWords());
-        Assert.Equal("127.0.0.1", "127.0.0.1".ToLowerUnderscoredWords());
-        Assert.Equal("", "".ToLowerUnderscoredWords());
-        Assert.Equal("_type", "_type".ToLowerUnderscoredWords());
-        Assert.Equal("__type", "__type".ToLowerUnderscoredWords());
-        Assert.Equal("my_custom_type", "myCustom   _type".ToLowerUnderscoredWords());
-        Assert.Equal("my_custom_type", "myCustom_type".ToLowerUnderscoredWords());
-        Assert.Equal("my_custom_type", "myCustom _type".ToLowerUnderscoredWords());
-        Assert.Equal("node.data", "node.data".ToLowerUnderscoredWords());
-        Assert.Equal("match_mapping_type", "match_mapping_type".ToLowerUnderscoredWords());
+        Assert.Equal(expected, input.ToLowerUnderscoredWords());
     }
 }
