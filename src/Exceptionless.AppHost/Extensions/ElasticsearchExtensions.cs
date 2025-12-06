@@ -1,4 +1,3 @@
-using Aspire.Hosting.Lifecycle;
 using HealthChecks.Elasticsearch;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -11,7 +10,6 @@ namespace Aspire.Hosting;
 public static class ElasticsearchBuilderExtensions
 {
     private const int ElasticsearchPort = 9200;
-    private const int ElasticsearchInternalPort = 9300;
     private const int KibanaPort = 5601;
 
     /// <summary>
@@ -80,8 +78,7 @@ public static class ElasticsearchBuilderExtensions
         {
             containerName ??= $"{builder.Resource.Name}-kibana";
 
-            builder.ApplicationBuilder.Services.TryAddEventingSubscriber<KibanaConfigWriterHook>();
-
+            var elasticsearch = builder.Resource;
             var resource = new KibanaResource(containerName);
             var resourceBuilder = builder.ApplicationBuilder.AddResource(resource)
                                       .WithImage(ElasticsearchContainerImageTags.KibanaImage, ElasticsearchContainerImageTags.Tag)
@@ -89,6 +86,15 @@ public static class ElasticsearchBuilderExtensions
                                       .WithHttpEndpoint(targetPort: KibanaPort, name: containerName)
                                       .WithUrlForEndpoint(containerName, u => u.DisplayText = "Kibana")
                                       .WithEnvironment("xpack.security.enabled", "false")
+                                      .WithEnvironment(ctx =>
+                                      {
+                                          // Use ReferenceExpression for proper container-to-container networking
+                                          // The Host property will resolve to the container name when used this way
+                                          var endpoint = elasticsearch.PrimaryEndpoint;
+                                          var hostsExpr = ReferenceExpression.Create($"http://{endpoint.Property(EndpointProperty.Host)}:{endpoint.Property(EndpointProperty.Port)}");
+                                          ctx.EnvironmentVariables["ELASTICSEARCH_HOSTS"] = hostsExpr;
+                                      })
+                                      .WaitFor(builder)
                                       .ExcludeFromManifest();
 
             configureContainer?.Invoke(resourceBuilder);
