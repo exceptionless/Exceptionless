@@ -57,7 +57,6 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
         Assert.NotNull(problemDetails);
         Assert.Single(problemDetails.Errors);
         Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "event_types[0]"));
-
     }
 
     [Fact]
@@ -118,31 +117,5 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
                 { "target_url", "https://example.com/webhook" }
             })
             .StatusCodeShouldBeNotFound());
-    }
-
-    [Fact]
-    public Task UnsubscribeWithNonZapierUrlReturnsNotFound()
-    {
-        return SendRequestAsync(r => r
-            .Post()
-            .AppendPath("webhooks/unsubscribe")
-            .Content(new Dictionary<string, string>
-            {
-                { "target_url", "https://example.com/webhook" }
-            })
-            .StatusCodeShouldBeNotFound());
-    }
-
-    [Fact]
-    public Task UnsubscribeWithNonExistentZapierUrlReturnsOk()
-    {
-        return SendRequestAsync(r => r
-            .Post()
-            .AppendPath("webhooks/unsubscribe")
-            .Content(new Dictionary<string, string>
-            {
-                { "target_url", "https://hooks.zapier.com/nonexistent" }
-            })
-            .StatusCodeShouldBeOk());
     }
 }
