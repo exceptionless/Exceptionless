@@ -1084,10 +1084,11 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeNotFound()
         );
 
+        // /docs/{documentName} is now handled by Scalar API documentation
         await SendRequestAsync(r => r
             .BaseUri(_server.BaseAddress)
             .AppendPaths("docs", "blah")
-            .StatusCodeShouldBeNotFound()
+            .StatusCodeShouldBeOk()
         );
     }
 

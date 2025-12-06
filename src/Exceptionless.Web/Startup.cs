@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Security.Claims;
+using System.Text.Json;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -7,9 +8,11 @@ using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Validation;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Hubs;
+using Exceptionless.Web.Models;
 using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
+using Exceptionless.Web.Utility.OpenApi;
 using FluentValidation;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Repositories.Exceptions;
@@ -20,10 +23,11 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi;
-using Newtonsoft.Json;
+using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
 
@@ -59,15 +63,27 @@ public class Startup
         services.AddControllers(o =>
         {
             o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
-            o.ModelMetadataDetailsProviders.Add(new NewtonsoftJsonValidationMetadataProvider(new ExceptionlessNamingStrategy()));
+            o.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider(LowerCaseUnderscoreNamingPolicy.Instance));
             o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
         })
-        .AddNewtonsoftJson(o =>
+        .AddJsonOptions(o =>
         {
-            o.SerializerSettings.DefaultValueHandling = DefaultValueHandling.Include;
-            o.SerializerSettings.NullValueHandling = NullValueHandling.Include;
-            o.SerializerSettings.Formatting = Formatting.Indented;
-            o.SerializerSettings.ContractResolver = Core.Bootstrapper.GetJsonContractResolver(); // TODO: See if we can resolve this from the di.
+            o.JsonSerializerOptions.PropertyNamingPolicy = LowerCaseUnderscoreNamingPolicy.Instance;
+            o.JsonSerializerOptions.Converters.Add(new DeltaJsonConverterFactory());
+#if DEBUG
+            o.JsonSerializerOptions.RespectNullableAnnotations = true;
+#endif
+        });
+
+        // Have to add this to get the open api json file to be snake case.
+        services.ConfigureHttpJsonOptions(o =>
+        {
+            o.SerializerOptions.PropertyNamingPolicy = LowerCaseUnderscoreNamingPolicy.Instance;
+            o.SerializerOptions.Converters.Add(new DeltaJsonConverterFactory());
+            //o.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+#if DEBUG
+            o.SerializerOptions.RespectNullableAnnotations = true;
+#endif
         });
 
         services.AddProblemDetails(o => o.CustomizeProblemDetails = CustomizeProblemDetails);
@@ -94,66 +110,30 @@ public class Startup
             r.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
         });
 
-        services.AddSwaggerGen(c =>
+        services.AddOpenApi(o =>
         {
-            c.SwaggerDoc("v2", new OpenApiInfo
+            // Customize schema names to strip "DeltaOf" prefix (e.g., DeltaOfUpdateToken -> UpdateToken)
+            o.CreateSchemaReferenceId = typeInfo =>
             {
-                Title = "Exceptionless API",
-                Version = "v2",
-                TermsOfService = new Uri("https://exceptionless.com/terms/"),
-                Contact = new OpenApiContact
+                var type = typeInfo.Type;
+                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Delta<>))
                 {
-                    Name = "Exceptionless",
-                    Email = String.Empty,
-                    Url = new Uri("https://github.com/exceptionless/Exceptionless")
-                },
-                License = new OpenApiLicense
-                {
-                    Name = "Apache License 2.0",
-                    Url = new Uri("https://github.com/exceptionless/Exceptionless/blob/main/LICENSE.txt")
+                    var innerType = type.GetGenericArguments()[0];
+                    return innerType.Name;
                 }
-            });
 
-            c.AddSecurityDefinition("Basic", new OpenApiSecurityScheme
-            {
-                Description = "Basic HTTP Authentication",
-                Scheme = "basic",
-                Type = SecuritySchemeType.Http
-            });
-            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-            {
-                Description = "Authorization token. Example: \"Bearer {apikey}\"",
-                Scheme = "bearer",
-                Type = SecuritySchemeType.Http
-            });
-            c.AddSecurityDefinition("Token", new OpenApiSecurityScheme
-            {
-                Description = "Authorization token. Example: \"Bearer {apikey}\"",
-                Name = "access_token",
-                In = ParameterLocation.Query,
-                Type = SecuritySchemeType.ApiKey
-            });
+                return OpenApiOptions.CreateDefaultSchemaReferenceId(typeInfo);
+            };
 
-            c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
-            {
-                { new OpenApiSecuritySchemeReference("Basic", document), [] },
-                { new OpenApiSecuritySchemeReference("Bearer", document), [] },
-                { new OpenApiSecuritySchemeReference("Token", document), [] }
-            });
-
-            string xmlDocPath = Path.Combine(AppContext.BaseDirectory, "Exceptionless.Web.xml");
-            if (File.Exists(xmlDocPath))
-                c.IncludeXmlComments(xmlDocPath);
-
-            c.IgnoreObsoleteActions();
-            c.OperationFilter<RequestBodyOperationFilter>();
-            c.OperationFilter<DeltaOperationFilter>();
-            c.SchemaFilter<XEnumNamesSchemaFilter>();
-            c.DocumentFilter<RemoveProblemJsonFromSuccessResponsesFilter>();
-
-            c.SupportNonNullableReferenceTypes();
+            o.AddDocumentTransformer<DocumentInfoTransformer>();
+            o.AddDocumentTransformer<RemoveProblemJsonFromSuccessResponsesTransformer>();
+            o.AddOperationTransformer<RequestBodyContentOperationTransformer>();
+            o.AddOperationTransformer<XmlDocumentationOperationTransformer>();
+            o.AddSchemaTransformer<XEnumNamesSchemaTransformer>();
+            o.AddSchemaTransformer<UniqueItemsSchemaTransformer>();
+            o.AddSchemaTransformer<ReadOnlyPropertySchemaTransformer>();
+            o.AddSchemaTransformer<DeltaSchemaTransformer>();
         });
-        services.AddSwaggerGenNewtonsoftSupport();
 
         var appOptions = AppOptions.ReadFromConfiguration(Configuration);
         Bootstrapper.RegisterServices(services, appOptions, Log.Logger.ToLoggerFactory());
@@ -214,7 +194,6 @@ public class Startup
             }
         });
         app.UseStatusCodePages();
-        app.UseMiddleware<AllowSynchronousIOMiddleware>();
 
         app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
@@ -340,14 +319,6 @@ public class Startup
         // Reject event posts in organizations over their max event limits.
         app.UseMiddleware<OverageMiddleware>();
 
-        app.UseSwagger(c => c.RouteTemplate = "docs/{documentName}/swagger.json");
-        app.UseSwaggerUI(s =>
-        {
-            s.RoutePrefix = "docs";
-            s.SwaggerEndpoint("/docs/v2/swagger.json", "Exceptionless API");
-            s.InjectStylesheet("/docs.css");
-        });
-
         if (options.EnableWebSockets)
         {
             app.UseWebSockets();
@@ -356,6 +327,27 @@ public class Startup
 
         app.UseEndpoints(endpoints =>
         {
+            endpoints.MapOpenApi("/docs/v2/openapi.json");
+            endpoints.MapScalarApiReference("docs", o =>
+            {
+                o.WithTitle("Exceptionless API")
+                    .WithTheme(ScalarTheme.Default)
+                    .AddHttpAuthentication("BasicAuth", auth =>
+                    {
+                        auth.Username = "your-username";
+                        auth.Password = "your-password";
+                    })
+                    .AddHttpAuthentication("BearerAuth", auth =>
+                    {
+                        auth.Token = "apikey";
+                    })
+                    .AddApiKeyAuthentication("ApiKey", apiKey =>
+                    {
+                        apiKey.Value = "access_token";
+                    })
+                    .AddPreferredSecuritySchemes("BearerAuth");
+            });
+
             endpoints.MapControllers();
             endpoints.MapFallback("{**slug:nonfile}", CreateRequestDelegate(endpoints, "/index.html"));
         });
