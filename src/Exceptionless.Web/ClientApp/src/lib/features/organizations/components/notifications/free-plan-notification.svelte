@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { NotificationProps } from '$comp/notification';
 
+    import { resolve } from '$app/paths';
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
     import { A } from '$comp/typography';
 
@@ -15,7 +16,7 @@
 <Notification variant="success" {...restProps}>
     <NotificationTitle>{name} is currently on a free plan.</NotificationTitle>
     <NotificationDescription>
-        <A href={`/next/organization/${organizationId}/billing?changePlan=true`}>Upgrade now</A>
+        <A href={resolve('/(app)/organization/[organizationId]/billing', { organizationId }) + '?changePlan=true'}>Upgrade now</A>
         to enable premium features and extra storage!
     </NotificationDescription>
 </Notification>

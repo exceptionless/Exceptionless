@@ -1,4 +1,5 @@
 <script module lang="ts">
+    import type { ViewOrganization } from '$features/organizations/models';
     import type { ViewProject } from '$features/projects/models';
 
     import { SuspensionCode } from '$features/organizations/models';
@@ -6,6 +7,7 @@
 
     import FreePlanNotification from './free-plan-notification.svelte';
     import HourlyOverageNotification from './hourly-overage-notification.svelte';
+    import ImpersonationNotification from './impersonation-notification.svelte';
     import MonthlyOverageNotification from './monthly-overage-notification.svelte';
     import PremiumUpgradeNotification from './premium-upgrade-notification.svelte';
     import ProjectConfigurationNotification from './project-configuration-notification.svelte';
@@ -31,6 +33,13 @@
             usage: [],
             usage_hours: []
         }
+    ];
+
+    const mockOrganizations: ViewOrganization[] = [
+        {
+            id: 'org1',
+            name: 'Test Organization'
+        } as ViewOrganization
     ];
 
     const { Story } = defineMeta({
@@ -100,6 +109,13 @@
         isChatEnabled={false}
         openChat={() => {}}
         organizationId="org1"
+    />
+</Story>
+
+<Story name="Impersonation">
+    <ImpersonationNotification
+        name="Admin User"
+        userOrganizations={mockOrganizations}
     />
 </Story>
 

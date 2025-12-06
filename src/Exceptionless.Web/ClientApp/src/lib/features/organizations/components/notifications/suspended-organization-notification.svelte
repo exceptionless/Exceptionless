@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { NotificationProps } from '$comp/notification';
 
+    import { resolve } from '$app/paths';
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
     import { A } from '$comp/typography';
     import { SuspensionCode } from '$features/organizations/models';
@@ -15,7 +16,7 @@
 
     let { isChatEnabled, name, openChat, organizationId, suspensionCode, ...restProps }: Props = $props();
 
-    const changePlanHref = `/next/organization/${organizationId}/billing?changePlan=true`;
+    const changePlanHref = $derived(resolve('/(app)/organization/[organizationId]/billing', { organizationId }) + '?changePlan=true');
 </script>
 
 <Notification variant="destructive" {...restProps}>
