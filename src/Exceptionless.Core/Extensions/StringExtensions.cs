@@ -210,6 +210,11 @@ public static class StringExtensions
         return value.Split([delimiter], StringSplitOptions.RemoveEmptyEntries).ToArray();
     }
 
+    /// <summary>
+    /// Converts a PascalCase string to lower_underscored_words.
+    /// We would like to deprecate this but it requires planning and upgrading json.
+    /// see https://github.com/exceptionless/Exceptionless.Net/issues/2
+    /// </summary>
     public static string ToLowerUnderscoredWords(this string value, char delimiter = '_')
     {
         if (String.IsNullOrEmpty(value))

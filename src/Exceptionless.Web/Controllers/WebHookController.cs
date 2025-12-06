@@ -73,6 +73,7 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     [HttpPost]
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [ProducesResponseType<WebHook>(StatusCodes.Status201Created)]
     public Task<ActionResult<WebHook>> PostAsync(NewWebHook webhook)
     {
         return PostImplAsync(webhook);
@@ -88,7 +89,7 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     /// <response code="500">An error occurred while deleting one or more web hooks.</response>
     [HttpDelete("{ids:objectids}")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType<WorkInProgressResult>(StatusCodes.Status202Accepted)]
     public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids)
     {
         return DeleteImplAsync(ids.FromDelimitedString());
