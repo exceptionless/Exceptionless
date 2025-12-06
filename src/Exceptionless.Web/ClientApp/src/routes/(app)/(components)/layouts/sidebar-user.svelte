@@ -1,13 +1,18 @@
 <script lang="ts">
+    import type { ViewOrganization } from '$features/organizations/models';
     import type { Gravatar } from '$features/users/gravatar.svelte';
 
+    import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { A } from '$comp/typography';
     import * as Avatar from '$comp/ui/avatar/index';
     import * as DropdownMenu from '$comp/ui/dropdown-menu/index';
     import * as Sidebar from '$comp/ui/sidebar/index';
     import { useSidebar } from '$comp/ui/sidebar/index';
     import { Skeleton } from '$comp/ui/skeleton';
+    import ImpersonateOrganizationDialog from '$features/organizations/components/dialogs/impersonate-organization-dialog.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import GlobalUser from '$features/users/components/global-user.svelte';
     import { User } from '$features/users/models';
     import BadgeCheck from '@lucide/svelte/icons/badge-check';
     import Bell from '@lucide/svelte/icons/bell';
@@ -16,6 +21,8 @@
     import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
     import Help from '@lucide/svelte/icons/circle-help';
     import CreditCard from '@lucide/svelte/icons/credit-card';
+    import Eye from '@lucide/svelte/icons/eye';
+    import EyeOff from '@lucide/svelte/icons/eye-off';
     import GitHub from '@lucide/svelte/icons/github';
     import LogOut from '@lucide/svelte/icons/log-out';
     import Plus from '@lucide/svelte/icons/plus';
@@ -23,16 +30,32 @@
 
     interface Props {
         gravatar: Gravatar;
+        isImpersonating?: boolean;
         isLoading: boolean;
+        organizations?: ViewOrganization[];
         user: undefined | User;
     }
 
-    let { gravatar, isLoading, user }: Props = $props();
+    let { gravatar, isImpersonating = false, isLoading, organizations = [], user }: Props = $props();
     const sidebar = useSidebar();
+    let openImpersonateDialog = $state(false);
 
     function onMenuClick() {
         if (sidebar.isMobile) {
             sidebar.toggle();
+        }
+    }
+
+    async function handleImpersonate(vo: ViewOrganization): Promise<void> {
+        organization.current = vo.id;
+        await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: vo.id }));
+    }
+
+    async function stopImpersonating(): Promise<void> {
+        if (organizations.length > 0) {
+            const defaultOrganization = organizations[0]!;
+            organization.current = defaultOrganization.id;
+            await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: defaultOrganization.id }));
         }
     }
 </script>
@@ -174,6 +197,23 @@
                             </DropdownMenu.Item>
                         </DropdownMenu.SubContent>
                     </DropdownMenu.Sub>
+                    <GlobalUser>
+                        <DropdownMenu.Separator />
+                        {#if isImpersonating}
+                            <DropdownMenu.Item
+                                onSelect={stopImpersonating}
+                                class="bg-violet-100 text-violet-900 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-100 dark:hover:bg-violet-900/50"
+                            >
+                                <EyeOff />
+                                Stop Impersonating
+                            </DropdownMenu.Item>
+                        {:else}
+                            <DropdownMenu.Item onSelect={() => (openImpersonateDialog = true)}>
+                                <Eye />
+                                Impersonate Organization
+                            </DropdownMenu.Item>
+                        {/if}
+                    </GlobalUser>
                     <DropdownMenu.Separator />
                     <DropdownMenu.Item>
                         <LogOut />
@@ -184,4 +224,8 @@
             </DropdownMenu.Root>
         </Sidebar.MenuItem>
     </Sidebar.Menu>
+{/if}
+
+{#if openImpersonateDialog}
+    <ImpersonateOrganizationDialog bind:open={openImpersonateDialog} onSelect={handleImpersonate} userOrganizationIds={organizations.map((o) => o.id)} />
 {/if}

@@ -113,10 +113,7 @@
 </Story>
 
 <Story name="Impersonation">
-    <ImpersonationNotification
-        name="Admin User"
-        userOrganizations={mockOrganizations}
-    />
+    <ImpersonationNotification name="Admin User" userOrganizations={mockOrganizations} />
 </Story>
 
 <Story name="Premium Upgrade">
