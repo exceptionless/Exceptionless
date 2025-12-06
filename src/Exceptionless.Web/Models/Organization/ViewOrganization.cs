@@ -4,10 +4,11 @@ using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Web.Models;
 
-public record ViewOrganization : IIdentity, IData, IHaveCreatedDate
+public record ViewOrganization : IIdentity, IData, IHaveDates
 {
     public string Id { get; set; } = null!;
     public DateTime CreatedUtc { get; set; }
+    public DateTime UpdatedUtc { get; set; }
     public string Name { get; set; } = null!;
     public string PlanId { get; set; } = null!;
     public string PlanName { get; set; } = null!;

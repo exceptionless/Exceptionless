@@ -390,6 +390,8 @@ export class ViewOrganization {
     @IsMongoId({ message: 'id must be a valid ObjectId.' }) id!: string;
     /** @format date-time */
     @IsDate({ message: 'created_utc must be a valid date and time.' }) created_utc!: string;
+    /** @format date-time */
+    @IsDate({ message: 'updated_utc must be a valid date and time.' }) updated_utc!: string;
     @IsDefined({ message: 'name is required.' }) name!: string;
     @IsMongoId({ message: 'plan_id must be a valid ObjectId.' }) plan_id!: string;
     @IsDefined({ message: 'plan_name is required.' }) plan_name!: string;
