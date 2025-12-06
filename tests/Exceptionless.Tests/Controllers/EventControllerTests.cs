@@ -1543,7 +1543,7 @@ public class EventControllerTests : IntegrationTestsBase
         return result;
     }
 
-    [Fact]
+    [Fact(Skip = "Foundatio bug with not passing in time provider to extension methods.")]
     public async Task PostEvent_WithEnvironmentAndRequestInfo_ReturnsCorrectSnakeCaseSerialization()
     {
         TimeProvider.SetUtcNow(new DateTime(2026, 1, 15, 12, 0, 0, DateTimeKind.Utc));

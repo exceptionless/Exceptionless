@@ -4143,7 +4143,7 @@
           {
             "name": "integration",
             "in": "path",
-            "description": "The identifier of the user.",
+            "description": "The identifier of the integration.",
             "required": true,
             "schema": {
               "minLength": 1,
@@ -4192,7 +4192,7 @@
           {
             "name": "integration",
             "in": "path",
-            "description": "The identifier of the user.",
+            "description": "The identifier of the integration.",
             "required": true,
             "schema": {
               "minLength": 1,

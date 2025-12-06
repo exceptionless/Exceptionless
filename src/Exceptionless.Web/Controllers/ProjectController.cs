@@ -421,7 +421,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     /// Set an integrations notification settings
     /// </summary>
     /// <param name="id">The identifier of the project.</param>
-    /// <param name="integration">The identifier of the user.</param>
+    /// <param name="integration">The identifier of the integration.</param>
     /// <param name="settings">The notification settings.</param>
     /// <response code="404">The project or integration could not be found.</response>
     /// <response code="426">Please upgrade your plan to enable integrations.</response>
