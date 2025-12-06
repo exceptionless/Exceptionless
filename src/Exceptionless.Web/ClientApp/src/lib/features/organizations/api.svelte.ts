@@ -42,19 +42,6 @@ export interface AddOrganizationUserRequest {
     };
 }
 
-export interface GetAdminSearchOrganizationsParams {
-    criteria?: string;
-    limit?: number;
-    mode?: 'stats' | undefined;
-    page?: number;
-    paid?: boolean;
-    suspended?: boolean;
-}
-
-export interface GetAdminSearchOrganizationsRequest {
-    params?: GetAdminSearchOrganizationsParams;
-}
-
 export interface DeleteOrganizationRequest {
     route: {
         ids: string[];
@@ -85,6 +72,19 @@ export interface DeleteSuspendOrganizationRequest {
     route: {
         id: string | undefined;
     };
+}
+
+export interface GetAdminSearchOrganizationsParams {
+    criteria?: string;
+    limit?: number;
+    mode?: 'stats' | undefined;
+    page?: number;
+    paid?: boolean;
+    suspended?: boolean;
+}
+
+export interface GetAdminSearchOrganizationsRequest {
+    params?: GetAdminSearchOrganizationsParams;
 }
 
 export interface GetInvoiceRequest {
