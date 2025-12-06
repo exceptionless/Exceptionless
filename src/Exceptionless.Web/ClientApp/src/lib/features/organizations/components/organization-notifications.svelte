@@ -1,13 +1,15 @@
 <script lang="ts">
     import type { NotificationProps } from '$comp/notification';
 
-    import { getOrganizationQuery } from '$features/organizations/api.svelte';
+    import { getOrganizationQuery, getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { organization as currentOrganizationId } from '$features/organizations/context.svelte';
     import { SuspensionCode } from '$features/organizations/models';
     import { getOrganizationProjectsQuery } from '$features/projects/api.svelte';
+    import { getMeQuery } from '$features/users/api.svelte';
 
     import FreePlanNotification from './notifications/free-plan-notification.svelte';
     import HourlyOverageNotification from './notifications/hourly-overage-notification.svelte';
+    import ImpersonationNotification from './notifications/impersonation-notification.svelte';
     import MonthlyOverageNotification from './notifications/monthly-overage-notification.svelte';
     import PremiumUpgradeNotification from './notifications/premium-upgrade-notification.svelte';
     import ProjectConfigurationNotification from './notifications/project-configuration-notification.svelte';
@@ -28,7 +30,16 @@
     // Store the organizationId to prevent loading when switching organizations.
     const organizationId = currentOrganizationId.current;
 
-    const organizationsQuery = getOrganizationQuery({
+    const meQuery = getMeQuery();
+    const isGlobalAdmin = $derived(!!meQuery.data?.roles?.includes('global'));
+
+    const userOrganizationIds = $derived(meQuery.data?.organization_ids ?? []);
+    const isImpersonating = $derived(isGlobalAdmin && organizationId !== undefined && !userOrganizationIds.includes(organizationId));
+
+    const organizationsQuery = getOrganizationsQuery({});
+    const userOrganizations = $derived((organizationsQuery.data?.data ?? []).filter((org) => userOrganizationIds.includes(org.id!)));
+
+    const organizationQuery = getOrganizationQuery({
         route: {
             get id() {
                 return organizationId;
@@ -44,7 +55,7 @@
         }
     });
 
-    const organization = $derived(organizationsQuery.data);
+    const organization = $derived(organizationQuery.data);
     const projects = $derived((projectsQuery.data?.data ?? []).filter((p) => p.organization_id === organizationId));
     const projectsNeedingConfig = $derived(projects.filter((p) => p.is_configured === false));
 
@@ -71,6 +82,10 @@
     );
     const requiresPremiumUpgrade = $derived(requiresPremium && !organization?.has_premium_features && !needsProjectConfiguration);
 </script>
+
+{#if isImpersonating && organization}
+    <ImpersonationNotification name={organization.name} {userOrganizations} {...restProps} />
+{/if}
 
 {#if organization}
     {#if isSuspended}
