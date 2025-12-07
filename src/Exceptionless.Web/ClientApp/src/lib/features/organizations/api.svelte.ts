@@ -21,6 +21,7 @@ export async function invalidateOrganizationQueries(queryClient: QueryClient, me
 }
 
 export const queryKeys = {
+    adminSearch: (params: GetAdminSearchOrganizationsParams) => [...queryKeys.list(params.mode), 'admin', { ...params }] as const,
     deleteOrganization: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'delete'] as const,
     id: (id: string | undefined, mode: 'stats' | undefined) => (mode ? ([...queryKeys.type, id, { mode }] as const) : ([...queryKeys.type, id] as const)),
     ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
@@ -71,6 +72,19 @@ export interface DeleteSuspendOrganizationRequest {
     route: {
         id: string | undefined;
     };
+}
+
+export interface GetAdminSearchOrganizationsParams {
+    criteria?: string;
+    limit?: number;
+    mode?: 'stats' | undefined;
+    page?: number;
+    paid?: boolean;
+    suspended?: boolean;
+}
+
+export interface GetAdminSearchOrganizationsRequest {
+    params?: GetAdminSearchOrganizationsParams;
 }
 
 export interface GetInvoiceRequest {
@@ -208,6 +222,29 @@ export function deleteSuspendOrganization(request: DeleteSuspendOrganizationRequ
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, 'stats') });
             queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
         }
+    }));
+}
+
+export function getAdminOrganizationsQuery(request: GetAdminSearchOrganizationsRequest) {
+    return createQuery<FetchClientResponse<ViewOrganization[]>, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<ViewOrganization[]>('admin/organizations', {
+                params: {
+                    criteria: request.params?.criteria,
+                    limit: request.params?.limit ?? 10,
+                    mode: request.params?.mode,
+                    page: request.params?.page ?? 1,
+                    paid: request.params?.paid,
+                    suspended: request.params?.suspended
+                },
+                signal
+            });
+
+            return response;
+        },
+        queryKey: queryKeys.adminSearch(request.params ?? {})
     }));
 }
 

@@ -74,6 +74,7 @@ export interface GetEventsParams {
 }
 
 export interface GetOrganizationCountRequest {
+    enabled?: () => boolean;
     params?: {
         aggregations?: string;
         filter?: string;
@@ -171,7 +172,7 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
     const queryClient = useQueryClient();
 
     return createQuery<CountResult, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.organizationId,
+        enabled: () => !!accessToken.current && !!request.route.organizationId && (request.enabled?.() ?? true),
         queryClient,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();

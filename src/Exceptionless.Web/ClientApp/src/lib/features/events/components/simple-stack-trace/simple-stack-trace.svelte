@@ -13,10 +13,10 @@
 
     let { error }: Props = $props();
 
-    const errors = getErrors(error);
+    const errors = $derived(getErrors(error));
 </script>
 
-<pre class="bg-muted rounded p-2 break-words whitespace-pre-wrap"><Code class="px-0"
+<pre class="bg-muted rounded p-2 wrap-break-word whitespace-pre-wrap"><Code class="px-0"
         >{#each errors.reverse() as error, index (index)}<SimpleStackTraceHeader {error} /><SimpleStackTraceFrames {error} />{#if index < errors.length - 1}<br
                 />{/if}{/each}</Code
     ></pre>

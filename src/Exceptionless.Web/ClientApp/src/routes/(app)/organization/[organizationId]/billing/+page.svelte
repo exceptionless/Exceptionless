@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
     import ErrorMessage from '$comp/error-message.svelte';
     import DateTime from '$comp/formatters/date-time.svelte';
     import { A, H4 } from '$comp/typography';
@@ -46,7 +47,7 @@
     }
 
     function handleOpenInvoice(invoiceId: string) {
-        window.open(`/next/payment/${invoiceId}`, '_blank');
+        window.open(resolve('/(app)/payment/[id]', { id: invoiceId }), '_blank');
     }
 
     function handleViewStripeInvoice(invoiceId: string) {

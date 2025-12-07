@@ -161,7 +161,7 @@
                 {:else if showXmlCodeEditor}
                     <CodeBlock {code} language="xml" />
                 {:else}
-                    <pre class="bg-muted rounded p-2 break-words whitespace-pre-wrap"><Code class="px-0"><div class="bg-inherit">{clipboardData}</div></Code
+                    <pre class="bg-muted rounded p-2 wrap-break-word whitespace-pre-wrap"><Code class="px-0"><div class="bg-inherit">{clipboardData}</div></Code
                         ></pre>
                 {/if}
             {:else}

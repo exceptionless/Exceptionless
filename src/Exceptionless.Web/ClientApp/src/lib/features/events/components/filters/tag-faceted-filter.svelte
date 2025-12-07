@@ -8,11 +8,14 @@
 
     import { TagFilter } from './models.svelte';
 
-    let { filter, filterChanged, filterRemoved, title = 'Tag', ...props }: FacetedFilterProps<TagFilter> = $props();
+    let { filter, filterChanged, filterRemoved, open = $bindable(false), title = 'Tag', ...props }: FacetedFilterProps<TagFilter> = $props();
 
     // Store the organizationId to prevent loading when switching organizations.
     const organizationId = organization.current;
+
+    // Create query with conditional enabled - only fetch when dropdown is open
     const countQuery = getOrganizationCountQuery({
+        enabled: () => open,
         params: {
             aggregations: 'terms:tags'
         },
@@ -45,10 +48,12 @@
 </script>
 
 <FacetedFilter.MultiSelect
+    bind:open
     changed={(values: string[]) => {
         filter.value = values;
         filterChanged(filter);
     }}
+    loading={countQuery.isLoading}
     {options}
     remove={() => {
         filter.value = [];

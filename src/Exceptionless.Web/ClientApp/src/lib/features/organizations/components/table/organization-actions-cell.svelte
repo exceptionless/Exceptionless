@@ -83,15 +83,15 @@
         {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
-        <DropdownMenu.Item onclick={() => goto(resolve(`/(app)/organization/[organizationId]/manage`, { organizationId: org.id }))}>
+        <DropdownMenu.Item onclick={() => goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: org.id }))}>
             <Edit />
             Edit
         </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => goto(resolve(`/(app)/organization/[organizationId]/billing`, { organizationId: org.id }))}>
+        <DropdownMenu.Item onclick={() => goto(resolve('/(app)/organization/[organizationId]/billing', { organizationId: org.id }))}>
             <ChangePlan />
             Change Plan
         </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => goto(resolve(`/(app)/organization/[organizationId]/billing`, { organizationId: org.id }))}>
+        <DropdownMenu.Item onclick={() => goto(resolve('/(app)/organization/[organizationId]/billing', { organizationId: org.id }))}>
             <ViewInvoices />
             View Invoices
         </DropdownMenu.Item>

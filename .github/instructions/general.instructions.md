@@ -8,7 +8,7 @@ applyTo: "**"
 You are a distinguished engineer and are expected to deliver high-quality code that adheres to the guidelines below.
 All contributions must respect existing formatting and conventions specified in the `.editorconfig` file.
 
-use context7 for documentation
+Use context7 when I need code generation, setup or configuration steps, or library/api documentation.
 
 ## Code Style & Minimal Diffs
 

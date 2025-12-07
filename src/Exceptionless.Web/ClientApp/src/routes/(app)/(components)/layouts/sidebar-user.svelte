@@ -1,13 +1,18 @@
 <script lang="ts">
+    import type { ViewOrganization } from '$features/organizations/models';
     import type { Gravatar } from '$features/users/gravatar.svelte';
 
+    import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { A } from '$comp/typography';
     import * as Avatar from '$comp/ui/avatar/index';
     import * as DropdownMenu from '$comp/ui/dropdown-menu/index';
     import * as Sidebar from '$comp/ui/sidebar/index';
     import { useSidebar } from '$comp/ui/sidebar/index';
     import { Skeleton } from '$comp/ui/skeleton';
+    import ImpersonateOrganizationDialog from '$features/organizations/components/dialogs/impersonate-organization-dialog.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import GlobalUser from '$features/users/components/global-user.svelte';
     import { User } from '$features/users/models';
     import BadgeCheck from '@lucide/svelte/icons/badge-check';
     import Bell from '@lucide/svelte/icons/bell';
@@ -16,6 +21,8 @@
     import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
     import Help from '@lucide/svelte/icons/circle-help';
     import CreditCard from '@lucide/svelte/icons/credit-card';
+    import Eye from '@lucide/svelte/icons/eye';
+    import EyeOff from '@lucide/svelte/icons/eye-off';
     import GitHub from '@lucide/svelte/icons/github';
     import LogOut from '@lucide/svelte/icons/log-out';
     import Plus from '@lucide/svelte/icons/plus';
@@ -23,17 +30,30 @@
 
     interface Props {
         gravatar: Gravatar;
+        isImpersonating?: boolean;
         isLoading: boolean;
+        organizations?: ViewOrganization[];
         user: undefined | User;
     }
 
-    let { gravatar, isLoading, user }: Props = $props();
+    let { gravatar, isImpersonating = false, isLoading, organizations = [], user }: Props = $props();
     const sidebar = useSidebar();
+    let openImpersonateDialog = $state(false);
 
     function onMenuClick() {
         if (sidebar.isMobile) {
             sidebar.toggle();
         }
+    }
+
+    async function impersonateOrganization(vo: ViewOrganization): Promise<void> {
+        await goto(resolve('/(app)'));
+        organization.current = vo.id;
+    }
+
+    async function stopImpersonating(): Promise<void> {
+        await goto(resolve('/(app)'));
+        organization.current = organizations[0]?.id;
     }
 </script>
 
@@ -99,12 +119,12 @@
                     <DropdownMenu.Group>
                         <DropdownMenu.Item>
                             <BadgeCheck />
-                            <A variant="ghost" href="/next/account/manage" class="w-full" onclick={onMenuClick}>Account</A>
+                            <A variant="ghost" href={resolve('/(app)/account/manage')} class="w-full" onclick={onMenuClick}>Account</A>
                             <DropdownMenu.Shortcut>⇧⌘ga</DropdownMenu.Shortcut>
                         </DropdownMenu.Item>
                         <DropdownMenu.Item>
                             <Bell />
-                            <A variant="ghost" href="/next/account/notifications" class="w-full" onclick={onMenuClick}>Notifications</A>
+                            <A variant="ghost" href={resolve('/(app)/account/notifications')} class="w-full" onclick={onMenuClick}>Notifications</A>
                             <DropdownMenu.Shortcut>⇧⌘gn</DropdownMenu.Shortcut>
                         </DropdownMenu.Item>
                         {#if organization.current}
@@ -112,7 +132,7 @@
                                 <Settings />
                                 <A
                                     variant="ghost"
-                                    href={`/next/organization/${organization.current}/manage`}
+                                    href={resolve('/(app)/organization/[organizationId]/manage', { organizationId: organization.current })}
                                     class="flex w-full items-center gap-2"
                                     onclick={onMenuClick}
                                 >
@@ -124,7 +144,7 @@
                                 <CreditCard />
                                 <A
                                     variant="ghost"
-                                    href={`/next/organization/${organization.current}/billing`}
+                                    href={resolve('/(app)/organization/[organizationId]/billing', { organizationId: organization.current })}
                                     class="flex w-full items-center gap-2"
                                     onclick={onMenuClick}
                                 >
@@ -135,7 +155,7 @@
                         {:else}
                             <DropdownMenu.Item>
                                 <Plus />
-                                <A variant="ghost" href="/next/organization/add" class="flex w-full items-center gap-2" onclick={onMenuClick}>
+                                <A variant="ghost" href={resolve('/(app)/organization/add')} class="flex w-full items-center gap-2" onclick={onMenuClick}>
                                     Add organization
                                     <DropdownMenu.Shortcut>⇧⌘gn</DropdownMenu.Shortcut>
                                 </A>
@@ -174,14 +194,35 @@
                             </DropdownMenu.Item>
                         </DropdownMenu.SubContent>
                     </DropdownMenu.Sub>
+                    <GlobalUser>
+                        <DropdownMenu.Separator />
+                        {#if isImpersonating}
+                            <DropdownMenu.Item
+                                onSelect={stopImpersonating}
+                                class="bg-violet-100 text-violet-900 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-100 dark:hover:bg-violet-900/50"
+                            >
+                                <EyeOff />
+                                Stop Impersonating
+                            </DropdownMenu.Item>
+                        {:else}
+                            <DropdownMenu.Item onSelect={() => (openImpersonateDialog = true)}>
+                                <Eye />
+                                Impersonate Organization
+                            </DropdownMenu.Item>
+                        {/if}
+                    </GlobalUser>
                     <DropdownMenu.Separator />
                     <DropdownMenu.Item>
                         <LogOut />
-                        <A variant="ghost" href="/next/logout" class="w-full">Log out</A>
+                        <A variant="ghost" href={resolve('/(auth)/logout')} class="w-full">Log out</A>
                         <DropdownMenu.Shortcut>⇧⌘Q</DropdownMenu.Shortcut>
                     </DropdownMenu.Item>
                 </DropdownMenu.Content>
             </DropdownMenu.Root>
         </Sidebar.MenuItem>
     </Sidebar.Menu>
+{/if}
+
+{#if openImpersonateDialog}
+    <ImpersonateOrganizationDialog bind:open={openImpersonateDialog} {impersonateOrganization} userOrganizationIds={organizations.map((o) => o.id)} />
 {/if}

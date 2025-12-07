@@ -133,7 +133,7 @@
     </form>
 
     <div class="flex w-full items-center justify-between">
-        <Button variant="secondary" href="/next/issues">
+        <Button variant="secondary" href={resolve('/(app)/issues')}>
             <Issues class="mr-2 size-4" /> Go To Issues
         </Button>
 

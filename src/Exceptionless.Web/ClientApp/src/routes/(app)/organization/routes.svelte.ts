@@ -11,6 +11,7 @@ export function routes(): NavigationItem[] {
             group: 'Settings',
             href: resolve('/(app)/organization/list'),
             icon: Settings,
+            show: (context) => !context.impersonating,
             title: 'Organizations'
         },
         ...organizationSettingsRoutes()

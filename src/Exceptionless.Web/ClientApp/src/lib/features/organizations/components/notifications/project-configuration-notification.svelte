@@ -2,6 +2,7 @@
     import type { NotificationProps } from '$comp/notification';
     import type { ViewProject } from '$features/projects/models';
 
+    import { resolve } from '$app/paths';
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
     import { A } from '$comp/typography';
 
@@ -18,7 +19,7 @@
         Please configure your clients for
         {#each projects as project, index (project.id)}
             {#if index > 0},
-            {/if}<A href="/next/project/{project.id}/configure">{project.name}</A>
+            {/if}<A href={resolve('/(app)/project/[projectId]/configure', { projectId: project.id })}>{project.name}</A>
         {/each}
         {#if projects.length === 1}
             project

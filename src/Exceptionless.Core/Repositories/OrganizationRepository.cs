@@ -51,7 +51,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
     {
         var filter = Query<Organization>.MatchAll();
         if (!String.IsNullOrWhiteSpace(criteria))
-            filter &= Query<Organization>.Term(o => o.Name, criteria);
+            filter &= (Query<Organization>.Term(o => o.Id, criteria) || Query<Organization>.Term(o => o.Name, criteria));
 
         if (paid.HasValue)
         {

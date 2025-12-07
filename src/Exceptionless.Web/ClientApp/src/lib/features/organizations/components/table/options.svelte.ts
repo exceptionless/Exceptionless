@@ -2,12 +2,16 @@ import type { FetchClientResponse, ProblemDetails } from '@exceptionless/fetchcl
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import NumberFormatter from '$comp/formatters/number.svelte';
-import OrganizationsActionsCell from '$features/organizations/components/table/organization-actions-cell.svelte';
 import { ViewOrganization } from '$features/organizations/models';
 import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
 import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
 
 import type { GetOrganizationsMode, GetOrganizationsParams } from '../../api.svelte';
+
+import OrganizationsActionsCell from './organization-actions-cell.svelte';
+import OrganizationOverLimitCell from './organization-over-limit-cell.svelte';
+import OrganizationRetentionDaysCell from './organization-retention-days-cell.svelte';
+import OrganizationSuspensionCell from './organization-suspension-cell.svelte';
 
 export function getColumns<TOrganizations extends ViewOrganization>(mode: GetOrganizationsMode = 'stats'): ColumnDef<TOrganizations>[] {
     const columns: ColumnDef<TOrganizations>[] = [
@@ -28,6 +32,44 @@ export function getColumns<TOrganizations extends ViewOrganization>(mode: GetOrg
             header: 'Plan',
             meta: {
                 class: 'w-[200px]'
+            }
+        },
+        {
+            accessorFn: (row) => row.is_over_monthly_limit,
+            cell: (info) => renderComponent(OrganizationOverLimitCell, { isOverLimit: info.getValue<boolean>() }),
+            enableSorting: false,
+            header: 'Over Limit',
+            id: 'is_over_monthly_limit',
+            meta: {
+                class: 'w-24',
+                defaultHidden: true
+            }
+        },
+        {
+            accessorKey: 'retention_days',
+            cell: (info) => renderComponent(OrganizationRetentionDaysCell, { value: info.getValue<number>() }),
+            enableSorting: false,
+            header: 'Retention',
+            meta: {
+                class: 'w-24',
+                defaultHidden: true
+            }
+        },
+        {
+            accessorFn: (row) => row.is_suspended,
+            cell: (info) => {
+                const org = info.row.original;
+                return renderComponent(OrganizationSuspensionCell, {
+                    code: org.suspension_code,
+                    notes: org.suspension_notes
+                });
+            },
+            enableSorting: false,
+            header: 'Suspended',
+            id: 'is_suspended',
+            meta: {
+                class: 'w-28',
+                defaultHidden: true
             }
         }
     ];

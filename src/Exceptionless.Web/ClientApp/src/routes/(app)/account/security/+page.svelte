@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
     import ErrorMessage from '$comp/error-message.svelte';
     import PasswordInput from '$comp/form/password-input.svelte';
     import GoogleIcon from '$comp/icons/GoogleIcon.svelte';
@@ -119,11 +120,15 @@
                         <div class="min-w-0 flex-1 font-semibold">Microsoft account</div>
                         <div class="inline-flex items-center">
                             {#if true}
-                                <Button aria-label="Disconnect Microsoft account" onclick={() => liveLogin('/next/account/security')} variant="outline">
+                                <Button
+                                    aria-label="Disconnect Microsoft account"
+                                    onclick={() => liveLogin(resolve('/(app)/account/security'))}
+                                    variant="outline"
+                                >
                                     Disconnect
                                 </Button>
                             {:else}
-                                <Button aria-label="Connect Microsoft account" onclick={() => liveLogin('/next/account/security')}>Connect</Button>
+                                <Button aria-label="Connect Microsoft account" onclick={() => liveLogin(resolve('/(app)/account/security'))}>Connect</Button>
                             {/if}
                         </div>
                     </div>
@@ -136,11 +141,15 @@
                         <div class="min-w-0 flex-1 font-semibold">Google account</div>
                         <div class="inline-flex items-center">
                             {#if false}
-                                <Button aria-label="Disconnect Google account" onclick={() => googleLogin('/next/account/security')} variant="outline">
+                                <Button
+                                    aria-label="Disconnect Google account"
+                                    onclick={() => googleLogin(resolve('/(app)/account/security'))}
+                                    variant="outline"
+                                >
                                     Disconnect
                                 </Button>
                             {:else}
-                                <Button aria-label="Connect Google account" onclick={() => googleLogin('/next/account/security')}>Connect</Button>
+                                <Button aria-label="Connect Google account" onclick={() => googleLogin(resolve('/(app)/account/security'))}>Connect</Button>
                             {/if}
                         </div>
                     </div>
@@ -153,11 +162,15 @@
                         <div class="min-w-0 flex-1 font-semibold">Facebook account</div>
                         <div class="inline-flex items-center">
                             {#if false}
-                                <Button aria-label="Disconnect Facebook account" onclick={() => facebookLogin('/next/account/security')} variant="outline">
+                                <Button
+                                    aria-label="Disconnect Facebook account"
+                                    onclick={() => facebookLogin(resolve('/(app)/account/security'))}
+                                    variant="outline"
+                                >
                                     Disconnect
                                 </Button>
                             {:else}
-                                <Button aria-label="Connect Facebook account" onclick={() => facebookLogin('/next/account/security')}>Connect</Button>
+                                <Button aria-label="Connect Facebook account" onclick={() => facebookLogin(resolve('/(app)/account/security'))}>Connect</Button>
                             {/if}
                         </div>
                     </div>
@@ -170,11 +183,15 @@
                         <div class="min-w-0 flex-1 font-semibold">GitHub account</div>
                         <div class="inline-flex items-center">
                             {#if true}
-                                <Button aria-label="Disconnect GitHub account" onclick={() => githubLogin('/next/account/security')} variant="outline">
+                                <Button
+                                    aria-label="Disconnect GitHub account"
+                                    onclick={() => githubLogin(resolve('/(app)/account/security'))}
+                                    variant="outline"
+                                >
                                     Disconnect
                                 </Button>
                             {:else}
-                                <Button aria-label="Connect GitHub account" onclick={() => githubLogin('/next/account/security')}>Connect</Button>
+                                <Button aria-label="Connect GitHub account" onclick={() => githubLogin(resolve('/(app)/account/security'))}>Connect</Button>
                             {/if}
                         </div>
                     </div>

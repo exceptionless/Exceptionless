@@ -77,6 +77,7 @@
         }
     });
 
+    // NOTE: This might be applying query string parameters when redirecting away.
     watch(
         () => organization.current,
         () => {
@@ -302,7 +303,11 @@
     <Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
         <Sheet.Header>
             <Sheet.Title
-                >Event Details <Button href="/next/event/{selectedEventId}" size="sm" title="Open in new window" variant="ghost"><ExternalLink /></Button
+                >Event Details <Button
+                    href={selectedEventId ? resolve('/(app)/event/[eventId]', { eventId: selectedEventId }) : '#'}
+                    size="sm"
+                    title="Open in new window"
+                    variant="ghost"><ExternalLink /></Button
                 ></Sheet.Title
             >
         </Sheet.Header>
