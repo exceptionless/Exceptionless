@@ -27,14 +27,11 @@
 
     let { ignoreConfigureProjects = false, ignoreFree = false, isChatEnabled, openChat, requiresPremium = false, ...restProps }: Props = $props();
 
-    // Store the organizationId to prevent loading when switching organizations.
-    const organizationId = currentOrganizationId.current;
-
     const meQuery = getMeQuery();
     const isGlobalAdmin = $derived(!!meQuery.data?.roles?.includes('global'));
 
     const userOrganizationIds = $derived(meQuery.data?.organization_ids ?? []);
-    const isImpersonating = $derived(isGlobalAdmin && organizationId !== undefined && !userOrganizationIds.includes(organizationId));
+    const isImpersonating = $derived(isGlobalAdmin && currentOrganizationId.current !== undefined && !userOrganizationIds.includes(currentOrganizationId.current));
 
     const organizationsQuery = getOrganizationsQuery({});
     const userOrganizations = $derived((organizationsQuery.data?.data ?? []).filter((org) => userOrganizationIds.includes(org.id!)));
@@ -42,7 +39,7 @@
     const organizationQuery = getOrganizationQuery({
         route: {
             get id() {
-                return organizationId;
+                return currentOrganizationId.current;
             }
         }
     });
@@ -50,13 +47,13 @@
     const projectsQuery = getOrganizationProjectsQuery({
         route: {
             get organizationId() {
-                return organizationId;
+                return currentOrganizationId.current;
             }
         }
     });
 
     const organization = $derived(organizationQuery.data);
-    const projects = $derived((projectsQuery.data?.data ?? []).filter((p) => p.organization_id === organizationId));
+    const projects = $derived((projectsQuery.data?.data ?? []).filter((p) => p.organization_id === currentOrganizationId.current));
     const projectsNeedingConfig = $derived(projects.filter((p) => p.is_configured === false));
 
     const suspensionCode: SuspensionCode | undefined = $derived(
