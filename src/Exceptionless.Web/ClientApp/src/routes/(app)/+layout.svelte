@@ -8,7 +8,7 @@
     import { env } from '$env/dynamic/public';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
-    import { getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
+    import { getOrganizationQuery, getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
     import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
     import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
@@ -166,26 +166,53 @@
 
     const meQuery = getMeQuery();
     const gravatar = getGravatarFromCurrentUser(meQuery);
+    const isGlobalAdmin = $derived(!!meQuery.data?.roles?.includes('global'));
 
     const organizationsQuery = getOrganizationsQuery({});
+    const organizations = $derived(organizationsQuery.data?.data ?? []);
+
+    const impersonatingOrganizationId = $derived.by(() => {
+        const isUserOrganization = meQuery.data?.organization_ids.includes(organization.current ?? '');
+        return isUserOrganization ? undefined : organization.current;
+    });
+
+    const impersonatedOrganizationQuery = getOrganizationQuery({
+        route: {
+            get id() {
+                return impersonatingOrganizationId;
+            }
+        }
+    });
+    const impersonatedOrganization = $derived(impersonatingOrganizationId ? impersonatedOrganizationQuery.data : undefined);
+
+    // Simple organization selection - pick first available if none selected
     $effect(() => {
         if (!organizationsQuery.isSuccess) {
             return;
         }
 
-        if (!organizationsQuery.data.data || organizationsQuery.data.data.length === 0) {
+        const hasOrganizations = organizations.length > 0;
+        if (!hasOrganizations) {
             organization.current = undefined;
-            goto(resolve(`/(app)/organization/add`));
+
+            // Redirect non-admins to add organization page
+            if (!isGlobalAdmin && !organizationsQuery.isLoading) {
+                goto(resolve(`/(app)/organization/add`));
+            }
+
             return;
         }
 
-        if (!organizationsQuery.data.data.find((org) => org.id === organization.current)) {
-            organization.current = organizationsQuery.data.data[0]!.id;
+        // Select first organization if none selected
+        if (!organization.current) {
+            organization.current = organizations[0]!.id;
         }
     });
 
+    const isImpersonating = $derived(!!impersonatedOrganization);
+
     const filteredRoutes = $derived.by(() => {
-        const context: NavigationItemContext = { authenticated: isAuthenticated, user: meQuery.data };
+        const context: NavigationItemContext = { authenticated: isAuthenticated, impersonating: isImpersonating, user: meQuery.data };
         return routes().filter((route) => (route.show ? route.show(context) : true));
     });
 
@@ -197,18 +224,19 @@
 
 {#if isAuthenticated}
     <Navbar bind:isCommandOpen></Navbar>
-    <Sidebar routes={filteredRoutes}>
+    <Sidebar routes={filteredRoutes} impersonating={!!impersonatedOrganization}>
         {#snippet header()}
             <SidebarOrganizationSwitcher
                 class="pt-2"
                 isLoading={organizationsQuery.isLoading}
-                organizations={organizationsQuery.data?.data ?? []}
+                {organizations}
+                {impersonatedOrganization}
                 bind:selected={organization.current}
             />
         {/snippet}
 
         {#snippet footer()}
-            <SidebarUser isLoading={meQuery.isLoading} user={meQuery.data} {gravatar} />
+            <SidebarUser isLoading={meQuery.isLoading} user={meQuery.data} {gravatar} isImpersonating={!!impersonatedOrganization} {organizations} />
         {/snippet}
     </Sidebar>
     <div class="flex w-full pt-16">

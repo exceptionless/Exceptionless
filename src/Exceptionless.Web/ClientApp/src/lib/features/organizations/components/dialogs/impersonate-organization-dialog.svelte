@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { ViewOrganization } from '$features/organizations/models';
 
+    import PageNumber from '$comp/page-number.svelte';
     import { Muted, P } from '$comp/typography';
     import * as Avatar from '$comp/ui/avatar';
     import { Badge } from '$comp/ui/badge';
@@ -252,7 +253,7 @@
                 {/if}
             </div>
 
-            <div class="max-h-[45vh] min-h-[250px] overflow-y-auto rounded-md border">
+            <div class="h-[45vh] min-h-[250px] overflow-y-auto rounded-md border">
                 <div class="p-1.5">
                     {#if searchResults.isFetching}
                         <div class="space-y-1">
@@ -441,14 +442,8 @@
                 </div>
             </div>
 
-            <div class="flex items-center justify-between text-xs">
-                <Muted>
-                    {#if totalCount > 0}
-                        Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, totalCount)} of {totalCount} organizations
-                    {:else if searchResults.isFetching}
-                        Loading...
-                    {/if}
-                </Muted>
+            <div class="flex flex-wrap items-center justify-between gap-3 text-xs">
+                <PageNumber {currentPage} size="xs" {totalPages} />
                 {#if totalPages > 1}
                     <Pagination count={totalCount} bind:page={currentPage} onPageChange={handlePageChange} perPage={pageSize} siblingCount={0}>
                         <PaginationContent class="gap-1">
