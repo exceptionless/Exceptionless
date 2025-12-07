@@ -304,7 +304,7 @@
         <Sheet.Header>
             <Sheet.Title
                 >Event Details <Button
-                    href={resolve('/(app)/event/[eventId]', { eventId: selectedEventId })}
+                    href={selectedEventId ? resolve('/(app)/event/[eventId]', { eventId: selectedEventId }) : '#'}
                     size="sm"
                     title="Open in new window"
                     variant="ghost"><ExternalLink /></Button

@@ -5,7 +5,7 @@
 
     let { value }: Props = $props();
 
-    const parsedValue = typeof value === 'number' ? value : parseFloat(value ?? '');
+    const parsedValue = $derived(typeof value === 'number' ? value : parseFloat(value ?? ''));
     const byteValueNumberFormatter = new Intl.NumberFormat(navigator.language, {
         notation: 'compact',
         style: 'unit',

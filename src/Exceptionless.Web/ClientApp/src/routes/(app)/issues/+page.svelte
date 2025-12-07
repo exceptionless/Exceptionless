@@ -330,8 +330,11 @@
     <Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
         <Sheet.Header>
             <Sheet.Title
-                >Event Details <Button href={resolve('/(app)/event/[eventId]', { eventId })} size="sm" title="Open in new window" variant="ghost"
-                    ><ExternalLink /></Button
+                >Event Details <Button
+                    href={eventId ? resolve('/(app)/event/[eventId]', { eventId }) : '#'}
+                    size="sm"
+                    title="Open in new window"
+                    variant="ghost"><ExternalLink /></Button
                 ></Sheet.Title
             >
         </Sheet.Header>

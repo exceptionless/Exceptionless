@@ -7,7 +7,7 @@
 
     let { mode }: Props = $props();
 
-    let resolvedMode = $state(mode !== 'system' ? mode : (systemPrefersMode.current ?? 'dark'));
+    const resolvedMode = $derived(mode !== 'system' ? mode : (systemPrefersMode.current ?? 'dark'));
 </script>
 
 {#if resolvedMode === 'light'}
@@ -16,7 +16,7 @@
             <!-- secondary-->
             <div class="space-y-2 rounded-md bg-[hsl(0,0%,100%)] p-2 shadow-xs">
                 <!--card -->
-                <div class="h-2 w-[80px] rounded-lg bg-[hsl(240,3.8%,46.1%)]"></div>
+                <div class="h-2 w-20 rounded-lg bg-[hsl(240,3.8%,46.1%)]"></div>
                 <!--muted-foreground -->
                 <div class="h-2 w-[100px] rounded-lg bg-[hsl(240,3.8%,46.1%)]"></div>
             </div>
@@ -36,7 +36,7 @@
             <!-- secondary-->
             <div class="space-y-2 rounded-md bg-[hsl(222,17%,11%)] p-2 shadow-xs">
                 <!--card -->
-                <div class="h-2 w-[80px] rounded-lg bg-[hsl(240,5%,64.9%)]"></div>
+                <div class="h-2 w-20 rounded-lg bg-[hsl(240,5%,64.9%)]"></div>
                 <!--muted-foreground -->
                 <div class="h-2 w-[100px] rounded-lg bg-[hsl(240,5%,64.9%)]"></div>
             </div>
