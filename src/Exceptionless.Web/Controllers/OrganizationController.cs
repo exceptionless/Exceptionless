@@ -244,7 +244,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             Total = stripeInvoice.Total / 100.0m
         };
 
-        // In Stripe.net v49, Price information needs to be fetched separately
+        // In Stripe.net v49+, Price information needs to be fetched separately
         var client2 = new StripeClient(_options.StripeOptions.StripeApiKey);
         var priceService = new PriceService(client2);
 
@@ -252,7 +252,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         {
             var item = new InvoiceLineItem { Amount = line.Amount / 100.0m, Description = line.Description };
             
-            // In v49, access price ID from Pricing.PriceDetails.Price
+            // In v49+, access price ID from Pricing.PriceDetails.Price
             var priceId = line.Pricing?.PriceDetails?.Price;
             if (!String.IsNullOrEmpty(priceId))
             {
