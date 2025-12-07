@@ -17,6 +17,7 @@ export type NavigationItem = {
 
 export type NavigationItemContext = {
     authenticated: boolean;
+    impersonating?: boolean;
     user?: User;
 };
 

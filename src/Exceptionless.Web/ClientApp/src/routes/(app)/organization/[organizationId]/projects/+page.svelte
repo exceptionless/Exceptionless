@@ -7,6 +7,7 @@
     import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Input } from '$comp/ui/input';
+    import { Separator } from '$comp/ui/separator';
     import { organization } from '$features/organizations/context.svelte';
     import { type GetOrganizationProjectsParams, getOrganizationProjectsQuery } from '$features/projects/api.svelte';
     import { getTableOptions } from '$features/projects/components/table/options.svelte';
@@ -92,6 +93,7 @@
             </Button>
         </div>
     </div>
+    <Separator />
     <ProjectsDataTable bind:limit={projectsQueryParameters.limit!} isLoading={projectsQuery.isLoading} {rowClick} {rowHref} {table}>
         {#snippet toolbarChildren()}
             <Input type="search" placeholder="Filter projects..." class="flex-1" bind:value={projectsQueryParameters.filter} />

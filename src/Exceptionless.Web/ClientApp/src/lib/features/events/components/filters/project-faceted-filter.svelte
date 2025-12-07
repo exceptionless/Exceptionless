@@ -7,11 +7,14 @@
 
     import { ProjectFilter } from './models.svelte';
 
-    let { filter, filterChanged, filterRemoved, title = 'Project', ...props }: FacetedFilterProps<ProjectFilter> = $props();
+    let { filter, filterChanged, filterRemoved, open = $bindable(false), title = 'Project', ...props }: FacetedFilterProps<ProjectFilter> = $props();
 
     // Store the organizationId to prevent loading when switching organizations.
     const organizationId = organization.current;
+
+    // Create query with conditional enabled - only fetch when dropdown is open
     const projectsQuery = getOrganizationProjectsQuery({
+        enabled: () => open,
         route: {
             get organizationId() {
                 return organizationId;
@@ -41,6 +44,7 @@
 </script>
 
 <FacetedFilter.MultiSelect
+    bind:open
     changed={(values) => {
         filter.value = values;
         filterChanged(filter);

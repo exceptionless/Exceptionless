@@ -24,6 +24,7 @@
     import Filter from '@lucide/svelte/icons/filter';
     import Users from '@lucide/svelte/icons/users';
 
+    import StackLogLevel from './stack-log-level.svelte';
     import StackOptionsDropdownMenu from './stack-options-dropdown-menu.svelte';
     import StackReferences from './stack-references.svelte';
     import StackStatusDropdownMenu from './stack-status-dropdown-menu.svelte';
@@ -121,7 +122,8 @@
                         <span class="block max-w-full min-w-0 truncate" title={stack.title}>{stack.title}</span>
                     </div>
                 </div>
-                <div class="ml-2 flex shrink-0">
+                <div class="ml-2 flex shrink-0 items-center gap-2">
+                    <StackLogLevel {stack} />
                     <ButtonGroup.Root>
                         <StackStatusDropdownMenu {stack} />
                         <StackOptionsDropdownMenu {stack} />
@@ -133,8 +135,11 @@
             <div class="grid auto-rows-min grid-cols-2 gap-2 lg:grid-cols-4">
                 <Tooltip.Root>
                     <Tooltip.Trigger
-                        class="bg-muted flex flex-col items-center rounded-lg p-2"
+                        class="bg-muted hover:bg-muted/80 flex cursor-pointer flex-col items-center rounded-lg p-2 transition-colors"
                         onclick={() => filterChanged(new StringFilter('stack', stack.id))}
+                        aria-label="Filter by this stack"
+                        role="button"
+                        tabindex={0}
                     >
                         <Calendar class="text-primary mb-1 size-6" />
                         <span class="text-lg font-bold"><Number value={totalOccurrences} /></span>
@@ -238,6 +243,12 @@
                     </div>
                 {/each}
             </div>
+
+            <div class="flex justify-end">
+                <Muted class="text-xs uppercase">Last 7 days</Muted>
+            </div>
+
+            <Skeleton class="h-12 w-full rounded-md" />
         </Card.Content>
     </Card.Root>
 {/if}

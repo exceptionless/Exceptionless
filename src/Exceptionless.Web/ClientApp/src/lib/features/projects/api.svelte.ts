@@ -87,6 +87,7 @@ export interface GetOrganizationProjectsParams {
 }
 
 export interface GetOrganizationProjectsRequest {
+    enabled?: () => boolean;
     params?: GetOrganizationProjectsParams;
     route: {
         organizationId: string | undefined;
@@ -279,7 +280,7 @@ export function getOrganizationProjectsQuery(request: GetOrganizationProjectsReq
     const queryClient = useQueryClient();
 
     return createQuery<FetchClientResponse<ViewProject[]>, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.organizationId,
+        enabled: () => !!accessToken.current && !!request.route.organizationId && (request.enabled?.() ?? true),
         onSuccess: (data: FetchClientResponse<ViewProject[]>) => {
             data.data?.forEach((project) => {
                 queryClient.setQueryData(queryKeys.id(project.id!), project);
