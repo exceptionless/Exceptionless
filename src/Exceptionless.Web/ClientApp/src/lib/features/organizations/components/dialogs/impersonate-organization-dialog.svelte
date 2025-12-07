@@ -442,10 +442,22 @@
                 </div>
             </div>
 
-            <div class="flex flex-wrap items-center justify-between gap-3 text-xs">
-                <PageNumber {currentPage} size="xs" {totalPages} />
+            <div class="flex items-center justify-between gap-3 text-xs sm:flex-nowrap">
+                <div class="flex items-center gap-2">
+                    <PageNumber {currentPage} size="xs" {totalPages} />
+                    {#if totalCount > 0}
+                        <Muted class="text-[11px]">{totalCount} organizations</Muted>
+                    {/if}
+                </div>
                 {#if totalPages > 1}
-                    <Pagination count={totalCount} bind:page={currentPage} onPageChange={handlePageChange} perPage={pageSize} siblingCount={0}>
+                    <Pagination
+                        count={totalCount}
+                        bind:page={currentPage}
+                        class="mx-0 w-auto justify-start"
+                        onPageChange={handlePageChange}
+                        perPage={pageSize}
+                        siblingCount={0}
+                    >
                         <PaginationContent class="gap-1">
                             <PaginationItem>
                                 <PaginationFirstButton {currentPage} />
