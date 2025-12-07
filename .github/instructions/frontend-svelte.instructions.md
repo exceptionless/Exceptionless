@@ -22,29 +22,166 @@ You can now use `await` directly in three places:
 - In a `$derived` expression
 - In template expressions (markup)
 
-## Form Handling with Superforms
+## Form Handling with TanStack Form + Zod
 
-Always supply a unique, stable `id` option for every `superForm` instance (e.g. `id: 'login'`, `id: 'update-user'`, `id: 'invite-user'`). Missing ids lead to duplicate form data warnings when multiple forms (including dialogs) are present. Use short, kebab-case resource-action names and never reuse the same id on the same page.
+Use TanStack Form (`@tanstack/svelte-form`) with Zod for form state management and validation.
 
-### Safe Data Cloning Pattern
-Always use the `structuredCloneState()` utility when initializing forms and resetting form data to prevent cache mutation and reactive entanglement:
+### Key Concepts
+
+- **Zod via Standard Schema**: TanStack Form works directly with Zod 4+ via [Standard Schema](https://github.com/standard-schema/standard-schema) - no adapter needed!
+- **Schemas location**: Create Zod schemas in `schemas.ts` files next to models in each feature slice
+- **Field components**: Use shadcn-svelte Field components (`$comp/ui/field`) for form field layout
+
+### Basic Form Pattern
 
 ```svelte
-import { structuredCloneState } from '$features/shared/utils/state';
+<script lang="ts">
+    import { createForm } from '@tanstack/svelte-form';
+    import * as Field from '$comp/ui/field';
+    import { Input } from '$comp/ui/input';
+    import { mySchema, type MyFormData } from '$features/myfeature/schemas';
+    import { mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
 
-// Form initialization - use structuredCloneState utility
-const form = superForm(defaults(structuredCloneState(settings) || new NotificationSettings(), classvalidatorClient(NotificationSettings)), {
-    // form options...
+    const form = createForm(() => ({
+        defaultValues: {
+            email: '',
+            name: ''
+        } as MyFormData,
+        validators: {
+            onSubmit: mySchema,  // Zod schema for client-side validation
+            onSubmitAsync: async ({ value }) => {
+                const response = await apiCall(value);
+                if (response.ok) {
+                    await goto('/success');
+                    return null;
+                }
+                // Convert server errors to TanStack Form format
+                return problemDetailsToFormErrors(response.problem);
+            }
+        }
+    }));
+</script>
+
+<form
+    onsubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        form.handleSubmit();
+    }}
+>
+    <!-- Form-level error display -->
+    <form.Subscribe selector={(state) => state.errors}>
+        {#snippet children(errors)}
+            {@const formError = errors.length > 0
+                ? (typeof errors[0] === 'string' ? errors[0] : (errors[0] as { form?: string })?.form)
+                : undefined}
+            <ErrorMessage message={formError} />
+        {/snippet}
+    </form.Subscribe>
+
+    <!-- Field with validation -->
+    <form.Field name="email">
+        {#snippet children(field)}
+            <Field.Field data-invalid={field.state.meta.errors.length > 0 ? true : undefined}>
+                <Field.Label for={field.name}>Email</Field.Label>
+                <Input
+                    id={field.name}
+                    name={field.name}
+                    type="email"
+                    value={field.state.value}
+                    onblur={field.handleBlur}
+                    oninput={(e) => field.handleChange(e.currentTarget.value)}
+                    aria-invalid={field.state.meta.errors.length > 0 ? true : undefined}
+                />
+                <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+            </Field.Field>
+        {/snippet}
+    </form.Field>
+
+    <!-- Submit button with loading state -->
+    <form.Subscribe selector={(state) => state.isSubmitting}>
+        {#snippet children(isSubmitting)}
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : 'Save'}
+            </Button>
+        {/snippet}
+    </form.Subscribe>
+</form>
+```
+
+### Creating Zod Schemas
+
+Place schemas in `schemas.ts` next to models in each feature slice:
+
+```typescript
+// src/lib/features/auth/schemas.ts
+import { z } from 'zod';
+
+export const loginSchema = z.object({
+    email: z.string().min(1, 'Email is required').email('Invalid email address'),
+    password: z.string().min(6, 'Password must be at least 6 characters').max(100),
+    invite_token: z.string().length(40).optional()
 });
 
-// Form reset in $effect - use structuredCloneState utility
-$effect(() => {
-    if (!$submitting && !$tainted && settings !== previousSettingsRef) {
-        const clonedSettings = structuredCloneState(settings);
-        form.reset({ data: clonedSettings, keepMessage: true });
-        previousSettingsRef = settings;
+export type LoginFormData = z.infer<typeof loginSchema>;
+```
+
+### Server-Side Error Handling
+
+Use `problemDetailsToFormErrors()` to convert API errors:
+
+```typescript
+import { problemDetailsToFormErrors } from '$shared/validation';
+
+// In onSubmitAsync validator:
+onSubmitAsync: async ({ value }) => {
+    const response = await apiCall(value);
+    if (response.ok) {
+        return null;  // Success - no errors
     }
-});
+    // Returns { form?: string, fields?: Record<string, string> }
+    return problemDetailsToFormErrors(response.problem);
+}
+```
+
+The `problemDetailsToFormErrors` function:
+- Extracts form-level errors from `problem.errors.general` or `problem.title`
+- Extracts field-level errors for 422 validation responses
+- Returns `null` if no errors
+
+### Form in Dialogs Pattern
+
+For forms inside dialogs, close the dialog only after successful submission:
+
+```svelte
+<script lang="ts">
+    let open = $state(false);
+
+    const form = createForm(() => ({
+        defaultValues: { name: '' },
+        validators: {
+            onSubmit: mySchema,
+            onSubmitAsync: async ({ value }) => {
+                const response = await createItem(value);
+                if (response.ok) {
+                    open = false;  // Close dialog on success
+                    return null;
+                }
+                return problemDetailsToFormErrors(response.problem);
+            }
+        }
+    }));
+</script>
+
+{#if open}
+<Dialog.Root bind:open>
+    <Dialog.Content>
+        <form onsubmit={(e) => { e.preventDefault(); form.handleSubmit(); }}>
+            <!-- form fields -->
+        </form>
+    </Dialog.Content>
+</Dialog.Root>
+{/if}
 ```
 
 ### Reactive Binding Pattern
@@ -67,91 +204,29 @@ $effect(() => {
 
 **Note:** This pattern uses Svelte 5's ability to override derived values (available since v5.25). The derived value automatically recalculates when dependencies change, but can be temporarily overridden for UI binding. The `$effect` ensures the local state resyncs when the source data changes.
 
-### Superforms onUpdate Pattern for Dialogs
+### Safe Data Cloning for Form Initialization
 
-When using `superForm` inside dialogs, always use the following `onUpdate` pattern to ensure server-side validation errors are applied and dialogs don't close prematurely. This also prevents SvelteKit from stealing focus on success.
+When initializing forms from query data, use `structuredCloneState()` to prevent cache mutation:
 
 ```svelte
-const form = superForm(defaults(new MyForm(), classvalidatorClient(MyForm)), {
-    dataType: 'json',
-    id: 'my-form-id',
-    async onUpdate({ form, result }) {
-        if (!form.valid) {
-            return;
-        }
+import { structuredCloneState } from '$features/shared/utils/state';
 
-        try {
-            await doAction(form.data);
-
-            open = false;
-
-            // HACK: Prevent SvelteKit from stealing focus
-            result.type = 'failure';
-        } catch (error: unknown) {
-            if (error instanceof ProblemDetails) {
-                applyServerSideErrors(form, error);
-                result.status = error.status ?? 500;
-            } else {
-                result.status = 500;
-            }
-        }
-    },
-    SPA: true,
-    validators: classvalidatorClient(MyForm)
-});
-```
-
-Requirements:
-- Import and use `ProblemDetails` from `@exceptionless/fetchclient` and `applyServerSideErrors` from `$features/shared/validation`.
-- Close the dialog with `open = false` only after the action succeeds.
-- Set `result.type = 'failure'` after success to avoid focus theft.
-
-### Dialog Action Functions Must Rethrow
-
-When passing action functions into dialogs (e.g., `save`, `suspend`, `setBonus`), if you display a toast in a `catch` block, you must rethrow the error so the dialog’s `onUpdate` handler can catch it and apply server-side validation errors.
-
-Example:
-
-```ts
-async function setBonus(params: PostSetBonusOrganizationParams) {
-    toast.dismiss(toastId);
-    try {
-        await setOrganizationBonus.mutateAsync(params);
-        toast.success('Successfully set the organization bonus.');
-    } catch (error) {
-        const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
-        toast.error(`An error occurred while trying to set the organization bonus: ${message}`);
-        throw error; // critical: propagate to form
-    }
-}
+const form = createForm(() => ({
+    defaultValues: structuredCloneState(queryData) ?? { name: '' },
+    // ...
+}));
 ```
 
 ### Why These Patterns?
-- **Prevents Cache Mutation**: `structuredCloneState()` creates independent copies that don't affect cached data
-- **Reactive Safety**: Uses `$state.snapshot()` internally for non-reactive snapshots, preventing unintended dependencies
-- **Form Isolation**: Each form gets its own copy of data, preventing cross-contamination
-- **Auto-Reset**: Local state automatically resets when source data changes
-- **Bindable**: Creates writable state for form controls and UI components
-- **Predictable Behavior**: Ensures consistent form state management across all scenarios
-- **Type Safety**: Utility provides proper TypeScript types and handles undefined/null gracefully
 
-### Reference Comparison for Resets
-Use object reference comparison instead of JSON stringification for performance:
-```svelte
-// ✅ Good - Reference comparison
-if (settings !== previousSettingsRef) {
-    // reset logic
-}
-
-// ❌ Avoid - JSON comparison (slower)
-if (JSON.stringify(settings) !== JSON.stringify(previousSettings)) {
-    // reset logic
-}
-```
+- **No Adapter Needed**: Zod 4+ works via Standard Schema specification directly
+- **Validation on Submit**: Using `onSubmit` prevents showing errors on untouched fields
+- **Server Error Integration**: `onSubmitAsync` handles API errors seamlessly
+- **Type Safety**: Zod schemas provide full TypeScript inference
+- **Prevents Cache Mutation**: `structuredCloneState()` creates independent copies
 
 ## Event Handling
 
-- All single-line control statements must be enclosed in curly braces
 - Use proper event handling patterns with Svelte 5 syntax
 
 ## Component Organization

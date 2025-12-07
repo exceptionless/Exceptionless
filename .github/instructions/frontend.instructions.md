@@ -30,8 +30,9 @@ Located in the `src/Exceptionless.Web/ClientApp` directory.
 ## UI & Accessibility
 
 - Ensure excellent keyboard navigation for all interactions.
-- Build forms with shadcn-svelte forms & superforms, and validate with class-validator.
-  - Good examples are the manage account and login pages.
+- Build forms with TanStack Form (`@tanstack/svelte-form`) and validate with Zod schemas.
+  - Create schemas in `schemas.ts` files next to models in each feature slice.
+  - See the login page for a complete example.
 - Use formatters `src/Exceptionless.Web/ClientApp/src/lib/features/shared/components/formatters` for displaying built-in types (date, number, boolean, etc.).
 - All dialogs should use shadcn-svelte dialog components.
   - Good examples are the mark fixed and delete stack dialogs.
