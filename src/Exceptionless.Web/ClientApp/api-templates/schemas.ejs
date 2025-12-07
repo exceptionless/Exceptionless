@@ -1,0 +1,254 @@
+<%
+const { modelTypes, utils, config } = it;
+const { formatDescription, require, _, Ts } = utils;
+
+const cleanType = (type) => {
+    if (!type) return 'unknown';
+    return type.trim();
+};
+
+const usedZodFunctions = new Set();
+const enumSchemas = [];
+
+// First pass: identify enum types and their value types
+const enumInfo = new Map();
+for (const contract of modelTypes) {
+    if (contract.internal) continue;
+    if (contract.typeIdentifier === 'enum') {
+        const $content = contract.$content || [];
+
+        // Determine if it's a string or numeric enum from the actual values
+        let isStringEnum = true;
+        let enumValues = [];
+
+        for (const item of $content) {
+            if (item && item.value !== undefined) {
+                // Clean the value - remove surrounding quotes if present
+                let value = item.value;
+                if (typeof value === 'string') {
+                    // Remove surrounding quotes from the value
+                    value = value.replace(/^["']|["']$/g, '');
+                }
+                if (typeof item.value === 'number' || /^\d+$/.test(String(item.value))) {
+                    isStringEnum = false;
+                    value = Number(item.value);
+                }
+                enumValues.push({ key: item.key, value });
+            }
+        }
+
+        enumInfo.set(contract.name, { isStringEnum, values: enumValues });
+    }
+}
+
+const typeToZod = (rawType, isRequired, nullable) => {
+    let type = cleanType(rawType);
+
+    if (type.includes(' | null')) {
+        let innerType = type.replace(/\s*\|\s*null/g, '').trim();
+        if (innerType.startsWith('(') && innerType.endsWith(')') && !innerType.endsWith('[]')) {
+            innerType = innerType.slice(1, -1);
+        }
+        return `${typeToZod(innerType, true, false)}.nullable()`;
+    }
+
+    if (type.startsWith('(') && type.endsWith(')') && !type.includes('[]')) {
+        type = type.slice(1, -1);
+    }
+
+    const arrayMatch = type.match(/^\((.+)\)\[\]$/) || type.match(/^(.+)\[\]$/);
+    if (arrayMatch) {
+        const innerType = arrayMatch[1];
+        const zodInner = typeToZod(innerType, true, false);
+        usedZodFunctions.add('array');
+        return `array(${zodInner})`;
+    }
+
+    if (type.startsWith('Array<') && type.endsWith('>')) {
+        const innerType = type.slice(6, -1);
+        const zodInner = typeToZod(innerType, true, false);
+        usedZodFunctions.add('array');
+        return `array(${zodInner})`;
+    }
+
+    if (type.includes(' | ')) {
+        const unionTypes = type.split(' | ').map(t => t.trim()).filter(t => t !== 'null');
+        if (unionTypes.length === 1) {
+            return typeToZod(unionTypes[0], true, false);
+        }
+        const zodTypes = unionTypes.map(t => typeToZod(t, true, false));
+        if (zodTypes.every(t => !t.includes('unknown()'))) {
+            usedZodFunctions.add('union');
+            return `union([${zodTypes.join(', ')}])`;
+        }
+        usedZodFunctions.add('unknown');
+        return 'unknown()';
+    }
+
+    if (type.startsWith('Record<')) {
+        const match = type.match(/Record<([^,]+),\s*(.+)>$/);
+        if (match) {
+            const valueType = match[2].trim();
+            usedZodFunctions.add('record');
+            usedZodFunctions.add('string');
+            return `record(string(), ${typeToZod(valueType, true, false)})`;
+        }
+        usedZodFunctions.add('record');
+        usedZodFunctions.add('string');
+        usedZodFunctions.add('unknown');
+        return 'record(string(), unknown())';
+    }
+
+    switch (type) {
+        case 'string':
+            usedZodFunctions.add('string');
+            return 'string()';
+        case 'number':
+            usedZodFunctions.add('number');
+            return 'number()';
+        case 'boolean':
+            usedZodFunctions.add('boolean');
+            return 'boolean()';
+        case 'object':
+            usedZodFunctions.add('record');
+            usedZodFunctions.add('string');
+            usedZodFunctions.add('unknown');
+            return 'record(string(), unknown())';
+        case 'unknown':
+        case 'any':
+            usedZodFunctions.add('unknown');
+            return 'unknown()';
+        case 'null':
+            usedZodFunctions.add('null');
+            return 'null()';
+        case 'undefined':
+            usedZodFunctions.add('undefined');
+            return 'undefined()';
+        case 'void':
+            usedZodFunctions.add('void');
+            return 'void()';
+        case 'Date':
+            usedZodFunctions.add('coerce');
+            return 'coerce.date()';
+        default:
+            const contract = modelTypes.find(c => c.name === type);
+            if (contract) {
+                if (contract.typeIdentifier === 'enum') {
+                    return `${type}Schema`;
+                }
+                usedZodFunctions.add('lazy');
+                return `lazy(() => ${type}Schema)`;
+            }
+            usedZodFunctions.add('unknown');
+            return 'unknown()';
+    }
+};
+
+const buildZodField = (field) => {
+    const rawType = field.value || 'unknown';
+    const type = rawType.replace(/\bany\b/g, 'unknown');
+
+    let zodType = typeToZod(type, field.isRequired, field.nullable);
+
+    if (!field.isRequired) {
+        zodType = `${zodType}.optional()`;
+    }
+
+    return `    ${field.name}: ${zodType}`;
+};
+
+// Build enum schemas
+for (const contract of modelTypes) {
+    if (contract.internal) continue;
+
+    if (contract.typeIdentifier === 'enum') {
+        const info = enumInfo.get(contract.name);
+        if (!info || info.values.length === 0) continue;
+
+        if (info.isStringEnum) {
+            usedZodFunctions.add('enum');
+            const values = info.values.map(item => `'${item.value}'`);
+            enumSchemas.push({
+                name: contract.name,
+                schema: `export const ${contract.name}Schema = zodEnum([${values.join(', ')}]);`
+            });
+        } else {
+            // Numeric enum - use union of literals
+            usedZodFunctions.add('union');
+            usedZodFunctions.add('literal');
+            const values = info.values.map(item => `literal(${item.value})`);
+            enumSchemas.push({
+                name: contract.name,
+                schema: `export const ${contract.name}Schema = union([${values.join(', ')}]);`
+            });
+        }
+    }
+}
+
+// Build interface schemas
+const schemaOutputs = [];
+for (const contract of modelTypes) {
+    if (contract.internal) continue;
+
+    if (contract.typeIdentifier === 'interface') {
+        const fields = contract.$content || [];
+        if (fields.length === 0) continue;
+
+        usedZodFunctions.add('object');
+        usedZodFunctions.add('infer');
+        const fieldLines = fields.map(field => buildZodField(field)).join(',\n');
+        schemaOutputs.push({
+            name: contract.name,
+            schema: `export const ${contract.name}Schema = object({\n${fieldLines}\n});`,
+            type: `export type ${contract.name}FormData = Infer<typeof ${contract.name}Schema>;`
+        });
+    }
+}
+
+// Build imports - separate types from values
+const valueImports = Array.from(usedZodFunctions)
+    .filter(f => f !== 'enum' && f !== 'infer')
+    .sort();
+
+const typeImports = [];
+if (usedZodFunctions.has('infer')) {
+    typeImports.push('infer as Infer');
+}
+
+if (usedZodFunctions.has('enum')) {
+    valueImports.push('enum as zodEnum');
+}
+
+// Build final output with proper spacing
+const outputLines = [];
+
+// Type imports first (if any)
+if (typeImports.length > 0) {
+    outputLines.push(`import type { ${typeImports.join(', ')} } from 'zod';`);
+    outputLines.push('');
+}
+
+// Value imports
+outputLines.push(`import { ${valueImports.join(', ')} } from 'zod';`);
+
+// Enum schemas
+if (enumSchemas.length > 0) {
+    outputLines.push('');
+    for (const e of enumSchemas) {
+        outputLines.push(e.schema);
+    }
+}
+
+// Interface schemas with types
+if (schemaOutputs.length > 0) {
+    for (const s of schemaOutputs) {
+        outputLines.push('');
+        outputLines.push(s.schema);
+        outputLines.push(s.type);
+    }
+}
+
+// Add trailing newline
+outputLines.push('');
+-%>
+<%~ outputLines.join('\n') %>

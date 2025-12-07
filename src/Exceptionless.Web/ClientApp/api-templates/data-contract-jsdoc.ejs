@@ -1,0 +1,38 @@
+<%
+const { data, utils } = it;
+const { formatDescription, require, _ } = utils;
+
+const stringify = (value) => _.isObject(value) ? JSON.stringify(value) : _.isString(value) ? `"${value}"` : value;
+
+// Skip description if it looks like an enum value listing (contains newlines with short values)
+const shouldSkipDescription = (desc) => {
+    if (!desc) return true;
+    // Skip if description is just enum values listed (pattern: "value1\n\nvalue2\n\nvalue3")
+    if (/^[\w\s]+(\n\n[\w\s=]+)+$/.test(desc)) return true;
+    // Skip very short descriptions that are just value names
+    if (desc.split('\n').length > 2 && desc.split('\n').every(l => l.trim().length < 20)) return true;
+    return false;
+};
+
+const jsDocLines = _.compact([
+    !shouldSkipDescription(data.description) && data.description && formatDescription(data.description),
+    !_.isUndefined(data.deprecated) && data.deprecated && '@deprecated',
+    !_.isUndefined(data.format) && `@format ${data.format}`,
+    !_.isUndefined(data.minimum) && `@min ${data.minimum}`,
+    !_.isUndefined(data.maximum) && `@max ${data.maximum}`,
+    !_.isUndefined(data.minLength) && `@minLength ${data.minLength}`,
+    !_.isUndefined(data.maxLength) && `@maxLength ${data.maxLength}`,
+    !_.isUndefined(data.pattern) && `@pattern ${data.pattern}`,
+    !_.isUndefined(data.example) && `@example ${stringify(data.example)}`
+]).join('\n').split('\n');
+-%>
+<% if (jsDocLines.every(_.isEmpty)) { -%>
+<% } else if (jsDocLines.length === 1) { -%>
+/** <%~ jsDocLines[0] %> */
+<% } else if (jsDocLines.length) { -%>
+/**
+<% for (jsDocLine of jsDocLines) { -%>
+ * <%~ jsDocLine %>
+<% } -%>
+ */
+<% } -%>
