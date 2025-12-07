@@ -76,7 +76,7 @@
                     <OrganizationAdminActionsDropdownMenu organization={organizationQuery.data} />
                 </GlobalUser>
             {/if}
-            <Button variant="secondary" size="icon" href={resolve('/(app)/account/notifications') + `?project=${projectId}`} title="Notification Settings">
+            <Button variant="secondary" size="icon" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`} title="Notification Settings">
                 <NotificationSettings class="size-4" />
             </Button>
         </div>

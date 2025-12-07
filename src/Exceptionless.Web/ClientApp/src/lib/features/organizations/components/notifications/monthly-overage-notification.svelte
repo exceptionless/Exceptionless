@@ -16,7 +16,7 @@
 <Notification variant="destructive" {...restProps}>
     <NotificationTitle>{name} has reached its monthly plan limit.</NotificationTitle>
     <NotificationDescription>
-        <A href={resolve('/(app)/organization/[organizationId]/billing', { organizationId }) + '?changePlan=true'}>Upgrade now</A>
+        <A href={`${resolve('/(app)/organization/[organizationId]/billing', { organizationId })}?changePlan=true`}>Upgrade now</A>
         to continue receiving events.
     </NotificationDescription>
 </Notification>

@@ -16,7 +16,7 @@
 <Notification variant="success" {...restProps}>
     <NotificationTitle>{name} is currently on a free plan.</NotificationTitle>
     <NotificationDescription>
-        <A href={resolve('/(app)/organization/[organizationId]/billing', { organizationId }) + '?changePlan=true'}>Upgrade now</A>
+        <A href={`${resolve('/(app)/organization/[organizationId]/billing', { organizationId })}?changePlan=true`}>Upgrade now</A>
         to enable premium features and extra storage!
     </NotificationDescription>
 </Notification>

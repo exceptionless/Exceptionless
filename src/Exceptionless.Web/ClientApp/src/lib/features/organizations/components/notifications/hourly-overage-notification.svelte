@@ -17,6 +17,6 @@
     <NotificationTitle>Events are currently being throttled for {name}</NotificationTitle>
     <NotificationDescription>
         Events are currently being throttled to prevent using up your plan limit in a small window of time.
-        <A href={resolve('/(app)/organization/[organizationId]/billing', { organizationId }) + '?changePlan=true'}>Upgrade now</A> to increase your limits.
+        <A href={`${resolve('/(app)/organization/[organizationId]/billing', { organizationId })}?changePlan=true`}>Upgrade now</A> to increase your limits.
     </NotificationDescription>
 </Notification>

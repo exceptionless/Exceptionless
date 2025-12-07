@@ -16,7 +16,7 @@
 
     let { isChatEnabled, name, openChat, organizationId, suspensionCode, ...restProps }: Props = $props();
 
-    const changePlanHref = $derived(resolve('/(app)/organization/[organizationId]/billing', { organizationId }) + '?changePlan=true');
+    const changePlanHref = $derived(`${resolve('/(app)/organization/[organizationId]/billing', { organizationId })}?changePlan=true`);
 </script>
 
 <Notification variant="destructive" {...restProps}>

@@ -126,7 +126,11 @@
                     <DropdownMenu.Separator />
                     {#if activeOrganization?.id}
                         <DropdownMenu.Item>
-                            <A variant="ghost" href={`/next/organization/${activeOrganization.id}/manage`} class="flex w-full items-center gap-2">
+                            <A
+                                variant="ghost"
+                                href={resolve('/(app)/organization/[organizationId]/manage', { organizationId: activeOrganization.id })}
+                                class="flex w-full items-center gap-2"
+                            >
                                 <div class="bg-background flex size-6 items-center justify-center rounded-md border">
                                     <Settings class="size-4" aria-hidden="true" />
                                 </div>
@@ -136,7 +140,7 @@
                         </DropdownMenu.Item>
                     {/if}
                     <DropdownMenu.Item>
-                        <A variant="ghost" href="/next/organization/add" class="flex w-full items-center gap-2">
+                        <A variant="ghost" href={resolve('/(app)/organization/add')} class="flex w-full items-center gap-2">
                             <div class="bg-background flex size-6 items-center justify-center rounded-md border">
                                 <Plus class="size-4" aria-hidden="true" />
                             </div>

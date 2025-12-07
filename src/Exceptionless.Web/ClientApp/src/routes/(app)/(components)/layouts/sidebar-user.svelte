@@ -118,12 +118,12 @@
                     <DropdownMenu.Group>
                         <DropdownMenu.Item>
                             <BadgeCheck />
-                            <A variant="ghost" href="/next/account/manage" class="w-full" onclick={onMenuClick}>Account</A>
+                            <A variant="ghost" href={resolve('/(app)/account/manage')} class="w-full" onclick={onMenuClick}>Account</A>
                             <DropdownMenu.Shortcut>⇧⌘ga</DropdownMenu.Shortcut>
                         </DropdownMenu.Item>
                         <DropdownMenu.Item>
                             <Bell />
-                            <A variant="ghost" href="/next/account/notifications" class="w-full" onclick={onMenuClick}>Notifications</A>
+                            <A variant="ghost" href={resolve('/(app)/account/notifications')} class="w-full" onclick={onMenuClick}>Notifications</A>
                             <DropdownMenu.Shortcut>⇧⌘gn</DropdownMenu.Shortcut>
                         </DropdownMenu.Item>
                         {#if organization.current}
@@ -131,7 +131,7 @@
                                 <Settings />
                                 <A
                                     variant="ghost"
-                                    href={`/next/organization/${organization.current}/manage`}
+                                    href={resolve('/(app)/organization/[organizationId]/manage', { organizationId: organization.current })}
                                     class="flex w-full items-center gap-2"
                                     onclick={onMenuClick}
                                 >
@@ -143,7 +143,7 @@
                                 <CreditCard />
                                 <A
                                     variant="ghost"
-                                    href={`/next/organization/${organization.current}/billing`}
+                                    href={resolve('/(app)/organization/[organizationId]/billing', { organizationId: organization.current })}
                                     class="flex w-full items-center gap-2"
                                     onclick={onMenuClick}
                                 >
@@ -154,7 +154,7 @@
                         {:else}
                             <DropdownMenu.Item>
                                 <Plus />
-                                <A variant="ghost" href="/next/organization/add" class="flex w-full items-center gap-2" onclick={onMenuClick}>
+                                <A variant="ghost" href={resolve('/(app)/organization/add')} class="flex w-full items-center gap-2" onclick={onMenuClick}>
                                     Add organization
                                     <DropdownMenu.Shortcut>⇧⌘gn</DropdownMenu.Shortcut>
                                 </A>
@@ -213,7 +213,7 @@
                     <DropdownMenu.Separator />
                     <DropdownMenu.Item>
                         <LogOut />
-                        <A variant="ghost" href="/next/logout" class="w-full">Log out</A>
+                        <A variant="ghost" href={resolve('/(auth)/logout')} class="w-full">Log out</A>
                         <DropdownMenu.Shortcut>⇧⌘Q</DropdownMenu.Shortcut>
                     </DropdownMenu.Item>
                 </DropdownMenu.Content>

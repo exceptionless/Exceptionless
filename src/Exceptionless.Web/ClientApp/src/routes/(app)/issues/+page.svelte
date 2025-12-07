@@ -66,7 +66,7 @@
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
         const stackFilter = `stack:${row.id}`;
-        return resolve('/(app)') + `?filter=${encodeURIComponent(stackFilter)}`;
+        return `${resolve('/(app)')}?filter=${encodeURIComponent(stackFilter)}`;
     }
 
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
@@ -330,7 +330,9 @@
     <Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
         <Sheet.Header>
             <Sheet.Title
-                >Event Details <Button href="/next/event/{eventId}" size="sm" title="Open in new window" variant="ghost"><ExternalLink /></Button></Sheet.Title
+                >Event Details <Button href={resolve('/(app)/event/[eventId]', { eventId })} size="sm" title="Open in new window" variant="ghost"
+                    ><ExternalLink /></Button
+                ></Sheet.Title
             >
         </Sheet.Header>
         <div class="px-4">

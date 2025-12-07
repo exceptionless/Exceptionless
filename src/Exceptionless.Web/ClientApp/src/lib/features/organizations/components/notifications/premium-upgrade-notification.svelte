@@ -16,7 +16,7 @@
 <Notification variant="information" {...restProps}>
     <NotificationTitle>{name} is attempting to use a premium feature.</NotificationTitle>
     <NotificationDescription>
-        <A href={resolve('/(app)/organization/[organizationId]/billing', { organizationId }) + '?changePlan=true'}>Upgrade now</A>
+        <A href={`${resolve('/(app)/organization/[organizationId]/billing', { organizationId })}?changePlan=true`}>Upgrade now</A>
         to enable search and other premium features!
     </NotificationDescription>
 </Notification>

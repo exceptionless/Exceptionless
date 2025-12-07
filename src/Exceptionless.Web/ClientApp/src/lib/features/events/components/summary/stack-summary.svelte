@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { StackStatus } from '$features/stacks/models';
 
+    import { resolve } from '$app/paths';
     import { A } from '$comp/typography';
     import StackStatusBadge from '$features/stacks/components/stack-status-badge.svelte';
 
@@ -38,7 +39,7 @@
         :&nbsp;
     {/if}
 
-    <A class="inline" href={`/next?filter=stack:${source.id}`}>
+    <A class="inline" href={`${resolve('/(app)')}?filter=stack:${source.id}`}>
         {source.title}
     </A>
 </div>
