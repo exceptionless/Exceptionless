@@ -47,11 +47,12 @@
     }
 
     async function impersonateOrganization(vo: ViewOrganization): Promise<void> {
-        organization.current = vo.id;
         await goto(resolve('/(app)'));
+        organization.current = vo.id;
     }
 
     async function stopImpersonating(): Promise<void> {
+        await goto(resolve('/(app)'));
         organization.current = organizations[0]?.id;
     }
 </script>
