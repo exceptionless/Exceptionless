@@ -31,7 +31,9 @@
     const isGlobalAdmin = $derived(!!meQuery.data?.roles?.includes('global'));
 
     const userOrganizationIds = $derived(meQuery.data?.organization_ids ?? []);
-    const isImpersonating = $derived(isGlobalAdmin && currentOrganizationId.current !== undefined && !userOrganizationIds.includes(currentOrganizationId.current));
+    const isImpersonating = $derived(
+        isGlobalAdmin && currentOrganizationId.current !== undefined && !userOrganizationIds.includes(currentOrganizationId.current)
+    );
 
     const organizationsQuery = getOrganizationsQuery({});
     const userOrganizations = $derived((organizationsQuery.data?.data ?? []).filter((org) => userOrganizationIds.includes(org.id!)));

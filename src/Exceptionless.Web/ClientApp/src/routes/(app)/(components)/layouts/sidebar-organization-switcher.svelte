@@ -22,16 +22,16 @@
     import UserRoundSearch from '@lucide/svelte/icons/user-round-search';
 
     type Props = HTMLAttributes<HTMLUListElement> & {
+        currentOrganizationId: string | undefined;
         impersonatedOrganization: undefined | ViewOrganization;
         isLoading: boolean;
         organizations: undefined | ViewOrganization[];
-        selected: string | undefined;
     };
 
-    let { class: className, impersonatedOrganization, isLoading, organizations = [], selected = $bindable() }: Props = $props();
+    let { class: className, currentOrganizationId = $bindable(), impersonatedOrganization, isLoading, organizations = [] }: Props = $props();
 
     const sidebar = useSidebar();
-    const activeOrganization = $derived(impersonatedOrganization ?? organizations.find((organization) => organization.id === selected));
+    const activeOrganization = $derived(impersonatedOrganization ?? organizations.find((organization) => organization.id === currentOrganizationId));
     const isImpersonating = $derived(!!impersonatedOrganization);
     let openImpersonateDialog = $state(false);
 
@@ -40,24 +40,20 @@
             sidebar.toggle();
         }
 
-        if (organization.id === selected) {
+        if (organization.id === currentOrganizationId) {
             return;
         }
 
-        selected = organization.id;
+        currentOrganizationId = organization.id;
     }
 
     async function handleImpersonate(organization: ViewOrganization): Promise<void> {
-        selected = organization.id;
-        await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: organization.id }));
+        currentOrganizationId = organization.id;
+        await goto(resolve('/(app)'));
     }
 
-    async function stopImpersonating(): Promise<void> {
-        if (organizations.length > 0) {
-            const defaultOrganization = organizations[0]!;
-            selected = defaultOrganization.id;
-            await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: defaultOrganization.id }));
-        }
+    function stopImpersonating(): void {
+        currentOrganizationId = organizations[0]?.id;
     }
 </script>
 
@@ -109,7 +105,7 @@
                         {#each organizations as organization, index (organization.name)}
                             <DropdownMenu.Item
                                 onSelect={() => onOrganizationSelected(organization)}
-                                data-active={organization.id === selected && !isImpersonating}
+                                data-active={organization.id === currentOrganizationId && !isImpersonating}
                                 class="data-[active=true]:bg-accent data-[active=true]:text-accent-foreground gap-2 p-2"
                             >
                                 <Avatar.Root class="size-6 rounded-lg border" title={organization.name}>
@@ -190,5 +186,9 @@
 {/if}
 
 {#if openImpersonateDialog}
-    <ImpersonateOrganizationDialog bind:open={openImpersonateDialog} onSelect={handleImpersonate} userOrganizationIds={organizations.map((o) => o.id)} />
+    <ImpersonateOrganizationDialog
+        bind:open={openImpersonateDialog}
+        impersonateOrganization={handleImpersonate}
+        userOrganizationIds={organizations.map((o) => o.id)}
+    />
 {/if}

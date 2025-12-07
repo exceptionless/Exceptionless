@@ -35,12 +35,12 @@
     import UserRoundSearch from '@lucide/svelte/icons/user-round-search';
 
     interface Props {
-        onSelect: (organization: ViewOrganization) => void;
+        impersonateOrganization: (organization: ViewOrganization) => Promise<void>;
         open: boolean;
         userOrganizationIds?: string[];
     }
 
-    let { onSelect, open = $bindable(), userOrganizationIds = [] }: Props = $props();
+    let { impersonateOrganization, open = $bindable(), userOrganizationIds = [] }: Props = $props();
 
     let searchQuery = $state('');
     let paidFilter = $state<boolean | undefined>(undefined);
@@ -89,9 +89,9 @@
         selectedOrganization = organization;
     }
 
-    function handleImpersonate() {
+    async function handleImpersonate() {
         if (selectedOrganization) {
-            onSelect(selectedOrganization);
+            await impersonateOrganization(selectedOrganization);
             open = false;
             searchQuery = '';
             selectedOrganization = null;

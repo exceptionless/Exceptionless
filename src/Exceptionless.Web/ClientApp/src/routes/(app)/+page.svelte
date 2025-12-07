@@ -77,6 +77,7 @@
         }
     });
 
+    // NOTE: This might be applying query string parameters when redirecting away.
     watch(
         () => organization.current,
         () => {

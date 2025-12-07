@@ -231,7 +231,7 @@
                 isLoading={organizationsQuery.isLoading}
                 {organizations}
                 {impersonatedOrganization}
-                bind:selected={organization.current}
+                bind:currentOrganizationId={organization.current}
             />
         {/snippet}
 

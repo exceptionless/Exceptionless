@@ -46,17 +46,13 @@
         }
     }
 
-    async function handleImpersonate(vo: ViewOrganization): Promise<void> {
+    async function impersonateOrganization(vo: ViewOrganization): Promise<void> {
         organization.current = vo.id;
-        await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: vo.id }));
+        await goto(resolve('/(app)'));
     }
 
     async function stopImpersonating(): Promise<void> {
-        if (organizations.length > 0) {
-            const defaultOrganization = organizations[0]!;
-            organization.current = defaultOrganization.id;
-            await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: defaultOrganization.id }));
-        }
+        organization.current = organizations[0]?.id;
     }
 </script>
 
@@ -227,5 +223,5 @@
 {/if}
 
 {#if openImpersonateDialog}
-    <ImpersonateOrganizationDialog bind:open={openImpersonateDialog} onSelect={handleImpersonate} userOrganizationIds={organizations.map((o) => o.id)} />
+    <ImpersonateOrganizationDialog bind:open={openImpersonateDialog} {impersonateOrganization} userOrganizationIds={organizations.map((o) => o.id)} />
 {/if}

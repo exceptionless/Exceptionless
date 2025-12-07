@@ -2,8 +2,6 @@
     import type { NotificationProps } from '$comp/notification';
     import type { ViewOrganization } from '$features/organizations/models';
 
-    import { goto } from '$app/navigation';
-    import { resolve } from '$app/paths';
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
     import { Button } from '$comp/ui/button';
     import { organization } from '$features/organizations/context.svelte';
@@ -16,12 +14,8 @@
 
     let { name, userOrganizations, ...restProps }: Props = $props();
 
-    async function stopImpersonating() {
-        if (userOrganizations.length > 0) {
-            const defaultOrganization = userOrganizations[0]!;
-            organization.current = defaultOrganization.id;
-            await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: defaultOrganization.id }));
-        }
+    function stopImpersonating() {
+        organization.current = userOrganizations[0]?.id;
     }
 </script>
 
