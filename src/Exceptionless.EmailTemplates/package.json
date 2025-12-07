@@ -29,7 +29,7 @@
     "gulp-html-src": "^1.0.0",
     "gulp-htmlmin": "^1.1.1",
     "gulp-if": "^2.0.0",
-    "gulp-imagemin": "^2.4.0",
+    "gulp-imagemin": "^9.2.0",
     "gulp-inline-css": "^3.0.0",
     "gulp-litmus": "0.0.7",
     "gulp-load-plugins": "^1.1.0",
