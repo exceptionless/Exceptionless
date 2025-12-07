@@ -1,3 +1,4 @@
+import type { ResolvedPathname } from '$app/types';
 import type { User } from '$features/users/models';
 import type { Icon } from '@lucide/svelte';
 import type { Component } from 'svelte';
@@ -7,7 +8,7 @@ import { routes as authRoutes } from './(auth)/routes.svelte';
 
 export type NavigationItem = {
     group: string;
-    href: string;
+    href: ResolvedPathname | string;
     icon: Component | typeof Icon;
     openInNewTab?: boolean;
     show?: (context: NavigationItemContext) => boolean;
@@ -16,6 +17,7 @@ export type NavigationItem = {
 
 export type NavigationItemContext = {
     authenticated: boolean;
+    impersonating?: boolean;
     user?: User;
 };
 

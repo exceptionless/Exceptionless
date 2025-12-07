@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /app
 
 COPY ./*.slnx ./NuGet.Config ./
@@ -24,7 +24,7 @@ RUN dotnet build -c Release
 
 FROM build AS testrunner
 WORKDIR /app/tests/Exceptionless.Tests
-ENTRYPOINT dotnet test --results-directory /app/artifacts --logger:trx
+ENTRYPOINT ["dotnet", "test", "--results-directory", "/app/artifacts", "--logger:trx"]
 
 # job-publish
 
@@ -35,7 +35,7 @@ RUN dotnet publish -c Release -o out
 
 # job
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS job
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS job
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 
@@ -48,14 +48,11 @@ ENTRYPOINT [ "dotnet", "Exceptionless.Job.dll" ]
 FROM build AS api-publish
 WORKDIR /app/src/Exceptionless.Web
 
-RUN apt-get update -yq
-RUN curl -sL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -yq nodejs
-
 RUN dotnet publish -c Release -o out /p:SkipSpaPublish=true
 
 # api
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS api
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS api
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 
@@ -75,7 +72,7 @@ RUN dotnet publish -c Release -o out
 
 # app
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS app
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS app
 
 WORKDIR /app
 COPY --from=app-publish /app/src/Exceptionless.Web/out ./
@@ -98,7 +95,7 @@ ENTRYPOINT ["/app/app-docker-entrypoint.sh"]
 
 # completely self-contained
 
-FROM exceptionless/elasticsearch:8.19.2 AS exceptionless
+FROM exceptionless/elasticsearch:8.19.6 AS exceptionless
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
@@ -111,20 +108,22 @@ COPY ./build/supervisord.conf /etc/
 USER root
 
 # install dotnet and supervisor
-RUN apt-get update -y && \
-    apt-get install -y --no-install-recommends \
-    wget \
-    apt-transport-https \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
     supervisor \
+    wget \
     dos2unix \
+    ca-certificates \
+    \
+    # .NET dependencies
     libc6 \
-    libgcc1 \
-    libgssapi-krb5-2 \
-    libicu66 \
-    libssl1.1 \
+    libgcc-s1 \
+    libicu74 \
+    libssl3 \
     libstdc++6 \
-    zlib1g && \
-    dos2unix /app/docker-entrypoint.sh
+    tzdata \
+    && rm -rf /var/lib/apt/lists/* \
+    && dos2unix /app/docker-entrypoint.sh
 
 ENV discovery.type=single-node \
     xpack.security.enabled=false \
@@ -147,7 +146,7 @@ USER elasticsearch
 
 RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     chmod +x dotnet-install.sh && \
-    ./dotnet-install.sh --channel 9.0 --runtime aspnetcore && \
+    ./dotnet-install.sh --channel 10.0 --runtime aspnetcore && \
     rm dotnet-install.sh
 
 EXPOSE 8080 9200
@@ -169,20 +168,22 @@ COPY ./build/supervisord.conf /etc/
 USER root
 
 # install dotnet and supervisor
-RUN apt-get update -y && \
-    apt-get install -y --no-install-recommends \
-    wget \
-    apt-transport-https \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
     supervisor \
+    wget \
     dos2unix \
+    ca-certificates \
+    \
+    # .NET dependencies
     libc6 \
-    libgcc1 \
-    libgssapi-krb5-2 \
+    libgcc-s1 \
     libicu66 \
     libssl1.1 \
     libstdc++6 \
-    zlib1g && \
-    dos2unix /app/docker-entrypoint.sh
+    tzdata \
+    && rm -rf /var/lib/apt/lists/* \
+    && dos2unix /app/docker-entrypoint.sh
 
 ENV discovery.type=single-node \
     xpack.security.enabled=false \
@@ -205,7 +206,7 @@ USER elasticsearch
 
 RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     chmod +x dotnet-install.sh && \
-    ./dotnet-install.sh --channel 9.0 --runtime aspnetcore && \
+    ./dotnet-install.sh --channel 10.0 --runtime aspnetcore && \
     rm dotnet-install.sh
 
 EXPOSE 8080 9200

@@ -1,4 +1,3 @@
-using Aspire.Hosting.Lifecycle;
 using HealthChecks.Elasticsearch;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -11,11 +10,10 @@ namespace Aspire.Hosting;
 public static class ElasticsearchBuilderExtensions
 {
     private const int ElasticsearchPort = 9200;
-    private const int ElasticsearchInternalPort = 9300;
     private const int KibanaPort = 5601;
 
     /// <summary>
-    /// Adds a Elasticsearch container to the application model. The default image is "docker.elastic.co/elasticsearch/elasticsearch". This version the package defaults to the 8.19.2 tag of the Elasticsearch container image
+    /// Adds a Elasticsearch container to the application model. The default image is "docker.elastic.co/elasticsearch/elasticsearch". This version the package defaults to the 8.19.6 tag of the Elasticsearch container image
     /// </summary>
     /// <param name="builder">The <see cref="IDistributedApplicationBuilder"/>.</param>
     /// <param name="name">The name of the resource. This name will be used as the connection string name when referenced in a dependency.</param>
@@ -80,8 +78,7 @@ public static class ElasticsearchBuilderExtensions
         {
             containerName ??= $"{builder.Resource.Name}-kibana";
 
-            builder.ApplicationBuilder.Services.TryAddLifecycleHook<KibanaConfigWriterHook>();
-
+            var elasticsearch = builder.Resource;
             var resource = new KibanaResource(containerName);
             var resourceBuilder = builder.ApplicationBuilder.AddResource(resource)
                                       .WithImage(ElasticsearchContainerImageTags.KibanaImage, ElasticsearchContainerImageTags.Tag)
@@ -89,6 +86,15 @@ public static class ElasticsearchBuilderExtensions
                                       .WithHttpEndpoint(targetPort: KibanaPort, name: containerName)
                                       .WithUrlForEndpoint(containerName, u => u.DisplayText = "Kibana")
                                       .WithEnvironment("xpack.security.enabled", "false")
+                                      .WithEnvironment(ctx =>
+                                      {
+                                          // Use ReferenceExpression for proper container-to-container networking
+                                          // The Host property will resolve to the container name when used this way
+                                          var endpoint = elasticsearch.PrimaryEndpoint;
+                                          var hostsExpr = ReferenceExpression.Create($"http://{endpoint.Property(EndpointProperty.Host)}:{endpoint.Property(EndpointProperty.Port)}");
+                                          ctx.EnvironmentVariables["ELASTICSEARCH_HOSTS"] = hostsExpr;
+                                      })
+                                      .WaitFor(builder)
                                       .ExcludeFromManifest();
 
             configureContainer?.Invoke(resourceBuilder);
@@ -119,5 +125,5 @@ internal static class ElasticsearchContainerImageTags
     public const string Image = "exceptionless/elasticsearch";
     public const string KibanaRegistry = "docker.elastic.co";
     public const string KibanaImage = "kibana/kibana";
-    public const string Tag = "8.19.2";
+    public const string Tag = "8.19.6";
 }

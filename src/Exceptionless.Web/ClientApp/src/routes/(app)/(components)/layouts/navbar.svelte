@@ -1,8 +1,9 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
     import DarkModeButton from '$comp/dark-mode-button.svelte';
     import Logo from '$comp/logo.svelte';
     import { Button } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
+    import * as Kbd from '$comp/ui/kbd';
     import * as Sidebar from '$comp/ui/sidebar';
     import logoSmall from '$lib/assets/exceptionless-48.png';
     import Search from '@lucide/svelte/icons/search';
@@ -27,7 +28,7 @@
             <div class="flex items-center justify-start">
                 <Sidebar.Trigger variant="outline" class="size-9" />
 
-                <a class="mr-14 ml-2 flex md:min-w-[250px] lg:ml-3 dark:text-white" href="./">
+                <a class="mr-14 ml-2 flex md:min-w-[250px] lg:ml-3 dark:text-white" href={resolve('/(app)')}>
                     {#if isMediumScreenQuery.current}
                         <Logo class="absolute top-[9px] mr-3 h-[45px]" />
                     {:else}
@@ -39,7 +40,7 @@
                 <Button onclick={onSearchClick} size="default" variant="outline">
                     <Search />
                     Search
-                    <DropdownMenu.Shortcut class="ml-12">⌘K</DropdownMenu.Shortcut>
+                    <Kbd.Root class="ml-12">⌘K</Kbd.Root>
                 </Button>
 
                 <DarkModeButton></DarkModeButton>

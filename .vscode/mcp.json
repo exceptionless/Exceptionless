@@ -1,12 +1,24 @@
 {
 	"servers": {
+        "chrome-devtools": {
+            "command": "npx",
+            "args": [
+                "chrome-devtools-mcp@latest"
+            ]
+        },
+        "context7": {
+            "url": "https://mcp.context7.com/mcp",
+        },
 		"ESLint": {
 			"type": "stdio",
 			"command": "npx",
 			"args": ["eslint", "--mcp"]
 		},
-		"context7": {
-			"url": "https://mcp.context7.com/mcp"
-		}
+        "microsoft-docs": {
+            "url": "https://learn.microsoft.com/api/mcp"
+        },
+        "svelte": {
+            "url": "https://mcp.svelte.dev/mcp"
+        },
 	}
 }

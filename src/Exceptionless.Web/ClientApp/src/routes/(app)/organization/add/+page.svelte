@@ -1,10 +1,11 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import ErrorMessage from '$comp/error-message.svelte';
-    import Loading from '$comp/loading.svelte';
     import { H3, Muted } from '$comp/typography';
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
+    import { Spinner } from '$comp/ui/spinner';
     import { postOrganization } from '$features/organizations/api.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
     import { applyServerSideErrors } from '$features/shared/validation';
@@ -31,7 +32,7 @@
             try {
                 const { id } = await createOrganization.mutateAsync(form.data);
                 toastId = toast.success('Organization added successfully');
-                await goto(`/next/organization/${id}/manage`);
+                await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: id }));
 
                 // HACK: This is to prevent sveltekit from stealing focus
                 result.type = 'failure';
@@ -72,7 +73,7 @@
 
         <Form.Button>
             {#if $submitting}
-                <Loading class="mr-2" variant="secondary"></Loading> Adding Organization...
+                <Spinner /> Adding Organization...
             {:else}
                 Add Organization
             {/if}</Form.Button

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
@@ -18,7 +19,7 @@
 
     let { children } = $props();
 
-    const projectId = page.params.projectId || '';
+    const projectId = $derived(page.params.projectId || '');
     const projectQuery = getProjectQuery({
         route: {
             get id() {
@@ -38,12 +39,20 @@
     $effect(() => {
         if (projectQuery.isError) {
             toast.error(`The project "${projectId}" could not be found.`);
-            goto(`/next/organization/${organization.current}/projects`);
+            if (organization.current) {
+                goto(resolve('/(app)/organization/[organizationId]/projects', { organizationId: organization.current }));
+            } else {
+                goto(resolve('/(app)/organization/list'));
+            }
         }
 
         if (projectQuery.isSuccess && projectQuery.data.organization_id !== organization.current) {
             toast.error(`The project "${projectQuery.data.name}" does not belong to the current organization.`);
-            goto(`/next/organization/${organization.current}/projects`);
+            if (organization.current) {
+                goto(resolve('/(app)/organization/[organizationId]/projects', { organizationId: organization.current }));
+            } else {
+                goto(resolve('/(app)/organization/list'));
+            }
         }
     });
 </script>
@@ -67,7 +76,7 @@
                     <OrganizationAdminActionsDropdownMenu organization={organizationQuery.data} />
                 </GlobalUser>
             {/if}
-            <Button variant="secondary" size="icon" href="/account/manage?tab=notifications&projectId={projectId}" title="Notification Settings">
+            <Button variant="secondary" size="icon" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`} title="Notification Settings">
                 <NotificationSettings class="size-4" />
             </Button>
         </div>

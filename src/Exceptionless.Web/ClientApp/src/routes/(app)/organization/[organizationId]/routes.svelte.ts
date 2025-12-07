@@ -1,3 +1,4 @@
+import { resolve } from '$app/paths';
 import { page } from '$app/state';
 import { organization } from '$features/organizations/context.svelte';
 import Usage from '@lucide/svelte/icons/bar-chart';
@@ -18,39 +19,45 @@ export function routes(): NavigationItem[] {
     return [
         {
             group: 'Organization Settings',
-            href: `/next/organization/${organizationId}/manage`,
+            href: resolve('/(app)/organization/[organizationId]/manage', { organizationId }),
             icon: Settings,
             title: 'General'
         },
         {
             group: 'Organization Settings',
-            href: `/next/organization/${organizationId}/usage`,
+            href: resolve('/(app)/organization/[organizationId]/usage', { organizationId }),
             icon: Usage,
             title: 'Usage'
         },
         {
             group: 'Organization Settings',
-            href: `/next/organization/${organizationId}/projects`,
+            href: resolve('/(app)/organization/[organizationId]/projects', { organizationId }),
             icon: Folder,
             title: 'Projects'
         },
         {
             group: 'Organization Settings',
-            href: `/next/organization/${organizationId}/users`,
+            href: resolve('/(app)/organization/[organizationId]/users', { organizationId }),
             icon: Users,
             title: 'Users'
         },
         {
             group: 'Organization Settings',
-            href: `/next/organization/${organizationId}/billing`,
+            href: resolve('/(app)/organization/[organizationId]/billing', { organizationId }),
             icon: Billing,
             title: 'Billing'
         },
         {
             group: 'Settings',
-            href: `/next/organization/${organizationId}/projects`,
-            icon: Settings,
+            href: resolve('/(app)/organization/[organizationId]/projects', { organizationId }),
+            icon: Folder,
             title: 'Projects'
+        },
+        {
+            group: 'Settings',
+            href: resolve('/(app)/organization/[organizationId]/users', { organizationId }),
+            icon: Users,
+            title: 'Users'
         }
     ];
 }

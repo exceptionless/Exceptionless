@@ -2,8 +2,10 @@
     import type { GetEventsParams } from '$features/events/api.svelte';
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
+    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import DelayedRender from '$comp/delayed-render.svelte';
     import ErrorMessage from '$comp/error-message.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
@@ -29,7 +31,7 @@
     import { getSharedTableOptions, isTableEmpty, removeTableData } from '$features/shared/table.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { DEFAULT_LIMIT, useFetchClientStatus } from '$shared/api/api.svelte';
+    import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import { createTable } from '@tanstack/svelte-table';
@@ -37,9 +39,15 @@
     import { useEventListener, watch } from 'runed';
     import { debounce } from 'throttle-debounce';
 
+    import { redirectToEventsWithFilter } from '../redirect-to-events.svelte';
+
     let selectedEventId: null | string = $state(null);
     function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
         selectedEventId = row.id;
+    }
+
+    function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
+        return resolve('/(app)/event/[eventId]', { eventId: row.id });
     }
 
     const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
@@ -82,7 +90,14 @@
         { lazy: true }
     );
 
-    function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
+    async function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
+        // If this is a stack filter, redirect to the Events page
+        if (addedOrUpdated.type === 'string' && addedOrUpdated.key === 'string-stack') {
+            await redirectToEventsWithFilter(organization.current, addedOrUpdated);
+            return;
+        }
+
+        // For all other filters (skipping date filters), apply them to the current page
         if (addedOrUpdated.type !== 'date') {
             updateFilters(filterChanged(filters ?? [], addedOrUpdated));
         }
@@ -113,7 +128,8 @@
         set limit(value) {
             queryParams.limit = value;
         },
-        mode: 'summary'
+        mode: 'summary',
+        offset: DEFAULT_OFFSET
     });
 
     const client = useFetchClient();
@@ -229,17 +245,19 @@
 </script>
 
 <DataTable.Root>
-    <DataTable.Toolbar {table}>
-        <H3 class="pr-2">Event Stream</H3>
-        <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
-            <OrganizationDefaultsFacetedFilterBuilder includeDateFacets={false} />
-        </FacetedFilter.Root>
-
-        {#snippet actions()}
-            <StreamingIndicatorButton {paused} onToggle={handleToggle} />
-        {/snippet}
-    </DataTable.Toolbar>
-    <DataTable.Body rowClick={rowclick} {table}>
+    <div class="mb-4 flex flex-wrap items-start gap-2">
+        <H3 class="my-0 shrink-0">Event Stream</H3>
+        <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
+            <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
+                <OrganizationDefaultsFacetedFilterBuilder />
+            </FacetedFilter.Root>
+        </div>
+        <div class="ml-auto flex shrink-0 items-start gap-2">
+            <DataTableViewOptions size="icon-lg" {table} />
+            <StreamingIndicatorButton onToggle={handleToggle} {paused} size="icon-lg" />
+        </div>
+    </div>
+    <DataTable.Body rowClick={rowclick} {rowHref} {table}>
         {#if clientStatus.isLoading}
             <DelayedRender>
                 <DataTable.Loading {table} />
@@ -262,7 +280,11 @@
     <Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
         <Sheet.Header>
             <Sheet.Title
-                >Event Details <Button href="/next/event/{selectedEventId}" size="sm" title="Open in new window" variant="ghost"><ExternalLink /></Button
+                >Event Details <Button
+                    href={selectedEventId ? resolve('/(app)/event/[eventId]', { eventId: selectedEventId }) : '#'}
+                    size="sm"
+                    title="Open in new window"
+                    variant="ghost"><ExternalLink /></Button
                 ></Sheet.Title
             >
         </Sheet.Header>

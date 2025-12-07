@@ -13,11 +13,11 @@
 
     let { value }: Props = $props();
 
-    let type = typeof value;
-    let isBoolean = type === 'boolean' || value instanceof Boolean;
-    let isObject = (type === 'object' || value instanceof Object) && value !== null;
-    let isNull = value === null;
-    let isEmptyValue = isEmpty(value);
+    const type = $derived(typeof value);
+    const isBoolean = $derived(type === 'boolean' || value instanceof Boolean);
+    const isObject = $derived((type === 'object' || value instanceof Object) && value !== null);
+    const isNull = $derived(value === null);
+    const isEmptyValue = $derived(isEmpty(value));
 
     function isEmpty(value: unknown) {
         if (value === undefined) {

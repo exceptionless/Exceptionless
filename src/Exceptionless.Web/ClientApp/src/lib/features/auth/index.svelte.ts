@@ -1,8 +1,9 @@
 import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
 import { page } from '$app/state';
 import { env } from '$env/dynamic/public';
+import { CachedPersistedState } from '$features/shared/utils/cached-persisted-state.svelte';
 import { useFetchClient } from '@exceptionless/fetchclient';
-import { PersistedState } from 'runed';
 
 import type { Login, TokenResult } from './models';
 
@@ -28,22 +29,14 @@ export type SupportedOAuthProviders = 'facebook' | 'github' | 'google' | 'live' 
 
 const authSerializer = {
     deserialize: (value: null | string): null | string => {
-        if (value === '') {
-            return null;
-        }
-
-        return value;
+        return value === '' ? null : value;
     },
     serialize: (value: null | string): string => {
-        if (value === null) {
-            return '';
-        }
-
-        return value;
+        return value === null ? '' : value;
     }
 };
 
-export const accessToken = new PersistedState<null | string>('satellizer_token', null, { serializer: authSerializer });
+export const accessToken = new CachedPersistedState<null | string>('satellizer_token', null, { serializer: authSerializer });
 
 export const enableAccountCreation = env.PUBLIC_ENABLE_ACCOUNT_CREATION === 'true';
 export const facebookClientId = env.PUBLIC_FACEBOOK_APPID;
@@ -106,7 +99,7 @@ export async function googleLogin(redirectUrl?: string) {
 export async function gotoLogin() {
     const url = page.url;
     const isAuthPath = url.pathname.startsWith('/next/login') || url.pathname.startsWith('/next/logout');
-    const redirect = url.pathname === '/next/' || isAuthPath ? '/next/login' : `/next/login?redirect=${url.pathname}`;
+    const redirect = url.pathname === resolve('/') || isAuthPath ? resolve('/(auth)/login') : `${resolve('/(auth)/login')}?redirect=${url.pathname}`;
     await goto(redirect, { replaceState: true });
 }
 
@@ -146,7 +139,8 @@ export async function login(email: string, password: string) {
 export async function logout() {
     const client = useFetchClient();
     await client.get('auth/logout', { expectedStatusCodes: [200, 401] });
-    accessToken.current = null;
+
+    accessToken.current = '';
 }
 
 export async function slackOAuthLogin(): Promise<string> {
@@ -181,7 +175,7 @@ async function oauthLogin(options: OAuthLoginOptions) {
 
     if (response.ok && response.data?.token) {
         accessToken.current = response.data.token;
-        await goto(options.redirectUrl || '/');
+        await goto(options.redirectUrl || resolve('/'));
     }
 }
 

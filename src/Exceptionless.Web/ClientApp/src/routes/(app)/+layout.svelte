@@ -2,12 +2,13 @@
     import type { Snippet } from 'svelte';
 
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { useSidebar } from '$comp/ui/sidebar';
     import { env } from '$env/dynamic/public';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
-    import { getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
+    import { getOrganizationQuery, getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
     import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
     import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
@@ -36,7 +37,7 @@
     }
 
     let { children }: Props = $props();
-    let isAuthenticated = $derived(accessToken.current !== null);
+    let isAuthenticated = $derived(!!accessToken.current);
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
 
@@ -120,6 +121,11 @@
     });
 
     $effect(() => {
+        // Direct read of accessToken.current establishes reactive dependency, working around PersistedState reactivity bug
+        const currentToken = accessToken.current;
+        // Track page.url to ensure effect re-runs on navigation
+        void page.url.pathname;
+
         function handleKeydown(e: KeyboardEvent) {
             if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
@@ -127,7 +133,8 @@
             }
         }
 
-        if (!isAuthenticated) {
+        // Check token directly instead of using derived isAuthenticated
+        if (!currentToken) {
             queryClient.cancelQueries();
             queryClient.invalidateQueries();
 
@@ -159,26 +166,53 @@
 
     const meQuery = getMeQuery();
     const gravatar = getGravatarFromCurrentUser(meQuery);
+    const isGlobalAdmin = $derived(!!meQuery.data?.roles?.includes('global'));
 
     const organizationsQuery = getOrganizationsQuery({});
+    const organizations = $derived(organizationsQuery.data?.data ?? []);
+
+    const impersonatingOrganizationId = $derived.by(() => {
+        const isUserOrganization = meQuery.data?.organization_ids.includes(organization.current ?? '');
+        return isUserOrganization ? undefined : organization.current;
+    });
+
+    const impersonatedOrganizationQuery = getOrganizationQuery({
+        route: {
+            get id() {
+                return impersonatingOrganizationId;
+            }
+        }
+    });
+    const impersonatedOrganization = $derived(impersonatingOrganizationId ? impersonatedOrganizationQuery.data : undefined);
+
+    // Simple organization selection - pick first available if none selected
     $effect(() => {
         if (!organizationsQuery.isSuccess) {
             return;
         }
 
-        if (!organizationsQuery.data.data || organizationsQuery.data.data.length === 0) {
+        const hasOrganizations = organizations.length > 0;
+        if (!hasOrganizations) {
             organization.current = undefined;
-            goto('/next/organization/add');
+
+            // Redirect non-admins to add organization page
+            if (!isGlobalAdmin && !organizationsQuery.isLoading) {
+                goto(resolve(`/(app)/organization/add`));
+            }
+
             return;
         }
 
-        if (!organizationsQuery.data.data.find((org) => org.id === organization.current)) {
-            organization.current = organizationsQuery.data.data[0]!.id;
+        // Select first organization if none selected
+        if (!organization.current) {
+            organization.current = organizations[0]!.id;
         }
     });
 
+    const isImpersonating = $derived(!!impersonatedOrganization);
+
     const filteredRoutes = $derived.by(() => {
-        const context: NavigationItemContext = { authenticated: isAuthenticated, user: meQuery.data };
+        const context: NavigationItemContext = { authenticated: isAuthenticated, impersonating: isImpersonating, user: meQuery.data };
         return routes().filter((route) => (route.show ? route.show(context) : true));
     });
 
@@ -190,22 +224,23 @@
 
 {#if isAuthenticated}
     <Navbar bind:isCommandOpen></Navbar>
-    <Sidebar routes={filteredRoutes}>
+    <Sidebar routes={filteredRoutes} impersonating={!!impersonatedOrganization}>
         {#snippet header()}
             <SidebarOrganizationSwitcher
                 class="pt-2"
                 isLoading={organizationsQuery.isLoading}
-                organizations={organizationsQuery.data?.data ?? []}
-                bind:selected={organization.current}
+                {organizations}
+                {impersonatedOrganization}
+                bind:currentOrganizationId={organization.current}
             />
         {/snippet}
 
         {#snippet footer()}
-            <SidebarUser isLoading={meQuery.isLoading} user={meQuery.data} {gravatar} />
+            <SidebarUser isLoading={meQuery.isLoading} user={meQuery.data} {gravatar} isImpersonating={!!impersonatedOrganization} {organizations} />
         {/snippet}
     </Sidebar>
-    <div class="flex w-full overflow-hidden pt-16">
-        <div class="text-secondary-foreground w-full">
+    <div class="flex w-full pt-16">
+        <div class="text-secondary-foreground w-full overflow-y-auto">
             <main class="px-4 pt-4">
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
 

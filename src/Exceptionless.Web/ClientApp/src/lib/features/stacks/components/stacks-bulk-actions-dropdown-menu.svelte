@@ -150,10 +150,12 @@
 
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
-        <Button variant="outline">
-            Bulk Actions
-            <ChevronDown class="size-4" />
-        </Button>
+        {#snippet child({ props })}
+            <Button {...props} variant="outline">
+                Bulk Actions
+                <ChevronDown class="size-4" />
+            </Button>
+        {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content>
         <DropdownMenu.Group>

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
     import ErrorMessage from '$comp/error-message.svelte';
     import DateTime from '$comp/formatters/date-time.svelte';
     import { A, H4 } from '$comp/typography';
@@ -46,7 +47,7 @@
     }
 
     function handleOpenInvoice(invoiceId: string) {
-        window.open(`/next/payment/${invoiceId}`, '_blank');
+        window.open(resolve('/(app)/payment/[id]', { id: invoiceId }), '_blank');
     }
 
     function handleViewStripeInvoice(invoiceId: string) {
@@ -118,10 +119,12 @@
                                         <Table.Cell>
                                             <DropdownMenu.Root>
                                                 <DropdownMenu.Trigger>
-                                                    <Button variant="outline" size="sm">
-                                                        <MoreHorizontal class="size-4" />
-                                                        <span class="sr-only">Actions</span>
-                                                    </Button>
+                                                    {#snippet child({ props })}
+                                                        <Button {...props} variant="outline" size="sm">
+                                                            <MoreHorizontal class="size-4" />
+                                                            <span class="sr-only">Actions</span>
+                                                        </Button>
+                                                    {/snippet}
                                                 </DropdownMenu.Trigger>
                                                 <DropdownMenu.Content align="end">
                                                     <DropdownMenu.Item onclick={() => handleOpenInvoice(invoice.id)}>

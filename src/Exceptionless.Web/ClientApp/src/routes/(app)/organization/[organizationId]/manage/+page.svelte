@@ -1,14 +1,15 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
-    import Loading from '$comp/loading.svelte';
     import { H3, Muted } from '$comp/typography';
     import { Button, buttonVariants } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Form from '$comp/ui/form';
     import { Input } from '$comp/ui/input';
     import { Separator } from '$comp/ui/separator';
+    import { Spinner } from '$comp/ui/spinner';
     import { deleteOrganization, getOrganizationQuery, patchOrganization } from '$features/organizations/api.svelte';
     import RemoveOrganizationDialog from '$features/organizations/components/dialogs/remove-organization-dialog.svelte';
     import { NewOrganization } from '$features/organizations/models';
@@ -23,9 +24,9 @@
     import { debounce } from 'throttle-debounce';
 
     let toastId = $state<number | string>();
-    let previousOrganizationRef = $state<NewOrganization>();
+    let previousOrganizationRef: NewOrganization | undefined;
 
-    const organizationId = page.params.organizationId || '';
+    const organizationId = $derived(page.params.organizationId || '');
     const organizationQuery = getOrganizationQuery({
         route: {
             get id() {
@@ -57,7 +58,7 @@
             await removeOrganization.mutateAsync();
             toastId = toast.success('Successfully queued the organization for deletion.');
 
-            await goto('/next/organization/list');
+            await goto(resolve('/(app)/organization/list'));
         } catch (error: unknown) {
             const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
             toastId = toast.error(`An error occurred while trying to delete the organization: ${message}`);
@@ -132,7 +133,7 @@
     </form>
 
     <div class="flex w-full items-center justify-between">
-        <Button variant="secondary" href="/next/issues">
+        <Button variant="secondary" href={resolve('/(app)/issues')}>
             <Issues class="mr-2 size-4" /> Go To Issues
         </Button>
 
@@ -146,7 +147,7 @@
                     <DropdownMenu.Separator />
                     <DropdownMenu.Item onclick={() => (showRemoveDialog = true)} disabled={removeOrganization.isPending}>
                         {#if removeOrganization.isPending}
-                            <Loading class="mr-2" variant="secondary"></Loading>
+                            <Spinner />
                             <span>Deleting Organization...</span>
                         {:else}
                             <X class="mr-2 size-4" />

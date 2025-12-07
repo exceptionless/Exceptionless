@@ -1,4 +1,5 @@
 ﻿using Foundatio.Storage;
+using Minio.DataModel.Args;
 
 namespace Aspire.Hosting;
 
@@ -12,25 +13,27 @@ public static class MinIoExtensions
         var options = new MinIoBuilder();
         configure?.Invoke(options);
 
-        var resource = new MinIoResource(name, options.AccessKey, options.SecretKey, options.Bucket ?? "storage");
+        string bucket = options.Bucket ?? "storage";
+        var resource = new MinIoResource(name, options.AccessKey, options.SecretKey, bucket);
+        string? connectionString;
 
-        string? connectionString = null;
-
-        builder.Eventing.Subscribe<ResourceReadyEvent>(resource, async (@event, ct) =>
+        builder.Eventing.Subscribe<ResourceReadyEvent>(resource, async (_, ct) =>
         {
-            connectionString = await resource.ConnectionStringExpression.GetValueAsync(ct).ConfigureAwait(false);
+            connectionString = await resource.ConnectionStringExpression.GetValueAsync(ct);
 
             if (connectionString == null)
                 throw new DistributedApplicationException($"ResourceReadyEvent was published for the '{resource.Name}' resource but the connection string was null.");
 
-            var storage = new S3FileStorage(o => o.ConnectionString(connectionString));
+            var storage = new MinioFileStorage(o => o.ConnectionString(connectionString));
             try
             {
-                await storage.Client.PutBucketAsync(options.Bucket ?? "storage", ct);
+                bool found = await storage.Client.BucketExistsAsync(new BucketExistsArgs().WithBucket(bucket), ct);
+                if (!found)
+                    await storage.Client.MakeBucketAsync(new MakeBucketArgs().WithBucket(bucket), ct);
             }
-            catch
+            catch (Exception ex)
             {
-                // ignored
+                Console.WriteLine(ex.Message);
             }
         });
 
@@ -88,8 +91,8 @@ public class MinIoResource(string name, string? accessKey = null, string? secret
             $"EndPoint=http://{ApiEndpoint.Property(EndpointProperty.Host)}:{ApiEndpoint.Property(EndpointProperty.Port)};" +
             $"AccessKey={AccessKey ?? "minioadmin"};" +
             $"SecretKey={SecretKey ?? "minioadmin"};" +
-            $"Bucket={Bucket};" +
-            $"Provider=minio;");
+            $"Bucket={Bucket};"
+        );
 
     public string? AccessKey { get; } = accessKey;
     public string? SecretKey { get; } = secretKey;
@@ -136,5 +139,5 @@ internal static class MinIoContainerImageTags
 {
     internal const string Registry = "docker.io";
     internal const string Image = "minio/minio";
-    internal const string Tag = "RELEASE.2025-04-22T22-12-26Z";
+    internal const string Tag = "RELEASE.2025-07-23T15-54-02Z";
 }

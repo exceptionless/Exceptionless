@@ -1,0 +1,60 @@
+name: "Copilot Setup"
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.*
+          dotnet-quality: ga
+
+      - name: Start Services
+        working-directory: docker
+        run: docker compose up -d elasticsearch &
+
+      - uses: actions/cache@v4
+        with:
+            path: ~/.nuget/packages
+            key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
+            restore-keys: |
+                nuget-${{ runner.os }}-
+
+      - name: Nuget Restore
+        run: dotnet restore
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        id: cache-node-modules
+        with:
+          path: src/Exceptionless.Web/ClientApp/node_modules
+          key: node-modules-${{ hashFiles('src/Exceptionless.Web/ClientApp/package-lock.json') }}
+
+      - name: Install Npm Packages
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        working-directory: src/Exceptionless.Web/ClientApp
+        run: npm ci

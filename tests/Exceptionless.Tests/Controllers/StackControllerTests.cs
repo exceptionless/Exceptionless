@@ -119,4 +119,54 @@ public class StackControllerTests : IntegrationTestsBase
         Assert.Equal(message, ev.Message);
         return ev;
     }
+
+    [Theory]
+    [InlineData("ErrorStack")]
+    [InlineData("Stack")]
+    public async Task CanMarkFixedWithJsonDocument(string propertyName)
+    {
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.False(stack.IsFixed());
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("stacks/mark-fixed")
+            .Content(new Dictionary<string, string> { { propertyName, stack.Id } })
+            .StatusCodeShouldBeOk());
+
+        stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.True(stack.IsFixed());
+    }
+
+    [Theory]
+    [InlineData("ErrorStack")]
+    [InlineData("Stack")]
+    public async Task CanAddLinkWithJsonDocument(string propertyName)
+    {
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.Empty(stack.References);
+
+        string testUrl = "https://localhost/123";
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("stacks/add-link")
+            .Content(new Dictionary<string, string> { { propertyName, stack.Id }, { "Link", testUrl } })
+            .StatusCodeShouldBeOk());
+
+        stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.Single(stack.References);
+        Assert.Contains(testUrl, stack.References);
+    }
 }

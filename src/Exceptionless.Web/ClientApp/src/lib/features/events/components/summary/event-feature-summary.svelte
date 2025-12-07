@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
     import { A } from '$comp/typography';
 
     import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from './index';
@@ -16,5 +17,5 @@
     {#if showType}
         <strong>Feature:&nbsp;</strong>
     {/if}
-    <A class="inline">{source.data.Source}</A>
+    <A class="inline" href={resolve('/(app)/event/[eventId]', { eventId: source.id })}>{source.data.Source}</A>
 </div>

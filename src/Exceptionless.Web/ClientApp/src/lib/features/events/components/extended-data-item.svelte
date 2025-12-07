@@ -14,6 +14,7 @@
 
     interface Props {
         canPromote?: boolean;
+        class?: string;
         data: unknown;
         demote?: (title: string) => Promise<void>;
         excludedKeys?: string[];
@@ -22,7 +23,16 @@
         title: string;
     }
 
-    let { canPromote = true, data, demote = async () => {}, excludedKeys = [], isPromoted = false, promote = async () => {}, title }: Props = $props();
+    let {
+        canPromote = true,
+        class: className,
+        data,
+        demote = async () => {},
+        excludedKeys = [],
+        isPromoted = false,
+        promote = async () => {},
+        title
+    }: Props = $props();
 
     function transformData(data: unknown): unknown {
         if (isJSONString(data)) {
@@ -81,7 +91,7 @@
     let showRaw = $state(false);
     const transformedData = $derived(transformData(data));
     const filteredData = $derived(getFilteredData(transformedData, excludedKeys));
-    const hasData = $derived(!isEmpty(transformedData));
+    const hasData = $derived(!isEmpty(filteredData));
     const showJSONCodeEditor = $derived(isJSONString(data) || Array.isArray(transformedData) || isObject(transformedData));
     const showXmlCodeEditor = $derived(isXmlString(filteredData));
     const canToggle = $derived(!showXmlCodeEditor);
@@ -101,14 +111,16 @@
 </script>
 
 {#if hasData}
-    <div class="flex flex-col space-y-2">
+    <div class={['flex flex-col space-y-2', className]}>
         <div class="flex items-center justify-between">
             <H4>{title}</H4>
             <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
-                    <Button variant="ghost" size="icon" title="Options">
-                        <MoreVertical class="size-4" />
-                    </Button>
+                    {#snippet child({ props })}
+                        <Button {...props} variant="ghost" size="icon" title="Options">
+                            <MoreVertical class="size-4" />
+                        </Button>
+                    {/snippet}
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content align="end">
                     <DropdownMenu.Group>
@@ -149,7 +161,7 @@
                 {:else if showXmlCodeEditor}
                     <CodeBlock {code} language="xml" />
                 {:else}
-                    <pre class="bg-muted rounded p-2 break-words whitespace-pre-wrap"><Code class="px-0"><div class="bg-inherit">{clipboardData}</div></Code
+                    <pre class="bg-muted rounded p-2 wrap-break-word whitespace-pre-wrap"><Code class="px-0"><div class="bg-inherit">{clipboardData}</div></Code
                         ></pre>
                 {/if}
             {:else}

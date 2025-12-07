@@ -1,10 +1,11 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import ErrorMessage from '$comp/error-message.svelte';
-    import Loading from '$comp/loading.svelte';
     import Logo from '$comp/logo.svelte';
     import * as Card from '$comp/ui/card';
     import * as Form from '$comp/ui/form';
+    import { Spinner } from '$comp/ui/spinner';
     import { accessToken, logout } from '$features/auth/index.svelte';
     import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { useFetchClient } from '@exceptionless/fetchclient';
@@ -13,7 +14,7 @@
 
     $effect(() => {
         if (!isAuthenticated) {
-            goto('/next/login', { replaceState: true });
+            goto(resolve('/(auth)/login'), { replaceState: true });
         }
     });
 
@@ -29,7 +30,7 @@
         const response = await client.get('auth/logout');
         if (response.ok) {
             await logout();
-            await goto('/next/login');
+            await goto(resolve('/(auth)/login'));
         } else {
             message = 'An error occurred while logging out, please try again.';
         }
@@ -47,7 +48,7 @@
 
             <Form.Button>
                 {#if clientStatus.isLoading}
-                    <Loading class="mr-2" variant="secondary"></Loading> Logging out...
+                    <Spinner /> Logging out...
                 {:else}
                     Logout
                 {/if}

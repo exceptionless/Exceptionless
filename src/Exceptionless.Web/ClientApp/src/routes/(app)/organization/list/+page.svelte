@@ -3,6 +3,7 @@
     import type { TableMemoryPagingParameters } from '$features/shared/table.svelte';
 
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { type GetOrganizationsParams, getOrganizationsQuery } from '$features/organizations/api.svelte';
@@ -26,12 +27,16 @@
 
     async function rowClick(organization: ViewOrganization) {
         if (organization.id) {
-            await goto(`/next/organization/${organization.id}/manage`);
+            await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: organization.id }));
         }
     }
 
+    function rowHref(organization: ViewOrganization): string {
+        return resolve('/(app)/organization/[organizationId]/manage', { organizationId: organization.id });
+    }
+
     async function addOrganization() {
-        await goto('/next/organization/add');
+        await goto(resolve('/(app)/organization/add'));
     }
 
     useHideOrganizationNotifications();
@@ -50,5 +55,5 @@
             </Button>
         </div>
     </div>
-    <OrganizationsDataTable isLoading={organizationsQuery.isLoading} {rowClick} {table} />
+    <OrganizationsDataTable isLoading={organizationsQuery.isLoading} {rowClick} {rowHref} {table} />
 </div>

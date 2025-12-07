@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import DateTime from '$comp/formatters/date-time.svelte';
@@ -25,11 +26,11 @@
 
     $effect(() => {
         if (!accessToken.current || !organization.current || invoiceQuery.isError) {
-            goto('/next/');
+            goto(resolve('/(app)'));
         }
 
         if (invoiceQuery.isSuccess && invoiceQuery.data?.organization_id !== organization.current) {
-            goto('/next/');
+            goto(resolve('/(app)'));
         }
     });
 </script>

@@ -19,11 +19,11 @@ export async function invalidatePersistentEventQueries(queryClient: QueryClient,
     }
 
     if (project_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.projectsCount(project_id) });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.projects(project_id) });
     }
 
     if (organization_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.organizationsCount(organization_id) });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.organizations(organization_id) });
     }
 
     if (!id && !stack_id) {
@@ -34,10 +34,12 @@ export async function invalidatePersistentEventQueries(queryClient: QueryClient,
 export const queryKeys = {
     deleteEvent: (ids: string[] | undefined) => [...queryKeys.type, 'delete', ...(ids ?? [])] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
-    organizationsCount: (id: string | undefined) => [...queryKeys.type, 'organizations', id, 'count'] as const,
-    projectsCount: (id: string | undefined) => [...queryKeys.type, 'projects', id, 'count'] as const,
+    organizations: (id: string | undefined) => [...queryKeys.type, 'organizations', id] as const,
+    organizationsCount: (id: string | undefined, params?: GetOrganizationCountRequest['params']) => [...queryKeys.organizations(id), 'count', params] as const,
+    projects: (id: string | undefined) => [...queryKeys.type, 'projects', id] as const,
+    projectsCount: (id: string | undefined, params?: GetProjectCountRequest['params']) => [...queryKeys.projects(id), 'count', params] as const,
     stacks: (id: string | undefined) => [...queryKeys.type, 'stacks', id] as const,
-    stacksCount: (id: string | undefined) => [...queryKeys.stacks(id), 'count'] as const,
+    stacksCount: (id: string | undefined, params?: GetStackCountRequest['params']) => [...queryKeys.stacks(id), 'count', params] as const,
     type: ['PersistentEvent'] as const
 };
 
@@ -72,6 +74,7 @@ export interface GetEventsParams {
 }
 
 export interface GetOrganizationCountRequest {
+    enabled?: () => boolean;
     params?: {
         aggregations?: string;
         filter?: string;
@@ -169,7 +172,7 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
     const queryClient = useQueryClient();
 
     return createQuery<CountResult, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.organizationId,
+        enabled: () => !!accessToken.current && !!request.route.organizationId && (request.enabled?.() ?? true),
         queryClient,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
@@ -183,7 +186,7 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
 
             return response.data!;
         },
-        queryKey: queryKeys.organizationsCount(request.route.organizationId)
+        queryKey: queryKeys.organizationsCount(request.route.organizationId, request.params)
     }));
 }
 
@@ -205,7 +208,7 @@ export function getProjectCountQuery(request: GetProjectCountRequest) {
 
             return response.data!;
         },
-        queryKey: queryKeys.projectsCount(request.route.projectId)
+        queryKey: queryKeys.projectsCount(request.route.projectId, request.params)
     }));
 }
 
@@ -230,7 +233,7 @@ export function getStackCountQuery(request: GetStackCountRequest) {
 
             return response.data!;
         },
-        queryKey: [...queryKeys.stacksCount(request.route.stackId), { params: request.params }]
+        queryKey: queryKeys.stacksCount(request.route.stackId, request.params)
     }));
 }
 

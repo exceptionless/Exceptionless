@@ -4,14 +4,14 @@ metadata:
   name: elastic-monitor
   namespace: elastic-system
 spec:
-  version: 8.17.4
+  version: 8.19.6
   podDisruptionBudget: {}
   nodeSets:
     - name: main
       count: 1
       config:
-        # if not setting max_map_count in an init container, then use this setting
-        #node.store.allow_mmap: false
+      # if not setting max_map_count in an init container, then use this setting
+      #node.store.allow_mmap: false
       podTemplate:
         spec:
           containers:
@@ -51,7 +51,7 @@ metadata:
   name: kibana-monitor
   namespace: elastic-system
 spec:
-  version: 8.17.4
+  version: 8.19.6
   count: 1
   elasticsearchRef:
     name: elastic-monitor
@@ -145,7 +145,7 @@ metadata:
   name: fleet-server
   namespace: elastic-system
 spec:
-  version: 8.17.4
+  version: 8.19.6
   kibanaRef:
     name: kibana-monitor
   elasticsearchRefs:
@@ -169,7 +169,7 @@ metadata:
   name: elastic-agent
   namespace: elastic-system
 spec:
-  version: 8.17.4
+  version: 8.19.6
   kibanaRef:
     name: kibana-monitor
   fleetServerRef:

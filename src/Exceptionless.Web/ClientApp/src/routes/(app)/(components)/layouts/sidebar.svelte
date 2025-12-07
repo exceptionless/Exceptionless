@@ -8,17 +8,23 @@
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
     import Settings from '@lucide/svelte/icons/settings-2';
 
-    import type { NavigationItem } from '../../../routes.svelte';
+    import type { NavigationItem, NavigationItemContext } from '../../../routes.svelte';
 
     type Props = ComponentProps<typeof Sidebar.Root> & {
         footer?: Snippet;
         header?: Snippet;
+        impersonating?: boolean;
         routes: NavigationItem[];
     };
 
-    let { footer, header, routes, ...props }: Props = $props();
+    let { footer, header, impersonating = false, routes, ...props }: Props = $props();
     const dashboardRoutes = $derived(routes.filter((route) => route.group === 'Dashboards'));
-    const settingsRoutes = $derived(routes.filter((route) => route.group === 'Settings'));
+
+    // Settings routes need additional filtering based on navigation context
+    const navigationContext: NavigationItemContext = $derived({ authenticated: true, impersonating });
+    const settingsRoutes = $derived(
+        routes.filter((route) => route.group === 'Settings').filter((route) => (route.show ? route.show(navigationContext) : true))
+    );
     const settingsIsActive = $derived(settingsRoutes.some((route) => route.href === page.url.pathname));
 
     const sidebar = useSidebar();
@@ -37,7 +43,7 @@
         {/if}
     </Sidebar.Header>
     <Sidebar.Content>
-        <Sidebar.Group class="pt-0">
+        <Sidebar.Group class="pt-1">
             <Sidebar.Menu>
                 {#each dashboardRoutes as route (route.href)}
                     {@const Icon = route.icon}

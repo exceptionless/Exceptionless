@@ -148,11 +148,13 @@
 
 <Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
-        <Button class="gap-x-1 px-3" size="lg" variant="outline">
-            <Circle class="mr-2 size-4" /> Filter
-        </Button>
+        {#snippet child({ props })}
+            <Button {...props} class="gap-x-1 px-3" size="lg" variant="outline">
+                <Circle class="mr-2 size-4" /> Filter
+            </Button>
+        {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="w-[260px] p-0" side="bottom">
+    <Popover.Content align="start" class="w-[260px] p-0" side="bottom" trapFocus={false}>
         <Command.Root filter={filterCommand}>
             <Command.Input placeholder="Search..." bind:value={search} />
             <Command.List>
@@ -174,7 +176,7 @@
         </Command.Root>
         <div class="flex flex-col">
             <Separator />
-            {#if facets.length > 0}
+            {#if filters.some((f) => f.type !== 'date')}
                 <Button class="justify-center text-center" variant="ghost" onclick={onRemoveAll}>Clear filters</Button>
             {/if}
             <Button class="justify-center text-center" variant="ghost" onclick={onClose}>Close</Button>

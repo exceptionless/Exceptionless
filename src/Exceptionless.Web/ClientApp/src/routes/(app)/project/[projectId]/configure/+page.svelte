@@ -1,18 +1,21 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
+    import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
     import { A, CodeBlock, H3, Muted, P } from '$comp/typography';
-    import * as Alert from '$comp/ui/alert';
     import * as Select from '$comp/ui/select';
     import { Separator } from '$comp/ui/separator';
     import { env } from '$env/dynamic/public';
-    import { getProjectDefaultTokenQuery } from '$features/tokens/api.svelte';
+    import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
+    import EnableTokenDialog from '$features/tokens/components/dialogs/enable-token-dialog.svelte';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener } from 'runed';
+    import { toast } from 'svelte-sonner';
 
     // Project ID from route params
-    const projectId = page.params.projectId || '';
+    const projectId = $derived(page.params.projectId || '');
 
     const defaultTokenQuery = getProjectDefaultTokenQuery({
         route: {
@@ -24,6 +27,31 @@
 
     const apiKey = $derived(defaultTokenQuery.data?.id || 'YOUR_API_KEY');
     const serverUrl = env.PUBLIC_API_URL || window.location.origin;
+    const isTokenDisabled = $derived(defaultTokenQuery.data?.is_disabled ?? false);
+    const isTokenSuspended = $derived(defaultTokenQuery.data?.is_suspended ?? false);
+
+    let toastId = $state<number | string>();
+    let openEnableTokenDialog = $state(false);
+
+    const enableTokenMutation = patchToken({
+        route: {
+            get id() {
+                return defaultTokenQuery.data?.id || '';
+            }
+        }
+    });
+
+    async function enableToken() {
+        toast.dismiss(toastId);
+
+        try {
+            await enableTokenMutation.mutateAsync({ is_disabled: false });
+            toastId = toast.success(`Successfully enabled API key`);
+        } catch (error) {
+            toastId = toast.error('Failed to enable API key. Please try again.');
+            throw error;
+        }
+    }
 
     interface ProjectType {
         config?: string;
@@ -87,7 +115,7 @@
     const isDotNetLegacy = $derived(selectedProjectType?.platform === '.NET Legacy');
     const isJavaScript = $derived(selectedProjectType?.platform === 'JavaScript');
     const isNode = $derived(selectedProjectType?.package === 'Exceptionless.Node');
-    const isBashShell = $derived(selectedProjectType?.package === 'Bash Shell');
+    const isBashShell = $derived(selectedProjectType?.id === 'bash');
     const clientDocumentationUrl = $derived.by(() => {
         if (isDotNet || isDotNetLegacy) {
             return 'https://exceptionless.com/docs/clients/dotnet/';
@@ -190,9 +218,13 @@ public partial class App : Application {
 
     useEventListener(document, 'PersistentEventChanged', async () => {
         if (queryParams.redirect) {
-            await goto('/next/issues');
+            await goto(resolve('/(app)/issues'));
         }
     });
+
+    function openChat() {
+        // TODO: Implement chat opening logic
+    }
 </script>
 
 <div class="space-y-6">
@@ -200,6 +232,29 @@ public partial class App : Application {
         <H3>Download & Configure Project</H3>
         <Muted>The Exceptionless client can be integrated into your project in just a few easy steps.</Muted>
     </div>
+
+    {#if isTokenDisabled}
+        <Notification variant="destructive">
+            <NotificationTitle>API Key Disabled</NotificationTitle>
+            <NotificationDescription>
+                <P
+                    >The configuration steps won't work until your project's API key is enabled. Please <A onclick={() => (openEnableTokenDialog = true)}
+                        >enable your API key</A
+                    > to continue.</P
+                >
+            </NotificationDescription>
+        </Notification>
+    {:else if isTokenSuspended}
+        <Notification variant="destructive">
+            <NotificationTitle>API Key Disabled</NotificationTitle>
+            <NotificationDescription>
+                <P
+                    >The configuration steps won't work while your project's API key is suspended. Please <A onclick={openChat}>contact support</A> for more information.</P
+                >
+            </NotificationDescription>
+        </Notification>
+    {/if}
+
     <Separator />
 
     <ol class="my-6 ml-6 list-decimal [&>li]:mt-2">
@@ -209,7 +264,7 @@ public partial class App : Application {
                 type="single"
                 bind:value={queryParams.type as string | undefined}
                 onValueChange={(value) => {
-                    selectedProjectType = projectTypes.find((P) => P.package === value) || null;
+                    selectedProjectType = projectTypes.find((P) => P.id === value) || null;
                     queryParams.type = value;
                 }}
             >
@@ -521,8 +576,9 @@ public partial class App : Application {
             {/if}
         </P>
 
-        <Alert.Root>
-            <Alert.Description>
+        <Notification>
+            <NotificationTitle>Need more help?</NotificationTitle>
+            <NotificationDescription>
                 <P>
                     For more information and troubleshooting tips, view the
                     <A href={clientDocumentationUrl} target="_blank">Exceptionless documentation</A>.
@@ -532,7 +588,11 @@ public partial class App : Application {
                         steps.
                     {/if}
                 </P>
-            </Alert.Description>
-        </Alert.Root>
+            </NotificationDescription>
+        </Notification>
+    {/if}
+
+    {#if isTokenDisabled}
+        <EnableTokenDialog open={openEnableTokenDialog} id={defaultTokenQuery.data?.id || ''} notes={defaultTokenQuery.data?.notes} enable={enableToken} />
     {/if}
 </div>

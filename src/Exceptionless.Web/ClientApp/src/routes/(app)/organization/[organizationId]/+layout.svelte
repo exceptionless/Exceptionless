@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { H3, Muted } from '$comp/typography';
     import { Separator } from '$comp/ui/separator';
@@ -15,7 +16,7 @@
 
     let { children } = $props();
 
-    const organizationId = page.params.organizationId || '';
+    const organizationId = $derived(page.params.organizationId || '');
     const organizationQuery = getOrganizationQuery({
         route: {
             get id() {
@@ -24,17 +25,12 @@
         }
     });
 
-    // Set the current organization based on the current organization param on page load.
-    if (organizationId !== organization.current) {
-        organization.current = organizationId;
-    }
-
     const filteredRoutes = $derived(routes().filter((route) => route.group === 'Organization Settings'));
 
     $effect(() => {
         if (organizationQuery.isError) {
             toast.error(`The organization "${organizationId}" could not be found.`);
-            goto('/next/organization/list');
+            goto(resolve('/(app)/organization/list'));
             return;
         }
 

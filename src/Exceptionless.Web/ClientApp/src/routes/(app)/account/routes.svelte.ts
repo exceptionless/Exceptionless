@@ -1,3 +1,4 @@
+import { resolve } from '$app/paths';
 import Notifications from '@lucide/svelte/icons/bell';
 import Password from '@lucide/svelte/icons/key-round';
 import Verify from '@lucide/svelte/icons/shield-check';
@@ -11,39 +12,39 @@ export function routes(): NavigationItem[] {
     return [
         {
             group: 'My Account',
-            href: '/next/account/manage',
+            href: resolve('/(app)/account/manage'),
             icon: Account,
             title: 'Account'
         },
         {
             group: 'My Account',
-            href: '/next/account/appearance',
+            href: resolve('/(app)/account/appearance'),
             icon: Appearance,
             title: 'Appearance'
         },
         {
             group: 'My Account',
-            href: '/next/account/notifications',
+            href: resolve('/(app)/account/notifications'),
             icon: Notifications,
             title: 'Notifications'
         },
         {
             group: 'My Account',
-            href: '/next/account/security',
+            href: resolve('/(app)/account/security'),
             icon: Password,
             show: () => false,
             title: 'Password and authentication'
         },
         {
             group: 'My Account',
-            href: '/next/account/sessions',
+            href: resolve('/(app)/account/sessions'),
             icon: Sessions,
             show: () => false,
             title: 'Sessions'
         },
         {
             group: 'My Account',
-            href: '/next/account/verify',
+            href: resolve('/(app)/account/verify'),
             icon: Verify,
             show: () => false,
             title: 'Verify'

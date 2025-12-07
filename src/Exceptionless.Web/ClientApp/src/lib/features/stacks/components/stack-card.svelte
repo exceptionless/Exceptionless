@@ -5,15 +5,17 @@
     import Percentage from '$comp/formatters/percentage.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
     import Muted from '$comp/typography/muted.svelte';
-    import { Badge } from '$comp/ui/badge';
+    import * as ButtonGroup from '$comp/ui/button-group';
     import * as Card from '$comp/ui/card';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Tooltip from '$comp/ui/tooltip';
     import { getProjectCountQuery, getStackCountQuery } from '$features/events/api.svelte';
+    import EventsStackChart, { type EventsStackChartPoint } from '$features/events/components/events-stack-chart.svelte';
     import * as EventsFacetedFilter from '$features/events/components/filters';
     import { StringFilter } from '$features/events/components/filters';
+    import * as agg from '$features/shared/api/aggregations';
+    import { fillDateSeries } from '$features/shared/utils/charts';
     import { getStackQuery } from '$features/stacks/api.svelte';
-    import { cardinality, max, min, sum } from '$shared/api/aggregations';
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
     import FirstOccurrence from '@lucide/svelte/icons/arrow-left-circle';
     import LastOccurrence from '@lucide/svelte/icons/arrow-right-circle';
@@ -22,6 +24,7 @@
     import Filter from '@lucide/svelte/icons/filter';
     import Users from '@lucide/svelte/icons/users';
 
+    import StackLogLevel from './stack-log-level.svelte';
     import StackOptionsDropdownMenu from './stack-options-dropdown-menu.svelte';
     import StackReferences from './stack-references.svelte';
     import StackStatusDropdownMenu from './stack-status-dropdown-menu.svelte';
@@ -52,10 +55,14 @@
         }
     });
 
+    // TODO: Log Level
+    const stack = $derived(stackQuery.data!);
+
     // TODO: Add stack charts for Occurrences, Average Value, Value Sum
     const stackCountQuery = getStackCountQuery({
         params: {
-            aggregations: `date:(date${DEFAULT_OFFSET ? '^' + DEFAULT_OFFSET : ''} cardinality:user sum:count~1) min:date max:date cardinality:user sum:count~1`
+            aggregations: `date:(date${DEFAULT_OFFSET ? '^' + DEFAULT_OFFSET : ''} cardinality:user sum:count~1) min:date max:date cardinality:user sum:count~1`,
+            time: '[now-7d TO now]'
         },
         route: {
             get stackId() {
@@ -64,14 +71,45 @@
         }
     });
 
-    // TODO: Log Level
-    const stack = $derived(stackQuery.data!);
-    const eventOccurrences = $derived(sum(stackCountQuery?.data?.aggregations, 'sum_count')?.value ?? 0);
+    const eventOccurrences = $derived(agg.sum(stackCountQuery?.data?.aggregations, 'sum_count')?.value ?? 0);
     const totalOccurrences = $derived(stack && stack.total_occurrences > eventOccurrences ? stack.total_occurrences : eventOccurrences);
-    const userCount = $derived(sum(stackCountQuery?.data?.aggregations, 'cardinality_user')?.value ?? 0);
-    const totalUserCount = $derived(cardinality(projectCountQuery?.data?.aggregations, 'cardinality_user')?.value ?? 0);
-    const firstOccurrence = $derived(min<string>(stackCountQuery?.data?.aggregations, 'min_date')?.value ?? stack?.first_occurrence);
-    const lastOccurrence = $derived(max<string>(stackCountQuery?.data?.aggregations, 'max_date')?.value ?? stack?.last_occurrence);
+    const userCount = $derived(agg.sum(stackCountQuery?.data?.aggregations, 'cardinality_user')?.value ?? 0);
+    const totalUserCount = $derived(agg.cardinality(projectCountQuery?.data?.aggregations, 'cardinality_user')?.value ?? 0);
+    const firstOccurrence = $derived(agg.min<string>(stackCountQuery?.data?.aggregations, 'min_date')?.value ?? stack?.first_occurrence);
+    const lastOccurrence = $derived(agg.max<string>(stackCountQuery?.data?.aggregations, 'max_date')?.value ?? stack?.last_occurrence);
+
+    const chartData = $derived(() => {
+        const now = new Date();
+        const SEVEN_DAYS_IN_MS = 7 * 24 * 60 * 60 * 1000;
+        const sevenDaysAgo = new Date(now.getTime() - SEVEN_DAYS_IN_MS);
+        const buildZeroFilledSeries = () =>
+            fillDateSeries(
+                sevenDaysAgo,
+                now,
+                (date: Date) =>
+                    ({
+                        date,
+                        occurrences: 0
+                    }) as EventsStackChartPoint
+            );
+
+        const dateHistogramBuckets = agg.dateHistogram(stackCountQuery.data?.aggregations, 'date_date')?.buckets ?? [];
+        const recentBuckets = dateHistogramBuckets
+            .map(
+                (bucket) =>
+                    ({
+                        date: new Date(bucket.key),
+                        occurrences: agg.sum(bucket.aggregations, 'sum_count')?.value ?? 0
+                    }) as EventsStackChartPoint
+            )
+            .filter((bucket) => bucket.date >= sevenDaysAgo);
+
+        if (recentBuckets.length === 0) {
+            return buildZeroFilledSeries();
+        }
+
+        return recentBuckets;
+    });
 </script>
 
 {#if stackQuery.isSuccess}
@@ -84,18 +122,24 @@
                         <span class="block max-w-full min-w-0 truncate" title={stack.title}>{stack.title}</span>
                     </div>
                 </div>
-                <div class="ml-2 flex shrink-0 items-center space-x-2">
-                    <StackStatusDropdownMenu {stack} />
-                    <StackOptionsDropdownMenu {stack} />
+                <div class="ml-2 flex shrink-0 items-center gap-2">
+                    <StackLogLevel {stack} />
+                    <ButtonGroup.Root>
+                        <StackStatusDropdownMenu {stack} />
+                        <StackOptionsDropdownMenu {stack} />
+                    </ButtonGroup.Root>
                 </div>
             </Card.Title>
         </Card.Header>
-        <Card.Content class="space-y-4 pt-2">
-            <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Card.Content class="space-y-2">
+            <div class="grid auto-rows-min grid-cols-2 gap-2 lg:grid-cols-4">
                 <Tooltip.Root>
                     <Tooltip.Trigger
-                        class="bg-muted flex flex-col items-center rounded-lg p-2"
+                        class="bg-muted hover:bg-muted/80 flex cursor-pointer flex-col items-center rounded-lg p-2 transition-colors"
                         onclick={() => filterChanged(new StringFilter('stack', stack.id))}
+                        aria-label="Filter by this stack"
+                        role="button"
+                        tabindex={0}
                     >
                         <Calendar class="text-primary mb-1 size-6" />
                         <span class="text-lg font-bold"><Number value={totalOccurrences} /></span>
@@ -135,9 +179,13 @@
                 </Tooltip.Root>
             </div>
 
-            <!-- Line Chart -->
+            <div class="flex justify-end">
+                <Muted class="text-xs uppercase">Last 7 days</Muted>
+            </div>
 
-            <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <EventsStackChart class="h-12 w-full" data={chartData()} isLoading={stackCountQuery.isLoading} />
+
+            <div class="grid grid-cols-1 gap-x-4 lg:grid-cols-2">
                 {#if (stack.status === 'fixed' || stack.status === 'regressed') && stack.date_fixed}
                     <div class="flex items-center gap-2 text-sm">
                         <Calendar class="size-4 text-green-500" />
@@ -158,11 +206,10 @@
             {#if stack.tags && stack.tags.length > 0}
                 <div class="flex flex-wrap gap-2">
                     {#each stack.tags as tag (tag)}
-                        <Badge color="dark"
-                            ><EventsFacetedFilter.TagTrigger changed={filterChanged} class="mr-1" value={[tag]}
-                                ><Filter class="text-muted-foreground text-opacity-50 hover:text-secondary size-5" /></EventsFacetedFilter.TagTrigger
-                            >{tag}</Badge
-                        >
+                        <EventsFacetedFilter.TagTrigger changed={filterChanged} value={[tag]}>
+                            <Filter class="size-3" />
+                            {tag}
+                        </EventsFacetedFilter.TagTrigger>
                     {/each}
                 </div>
             {/if}
@@ -176,26 +223,32 @@
             <Card.Title class="flex flex-row items-center justify-between text-lg font-semibold">
                 <span class="mb-2 flex flex-col lg:mb-0">
                     <div class="flex items-center gap-2">
-                        <Skeleton class="h-[26px] w-[32px]" />
-                        <Skeleton class="h-[26px] w-[200px]" />
+                        <Skeleton class="h-6 w-8" />
+                        <Skeleton class="h-6 w-48" />
                     </div>
                 </span>
                 <div class="flex items-center space-x-2">
-                    <Skeleton class="h-[36px] w-[135px]" />
-                    <Skeleton class="h-[36px] w-[32px]" />
+                    <Skeleton class="h-9 w-36" />
+                    <Skeleton class="h-9 w-8" />
                 </div>
             </Card.Title>
         </Card.Header>
-        <Card.Content class="space-y-4 pt-2">
-            <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Card.Content class="space-y-2">
+            <div class="grid auto-rows-min grid-cols-2 gap-2 lg:grid-cols-4">
                 {#each { length: 4 } as name, index (`${name}-${index}`)}
                     <div class="bg-muted flex flex-col items-center rounded-lg p-2">
                         <Skeleton class="mb-1 size-6" />
-                        <Skeleton class="mb-1 h-[28px] w-[60px]" />
-                        <Skeleton class="h-[24px] w-[80px]" />
+                        <Skeleton class="mb-1 h-7 w-16" />
+                        <Skeleton class="h-6 w-20" />
                     </div>
                 {/each}
             </div>
+
+            <div class="flex justify-end">
+                <Muted class="text-xs uppercase">Last 7 days</Muted>
+            </div>
+
+            <Skeleton class="h-12 w-full rounded-md" />
         </Card.Content>
     </Card.Root>
 {/if}

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import Button from '$comp/ui/button/button.svelte';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import Reference from '@lucide/svelte/icons/link-2';
@@ -86,7 +87,7 @@
     }
 
     async function navigateToProjectIntegrations() {
-        await goto(`/project/${stack.project_id}/manage`);
+        await goto(resolve('/(app)/project/[projectId]/manage', { projectId: stack.project_id }));
     }
 
     async function updateCritical() {
@@ -111,9 +112,11 @@
 
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
-        <Button variant="ghost" size="icon">
-            <Settings class="size-4" />
-        </Button>
+        {#snippet child({ props })}
+            <Button {...props} variant="outline" size="icon">
+                <Settings class="size-4" />
+            </Button>
+        {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
         <DropdownMenu.Group>

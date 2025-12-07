@@ -325,6 +325,22 @@
                 "reveal": "always"
             },
             "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "Update shadcn-svelte",
+            "command": "npx",
+            "args": [
+                "shadcn-svelte@latest",
+                "update"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/src/Exceptionless.Web/ClientApp"
+            },
+            "presentation": {
+                "reveal": "always"
+            },
+            "problemMatcher": []
         }
     ]
 }

@@ -2,6 +2,7 @@
     import type { Snippet } from 'svelte';
 
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as Sidebar from '$comp/ui/sidebar';
     import { Toaster } from '$comp/ui/sonner';
@@ -41,21 +42,18 @@
         }
 
         if (status === 401 && !ctx.options.expectedStatusCodes?.includes(401)) {
-            accessToken.current = '';
-            return;
-        }
-
-        if (status === 404 && !ctx.options.expectedStatusCodes?.includes(404)) {
+            if (accessToken.current) {
+                accessToken.current = '';
+            }
+        } else if (status === 404 && !ctx.options.expectedStatusCodes?.includes(404)) {
             throw error(404, 'Not found');
-        }
-
-        if ([0, 408, 503].includes(status) && !ctx.options.expectedStatusCodes?.includes(status)) {
+        } else if ([0, 408, 503].includes(status) && !ctx.options.expectedStatusCodes?.includes(status)) {
             const url = page.url;
             if (url.pathname.startsWith('/next/status')) {
                 return;
             }
 
-            await goto(`/next/status?redirect=${url.pathname}`, { replaceState: true });
+            await goto(`${resolve('/status/')}?redirect=${url.pathname}`, { replaceState: true });
         }
     });
 
@@ -77,11 +75,24 @@
                     }
 
                     if (error instanceof ProblemDetails) {
-                        if (error.status === 401) {
+                        const status = error.status;
+
+                        // Never retry auth / obvious client bugs
+                        if (!status) {
+                            return true;
+                        }
+
+                        if ([400, 401, 403, 404, 410, 422].includes(status)) {
                             return false;
                         }
 
-                        return !!error.status && error.status < 500;
+                        // Retry "likely transient" errors
+                        if (status === 408 || status === 429 || (status >= 500 && status < 600)) {
+                            return true;
+                        }
+
+                        // Default: no retry
+                        return false;
                     }
 
                     return true;
