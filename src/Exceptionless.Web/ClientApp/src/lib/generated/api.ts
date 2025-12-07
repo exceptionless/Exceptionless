@@ -1,5 +1,6 @@
 /* eslint-disable */
 /* tslint:disable */
+// @ts-nocheck
 /*
  * ---------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
@@ -13,38 +14,16 @@
 
 import { IsDate, IsDefined, IsEmail, IsInt, IsMongoId, IsNumber, IsOptional, IsUrl, MaxLength, MinLength, ValidateNested } from 'class-validator';
 
-export class BillingPlan {
-    @IsMongoId({ message: 'id must be a valid ObjectId.' }) id!: string;
-    @IsDefined({ message: 'name is required.' }) name!: string;
-    @IsDefined({ message: 'description is required.' }) description!: string;
-    /** @format double */
-    @IsNumber({}, { message: 'price must be a numeric value.' }) price!: number;
-    /** @format int32 */
-    @IsInt({ message: 'max_projects must be a whole number.' }) max_projects!: number;
-    /** @format int32 */
-    @IsInt({ message: 'max_users must be a whole number.' }) max_users!: number;
-    /** @format int32 */
-    @IsInt({ message: 'retention_days must be a whole number.' }) retention_days!: number;
-    /** @format int32 */
-    @IsInt({ message: 'max_events_per_month must be a whole number.' }) max_events_per_month!: number;
-    @IsDefined({ message: 'has_premium_features is required.' }) has_premium_features!: boolean;
-    @IsDefined({ message: 'is_hidden is required.' }) is_hidden!: boolean;
+export enum StackStatus {
+    Open = 'open',
+    Fixed = 'fixed',
+    Regressed = 'regressed',
+    Snoozed = 'snoozed',
+    Ignored = 'ignored',
+    Discarded = 'discarded'
 }
 
-/**
- *
- *
- * 0 = Trialing
- *
- * 1 = Active
- *
- * 2 = PastDue
- *
- * 3 = Canceled
- *
- * 4 = Unpaid
- * @format int32
- */
+/** @format int32 */
 export enum BillingStatus {
     Trialing = 0,
     Active = 1,
@@ -53,9 +32,35 @@ export enum BillingStatus {
     Unpaid = 4
 }
 
+export class BillingPlan {
+    @IsMongoId({ message: 'id must be a valid ObjectId.' }) id!: string;
+    @IsDefined({ message: 'name is required.' }) name!: string;
+    @IsDefined({ message: 'description is required.' }) description!: string;
+    /** @format double */
+    @IsNumber({}, { message: 'price must be a numeric value.' }) price!: number;
+    /** @format int32 */
+    @IsInt({ message: 'max_projects must be a whole number.' })
+    max_projects!: number;
+    /** @format int32 */
+    @IsInt({ message: 'max_users must be a whole number.' }) max_users!: number;
+    /** @format int32 */
+    @IsInt({ message: 'retention_days must be a whole number.' })
+    retention_days!: number;
+    /** @format int32 */
+    @IsInt({ message: 'max_events_per_month must be a whole number.' })
+    max_events_per_month!: number;
+    @IsDefined({ message: 'has_premium_features is required.' })
+    has_premium_features!: boolean;
+    @IsDefined({ message: 'is_hidden is required.' }) is_hidden!: boolean;
+}
+
 export class ChangePasswordModel {
-    @MinLength(6, { message: 'current_password must be at least 6 characters long.' })
-    @MaxLength(100, { message: 'current_password must be at most 100 characters long.' })
+    @MinLength(6, {
+        message: 'current_password must be at least 6 characters long.'
+    })
+    @MaxLength(100, {
+        message: 'current_password must be at most 100 characters long.'
+    })
     current_password!: string;
     @MinLength(6, { message: 'password must be at least 6 characters long.' })
     @MaxLength(100, { message: 'password must be at most 100 characters long.' })
@@ -70,20 +75,28 @@ export class ChangePlanResult {
 export class ClientConfiguration {
     /** @format int32 */
     @IsInt({ message: 'version must be a whole number.' }) version!: number;
-    @ValidateNested({ message: 'settings must be a valid nested object.' }) settings!: Record<string, string>;
+    @ValidateNested({ message: 'settings must be a valid nested object.' })
+    settings!: Record<string, string>;
 }
 
 export class CountResult {
     /** @format int64 */
     @IsInt({ message: 'total must be a whole number.' }) total!: number;
-    @IsOptional() @ValidateNested({ message: 'aggregations must be a valid nested object.' }) aggregations?: Record<string, IAggregate>;
-    @IsOptional() @ValidateNested({ message: 'data must be a valid nested object.' }) data?: Record<string, unknown>;
+    @IsOptional()
+    @ValidateNested({ message: 'aggregations must be a valid nested object.' })
+    aggregations?: Record<string, IAggregate>;
+    @IsOptional()
+    @ValidateNested({ message: 'data must be a valid nested object.' })
+    data?: Record<string, unknown>;
 }
 
 export class ExternalAuthInfo {
-    @MinLength(1, { message: 'clientId must be at least 1 characters long.' }) clientId!: string;
-    @MinLength(1, { message: 'code must be at least 1 characters long.' }) code!: string;
-    @MinLength(1, { message: 'redirectUri must be at least 1 characters long.' }) redirectUri!: string;
+    @MinLength(1, { message: 'clientId must be at least 1 characters long.' })
+    clientId!: string;
+    @MinLength(1, { message: 'code must be at least 1 characters long.' })
+    code!: string;
+    @MinLength(1, { message: 'redirectUri must be at least 1 characters long.' })
+    redirectUri!: string;
     @IsOptional() inviteToken?: string | null;
 }
 
@@ -95,19 +108,23 @@ export class Invite {
     @IsDefined({ message: 'token is required.' }) token!: string;
     @IsDefined({ message: 'email_address is required.' }) email_address!: string;
     /** @format date-time */
-    @IsDate({ message: 'date_added must be a valid date and time.' }) date_added!: string;
+    @IsDate({ message: 'date_added must be a valid date and time.' })
+    date_added!: string;
 }
 
 export class Invoice {
     @IsMongoId({ message: 'id must be a valid ObjectId.' }) id!: string;
-    @IsMongoId({ message: 'organization_id must be a valid ObjectId.' }) organization_id!: string;
-    @IsDefined({ message: 'organization_name is required.' }) organization_name!: string;
+    @IsMongoId({ message: 'organization_id must be a valid ObjectId.' })
+    organization_id!: string;
+    @IsDefined({ message: 'organization_name is required.' })
+    organization_name!: string;
     /** @format date-time */
     @IsDate({ message: 'date must be a valid date and time.' }) date!: string;
     @IsDefined({ message: 'paid is required.' }) paid!: boolean;
     /** @format double */
     @IsNumber({}, { message: 'total must be a numeric value.' }) total!: number;
-    @ValidateNested({ message: 'items must be a valid nested object.' }) items!: InvoiceLineItem[];
+    @ValidateNested({ message: 'items must be a valid nested object.' })
+    items!: InvoiceLineItem[];
 }
 
 export class InvoiceGridModel {
@@ -126,13 +143,18 @@ export class InvoiceLineItem {
 
 export class Login {
     /** The email address or domain username */
-    @MinLength(1, { message: 'email must be at least 1 characters long.' }) email!: string;
+    @MinLength(1, { message: 'email must be at least 1 characters long.' })
+    email!: string;
     @MinLength(6, { message: 'password must be at least 6 characters long.' })
     @MaxLength(100, { message: 'password must be at most 100 characters long.' })
     password!: string;
     @IsOptional()
-    @MinLength(40, { message: 'invite_token must be at least 40 characters long.' })
-    @MaxLength(40, { message: 'invite_token must be at most 40 characters long.' })
+    @MinLength(40, {
+        message: 'invite_token must be at least 40 characters long.'
+    })
+    @MaxLength(40, {
+        message: 'invite_token must be at most 40 characters long.'
+    })
     invite_token?: string | null;
 }
 
@@ -141,24 +163,34 @@ export class NewOrganization {
 }
 
 export class NewProject {
-    @IsMongoId({ message: 'organization_id must be a valid ObjectId.' }) organization_id!: string;
+    @IsMongoId({ message: 'organization_id must be a valid ObjectId.' })
+    organization_id!: string;
     @IsDefined({ message: 'name is required.' }) name!: string;
-    @IsDefined({ message: 'delete_bot_data_enabled is required.' }) delete_bot_data_enabled!: boolean;
+    @IsDefined({ message: 'delete_bot_data_enabled is required.' })
+    delete_bot_data_enabled!: boolean;
 }
 
 export class NewToken {
-    @IsMongoId({ message: 'organization_id must be a valid ObjectId.' }) organization_id!: string;
-    @IsMongoId({ message: 'project_id must be a valid ObjectId.' }) project_id!: string;
-    @IsOptional() @IsMongoId({ message: 'default_project_id must be a valid ObjectId.' }) default_project_id?: string | null;
+    @IsMongoId({ message: 'organization_id must be a valid ObjectId.' })
+    organization_id!: string;
+    @IsMongoId({ message: 'project_id must be a valid ObjectId.' })
+    project_id!: string;
+    @IsOptional()
+    @IsMongoId({ message: 'default_project_id must be a valid ObjectId.' })
+    default_project_id?: string | null;
     @IsDefined({ message: 'scopes is required.' }) scopes!: string[];
     /** @format date-time */
-    @IsOptional() @IsDate({ message: 'expires_utc must be a valid date and time.' }) expires_utc?: string | null;
+    @IsOptional()
+    @IsDate({ message: 'expires_utc must be a valid date and time.' })
+    expires_utc?: string | null;
     @IsOptional() notes?: string | null;
 }
 
 export class NewWebHook {
-    @IsMongoId({ message: 'organization_id must be a valid ObjectId.' }) organization_id!: string;
-    @IsMongoId({ message: 'project_id must be a valid ObjectId.' }) project_id!: string;
+    @IsMongoId({ message: 'organization_id must be a valid ObjectId.' })
+    organization_id!: string;
+    @IsMongoId({ message: 'project_id must be a valid ObjectId.' })
+    project_id!: string;
     @IsUrl({}, { message: 'url must be a valid URL.' }) url!: string;
     @IsDefined({ message: 'event_types is required.' }) event_types!: string[];
     /** The schema version that should be used. */
@@ -166,30 +198,44 @@ export class NewWebHook {
 }
 
 export class NotificationSettings {
-    @IsDefined({ message: 'send_daily_summary is required.' }) send_daily_summary!: boolean;
-    @IsDefined({ message: 'report_new_errors is required.' }) report_new_errors!: boolean;
-    @IsDefined({ message: 'report_critical_errors is required.' }) report_critical_errors!: boolean;
-    @IsDefined({ message: 'report_event_regressions is required.' }) report_event_regressions!: boolean;
-    @IsDefined({ message: 'report_new_events is required.' }) report_new_events!: boolean;
-    @IsDefined({ message: 'report_critical_events is required.' }) report_critical_events!: boolean;
+    @IsDefined({ message: 'send_daily_summary is required.' })
+    send_daily_summary!: boolean;
+    @IsDefined({ message: 'report_new_errors is required.' })
+    report_new_errors!: boolean;
+    @IsDefined({ message: 'report_critical_errors is required.' })
+    report_critical_errors!: boolean;
+    @IsDefined({ message: 'report_event_regressions is required.' })
+    report_event_regressions!: boolean;
+    @IsDefined({ message: 'report_new_events is required.' })
+    report_new_events!: boolean;
+    @IsDefined({ message: 'report_critical_events is required.' })
+    report_critical_events!: boolean;
 }
 
 export class OAuthAccount {
     @IsDefined({ message: 'provider is required.' }) provider!: string;
-    @IsMongoId({ message: 'provider_user_id must be a valid ObjectId.' }) provider_user_id!: string;
+    @IsMongoId({ message: 'provider_user_id must be a valid ObjectId.' })
+    provider_user_id!: string;
     @IsDefined({ message: 'username is required.' }) username!: string;
-    @ValidateNested({ message: 'extra_data must be a valid nested object.' }) extra_data!: Record<string, string>;
+    @ValidateNested({ message: 'extra_data must be a valid nested object.' })
+    extra_data!: Record<string, string>;
 }
 
 export class PersistentEvent {
     @IsMongoId({ message: 'id must be a valid ObjectId.' }) id!: string;
-    @IsMongoId({ message: 'organization_id must be a valid ObjectId.' }) organization_id!: string;
-    @IsMongoId({ message: 'project_id must be a valid ObjectId.' }) project_id!: string;
-    @IsMongoId({ message: 'stack_id must be a valid ObjectId.' }) stack_id!: string;
-    @IsDefined({ message: 'is_first_occurrence is required.' }) is_first_occurrence!: boolean;
+    @IsMongoId({ message: 'organization_id must be a valid ObjectId.' })
+    organization_id!: string;
+    @IsMongoId({ message: 'project_id must be a valid ObjectId.' })
+    project_id!: string;
+    @IsMongoId({ message: 'stack_id must be a valid ObjectId.' })
+    stack_id!: string;
+    @IsDefined({ message: 'is_first_occurrence is required.' })
+    is_first_occurrence!: boolean;
     /** @format date-time */
-    @IsDate({ message: 'created_utc must be a valid date and time.' }) created_utc!: string;
-    @ValidateNested({ message: 'idx must be a valid nested object.' }) idx!: Record<string, unknown>;
+    @IsDate({ message: 'created_utc must be a valid date and time.' })
+    created_utc!: string;
+    @ValidateNested({ message: 'idx must be a valid nested object.' })
+    idx!: Record<string, unknown>;
     @IsOptional() type?: string | null;
     @IsOptional() source?: string | null;
     /** @format date-time */
@@ -198,16 +244,26 @@ export class PersistentEvent {
     @IsOptional() message?: string | null;
     @IsOptional() geo?: string | null;
     /** @format double */
-    @IsOptional() @IsNumber({}, { message: 'value must be a numeric value.' }) value?: number | null;
+    @IsOptional()
+    @IsNumber({}, { message: 'value must be a numeric value.' })
+    value?: number | null;
     /** @format int32 */
     @IsOptional() @IsInt({ message: 'count must be a whole number.' }) count?: number | null;
-    @IsOptional() @ValidateNested({ message: 'data must be a valid nested object.' }) data?: Record<string, unknown>;
-    @IsOptional() @IsMongoId({ message: 'reference_id must be a valid ObjectId.' }) reference_id?: string | null;
+    @IsOptional()
+    @ValidateNested({ message: 'data must be a valid nested object.' })
+    data?: Record<string, unknown>;
+    @IsOptional()
+    @IsMongoId({ message: 'reference_id must be a valid ObjectId.' })
+    reference_id?: string | null;
 }
 
 export class ResetPasswordModel {
-    @MinLength(40, { message: 'password_reset_token must be at least 40 characters long.' })
-    @MaxLength(40, { message: 'password_reset_token must be at most 40 characters long.' })
+    @MinLength(40, {
+        message: 'password_reset_token must be at least 40 characters long.'
+    })
+    @MaxLength(40, {
+        message: 'password_reset_token must be at most 40 characters long.'
+    })
     password_reset_token!: string;
     @MinLength(6, { message: 'password must be at least 6 characters long.' })
     @MaxLength(100, { message: 'password must be at most 100 characters long.' })
@@ -215,82 +271,71 @@ export class ResetPasswordModel {
 }
 
 export class Signup {
-    @MinLength(1, { message: 'name must be at least 1 characters long.' }) name!: string;
+    @MinLength(1, { message: 'name must be at least 1 characters long.' })
+    name!: string;
     /** The email address or domain username */
-    @MinLength(1, { message: 'email must be at least 1 characters long.' }) email!: string;
+    @MinLength(1, { message: 'email must be at least 1 characters long.' })
+    email!: string;
     @MinLength(6, { message: 'password must be at least 6 characters long.' })
     @MaxLength(100, { message: 'password must be at most 100 characters long.' })
     password!: string;
     @IsOptional()
-    @MinLength(40, { message: 'invite_token must be at least 40 characters long.' })
-    @MaxLength(40, { message: 'invite_token must be at most 40 characters long.' })
+    @MinLength(40, {
+        message: 'invite_token must be at least 40 characters long.'
+    })
+    @MaxLength(40, {
+        message: 'invite_token must be at most 40 characters long.'
+    })
     invite_token?: string | null;
 }
 
 export class Stack {
     @IsMongoId({ message: 'id must be a valid ObjectId.' }) id!: string;
-    @IsMongoId({ message: 'organization_id must be a valid ObjectId.' }) organization_id!: string;
-    @IsMongoId({ message: 'project_id must be a valid ObjectId.' }) project_id!: string;
+    @IsMongoId({ message: 'organization_id must be a valid ObjectId.' })
+    organization_id!: string;
+    @IsMongoId({ message: 'project_id must be a valid ObjectId.' })
+    project_id!: string;
     @IsDefined({ message: 'type is required.' }) type!: string;
-    /**
-     *
-     * open
-     * fixed
-     * regressed
-     * snoozed
-     * ignored
-     * discarded
-     */
     @IsDefined({ message: 'status is required.' }) status!: StackStatus;
     /** @format date-time */
-    @IsOptional() @IsDate({ message: 'snooze_until_utc must be a valid date and time.' }) snooze_until_utc?: string | null;
-    @IsDefined({ message: 'signature_hash is required.' }) signature_hash!: string;
-    @ValidateNested({ message: 'signature_info must be a valid nested object.' }) signature_info!: Record<string, string>;
+    @IsOptional()
+    @IsDate({ message: 'snooze_until_utc must be a valid date and time.' })
+    snooze_until_utc?: string | null;
+    @IsDefined({ message: 'signature_hash is required.' })
+    signature_hash!: string;
+    @ValidateNested({ message: 'signature_info must be a valid nested object.' })
+    signature_info!: Record<string, string>;
     @IsOptional() fixed_in_version?: string | null;
     /** @format date-time */
-    @IsOptional() @IsDate({ message: 'date_fixed must be a valid date and time.' }) date_fixed?: string | null;
+    @IsOptional()
+    @IsDate({ message: 'date_fixed must be a valid date and time.' })
+    date_fixed?: string | null;
     @IsDefined({ message: 'title is required.' }) title!: string;
     /** @format int32 */
-    @IsInt({ message: 'total_occurrences must be a whole number.' }) total_occurrences!: number;
+    @IsInt({ message: 'total_occurrences must be a whole number.' })
+    total_occurrences!: number;
     /** @format date-time */
-    @IsDate({ message: 'first_occurrence must be a valid date and time.' }) first_occurrence!: string;
+    @IsDate({ message: 'first_occurrence must be a valid date and time.' })
+    first_occurrence!: string;
     /** @format date-time */
-    @IsDate({ message: 'last_occurrence must be a valid date and time.' }) last_occurrence!: string;
+    @IsDate({ message: 'last_occurrence must be a valid date and time.' })
+    last_occurrence!: string;
     @IsOptional() description?: string | null;
-    @IsDefined({ message: 'occurrences_are_critical is required.' }) occurrences_are_critical!: boolean;
+    @IsDefined({ message: 'occurrences_are_critical is required.' })
+    occurrences_are_critical!: boolean;
     @IsDefined({ message: 'references is required.' }) references!: string[];
     @IsDefined({ message: 'tags is required.' }) tags!: string[];
-    @IsDefined({ message: 'duplicate_signature is required.' }) duplicate_signature!: string;
+    @IsDefined({ message: 'duplicate_signature is required.' })
+    duplicate_signature!: string;
     /** @format date-time */
-    @IsDate({ message: 'created_utc must be a valid date and time.' }) created_utc!: string;
+    @IsDate({ message: 'created_utc must be a valid date and time.' })
+    created_utc!: string;
     /** @format date-time */
-    @IsDate({ message: 'updated_utc must be a valid date and time.' }) updated_utc!: string;
+    @IsDate({ message: 'updated_utc must be a valid date and time.' })
+    updated_utc!: string;
     @IsDefined({ message: 'is_deleted is required.' }) is_deleted!: boolean;
-    @IsDefined({ message: 'allow_notifications is required.' }) allow_notifications!: boolean;
-}
-
-/**
- *
- *
- * open
- *
- * fixed
- *
- * regressed
- *
- * snoozed
- *
- * ignored
- *
- * discarded
- */
-export enum StackStatus {
-    Open = 'open',
-    Fixed = 'fixed',
-    Regressed = 'regressed',
-    Snoozed = 'snoozed',
-    Ignored = 'ignored',
-    Discarded = 'discarded'
+    @IsDefined({ message: 'allow_notifications is required.' })
+    allow_notifications!: boolean;
 }
 
 export class StringStringValuesKeyValuePair {
@@ -303,7 +348,8 @@ export class StringValueFromBody {
 }
 
 export class TokenResult {
-    @MinLength(1, { message: 'token must be at least 1 characters long.' }) token!: string;
+    @MinLength(1, { message: 'token must be at least 1 characters long.' })
+    token!: string;
 }
 
 export class UpdateEmailAddressResult {
@@ -340,47 +386,69 @@ export class UsageInfo {
 
 export class User {
     @IsMongoId({ message: 'id must be a valid ObjectId.' }) id!: string;
-    @IsDefined({ message: 'organization_ids is required.' }) organization_ids!: string[];
+    @IsDefined({ message: 'organization_ids is required.' })
+    organization_ids!: string[];
     @IsOptional() password?: string | null;
     @IsOptional() salt?: string | null;
     @IsOptional() password_reset_token?: string | null;
     /** @format date-time */
-    @IsDate({ message: 'password_reset_token_expiration must be a valid date and time.' }) password_reset_token_expiration!: string;
-    @ValidateNested({ message: 'o_auth_accounts must be a valid nested object.' }) o_auth_accounts!: OAuthAccount[];
-    @MinLength(1, { message: 'full_name must be at least 1 characters long.' }) full_name!: string;
+    @IsDate({
+        message: 'password_reset_token_expiration must be a valid date and time.'
+    })
+    password_reset_token_expiration!: string;
+    @ValidateNested({ message: 'o_auth_accounts must be a valid nested object.' })
+    o_auth_accounts!: OAuthAccount[];
+    @MinLength(1, { message: 'full_name must be at least 1 characters long.' })
+    full_name!: string;
     /** @format email */
     @IsEmail({ require_tld: false }, { message: 'email_address must be a valid email address.' })
-    @MinLength(1, { message: 'email_address must be at least 1 characters long.' })
+    @MinLength(1, {
+        message: 'email_address must be at least 1 characters long.'
+    })
     email_address!: string;
-    @IsDefined({ message: 'email_notifications_enabled is required.' }) email_notifications_enabled!: boolean;
-    @IsDefined({ message: 'is_email_address_verified is required.' }) is_email_address_verified!: boolean;
+    @IsDefined({ message: 'email_notifications_enabled is required.' })
+    email_notifications_enabled!: boolean;
+    @IsDefined({ message: 'is_email_address_verified is required.' })
+    is_email_address_verified!: boolean;
     @IsOptional() verify_email_address_token?: string | null;
     /** @format date-time */
-    @IsDate({ message: 'verify_email_address_token_expiration must be a valid date and time.' }) verify_email_address_token_expiration!: string;
+    @IsDate({
+        message: 'verify_email_address_token_expiration must be a valid date and time.'
+    })
+    verify_email_address_token_expiration!: string;
     @IsDefined({ message: 'is_active is required.' }) is_active!: boolean;
     @IsDefined({ message: 'roles is required.' }) roles!: string[];
     /** @format date-time */
-    @IsDate({ message: 'created_utc must be a valid date and time.' }) created_utc!: string;
+    @IsDate({ message: 'created_utc must be a valid date and time.' })
+    created_utc!: string;
     /** @format date-time */
-    @IsDate({ message: 'updated_utc must be a valid date and time.' }) updated_utc!: string;
+    @IsDate({ message: 'updated_utc must be a valid date and time.' })
+    updated_utc!: string;
 }
 
 export class UserDescription {
     @IsOptional() email_address?: string | null;
     @IsOptional() description?: string | null;
-    @IsOptional() @ValidateNested({ message: 'data must be a valid nested object.' }) data?: Record<string, unknown>;
+    @IsOptional()
+    @ValidateNested({ message: 'data must be a valid nested object.' })
+    data?: Record<string, unknown>;
 }
 
 export class ViewCurrentUser {
     @IsOptional() hash?: string | null;
-    @IsDefined({ message: 'has_local_account is required.' }) has_local_account!: boolean;
-    @ValidateNested({ message: 'o_auth_accounts must be a valid nested object.' }) o_auth_accounts!: OAuthAccount[];
+    @IsDefined({ message: 'has_local_account is required.' })
+    has_local_account!: boolean;
+    @ValidateNested({ message: 'o_auth_accounts must be a valid nested object.' })
+    o_auth_accounts!: OAuthAccount[];
     @IsMongoId({ message: 'id must be a valid ObjectId.' }) id!: string;
-    @IsDefined({ message: 'organization_ids is required.' }) organization_ids!: string[];
+    @IsDefined({ message: 'organization_ids is required.' })
+    organization_ids!: string[];
     @IsDefined({ message: 'full_name is required.' }) full_name!: string;
     @IsDefined({ message: 'email_address is required.' }) email_address!: string;
-    @IsDefined({ message: 'email_notifications_enabled is required.' }) email_notifications_enabled!: boolean;
-    @IsDefined({ message: 'is_email_address_verified is required.' }) is_email_address_verified!: boolean;
+    @IsDefined({ message: 'email_notifications_enabled is required.' })
+    email_notifications_enabled!: boolean;
+    @IsDefined({ message: 'is_email_address_verified is required.' })
+    is_email_address_verified!: boolean;
     @IsDefined({ message: 'is_active is required.' }) is_active!: boolean;
     @IsDefined({ message: 'is_invite is required.' }) is_invite!: boolean;
     @IsDefined({ message: 'roles is required.' }) roles!: string[];
@@ -389,109 +457,159 @@ export class ViewCurrentUser {
 export class ViewOrganization {
     @IsMongoId({ message: 'id must be a valid ObjectId.' }) id!: string;
     /** @format date-time */
-    @IsDate({ message: 'created_utc must be a valid date and time.' }) created_utc!: string;
+    @IsDate({ message: 'created_utc must be a valid date and time.' })
+    created_utc!: string;
     /** @format date-time */
-    @IsDate({ message: 'updated_utc must be a valid date and time.' }) updated_utc!: string;
+    @IsDate({ message: 'updated_utc must be a valid date and time.' })
+    updated_utc!: string;
     @IsDefined({ message: 'name is required.' }) name!: string;
     @IsMongoId({ message: 'plan_id must be a valid ObjectId.' }) plan_id!: string;
     @IsDefined({ message: 'plan_name is required.' }) plan_name!: string;
-    @IsDefined({ message: 'plan_description is required.' }) plan_description!: string;
-    @IsOptional() 'card_last4'?: string | null;
+    @IsDefined({ message: 'plan_description is required.' })
+    plan_description!: string;
+    @IsOptional() card_last4?: string | null;
     /** @format date-time */
-    @IsOptional() @IsDate({ message: 'subscribe_date must be a valid date and time.' }) subscribe_date?: string | null;
+    @IsOptional()
+    @IsDate({ message: 'subscribe_date must be a valid date and time.' })
+    subscribe_date?: string | null;
     /** @format date-time */
-    @IsOptional() @IsDate({ message: 'billing_change_date must be a valid date and time.' }) billing_change_date?: string | null;
-    @IsOptional() @IsMongoId({ message: 'billing_changed_by_user_id must be a valid ObjectId.' }) billing_changed_by_user_id?: string | null;
-    /**
-     *
-     * 0 = Trialing
-     * 1 = Active
-     * 2 = PastDue
-     * 3 = Canceled
-     * 4 = Unpaid
-     */
-    @IsDefined({ message: 'billing_status is required.' }) billing_status!: BillingStatus;
+    @IsOptional()
+    @IsDate({ message: 'billing_change_date must be a valid date and time.' })
+    billing_change_date?: string | null;
+    @IsOptional()
+    @IsMongoId({
+        message: 'billing_changed_by_user_id must be a valid ObjectId.'
+    })
+    billing_changed_by_user_id?: string | null;
+    @IsDefined({ message: 'billing_status is required.' })
+    billing_status!: BillingStatus;
     /** @format double */
-    @IsNumber({}, { message: 'billing_price must be a numeric value.' }) billing_price!: number;
+    @IsNumber({}, { message: 'billing_price must be a numeric value.' })
+    billing_price!: number;
     /** @format int32 */
-    @IsInt({ message: 'max_events_per_month must be a whole number.' }) max_events_per_month!: number;
+    @IsInt({ message: 'max_events_per_month must be a whole number.' })
+    max_events_per_month!: number;
     /** @format int32 */
-    @IsInt({ message: 'bonus_events_per_month must be a whole number.' }) bonus_events_per_month!: number;
+    @IsInt({ message: 'bonus_events_per_month must be a whole number.' })
+    bonus_events_per_month!: number;
     /** @format date-time */
-    @IsOptional() @IsDate({ message: 'bonus_expiration must be a valid date and time.' }) bonus_expiration?: string | null;
+    @IsOptional()
+    @IsDate({ message: 'bonus_expiration must be a valid date and time.' })
+    bonus_expiration?: string | null;
     /** @format int32 */
-    @IsInt({ message: 'retention_days must be a whole number.' }) retention_days!: number;
+    @IsInt({ message: 'retention_days must be a whole number.' })
+    retention_days!: number;
     @IsDefined({ message: 'is_suspended is required.' }) is_suspended!: boolean;
     @IsOptional() suspension_code?: string | null;
     @IsOptional() suspension_notes?: string | null;
     /** @format date-time */
-    @IsOptional() @IsDate({ message: 'suspension_date must be a valid date and time.' }) suspension_date?: string | null;
-    @IsDefined({ message: 'has_premium_features is required.' }) has_premium_features!: boolean;
+    @IsOptional()
+    @IsDate({ message: 'suspension_date must be a valid date and time.' })
+    suspension_date?: string | null;
+    @IsDefined({ message: 'has_premium_features is required.' })
+    has_premium_features!: boolean;
     /** @format int32 */
     @IsInt({ message: 'max_users must be a whole number.' }) max_users!: number;
     /** @format int32 */
-    @IsInt({ message: 'max_projects must be a whole number.' }) max_projects!: number;
+    @IsInt({ message: 'max_projects must be a whole number.' })
+    max_projects!: number;
     /** @format int64 */
-    @IsInt({ message: 'project_count must be a whole number.' }) project_count!: number;
+    @IsInt({ message: 'project_count must be a whole number.' })
+    project_count!: number;
     /** @format int64 */
-    @IsInt({ message: 'stack_count must be a whole number.' }) stack_count!: number;
+    @IsInt({ message: 'stack_count must be a whole number.' })
+    stack_count!: number;
     /** @format int64 */
-    @IsInt({ message: 'event_count must be a whole number.' }) event_count!: number;
-    @ValidateNested({ message: 'invites must be a valid nested object.' }) invites!: Invite[];
-    @ValidateNested({ message: 'usage_hours must be a valid nested object.' }) usage_hours!: UsageHourInfo[];
-    @ValidateNested({ message: 'usage must be a valid nested object.' }) usage!: UsageInfo[];
-    @IsOptional() @ValidateNested({ message: 'data must be a valid nested object.' }) data?: Record<string, unknown>;
+    @IsInt({ message: 'event_count must be a whole number.' })
+    event_count!: number;
+    @ValidateNested({ message: 'invites must be a valid nested object.' })
+    invites!: Invite[];
+    @ValidateNested({ message: 'usage_hours must be a valid nested object.' })
+    usage_hours!: UsageHourInfo[];
+    @ValidateNested({ message: 'usage must be a valid nested object.' })
+    usage!: UsageInfo[];
+    @IsOptional()
+    @ValidateNested({ message: 'data must be a valid nested object.' })
+    data?: Record<string, unknown>;
     @IsDefined({ message: 'is_throttled is required.' }) is_throttled!: boolean;
-    @IsDefined({ message: 'is_over_monthly_limit is required.' }) is_over_monthly_limit!: boolean;
-    @IsDefined({ message: 'is_over_request_limit is required.' }) is_over_request_limit!: boolean;
+    @IsDefined({ message: 'is_over_monthly_limit is required.' })
+    is_over_monthly_limit!: boolean;
+    @IsDefined({ message: 'is_over_request_limit is required.' })
+    is_over_request_limit!: boolean;
 }
 
 export class ViewProject {
     @IsMongoId({ message: 'id must be a valid ObjectId.' }) id!: string;
     /** @format date-time */
-    @IsDate({ message: 'created_utc must be a valid date and time.' }) created_utc!: string;
-    @IsMongoId({ message: 'organization_id must be a valid ObjectId.' }) organization_id!: string;
-    @IsDefined({ message: 'organization_name is required.' }) organization_name!: string;
+    @IsDate({ message: 'created_utc must be a valid date and time.' })
+    created_utc!: string;
+    @IsMongoId({ message: 'organization_id must be a valid ObjectId.' })
+    organization_id!: string;
+    @IsDefined({ message: 'organization_name is required.' })
+    organization_name!: string;
     @IsDefined({ message: 'name is required.' }) name!: string;
-    @IsDefined({ message: 'delete_bot_data_enabled is required.' }) delete_bot_data_enabled!: boolean;
-    @IsOptional() @ValidateNested({ message: 'data must be a valid nested object.' }) data?: Record<string, unknown>;
-    @IsDefined({ message: 'promoted_tabs is required.' }) promoted_tabs!: string[];
+    @IsDefined({ message: 'delete_bot_data_enabled is required.' })
+    delete_bot_data_enabled!: boolean;
+    @IsOptional()
+    @ValidateNested({ message: 'data must be a valid nested object.' })
+    data?: Record<string, unknown>;
+    @IsDefined({ message: 'promoted_tabs is required.' })
+    promoted_tabs!: string[];
     @IsOptional() is_configured?: boolean | null;
     /** @format int64 */
-    @IsInt({ message: 'stack_count must be a whole number.' }) stack_count!: number;
+    @IsInt({ message: 'stack_count must be a whole number.' })
+    stack_count!: number;
     /** @format int64 */
-    @IsInt({ message: 'event_count must be a whole number.' }) event_count!: number;
-    @IsDefined({ message: 'has_premium_features is required.' }) has_premium_features!: boolean;
-    @IsDefined({ message: 'has_slack_integration is required.' }) has_slack_integration!: boolean;
-    @ValidateNested({ message: 'usage_hours must be a valid nested object.' }) usage_hours!: UsageHourInfo[];
-    @ValidateNested({ message: 'usage must be a valid nested object.' }) usage!: UsageInfo[];
+    @IsInt({ message: 'event_count must be a whole number.' })
+    event_count!: number;
+    @IsDefined({ message: 'has_premium_features is required.' })
+    has_premium_features!: boolean;
+    @IsDefined({ message: 'has_slack_integration is required.' })
+    has_slack_integration!: boolean;
+    @ValidateNested({ message: 'usage_hours must be a valid nested object.' })
+    usage_hours!: UsageHourInfo[];
+    @ValidateNested({ message: 'usage must be a valid nested object.' })
+    usage!: UsageInfo[];
 }
 
 export class ViewToken {
     @IsMongoId({ message: 'id must be a valid ObjectId.' }) id!: string;
-    @IsMongoId({ message: 'organization_id must be a valid ObjectId.' }) organization_id!: string;
-    @IsMongoId({ message: 'project_id must be a valid ObjectId.' }) project_id!: string;
-    @IsOptional() @IsMongoId({ message: 'user_id must be a valid ObjectId.' }) user_id?: string | null;
-    @IsOptional() @IsMongoId({ message: 'default_project_id must be a valid ObjectId.' }) default_project_id?: string | null;
+    @IsMongoId({ message: 'organization_id must be a valid ObjectId.' })
+    organization_id!: string;
+    @IsMongoId({ message: 'project_id must be a valid ObjectId.' })
+    project_id!: string;
+    @IsOptional()
+    @IsMongoId({ message: 'user_id must be a valid ObjectId.' })
+    user_id?: string | null;
+    @IsOptional()
+    @IsMongoId({ message: 'default_project_id must be a valid ObjectId.' })
+    default_project_id?: string | null;
     @IsDefined({ message: 'scopes is required.' }) scopes!: string[];
     /** @format date-time */
-    @IsOptional() @IsDate({ message: 'expires_utc must be a valid date and time.' }) expires_utc?: string | null;
+    @IsOptional()
+    @IsDate({ message: 'expires_utc must be a valid date and time.' })
+    expires_utc?: string | null;
     @IsOptional() notes?: string | null;
     @IsDefined({ message: 'is_disabled is required.' }) is_disabled!: boolean;
     @IsDefined({ message: 'is_suspended is required.' }) is_suspended!: boolean;
     /** @format date-time */
-    @IsDate({ message: 'created_utc must be a valid date and time.' }) created_utc!: string;
+    @IsDate({ message: 'created_utc must be a valid date and time.' })
+    created_utc!: string;
     /** @format date-time */
-    @IsDate({ message: 'updated_utc must be a valid date and time.' }) updated_utc!: string;
+    @IsDate({ message: 'updated_utc must be a valid date and time.' })
+    updated_utc!: string;
 }
 
 export class ViewUser {
     @IsMongoId({ message: 'id must be a valid ObjectId.' }) id!: string;
-    @IsDefined({ message: 'organization_ids is required.' }) organization_ids!: string[];
+    @IsDefined({ message: 'organization_ids is required.' })
+    organization_ids!: string[];
     @IsDefined({ message: 'full_name is required.' }) full_name!: string;
     @IsDefined({ message: 'email_address is required.' }) email_address!: string;
-    @IsDefined({ message: 'email_notifications_enabled is required.' }) email_notifications_enabled!: boolean;
-    @IsDefined({ message: 'is_email_address_verified is required.' }) is_email_address_verified!: boolean;
+    @IsDefined({ message: 'email_notifications_enabled is required.' })
+    email_notifications_enabled!: boolean;
+    @IsDefined({ message: 'is_email_address_verified is required.' })
+    is_email_address_verified!: boolean;
     @IsDefined({ message: 'is_active is required.' }) is_active!: boolean;
     @IsDefined({ message: 'is_invite is required.' }) is_invite!: boolean;
     @IsDefined({ message: 'roles is required.' }) roles!: string[];
@@ -499,14 +617,17 @@ export class ViewUser {
 
 export class WebHook {
     @IsMongoId({ message: 'id must be a valid ObjectId.' }) id!: string;
-    @IsMongoId({ message: 'organization_id must be a valid ObjectId.' }) organization_id!: string;
-    @IsMongoId({ message: 'project_id must be a valid ObjectId.' }) project_id!: string;
+    @IsMongoId({ message: 'organization_id must be a valid ObjectId.' })
+    organization_id!: string;
+    @IsMongoId({ message: 'project_id must be a valid ObjectId.' })
+    project_id!: string;
     @IsUrl({}, { message: 'url must be a valid URL.' }) url!: string;
     @IsDefined({ message: 'event_types is required.' }) event_types!: string[];
     @IsDefined({ message: 'is_enabled is required.' }) is_enabled!: boolean;
     @IsDefined({ message: 'version is required.' }) version!: string;
     /** @format date-time */
-    @IsDate({ message: 'created_utc must be a valid date and time.' }) created_utc!: string;
+    @IsDate({ message: 'created_utc must be a valid date and time.' })
+    created_utc!: string;
 }
 
 export class WorkInProgressResult {
