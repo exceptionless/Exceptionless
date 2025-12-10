@@ -15,7 +15,6 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin>
         {
             try
             {
-                using var _ = AppDiagnostics.StartActivity(plugin.Name);
                 string metricName = String.Concat(_metricPrefix, plugin.Name.ToLower());
                 await AppDiagnostics.TimeAsync(() => plugin.StartupAsync(), metricName);
             }
@@ -40,7 +39,6 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin>
             string metricName = String.Concat(_metricPrefix, plugin.Name.ToLower());
             try
             {
-                using var _ = AppDiagnostics.StartActivity(plugin.Name);
                 await AppDiagnostics.TimeAsync(() => plugin.EventBatchProcessingAsync(contextsToProcess), metricName);
 
                 if (contextsToProcess.All(c => c.IsCancelled || c.HasError))
@@ -67,7 +65,6 @@ public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin>
             string metricName = String.Concat(_metricPrefix, plugin.Name.ToLower());
             try
             {
-                using var _ = AppDiagnostics.StartActivity(plugin.Name);
                 await AppDiagnostics.TimeAsync(() => plugin.EventBatchProcessedAsync(contextsToProcess), metricName);
 
                 if (contextsToProcess.All(c => c.IsCancelled || c.HasError))

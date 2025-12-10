@@ -25,7 +25,6 @@ public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin>
 
             try
             {
-                using var _ = AppDiagnostics.StartActivity(plugin.Name);
                 List<PersistentEvent>? events = null;
                 AppDiagnostics.Time(() => events = plugin.ParseEvents(input, apiVersion, userAgent), metricName);
                 if (events is null)
