@@ -18,6 +18,7 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
+using Exceptionless.Web.Utility.OpenApi;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Queues;
