@@ -1,14 +1,28 @@
----
-description: "C# backend testing guidelines"
-applyTo: "tests/**/*.cs"
----
-
 # Backend Testing Guidelines (C#)
+
+## Running Tests
+
+```bash
+dotnet test
+```
+
+### Specific Tests
+
+```bash
+# By test name
+dotnet test --filter "FullyQualifiedName~CanCreateOrganization"
+
+# By class name
+dotnet test --filter "ClassName~OrganizationTests"
+
+# By category/trait
+dotnet test --filter "Category=Integration"
+```
 
 ## Framework & Best Practices
 
-- Follow Microsoft's [unit testing best practices](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices).
-- Use xUnit as the primary testing framework.
+- Use xUnit as the primary testing framework
+- Follow Microsoft's [unit testing best practices](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices)
 
 ## Test Principles
 
@@ -20,7 +34,7 @@ applyTo: "tests/**/*.cs"
 
 - Write complete, runnable tests—no placeholders or TODOs.
 - Use clear, descriptive naming conventions for test methods:
-    - `MethodName_StateUnderTest_ExpectedBehavior`
+  - `MethodName_StateUnderTest_ExpectedBehavior`
 - Follow AAA pattern (Arrange, Act, Assert).
 
 ## Test Organization
