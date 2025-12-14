@@ -19,6 +19,17 @@ dotnet test --filter "ClassName~OrganizationTests"
 dotnet test --filter "Category=Integration"
 ```
 
+## Test-First Workflow
+
+1. **Search for existing tests**: Find tests covering the code you're modifying
+2. **Extend existing test classes**: Add new `[Fact]` or `[Theory]` cases to existing files for maintainability
+3. **Write the failing test first**: Verify it fails for the right reason
+4. **Implement minimal code**: Just enough to pass the test
+5. **Add edge case tests**: Null inputs, empty collections, boundary values
+6. **Run full test suite**: Ensure no regressions
+
+**Why extend existing tests?** Consolidates related test logic, reduces duplication, improves discoverability.
+
 ## Framework & Best Practices
 
 - Use xUnit as the primary testing framework
