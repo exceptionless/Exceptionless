@@ -1,12 +1,20 @@
 # Backend Guidelines (C#)
 
-## Patterns & Practices
+## Architecture & Layering
 
-- Respect existing layering: keep domain logic in `Exceptionless.Core`, concrete implementations in `Exceptionless.Insulation`, hosting concerns in `Exceptionless.Web`, and background work in `Exceptionless.Job`.
-- Reuse existing services and option classes; prefer dependency injection over static access.
-- When touching configuration, prefer appsettings and options binding; avoid hardcoding secrets or connection info.
+```text
+Exceptionless.Core        → Domain logic, services, interfaces
+Exceptionless.Insulation  → Concrete implementations (ES, Redis, etc.)
+Exceptionless.Web         → ASP.NET Core host, controllers, middleware
+Exceptionless.Job         → Background Jobs
+```
+
+- Keep domain logic in `Core`; concrete implementations in `Insulation`
+- Prefer dependency injection over static access
+- Use appsettings and options binding; never hardcode secrets
 
 ## Dependencies
 
-- NuGet feeds come from `NuGet.Config`; do not add sources unless requested. Keep versions aligned with `src/Directory.Build.props`.
-- Avoid introducing new packages unless necessary; prefer existing dependencies already in the solution.
+- NuGet feeds from `NuGet.Config`; do not add sources unless requested
+- Keep versions aligned with `src/Directory.Build.props`
+- Avoid new packages unless necessary; prefer existing dependencies

@@ -1,7 +1,5 @@
 # Web API Guidelines (Exceptionless.Web)
 
-## Scope
-
 Applies to the ASP.NET Core host in `src/Exceptionless.Web`, including controllers, middleware, configuration, and API-facing code. The Svelte SPA lives in `ClientApp`; the legacy Angular client is under `ClientApp.angular` (avoid changes there unless explicitly requested).
 
 ## API Development
