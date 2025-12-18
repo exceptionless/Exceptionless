@@ -1,9 +1,6 @@
----
-description: "Frontend: Svelte specific guidelines"
-applyTo: "src/Exceptionless.Web/ClientApp/**/*.svelte"
----
-
 # Svelte Component Guidelines
+
+Applies to Svelte components under `src/Exceptionless.Web/ClientApp/src`. Follow the ClientApp AGENT for general frontend, testing, and accessibility expectations.
 
 ## Component Structure
 
@@ -15,9 +12,10 @@ applyTo: "src/Exceptionless.Web/ClientApp/**/*.svelte"
 
 ## Asynchronous Components (Experimental)
 
-**Available in Svelte 5.36+ with experimental.async compiler option**
+Available in Svelte 5.36+ with experimental.async compiler option
 
 You can now use `await` directly in three places:
+
 - At the top level of a component `<script>`
 - In a `$derived` expression
 - In template expressions (markup)
@@ -145,6 +143,7 @@ onSubmitAsync: async ({ value }) => {
 ```
 
 The `problemDetailsToFormErrors` function:
+
 - Extracts form-level errors from `problem.errors.general` or `problem.title`
 - Extracts field-level errors for 422 validation responses
 - Returns `null` if no errors
@@ -185,6 +184,7 @@ For forms inside dialogs, close the dialog only after successful submission:
 ```
 
 ### Reactive Binding Pattern
+
 For simple reactive bindings to query data, you can override derived values for binding:
 
 ```svelte
@@ -278,6 +278,7 @@ When using shadcn-svelte trigger components (Tooltip.Trigger, Popover.Trigger, D
 ### When to Use
 
 Apply this pattern for **all trigger components** when wrapping custom interactive elements:
+
 - `Tooltip.Trigger`
 - `Popover.Trigger`
 - `DropdownMenu.Trigger`
@@ -287,6 +288,7 @@ Apply this pattern for **all trigger components** when wrapping custom interacti
 ### When NOT to Use
 
 You don't need the `child` snippet when:
+
 - Trigger content is simple text or non-interactive elements
 - The trigger itself has no nested focusable elements
 - You're using the trigger's native button functionality directly
@@ -294,6 +296,7 @@ You don't need the `child` snippet when:
 ### Additional Examples
 
 **DropdownMenu with Button:**
+
 ```svelte
 <DropdownMenu.Trigger>
     {#snippet child({ props })}
@@ -306,6 +309,7 @@ You don't need the `child` snippet when:
 ```
 
 **Popover with Button:**
+
 ```svelte
 <Popover.Trigger>
     {#snippet child({ props })}
@@ -320,24 +324,29 @@ You don't need the `child` snippet when:
 ## Dialog Component Patterns
 
 ### Naming Conventions
+
 - Dialog state variables should use `open[ComponentName]Dialog` pattern (e.g., `openSuspendOrganizationDialog`, `openMarkStackDiscardedDialog`)
 - Avoid generic names like `showDialog` or `isOpen`
 
 ### Event Handlers
+
 - Use inline arrow functions for opening dialogs: `onclick={() => (openDialogName = true)}`
 - Avoid creating separate handler functions just to set state to true
 - Create separate async functions only for complex operations (API calls, validation, etc.)
 
 ### Conditional Rendering
+
 - Always wrap dialogs in `{#if}` blocks: `{#if openDialogName} <Dialog /> {/if}`
 - This prevents unnecessary DOM creation and improves performance
 
 ### API Integration
+
 - Import and use existing interface types from API files (e.g., `SuspendOrganizationParams`)
 - Don't create inline types when proper interfaces exist
 - Create options files following the `DropdownItem<EnumType>[]` pattern in `options.ts`
 
 ### Example Pattern
+
 ```svelte
 <script lang="ts">
     import type { ApiParamsInterface } from '$features/module/api.svelte';
@@ -361,10 +370,7 @@ You don't need the `child` snippet when:
 
 ## Accessibility
 
-- Ensure excellent keyboard navigation for all interactions
-- Use semantic HTML elements
-- Maintain WCAG 2.2 Level AA compliance
-- Implement mobile-first design principles
+For detailed accessibility patterns (WCAG 2.2 AA), see [ClientApp/AGENTS.md](../AGENTS.md#accessibility-wcag-22-aa).
 
 ## Reference Documentation
 

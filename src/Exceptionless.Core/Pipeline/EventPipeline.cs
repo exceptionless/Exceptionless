@@ -23,9 +23,10 @@ public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase>
 
     public override async Task<ICollection<EventContext>> RunAsync(ICollection<EventContext> contexts)
     {
-        if (contexts is null || contexts.Count == 0)
-            return contexts ?? new List<EventContext>();
+        if (contexts.Count == 0)
+            return contexts;
 
+        using var _ = AppDiagnostics.StartActivity("Event Pipeline");
         AppDiagnostics.EventsSubmitted.Add(contexts.Count);
         try
         {
