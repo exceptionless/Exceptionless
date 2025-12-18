@@ -46,7 +46,7 @@ Use TanStack Form (`@tanstack/svelte-form`) with Zod for form state management a
             name: ''
         } as MyFormData,
         validators: {
-            onSubmit: mySchema,  // Zod schema for client-side validation
+            onSubmit: mySchema, // Zod schema for client-side validation
             onSubmitAsync: async ({ value }) => {
                 const response = await apiCall(value);
                 if (response.ok) {
@@ -70,9 +70,7 @@ Use TanStack Form (`@tanstack/svelte-form`) with Zod for form state management a
     <!-- Form-level error display -->
     <form.Subscribe selector={(state) => state.errors}>
         {#snippet children(errors)}
-            {@const formError = errors.length > 0
-                ? (typeof errors[0] === 'string' ? errors[0] : (errors[0] as { form?: string })?.form)
-                : undefined}
+            {@const formError = errors.length > 0 ? (typeof errors[0] === 'string' ? errors[0] : (errors[0] as { form?: string })?.form) : undefined}
             <ErrorMessage message={formError} />
         {/snippet}
     </form.Subscribe>
@@ -137,14 +135,14 @@ import { problemDetailsToFormErrors } from '$shared/validation';
 onSubmitAsync: async ({ value }) => {
     try {
         await createMutation.mutateAsync(value);
-        return null;  // Success
+        return null; // Success
     } catch (error: unknown) {
         if (error instanceof ProblemDetails) {
             return problemDetailsToFormErrors(error);
         }
         return { form: 'An unexpected error occurred.' };
     }
-}
+};
 ```
 
 **Pattern 2: APIs that return response objects (auth calls)**
@@ -155,10 +153,10 @@ import { problemDetailsToFormErrors } from '$shared/validation';
 onSubmitAsync: async ({ value }) => {
     const response = await login(value.email, value.password);
     if (response.ok) {
-        return null;  // Success
+        return null; // Success
     }
     return problemDetailsToFormErrors(response.problem);
-}
+};
 ```
 
 The `problemDetailsToFormErrors` function:
@@ -185,7 +183,7 @@ For forms inside dialogs, close the dialog only after successful submission:
             onSubmitAsync: async ({ value }) => {
                 try {
                     await createMutation.mutateAsync(value);
-                    open = false;  // Close dialog on success
+                    open = false; // Close dialog on success
                     return null;
                 } catch (error: unknown) {
                     if (error instanceof ProblemDetails) {
@@ -199,13 +197,18 @@ For forms inside dialogs, close the dialog only after successful submission:
 </script>
 
 {#if open}
-<Dialog.Root bind:open>
-    <Dialog.Content>
-        <form onsubmit={(e) => { e.preventDefault(); form.handleSubmit(); }}>
-            <!-- form fields -->
-        </form>
-    </Dialog.Content>
-</Dialog.Root>
+    <Dialog.Root bind:open>
+        <Dialog.Content>
+            <form
+                onsubmit={(e) => {
+                    e.preventDefault();
+                    form.handleSubmit();
+                }}
+            >
+                <!-- form fields -->
+            </form>
+        </Dialog.Content>
+    </Dialog.Root>
 {/if}
 ```
 
@@ -429,9 +432,7 @@ You don't need the `child` snippet when:
     }
 </script>
 
-<Button onclick={() => (openMyActionDialog = true)}>
-    Action Label
-</Button>
+<Button onclick={() => (openMyActionDialog = true)}>Action Label</Button>
 
 {#if openMyActionDialog}
     <MyActionDialog bind:open={openMyActionDialog} action={performAction} />
@@ -445,7 +446,7 @@ For detailed accessibility patterns (WCAG 2.2 AA), see [ClientApp/AGENTS.md](../
 ## Reference Documentation
 
 - Always use Svelte 5 features: [https://svelte.dev/llms-full.txt](https://svelte.dev/llms-full.txt)
-  - on:click -> onclick
-  - import { page } from '$app/stores'; -> import { page } from '$app/state'
-  - <slot> -> {#snippet ...}
-  - beforeUpdate/afterUpdate -> $effect.pre
+    - on:click -> onclick
+    - import { page } from '$app/stores'; -> import { page } from '$app/state'
+    - <slot> -> {#snippet ...}
+    - beforeUpdate/afterUpdate -> $effect.pre
