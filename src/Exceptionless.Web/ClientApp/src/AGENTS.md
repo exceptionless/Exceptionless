@@ -126,18 +126,37 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 
 ### Server-Side Error Handling
 
-Use `problemDetailsToFormErrors()` to convert API errors:
+Use `problemDetailsToFormErrors()` to convert API errors. There are two patterns depending on the API style:
+
+**Pattern 1: APIs that throw exceptions (TanStack Query mutations)**
+
+```typescript
+import { ProblemDetails } from '@exceptionless/fetchclient';
+import { problemDetailsToFormErrors } from '$shared/validation';
+
+onSubmitAsync: async ({ value }) => {
+    try {
+        await createMutation.mutateAsync(value);
+        return null;  // Success
+    } catch (error: unknown) {
+        if (error instanceof ProblemDetails) {
+            return problemDetailsToFormErrors(error);
+        }
+        return { form: 'An unexpected error occurred.' };
+    }
+}
+```
+
+**Pattern 2: APIs that return response objects (auth calls)**
 
 ```typescript
 import { problemDetailsToFormErrors } from '$shared/validation';
 
-// In onSubmitAsync validator:
 onSubmitAsync: async ({ value }) => {
-    const response = await apiCall(value);
+    const response = await login(value.email, value.password);
     if (response.ok) {
-        return null;  // Success - no errors
+        return null;  // Success
     }
-    // Returns { form?: string, fields?: Record<string, string> }
     return problemDetailsToFormErrors(response.problem);
 }
 ```
@@ -154,6 +173,9 @@ For forms inside dialogs, close the dialog only after successful submission:
 
 ```svelte
 <script lang="ts">
+    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { problemDetailsToFormErrors } from '$shared/validation';
+
     let open = $state(false);
 
     const form = createForm(() => ({
@@ -161,12 +183,16 @@ For forms inside dialogs, close the dialog only after successful submission:
         validators: {
             onSubmit: mySchema,
             onSubmitAsync: async ({ value }) => {
-                const response = await createItem(value);
-                if (response.ok) {
+                try {
+                    await createMutation.mutateAsync(value);
                     open = false;  // Close dialog on success
                     return null;
+                } catch (error: unknown) {
+                    if (error instanceof ProblemDetails) {
+                        return problemDetailsToFormErrors(error);
+                    }
+                    return { form: 'An unexpected error occurred.' };
                 }
-                return problemDetailsToFormErrors(response.problem);
             }
         }
     }));
@@ -204,18 +230,62 @@ $effect(() => {
 
 **Note:** This pattern uses Svelte 5's ability to override derived values (available since v5.25). The derived value automatically recalculates when dependencies change, but can be temporarily overridden for UI binding. The `$effect` ensures the local state resyncs when the source data changes.
 
-### Safe Data Cloning for Form Initialization
+### Form Initialization Patterns
 
-When initializing forms from query data, use `structuredCloneState()` to prevent cache mutation:
+**Simple forms** can initialize directly with inline objects or query data:
+
+```svelte
+// Inline default values
+const form = createForm(() => ({
+    defaultValues: {
+        name: '',
+        email: ''
+    } as MyFormData,
+    // ...
+}));
+
+// Query data with fallback
+const form = createForm(() => ({
+    defaultValues: {
+        email_address: meQuery.data?.email_address ?? ''
+    } as UpdateEmailFormData,
+    // ...
+}));
+```
+
+**Reactive forms** that reset when props change need `structuredCloneState()` to prevent cache mutation:
 
 ```svelte
 import { structuredCloneState } from '$features/shared/utils/state';
 
+// Clone initial data to prevent cache mutation
+const initialData = structuredCloneState(range) ?? { end: '', start: '' };
+
 const form = createForm(() => ({
-    defaultValues: structuredCloneState(queryData) ?? { name: '' },
+    defaultValues: initialData,
     // ...
 }));
+
+// Reset form when prop changes
+$effect(() => {
+    if (range !== previousRange) {
+        const clonedRange = structuredCloneState(range) ?? { end: '', start: '' };
+        form.reset();
+        form.setFieldValue('start', clonedRange.start);
+        // ...
+    }
+});
 ```
+
+**When to use `structuredCloneState()`:**
+
+- Forms that reset reactively based on prop changes
+- Initializing from TanStack Query data that will be mutated by the form
+
+**When NOT to use:**
+
+- Static forms with hardcoded defaults
+- Forms that don't reset after initialization
 
 ### Why These Patterns?
 
