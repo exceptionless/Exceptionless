@@ -60,4 +60,4 @@ builder.AddJavaScriptApp("AngularWeb", "../../src/Exceptionless.Web/ClientApp.an
     .WithUrlForEndpoint("AngularWeb", u => u.DisplayText = "Angular Web")
     .WithHttpEndpoint(port: 5100, targetPort: 5100, name: "AngularWeb", env: "PORT", isProxied: false);
 
-builder.Build().Run();
+await builder.Build().RunAsync();
