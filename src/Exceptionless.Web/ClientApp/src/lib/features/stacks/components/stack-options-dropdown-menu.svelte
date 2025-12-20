@@ -9,8 +9,9 @@
     import PromoteToExternal from '@lucide/svelte/icons/trending-up';
     import { toast } from 'svelte-sonner';
 
+    import type { Stack } from '../models';
+
     import { deleteMarkCritical, deleteStack, postAddLink, postMarkCritical, postPromote } from '../api.svelte';
-    import { Stack } from '../models';
     import AddStackReferenceDialog from './dialogs/add-stack-reference-dialog.svelte';
     import RemoveStackDialog from './dialogs/remove-stack-dialog.svelte';
     import RequiresPromotedWebHookDialog from './dialogs/requires-promoted-web-hook-dialog.svelte';

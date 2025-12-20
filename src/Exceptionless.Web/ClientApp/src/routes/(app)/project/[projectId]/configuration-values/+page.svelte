@@ -1,4 +1,6 @@
 <script lang="ts">
+    import type { ClientConfigurationSetting } from '$features/projects/models';
+
     import { page } from '$app/state';
     import { A, H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
@@ -7,7 +9,6 @@
     import AddProjectConfigDialog from '$features/projects/components/dialogs/add-project-config-dialog.svelte';
     import { getTableOptions } from '$features/projects/components/table/config-options.svelte';
     import ProjectsConfigDataTable from '$features/projects/components/table/projects-config-data-table.svelte';
-    import { ClientConfigurationSetting } from '$features/projects/models';
     import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';

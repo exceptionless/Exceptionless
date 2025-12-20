@@ -1,8 +1,8 @@
+import type { ClientConfiguration, ClientConfigurationSetting } from '$features/projects/models';
 import type { ProblemDetails } from '@exceptionless/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import ProjectConfigActionsCell from '$features/projects/components/table/project-config-actions-cell.svelte';
-import { type ClientConfiguration, ClientConfigurationSetting } from '$features/projects/models';
 import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
 import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
 

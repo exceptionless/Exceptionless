@@ -1,10 +1,11 @@
 <script lang="ts">
+    import type { ViewProject } from '$features/projects/models';
+
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { deleteProject } from '$features/projects/api.svelte';
-    import { ViewProject } from '$features/projects/models';
     import Issues from '@lucide/svelte/icons/bug';
     import Configure from '@lucide/svelte/icons/cloud';
     import EllipsisIcon from '@lucide/svelte/icons/ellipsis';

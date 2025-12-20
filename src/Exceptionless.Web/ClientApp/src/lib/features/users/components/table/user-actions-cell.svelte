@@ -1,8 +1,9 @@
 <script lang="ts">
+    import type { ViewUser } from '$features/users/models';
+
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { addOrganizationUser, deleteOrganizationUser } from '$features/organizations/api.svelte';
-    import { ViewUser } from '$features/users/models';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
     import Mail from '@lucide/svelte/icons/mail';

@@ -1,9 +1,9 @@
+import type { Webhook } from '$features/webhooks/models';
 import type { FetchClientResponse, ProblemDetails } from '@exceptionless/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import { getSharedTableOptions } from '$features/shared/table.svelte';
 import WebhookActionsCell from '$features/webhooks/components/table/webhook-actions-cell.svelte';
-import { Webhook } from '$features/webhooks/models';
 import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
 
 import type { GetProjectWebhooksParams } from '../../api.svelte';

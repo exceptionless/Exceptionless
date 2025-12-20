@@ -1,9 +1,10 @@
 <script lang="ts">
+    import type { NotificationSettings } from '$features/projects/models';
+
     import ErrorMessage from '$comp/error-message.svelte';
     import { Muted } from '$comp/typography';
     import { Skeleton } from '$comp/ui/skeleton';
     import { Switch } from '$comp/ui/switch';
-    import { NotificationSettings } from '$features/projects/models';
     import { structuredCloneState } from '$features/shared/utils/state.svelte';
     import { applyServerSideErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';

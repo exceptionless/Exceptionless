@@ -1,4 +1,6 @@
 <script lang="ts">
+    import type { NewToken, ViewToken } from '$features/tokens/models';
+
     import { page } from '$app/state';
     import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
@@ -8,7 +10,6 @@
     import { type GetProjectTokensParams, getProjectTokensQuery, postProjectToken } from '$features/tokens/api.svelte';
     import { getTableOptions } from '$features/tokens/components/table/options.svelte';
     import TokensDataTable from '$features/tokens/components/table/tokens-data-table.svelte';
-    import { NewToken, ViewToken } from '$features/tokens/models';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
