@@ -17,6 +17,6 @@ const buildGenerics = (contract) => {
 interface <%~ contract.name %><%~ buildGenerics(contract) %> {
 <% for (const field of contract.$content) { %>
 <%~ includeFile('@base/object-field-jsdoc.ejs', { ...it, field }) %>
-    <%~ field.name %><%~ field.isRequired && !field.nullable ? '' : '?' %>: <%~ field.value.replaceAll('any', 'unknown') %>;
+    <%~ field.name %><%~ field.nullable ? '?' : '' %>: <%~ field.value.replaceAll('any', 'unknown') %>;
 <% } %>
 }

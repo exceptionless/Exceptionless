@@ -150,7 +150,7 @@ const buildZodField = (field) => {
 
     let zodType = typeToZod(type, field.isRequired, field.nullable);
 
-    if (!field.isRequired) {
+    if (field.nullable) {
         zodType = `${zodType}.optional()`;
     }
 

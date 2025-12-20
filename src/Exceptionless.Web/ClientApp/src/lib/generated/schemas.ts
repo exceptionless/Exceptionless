@@ -34,13 +34,13 @@ export const BillingPlanSchema = object({
   id: string(),
   name: string(),
   description: string(),
-  price: number().optional(),
-  max_projects: number().optional(),
-  max_users: number().optional(),
-  retention_days: number().optional(),
-  max_events_per_month: number().optional(),
-  has_premium_features: boolean().optional(),
-  is_hidden: boolean().optional(),
+  price: number(),
+  max_projects: number(),
+  max_users: number(),
+  retention_days: number(),
+  max_events_per_month: number(),
+  has_premium_features: boolean(),
+  is_hidden: boolean(),
 });
 export type BillingPlanFormData = Infer<typeof BillingPlanSchema>;
 
@@ -53,21 +53,21 @@ export type ChangePasswordModelFormData = Infer<
 >;
 
 export const ChangePlanResultSchema = object({
-  success: boolean().optional(),
+  success: boolean(),
   message: string().nullable().optional(),
 });
 export type ChangePlanResultFormData = Infer<typeof ChangePlanResultSchema>;
 
 export const ClientConfigurationSchema = object({
-  version: number().optional(),
-  settings: record(string(), string()).optional(),
+  version: number(),
+  settings: record(string(), string()),
 });
 export type ClientConfigurationFormData = Infer<
   typeof ClientConfigurationSchema
 >;
 
 export const CountResultSchema = object({
-  total: number().optional(),
+  total: number(),
   aggregations: record(
     string(),
     lazy(() => IAggregateSchema),
@@ -103,7 +103,7 @@ export const InvoiceSchema = object({
   date: string(),
   paid: boolean(),
   total: number(),
-  items: array(lazy(() => InvoiceLineItemSchema)).optional(),
+  items: array(lazy(() => InvoiceLineItemSchema)),
 });
 export type InvoiceFormData = Infer<typeof InvoiceSchema>;
 
@@ -129,43 +129,43 @@ export const LoginSchema = object({
 export type LoginFormData = Infer<typeof LoginSchema>;
 
 export const NewOrganizationSchema = object({
-  name: string().optional(),
+  name: string(),
 });
 export type NewOrganizationFormData = Infer<typeof NewOrganizationSchema>;
 
 export const NewProjectSchema = object({
-  organization_id: string().optional(),
-  name: string().optional(),
-  delete_bot_data_enabled: boolean().optional(),
+  organization_id: string(),
+  name: string(),
+  delete_bot_data_enabled: boolean(),
 });
 export type NewProjectFormData = Infer<typeof NewProjectSchema>;
 
 export const NewTokenSchema = object({
-  organization_id: string().optional(),
-  project_id: string().optional(),
+  organization_id: string(),
+  project_id: string(),
   default_project_id: string().nullable().optional(),
-  scopes: array(string()).optional(),
+  scopes: array(string()),
   expires_utc: string().nullable().optional(),
   notes: string().nullable().optional(),
 });
 export type NewTokenFormData = Infer<typeof NewTokenSchema>;
 
 export const NewWebHookSchema = object({
-  organization_id: string().optional(),
-  project_id: string().optional(),
-  url: string().optional(),
-  event_types: array(string()).optional(),
+  organization_id: string(),
+  project_id: string(),
+  url: string(),
+  event_types: array(string()),
   version: string().nullable().optional(),
 });
 export type NewWebHookFormData = Infer<typeof NewWebHookSchema>;
 
 export const NotificationSettingsSchema = object({
-  send_daily_summary: boolean().optional(),
-  report_new_errors: boolean().optional(),
-  report_critical_errors: boolean().optional(),
-  report_event_regressions: boolean().optional(),
-  report_new_events: boolean().optional(),
-  report_critical_events: boolean().optional(),
+  send_daily_summary: boolean(),
+  report_new_errors: boolean(),
+  report_critical_errors: boolean(),
+  report_event_regressions: boolean(),
+  report_new_events: boolean(),
+  report_critical_events: boolean(),
 });
 export type NotificationSettingsFormData = Infer<
   typeof NotificationSettingsSchema
@@ -175,21 +175,21 @@ export const OAuthAccountSchema = object({
   provider: string(),
   provider_user_id: string(),
   username: string(),
-  extra_data: record(string(), string()).optional(),
+  extra_data: record(string(), string()),
 });
 export type OAuthAccountFormData = Infer<typeof OAuthAccountSchema>;
 
 export const PersistentEventSchema = object({
-  id: string().optional(),
-  organization_id: string().optional(),
-  project_id: string().optional(),
-  stack_id: string().optional(),
-  is_first_occurrence: boolean().optional(),
-  created_utc: string().optional(),
-  idx: record(string(), unknown()).optional(),
+  id: string(),
+  organization_id: string(),
+  project_id: string(),
+  stack_id: string(),
+  is_first_occurrence: boolean(),
+  created_utc: string(),
+  idx: record(string(), unknown()),
   type: string().nullable().optional(),
   source: string().nullable().optional(),
-  date: string().optional(),
+  date: string(),
   tags: array(string()).nullable().optional(),
   message: string().nullable().optional(),
   geo: string().nullable().optional(),
@@ -215,35 +215,35 @@ export const SignupSchema = object({
 export type SignupFormData = Infer<typeof SignupSchema>;
 
 export const StackSchema = object({
-  id: string().optional(),
-  organization_id: string().optional(),
-  project_id: string().optional(),
-  type: string().optional(),
-  status: StackStatusSchema.optional(),
+  id: string(),
+  organization_id: string(),
+  project_id: string(),
+  type: string(),
+  status: StackStatusSchema,
   snooze_until_utc: string().nullable().optional(),
-  signature_hash: string().optional(),
-  signature_info: record(string(), string()).optional(),
+  signature_hash: string(),
+  signature_info: record(string(), string()),
   fixed_in_version: string().nullable().optional(),
   date_fixed: string().nullable().optional(),
-  title: string().optional(),
-  total_occurrences: number().optional(),
-  first_occurrence: string().optional(),
-  last_occurrence: string().optional(),
+  title: string(),
+  total_occurrences: number(),
+  first_occurrence: string(),
+  last_occurrence: string(),
   description: string().nullable().optional(),
-  occurrences_are_critical: boolean().optional(),
-  references: array(string()).optional(),
-  tags: array(string()).optional(),
-  duplicate_signature: string().optional(),
-  created_utc: string().optional(),
-  updated_utc: string().optional(),
-  is_deleted: boolean().optional(),
-  allow_notifications: boolean().optional(),
+  occurrences_are_critical: boolean(),
+  references: array(string()),
+  tags: array(string()),
+  duplicate_signature: string(),
+  created_utc: string(),
+  updated_utc: string(),
+  is_deleted: boolean(),
+  allow_notifications: boolean(),
 });
 export type StackFormData = Infer<typeof StackSchema>;
 
 export const StringStringValuesKeyValuePairSchema = object({
   key: string().nullable().optional(),
-  value: array(string()).optional(),
+  value: array(string()),
 });
 export type StringStringValuesKeyValuePairFormData = Infer<
   typeof StringStringValuesKeyValuePairSchema
@@ -269,42 +269,42 @@ export type UpdateEmailAddressResultFormData = Infer<
 >;
 
 export const UsageHourInfoSchema = object({
-  date: string().optional(),
-  total: number().optional(),
-  blocked: number().optional(),
-  discarded: number().optional(),
-  too_big: number().optional(),
+  date: string(),
+  total: number(),
+  blocked: number(),
+  discarded: number(),
+  too_big: number(),
 });
 export type UsageHourInfoFormData = Infer<typeof UsageHourInfoSchema>;
 
 export const UsageInfoSchema = object({
-  date: string().optional(),
-  limit: number().optional(),
-  total: number().optional(),
-  blocked: number().optional(),
-  discarded: number().optional(),
-  too_big: number().optional(),
+  date: string(),
+  limit: number(),
+  total: number(),
+  blocked: number(),
+  discarded: number(),
+  too_big: number(),
 });
 export type UsageInfoFormData = Infer<typeof UsageInfoSchema>;
 
 export const UserSchema = object({
-  id: string().optional(),
-  organization_ids: array(string()).optional(),
+  id: string(),
+  organization_ids: array(string()),
   password: string().nullable().optional(),
   salt: string().nullable().optional(),
   password_reset_token: string().nullable().optional(),
-  password_reset_token_expiration: string().optional(),
-  o_auth_accounts: array(lazy(() => OAuthAccountSchema)).optional(),
+  password_reset_token_expiration: string(),
+  o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
   full_name: string(),
   email_address: string(),
-  email_notifications_enabled: boolean().optional(),
-  is_email_address_verified: boolean().optional(),
+  email_notifications_enabled: boolean(),
+  is_email_address_verified: boolean(),
   verify_email_address_token: string().nullable().optional(),
-  verify_email_address_token_expiration: string().optional(),
-  is_active: boolean().optional(),
-  roles: array(string()).optional(),
-  created_utc: string().optional(),
-  updated_utc: string().optional(),
+  verify_email_address_token_expiration: string(),
+  is_active: boolean(),
+  roles: array(string()),
+  created_utc: string(),
+  updated_utc: string(),
 });
 export type UserFormData = Infer<typeof UserSchema>;
 
@@ -317,120 +317,120 @@ export type UserDescriptionFormData = Infer<typeof UserDescriptionSchema>;
 
 export const ViewCurrentUserSchema = object({
   hash: string().nullable().optional(),
-  has_local_account: boolean().optional(),
-  o_auth_accounts: array(lazy(() => OAuthAccountSchema)).optional(),
-  id: string().optional(),
-  organization_ids: array(string()).optional(),
-  full_name: string().optional(),
-  email_address: string().optional(),
-  email_notifications_enabled: boolean().optional(),
-  is_email_address_verified: boolean().optional(),
-  is_active: boolean().optional(),
-  is_invite: boolean().optional(),
-  roles: array(string()).optional(),
+  has_local_account: boolean(),
+  o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
+  id: string(),
+  organization_ids: array(string()),
+  full_name: string(),
+  email_address: string(),
+  email_notifications_enabled: boolean(),
+  is_email_address_verified: boolean(),
+  is_active: boolean(),
+  is_invite: boolean(),
+  roles: array(string()),
 });
 export type ViewCurrentUserFormData = Infer<typeof ViewCurrentUserSchema>;
 
 export const ViewOrganizationSchema = object({
-  id: string().optional(),
-  created_utc: string().optional(),
-  updated_utc: string().optional(),
-  name: string().optional(),
-  plan_id: string().optional(),
-  plan_name: string().optional(),
-  plan_description: string().optional(),
+  id: string(),
+  created_utc: string(),
+  updated_utc: string(),
+  name: string(),
+  plan_id: string(),
+  plan_name: string(),
+  plan_description: string(),
   card_last4: string().nullable().optional(),
   subscribe_date: string().nullable().optional(),
   billing_change_date: string().nullable().optional(),
   billing_changed_by_user_id: string().nullable().optional(),
-  billing_status: BillingStatusSchema.optional(),
-  billing_price: number().optional(),
-  max_events_per_month: number().optional(),
-  bonus_events_per_month: number().optional(),
+  billing_status: BillingStatusSchema,
+  billing_price: number(),
+  max_events_per_month: number(),
+  bonus_events_per_month: number(),
   bonus_expiration: string().nullable().optional(),
-  retention_days: number().optional(),
-  is_suspended: boolean().optional(),
+  retention_days: number(),
+  is_suspended: boolean(),
   suspension_code: string().nullable().optional(),
   suspension_notes: string().nullable().optional(),
   suspension_date: string().nullable().optional(),
-  has_premium_features: boolean().optional(),
-  max_users: number().optional(),
-  max_projects: number().optional(),
-  project_count: number().optional(),
-  stack_count: number().optional(),
-  event_count: number().optional(),
-  invites: array(lazy(() => InviteSchema)).optional(),
-  usage_hours: array(lazy(() => UsageHourInfoSchema)).optional(),
-  usage: array(lazy(() => UsageInfoSchema)).optional(),
+  has_premium_features: boolean(),
+  max_users: number(),
+  max_projects: number(),
+  project_count: number(),
+  stack_count: number(),
+  event_count: number(),
+  invites: array(lazy(() => InviteSchema)),
+  usage_hours: array(lazy(() => UsageHourInfoSchema)),
+  usage: array(lazy(() => UsageInfoSchema)),
   data: record(string(), unknown()).optional(),
-  is_throttled: boolean().optional(),
-  is_over_monthly_limit: boolean().optional(),
-  is_over_request_limit: boolean().optional(),
+  is_throttled: boolean(),
+  is_over_monthly_limit: boolean(),
+  is_over_request_limit: boolean(),
 });
 export type ViewOrganizationFormData = Infer<typeof ViewOrganizationSchema>;
 
 export const ViewProjectSchema = object({
-  id: string().optional(),
-  created_utc: string().optional(),
-  organization_id: string().optional(),
-  organization_name: string().optional(),
-  name: string().optional(),
-  delete_bot_data_enabled: boolean().optional(),
+  id: string(),
+  created_utc: string(),
+  organization_id: string(),
+  organization_name: string(),
+  name: string(),
+  delete_bot_data_enabled: boolean(),
   data: record(string(), unknown()).optional(),
-  promoted_tabs: array(string()).optional(),
+  promoted_tabs: array(string()),
   is_configured: boolean().nullable().optional(),
-  stack_count: number().optional(),
-  event_count: number().optional(),
-  has_premium_features: boolean().optional(),
-  has_slack_integration: boolean().optional(),
-  usage_hours: array(lazy(() => UsageHourInfoSchema)).optional(),
-  usage: array(lazy(() => UsageInfoSchema)).optional(),
+  stack_count: number(),
+  event_count: number(),
+  has_premium_features: boolean(),
+  has_slack_integration: boolean(),
+  usage_hours: array(lazy(() => UsageHourInfoSchema)),
+  usage: array(lazy(() => UsageInfoSchema)),
 });
 export type ViewProjectFormData = Infer<typeof ViewProjectSchema>;
 
 export const ViewTokenSchema = object({
-  id: string().optional(),
-  organization_id: string().optional(),
-  project_id: string().optional(),
+  id: string(),
+  organization_id: string(),
+  project_id: string(),
   user_id: string().nullable().optional(),
   default_project_id: string().nullable().optional(),
-  scopes: array(string()).optional(),
+  scopes: array(string()),
   expires_utc: string().nullable().optional(),
   notes: string().nullable().optional(),
-  is_disabled: boolean().optional(),
-  is_suspended: boolean().optional(),
-  created_utc: string().optional(),
-  updated_utc: string().optional(),
+  is_disabled: boolean(),
+  is_suspended: boolean(),
+  created_utc: string(),
+  updated_utc: string(),
 });
 export type ViewTokenFormData = Infer<typeof ViewTokenSchema>;
 
 export const ViewUserSchema = object({
-  id: string().optional(),
-  organization_ids: array(string()).optional(),
-  full_name: string().optional(),
-  email_address: string().optional(),
-  email_notifications_enabled: boolean().optional(),
-  is_email_address_verified: boolean().optional(),
-  is_active: boolean().optional(),
-  is_invite: boolean().optional(),
-  roles: array(string()).optional(),
+  id: string(),
+  organization_ids: array(string()),
+  full_name: string(),
+  email_address: string(),
+  email_notifications_enabled: boolean(),
+  is_email_address_verified: boolean(),
+  is_active: boolean(),
+  is_invite: boolean(),
+  roles: array(string()),
 });
 export type ViewUserFormData = Infer<typeof ViewUserSchema>;
 
 export const WebHookSchema = object({
-  id: string().optional(),
-  organization_id: string().optional(),
-  project_id: string().optional(),
-  url: string().optional(),
-  event_types: array(string()).optional(),
-  is_enabled: boolean().optional(),
-  version: string().optional(),
-  created_utc: string().optional(),
+  id: string(),
+  organization_id: string(),
+  project_id: string(),
+  url: string(),
+  event_types: array(string()),
+  is_enabled: boolean(),
+  version: string(),
+  created_utc: string(),
 });
 export type WebHookFormData = Infer<typeof WebHookSchema>;
 
 export const WorkInProgressResultSchema = object({
-  workers: array(string()).optional(),
+  workers: array(string()),
 });
 export type WorkInProgressResultFormData = Infer<
   typeof WorkInProgressResultSchema
