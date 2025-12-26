@@ -1,4 +1,4 @@
-import { email, type infer as Infer, object, string } from 'zod';
+import { email, type infer as Infer, object } from 'zod';
 
 export { type UpdateUserFormData, UpdateUserSchema } from '$generated/schemas';
 
