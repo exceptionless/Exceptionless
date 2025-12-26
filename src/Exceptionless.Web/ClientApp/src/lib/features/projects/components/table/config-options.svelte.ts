@@ -56,10 +56,7 @@ export function getTableOptions<TClientConfigurationSetting extends ClientConfig
     const queryData = $derived(
         Object.entries(queryResponse.data?.settings ?? {})
             .map(([key, value]) => {
-                const config = new ClientConfigurationSetting() as TClientConfigurationSetting;
-                config.key = key;
-                config.value = value;
-                return config;
+                return { key, value } as TClientConfigurationSetting;
             })
             .filter((setting) => !knownSettingsToHide.includes(setting.key))
     );
