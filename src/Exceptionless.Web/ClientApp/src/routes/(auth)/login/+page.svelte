@@ -25,7 +25,7 @@
         login,
         microsoftClientId
     } from '$features/auth/index.svelte';
-    import { type LoginFormData, loginSchema } from '$features/auth/schemas';
+    import { type LoginFormData, LoginSchema } from '$features/auth/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import Facebook from '@lucide/svelte/icons/facebook';
     import GitHub from '@lucide/svelte/icons/github';
@@ -40,7 +40,7 @@
             password: ''
         } as LoginFormData,
         validators: {
-            onSubmit: loginSchema,
+            onSubmit: LoginSchema,
             onSubmitAsync: async ({ value }) => {
                 const response = await login(value.email, value.password);
                 if (response.ok) {
