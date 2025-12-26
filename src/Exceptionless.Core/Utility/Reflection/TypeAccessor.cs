@@ -38,7 +38,6 @@ internal class TypeAccessor
         return constructor.Invoke();
     }
 
-    #region FindProperty
     /// <summary>
     /// Searches for the public property with the specified name.
     /// </summary>
@@ -86,9 +85,7 @@ internal class TypeAccessor
     {
         return propertyInfo is null ? null : new PropertyAccessor(propertyInfo);
     }
-    #endregion
 
-    #region FindField
     /// <summary>
     /// Searches for the specified field with the specified name.
     /// </summary>
@@ -138,5 +135,4 @@ internal class TypeAccessor
     {
         return fieldInfo is null ? null : new FieldAccessor(fieldInfo);
     }
-    #endregion
 }

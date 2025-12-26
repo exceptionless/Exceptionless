@@ -69,8 +69,6 @@ public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TView
         return models;
     }
 
-    #region Mapping
-
     protected async Task<TDestination> MapAsync<TDestination>(object source, bool isResult = false)
     {
         var destination = _mapper.Map<TDestination>(source);
@@ -96,6 +94,4 @@ public abstract class ReadOnlyRepositoryApiController<TRepository, TModel, TView
 
         return Task.CompletedTask;
     }
-
-    #endregion
 }
