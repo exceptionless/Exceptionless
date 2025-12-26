@@ -66,8 +66,6 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         _usageService = usageService;
     }
 
-    #region CRUD
-
     /// <summary>
     /// Get all
     /// </summary>
@@ -208,8 +206,6 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
 
         return await base.DeleteModelsAsync(projects);
     }
-
-    #endregion
 
     [Obsolete("Use /api/v2/projects/config instead")]
     [HttpGet("~/api/v1/project/config")]

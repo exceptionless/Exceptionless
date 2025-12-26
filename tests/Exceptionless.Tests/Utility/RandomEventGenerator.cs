@@ -204,8 +204,6 @@ public class RandomEventGenerator
         };
     }
 
-    #region Sample Data
-
     public readonly List<string> Identities =
     [
         "eric@exceptionless.io",
@@ -328,5 +326,4 @@ public class RandomEventGenerator
         "GenerateCode"
     ];
 
-    #endregion
 }

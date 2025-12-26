@@ -74,8 +74,6 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         _options = options;
     }
 
-    #region CRUD
-
     /// <summary>
     /// Get all
     /// </summary>
@@ -194,8 +192,6 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
         return [];
     }
-
-    #endregion
 
     /// <summary>
     /// Get invoice
