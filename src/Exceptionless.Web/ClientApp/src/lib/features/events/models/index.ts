@@ -1,5 +1,4 @@
-import { PersistentEvent as PersistentEventBase, UserDescription } from '$generated/api';
-import { IsOptional, ValidateNested } from 'class-validator';
+import type { PersistentEvent as PersistentEventBase, UserDescription } from '$generated/api';
 
 import type { EnvironmentInfo, ErrorInfo, LogLevel, ManualStackingInfo, RequestInfo, SimpleErrorInfo, UserInfo } from './event-data';
 
@@ -44,15 +43,15 @@ export interface Location {
     locality?: string;
 }
 
+export interface PersistentEvent extends PersistentEventBase {
+    data?: IPersistentEventData;
+    type?: PersistentEventKnownTypes;
+}
+
 export type PersistentEventKnownTypes = '404' | 'error' | 'heartbeat' | 'log' | 'session' | 'sessionend' | 'usage' | string;
 
 export interface SubmissionClient {
     ip_address?: string;
     user_agent?: string;
     version?: string;
-}
-
-export class PersistentEvent extends PersistentEventBase {
-    @IsOptional() @ValidateNested() override data?: IPersistentEventData = undefined;
-    @IsOptional() override type?: PersistentEventKnownTypes = undefined;
 }
