@@ -78,7 +78,7 @@ Use TanStack Form (`@tanstack/svelte-form`) with Zod for form state management a
     <!-- Field with validation -->
     <form.Field name="email">
         {#snippet children(field)}
-            <Field.Field data-invalid={field.state.meta.errors.length > 0 ? true : undefined}>
+            <Field.Field data-invalid={ariaInvalid(field)}>
                 <Field.Label for={field.name}>Email</Field.Label>
                 <Input
                     id={field.name}
@@ -87,7 +87,7 @@ Use TanStack Form (`@tanstack/svelte-form`) with Zod for form state management a
                     value={field.state.value}
                     onblur={field.handleBlur}
                     oninput={(e) => field.handleChange(e.currentTarget.value)}
-                    aria-invalid={field.state.meta.errors.length > 0 ? true : undefined}
+                    aria-invalid={ariaInvalid(field)}
                 />
                 <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
             </Field.Field>
