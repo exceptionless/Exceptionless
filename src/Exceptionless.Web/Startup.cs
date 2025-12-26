@@ -147,6 +147,7 @@ public class Startup
 
             c.IgnoreObsoleteActions();
             c.OperationFilter<RequestBodyOperationFilter>();
+            c.OperationFilter<DeltaOperationFilter>();
             c.SchemaFilter<XEnumNamesSchemaFilter>();
             c.DocumentFilter<RemoveProblemJsonFromSuccessResponsesFilter>();
 
