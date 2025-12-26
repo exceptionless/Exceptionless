@@ -1,14 +1,15 @@
 <script lang="ts">
     import { A, P } from '$comp/typography';
     import * as AlertDialog from '$comp/ui/alert-dialog';
-    import * as Form from '$comp/ui/form';
+    import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
-    import { applyServerSideErrors } from '$features/shared/validation';
+    import { ariaInvalid, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
-    import { defaults, superForm } from 'sveltekit-superforms';
-    import { classvalidatorClient } from 'sveltekit-superforms/adapters';
+    import { createForm } from '@tanstack/svelte-form';
 
-    import { ClientConfigurationSetting } from '../../models';
+    import type { ClientConfigurationSetting } from '../../models';
+
+    import { type ClientConfigurationSettingFormData, ClientConfigurationSettingSchema } from '../../schemas';
 
     interface Props {
         open: boolean;
@@ -16,39 +17,42 @@
     }
     let { open = $bindable(), save }: Props = $props();
 
-    const form = superForm(defaults(new ClientConfigurationSetting(), classvalidatorClient(ClientConfigurationSetting)), {
-        dataType: 'json',
-        id: 'add-project-config',
-        async onUpdate({ form, result }) {
-            if (!form.valid) {
-                return;
-            }
+    const form = createForm(() => ({
+        defaultValues: {
+            key: '',
+            value: ''
+        } as ClientConfigurationSettingFormData,
+        validators: {
+            onSubmit: ClientConfigurationSettingSchema,
+            onSubmitAsync: async ({ value }) => {
+                try {
+                    await save({
+                        key: value.key.trim(),
+                        value: value.value.trim()
+                    });
+                    open = false;
+                    return null;
+                } catch (error: unknown) {
+                    if (error instanceof ProblemDetails) {
+                        return problemDetailsToFormErrors(error);
+                    }
 
-            try {
-                await save(form.data);
-                open = false;
-
-                // HACK: This is to prevent sveltekit from stealing focus
-                result.type = 'failure';
-            } catch (error: unknown) {
-                if (error instanceof ProblemDetails) {
-                    applyServerSideErrors(form, error);
-                    result.status = error.status ?? 500;
-                } else {
-                    result.status = 500;
+                    return { form: 'An unexpected error occurred.' };
                 }
             }
-        },
-        SPA: true,
-        validators: classvalidatorClient(ClientConfigurationSetting)
-    });
-
-    const { enhance, form: formData } = form;
+        }
+    }));
 </script>
 
 <AlertDialog.Root bind:open>
     <AlertDialog.Content class="sm:max-w-[425px]">
-        <form method="POST" use:enhance>
+        <form
+            onsubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                form.handleSubmit();
+            }}
+        >
             <AlertDialog.Header>
                 <AlertDialog.Title>Add New Configuration Value</AlertDialog.Title>
                 <AlertDialog.Description
@@ -58,47 +62,51 @@
             </AlertDialog.Header>
 
             <P class="pb-4">
-                <Form.Field {form} name="key">
-                    <Form.Control>
-                        {#snippet children({ props })}
-                            <Form.Label>Key</Form.Label>
+                <form.Field name="key">
+                    {#snippet children(field)}
+                        <Field.Field data-invalid={ariaInvalid(field)}>
+                            <Field.Label for={field.name}>Key</Field.Label>
                             <Input
-                                {...props}
-                                bind:value={$formData.key}
+                                id={field.name}
+                                name={field.name}
                                 type="text"
                                 placeholder="Please enter a valid key"
                                 required
                                 autocomplete="off"
-                                oninput={() => ($formData.key = $formData.key.trim())}
+                                value={field.state.value}
+                                onblur={field.handleBlur}
+                                oninput={(e) => field.handleChange(e.currentTarget.value.trim())}
+                                aria-invalid={ariaInvalid(field)}
                             />
-                        {/snippet}
-                    </Form.Control>
-                    <Form.Description />
-                    <Form.FieldErrors />
-                </Form.Field>
-                <Form.Field {form} name="value">
-                    <Form.Control>
-                        {#snippet children({ props })}
-                            <Form.Label>Value</Form.Label>
+                            <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                        </Field.Field>
+                    {/snippet}
+                </form.Field>
+                <form.Field name="value">
+                    {#snippet children(field)}
+                        <Field.Field data-invalid={ariaInvalid(field)}>
+                            <Field.Label for={field.name}>Value</Field.Label>
                             <Input
-                                {...props}
-                                bind:value={$formData.value}
+                                id={field.name}
+                                name={field.name}
                                 type="text"
                                 placeholder="Please enter a valid value"
                                 required
                                 autocomplete="off"
-                                oninput={() => ($formData.value = $formData.value.trim())}
+                                value={field.state.value}
+                                onblur={field.handleBlur}
+                                oninput={(e) => field.handleChange(e.currentTarget.value.trim())}
+                                aria-invalid={ariaInvalid(field)}
                             />
-                        {/snippet}
-                    </Form.Control>
-                    <Form.Description />
-                    <Form.FieldErrors />
-                </Form.Field>
+                            <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                        </Field.Field>
+                    {/snippet}
+                </form.Field>
             </P>
 
             <AlertDialog.Footer>
                 <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-                <AlertDialog.Action>Add Configuration Value</AlertDialog.Action>
+                <AlertDialog.Action type="submit">Add Configuration Value</AlertDialog.Action>
             </AlertDialog.Footer>
         </form>
     </AlertDialog.Content>
