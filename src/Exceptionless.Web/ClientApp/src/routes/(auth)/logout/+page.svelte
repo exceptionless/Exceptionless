@@ -3,8 +3,8 @@
     import { resolve } from '$app/paths';
     import ErrorMessage from '$comp/error-message.svelte';
     import Logo from '$comp/logo.svelte';
+    import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
-    import * as Form from '$comp/ui/form';
     import { Spinner } from '$comp/ui/spinner';
     import { accessToken, logout } from '$features/auth/index.svelte';
     import { useFetchClientStatus } from '$shared/api/api.svelte';
@@ -46,13 +46,13 @@
         <form onsubmit={onLogout}>
             <ErrorMessage {message}></ErrorMessage>
 
-            <Form.Button>
+            <Button type="submit" class="w-full">
                 {#if clientStatus.isLoading}
                     <Spinner /> Logging out...
                 {:else}
                     Logout
                 {/if}
-            </Form.Button>
+            </Button>
         </form>
     </Card.Content>
 </Card.Root>
