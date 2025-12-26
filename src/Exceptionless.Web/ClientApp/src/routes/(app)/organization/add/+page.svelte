@@ -8,6 +8,7 @@
     import { Input } from '$comp/ui/input';
     import { Spinner } from '$comp/ui/spinner';
     import { postOrganization } from '$features/organizations/api.svelte';
+    import { organization } from '$features/organizations/context.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
     import { type NewOrganizationFormData, NewOrganizationSchema } from '$features/organizations/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
@@ -30,6 +31,8 @@
                 toast.dismiss(toastId);
                 try {
                     const { id } = await createOrganization.mutateAsync(value);
+                    // Update the persisted organization state so the sidebar selects the new org
+                    organization.current = id;
                     toastId = toast.success('Organization added successfully');
                     await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: id }));
                     return null;

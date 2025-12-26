@@ -133,10 +133,10 @@
         toast.dismiss(toastId);
 
         try {
-            const data: UpdateProject = {
+            const data: Partial<UpdateProject> = {
                 delete_bot_data_enabled: deleteBotDataEnabled
             };
-            await update.mutateAsync(data);
+            await update.mutateAsync(data as UpdateProject);
 
             toastId = toast.success(`Successfully updated Delete Bot Data Enabled setting.`);
         } catch {
