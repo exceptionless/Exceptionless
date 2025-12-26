@@ -1,9 +1,10 @@
 <script lang="ts">
+    import ErrorMessage from '$comp/error-message.svelte';
     import { A, P } from '$comp/typography';
     import * as AlertDialog from '$comp/ui/alert-dialog';
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
-    import { ariaInvalid, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
 
@@ -42,6 +43,12 @@
             }
         }
     }));
+
+    $effect(() => {
+        if (open) {
+            form.reset();
+        }
+    });
 </script>
 
 <AlertDialog.Root bind:open>
@@ -60,6 +67,12 @@
                     Exceptionless clients in real time.</AlertDialog.Description
                 >
             </AlertDialog.Header>
+
+            <form.Subscribe selector={(state) => state.errors}>
+                {#snippet children(errors)}
+                    <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
+                {/snippet}
+            </form.Subscribe>
 
             <P class="pb-4">
                 <form.Field name="key">

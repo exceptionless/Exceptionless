@@ -1,12 +1,11 @@
-import { type infer as Infer, object, string } from 'zod';
-
 import {
+    UpdateProjectSchema as GeneratedUpdateProjectSchema,
     type NewProjectFormData,
     NewProjectSchema,
     type NotificationSettingsFormData,
-    NotificationSettingsSchema,
-    UpdateProjectSchema as GeneratedUpdateProjectSchema
+    NotificationSettingsSchema
 } from '$generated/schemas';
+import { type infer as Infer, object, string } from 'zod';
 
 export { type NewProjectFormData, NewProjectSchema, type NotificationSettingsFormData, NotificationSettingsSchema };
 

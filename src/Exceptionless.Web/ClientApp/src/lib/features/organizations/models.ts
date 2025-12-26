@@ -7,21 +7,3 @@ export enum SuspensionCode {
     Abuse = 2,
     Other = 100
 }
-
-export class SetBonusOrganizationForm {
-    @IsInt()
-    bonusEvents!: number;
-
-    @IsDate()
-    @IsOptional()
-    expires?: Date;
-}
-
-export class SuspendOrganizationForm {
-    @IsEnum(SuspensionCode)
-    code!: SuspensionCode;
-
-    @IsOptional()
-    @IsString()
-    notes?: string;
-}

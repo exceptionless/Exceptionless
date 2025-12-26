@@ -2,6 +2,7 @@
     import type { PostSuspendOrganizationParams } from '$features/organizations/api.svelte';
     import type { ViewOrganization } from '$features/organizations/models';
 
+    import ErrorMessage from '$comp/error-message.svelte';
     import { P } from '$comp/typography';
     import * as AlertDialog from '$comp/ui/alert-dialog';
     import { buttonVariants } from '$comp/ui/button';
@@ -10,7 +11,7 @@
     import { Textarea } from '$comp/ui/textarea';
     import { SuspensionCode } from '$features/organizations/models';
     import { suspensionCodeOptions } from '$features/organizations/options';
-    import { ariaInvalid, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
 
@@ -54,6 +55,13 @@
         }
     }));
 
+    $effect(() => {
+        if (open) {
+            form.reset();
+            selectedCodeValue = String(SuspensionCode.Abuse);
+        }
+    });
+
     function handleCodeChange(value: string | undefined) {
         if (value) {
             selectedCodeValue = value;
@@ -77,6 +85,12 @@
                     Are you sure you want to suspend the organization "{organization.name}"?
                 </AlertDialog.Description>
             </AlertDialog.Header>
+
+            <form.Subscribe selector={(state) => state.errors}>
+                {#snippet children(errors)}
+                    <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
+                {/snippet}
+            </form.Subscribe>
 
             <P class="space-y-4 pb-4">
                 <form.Field name="code">

@@ -170,7 +170,13 @@
                                     {/snippet}
                                 </Popover.Trigger>
                                 <Popover.Content class="w-auto p-0">
-                                    <Calendar.Calendar value={calendarValue} onValueChange={handleCalendarChange} type="single" calendarLabel="Select an expiration date" locale="en-US" />
+                                    <Calendar.Calendar
+                                        value={calendarValue}
+                                        onValueChange={handleCalendarChange}
+                                        type="single"
+                                        calendarLabel="Select an expiration date"
+                                        locale="en-US"
+                                    />
                                 </Popover.Content>
                             </Popover.Root>
                             <Muted>Bonus events will expire after this date.</Muted>

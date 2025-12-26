@@ -40,6 +40,14 @@
             }
         }
     }));
+
+    $effect(() => {
+        if (open) {
+            form.reset();
+            form.setFieldValue('key', setting.key);
+            form.setFieldValue('value', setting.value);
+        }
+    });
 </script>
 
 <AlertDialog.Root bind:open>
