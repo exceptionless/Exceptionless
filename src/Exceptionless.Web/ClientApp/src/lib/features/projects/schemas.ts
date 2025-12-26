@@ -9,3 +9,6 @@ import {
 } from '$generated/schemas';
 
 export { type NewProjectFormData, NewProjectSchema, type NotificationSettingsFormData, NotificationSettingsSchema };
+
+export const UpdateProjectSchema = GeneratedUpdateProjectSchema.partial();
+export type UpdateProjectFormData = Infer<typeof UpdateProjectSchema>;
