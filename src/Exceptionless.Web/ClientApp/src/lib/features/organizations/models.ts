@@ -1,5 +1,4 @@
-export { Invoice, InvoiceGridModel, NewOrganization, ViewOrganization } from '$generated/api';
-import { IsDate, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
+export type { Invoice, InvoiceGridModel, NewOrganization, ViewOrganization } from '$generated/api';
 
 // TODO: This should be generated from the backend enum - investigate why it wasn't included in the generated API
 export enum SuspensionCode {

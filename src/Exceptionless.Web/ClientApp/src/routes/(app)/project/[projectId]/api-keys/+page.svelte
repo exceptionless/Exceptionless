@@ -26,10 +26,11 @@
     });
 
     async function addApiKey() {
-        const token = new NewToken();
-        token.organization_id = organization.current!;
-        token.project_id = projectId;
-        token.scopes = ['client'];
+        const token: NewToken = {
+            organization_id: organization.current!,
+            project_id: projectId,
+            scopes: ['client']
+        };
 
         await newToken.mutateAsync(token);
         toast.success('API Key added successfully');
