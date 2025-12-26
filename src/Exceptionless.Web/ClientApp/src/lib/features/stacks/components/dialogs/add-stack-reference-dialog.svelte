@@ -1,14 +1,13 @@
 <script lang="ts">
+    import ErrorMessage from '$comp/error-message.svelte';
     import { P } from '$comp/typography';
     import * as AlertDialog from '$comp/ui/alert-dialog';
-    import * as Form from '$comp/ui/form';
+    import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
-    import { applyServerSideErrors } from '$features/shared/validation';
+    import { ReferenceLinkSchema } from '$features/stacks/schemas';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
-    import { defaults, superForm } from 'sveltekit-superforms';
-    import { classvalidatorClient } from 'sveltekit-superforms/adapters';
-
-    import { ReferenceLinkForm } from '../../models';
+    import { createForm } from '@tanstack/svelte-form';
 
     interface Props {
         open: boolean;
@@ -17,60 +16,84 @@
 
     let { open = $bindable(), save }: Props = $props();
 
-    const form = superForm(defaults(new ReferenceLinkForm(), classvalidatorClient(ReferenceLinkForm)), {
-        dataType: 'json',
-        id: 'add-stack-reference',
-        async onUpdate({ form, result }) {
-            if (!form.valid) {
-                return;
-            }
-
-            try {
-                await save(form.data.url);
-                open = false;
-
-                // HACK: This is to prevent sveltekit from stealing focus
-                result.type = 'failure';
-            } catch (error: unknown) {
-                if (error instanceof ProblemDetails) {
-                    applyServerSideErrors(form, error);
-                    result.status = error.status ?? 500;
-                } else {
-                    result.status = 500;
+    const form = createForm(() => ({
+        defaultValues: {
+            url: ''
+        },
+        validators: {
+            onSubmit: ReferenceLinkSchema,
+            onSubmitAsync: async ({ value }) => {
+                try {
+                    await save(value.url);
+                    open = false;
+                    return null;
+                } catch (error: unknown) {
+                    if (error instanceof ProblemDetails) {
+                        return problemDetailsToFormErrors(error);
+                    }
+                    return { form: 'An unexpected error occurred' };
                 }
             }
-        },
-        SPA: true,
-        validators: classvalidatorClient(ReferenceLinkForm)
-    });
+        }
+    }));
 
-    const { enhance, form: formData } = form;
+    $effect(() => {
+        if (open) {
+            form.reset();
+        }
+    });
 </script>
 
 <AlertDialog.Root bind:open>
     <AlertDialog.Content class="sm:max-w-[425px]">
-        <form method="POST" use:enhance>
+        <form
+            onsubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                form.handleSubmit();
+            }}
+        >
             <AlertDialog.Header>
                 <AlertDialog.Title>Add Reference Link</AlertDialog.Title>
                 <AlertDialog.Description>Add a reference link to an external resource.</AlertDialog.Description>
             </AlertDialog.Header>
 
+            <form.Subscribe selector={(state) => state.errors}>
+                {#snippet children(errors)}
+                    <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
+                {/snippet}
+            </form.Subscribe>
+
             <P class="pb-4">
-                <Form.Field {form} name="url">
-                    <Form.Control>
-                        {#snippet children({ props })}
-                            <Form.Label>Reference Link</Form.Label>
-                            <Input {...props} bind:value={$formData.url} type="url" placeholder="Please enter a valid URL" autocomplete="url" required />
-                        {/snippet}
-                    </Form.Control>
-                    <Form.Description />
-                    <Form.FieldErrors />
-                </Form.Field>
+                <form.Field name="url">
+                    {#snippet children(field)}
+                        <Field.Field data-invalid={ariaInvalid(field)}>
+                            <Field.Label for={field.name}>Reference Link</Field.Label>
+                            <Input
+                                id={field.name}
+                                name={field.name}
+                                type="url"
+                                placeholder="Please enter a valid URL"
+                                autocomplete="url"
+                                required
+                                value={field.state.value}
+                                onblur={field.handleBlur}
+                                oninput={(e) => field.handleChange(e.currentTarget.value)}
+                                aria-invalid={ariaInvalid(field)}
+                            />
+                            <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                        </Field.Field>
+                    {/snippet}
+                </form.Field>
             </P>
 
             <AlertDialog.Footer>
                 <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-                <AlertDialog.Action>Save Reference Link</AlertDialog.Action>
+                <form.Subscribe selector={(state) => state.isSubmitting}>
+                    {#snippet children(isSubmitting)}
+                        <AlertDialog.Action type="submit" disabled={isSubmitting}>Save Reference Link</AlertDialog.Action>
+                    {/snippet}
+                </form.Subscribe>
             </AlertDialog.Footer>
         </form>
     </AlertDialog.Content>

@@ -4,7 +4,7 @@
     import * as AlertDialog from '$comp/ui/alert-dialog';
     import * as Field from '$comp/ui/field';
     import { Textarea } from '$comp/ui/textarea';
-    import { UpdateTokenSchema } from '$features/tokens/schemas';
+    import { type UpdateTokenFormData, UpdateTokenSchema } from '$features/tokens/schemas';
     import { getFormErrorMessages, problemDetailsToFormErrors } from '$shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
@@ -19,9 +19,8 @@
 
     const form = createForm(() => ({
         defaultValues: {
-            is_disabled: false,
             notes
-        } as { is_disabled: boolean; notes?: string },
+        } as UpdateTokenFormData,
         validators: {
             onSubmit: UpdateTokenSchema,
             onSubmitAsync: async ({ value }) => {
@@ -38,6 +37,13 @@
             }
         }
     }));
+
+    $effect(() => {
+        if (open) {
+            form.reset();
+            form.setFieldValue('notes', notes);
+        }
+    });
 </script>
 
 <AlertDialog.Root bind:open>

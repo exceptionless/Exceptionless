@@ -1,1 +1,1 @@
-export type { NewToken, ViewToken, UpdateToken } from '$generated/api';
+export type { NewToken, UpdateToken, ViewToken } from '$generated/api';
