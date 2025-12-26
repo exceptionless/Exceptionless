@@ -29,8 +29,6 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
         _billingManager = billingManager;
     }
 
-    #region CRUD
-
     /// <summary>
     /// Get by project
     /// </summary>
@@ -94,8 +92,6 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     {
         return DeleteImplAsync(ids.FromDelimitedString());
     }
-
-    #endregion
 
     /// <summary>
     /// This controller action is called by zapier to create a hook subscription.
