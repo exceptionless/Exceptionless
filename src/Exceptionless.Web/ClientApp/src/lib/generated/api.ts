@@ -60,6 +60,7 @@ export interface CountResult {
 export interface ExternalAuthInfo {
   clientId: string;
   code: string;
+  /** @format uri */
   redirectUri: string;
   inviteToken?: string | null;
 }
@@ -113,6 +114,7 @@ export interface NewOrganization {
 }
 
 export interface NewProject {
+  /** The organization ID. Optional - defaults to user's first associated organization if not specified. */
   organization_id: string;
   name: string;
   delete_bot_data_enabled: boolean;
@@ -131,10 +133,11 @@ export interface NewToken {
 export interface NewWebHook {
   organization_id: string;
   project_id: string;
+  /** @format uri */
   url: string;
   event_types: string[];
   /** The schema version that should be used. */
-  version?: string | null;
+  version: string;
 }
 
 export interface NotificationSettings {
@@ -240,6 +243,21 @@ export interface UpdateEmailAddressResult {
   is_verified: boolean;
 }
 
+export interface UpdateProject {
+  name: string;
+  delete_bot_data_enabled: boolean;
+}
+
+export interface UpdateToken {
+  is_disabled: boolean;
+  notes?: string | null;
+}
+
+export interface UpdateUser {
+  full_name: string;
+  email_notifications_enabled: boolean;
+}
+
 export interface UsageHourInfo {
   /** @format date-time */
   date: string;
@@ -294,8 +312,9 @@ export interface User {
 }
 
 export interface UserDescription {
+  /** @format email */
   email_address?: string | null;
-  description?: string | null;
+  description: string;
   data?: Record<string, unknown>;
 }
 
@@ -421,6 +440,7 @@ export interface WebHook {
   id: string;
   organization_id: string;
   project_id: string;
+  /** @format uri */
   url: string;
   event_types: string[];
   is_enabled: boolean;

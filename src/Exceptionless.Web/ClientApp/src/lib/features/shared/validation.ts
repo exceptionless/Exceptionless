@@ -1,5 +1,20 @@
 import { ProblemDetails } from '@exceptionless/fetchclient';
 
+export type FieldWithErrors = {
+    state: {
+        meta: {
+            errors: unknown[];
+        };
+    };
+};
+
+/**
+ * ARIA helper: returns `true` when invalid, otherwise `undefined` (omit attribute).
+ */
+export function ariaInvalid(field: FieldWithErrors): true | undefined {
+    return field.state.meta.errors.length > 0 ? true : undefined;
+}
+
 /**
  * Extracts error message from various error formats.
  * Handles:
@@ -17,48 +32,6 @@ export function extractErrorMessage(error: unknown): string {
     }
     return String(error);
 }
-
-/**
- * Extracts all form-level error messages from form submission errors.
- * Returns a summary of all errors as a string or array of strings.
- * Use with form.Subscribe selector={(state) => state.errors}
- *
- * @example
- * ```svelte
- * <form.Subscribe selector={(state) => state.errors}>
- *   {#snippet children(errors)}
- *     <ErrorMessage message={getFormError(errors)}></ErrorMessage>
- *   {/snippet}
- * </form.Subscribe>
- * ```
- */
-export function getFormErrorMessages(errors?: unknown[]): string | string[] | undefined {
-    if (!errors || errors.length === 0) {
-        return undefined;
-    }
-
-    const messages: string[] = [];
-    for (const error of errors) {
-        if (typeof error === 'string') {
-            messages.push(error);
-        } else if (typeof error === 'object' && error !== null && 'form' in error) {
-            const formError = (error as { form?: string }).form;
-            if (typeof formError === 'string') {
-                messages.push(formError);
-            }
-        }
-    }
-
-    return messages;
-}
-
-export type FieldWithErrors = {
-    state: {
-        meta: {
-            errors: unknown[];
-        };
-    };
-};
 
 /**
  * Helper to get the first error message for a field.
@@ -98,6 +71,40 @@ export function getFieldErrors(field: FieldWithErrors, separator = ', '): string
 }
 
 /**
+ * Extracts all form-level error messages from form submission errors.
+ * Returns a summary of all errors as a string or array of strings.
+ * Use with form.Subscribe selector={(state) => state.errors}
+ *
+ * @example
+ * ```svelte
+ * <form.Subscribe selector={(state) => state.errors}>
+ *   {#snippet children(errors)}
+ *     <ErrorMessage message={getFormError(errors)}></ErrorMessage>
+ *   {/snippet}
+ * </form.Subscribe>
+ * ```
+ */
+export function getFormErrorMessages(errors?: unknown[]): string | string[] | undefined {
+    if (!errors || errors.length === 0) {
+        return undefined;
+    }
+
+    const messages: string[] = [];
+    for (const error of errors) {
+        if (typeof error === 'string') {
+            messages.push(error);
+        } else if (typeof error === 'object' && error !== null && 'form' in error) {
+            const formError = (error as { form?: string }).form;
+            if (typeof formError === 'string') {
+                messages.push(formError);
+            }
+        }
+    }
+
+    return messages;
+}
+
+/**
  * Helper to check if a field has validation errors.
  * Useful for conditional styling of form fields.
  *
@@ -108,13 +115,6 @@ export function getFieldErrors(field: FieldWithErrors, separator = ', '): string
  */
 export function hasFieldError(field: FieldWithErrors): boolean {
     return field.state.meta.errors.length > 0;
-}
-
-/**
- * ARIA helper: returns `true` when invalid, otherwise `undefined` (omit attribute).
- */
-export function ariaInvalid(field: FieldWithErrors): true | undefined {
-    return field.state.meta.errors.length > 0 ? true : undefined;
 }
 
 /**

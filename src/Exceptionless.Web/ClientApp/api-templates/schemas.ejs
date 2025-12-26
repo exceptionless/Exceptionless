@@ -7,6 +7,15 @@ const cleanType = (type) => {
     return type.trim();
 };
 
+// Helper to create a readable field name for error messages
+const toReadableName = (fieldName) => {
+    return fieldName
+        .replace(/_/g, ' ')
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .toLowerCase()
+        .replace(/^./, (c) => c.toUpperCase());
+};
+
 const usedZodFunctions = new Set();
 const enumSchemas = [];
 
@@ -41,7 +50,10 @@ for (const contract of modelTypes) {
     }
 }
 
-const typeToZod = (rawType, isRequired, nullable) => {
+// Known webhook event types for typed enum validation
+const webhookEventTypes = ['CriticalError', 'CriticalEvent', 'NewError', 'NewEvent', 'StackPromoted', 'StackRegression'];
+
+const typeToZod = (rawType, isRequired, nullable, fieldName) => {
     let type = cleanType(rawType);
 
     if (type.includes(' | null')) {
@@ -49,7 +61,7 @@ const typeToZod = (rawType, isRequired, nullable) => {
         if (innerType.startsWith('(') && innerType.endsWith(')') && !innerType.endsWith('[]')) {
             innerType = innerType.slice(1, -1);
         }
-        return `${typeToZod(innerType, true, false)}.nullable()`;
+        return `${typeToZod(innerType, true, false, fieldName)}.nullable()`;
     }
 
     if (type.startsWith('(') && type.endsWith(')') && !type.includes('[]')) {
@@ -59,14 +71,26 @@ const typeToZod = (rawType, isRequired, nullable) => {
     const arrayMatch = type.match(/^\((.+)\)\[\]$/) || type.match(/^(.+)\[\]$/);
     if (arrayMatch) {
         const innerType = arrayMatch[1];
-        const zodInner = typeToZod(innerType, true, false);
+        // Special handling for event_types array - use typed enum values
+        if (fieldName === 'event_types') {
+            usedZodFunctions.add('array');
+            usedZodFunctions.add('enum');
+            return `array(zodEnum([${webhookEventTypes.map(e => `'${e}'`).join(', ')}]))`;
+        }
+        const zodInner = typeToZod(innerType, true, false, undefined);
         usedZodFunctions.add('array');
         return `array(${zodInner})`;
     }
 
     if (type.startsWith('Array<') && type.endsWith('>')) {
         const innerType = type.slice(6, -1);
-        const zodInner = typeToZod(innerType, true, false);
+        // Special handling for event_types array - use typed enum values
+        if (fieldName === 'event_types') {
+            usedZodFunctions.add('array');
+            usedZodFunctions.add('enum');
+            return `array(zodEnum([${webhookEventTypes.map(e => `'${e}'`).join(', ')}]))`;
+        }
+        const zodInner = typeToZod(innerType, true, false, undefined);
         usedZodFunctions.add('array');
         return `array(${zodInner})`;
     }
@@ -74,9 +98,9 @@ const typeToZod = (rawType, isRequired, nullable) => {
     if (type.includes(' | ')) {
         const unionTypes = type.split(' | ').map(t => t.trim()).filter(t => t !== 'null');
         if (unionTypes.length === 1) {
-            return typeToZod(unionTypes[0], true, false);
+            return typeToZod(unionTypes[0], true, false, fieldName);
         }
-        const zodTypes = unionTypes.map(t => typeToZod(t, true, false));
+        const zodTypes = unionTypes.map(t => typeToZod(t, true, false, fieldName));
         if (zodTypes.every(t => !t.includes('unknown()'))) {
             usedZodFunctions.add('union');
             return `union([${zodTypes.join(', ')}])`;
@@ -91,7 +115,7 @@ const typeToZod = (rawType, isRequired, nullable) => {
             const valueType = match[2].trim();
             usedZodFunctions.add('record');
             usedZodFunctions.add('string');
-            return `record(string(), ${typeToZod(valueType, true, false)})`;
+            return `record(string(), ${typeToZod(valueType, true, false, undefined)})`;
         }
         usedZodFunctions.add('record');
         usedZodFunctions.add('string');
@@ -134,10 +158,10 @@ const typeToZod = (rawType, isRequired, nullable) => {
             const contract = modelTypes.find(c => c.name === type);
             if (contract) {
                 if (contract.typeIdentifier === 'enum') {
-                    return `${type}Schema`;
+                    return type + 'Schema';
                 }
                 usedZodFunctions.add('lazy');
-                return `lazy(() => ${type}Schema)`;
+                return 'lazy(() => ' + type + 'Schema)';
             }
             usedZodFunctions.add('unknown');
             return 'unknown()';
@@ -147,14 +171,167 @@ const typeToZod = (rawType, isRequired, nullable) => {
 const buildZodField = (field) => {
     const rawType = field.value || 'unknown';
     const type = rawType.replace(/\bany\b/g, 'unknown');
+    const cleanedType = cleanType(type);
+    const readableName = toReadableName(field.name);
+    const fieldNameLower = field.name.toLowerCase();
 
-    let zodType = typeToZod(type, field.isRequired, field.nullable);
+    // Detect special field types by name or format
+    const isUrlField = field.format === 'uri' || field.format === 'url' ||
+        fieldNameLower === 'url' || fieldNameLower.endsWith('_url');
+    const isEmailField = field.format === 'email' ||
+        fieldNameLower === 'email' || fieldNameLower === 'email_address' ||
+        fieldNameLower.endsWith('emailaddress');
+    const isVersionField = fieldNameLower === 'version' || fieldNameLower.endsWith('_version');
+    const isDateTimeField = field.format === 'date-time' ||
+        fieldNameLower.endsWith('_utc') || fieldNameLower === 'date' ||
+        fieldNameLower.endsWith('_date') || fieldNameLower.endsWith('_at');
+    const isUuidField = field.format === 'uuid' || fieldNameLower.endsWith('_uuid');
 
-    if (field.nullable) {
-        zodType = `${zodType}.optional()`;
+    // Check if this is an array type
+    const isArray = cleanedType.endsWith('[]') || cleanedType.startsWith('Array<');
+
+    // Check if this is a nullable union type
+    const isNullableUnion = cleanedType.includes(' | null');
+
+    // Get the base type (without null union)
+    let baseType = cleanedType;
+    if (isNullableUnion) {
+        baseType = cleanedType.replace(/\s*\|\s*null/g, '').trim();
+        if (baseType.startsWith('(') && baseType.endsWith(')') && !baseType.endsWith('[]')) {
+            baseType = baseType.slice(1, -1);
+        }
     }
 
-    return `    ${field.name}: ${zodType}`;
+    // Get inner type for arrays
+    let innerType = baseType;
+    if (isArray) {
+        const arrayMatch = baseType.match(/^\((.+)\)\[\]$/) || baseType.match(/^(.+)\[\]$/);
+        if (arrayMatch) {
+            innerType = arrayMatch[1];
+        } else if (baseType.startsWith('Array<') && baseType.endsWith('>')) {
+            innerType = baseType.slice(6, -1);
+        }
+    }
+
+    let zodType = '';
+
+    // Handle string type with validations
+    if (innerType === 'string' && !isArray) {
+        // Use Zod 4 top-level APIs for email, url, and uuid
+        if (isEmailField) {
+            usedZodFunctions.add('email');
+            zodType = 'email()';
+        } else if (isUrlField) {
+            usedZodFunctions.add('url');
+            zodType = 'url()';
+        } else if (isUuidField) {
+            usedZodFunctions.add('uuid');
+            zodType = 'uuid()';
+        } else if (isDateTimeField) {
+            // For date-time strings, use iso.datetime() for strict ISO 8601 validation
+            usedZodFunctions.add('iso');
+            zodType = 'iso.datetime()';
+        } else {
+            usedZodFunctions.add('string');
+            let validations = 'string()';
+
+            // Check for exact length (minLength === maxLength)
+            if (field.minLength !== undefined && field.maxLength !== undefined && field.minLength === field.maxLength) {
+                validations += '.length(' + field.minLength + ", '" + readableName + ' must be exactly ' + field.minLength + " characters')";
+            } else {
+                // Min length
+                if (field.minLength !== undefined && field.minLength > 0) {
+                    if (field.minLength === 1) {
+                        validations += ".min(1, '" + readableName + " is required')";
+                    } else {
+                        validations += '.min(' + field.minLength + ", '" + readableName + ' must be at least ' + field.minLength + " characters')";
+                    }
+                } else if (!field.nullable && !isVersionField) {
+                    // Non-nullable string without explicit minLength - add .min(1) to ensure not empty
+                    validations += ".min(1, '" + readableName + " is required')";
+                }
+
+                // Max length
+                if (field.maxLength !== undefined) {
+                    validations += '.max(' + field.maxLength + ", '" + readableName + ' must be at most ' + field.maxLength + " characters')";
+                }
+            }
+
+            // Pattern validation
+            if (field.pattern) {
+                validations += '.regex(/' + field.pattern + "/, '" + readableName + " has invalid format')";
+            }
+
+            zodType = validations;
+        }
+    }
+    // Handle number type with validations
+    else if ((innerType === 'number' || field.format === 'int32' || field.format === 'int64' || field.format === 'double') && !isArray) {
+        // Use Zod 4 top-level int32() for int32 format
+        if (field.format === 'int32') {
+            usedZodFunctions.add('int32');
+            let validations = 'int32()';
+
+            // Min value
+            if (field.minimum !== undefined) {
+                validations += '.min(' + field.minimum + ", '" + readableName + ' must be at least ' + field.minimum + "')";
+            }
+
+            // Max value
+            if (field.maximum !== undefined) {
+                validations += '.max(' + field.maximum + ", '" + readableName + ' must be at most ' + field.maximum + "')";
+            }
+
+            zodType = validations;
+        } else if (field.format === 'int64') {
+            // For int64, use int() which handles safe integers
+            usedZodFunctions.add('int');
+            let validations = 'int()';
+
+            // Min value
+            if (field.minimum !== undefined) {
+                validations += '.min(' + field.minimum + ", '" + readableName + ' must be at least ' + field.minimum + "')";
+            }
+
+            // Max value
+            if (field.maximum !== undefined) {
+                validations += '.max(' + field.maximum + ", '" + readableName + ' must be at most ' + field.maximum + "')";
+            }
+
+            zodType = validations;
+        } else {
+            usedZodFunctions.add('number');
+            let validations = 'number()';
+
+            // Min value
+            if (field.minimum !== undefined) {
+                validations += '.min(' + field.minimum + ", '" + readableName + ' must be at least ' + field.minimum + "')";
+            }
+
+            // Max value
+            if (field.maximum !== undefined) {
+                validations += '.max(' + field.maximum + ", '" + readableName + ' must be at most ' + field.maximum + "')";
+            }
+
+            zodType = validations;
+        }
+    }
+    // Handle other types using the base converter
+    else {
+        zodType = typeToZod(type, field.isRequired, field.nullable, field.name);
+    }
+
+    // Handle nullable (adds .nullable())
+    if (isNullableUnion && !zodType.includes('.nullable()')) {
+        zodType = zodType + '.nullable()';
+    }
+
+    // Handle optional (non-required fields and nullable fields are optional)
+    if (field.nullable || !field.isRequired) {
+        zodType = zodType + '.optional()';
+    }
+
+    return '    ' + field.name + ': ' + zodType;
 };
 
 // Build enum schemas
@@ -165,21 +342,23 @@ for (const contract of modelTypes) {
         const info = enumInfo.get(contract.name);
         if (!info || info.values.length === 0) continue;
 
+        const schemaName = contract.name + 'Schema';
+
         if (info.isStringEnum) {
             usedZodFunctions.add('enum');
-            const values = info.values.map(item => `'${item.value}'`);
+            const values = info.values.map(item => "'" + item.value + "'");
             enumSchemas.push({
                 name: contract.name,
-                schema: `export const ${contract.name}Schema = zodEnum([${values.join(', ')}]);`
+                schema: 'export const ' + schemaName + ' = zodEnum([' + values.join(', ') + ']);'
             });
         } else {
             // Numeric enum - use union of literals
             usedZodFunctions.add('union');
             usedZodFunctions.add('literal');
-            const values = info.values.map(item => `literal(${item.value})`);
+            const values = info.values.map(item => 'literal(' + item.value + ')');
             enumSchemas.push({
                 name: contract.name,
-                schema: `export const ${contract.name}Schema = union([${values.join(', ')}]);`
+                schema: 'export const ' + schemaName + ' = union([' + values.join(', ') + ']);'
             });
         }
     }
@@ -196,11 +375,12 @@ for (const contract of modelTypes) {
 
         usedZodFunctions.add('object');
         usedZodFunctions.add('infer');
+        const schemaName = contract.name + 'Schema';
         const fieldLines = fields.map(field => buildZodField(field)).join(',\n');
         schemaOutputs.push({
             name: contract.name,
-            schema: `export const ${contract.name}Schema = object({\n${fieldLines}\n});`,
-            type: `export type ${contract.name}FormData = Infer<typeof ${contract.name}Schema>;`
+            schema: 'export const ' + schemaName + ' = object({\n' + fieldLines + '\n});',
+            type: 'export type ' + contract.name + 'FormData = Infer<typeof ' + schemaName + '>;'
         });
     }
 }
@@ -224,12 +404,12 @@ const outputLines = [];
 
 // Type imports first (if any)
 if (typeImports.length > 0) {
-    outputLines.push(`import type { ${typeImports.join(', ')} } from 'zod';`);
+    outputLines.push("import type { " + typeImports.join(', ') + " } from 'zod';");
     outputLines.push('');
 }
 
 // Value imports
-outputLines.push(`import { ${valueImports.join(', ')} } from 'zod';`);
+outputLines.push("import { " + valueImports.join(', ') + " } from 'zod';");
 
 // Enum schemas
 if (enumSchemas.length > 0) {
