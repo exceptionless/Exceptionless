@@ -370,8 +370,9 @@ export function postOrganization() {
             return response.data!;
         },
         mutationKey: queryKeys.postOrganization(),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        onSuccess: (organization: ViewOrganization) => {
+            queryClient.setQueryData(queryKeys.id(organization.id, 'stats'), organization);
+            queryClient.setQueryData(queryKeys.id(organization.id), organization);
         }
     }));
 }

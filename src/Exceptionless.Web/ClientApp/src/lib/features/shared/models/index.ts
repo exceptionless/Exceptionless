@@ -2,10 +2,7 @@ export type { CountResult, IAggregate, StringValueFromBody, WorkInProgressResult
 
 export * from './aggregations';
 
-export class CustomDateRange {
-    @IsString()
+export interface CustomDateRange {
     end?: string;
-
-    @IsString()
     start?: string;
 }
