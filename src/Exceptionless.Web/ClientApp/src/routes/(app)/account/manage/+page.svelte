@@ -4,7 +4,10 @@
     import * as Avatar from '$comp/ui/avatar';
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
+    import * as InputGroup from '$comp/ui/input-group';
     import { Separator } from '$comp/ui/separator';
+    import { Spinner } from '$comp/ui/spinner';
+    import { validateEmailAvailability } from '$features/auth/validators';
     import { getMeQuery, patchUser, postEmailAddress, resendVerificationEmail } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { type UpdateUserEmailAddressFormData, UpdateUserEmailAddressSchema, type UpdateUserFormData, UpdateUserSchema } from '$features/users/schemas';
@@ -60,7 +63,7 @@
                         return problemDetailsToFormErrors(error);
                     }
 
-                    return { form: 'An unexpected error occurred.' };
+                    return { form: 'An unexpected error occurred, please try again.' };
                 }
             }
         }
@@ -84,7 +87,7 @@
                         return problemDetailsToFormErrors(error);
                     }
 
-                    return { form: 'An unexpected error occurred.' };
+                    return { form: 'An unexpected error occurred, please try again.' };
                 }
             }
         }
@@ -169,25 +172,35 @@
                     <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
                 {/snippet}
             </updateEmailAddressForm.Subscribe>
-            <updateEmailAddressForm.Field name="email_address">
+            <updateEmailAddressForm.Field
+                name="email_address"
+                validators={{ onChangeAsync: ({ value }) => validateEmailAvailability(value ?? ''), onChangeAsyncDebounceMs: 1000 }}
+            >
                 {#snippet children(field)}
                     <Field.Field data-invalid={ariaInvalid(field)}>
                         <Field.Label for={field.name}>Email</Field.Label>
-                        <Input
-                            id={field.name}
-                            name={field.name}
-                            type="email"
-                            placeholder="Enter email address"
-                            autocomplete="email"
-                            required
-                            value={field.state.value}
-                            onblur={field.handleBlur}
-                            oninput={(e) => {
-                                field.handleChange(e.currentTarget.value);
-                                debouncedUpdateEmailAddressFormSubmit();
-                            }}
-                            aria-invalid={ariaInvalid(field)}
-                        />
+                        <InputGroup.Root>
+                            <InputGroup.Input
+                                id={field.name}
+                                name={field.name}
+                                type="email"
+                                placeholder="Enter email address"
+                                autocomplete="email"
+                                required
+                                value={field.state.value}
+                                onblur={field.handleBlur}
+                                oninput={(e) => {
+                                    field.handleChange(e.currentTarget.value);
+                                    debouncedUpdateEmailAddressFormSubmit();
+                                }}
+                                aria-invalid={ariaInvalid(field)}
+                            />
+                            {#if field.state.meta.isValidating}
+                                <InputGroup.Addon align="inline-end" aria-label="Validating email">
+                                    <Spinner class="size-4" />
+                                </InputGroup.Addon>
+                            {/if}
+                        </InputGroup.Root>
                         <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
                     </Field.Field>
                 {/snippet}

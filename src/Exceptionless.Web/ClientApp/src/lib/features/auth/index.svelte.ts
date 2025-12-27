@@ -5,7 +5,23 @@ import { env } from '$env/dynamic/public';
 import { CachedPersistedState } from '$features/shared/utils/cached-persisted-state.svelte';
 import { useFetchClient } from '@exceptionless/fetchclient';
 
-import type { Login, TokenResult } from './models';
+import type { TokenResult } from './models';
+
+// Re-export all API functions for backward compatibility
+export {
+    cancelResetPassword,
+    changePassword,
+    forgotPassword,
+    isEmailAddressTaken,
+    login,
+    logout,
+    resetPassword,
+    signup,
+    unlinkOAuthAccount
+} from './api.svelte';
+
+// Re-export validators
+export { validateEmailAvailability } from './validators';
 
 export interface OAuthLoginOptions extends OAuthPopupOptions {
     redirectUrl?: string;
@@ -45,6 +61,15 @@ export const googleClientId = env.PUBLIC_GOOGLE_APPID;
 export const microsoftClientId = env.PUBLIC_MICROSOFT_APPID;
 export const slackClientId = env.PUBLIC_SLACK_APPID;
 export const enableOAuthLogin = facebookClientId || gitHubClientId || googleClientId || microsoftClientId;
+
+export async function gotoLogin() {
+    const url = page.url;
+    const isAuthPath = url.pathname.startsWith('/next/login') || url.pathname.startsWith('/next/logout');
+    const redirect = url.pathname === resolve('/') || isAuthPath ? resolve('/(auth)/login') : `${resolve('/(auth)/login')}?redirect=${url.pathname}`;
+    await goto(redirect, { replaceState: true });
+}
+
+// OAuth login functions (interactive popup-based, not pure API calls)
 
 export async function facebookLogin(redirectUrl?: string) {
     if (!facebookClientId) {
@@ -96,13 +121,6 @@ export async function googleLogin(redirectUrl?: string) {
     });
 }
 
-export async function gotoLogin() {
-    const url = page.url;
-    const isAuthPath = url.pathname.startsWith('/next/login') || url.pathname.startsWith('/next/logout');
-    const redirect = url.pathname === resolve('/') || isAuthPath ? resolve('/(auth)/login') : `${resolve('/(auth)/login')}?redirect=${url.pathname}`;
-    await goto(redirect, { replaceState: true });
-}
-
 export async function liveLogin(redirectUrl?: string) {
     if (!microsoftClientId) {
         throw new Error('Live client id not set');
@@ -118,29 +136,6 @@ export async function liveLogin(redirectUrl?: string) {
         redirectUrl,
         scope: 'wl.emails'
     });
-}
-
-export async function login(email: string, password: string) {
-    const data: Login = { email, password };
-    const client = useFetchClient();
-    const response = await client.postJSON<TokenResult>('auth/login', data, {
-        expectedStatusCodes: [401, 422]
-    });
-
-    if (response.ok && response.data?.token) {
-        accessToken.current = response.data.token;
-    } else if (response.status === 401) {
-        response.problem.setErrorMessage('Invalid email or password');
-    }
-
-    return response;
-}
-
-export async function logout() {
-    const client = useFetchClient();
-    await client.get('auth/logout', { expectedStatusCodes: [200, 401] });
-
-    accessToken.current = '';
 }
 
 export async function slackOAuthLogin(): Promise<string> {
@@ -161,6 +156,8 @@ export async function slackOAuthLogin(): Promise<string> {
 
     return data.code;
 }
+
+// OAuth helpers
 
 async function oauthLogin(options: OAuthLoginOptions) {
     const data = await openOAuthPopup(options);
