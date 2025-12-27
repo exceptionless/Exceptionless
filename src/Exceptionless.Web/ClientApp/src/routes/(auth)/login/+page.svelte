@@ -54,7 +54,7 @@
     }));
 </script>
 
-<Card.Root class="mx-auto max-w-sm">
+<Card.Root class="mx-auto w-sm">
     <Card.Header>
         <Logo />
         <Card.Title class="text-center text-2xl">Log in to your account</Card.Title>

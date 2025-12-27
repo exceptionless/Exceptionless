@@ -53,6 +53,14 @@
 
     const table = createTable(getTableOptions<ViewUser>(usersQueryParameters, usersQuery, organizationId));
 
+    const addUserMutation = addOrganizationUser({
+        route: {
+            get organizationId() {
+                return organizationId;
+            }
+        }
+    });
+
     $effect(() => {
         queryParams.limit ??= DEFAULT_LIMIT;
     });
@@ -68,13 +76,7 @@
         toast.dismiss(toastId);
 
         try {
-            const mutation = addOrganizationUser({
-                route: {
-                    email,
-                    organizationId
-                }
-            });
-            await mutation.mutateAsync();
+            await addUserMutation.mutateAsync(email);
             toastId = toast.success('User invited successfully');
         } catch (error: unknown) {
             const message = error instanceof ProblemDetails ? error.title : 'Please try again.';

@@ -18,7 +18,7 @@
 </script>
 
 <div class="flex h-screen w-full items-center justify-center">
-    <Card.Root class="mx-auto max-w-sm">
+    <Card.Root class="mx-auto w-sm">
         <Card.Header>
             <Logo />
             <Card.Title class="text-center text-2xl">Service Status</Card.Title>

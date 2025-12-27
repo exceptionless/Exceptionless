@@ -8,7 +8,7 @@
     import { Input } from '$comp/ui/input';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { webhookEventTypes } from '$features/webhooks/options';
-    import { type NewWebhookFormData, NewWebhookSchema } from '$features/webhooks/schemas';
+    import { type NewWebHookFormData, NewWebHookSchema } from '$features/webhooks/schemas';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
 
@@ -28,9 +28,9 @@
             organization_id: organizationId,
             project_id: projectId,
             url: ''
-        } as NewWebhookFormData,
+        } as NewWebHookFormData,
         validators: {
-            onSubmit: NewWebhookSchema,
+            onSubmit: NewWebHookSchema,
             onSubmitAsync: async ({ value }) => {
                 try {
                     await save(value as NewWebhook);
@@ -40,7 +40,7 @@
                     if (error instanceof ProblemDetails) {
                         return problemDetailsToFormErrors(error);
                     }
-                    return { form: 'An unexpected error occurred.' };
+                    return { form: 'An unexpected error occurred, please try again.' };
                 }
             }
         }

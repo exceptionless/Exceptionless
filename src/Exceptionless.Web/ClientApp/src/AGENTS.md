@@ -140,7 +140,7 @@ onSubmitAsync: async ({ value }) => {
         if (error instanceof ProblemDetails) {
             return problemDetailsToFormErrors(error);
         }
-        return { form: 'An unexpected error occurred.' };
+        return { form: 'An unexpected error occurred, please try again.' };
     }
 };
 ```
@@ -189,7 +189,7 @@ For forms inside dialogs, close the dialog only after successful submission:
                     if (error instanceof ProblemDetails) {
                         return problemDetailsToFormErrors(error);
                     }
-                    return { form: 'An unexpected error occurred.' };
+                    return { form: 'An unexpected error occurred, please try again.' };
                 }
             }
         }

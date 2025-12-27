@@ -23,15 +23,20 @@
 
     const removeUser = deleteOrganizationUser({
         route: {
-            email: user.email_address,
-            organizationId
+            get email() {
+                return user.email_address ?? '';
+            },
+            get organizationId() {
+                return organizationId;
+            }
         }
     });
 
     const addUser = addOrganizationUser({
         route: {
-            email: user.email_address,
-            organizationId
+            get organizationId() {
+                return organizationId;
+            }
         }
     });
 
@@ -52,7 +57,7 @@
         toast.dismiss(toastId);
 
         try {
-            await addUser.mutateAsync();
+            await addUser.mutateAsync(user.email_address);
             toastId = toast.success('Successfully resent the invite email.');
         } catch (error: unknown) {
             const message = error instanceof ProblemDetails ? error.title : 'Please try again.';

@@ -38,7 +38,7 @@
                         return problemDetailsToFormErrors(error);
                     }
 
-                    return { form: 'An unexpected error occurred.' };
+                    return { form: 'An unexpected error occurred, please try again.' };
                 }
             }
         }

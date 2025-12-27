@@ -191,7 +191,7 @@ export const NewWebHookSchema = object({
       "StackRegression",
     ]),
   ),
-  version: string(),
+  version: string().optional(),
 });
 export type NewWebHookFormData = Infer<typeof NewWebHookSchema>;
 
