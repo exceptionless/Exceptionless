@@ -56,12 +56,12 @@
 		const [item] = tooltipCtx.payload;
 		const key = labelKey ?? item?.label ?? item?.name ?? "value";
 
-		const itemConfig = getPayloadConfigFromPayload(chart.config, item, key);
+		const itemConfig = item ? getPayloadConfigFromPayload(chart.config, item, key) : undefined;
 
 		const value =
 			!labelKey && typeof label === "string"
 				? (chart.config[label as keyof typeof chart.config]?.label ?? label)
-				: (itemConfig?.label ?? item.label);
+				: (itemConfig?.label ?? item?.label);
 
 		if (value === undefined) return null;
 		if (!labelFormatter) return value;
