@@ -5,9 +5,11 @@
     import { P } from '$comp/typography';
     import * as Card from '$comp/ui/card';
     import { Spinner } from '$comp/ui/spinner';
+    import { getSafeRedirectUrl } from '$features/shared/url';
     import { getHealthQuery } from '$features/status/api.svelte';
 
-    let redirect = page.url.searchParams.get('redirect');
+    const redirectParam = page.url.searchParams.get('redirect');
+    const redirect = redirectParam ? getSafeRedirectUrl(redirectParam, null) : null;
 
     const healthQuery = getHealthQuery();
     $effect(() => {

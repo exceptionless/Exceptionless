@@ -26,12 +26,14 @@
         microsoftClientId
     } from '$features/auth/index.svelte';
     import { type LoginFormData, LoginSchema } from '$features/auth/schemas';
+    import { getSafeRedirectUrl } from '$features/shared/url';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import Facebook from '@lucide/svelte/icons/facebook';
     import GitHub from '@lucide/svelte/icons/github';
     import { createForm } from '@tanstack/svelte-form';
 
-    const redirectUrl = page.url.searchParams.get('redirect') ?? resolve('/(app)');
+    const defaultRedirect = resolve('/(app)');
+    const redirectUrl = getSafeRedirectUrl(page.url.searchParams.get('redirect'), defaultRedirect);
 
     const form = createForm(() => ({
         defaultValues: {
