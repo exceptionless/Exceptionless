@@ -7,7 +7,7 @@
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
     import * as Dialog from '$comp/ui/dialog';
-    import { Pagination, PaginationContent, PaginationFirstButton, PaginationItem, PaginationNextButton, PaginationPrevButton } from '$comp/ui/pagination';
+    import { Pagination, PaginationContent, PaginationFirstButton, PaginationItem, PaginationNext, PaginationPrevious } from '$comp/ui/pagination';
     import * as Select from '$comp/ui/select';
     import { Skeleton } from '$comp/ui/skeleton';
     import { getAdminOrganizationsQuery } from '$features/organizations/api.svelte';
@@ -463,10 +463,10 @@
                                 <PaginationFirstButton {currentPage} />
                             </PaginationItem>
                             <PaginationItem>
-                                <PaginationPrevButton />
+                                <PaginationPrevious />
                             </PaginationItem>
                             <PaginationItem>
-                                <PaginationNextButton />
+                                <PaginationNext />
                             </PaginationItem>
                         </PaginationContent>
                     </Pagination>

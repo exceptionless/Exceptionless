@@ -5,7 +5,7 @@
 <script generics="TData" lang="ts">
     import type { Table } from '@tanstack/svelte-table';
 
-    import { Pagination, PaginationContent, PaginationFirstButton, PaginationItem, PaginationNextButton, PaginationPrevButton } from '$comp/ui/pagination';
+    import { Pagination, PaginationContent, PaginationFirstButton, PaginationItem, PaginationNext, PaginationPrevious } from '$comp/ui/pagination';
 
     interface Props {
         table: Table<TData>;
@@ -28,10 +28,10 @@
             <PaginationFirstButton currentPage={page} />
         </PaginationItem>
         <PaginationItem>
-            <PaginationPrevButton />
+            <PaginationPrevious />
         </PaginationItem>
         <PaginationItem>
-            <PaginationNextButton />
+            <PaginationNext />
         </PaginationItem>
     </PaginationContent>
 </Pagination>

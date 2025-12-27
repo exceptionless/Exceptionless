@@ -5,7 +5,8 @@
 	import { getTooltipContext, Tooltip as TooltipPrimitive } from "layerchart";
 	import type { Snippet } from "svelte";
 
-	function defaultFormatter(value: unknown, _payload: TooltipPayload[]) {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	function defaultFormatter(value: any, _payload: TooltipPayload[]) {
 		return `${value}`;
 	}
 
@@ -31,7 +32,8 @@
 		labelKey?: string;
 		hideIndicator?: boolean;
 		labelClassName?: string;
-		labelFormatter?: ((value: unknown, payload: TooltipPayload[]) => string | number | Snippet) | null;
+		labelFormatter?: // eslint-disable-next-line @typescript-eslint/no-explicit-any
+			((value: any, payload: TooltipPayload[]) => string | number | Snippet) | null;
 		formatter?: Snippet<
 			[
 				{
@@ -54,12 +56,12 @@
 		const [item] = tooltipCtx.payload;
 		const key = labelKey ?? item?.label ?? item?.name ?? "value";
 
-		const itemConfig = item ? getPayloadConfigFromPayload(chart.config, item, key) : undefined;
+		const itemConfig = getPayloadConfigFromPayload(chart.config, item, key);
 
 		const value =
 			!labelKey && typeof label === "string"
 				? (chart.config[label as keyof typeof chart.config]?.label ?? label)
-				: (itemConfig?.label ?? item?.label);
+				: (itemConfig?.label ?? item.label);
 
 		if (value === undefined) return null;
 		if (!labelFormatter) return value;
@@ -84,7 +86,7 @@
 <TooltipPrimitive.Root variant="none">
 	<div
 		class={cn(
-			"border-border/50 bg-background grid min-w-36 items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl",
+			"border-border/50 bg-background grid min-w-[9rem] items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl",
 			className
 		)}
 		{...restProps}
@@ -118,7 +120,7 @@
 							<div
 								style="--color-bg: {indicatorColor}; --color-border: {indicatorColor};"
 								class={cn(
-									"border-(--color-border) bg-(--color-bg) shrink-0 rounded-[2px]",
+									"shrink-0 rounded-[2px] border-(--color-border) bg-(--color-bg)",
 									{
 										"size-2.5": indicator === "dot",
 										"h-full w-1": indicator === "line",
