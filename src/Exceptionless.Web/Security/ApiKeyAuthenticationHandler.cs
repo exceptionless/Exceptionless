@@ -105,18 +105,18 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             return AuthenticateResult.Fail("Token is not valid");
         }
 
-        if (tokenRecord.IsDisabled || (Request.IsEventPost() && tokenRecord.IsSuspended))
+        if (tokenRecord.IsDisabled || tokenRecord.IsSuspended)
         {
-            AppDiagnostics.PostsBlocked.Add(1);
-            Logger.LogInformation("Token {Token} is disabled or account is suspended for {Path}", token, Request.Path);
+            if (Request.IsEventPost())
+                AppDiagnostics.PostsBlocked.Add(1);
 
+            Logger.LogInformation("Token {Token} is disabled or account is suspended for {Path}", token, Request.Path);
             return AuthenticateResult.Fail("Token is not valid");
         }
 
         if (tokenRecord.ExpiresUtc.HasValue && tokenRecord.ExpiresUtc.Value < _timeProvider.GetUtcNow().UtcDateTime)
         {
             Logger.LogInformation("Token {Token} for {Path} expired on {TokenExpiresUtc}", token, Request.Path, tokenRecord.ExpiresUtc.Value);
-
             return AuthenticateResult.Fail("Token is not valid");
         }
 
