@@ -15,9 +15,15 @@
     const builder: FacetFilterBuilder<BooleanFilter> = {
         component: BooleanFacetedFilter,
         create: (filter?: BooleanFilter) => filter ?? new BooleanFilter(term),
-        priority,
-        title
+        get priority() {
+            return priority;
+        },
+        get title() {
+            return title;
+        }
     };
 
-    builderContext.set(`boolean-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
+    $effect(() => {
+        builderContext.set(`boolean-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
+    });
 </script>

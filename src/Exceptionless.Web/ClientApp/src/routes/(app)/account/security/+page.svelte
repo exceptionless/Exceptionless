@@ -1,208 +1,144 @@
 <script lang="ts">
-    import { resolve } from '$app/paths';
     import ErrorMessage from '$comp/error-message.svelte';
-    import PasswordInput from '$comp/form/password-input.svelte';
-    import GoogleIcon from '$comp/icons/GoogleIcon.svelte';
-    import MicrosoftIcon from '$comp/icons/MicrosoftIcon.svelte';
     import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
+    import * as Field from '$comp/ui/field';
+    import { Input } from '$comp/ui/input';
     import { Separator } from '$comp/ui/separator';
-    import { Spinner } from '$comp/ui/spinner';
-    import {
-        enableOAuthLogin,
-        facebookClientId,
-        facebookLogin,
-        gitHubClientId,
-        githubLogin,
-        googleClientId,
-        googleLogin,
-        liveLogin,
-        microsoftClientId
-    } from '$features/auth/index.svelte';
-    import { User } from '$features/users/models';
-    import { useFetchClientStatus } from '$shared/api/api.svelte';
-    import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-    import Facebook from '@lucide/svelte/icons/facebook';
-    import GitHub from '@lucide/svelte/icons/github';
+    import { changePassword } from '$features/auth/index.svelte';
+    import { ChangePasswordSchema, ChangePasswordWithCurrentSchema } from '$features/auth/schemas';
+    import { getMeQuery } from '$features/users/api.svelte';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
+    import { createForm } from '@tanstack/svelte-form';
+    import { toast } from 'svelte-sonner';
 
-    const data = $state(new User());
+    let toastId = $state<number | string>();
+    const meQuery = getMeQuery();
 
-    const client = useFetchClient();
-    const clientStatus = useFetchClientStatus(client);
+    const hasLocalAccount = $derived(meQuery.data?.has_local_account ?? false);
 
-    let problem = $state(new ProblemDetails());
+    const form = createForm(() => ({
+        defaultValues: {
+            confirm_password: '',
+            current_password: '',
+            password: ''
+        },
+        validators: {
+            onSubmit: hasLocalAccount ? ChangePasswordWithCurrentSchema : ChangePasswordSchema,
+            onSubmitAsync: async ({ value }) => {
+                toast.dismiss(toastId);
 
-    async function onSave() {
-        if (client.isLoading) {
-            return;
+                const response = await changePassword(hasLocalAccount ? value.current_password : undefined, value.password);
+                if (response.ok) {
+                    await meQuery.refetch();
+                    form.reset();
+                    toastId = toast.success(hasLocalAccount ? 'Password changed successfully.' : 'Password set successfully.');
+                    return null;
+                }
+
+                toastId = toast.error(hasLocalAccount ? 'Error changing password. Please try again.' : 'Error setting password. Please try again.');
+                return problemDetailsToFormErrors(response.problem);
+            }
         }
-
-        // let response = await save(data);
-        // if (response.ok) {
-        //     // TODO
-        // } else {
-        // 	problem = response.problem;
-        // }
-    }
+    }));
 </script>
 
 <div class="space-y-6">
     <div>
-        <H3>Change password</H3>
-        <Muted>Update your password to keep your account secure.</Muted>
+        <H3>Change Password</H3>
+        <Muted>{hasLocalAccount ? 'Change your password.' : 'Set a password to enable password-based sign in.'}</Muted>
     </div>
     <Separator />
 
-    <form class="space-y-2" onsubmit={onSave}>
-        <ErrorMessage message={problem.errors.general}></ErrorMessage>
+    <form
+        class="max-w-md space-y-4"
+        onsubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+        }}
+    >
+        <form.Subscribe selector={(state) => state.errors}>
+            {#snippet children(errors)}
+                <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
+            {/snippet}
+        </form.Subscribe>
 
-        <PasswordInput
-            autocomplete="current-password"
-            bind:value={data.password}
-            label="Old password"
-            maxlength={100}
-            minlength={6}
-            name="current_password"
-            placeholder=""
-            {problem}
-            required
-        ></PasswordInput>
+        {#if hasLocalAccount}
+            <form.Field name="current_password">
+                {#snippet children(field)}
+                    <Field.Field data-invalid={ariaInvalid(field)}>
+                        <Field.Label for={field.name}>Current Password</Field.Label>
+                        <Input
+                            id={field.name}
+                            name={field.name}
+                            type="password"
+                            placeholder="Enter current password"
+                            autocomplete="current-password"
+                            required
+                            value={field.state.value}
+                            onblur={field.handleBlur}
+                            oninput={(e) => field.handleChange(e.currentTarget.value)}
+                            aria-invalid={ariaInvalid(field)}
+                        />
+                        <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                    </Field.Field>
+                {/snippet}
+            </form.Field>
+        {/if}
 
-        <PasswordInput
-            autocomplete="new-password"
-            bind:value={data.password}
-            label="New password"
-            maxlength={100}
-            minlength={6}
-            name="new_password"
-            placeholder=""
-            {problem}
-            required
-        ></PasswordInput>
+        <form.Field name="password">
+            {#snippet children(field)}
+                <Field.Field data-invalid={ariaInvalid(field)}>
+                    <Field.Label for={field.name}>{hasLocalAccount ? 'New Password' : 'Password'}</Field.Label>
+                    <Input
+                        id={field.name}
+                        name={field.name}
+                        type="password"
+                        placeholder={hasLocalAccount ? 'Enter new password' : 'Enter password'}
+                        autocomplete="new-password"
+                        required
+                        value={field.state.value}
+                        onblur={field.handleBlur}
+                        oninput={(e) => field.handleChange(e.currentTarget.value)}
+                        aria-invalid={ariaInvalid(field)}
+                    />
+                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                </Field.Field>
+            {/snippet}
+        </form.Field>
 
-        <PasswordInput
-            autocomplete="new-password"
-            bind:value={data.password}
-            label="Confirm new password"
-            maxlength={100}
-            minlength={6}
-            name="confirm_new_password"
-            placeholder=""
-            {problem}
-            required
-        ></PasswordInput>
+        <form.Field name="confirm_password">
+            {#snippet children(field)}
+                <Field.Field data-invalid={ariaInvalid(field)}>
+                    <Field.Label for={field.name}>Confirm Password</Field.Label>
+                    <Input
+                        id={field.name}
+                        name={field.name}
+                        type="password"
+                        placeholder="Confirm password"
+                        autocomplete="new-password"
+                        required
+                        value={field.state.value}
+                        onblur={field.handleBlur}
+                        oninput={(e) => field.handleChange(e.currentTarget.value)}
+                        aria-invalid={ariaInvalid(field)}
+                    />
+                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                </Field.Field>
+            {/snippet}
+        </form.Field>
 
-        <Muted>Make sure it's at least 6 characters including a number and a lowercase letter.</Muted>
-
-        <div class="pt-2">
-            <Button type="submit">
-                {#if clientStatus.isLoading}
-                    <Spinner /> Updating password...
-                {:else}
-                    Update password
-                {/if}
-            </Button>
-        </div>
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+            {#snippet children(isSubmitting)}
+                <Button type="submit" disabled={isSubmitting}>
+                    {#if isSubmitting}
+                        {hasLocalAccount ? 'Changing Password...' : 'Setting Password...'}
+                    {:else}
+                        {hasLocalAccount ? 'Change Password' : 'Set Password'}
+                    {/if}
+                </Button>
+            {/snippet}
+        </form.Subscribe>
     </form>
-
-    {#if !enableOAuthLogin}
-        <div>
-            <H3>Connected accounts</H3>
-            <Muted>These are the social accounts you connected to your Exceptionless account to log in. You can disable access here.</Muted>
-        </div>
-        <Separator />
-
-        <ul class="divide-border divide-y">
-            {#if !microsoftClientId}
-                <li class="pb-4">
-                    <div class="flex items-center space-x-4">
-                        <MicrosoftIcon class="size-4" />
-                        <div class="min-w-0 flex-1 font-semibold">Microsoft account</div>
-                        <div class="inline-flex items-center">
-                            {#if true}
-                                <Button
-                                    aria-label="Disconnect Microsoft account"
-                                    onclick={() => liveLogin(resolve('/(app)/account/security'))}
-                                    variant="outline"
-                                >
-                                    Disconnect
-                                </Button>
-                            {:else}
-                                <Button aria-label="Connect Microsoft account" onclick={() => liveLogin(resolve('/(app)/account/security'))}>Connect</Button>
-                            {/if}
-                        </div>
-                    </div>
-                </li>
-            {/if}
-            {#if !googleClientId}
-                <li class="py-4">
-                    <div class="flex items-center space-x-4">
-                        <GoogleIcon class="size-4" />
-                        <div class="min-w-0 flex-1 font-semibold">Google account</div>
-                        <div class="inline-flex items-center">
-                            {#if false}
-                                <Button
-                                    aria-label="Disconnect Google account"
-                                    onclick={() => googleLogin(resolve('/(app)/account/security'))}
-                                    variant="outline"
-                                >
-                                    Disconnect
-                                </Button>
-                            {:else}
-                                <Button aria-label="Connect Google account" onclick={() => googleLogin(resolve('/(app)/account/security'))}>Connect</Button>
-                            {/if}
-                        </div>
-                    </div>
-                </li>
-            {/if}
-            {#if !facebookClientId}
-                <li class="py-4">
-                    <div class="flex items-center space-x-4">
-                        <Facebook class="size-4" />
-                        <div class="min-w-0 flex-1 font-semibold">Facebook account</div>
-                        <div class="inline-flex items-center">
-                            {#if false}
-                                <Button
-                                    aria-label="Disconnect Facebook account"
-                                    onclick={() => facebookLogin(resolve('/(app)/account/security'))}
-                                    variant="outline"
-                                >
-                                    Disconnect
-                                </Button>
-                            {:else}
-                                <Button aria-label="Connect Facebook account" onclick={() => facebookLogin(resolve('/(app)/account/security'))}>Connect</Button>
-                            {/if}
-                        </div>
-                    </div>
-                </li>
-            {/if}
-            {#if !gitHubClientId}
-                <li class="py-4">
-                    <div class="flex items-center space-x-4">
-                        <GitHub class="size-4" />
-                        <div class="min-w-0 flex-1 font-semibold">GitHub account</div>
-                        <div class="inline-flex items-center">
-                            {#if true}
-                                <Button
-                                    aria-label="Disconnect GitHub account"
-                                    onclick={() => githubLogin(resolve('/(app)/account/security'))}
-                                    variant="outline"
-                                >
-                                    Disconnect
-                                </Button>
-                            {:else}
-                                <Button aria-label="Connect GitHub account" onclick={() => githubLogin(resolve('/(app)/account/security'))}>Connect</Button>
-                            {/if}
-                        </div>
-                    </div>
-                </li>
-            {/if}
-        </ul>
-        <div>
-            <button
-                class="bg-primary-700 hover:bg-primary-800 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800 rounded-lg px-5 py-2.5 text-center text-sm font-medium text-white focus:ring-4"
-                >Save all</button
-            >
-        </div>
-    {/if}
 </div>

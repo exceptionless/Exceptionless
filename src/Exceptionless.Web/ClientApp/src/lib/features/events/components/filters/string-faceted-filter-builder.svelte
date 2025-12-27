@@ -15,9 +15,15 @@
     const builder: FacetFilterBuilder<StringFilter> = {
         component: StringFacetedFilter,
         create: (filter?: StringFilter) => filter ?? new StringFilter(term),
-        priority,
-        title
+        get priority() {
+            return priority;
+        },
+        get title() {
+            return title;
+        }
     };
 
-    builderContext.set(`string-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
+    $effect(() => {
+        builderContext.set(`string-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
+    });
 </script>

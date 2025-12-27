@@ -2,4 +2,9 @@
 package-lock.json
 pnpm-lock.yaml
 yarn.lock
+
+# Generated files
+src/lib/generated
+
+# UI components (shadcn)
 src/lib/features/shared/components/ui

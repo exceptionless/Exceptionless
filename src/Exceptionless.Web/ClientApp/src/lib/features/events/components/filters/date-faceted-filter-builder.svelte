@@ -15,9 +15,15 @@
     const builder: FacetFilterBuilder<DateFilter> = {
         component: DateFacetedFilter,
         create: (filter?: DateFilter) => filter ?? new DateFilter(term),
-        priority,
-        title
+        get priority() {
+            return priority;
+        },
+        get title() {
+            return title;
+        }
     };
 
-    builderContext.set(`date-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
+    $effect(() => {
+        builderContext.set(`date-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
+    });
 </script>

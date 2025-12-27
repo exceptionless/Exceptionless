@@ -1,8 +1,8 @@
+import type { ClientConfiguration, ClientConfigurationSetting } from '$features/projects/models';
 import type { ProblemDetails } from '@exceptionless/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import ProjectConfigActionsCell from '$features/projects/components/table/project-config-actions-cell.svelte';
-import { type ClientConfiguration, ClientConfigurationSetting } from '$features/projects/models';
 import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
 import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
 
@@ -56,10 +56,7 @@ export function getTableOptions<TClientConfigurationSetting extends ClientConfig
     const queryData = $derived(
         Object.entries(queryResponse.data?.settings ?? {})
             .map(([key, value]) => {
-                const config = new ClientConfigurationSetting() as TClientConfigurationSetting;
-                config.key = key;
-                config.value = value;
-                return config;
+                return { key, value } as TClientConfigurationSetting;
             })
             .filter((setting) => !knownSettingsToHide.includes(setting.key))
     );

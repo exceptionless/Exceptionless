@@ -1,8 +1,9 @@
 <script lang="ts">
+    import type { Webhook } from '$features/webhooks/models';
+
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { deleteWebhook } from '$features/webhooks/api.svelte';
-    import { Webhook } from '$features/webhooks/models';
     import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
     import X from '@lucide/svelte/icons/x';
     import { toast } from 'svelte-sonner';

@@ -52,9 +52,10 @@ Use the chrome MCP to verify visual/functional correctness; default to the `/nex
 
 ## UI Patterns
 
-- Build forms with shadcn-svelte + superforms; validate with class-validator
-- Follow patterns from manage account/login pages
-- Use formatters in `src/lib/features/shared/components/formatters` for common types
+- Build forms with TanStack Form (`@tanstack/svelte-form`) and validate with Zod schemas.
+    - Create schemas in `schemas.ts` files next to models in each feature slice.
+    - See the manage account/login page for a complete example.
+- Use formatters in `src/lib/features/shared/components/formatters` when rendering built in types (boolean, date, number, etc).
 
 ## Accessibility (WCAG 2.2 AA)
 
