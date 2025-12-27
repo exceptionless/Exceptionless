@@ -34,23 +34,23 @@ public class OrganizationService : IStartupAction
 
     public Task RunAsync(CancellationToken shutdownToken = default)
     {
-        _organizationRepository.DocumentsSaved.AddHandler(OrgChanged);
+        _organizationRepository.DocumentsSaved.AddHandler(OnOrganizationSavedAsync);
         return Task.CompletedTask;
     }
 
-    private async Task OrgChanged(object source, ModifiedDocumentsEventArgs<Organization> args)
+    private async Task OnOrganizationSavedAsync(object source, ModifiedDocumentsEventArgs<Organization> args)
     {
         foreach (var doc in args.Documents)
         {
-            if (doc.Original is not null)
-            {
-                await _usageService.HandleOrganizationChange(doc.Value, doc.Original);
+            if (doc.Original is null)
+                continue;
 
-                if (doc.Original.IsSuspended == false && doc.Value.IsSuspended == true)
-                    await _tokenRepository.PatchAllAsync(q => q.Organization(doc.Value.Id).FieldEquals(t => t.IsSuspended, false), new PartialPatch(new { is_suspended = true }), o => o.ImmediateConsistency());
-                else if (doc.Original.IsSuspended == true && doc.Value.IsSuspended == false)
-                    await _tokenRepository.PatchAllAsync(q => q.Organization(doc.Value.Id).FieldEquals(t => t.IsSuspended, true), new PartialPatch(new { is_suspended = false }), o => o.ImmediateConsistency());
-            }
+            await _usageService.HandleOrganizationChangeAsync(doc.Value, doc.Original);
+
+            if (!doc.Original.IsSuspended && doc.Value.IsSuspended)
+                await _tokenRepository.PatchAllAsync(q => q.Organization(doc.Value.Id).FieldEquals(t => t.IsSuspended, false), new PartialPatch(new { is_suspended = true }), o => o.ImmediateConsistency());
+            else if (doc.Original.IsSuspended && !doc.Value.IsSuspended)
+                await _tokenRepository.PatchAllAsync(q => q.Organization(doc.Value.Id).FieldEquals(t => t.IsSuspended, true), new PartialPatch(new { is_suspended = false }), o => o.ImmediateConsistency());
         }
     }
 

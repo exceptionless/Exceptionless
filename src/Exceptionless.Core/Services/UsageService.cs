@@ -200,7 +200,7 @@ public class UsageService
         }
     }
 
-    public async Task HandleOrganizationChange(Organization modified, Organization original)
+    public async Task HandleOrganizationChangeAsync(Organization modified, Organization original)
     {
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
@@ -208,7 +208,6 @@ public class UsageService
 
         int modifiedMaxEvents = modified.GetMaxEventsPerMonthWithBonus(_timeProvider);
         int originalMaxEvents = original.GetMaxEventsPerMonthWithBonus(_timeProvider);
-
         if (modifiedMaxEvents == originalMaxEvents)
             return;
 

@@ -465,8 +465,8 @@ public class AuthController : ExceptionlessApiController
     /// Checks to see if an Email Address is available for account creation
     /// </summary>
     /// <param name="email"></param>
-    /// <response code="201">Email Address is available</response>
-    /// <response code="204">Email Address is not available</response>
+    /// <response code="201">Email Address is not available (user exists)</response>
+    /// <response code="204">Email Address is available</response>
     [ApiExplorerSettings(IgnoreApi = true)]
     [AllowAnonymous]
     [HttpGet("check-email-address/{email:minlength(1)}")]

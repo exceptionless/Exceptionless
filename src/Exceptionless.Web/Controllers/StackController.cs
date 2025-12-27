@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -99,7 +99,6 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <param name="version">A version number that the stack was fixed in.</param>
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpPost("{ids:objectids}/mark-fixed")]
-    [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public async Task<ActionResult> MarkFixedAsync(string ids, string? version = null)
@@ -157,7 +156,6 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     /// <param name="snoozeUntilUtc">A time that the stack should be snoozed until.</param>
     /// <response code="404">One or more stacks could not be found.</response>
     [HttpPost("{ids:objectids}/mark-snoozed")]
-    [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public async Task<IActionResult> SnoozeAsync(string ids, DateTime snoozeUntilUtc)
