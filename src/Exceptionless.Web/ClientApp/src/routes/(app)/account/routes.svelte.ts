@@ -1,6 +1,8 @@
 import { resolve } from '$app/paths';
+import { enableOAuthLogin } from '$features/auth/index.svelte';
 import Notifications from '@lucide/svelte/icons/bell';
 import Password from '@lucide/svelte/icons/key-round';
+import ExternalLogin from '@lucide/svelte/icons/link';
 import Verify from '@lucide/svelte/icons/shield-check';
 import Appearance from '@lucide/svelte/icons/sun-moon';
 import Account from '@lucide/svelte/icons/user';
@@ -32,8 +34,14 @@ export function routes(): NavigationItem[] {
             group: 'My Account',
             href: resolve('/(app)/account/security'),
             icon: Password,
-            show: () => false,
-            title: 'Password and authentication'
+            title: 'Password'
+        },
+        {
+            group: 'My Account',
+            href: resolve('/(app)/account/external-logins'),
+            icon: ExternalLogin,
+            show: () => !!enableOAuthLogin,
+            title: 'External Logins'
         },
         {
             group: 'My Account',

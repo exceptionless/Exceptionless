@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { ViewOrganization } from '$features/organizations/models';
     import type { Gravatar } from '$features/users/gravatar.svelte';
+    import type { ViewCurrentUser } from '$features/users/models';
 
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
@@ -13,7 +14,6 @@
     import ImpersonateOrganizationDialog from '$features/organizations/components/dialogs/impersonate-organization-dialog.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import GlobalUser from '$features/users/components/global-user.svelte';
-    import { User } from '$features/users/models';
     import BadgeCheck from '@lucide/svelte/icons/badge-check';
     import Bell from '@lucide/svelte/icons/bell';
     import BookOpen from '@lucide/svelte/icons/book-open';
@@ -33,7 +33,7 @@
         isImpersonating?: boolean;
         isLoading: boolean;
         organizations?: ViewOrganization[];
-        user: undefined | User;
+        user: undefined | ViewCurrentUser;
     }
 
     let { gravatar, isImpersonating = false, isLoading, organizations = [], user }: Props = $props();

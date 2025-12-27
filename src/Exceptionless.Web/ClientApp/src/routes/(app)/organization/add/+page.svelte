@@ -3,55 +3,50 @@
     import { resolve } from '$app/paths';
     import ErrorMessage from '$comp/error-message.svelte';
     import { H3, Muted } from '$comp/typography';
-    import * as Form from '$comp/ui/form';
+    import { Button } from '$comp/ui/button';
+    import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import { Spinner } from '$comp/ui/spinner';
     import { postOrganization } from '$features/organizations/api.svelte';
+    import { organization } from '$features/organizations/context.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
-    import { applyServerSideErrors } from '$features/shared/validation';
-    import { NewOrganization } from '$generated/api';
+    import { type NewOrganizationFormData, NewOrganizationSchema } from '$features/organizations/schemas';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
-    import { defaults, superForm } from 'sveltekit-superforms';
-    import { classvalidatorClient } from 'sveltekit-superforms/adapters';
 
     let toastId = $state<number | string>();
     const createOrganization = postOrganization();
 
     useHideOrganizationNotifications();
 
-    const form = superForm(defaults(new NewOrganization(), classvalidatorClient(NewOrganization)), {
-        dataType: 'json',
-        id: 'post-organization',
-        async onUpdate({ form, result }) {
-            if (!form.valid) {
-                return;
-            }
+    const form = createForm(() => ({
+        defaultValues: {
+            name: ''
+        } as NewOrganizationFormData,
+        validators: {
+            onSubmit: NewOrganizationSchema,
+            onSubmitAsync: async ({ value }) => {
+                toast.dismiss(toastId);
+                try {
+                    const { id } = await createOrganization.mutateAsync(value);
+                    // Update the persisted organization state so the sidebar selects the new org
+                    organization.current = id;
+                    toastId = toast.success('Organization added successfully');
+                    await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: id }));
+                    return null;
+                } catch (error: unknown) {
+                    toastId = toast.error('Error creating organization. Please try again.');
+                    if (error instanceof ProblemDetails) {
+                        return problemDetailsToFormErrors(error);
+                    }
 
-            toast.dismiss(toastId);
-            try {
-                const { id } = await createOrganization.mutateAsync(form.data);
-                toastId = toast.success('Organization added successfully');
-                await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: id }));
-
-                // HACK: This is to prevent sveltekit from stealing focus
-                result.type = 'failure';
-            } catch (error: unknown) {
-                if (error instanceof ProblemDetails) {
-                    applyServerSideErrors(form, error);
-                    result.status = error.status ?? 500;
-                } else {
-                    result.status = 500;
+                    return { form: 'An unexpected error occurred, please try again.' };
                 }
-
-                toastId = toast.error(form.message ?? 'Error creating organization. Please try again.');
             }
-        },
-        SPA: true,
-        validators: classvalidatorClient(NewOrganization)
-    });
-
-    const { enhance, form: formData, message, submitting } = form;
+        }
+    }));
 </script>
 
 <div class="flex flex-col gap-4">
@@ -59,24 +54,45 @@
         <H3>Add Organization</H3>
         <Muted>Add a new organization to start tracking errors and events.</Muted>
     </div>
-    <form method="POST" use:enhance>
-        <ErrorMessage message={$message} />
-        <Form.Field {form} name="name">
-            <Form.Control>
-                {#snippet children({ props })}
-                    <Form.Label>Organization Name</Form.Label>
-                    <Input {...props} bind:value={$formData.name} placeholder="Enter organization name" />
-                {/snippet}
-            </Form.Control>
-            <Form.FieldErrors />
-        </Form.Field>
-
-        <Form.Button>
-            {#if $submitting}
-                <Spinner /> Adding Organization...
-            {:else}
-                Add Organization
-            {/if}</Form.Button
-        >
+    <form
+        onsubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+        }}
+    >
+        <form.Subscribe selector={(state) => state.errors}>
+            {#snippet children(errors)}
+                <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
+            {/snippet}
+        </form.Subscribe>
+        <form.Field name="name">
+            {#snippet children(field)}
+                <Field.Field data-invalid={ariaInvalid(field)}>
+                    <Field.Label for={field.name}>Organization Name</Field.Label>
+                    <Input
+                        id={field.name}
+                        name={field.name}
+                        placeholder="Enter organization name"
+                        value={field.state.value}
+                        onblur={field.handleBlur}
+                        oninput={(e) => field.handleChange(e.currentTarget.value)}
+                        aria-invalid={ariaInvalid(field)}
+                    />
+                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                </Field.Field>
+            {/snippet}
+        </form.Field>
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+            {#snippet children(isSubmitting)}
+                <Button type="submit" class="mt-4" disabled={isSubmitting}>
+                    {#if isSubmitting}
+                        <Spinner /> Adding Organization...
+                    {:else}
+                        Add Organization
+                    {/if}
+                </Button>
+            {/snippet}
+        </form.Subscribe>
     </form>
 </div>

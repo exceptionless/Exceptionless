@@ -9,15 +9,13 @@
 
     let { filter, filterChanged, filterRemoved, open = $bindable(false), title = 'Project', ...props }: FacetedFilterProps<ProjectFilter> = $props();
 
-    // Store the organizationId to prevent loading when switching organizations.
-    const organizationId = organization.current;
-
-    // Create query with conditional enabled - only fetch when dropdown is open
+    // Create query with conditional enabled - only fetch when dropdown is open and organization is available.
+    // The organizationId getter ensures reactive updates when the organization changes.
     const projectsQuery = getOrganizationProjectsQuery({
-        enabled: () => open,
+        enabled: () => open && !!organization.current,
         route: {
             get organizationId() {
-                return organizationId;
+                return organization.current;
             }
         }
     });

@@ -1,5 +1,13 @@
 {
 	"servers": {
+        "aspire": {
+            "type": "stdio",
+            "command": "aspire",
+            "args": [
+                "mcp",
+                "start"
+            ]
+        },
         "chrome-devtools": {
             "command": "npx",
             "args": [

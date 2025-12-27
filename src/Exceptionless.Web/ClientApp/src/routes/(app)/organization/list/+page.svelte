@@ -9,6 +9,7 @@
     import { type GetOrganizationsParams, getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { getTableOptions } from '$features/organizations/components/table/options.svelte';
     import OrganizationsDataTable from '$features/organizations/components/table/organizations-data-table.svelte';
+    import { organization } from '$features/organizations/context.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
@@ -25,14 +26,15 @@
 
     const table = createTable(getTableOptions<ViewOrganization>(organizationsQueryParameters, organizationsQuery));
 
-    async function rowClick(organization: ViewOrganization) {
-        if (organization.id) {
-            await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: organization.id }));
+    async function rowClick(org: ViewOrganization) {
+        if (org.id) {
+            organization.current = org.id;
+            await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: org.id }));
         }
     }
 
-    function rowHref(organization: ViewOrganization): string {
-        return resolve('/(app)/organization/[organizationId]/manage', { organizationId: organization.id });
+    function rowHref(org: ViewOrganization): string {
+        return resolve('/(app)/organization/[organizationId]/manage', { organizationId: org.id });
     }
 
     async function addOrganization() {

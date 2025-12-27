@@ -2,23 +2,22 @@
     import ErrorMessage from '$comp/error-message.svelte';
     import { A, H3, Muted, Small } from '$comp/typography';
     import * as Avatar from '$comp/ui/avatar';
-    import * as Form from '$comp/ui/form';
+    import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
+    import * as InputGroup from '$comp/ui/input-group';
     import { Separator } from '$comp/ui/separator';
-    import { structuredCloneState } from '$features/shared/utils/state.svelte';
+    import { Spinner } from '$comp/ui/spinner';
+    import { validateEmailAvailability } from '$features/auth/validators';
     import { getMeQuery, patchUser, postEmailAddress, resendVerificationEmail } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
-    import { UpdateUser, UpdateUserEmailAddress } from '$features/users/models';
-    import { applyServerSideErrors } from '$shared/validation';
+    import { type UpdateUserEmailAddressFormData, UpdateUserEmailAddressSchema, type UpdateUserFormData, UpdateUserSchema } from '$features/users/schemas';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
-    import { defaults, superForm } from 'sveltekit-superforms';
-    import { classvalidatorClient } from 'sveltekit-superforms/adapters';
     import { debounce } from 'throttle-debounce';
 
     let toastId = $state<number | string>();
-    let previousEmailSettingsRef: undefined | UpdateUserEmailAddress;
-    let previousUserSettingsRef: undefined | UpdateUser;
     const meQuery = getMeQuery();
     const gravatar = getGravatarFromCurrentUser(meQuery);
     const updateUser = patchUser({
@@ -46,112 +45,56 @@
         }
     });
 
-    const updateEmailAddressForm = superForm(
-        defaults(structuredCloneState(meQuery.data) ?? new UpdateUserEmailAddress(), classvalidatorClient(UpdateUserEmailAddress)),
-        {
-            dataType: 'json',
-            id: 'update-email-address',
-            async onUpdate({ form, result }) {
-                if (!form.valid) {
-                    return;
-                }
-
+    const updateEmailAddressForm = createForm(() => ({
+        defaultValues: {
+            email_address: meQuery.data?.email_address
+        } as UpdateUserEmailAddressFormData,
+        validators: {
+            onSubmit: UpdateUserEmailAddressSchema,
+            onSubmitAsync: async ({ value }) => {
                 toast.dismiss(toastId);
                 try {
-                    await updateEmailAddress.mutateAsync(form.data);
+                    await updateEmailAddress.mutateAsync(value as UpdateUserEmailAddressFormData);
                     toastId = toast.success('Successfully updated Account');
-
-                    // HACK: This is to prevent sveltekit from stealing focus
-                    result.type = 'failure';
+                    return null;
                 } catch (error: unknown) {
+                    toastId = toast.error('Error saving email address. Please try again.');
                     if (error instanceof ProblemDetails) {
-                        applyServerSideErrors(form, error);
-                        result.status = error.status ?? 500;
-                    } else {
-                        result.status = 500;
+                        return problemDetailsToFormErrors(error);
                     }
 
-                    toastId = toast.error(form.message ?? 'Error saving email address. Please try again.');
+                    return { form: 'An unexpected error occurred, please try again.' };
                 }
-            },
-            SPA: true,
-            validators: classvalidatorClient(UpdateUserEmailAddress)
-        }
-    );
-
-    const updateUserForm = superForm(defaults(structuredCloneState(meQuery.data) ?? new UpdateUser(), classvalidatorClient(UpdateUser)), {
-        dataType: 'json',
-        id: 'update-user',
-        async onUpdate({ form, result }) {
-            if (!form.valid) {
-                return;
             }
+        }
+    }));
 
-            toast.dismiss(toastId);
-            try {
-                form.data = await updateUser.mutateAsync(form.data);
-                toastId = toast.success('Successfully updated Account');
+    const updateUserForm = createForm(() => ({
+        defaultValues: {
+            full_name: meQuery.data?.full_name
+        } as UpdateUserFormData,
+        validators: {
+            onSubmit: UpdateUserSchema,
+            onSubmitAsync: async ({ value }) => {
+                toast.dismiss(toastId);
+                try {
+                    await updateUser.mutateAsync(value as UpdateUserFormData);
+                    toastId = toast.success('Successfully updated Account');
+                    return null;
+                } catch (error: unknown) {
+                    toastId = toast.error('Error saving full name. Please try again.');
+                    if (error instanceof ProblemDetails) {
+                        return problemDetailsToFormErrors(error);
+                    }
 
-                // HACK: This is to prevent sveltekit from stealing focus
-                result.type = 'failure';
-            } catch (error: unknown) {
-                if (error instanceof ProblemDetails) {
-                    applyServerSideErrors(form, error);
-                    result.status = error.status ?? 500;
-                } else {
-                    result.status = 500;
+                    return { form: 'An unexpected error occurred, please try again.' };
                 }
-
-                toastId = toast.error(form.message ?? 'Error saving full name. Please try again.');
             }
-        },
-        SPA: true,
-        validators: classvalidatorClient(UpdateUser)
-    });
-
-    $effect(() => {
-        if (!meQuery.isSuccess) {
-            return;
         }
+    }));
 
-        if (!$updateEmailAddressFormSubmitting && !$updateEmailAddressFormTainted && meQuery.data !== previousEmailSettingsRef) {
-            const clonedData = structuredCloneState(meQuery.data);
-            updateEmailAddressForm.reset({ data: clonedData, keepMessage: true });
-            previousEmailSettingsRef = meQuery.data;
-        }
-    });
-
-    $effect(() => {
-        if (!meQuery.isSuccess) {
-            return;
-        }
-
-        if (!$updateUserFormSubmitting && !$updateUserFormTainted && meQuery.data !== previousUserSettingsRef) {
-            const clonedData = structuredCloneState(meQuery.data);
-            updateUserForm.reset({ data: clonedData, keepMessage: true });
-            previousUserSettingsRef = meQuery.data;
-        }
-    });
-
-    const {
-        enhance: updateEmailAddressFormEnhance,
-        form: updateEmailAddressFormData,
-        message: updateEmailAddressFormMessage,
-        submit: updateEmailAddressFormSubmit,
-        submitting: updateEmailAddressFormSubmitting,
-        tainted: updateEmailAddressFormTainted
-    } = updateEmailAddressForm;
-    const debouncedUpdateEmailAddressFormSubmit = debounce(1000, updateEmailAddressFormSubmit);
-
-    const {
-        enhance: updateUserFormEnhance,
-        form: updateUserFormData,
-        message: updateUserFormMessage,
-        submit: updateUserFormSubmit,
-        submitting: updateUserFormSubmitting,
-        tainted: updateUserFormTainted
-    } = updateUserForm;
-    const debouncedUpdatedUserFormSubmit = debounce(1000, updateUserFormSubmit);
+    const debouncedUpdateEmailAddressFormSubmit = debounce(1000, () => updateEmailAddressForm.handleSubmit());
+    const debouncedUpdatedUserFormSubmit = debounce(1000, () => updateUserForm.handleSubmit());
 
     async function handleResendVerificationEmail() {
         toast.dismiss(toastId);
@@ -181,46 +124,89 @@
     </Avatar.Root>
     <Muted>Your avatar is generated by requesting a Gravatar image with the email address below.</Muted>
 
-    <form use:updateUserFormEnhance>
-        <Form.Field form={updateUserForm} name="full_name">
-            <Form.Control>
-                {#snippet children({ props })}
-                    <Form.Label>Full Name</Form.Label>
-                    <Input
-                        {...props}
-                        bind:value={$updateUserFormData.full_name}
-                        placeholder="Full Name"
-                        autocomplete="name"
-                        required
-                        oninput={debouncedUpdatedUserFormSubmit}
-                    />
+    <div class="space-y-4">
+        <form
+            onsubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                updateUserForm.handleSubmit();
+            }}
+        >
+            <updateUserForm.Subscribe selector={(state) => state.errors}>
+                {#snippet children(errors)}
+                    <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
                 {/snippet}
-            </Form.Control>
-            <Form.Description />
-            <Form.FieldErrors />
-            <ErrorMessage message={$updateUserFormMessage}></ErrorMessage>
-        </Form.Field>
-    </form>
-    <form use:updateEmailAddressFormEnhance>
-        <Form.Field form={updateEmailAddressForm} name="email_address">
-            <Form.Control>
-                {#snippet children({ props })}
-                    <Form.Label>Email</Form.Label>
-                    <Input
-                        {...props}
-                        bind:value={$updateEmailAddressFormData.email_address}
-                        placeholder="Enter email address"
-                        autocomplete="email"
-                        required
-                        oninput={debouncedUpdateEmailAddressFormSubmit}
-                    />
+            </updateUserForm.Subscribe>
+            <updateUserForm.Field name="full_name">
+                {#snippet children(field)}
+                    <Field.Field data-invalid={ariaInvalid(field)}>
+                        <Field.Label for={field.name}>Full Name</Field.Label>
+                        <Input
+                            id={field.name}
+                            name={field.name}
+                            placeholder="Full Name"
+                            autocomplete="name"
+                            required
+                            value={field.state.value}
+                            onblur={field.handleBlur}
+                            oninput={(e) => {
+                                field.handleChange(e.currentTarget.value);
+                                debouncedUpdatedUserFormSubmit();
+                            }}
+                            aria-invalid={ariaInvalid(field)}
+                        />
+                        <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                    </Field.Field>
                 {/snippet}
-            </Form.Control>
-            <Form.Description />
-            <Form.FieldErrors />
-            <ErrorMessage message={$updateEmailAddressFormMessage}></ErrorMessage>
-        </Form.Field>
-    </form>
+            </updateUserForm.Field>
+        </form>
+        <form
+            onsubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                updateEmailAddressForm.handleSubmit();
+            }}
+        >
+            <updateEmailAddressForm.Subscribe selector={(state) => state.errors}>
+                {#snippet children(errors)}
+                    <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
+                {/snippet}
+            </updateEmailAddressForm.Subscribe>
+            <updateEmailAddressForm.Field
+                name="email_address"
+                validators={{ onChangeAsync: ({ value }) => validateEmailAvailability(value ?? ''), onChangeAsyncDebounceMs: 1000 }}
+            >
+                {#snippet children(field)}
+                    <Field.Field data-invalid={ariaInvalid(field)}>
+                        <Field.Label for={field.name}>Email</Field.Label>
+                        <InputGroup.Root>
+                            <InputGroup.Input
+                                id={field.name}
+                                name={field.name}
+                                type="email"
+                                placeholder="Enter email address"
+                                autocomplete="email"
+                                required
+                                value={field.state.value}
+                                onblur={field.handleBlur}
+                                oninput={(e) => {
+                                    field.handleChange(e.currentTarget.value);
+                                    debouncedUpdateEmailAddressFormSubmit();
+                                }}
+                                aria-invalid={ariaInvalid(field)}
+                            />
+                            {#if field.state.meta.isValidating}
+                                <InputGroup.Addon align="inline-end" aria-label="Validating email">
+                                    <Spinner class="size-4" />
+                                </InputGroup.Addon>
+                            {/if}
+                        </InputGroup.Root>
+                        <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                    </Field.Field>
+                {/snippet}
+            </updateEmailAddressForm.Field>
+        </form>
+    </div>
     {#if !isEmailAddressVerified}
         <Small>
             Email not verified. <A class="cursor-pointer" onclick={handleResendVerificationEmail}>Resend</A> verification email.

@@ -1,4 +1,6 @@
 <script lang="ts">
+    import type { ViewUser } from '$features/users/models';
+
     import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';
@@ -9,7 +11,6 @@
     import InviteUserDialog from '$features/users/components/invite-user-dialog.svelte';
     import { getTableOptions } from '$features/users/components/table/options.svelte';
     import UsersDataTable from '$features/users/components/table/users-data-table.svelte';
-    import { ViewUser } from '$features/users/models';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
@@ -52,6 +53,14 @@
 
     const table = createTable(getTableOptions<ViewUser>(usersQueryParameters, usersQuery, organizationId));
 
+    const addUserMutation = addOrganizationUser({
+        route: {
+            get organizationId() {
+                return organizationId;
+            }
+        }
+    });
+
     $effect(() => {
         queryParams.limit ??= DEFAULT_LIMIT;
     });
@@ -67,13 +76,7 @@
         toast.dismiss(toastId);
 
         try {
-            const mutation = addOrganizationUser({
-                route: {
-                    email,
-                    organizationId
-                }
-            });
-            await mutation.mutateAsync();
+            await addUserMutation.mutateAsync(email);
             toastId = toast.success('User invited successfully');
         } catch (error: unknown) {
             const message = error instanceof ProblemDetails ? error.title : 'Please try again.';

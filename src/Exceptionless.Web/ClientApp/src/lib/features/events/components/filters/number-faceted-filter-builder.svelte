@@ -15,9 +15,15 @@
     const builder: FacetFilterBuilder<NumberFilter> = {
         component: NumberFacetedFilter,
         create: (filter?: NumberFilter) => filter ?? new NumberFilter(term),
-        priority,
-        title
+        get priority() {
+            return priority;
+        },
+        get title() {
+            return title;
+        }
     };
 
-    builderContext.set(`number-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
+    $effect(() => {
+        builderContext.set(`number-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
+    });
 </script>

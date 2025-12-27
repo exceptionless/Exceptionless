@@ -37,7 +37,6 @@ export const queryKeys = {
 
 export interface AddOrganizationUserRequest {
     route: {
-        email: string;
         organizationId: string;
     };
 }
@@ -52,19 +51,6 @@ export interface DeleteOrganizationUserRequest {
     route: {
         email: string;
         organizationId: string;
-    };
-}
-
-export interface DeleteOrganizationUserRequest {
-    route: {
-        email: string;
-        organizationId: string;
-    };
-}
-
-export interface DeleteSuspendOrganizationRequest {
-    route: {
-        id: string | undefined;
     };
 }
 
@@ -149,12 +135,12 @@ export interface PostSuspendOrganizationRequest {
 
 export function addOrganizationUser(request: AddOrganizationUserRequest) {
     const queryClient = useQueryClient();
-    return createMutation<{ emailAddress: string }, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.organizationId && !!request.route.email,
-        mutationFn: async () => {
+    return createMutation<{ emailAddress: string }, ProblemDetails, string>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.organizationId,
+        mutationFn: async (email: string) => {
             const client = useFetchClient();
             const response = await client.postJSON<{ emailAddress: string }>(
-                `organizations/${request.route.organizationId}/users/${encodeURIComponent(request.route.email)}`
+                `organizations/${request.route.organizationId}/users/${encodeURIComponent(email)}`
             );
             return response.data!;
         },
@@ -370,8 +356,9 @@ export function postOrganization() {
             return response.data!;
         },
         mutationKey: queryKeys.postOrganization(),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        onSuccess: (organization: ViewOrganization) => {
+            queryClient.setQueryData(queryKeys.id(organization.id, 'stats'), organization);
+            queryClient.setQueryData(queryKeys.id(organization.id, undefined), organization);
         }
     }));
 }

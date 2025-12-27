@@ -5,8 +5,9 @@
     import Reference from '@lucide/svelte/icons/link';
     import Delete from '@lucide/svelte/icons/trash';
 
+    import type { Stack } from '../models';
+
     import { postRemoveLink } from '../api.svelte';
-    import { Stack } from '../models';
     import RemoveStackReferenceDialog from './dialogs/remove-stack-reference-dialog.svelte';
 
     interface Props {

@@ -15,9 +15,15 @@
     const builder: FacetFilterBuilder<VersionFilter> = {
         component: VersionFacetedFilter,
         create: (filter?: VersionFilter) => filter ?? new VersionFilter(term),
-        priority,
-        title
+        get priority() {
+            return priority;
+        },
+        get title() {
+            return title;
+        }
     };
 
-    builderContext.set(`version-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
+    $effect(() => {
+        builderContext.set(`version-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
+    });
 </script>

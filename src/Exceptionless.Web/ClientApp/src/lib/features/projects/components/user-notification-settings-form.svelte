@@ -1,17 +1,13 @@
 <script lang="ts">
+    import type { NotificationSettings } from '$features/projects/models';
+
     import ErrorMessage from '$comp/error-message.svelte';
     import { A, H4, Muted } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Skeleton } from '$comp/ui/skeleton';
     import { Switch } from '$comp/ui/switch';
-    import { NotificationSettings } from '$features/projects/models';
-    import { structuredCloneState } from '$features/shared/utils/state.svelte';
-    import { applyServerSideErrors } from '$features/shared/validation';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
     import InfoIcon from '@lucide/svelte/icons/info';
     import { toast } from 'svelte-sonner';
-    import { defaults, superForm } from 'sveltekit-superforms';
-    import { classvalidatorClient } from 'sveltekit-superforms/adapters';
     import { debounce } from 'throttle-debounce';
 
     interface Props {
@@ -24,54 +20,52 @@
 
     let { emailNotificationsEnabled = true, hasPremiumFeatures = false, save, settings, upgrade }: Props = $props();
     let toastId = $state<number | string>();
-    let currentSettingsRef: NotificationSettings | undefined;
+    let errorMessage = $state<string>();
 
-    const form = superForm(defaults(structuredCloneState(settings) || new NotificationSettings(), classvalidatorClient(NotificationSettings)), {
-        dataType: 'json',
-        id: 'user-notification-settings',
-        async onUpdate({ form, result }) {
-            if (!form.valid) {
-                return;
-            }
+    // Local state for switch values, synced when settings prop changes
+    let sendDailySummary = $state(false);
+    let reportNewErrors = $state(false);
+    let reportCriticalErrors = $state(false);
+    let reportEventRegressions = $state(false);
+    let reportNewEvents = $state(false);
+    let reportCriticalEvents = $state(false);
 
-            toast.dismiss(toastId);
-            if (save) {
-                try {
-                    await save(form.data);
-
-                    // HACK: This is to prevent sveltekit from stealing focus
-                    result.type = 'failure';
-                } catch (error: unknown) {
-                    if (error instanceof ProblemDetails) {
-                        applyServerSideErrors(form, error);
-                        result.status = error.status ?? 500;
-                    } else {
-                        result.status = 500;
-                    }
-
-                    toastId = toast.error(form.message ?? 'Error saving notification settings. Please try again.');
-                }
-            }
-        },
-        SPA: true,
-        validators: classvalidatorClient(NotificationSettings)
+    // Sync local state when settings prop changes
+    $effect(() => {
+        if (settings) {
+            sendDailySummary = settings.send_daily_summary ?? false;
+            reportNewErrors = settings.report_new_errors ?? false;
+            reportCriticalErrors = settings.report_critical_errors ?? false;
+            reportEventRegressions = settings.report_event_regressions ?? false;
+            reportNewEvents = settings.report_new_events ?? false;
+            reportCriticalEvents = settings.report_critical_events ?? false;
+        }
     });
 
-    const { enhance, form: formData, message, submit, submitting, tainted } = form;
-    const debouncedFormSubmit = debounce(500, () => submit());
+    const debouncedSave = debounce(500, async () => {
+        toast.dismiss(toastId);
+        errorMessage = undefined;
 
-    $effect(() => {
-        if (!$submitting && !$tainted && settings !== currentSettingsRef) {
-            const clonedSettings = structuredCloneState(settings);
-            form.reset({ data: clonedSettings, keepMessage: true });
-            currentSettingsRef = settings;
+        try {
+            const currentSettings: NotificationSettings = {
+                report_critical_errors: reportCriticalErrors,
+                report_critical_events: reportCriticalEvents,
+                report_event_regressions: reportEventRegressions,
+                report_new_errors: reportNewErrors,
+                report_new_events: reportNewEvents,
+                send_daily_summary: sendDailySummary
+            };
+            await save(currentSettings);
+        } catch {
+            errorMessage = 'Error saving notification settings. Please try again.';
+            toastId = toast.error(errorMessage);
         }
     });
 </script>
 
-{#if $formData.send_daily_summary !== undefined}
-    <form method="POST" use:enhance class="space-y-6">
-        <ErrorMessage message={$message} />
+{#if settings?.send_daily_summary !== undefined}
+    <div class="space-y-6">
+        <ErrorMessage message={errorMessage} />
 
         <div class="rounded-lg border p-4">
             <div class="flex items-center justify-between">
@@ -79,12 +73,7 @@
                     <div class="text-sm font-medium">Daily Project Summary</div>
                     <Muted class="text-xs">Receive a daily summary of your project activity.</Muted>
                 </div>
-                <Switch
-                    id="send_daily_summary"
-                    bind:checked={$formData.send_daily_summary}
-                    onCheckedChange={debouncedFormSubmit}
-                    disabled={!emailNotificationsEnabled}
-                />
+                <Switch id="send_daily_summary" bind:checked={sendDailySummary} onCheckedChange={debouncedSave} disabled={!emailNotificationsEnabled} />
             </div>
         </div>
 
@@ -107,8 +96,8 @@
                         </div>
                         <Switch
                             id="report_new_errors"
-                            bind:checked={$formData.report_new_errors}
-                            onCheckedChange={debouncedFormSubmit}
+                            bind:checked={reportNewErrors}
+                            onCheckedChange={debouncedSave}
                             disabled={!emailNotificationsEnabled || !hasPremiumFeatures}
                         />
                     </div>
@@ -122,8 +111,8 @@
                         </div>
                         <Switch
                             id="report_critical_errors"
-                            bind:checked={$formData.report_critical_errors}
-                            onCheckedChange={debouncedFormSubmit}
+                            bind:checked={reportCriticalErrors}
+                            onCheckedChange={debouncedSave}
                             disabled={!emailNotificationsEnabled || !hasPremiumFeatures}
                         />
                     </div>
@@ -137,8 +126,8 @@
                         </div>
                         <Switch
                             id="report_event_regressions"
-                            bind:checked={$formData.report_event_regressions}
-                            onCheckedChange={debouncedFormSubmit}
+                            bind:checked={reportEventRegressions}
+                            onCheckedChange={debouncedSave}
                             disabled={!emailNotificationsEnabled || !hasPremiumFeatures}
                         />
                     </div>
@@ -152,8 +141,8 @@
                         </div>
                         <Switch
                             id="report_new_events"
-                            bind:checked={$formData.report_new_events}
-                            onCheckedChange={debouncedFormSubmit}
+                            bind:checked={reportNewEvents}
+                            onCheckedChange={debouncedSave}
                             disabled={!emailNotificationsEnabled || !hasPremiumFeatures}
                         />
                     </div>
@@ -167,15 +156,15 @@
                         </div>
                         <Switch
                             id="report_critical_events"
-                            bind:checked={$formData.report_critical_events}
-                            onCheckedChange={debouncedFormSubmit}
+                            bind:checked={reportCriticalEvents}
+                            onCheckedChange={debouncedSave}
                             disabled={!emailNotificationsEnabled || !hasPremiumFeatures}
                         />
                     </div>
                 </div>
             </div>
         </div>
-    </form>
+    </div>
 {:else}
     <div class="space-y-6">
         <div class="rounded-lg border p-4">

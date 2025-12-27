@@ -4,14 +4,14 @@ import { accessToken } from '$features/auth/index.svelte';
 import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
-import { UpdateEmailAddressResult, type UpdateUser, UpdateUserEmailAddress, User, ViewUser } from './models';
+import type { UpdateEmailAddressResult, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
 
 export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>) {
     const { id } = message;
     if (id) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
 
-        const currentUser = queryClient.getQueryData<User>(queryKeys.me());
+        const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
         if (currentUser?.id === id) {
             queryClient.invalidateQueries({ queryKey: queryKeys.me() });
         }
@@ -64,15 +64,15 @@ export interface ResendVerificationEmailRequest {
 export function getMeQuery() {
     const queryClient = useQueryClient();
 
-    return createQuery<User, ProblemDetails>(() => ({
+    return createQuery<ViewCurrentUser, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current,
-        onSuccess: (data: User) => {
+        onSuccess: (data: ViewCurrentUser) => {
             queryClient.setQueryData(queryKeys.id(data.id!), data);
         },
         queryClient,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<User>('users/me', {
+            const response = await client.getJSON<ViewCurrentUser>('users/me', {
                 signal
             });
 
@@ -111,11 +111,11 @@ export function getOrganizationUsersQuery(request: GetOrganizationUsersRequest) 
 
 export function patchUser(request: PatchUserRequest) {
     const queryClient = useQueryClient();
-    return createMutation<User, ProblemDetails, UpdateUser>(() => ({
+    return createMutation<ViewCurrentUser, ProblemDetails, UpdateUser>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async (data: UpdateUser) => {
             const client = useFetchClient();
-            const response = await client.patchJSON<User>(`users/${request.route.id}`, data);
+            const response = await client.patchJSON<ViewCurrentUser>(`users/${request.route.id}`, data);
             return response.data!;
         },
         mutationKey: queryKeys.patchUser(request.route.id),
@@ -125,7 +125,7 @@ export function patchUser(request: PatchUserRequest) {
         onSuccess: (data) => {
             queryClient.setQueryData(queryKeys.id(request.route.id), data);
 
-            const currentUser = queryClient.getQueryData<User>(queryKeys.me());
+            const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
             if (currentUser?.id === request.route.id) {
                 queryClient.setQueryData(queryKeys.me(), data);
             }
@@ -137,23 +137,23 @@ export function postEmailAddress(request: PostEmailAddressRequest) {
     const queryClient = useQueryClient();
     return createMutation<UpdateEmailAddressResult, ProblemDetails, UpdateUserEmailAddress>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
-        mutationFn: async (data: Pick<User, 'email_address'>) => {
+        mutationFn: async (data: Pick<ViewCurrentUser, 'email_address'>) => {
             const client = useFetchClient();
             const response = await client.postJSON<UpdateEmailAddressResult>(`users/${request.route.id}/email-address/${data.email_address}`);
             return response.data!;
         },
         mutationKey: queryKeys.postEmailAddress(request.route.id),
         onSuccess: (data, variables) => {
-            const partialUserData: Partial<User> = { email_address: variables.email_address, is_email_address_verified: data.is_verified };
+            const partialUserData: Partial<ViewCurrentUser> = { email_address: variables.email_address, is_email_address_verified: data.is_verified };
 
-            const user = queryClient.getQueryData<User>(queryKeys.id(request.route.id));
+            const user = queryClient.getQueryData<ViewCurrentUser>(queryKeys.id(request.route.id));
             if (user) {
-                queryClient.setQueryData(queryKeys.id(request.route.id), <User>{ ...user, ...partialUserData });
+                queryClient.setQueryData(queryKeys.id(request.route.id), <ViewCurrentUser>{ ...user, ...partialUserData });
             }
 
-            const currentUser = queryClient.getQueryData<User>(queryKeys.me());
+            const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
             if (currentUser?.id === request.route.id) {
-                queryClient.setQueryData(queryKeys.me(), <User>{ ...currentUser, ...partialUserData });
+                queryClient.setQueryData(queryKeys.me(), <ViewCurrentUser>{ ...currentUser, ...partialUserData });
             }
         }
     }));

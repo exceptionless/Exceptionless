@@ -1,10 +1,10 @@
+import type { ViewUser } from '$features/users/models';
 import type { FetchClientResponse, ProblemDetails } from '@exceptionless/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import BooleanFormatter from '$features/shared/components/formatters/boolean.svelte';
 import { getSharedTableOptions } from '$features/shared/table.svelte';
 import UserActionsCell from '$features/users/components/table/user-actions-cell.svelte';
-import { ViewUser } from '$features/users/models';
 import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
 
 import type { GetOrganizationUsersParams } from '../../api.svelte';

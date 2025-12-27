@@ -1,8 +1,8 @@
 import type { ClientConfiguration, NewProject, NotificationSettings, UpdateProject, ViewProject } from '$features/projects/models';
+import type { StringValueFromBody } from '$features/shared/models';
 import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
-import { ValueFromBody } from '$features/shared/models';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
@@ -414,7 +414,7 @@ export function postProjectConfig(request: PostConfigRequest) {
         enabled: () => !!accessToken.current,
         mutationFn: async (params: PostConfigParams) => {
             const client = useFetchClient();
-            const response = await client.post(`projects/${request.route.id}/config`, new ValueFromBody(params.value), {
+            const response = await client.post(`projects/${request.route.id}/config`, <StringValueFromBody>{ value: params.value }, {
                 params: { key: params.key }
             });
 

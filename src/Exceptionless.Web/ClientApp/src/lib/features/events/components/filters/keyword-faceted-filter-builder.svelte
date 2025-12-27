@@ -11,11 +11,16 @@
 
     const { priority = 0, title = 'Keyword' }: Props = $props();
 
+    // Use getters to avoid state_referenced_locally warning - props are evaluated lazily
     const builder: FacetFilterBuilder<KeywordFilter> = {
         component: KeywordFacetedFilter,
         create: (filter?: KeywordFilter) => filter ?? new KeywordFilter(),
-        priority,
-        title
+        get priority() {
+            return priority;
+        },
+        get title() {
+            return title;
+        }
     };
 
     builderContext.set('keyword', builder as unknown as FacetFilterBuilder<IFilter>);

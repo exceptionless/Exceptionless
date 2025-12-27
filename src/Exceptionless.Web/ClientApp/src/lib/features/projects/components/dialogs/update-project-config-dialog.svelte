@@ -1,59 +1,64 @@
 <script lang="ts">
+    import ErrorMessage from '$comp/error-message.svelte';
     import { A, P } from '$comp/typography';
     import * as AlertDialog from '$comp/ui/alert-dialog';
-    import * as Form from '$comp/ui/form';
+    import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
-    import { applyServerSideErrors } from '$features/shared/validation';
+    import { ClientConfigurationSettingSchema } from '$features/projects/schemas';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
-    import { defaults, superForm } from 'sveltekit-superforms';
-    import { classvalidatorClient } from 'sveltekit-superforms/adapters';
+    import { createForm } from '@tanstack/svelte-form';
 
-    import { ClientConfigurationSetting } from '../../models';
+    import type { ClientConfigurationSetting } from '../../models';
 
     interface Props {
         open: boolean;
         save: (value: string) => Promise<void>;
-        setting: ClientConfigurationSetting; // Change type from string to ClientConfigurationSetting
+        setting: ClientConfigurationSetting;
     }
     let { open = $bindable(), save, setting }: Props = $props();
 
-    const defaultValue = new ClientConfigurationSetting();
-    defaultValue.key = setting.key;
-    defaultValue.value = setting.value;
+    const form = createForm(() => ({
+        defaultValues: {
+            key: setting.key,
+            value: setting.value
+        },
+        validators: {
+            onSubmit: ClientConfigurationSettingSchema,
+            onSubmitAsync: async ({ value }) => {
+                try {
+                    await save(value.value.trim());
+                    open = false;
+                    return null;
+                } catch (error: unknown) {
+                    if (error instanceof ProblemDetails) {
+                        return problemDetailsToFormErrors(error);
+                    }
 
-    const form = superForm(defaults(defaultValue, classvalidatorClient(ClientConfigurationSetting)), {
-        dataType: 'json',
-        id: 'update-project-config',
-        async onUpdate({ form, result }) {
-            if (!form.valid) {
-                return;
-            }
-
-            try {
-                await save(form.data.value.trim());
-                open = false;
-
-                // HACK: This is to prevent sveltekit from stealing focus
-                result.type = 'failure';
-            } catch (error: unknown) {
-                if (error instanceof ProblemDetails) {
-                    applyServerSideErrors(form, error);
-                    result.status = error.status ?? 500;
-                } else {
-                    result.status = 500;
+                    return { form: 'An unexpected error occurred' };
                 }
             }
-        },
-        SPA: true,
-        validators: classvalidatorClient(ClientConfigurationSetting)
-    });
+        }
+    }));
 
-    const { enhance, form: formData } = form;
+    $effect(() => {
+        if (open) {
+            form.reset();
+            form.setFieldValue('key', setting.key);
+            form.setFieldValue('value', setting.value);
+        }
+    });
 </script>
 
 <AlertDialog.Root bind:open>
     <AlertDialog.Content class="sm:max-w-[425px]">
-        <form method="POST" use:enhance>
+        <form
+            onsubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                form.handleSubmit();
+            }}
+        >
             <AlertDialog.Header>
                 <AlertDialog.Title>Update {setting.key} Configuration Value</AlertDialog.Title>
                 <AlertDialog.Description
@@ -62,30 +67,42 @@
                 >
             </AlertDialog.Header>
 
+            <form.Subscribe selector={(state) => state.errors}>
+                {#snippet children(errors)}
+                    <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
+                {/snippet}
+            </form.Subscribe>
+
             <P class="pb-4">
-                <Form.Field {form} name="value">
-                    <Form.Control>
-                        {#snippet children({ props })}
-                            <Form.Label>Value</Form.Label>
+                <form.Field name="value">
+                    {#snippet children(field)}
+                        <Field.Field data-invalid={ariaInvalid(field)}>
+                            <Field.Label for={field.name}>Value</Field.Label>
                             <Input
-                                {...props}
-                                bind:value={$formData.value}
+                                id={field.name}
+                                name={field.name}
                                 type="text"
                                 placeholder="Please enter a valid value"
                                 required
                                 autocomplete="off"
-                                oninput={() => ($formData.value = $formData.value.trim())}
+                                value={field.state.value}
+                                onblur={field.handleBlur}
+                                oninput={(e) => field.handleChange(e.currentTarget.value.trim())}
+                                aria-invalid={ariaInvalid(field)}
                             />
-                        {/snippet}
-                    </Form.Control>
-                    <Form.Description />
-                    <Form.FieldErrors />
-                </Form.Field>
+                            <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                        </Field.Field>
+                    {/snippet}
+                </form.Field>
             </P>
 
             <AlertDialog.Footer>
                 <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-                <AlertDialog.Action>Save Configuration Value</AlertDialog.Action>
+                <form.Subscribe selector={(state) => state.isSubmitting}>
+                    {#snippet children(isSubmitting)}
+                        <AlertDialog.Action type="submit" disabled={isSubmitting}>Save Configuration Value</AlertDialog.Action>
+                    {/snippet}
+                </form.Subscribe>
             </AlertDialog.Footer>
         </form>
     </AlertDialog.Content>

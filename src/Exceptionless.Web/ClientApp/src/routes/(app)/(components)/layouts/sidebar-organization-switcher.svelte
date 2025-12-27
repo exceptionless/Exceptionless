@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { ViewOrganization } from '$features/organizations/models';
     import type { HTMLAttributes } from 'svelte/elements';
 
     import { goto } from '$app/navigation';
@@ -11,7 +12,6 @@
     import { useSidebar } from '$comp/ui/sidebar/index';
     import { Skeleton } from '$comp/ui/skeleton';
     import ImpersonateOrganizationDialog from '$features/organizations/components/dialogs/impersonate-organization-dialog.svelte';
-    import { ViewOrganization } from '$features/organizations/models';
     import GlobalUser from '$features/users/components/global-user.svelte';
     import { getInitials } from '$shared/strings';
     import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';

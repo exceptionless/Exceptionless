@@ -1,17 +1,17 @@
 <script lang="ts">
+    import ErrorMessage from '$comp/error-message.svelte';
     import Number from '$comp/formatters/number.svelte';
     import { A, P } from '$comp/typography';
     import * as AlertDialog from '$comp/ui/alert-dialog';
-    import * as Form from '$comp/ui/form';
+    import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
-    import { applyServerSideErrors } from '$features/shared/validation';
+    import { getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import Documentation from '@lucide/svelte/icons/help-circle';
-    import { defaults, superForm } from 'sveltekit-superforms';
-    import { classvalidatorClient } from 'sveltekit-superforms/adapters';
+    import { createForm } from '@tanstack/svelte-form';
     import { debounce } from 'throttle-debounce';
 
-    import { FixedInVersionForm } from '../../models';
+    import { type FixedInVersionFormData, FixedInVersionSchema } from '../../schemas';
 
     interface Props {
         count?: number;
@@ -21,44 +21,38 @@
 
     let { count = 1, open = $bindable(), save }: Props = $props();
 
-    const form = superForm(defaults(new FixedInVersionForm(), classvalidatorClient(FixedInVersionForm)), {
-        dataType: 'json',
-        id: 'mark-stack-fixed-in-version',
-        onChange() {
-            debouncedUpdateVersionToSemanticVersion();
-        },
-        onSubmit() {
-            updateVersionToSemanticVersion();
-        },
-        async onUpdate({ form, result }) {
-            if (!form.valid) {
-                return;
-            }
+    const form = createForm(() => ({
+        defaultValues: {
+            version: ''
+        } as FixedInVersionFormData,
+        validators: {
+            onSubmit: FixedInVersionSchema,
+            onSubmitAsync: async ({ value }) => {
+                try {
+                    updateVersionToSemanticVersion();
+                    await save(value.version || undefined);
+                    open = false;
+                    return null;
+                } catch (error: unknown) {
+                    if (error instanceof ProblemDetails) {
+                        return problemDetailsToFormErrors(error);
+                    }
 
-            try {
-                await save(form.data.version);
-                open = false;
-
-                // HACK: This is to prevent sveltekit from stealing focus
-                result.type = 'failure';
-            } catch (error: unknown) {
-                if (error instanceof ProblemDetails) {
-                    applyServerSideErrors(form, error);
-                    result.status = error.status ?? 500;
-                } else {
-                    result.status = 500;
+                    return { form: 'An unexpected error occurred, please try again.' };
                 }
             }
-        },
-        SPA: true,
-        validators: classvalidatorClient(FixedInVersionForm)
-    });
+        }
+    }));
 
-    const { enhance, form: formData } = form;
+    $effect(() => {
+        if (open) {
+            form.reset();
+        }
+    });
 
     const debouncedUpdateVersionToSemanticVersion = debounce(1000, updateVersionToSemanticVersion);
     function updateVersionToSemanticVersion() {
-        const version = $formData.version;
+        const version = form.state.values.version;
         const isVersionRegex = /^(\d+)\.(\d+)\.?(\d+)?\.?(\d+)?$/;
         if (!version || !isVersionRegex.test(version)) {
             return;
@@ -74,14 +68,20 @@
         }
 
         if (transformedInput !== '') {
-            $formData.version = transformedInput;
+            form.setFieldValue('version', transformedInput);
         }
     }
 </script>
 
 <AlertDialog.Root bind:open>
     <AlertDialog.Content class="sm:max-w-[425px]">
-        <form method="POST" use:enhance>
+        <form
+            onsubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                form.handleSubmit();
+            }}
+        >
             <AlertDialog.Header>
                 <AlertDialog.Title>
                     {#if count === 1}
@@ -101,6 +101,12 @@
                 </AlertDialog.Description>
             </AlertDialog.Header>
 
+            <form.Subscribe selector={(state) => state.errors}>
+                {#snippet children(errors)}
+                    <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
+                {/snippet}
+            </form.Subscribe>
+
             <P class="pb-4">
                 <strong>Optional:</strong> Please enter the version in which
                 {#if count === 1}
@@ -112,20 +118,31 @@
                 <A class="inline-flex" href="https://exceptionless.com/docs/versioning/" target="_blank" title="Versioning Documentation"><Documentation /></A>
             </P>
 
-            <Form.Field {form} name="version">
-                <Form.Control>
-                    {#snippet children({ props })}
-                        <Form.Label>Version</Form.Label>
-                        <Input {...props} bind:value={$formData.version} type="text" placeholder="Optional Semantic Version (Example: 1.2.3)" />
-                    {/snippet}
-                </Form.Control>
-                <Form.Description />
-                <Form.FieldErrors />
-            </Form.Field>
+            <form.Field name="version">
+                {#snippet children(field)}
+                    <Field.Field data-invalid={field.state.meta.errors.length > 0 ? true : undefined}>
+                        <Field.Label for={field.name}>Version</Field.Label>
+                        <Input
+                            id={field.name}
+                            name={field.name}
+                            type="text"
+                            placeholder="Optional Semantic Version (Example: 1.2.3)"
+                            value={field.state.value}
+                            onblur={field.handleBlur}
+                            oninput={(e) => {
+                                field.handleChange(e.currentTarget.value);
+                                debouncedUpdateVersionToSemanticVersion();
+                            }}
+                            aria-invalid={field.state.meta.errors.length > 0 ? true : undefined}
+                        />
+                        <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                    </Field.Field>
+                {/snippet}
+            </form.Field>
 
             <AlertDialog.Footer>
                 <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-                <AlertDialog.Action>
+                <AlertDialog.Action type="submit">
                     Mark
                     {#if count === 1}
                         Stack

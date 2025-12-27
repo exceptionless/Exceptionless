@@ -1,8 +1,9 @@
 <script lang="ts">
+    import type { ViewToken } from '$features/tokens/models';
+
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { deleteToken, patchToken } from '$features/tokens/api.svelte';
-    import { ViewToken } from '$features/tokens/models';
     import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
     import Disable from '@lucide/svelte/icons/ban';
     import Enable from '@lucide/svelte/icons/check';

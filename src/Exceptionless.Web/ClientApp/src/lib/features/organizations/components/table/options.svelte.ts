@@ -1,8 +1,8 @@
+import type { ViewOrganization } from '$features/organizations/models';
 import type { FetchClientResponse, ProblemDetails } from '@exceptionless/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import NumberFormatter from '$comp/formatters/number.svelte';
-import { ViewOrganization } from '$features/organizations/models';
 import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
 import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
 

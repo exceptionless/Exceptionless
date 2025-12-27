@@ -1,4 +1,6 @@
 <script lang="ts">
+    import type { UpdateProject } from '$features/projects/models';
+
     import { page } from '$app/state';
     import { A, H3, H4, Large, Muted } from '$comp/typography';
     import { Input } from '$comp/ui/input';
@@ -7,7 +9,6 @@
     import { Switch } from '$comp/ui/switch';
     import { deleteProjectConfig, getProjectConfig, getProjectQuery, postProjectConfig, updateProject } from '$features/projects/api.svelte';
     import ProjectLogLevel from '$features/projects/components/project-log-level.svelte';
-    import { UpdateProject } from '$features/projects/models';
     import { toast } from 'svelte-sonner';
     import { debounce } from 'throttle-debounce';
 
@@ -132,9 +133,10 @@
         toast.dismiss(toastId);
 
         try {
-            const data = new UpdateProject();
-            data.delete_bot_data_enabled = deleteBotDataEnabled;
-            await update.mutateAsync(data);
+            const data: Partial<UpdateProject> = {
+                delete_bot_data_enabled: deleteBotDataEnabled
+            };
+            await update.mutateAsync(data as UpdateProject);
 
             toastId = toast.success(`Successfully updated Delete Bot Data Enabled setting.`);
         } catch {

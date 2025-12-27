@@ -7,7 +7,7 @@
  * https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#date-math
  */
 
-import { CustomDateRange } from '../models';
+import type { CustomDateRange } from '../models';
 
 /** Time units supported by Elasticsearch date math (matches backend exactly) */
 const TIME_UNITS = ['s', 'm', 'h', 'H', 'd', 'w', 'M', 'y'] as const;

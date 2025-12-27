@@ -1,10 +1,10 @@
+import type { ViewToken } from '$features/tokens/models';
 import type { FetchClientResponse, ProblemDetails } from '@exceptionless/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import { getSharedTableOptions } from '$features/shared/table.svelte';
 import TokenActionsCell from '$features/tokens/components/table/token-actions-cell.svelte';
 import TokenIdCell from '$features/tokens/components/table/token-id-cell.svelte';
-import { ViewToken } from '$features/tokens/models';
 import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
 
 import type { GetProjectTokensParams } from '../../api.svelte';

@@ -1,8 +1,9 @@
 <script lang="ts">
+    import type { ViewUser } from '$features/users/models';
+
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { addOrganizationUser, deleteOrganizationUser } from '$features/organizations/api.svelte';
-    import { ViewUser } from '$features/users/models';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
     import Mail from '@lucide/svelte/icons/mail';
@@ -22,15 +23,20 @@
 
     const removeUser = deleteOrganizationUser({
         route: {
-            email: user.email_address,
-            organizationId
+            get email() {
+                return user.email_address ?? '';
+            },
+            get organizationId() {
+                return organizationId;
+            }
         }
     });
 
     const addUser = addOrganizationUser({
         route: {
-            email: user.email_address,
-            organizationId
+            get organizationId() {
+                return organizationId;
+            }
         }
     });
 
@@ -51,7 +57,7 @@
         toast.dismiss(toastId);
 
         try {
-            await addUser.mutateAsync();
+            await addUser.mutateAsync(user.email_address);
             toastId = toast.success('Successfully resent the invite email.');
         } catch (error: unknown) {
             const message = error instanceof ProblemDetails ? error.title : 'Please try again.';

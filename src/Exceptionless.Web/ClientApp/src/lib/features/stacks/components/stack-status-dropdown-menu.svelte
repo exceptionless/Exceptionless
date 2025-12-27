@@ -6,8 +6,10 @@
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import { SvelteDate } from 'svelte/reactivity';
 
+    import type { Stack } from '../models';
+
     import { postChangeStatus, postMarkFixed, postMarkSnoozed } from '../api.svelte';
-    import { Stack, StackStatus } from '../models';
+    import { StackStatus } from '../models';
     import { stackStatuses } from '../options';
     import MarkStackDiscardedDialog from './dialogs/mark-stack-discarded-dialog.svelte';
     import MarkStackFixedInVersionDialog from './dialogs/mark-stack-fixed-in-version-dialog.svelte';

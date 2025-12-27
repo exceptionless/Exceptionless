@@ -9,7 +9,7 @@
     import { A, Muted, P } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
-    import * as Form from '$comp/ui/form';
+    import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import { Spinner } from '$comp/ui/spinner';
     import {
@@ -25,89 +25,113 @@
         login,
         microsoftClientId
     } from '$features/auth/index.svelte';
-    import { Login } from '$features/auth/models';
-    import { applyServerSideErrors } from '$shared/validation';
+    import { type LoginFormData, LoginSchema } from '$features/auth/schemas';
+    import { getSafeRedirectUrl } from '$features/shared/url';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import Facebook from '@lucide/svelte/icons/facebook';
     import GitHub from '@lucide/svelte/icons/github';
-    import { defaults, superForm } from 'sveltekit-superforms';
-    import { classvalidatorClient } from 'sveltekit-superforms/adapters';
+    import { createForm } from '@tanstack/svelte-form';
 
-    const redirectUrl = page.url.searchParams.get('redirect') ?? resolve('/(app)');
+    const defaultRedirect = resolve('/(app)');
+    const redirectUrl = getSafeRedirectUrl(page.url.searchParams.get('redirect'), defaultRedirect);
 
-    const defaultFormData = new Login();
-    defaultFormData.invite_token = page.url.searchParams.get('token');
-    const form = superForm(defaults(defaultFormData, classvalidatorClient(Login)), {
-        dataType: 'json',
-        id: 'login',
-        async onUpdate({ form, result }) {
-            if (!form.valid) {
-                return;
+    const form = createForm(() => ({
+        defaultValues: {
+            email: '',
+            invite_token: page.url.searchParams.get('token'),
+            password: ''
+        } as LoginFormData,
+        validators: {
+            onSubmit: LoginSchema,
+            onSubmitAsync: async ({ value }) => {
+                const response = await login(value.email, value.password);
+                if (response.ok) {
+                    await goto(redirectUrl);
+                    return null;
+                }
+
+                return problemDetailsToFormErrors(response.problem);
             }
-
-            let response = await login(form.data.email, form.data.password);
-            if (response.ok) {
-                await goto(redirectUrl);
-            } else {
-                applyServerSideErrors(form, response.problem);
-                result.status = response.problem.status ?? 500;
-            }
-        },
-        SPA: true,
-        validators: classvalidatorClient(Login)
-    });
-
-    const { enhance, form: formData, message, submitting } = form;
+        }
+    }));
 </script>
 
-<Card.Root class="mx-auto max-w-sm">
+<Card.Root class="mx-auto w-sm">
     <Card.Header>
         <Logo />
         <Card.Title class="text-center text-2xl">Log in to your account</Card.Title>
     </Card.Header>
     <Card.Content>
-        <form method="POST" use:enhance>
-            <ErrorMessage message={$message}></ErrorMessage>
-            <Form.Field {form} name="email">
-                <Form.Control>
-                    {#snippet children({ props })}
-                        <Form.Label>Email</Form.Label>
-                        <Input {...props} bind:value={$formData.email} type="email" placeholder="Enter email address" autocomplete="email" required />
-                    {/snippet}
-                </Form.Control>
-                <Form.Description />
-                <Form.FieldErrors />
-            </Form.Field>
-            <Form.Field {form} name="password">
-                <Form.Control>
-                    {#snippet children({ props })}
-                        <Form.Label
+        <form
+            onsubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                form.handleSubmit();
+            }}
+        >
+            <form.Subscribe selector={(state) => state.errors}>
+                {#snippet children(errors)}
+                    <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
+                {/snippet}
+            </form.Subscribe>
+            <form.Field name="email">
+                {#snippet children(field)}
+                    <Field.Field data-invalid={ariaInvalid(field)}>
+                        <Field.Label for={field.name}>Email</Field.Label>
+                        <Input
+                            id={field.name}
+                            name={field.name}
+                            type="email"
+                            placeholder="Enter email address"
+                            autocomplete="email"
+                            required
+                            value={field.state.value}
+                            onblur={field.handleBlur}
+                            oninput={(e) => field.handleChange(e.currentTarget.value)}
+                            aria-invalid={ariaInvalid(field)}
+                        />
+                        <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                    </Field.Field>
+                {/snippet}
+            </form.Field>
+            <form.Field name="password">
+                {#snippet children(field)}
+                    <Field.Field data-invalid={ariaInvalid(field)}>
+                        <Field.Label for={field.name}
                             >Password
                             <Muted class="float-right">
-                                <A href="/forgot-password">Forgot password?</A>
-                            </Muted></Form.Label
+                                <A href={resolve('/(auth)/forgot-password')}>Forgot password?</A>
+                            </Muted></Field.Label
                         >
                         <Input
-                            {...props}
-                            bind:value={$formData.password}
+                            id={field.name}
+                            name={field.name}
                             type="password"
                             placeholder="Enter password"
                             autocomplete="current-password"
                             maxlength={100}
                             minlength={6}
                             required
+                            value={field.state.value}
+                            onblur={field.handleBlur}
+                            oninput={(e) => field.handleChange(e.currentTarget.value)}
+                            aria-invalid={ariaInvalid(field)}
                         />
-                    {/snippet}
-                </Form.Control>
-                <Form.Description />
-                <Form.FieldErrors />
-            </Form.Field>
-            <Form.Button>
-                {#if $submitting}
-                    <Spinner /> Logging in...
-                {:else}
-                    Login
-                {/if}</Form.Button
-            >
+                        <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                    </Field.Field>
+                {/snippet}
+            </form.Field>
+            <form.Subscribe selector={(state) => state.isSubmitting}>
+                {#snippet children(isSubmitting)}
+                    <Button type="submit" class="mt-4 w-full" disabled={isSubmitting}>
+                        {#if isSubmitting}
+                            <Spinner /> Logging in...
+                        {:else}
+                            Login
+                        {/if}
+                    </Button>
+                {/snippet}
+            </form.Subscribe>
         </form>
 
         {#if enableOAuthLogin}
@@ -143,7 +167,7 @@
         {#if enableAccountCreation}
             <P class="text-center text-sm">
                 Not a member?
-                <A href="/signup">Start a free trial</A>
+                <A href={resolve('/(auth)/signup')}>Start a free trial</A>
             </P>
 
             <P class="text-center text-sm">

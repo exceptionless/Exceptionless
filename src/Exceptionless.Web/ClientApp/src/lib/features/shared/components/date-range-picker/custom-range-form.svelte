@@ -1,15 +1,16 @@
 <script lang="ts">
+    import type { CustomDateRange } from '$features/shared/models';
+
     import DateTime from '$comp/formatters/date-time.svelte';
     import { Button } from '$comp/ui/button';
-    import * as Form from '$comp/ui/form';
+    import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import * as Tooltip from '$comp/ui/tooltip/index.js';
-    import { CustomDateRange } from '$features/shared/models';
+    import { CustomDateRangeSchema } from '$features/shared/schemas';
     import { validateAndResolveTime, validateDateMath } from '$features/shared/utils/datemath';
     import { structuredCloneState } from '$features/shared/utils/state.svelte';
     import HelpCircle from '@lucide/svelte/icons/help-circle';
-    import { defaults, superForm } from 'sveltekit-superforms';
-    import { classvalidatorClient } from 'sveltekit-superforms/adapters';
+    import { createForm } from '@tanstack/svelte-form';
 
     interface Props {
         apply?: (range: CustomDateRange) => void;
@@ -20,45 +21,47 @@
     let { apply, cancel, range = null }: Props = $props();
     let previousRange: CustomDateRange | null | undefined;
 
-    const initialData = structuredCloneState(range) || new CustomDateRange();
-
-    const form = superForm(defaults(initialData, classvalidatorClient(CustomDateRange)), {
-        dataType: 'json',
-        id: 'custom-range-form',
-        async onUpdate({ form }) {
-            if (!form.valid) {
-                return;
+    const form = createForm(() => ({
+        defaultValues: structuredCloneState(range) ?? { end: '', start: '' },
+        validators: {
+            onSubmit: CustomDateRangeSchema,
+            onSubmitAsync: async ({ value }) => {
+                apply?.(value);
+                return null;
             }
+        }
+    }));
 
-            apply?.(form.data);
-        },
-        SPA: true,
-        validators: false
-    });
+    // TODO: See if we can simplify this component state
+    // Track form values for validation display (updated via oninput handlers)
+    let startValue = $state('');
+    let endValue = $state('');
 
-    const { enhance, form: formData, submit } = form;
-
-    // Reset form when range prop changes
+    // Initialize values on mount and reset when range prop changes
     $effect(() => {
         if (range !== previousRange) {
-            const clonedRange = structuredCloneState(range);
-            form.reset({ data: clonedRange || new CustomDateRange(), keepMessage: true });
+            const clonedRange = structuredCloneState(range) ?? { end: '', start: '' };
+            form.reset();
+            form.setFieldValue('start', clonedRange.start ?? '');
+            form.setFieldValue('end', clonedRange.end ?? '');
+            startValue = clonedRange.start ?? '';
+            endValue = clonedRange.end ?? '';
             previousRange = range;
         }
     });
 
     // Validation using datemath
-    // TODO: Can we move this into class-validator.
-    const startValidation = $derived(validateDateMath($formData.start || ''));
-    const startResolved = $derived(startValidation.valid ? validateAndResolveTime($formData.start || '') : null);
+    // TODO: See if we can move this into the zod schema directly.
+    const startValidation = $derived(validateDateMath(startValue));
+    const startResolved = $derived(startValidation.valid ? validateAndResolveTime(startValue) : null);
 
     const endValidation = $derived.by(() => {
-        const basicValidation = validateDateMath($formData.end || '');
+        const basicValidation = validateDateMath(endValue);
         if (!basicValidation.valid) {
             return basicValidation;
         }
 
-        const endTime = validateAndResolveTime($formData.end || '');
+        const endTime = validateAndResolveTime(endValue);
         if (startResolved && endTime && startResolved > endTime) {
             return { error: 'End date must be after start date', valid: false };
         }
@@ -66,14 +69,13 @@
         return basicValidation;
     });
 
-    const endResolved = $derived(endValidation.valid ? validateAndResolveTime($formData.end || '') : null);
-
-    const isValid = $derived(startValidation.valid && endValidation.valid && $formData.start && $formData.end);
+    const endResolved = $derived(endValidation.valid ? validateAndResolveTime(endValue) : null);
+    const isValid = $derived(startValidation.valid && endValidation.valid && startValue && endValue);
 
     function handleKeyDown(event: KeyboardEvent) {
         if (event.key === 'Enter' && !cancel && isValid) {
             event.preventDefault();
-            submit();
+            form.handleSubmit();
         } else if (event.key === 'Escape') {
             event.preventDefault();
             cancel?.();
@@ -82,7 +84,7 @@
 
     export function submitIfValid() {
         if (!cancel && isValid) {
-            submit();
+            form.handleSubmit();
         }
     }
 
@@ -98,11 +100,18 @@
 
 <div class="space-y-4">
     <Tooltip.Provider delayDuration={0}>
-        <form method="POST" use:enhance class="space-y-4">
-            <Form.Field {form} name="start">
-                <Form.Control>
-                    {#snippet children({ props })}
-                        <Form.Label>
+        <form
+            class="space-y-4"
+            onsubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                form.handleSubmit();
+            }}
+        >
+            <form.Field name="start">
+                {#snippet children(field)}
+                    <Field.Field data-invalid={!startValidation.valid ? true : undefined}>
+                        <Field.Label for={field.name}>
                             Start
                             <Tooltip.Root>
                                 <Tooltip.Trigger>
@@ -125,31 +134,38 @@
                                     </div>
                                 </Tooltip.Content>
                             </Tooltip.Root>
-                        </Form.Label>
+                        </Field.Label>
                         <Input
-                            {...props}
-                            bind:value={$formData.start}
+                            id={field.name}
+                            name={field.name}
+                            value={field.state.value ?? ''}
                             placeholder={startPlaceholder}
                             class="font-mono text-sm"
                             aria-invalid={!startValidation.valid}
                             aria-describedby="custom-range-form-help"
+                            onblur={field.handleBlur}
+                            oninput={(e) => {
+                                const value = e.currentTarget.value;
+                                field.handleChange(value);
+                                startValue = value;
+                            }}
                             onkeydown={handleKeyDown}
                         />
-                    {/snippet}
-                </Form.Control>
-                <Form.Description>
-                    {#if startValidation.valid && startResolved}
-                        <DateTime value={startResolved} />
-                    {:else if startValidation.error}
-                        <span class="text-destructive">{startValidation.error}</span>
-                    {/if}
-                </Form.Description>
-            </Form.Field>
+                        <Field.Description>
+                            {#if startValidation.valid && startResolved}
+                                <DateTime value={startResolved} />
+                            {:else if startValidation.error}
+                                <span class="text-destructive">{startValidation.error}</span>
+                            {/if}
+                        </Field.Description>
+                    </Field.Field>
+                {/snippet}
+            </form.Field>
 
-            <Form.Field {form} name="end">
-                <Form.Control>
-                    {#snippet children({ props })}
-                        <Form.Label>
+            <form.Field name="end">
+                {#snippet children(field)}
+                    <Field.Field data-invalid={!endValidation.valid ? true : undefined}>
+                        <Field.Label for={field.name}>
                             End
                             <Tooltip.Root>
                                 <Tooltip.Trigger>
@@ -172,26 +188,33 @@
                                     </div>
                                 </Tooltip.Content>
                             </Tooltip.Root>
-                        </Form.Label>
+                        </Field.Label>
                         <Input
-                            {...props}
-                            bind:value={$formData.end}
+                            id={field.name}
+                            name={field.name}
+                            value={field.state.value ?? ''}
                             placeholder={endPlaceholder}
                             class="font-mono text-sm"
                             aria-invalid={!endValidation.valid}
                             aria-describedby="custom-range-form-help"
+                            onblur={field.handleBlur}
+                            oninput={(e) => {
+                                const value = e.currentTarget.value;
+                                field.handleChange(value);
+                                endValue = value;
+                            }}
                             onkeydown={handleKeyDown}
                         />
-                    {/snippet}
-                </Form.Control>
-                <Form.Description>
-                    {#if endValidation.valid && endResolved}
-                        <DateTime value={endResolved} />
-                    {:else if endValidation.error}
-                        <span class="text-destructive">{endValidation.error}</span>
-                    {/if}
-                </Form.Description>
-            </Form.Field>
+                        <Field.Description>
+                            {#if endValidation.valid && endResolved}
+                                <DateTime value={endResolved} />
+                            {:else if endValidation.error}
+                                <span class="text-destructive">{endValidation.error}</span>
+                            {/if}
+                        </Field.Description>
+                    </Field.Field>
+                {/snippet}
+            </form.Field>
 
             {#if cancel}
                 <div class="flex justify-between">
