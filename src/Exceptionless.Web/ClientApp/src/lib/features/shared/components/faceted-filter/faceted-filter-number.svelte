@@ -14,10 +14,10 @@
     }
 
     let { changed, open = $bindable(), remove, title, value }: Props = $props();
-    // eslint-disable-next-line svelte/prefer-writable-derived
-    let updatedValue = $state(value);
 
-    $effect(() => {
+    let updatedValue = $state<number | undefined>();
+
+    $effect.pre(() => {
         updatedValue = value;
     });
 

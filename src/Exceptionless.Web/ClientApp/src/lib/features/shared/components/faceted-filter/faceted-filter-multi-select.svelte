@@ -25,15 +25,15 @@
     }
 
     let { changed, loading = false, noOptionsText = 'No results found.', open = $bindable(), options, remove, title, values }: Props = $props();
-    // eslint-disable-next-line svelte/prefer-writable-derived
-    let updatedValues = $state(values);
+
+    let updatedValues = $state<string[]>([]);
     let displayValues = $derived.by(() => {
         const labelsInOptions = options.filter((o) => values.includes(o.value)).map((o) => o.label);
         const valuesNotInOptions = values.filter((value) => !options.some((o) => o.value === value));
         return [...labelsInOptions, ...valuesNotInOptions];
     });
 
-    $effect(() => {
+    $effect.pre(() => {
         updatedValues = values;
     });
 

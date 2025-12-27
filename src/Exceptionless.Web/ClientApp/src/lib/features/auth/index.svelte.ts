@@ -62,13 +62,6 @@ export const microsoftClientId = env.PUBLIC_MICROSOFT_APPID;
 export const slackClientId = env.PUBLIC_SLACK_APPID;
 export const enableOAuthLogin = facebookClientId || gitHubClientId || googleClientId || microsoftClientId;
 
-export async function gotoLogin() {
-    const url = page.url;
-    const isAuthPath = url.pathname.startsWith('/next/login') || url.pathname.startsWith('/next/logout');
-    const redirect = url.pathname === resolve('/') || isAuthPath ? resolve('/(auth)/login') : `${resolve('/(auth)/login')}?redirect=${url.pathname}`;
-    await goto(redirect, { replaceState: true });
-}
-
 // OAuth login functions (interactive popup-based, not pure API calls)
 
 export async function facebookLogin(redirectUrl?: string) {
@@ -119,6 +112,13 @@ export async function googleLogin(redirectUrl?: string) {
         redirectUrl,
         scope: 'openid profile email'
     });
+}
+
+export async function gotoLogin() {
+    const url = page.url;
+    const isAuthPath = url.pathname.startsWith('/next/login') || url.pathname.startsWith('/next/logout');
+    const redirect = url.pathname === resolve('/') || isAuthPath ? resolve('/(auth)/login') : `${resolve('/(auth)/login')}?redirect=${url.pathname}`;
+    await goto(redirect, { replaceState: true });
 }
 
 export async function liveLogin(redirectUrl?: string) {

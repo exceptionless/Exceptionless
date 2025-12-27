@@ -8,7 +8,7 @@ import Appearance from '@lucide/svelte/icons/sun-moon';
 import Account from '@lucide/svelte/icons/user';
 import Sessions from '@lucide/svelte/icons/users';
 
-import type { NavigationItem, NavigationItemContext } from '../../routes.svelte';
+import type { NavigationItem } from '../../routes.svelte';
 
 export function routes(): NavigationItem[] {
     return [
