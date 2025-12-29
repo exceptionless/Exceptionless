@@ -72,7 +72,7 @@
         "@internationalized/date": "^3.10.1",
         "@lucide/svelte": "^0.562.0",
         "@tanstack/svelte-form": "^1.27.6",
-        "@tanstack/svelte-query": "^6.0.10",
+        "@tanstack/svelte-query": "^6.0.12",
         "@tanstack/svelte-query-devtools": "^6.0.2",
         "@tanstack/svelte-table": "^9.0.0-alpha.10",
         "@types/d3-scale": "^4.0.9",
