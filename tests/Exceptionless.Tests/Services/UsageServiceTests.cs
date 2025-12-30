@@ -52,7 +52,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
 
         int totalToIncrement = eventsLeftInBucket - 1;
         await _usageService.IncrementTotalAsync(organization.Id, project.Id, totalToIncrement);
-        await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
+        await Assert.ThrowsAsync<TimeoutException>(async () => await countdown.WaitAsync(TimeSpan.FromMilliseconds(150)));
         Assert.Equal(2, countdown.CurrentCount);
 
         int eventsLeft = await _usageService.GetEventsLeftAsync(organization.Id);
