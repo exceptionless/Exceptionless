@@ -6,6 +6,6 @@ public static class TaskExtensions
 {
     public static Task WaitAsync(this AsyncCountdownEvent countdownEvent, TimeSpan timeout)
     {
-        return Task.WhenAny(countdownEvent.WaitAsync(), Task.Delay(timeout));
+        return countdownEvent.WaitAsync().WaitAsync(timeout);
     }
 }
