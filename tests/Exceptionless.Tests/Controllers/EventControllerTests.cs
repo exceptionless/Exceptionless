@@ -26,7 +26,6 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Microsoft.Net.Http.Headers;
 using Xunit;
-using Xunit.Abstractions;
 using MediaTypeHeaderValue = System.Net.Http.Headers.MediaTypeHeaderValue;
 using Run = Exceptionless.Tests.Utility.Run;
 
@@ -81,7 +80,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal(0, stats.Completed);
 
         var processEventsJob = GetService<EventPostsJob>();
-        await processEventsJob.RunAsync();
+        await processEventsJob.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
         stats = await _eventQueue.GetQueueStatsAsync();
@@ -114,7 +113,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal(0, stats.Completed);
 
         var userDescriptionJob = GetService<EventUserDescriptionsJob>();
-        await userDescriptionJob.RunAsync();
+        await userDescriptionJob.RunAsync(TestCancellationToken);
 
         stats = await _eventUserDescriptionQueue.GetQueueStatsAsync();
         Assert.Equal(1, stats.Dequeued);
@@ -150,7 +149,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal(0, stats.Completed);
 
         var userDescriptionJob = GetService<EventUserDescriptionsJob>();
-        await userDescriptionJob.RunAsync();
+        await userDescriptionJob.RunAsync(TestCancellationToken);
 
         stats = await _eventUserDescriptionQueue.GetQueueStatsAsync();
         Assert.Equal(1, stats.Dequeued);
@@ -174,7 +173,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal(0, stats.Completed);
 
         var processEventsJob = GetService<EventPostsJob>();
-        await processEventsJob.RunAsync();
+        await processEventsJob.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
         stats = await _eventQueue.GetQueueStatsAsync();
@@ -192,7 +191,7 @@ public class EventControllerTests : IntegrationTestsBase
         byte[] data = Encoding.UTF8.GetBytes(message);
         var ms = new MemoryStream();
         await using (var gzip = new GZipStream(ms, CompressionMode.Compress, true))
-            await gzip.WriteAsync(data, CancellationToken.None);
+            await gzip.WriteAsync(data, TestCancellationToken);
         ms.Position = 0;
 
         var content = new StreamContent(ms);
@@ -200,7 +199,7 @@ public class EventControllerTests : IntegrationTestsBase
         content.Headers.ContentEncoding.Add("gzip");
         var client = CreateHttpClient();
         client.DefaultRequestHeaders.Add("Authorization", "Bearer " + TestConstants.ApiKey);
-        var response = await client.PostAsync("events", content);
+        var response = await client.PostAsync("events", content, TestCancellationToken);
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         Assert.True(response.Headers.Contains(Headers.ConfigurationVersion));
 
@@ -209,7 +208,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal(0, stats.Completed);
 
         var processEventsJob = GetService<EventPostsJob>();
-        await processEventsJob.RunAsync();
+        await processEventsJob.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
         stats = await _eventQueue.GetQueueStatsAsync();
@@ -236,7 +235,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal(0, stats.Completed);
 
         var processEventsJob = GetService<EventPostsJob>();
-        await processEventsJob.RunAsync();
+        await processEventsJob.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
         stats = await _eventQueue.GetQueueStatsAsync();
@@ -272,7 +271,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal(0, stats.Completed);
 
         var processEventsJob = GetService<EventPostsJob>();
-        await processEventsJob.RunAsync();
+        await processEventsJob.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
         stats = await _eventQueue.GetQueueStatsAsync();
@@ -308,7 +307,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         var processEventsJob = GetService<EventPostsJob>();
         var sw = Stopwatch.StartNew();
-        await processEventsJob.RunUntilEmptyAsync();
+        await processEventsJob.RunUntilEmptyAsync(TestCancellationToken);
         sw.Stop();
         _logger.LogInformation("{Duration:g}", sw.Elapsed);
 
@@ -338,7 +337,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal(0, stats.Completed);
 
         var processEventsJob = GetService<EventPostsJob>();
-        await processEventsJob.RunAsync();
+        await processEventsJob.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
         stats = await _eventQueue.GetQueueStatsAsync();
@@ -906,7 +905,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         // process events
         var processEventsJob = GetService<EventPostsJob>();
-        Assert.Equal(JobResult.Success, await processEventsJob.RunAsync());
+        Assert.Equal(JobResult.Success, await processEventsJob.RunAsync(TestCancellationToken));
 
         var usageInfo = await usageService.GetUsageAsync(organizationId);
         Assert.Equal(viewOrganization.MaxEventsPerMonth, usageInfo.CurrentUsage.Limit);
@@ -970,7 +969,7 @@ public class EventControllerTests : IntegrationTestsBase
         );
 
         // Run the job and verify usage
-        Assert.Equal(JobResult.Success, await processEventsJob.RunAsync());
+        Assert.Equal(JobResult.Success, await processEventsJob.RunAsync(TestCancellationToken));
 
         viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
             .AsTestOrganizationUser()
@@ -995,7 +994,7 @@ public class EventControllerTests : IntegrationTestsBase
         TimeProvider.Advance(TimeSpan.FromMinutes(6));
 
         var processUsageJob = GetService<EventUsageJob>();
-        Assert.Equal(JobResult.Success, await processUsageJob.RunAsync());
+        Assert.Equal(JobResult.Success, await processUsageJob.RunAsync(TestCancellationToken));
 
         organization = await _organizationRepository.GetByIdAsync(organizationId);
 
@@ -1073,7 +1072,7 @@ public class EventControllerTests : IntegrationTestsBase
             .AppendPath("blah")
             .StatusCodeShouldBeOk()
         );
-        string content = await response.Content.ReadAsStringAsync();
+        string content = await response.Content.ReadAsStringAsync(TestCancellationToken);
         Assert.Contains("exceptionless", content);
 
         await SendRequestAsync(r => r
@@ -1141,7 +1140,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         // process events
         var processEventsJob = GetService<EventPostsJob>();
-        Assert.Equal(JobResult.Success, await processEventsJob.RunAsync());
+        Assert.Equal(JobResult.Success, await processEventsJob.RunAsync(TestCancellationToken));
 
         var usageInfo = await usageService.GetUsageAsync(organizationId);
         Assert.Equal(viewOrganization.MaxEventsPerMonth, usageInfo.CurrentUsage.Limit);
@@ -1202,7 +1201,7 @@ public class EventControllerTests : IntegrationTestsBase
         );
 
         // Run the job and verify usage
-        Assert.Equal(JobResult.Success, await processEventsJob.RunAsync());
+        Assert.Equal(JobResult.Success, await processEventsJob.RunAsync(TestCancellationToken));
 
         viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
             .AsTestOrganizationUser()
@@ -1250,7 +1249,7 @@ public class EventControllerTests : IntegrationTestsBase
         TimeProvider.Advance(TimeSpan.FromMinutes(6));
 
         var processUsageJob = GetService<EventUsageJob>();
-        Assert.Equal(JobResult.Success, await processUsageJob.RunAsync());
+        Assert.Equal(JobResult.Success, await processUsageJob.RunAsync(TestCancellationToken));
 
         organization = await _organizationRepository.GetByIdAsync(organizationId);
 
@@ -1346,7 +1345,7 @@ public class EventControllerTests : IntegrationTestsBase
         string? nextPage = GetQueryStringValue(links["next"], "page");
         Assert.Equal("2", nextPage);
 
-        var result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        var result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>(TestCancellationToken);
         Assert.NotNull(result);
         string firstEventId = result.Single().Id;
 
@@ -1369,7 +1368,7 @@ public class EventControllerTests : IntegrationTestsBase
         nextPage = GetQueryStringValue(links["next"], "page");
         Assert.Equal("3", nextPage);
 
-        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>(TestCancellationToken);
         Assert.NotNull(result);
         string secondEventId = result.Single().Id;
         Assert.NotEqual(firstEventId, secondEventId);
@@ -1390,7 +1389,7 @@ public class EventControllerTests : IntegrationTestsBase
         previousPage = GetQueryStringValue(links["previous"], "page");
         Assert.Equal("2", previousPage);
 
-        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>(TestCancellationToken);
         Assert.NotNull(result);
         string thirdEventId = result.Single().Id;
         Assert.NotEqual(secondEventId, thirdEventId);
@@ -1408,7 +1407,7 @@ public class EventControllerTests : IntegrationTestsBase
         links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
         Assert.Equal(2, links.Count);
 
-        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>(TestCancellationToken);
         Assert.NotNull(result);
         Assert.Equal(secondEventId, result.Single().Id);
     }
@@ -1446,7 +1445,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.NotNull(after);
         Assert.Equal(before, after);
 
-        var result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        var result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>(TestCancellationToken);
         Assert.NotNull(result);
         string firstEventId = result.Single().Id;
 
@@ -1470,7 +1469,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.NotNull(after);
         Assert.Equal(before, after);
 
-        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>(TestCancellationToken);
         Assert.NotNull(result);
         string secondEventId = result.Single().Id;
         Assert.NotEqual(firstEventId, secondEventId);
@@ -1495,7 +1494,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.NotNull(after);
         Assert.Equal(before, after);
 
-        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>(TestCancellationToken);
         Assert.NotNull(result);
         string thirdEventId = result.Single().Id;
         Assert.NotEqual(secondEventId, thirdEventId);
@@ -1513,7 +1512,7 @@ public class EventControllerTests : IntegrationTestsBase
         links = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
         Assert.Equal(2, links.Count);
 
-        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>();
+        result = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<PersistentEvent>>(TestCancellationToken);
         Assert.NotNull(result);
         Assert.Equal(secondEventId, result.Single().Id);
     }
@@ -1549,7 +1548,7 @@ public class EventControllerTests : IntegrationTestsBase
         TimeProvider.SetUtcNow(new DateTime(2026, 1, 15, 12, 0, 0, DateTimeKind.Utc));
 
         string dataPath = Path.Combine("..", "..", "..", "Controllers", "Data");
-        string eventJson = await File.ReadAllTextAsync(Path.Combine(dataPath, "event-serialization-input.json"));
+        string eventJson = await File.ReadAllTextAsync(Path.Combine(dataPath, "event-serialization-input.json"), TestCancellationToken);
 
         await SendRequestAsync(r => r
             .Post()
@@ -1560,7 +1559,7 @@ public class EventControllerTests : IntegrationTestsBase
         );
 
         var processEventsJob = GetService<EventPostsJob>();
-        await processEventsJob.RunAsync();
+        await processEventsJob.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
         var events = await _eventRepository.GetAllAsync();
@@ -1572,8 +1571,8 @@ public class EventControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
-        string actualJson = await response.Content.ReadAsStringAsync();
-        string expectedJson = (await File.ReadAllTextAsync(Path.Combine(dataPath, "event-serialization-response.json")))
+        string actualJson = await response.Content.ReadAsStringAsync(TestCancellationToken);
+        string expectedJson = (await File.ReadAllTextAsync(Path.Combine(dataPath, "event-serialization-response.json"), TestCancellationToken))
             .Replace("<EVENT_ID>", processedEvent.Id)
             .Replace("<STACK_ID>", processedEvent.StackId);
 

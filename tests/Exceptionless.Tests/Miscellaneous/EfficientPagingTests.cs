@@ -1,6 +1,5 @@
-﻿using Exceptionless.Web.Utility.Results;
+using Exceptionless.Web.Utility.Results;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Miscellaneous;
 

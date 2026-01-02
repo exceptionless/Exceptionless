@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Billing;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -8,7 +8,6 @@ using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Repositories;
 

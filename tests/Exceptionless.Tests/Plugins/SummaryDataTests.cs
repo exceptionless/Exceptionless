@@ -3,7 +3,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Newtonsoft.Json;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins;
 
@@ -18,7 +17,7 @@ public class SummaryDataTests : TestWithServices
         var settings = GetService<JsonSerializerSettings>();
         settings.Formatting = Formatting.Indented;
 
-        string json = await File.ReadAllTextAsync(path);
+        string json = await File.ReadAllTextAsync(path, TestCancellationToken);
         Assert.NotNull(json);
 
         var ev = json.FromJson<PersistentEvent>(settings);
@@ -33,7 +32,7 @@ public class SummaryDataTests : TestWithServices
             Data = data.Data
         };
 
-        string expectedContent = await File.ReadAllTextAsync(Path.ChangeExtension(path, "summary.json"));
+        string expectedContent = await File.ReadAllTextAsync(Path.ChangeExtension(path, "summary.json"), TestCancellationToken);
         Assert.Equal(expectedContent, JsonConvert.SerializeObject(summary, settings));
     }
 
@@ -44,7 +43,7 @@ public class SummaryDataTests : TestWithServices
         var settings = GetService<JsonSerializerSettings>();
         settings.Formatting = Formatting.Indented;
 
-        string json = await File.ReadAllTextAsync(path);
+        string json = await File.ReadAllTextAsync(path, TestCancellationToken);
         Assert.NotNull(json);
 
         var stack = json.FromJson<Stack>(settings);
@@ -61,7 +60,7 @@ public class SummaryDataTests : TestWithServices
             Data = data.Data
         };
 
-        string expectedContent = await File.ReadAllTextAsync(Path.ChangeExtension(path, "summary.json"));
+        string expectedContent = await File.ReadAllTextAsync(Path.ChangeExtension(path, "summary.json"), TestCancellationToken);
         Assert.Equal(expectedContent, JsonConvert.SerializeObject(summary, settings));
     }
 

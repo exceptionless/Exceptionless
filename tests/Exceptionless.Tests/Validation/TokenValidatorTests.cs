@@ -1,8 +1,7 @@
-﻿using Exceptionless.Core.Models;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Validation;
 
@@ -346,7 +345,7 @@ public sealed class TokenValidatorTests : TestWithServices
         var token = CreateValidToken();
 
         // Act
-        var result = await _validator.ValidateAsync(token);
+        var result = await _validator.ValidateAsync(token, TestCancellationToken);
 
         // Assert
         Assert.True(result.IsValid);
