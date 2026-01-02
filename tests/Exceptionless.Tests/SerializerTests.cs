@@ -7,7 +7,6 @@ using Foundatio.Serializer;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests;
 

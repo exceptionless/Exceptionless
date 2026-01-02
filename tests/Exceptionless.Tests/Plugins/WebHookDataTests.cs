@@ -1,11 +1,10 @@
-﻿using Exceptionless.Core.Billing;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Tests.Utility;
 using Newtonsoft.Json;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins;
 
@@ -36,7 +35,7 @@ public sealed class WebHookDataTests : TestWithServices
         if (expectData)
         {
             string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"{version}.event.expected.json"));
-            string expectedContent = await File.ReadAllTextAsync(filePath);
+            string expectedContent = await File.ReadAllTextAsync(filePath, TestCancellationToken);
             string actualContent = JsonConvert.SerializeObject(data, settings);
             Assert.Equal(expectedContent, actualContent);
         }
@@ -56,7 +55,7 @@ public sealed class WebHookDataTests : TestWithServices
         if (expectData)
         {
             string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"{version}.stack.expected.json"));
-            string expectedContent = await File.ReadAllTextAsync(filePath);
+            string expectedContent = await File.ReadAllTextAsync(filePath, TestCancellationToken);
             string actualContent = JsonConvert.SerializeObject(data, settings);
             Assert.Equal(expectedContent, actualContent);
         }

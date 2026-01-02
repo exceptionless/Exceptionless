@@ -1,9 +1,8 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Validation;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Validation;
 
@@ -247,7 +246,7 @@ public sealed class EventValidatorTests : TestWithServices
         ev.Tags.Add(tag);
 
         // Act
-        var result = await _validator.ValidateAsync(ev);
+        var result = await _validator.ValidateAsync(ev, TestCancellationToken);
 
         // Assert
         Assert.False(result.IsValid);
@@ -492,7 +491,7 @@ public sealed class EventValidatorTests : TestWithServices
         var ev = CreateValidEvent();
 
         // Act
-        var result = await _validator.ValidateAsync(ev);
+        var result = await _validator.ValidateAsync(ev, TestCancellationToken);
 
         // Assert
         Assert.True(result.IsValid);

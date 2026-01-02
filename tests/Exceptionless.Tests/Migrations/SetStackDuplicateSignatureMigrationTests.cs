@@ -8,7 +8,6 @@ using Foundatio.Repositories.Migrations;
 using Foundatio.Utility;
 using Nest;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Migrations;
 
@@ -41,7 +40,7 @@ public class SetStackDuplicateSignatureMigrationTests : IntegrationTestsBase
         Assert.Null(stack.DuplicateSignature);
 
         var migration = GetService<SetStackDuplicateSignature>();
-        var context = new MigrationContext(GetService<ILock>(), _logger, CancellationToken.None);
+        var context = new MigrationContext(GetService<ILock>(), _logger, TestCancellationToken);
         await migration.RunAsync(context);
         await RefreshDataAsync();
 

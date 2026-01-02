@@ -1,6 +1,5 @@
 using Exceptionless.Tests.Extensions;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Controllers;
 
@@ -23,10 +22,10 @@ public class OpenApiControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
-        string actualJson = await response.Content.ReadAsStringAsync();
+        string actualJson = await response.Content.ReadAsStringAsync(TestCancellationToken);
 
         // Assert
-        string expectedJson = await File.ReadAllTextAsync(baselinePath);
+        string expectedJson = await File.ReadAllTextAsync(baselinePath, TestCancellationToken);
         Assert.Equal(expectedJson, actualJson);
     }
 }

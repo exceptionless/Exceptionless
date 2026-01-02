@@ -9,7 +9,6 @@ using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Options;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Repositories;
 

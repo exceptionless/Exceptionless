@@ -1,10 +1,9 @@
-﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Xunit;
-using Xunit.Abstractions;
 using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Tests.Repositories;

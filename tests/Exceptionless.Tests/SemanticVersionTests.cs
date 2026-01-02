@@ -1,7 +1,6 @@
-﻿using Exceptionless.Core.Utility;
+using Exceptionless.Core.Utility;
 using McSherry.SemanticVersioning;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests;
 

@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core;
+using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
@@ -12,7 +12,7 @@ using Foundatio.Caching;
 using Foundatio.Messaging;
 using Foundatio.Utility;
 using Foundatio.Xunit;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace Exceptionless.Tests;
 

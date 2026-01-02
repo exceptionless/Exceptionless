@@ -20,7 +20,6 @@ using Foundatio.Repositories.Extensions;
 using Foundatio.Storage;
 using McSherry.SemanticVersioning;
 using Xunit;
-using Xunit.Abstractions;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Tests.Pipeline;
@@ -1055,7 +1054,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     {
         var pipeline = GetService<EventPipeline>();
         var parserPluginManager = GetService<EventParserPluginManager>();
-        var events = parserPluginManager.ParseEvents(await File.ReadAllTextAsync(errorFilePath), 2, "exceptionless/2.0.0.0");
+        var events = parserPluginManager.ParseEvents(await File.ReadAllTextAsync(errorFilePath, TestCancellationToken), 2, "exceptionless/2.0.0.0");
         Assert.NotNull(events);
         Assert.True(events.Count > 0);
 
@@ -1086,7 +1085,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         string path = Path.Combine("..", "..", "..", "Pipeline", "Data");
         foreach (string file in Directory.GetFiles(path, "*.json", SearchOption.AllDirectories))
         {
-            var events = parserPluginManager.ParseEvents(await File.ReadAllTextAsync(file), 2, "exceptionless/2.0.0.0");
+            var events = parserPluginManager.ParseEvents(await File.ReadAllTextAsync(file, TestCancellationToken), 2, "exceptionless/2.0.0.0");
             Assert.NotNull(events);
             Assert.True(events.Count > 0);
 
@@ -1131,10 +1130,10 @@ public sealed class EventPipelineTests : IntegrationTestsBase
             LoggerFactory = Log
         });
 
-        foreach (var file in await storage.GetFileListAsync(Path.Combine("Exceptionless.Web", "storage", "q", "*")))
+        foreach (var file in await storage.GetFileListAsync(Path.Combine("Exceptionless.Web", "storage", "q", "*"), cancellationToken: TestCancellationToken))
         {
             byte[] data = await storage.GetFileContentsRawAsync(Path.ChangeExtension(file.Path, ".payload"));
-            var eventPostInfo = await storage.GetObjectAsync<EventPostInfo>(file.Path);
+            var eventPostInfo = await storage.GetObjectAsync<EventPostInfo>(file.Path, TestCancellationToken);
             if (!String.IsNullOrEmpty(eventPostInfo.ContentEncoding))
                 data = data.Decompress(eventPostInfo.ContentEncoding);
 
@@ -1208,7 +1207,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
             if (currentBatchCount % 10 == 0)
                 events.Insert(0, events[0].ToSessionStartEvent());
 
-            await storage.SaveObjectAsync(Path.Combine(dataDirectory, $"{currentBatchCount++}.json"), events);
+            await storage.SaveObjectAsync(Path.Combine(dataDirectory, $"{currentBatchCount++}.json"), events, TestCancellationToken);
         }
     }
 
