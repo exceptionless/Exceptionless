@@ -64,7 +64,7 @@
         "vite": "^7.3.0",
         "vitest": "4.0.16",
         "vitest-websocket-mock": "^0.5.0",
-        "zod": "^4.2.1"
+        "zod": "^4.3.5"
     },
     "dependencies": {
         "@exceptionless/browser": "^3.1.0",
