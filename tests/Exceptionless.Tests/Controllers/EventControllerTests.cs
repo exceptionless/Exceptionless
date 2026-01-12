@@ -58,6 +58,7 @@ public class EventControllerTests : IntegrationTestsBase
     {
         await base.ResetDataAsync();
         await _eventQueue.DeleteQueueAsync();
+        await _eventUserDescriptionQueue.DeleteQueueAsync();
 
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
@@ -154,6 +155,8 @@ public class EventControllerTests : IntegrationTestsBase
         stats = await _eventUserDescriptionQueue.GetQueueStatsAsync();
         Assert.Equal(1, stats.Dequeued);
         Assert.Equal(1, stats.Abandoned); // Event doesn't exist
+
+        await _eventUserDescriptionQueue.DeleteQueueAsync();
     }
 
     [Fact]
