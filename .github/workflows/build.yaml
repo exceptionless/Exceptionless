@@ -235,9 +235,6 @@ jobs:
           echo "::remove-matcher owner=csc::"
           # tag and push docker images
 
-          # only build elasticsearch 7 all-in-one image for release builds
-          docker image tag exceptionless/exceptionless:latest-elasticsearch7 exceptionless/exceptionless:$VERSION-elasticsearch7
-
           for image in {"api","job","app","exceptionless"}; do
             docker image tag exceptionless/$image-ci:latest exceptionless/$image:$VERSION
             docker image tag exceptionless/$image-ci:latest exceptionless/$image:latest
