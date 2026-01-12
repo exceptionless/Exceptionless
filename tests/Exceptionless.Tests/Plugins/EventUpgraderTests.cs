@@ -1,7 +1,6 @@
-﻿using Exceptionless.Core.Plugins.EventParser;
+using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins;
 

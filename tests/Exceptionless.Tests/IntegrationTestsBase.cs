@@ -25,7 +25,6 @@ using Microsoft.AspNetCore.TestHost;
 using Nest;
 using Newtonsoft.Json;
 using Xunit;
-using Xunit.Abstractions;
 using HttpMethod = System.Net.Http.HttpMethod;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
@@ -75,7 +74,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         _disposables.Add(new DisposableAction(() => _timeProvider.Restore()));
     }
 
-    public virtual async Task InitializeAsync()
+    public virtual async ValueTask InitializeAsync()
     {
         Log.SetLogLevel("Microsoft.AspNetCore.Hosting.Internal.WebHost", LogLevel.Warning);
         Log.SetLogLevel("Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService", LogLevel.None);
@@ -262,7 +261,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         return response.DeserializeAsync<T>();
     }
 
-    public virtual Task DisposeAsync()
+    public virtual ValueTask DisposeAsync()
     {
         foreach (var disposable in _disposables)
         {
@@ -275,6 +274,6 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
                 _logger?.LogError(ex, "Error disposing resource");
             }
         }
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 }

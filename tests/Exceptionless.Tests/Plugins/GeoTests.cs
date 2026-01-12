@@ -14,7 +14,6 @@ using Foundatio.Caching;
 using Foundatio.Resilience;
 using Foundatio.Storage;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Plugins;
 
@@ -226,7 +225,7 @@ public sealed class GeoTests : TestWithServices
             return;
 
         Assert.True(GeoResult.TryParse(GREEN_BAY_COORDINATES, out var coordinates));
-        var location = await service.ReverseGeocodeAsync(coordinates.Latitude.GetValueOrDefault(), coordinates.Longitude.GetValueOrDefault());
+        var location = await service.ReverseGeocodeAsync(coordinates.Latitude.GetValueOrDefault(), coordinates.Longitude.GetValueOrDefault(), TestCancellationToken);
         Assert.Equal("US", location?.Country);
         Assert.Equal("WI", location?.Level1);
         Assert.Equal("Brown County", location?.Level2);
@@ -274,7 +273,7 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var result = await resolver.ResolveIpAsync(ip);
+        var result = await resolver.ResolveIpAsync(ip, TestCancellationToken);
         if (canResolve)
             Assert.NotNull(result);
         else
@@ -289,11 +288,11 @@ public sealed class GeoTests : TestWithServices
             return;
 
         // Load the database
-        await resolver.ResolveIpAsync("0.0.0.0");
+        await resolver.ResolveIpAsync("0.0.0.0", TestCancellationToken);
 
         var sw = Stopwatch.StartNew();
         for (int i = 0; i < 1000; i++)
-            Assert.NotNull(await resolver.ResolveIpAsync("8.8.4.4"));
+            Assert.NotNull(await resolver.ResolveIpAsync("8.8.4.4", TestCancellationToken));
 
         sw.Stop();
         Assert.InRange(sw.ElapsedMilliseconds, 0, 65);

@@ -9,7 +9,6 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Utility;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Migrations;
 
@@ -62,7 +61,7 @@ public class UpdateEventUsageMigrationTests : IntegrationTestsBase
         await _eventRepository.AddAsync(_eventData.GenerateEvents(count: 10, stackId: stack.Id, startDate: currentMonthUsageDate, endDate: DateTime.UtcNow), o => o.ImmediateConsistency());
 
         var migration = GetService<UpdateEventUsage>();
-        var context = new MigrationContext(GetService<ILock>(), _logger, CancellationToken.None);
+        var context = new MigrationContext(GetService<ILock>(), _logger, TestCancellationToken);
         await migration.RunAsync(context);
 
         int limit = organization.GetMaxEventsPerMonthWithBonus(TimeProvider);

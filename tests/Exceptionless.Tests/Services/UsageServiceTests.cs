@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
@@ -9,7 +9,6 @@ using Foundatio.AsyncEx;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Xunit;
-using Xunit.Abstractions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests.Services;
@@ -41,7 +40,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         {
             _logger.LogInformation("Plan Overage for {Organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsHourly);
             countdown.Signal();
-        });
+        }, TestCancellationToken);
 
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
         var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
@@ -117,7 +116,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         {
             _logger.LogInformation("Plan Overage for {Organization} (Hourly: {IsHourly})", po.OrganizationId, po.IsHourly);
             countdown.Signal();
-        });
+        }, TestCancellationToken);
 
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
         var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());

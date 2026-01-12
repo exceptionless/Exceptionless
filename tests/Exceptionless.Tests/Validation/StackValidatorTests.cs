@@ -1,7 +1,6 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Validation;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Validation;
 
@@ -352,7 +351,7 @@ public sealed class StackValidatorTests : TestWithServices
         var stack = CreateValidStack();
 
         // Act
-        var result = await _validator.ValidateAsync(stack);
+        var result = await _validator.ValidateAsync(stack, TestCancellationToken);
 
         // Assert
         Assert.True(result.IsValid);
