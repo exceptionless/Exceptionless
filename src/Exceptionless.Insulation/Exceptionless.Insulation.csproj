@@ -1,5 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="AWSSDK.CloudWatch" Version="4.0.6.4" />
+    <PackageReference Include="AWSSDK.Core" Version="4.0.3.8" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.17" />
+    <PackageReference Include="AWSSDK.SQS" Version="4.0.2.11" />
+    
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
     <PackageReference Include="MaxMind.GeoIP2" Version="5.4.1" />
     <PackageReference Include="Foundatio.Aliyun" Version="12.0.0" />
