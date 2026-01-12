@@ -6,7 +6,6 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Parsers.ElasticQueries.Visitors;
 using Foundatio.Repositories;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Search;
 

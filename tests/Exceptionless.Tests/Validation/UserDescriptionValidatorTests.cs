@@ -1,7 +1,6 @@
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Validation;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Validation;
 
@@ -142,7 +141,7 @@ public sealed class UserDescriptionValidatorTests : TestWithServices
         var userDescription = CreateValidUserDescription();
 
         // Act
-        var result = await _validator.ValidateAsync(userDescription);
+        var result = await _validator.ValidateAsync(userDescription, TestCancellationToken);
 
         // Assert
         Assert.True(result.IsValid);

@@ -4,7 +4,6 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Repositories;
 

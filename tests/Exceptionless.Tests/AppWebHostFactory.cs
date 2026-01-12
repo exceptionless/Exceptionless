@@ -14,7 +14,7 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 
     public DistributedApplication App => _app ?? throw new InvalidOperationException("The application is not initialized");
 
-    public Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var options = new DistributedApplicationOptions { AssemblyName = typeof(ElasticsearchResource).Assembly.FullName, DisableDashboard = true };
         var builder = DistributedApplication.CreateBuilder(options);
@@ -28,7 +28,7 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 
         _app = builder.Build();
 
-        return _app.StartAsync();
+        await _app.StartAsync();
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -46,11 +46,12 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
         return Web.Program.CreateHostBuilder(config, Environments.Development);
     }
 
-    async Task IAsyncLifetime.DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
         if (_app is not null)
         {
             await _app.DisposeAsync();
         }
+        await base.DisposeAsync();
     }
 }

@@ -1,13 +1,14 @@
-﻿using Exceptionless.Web.Utility;
+using Exceptionless.Web.Utility;
 using Foundatio.Xunit;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Miscellaneous;
 
 public class DeltaTests : TestWithLoggingBase
 {
-    public DeltaTests(ITestOutputHelper output) : base(output) { }
+    public DeltaTests(ITestOutputHelper output) : base(output)
+    {
+    }
 
     [Fact]
     public void TrySetPropertyValue_UnknownProperty_AddsToUnknownProperties()

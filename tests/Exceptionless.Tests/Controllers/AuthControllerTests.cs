@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -15,7 +15,6 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
-using Xunit.Abstractions;
 using User = Exceptionless.Core.Models.User;
 
 namespace Exceptionless.Tests.Controllers;

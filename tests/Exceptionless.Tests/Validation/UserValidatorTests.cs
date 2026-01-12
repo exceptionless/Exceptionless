@@ -1,7 +1,6 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Validation;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Validation;
 

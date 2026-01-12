@@ -8,7 +8,6 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
 using Xunit;
-using Xunit.Abstractions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests.Repositories;
@@ -152,7 +151,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task CanGetPreviousAndNExtEventIdWithFilterTestAsync()
+    public async Task CanGetPreviousAndNextEventIdWithFilterTestAsync()
     {
         await CreateDataAsync();
         Log.SetLogLevel<StackRepository>(LogLevel.Trace);

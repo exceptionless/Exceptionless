@@ -4,7 +4,6 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Controllers;
 

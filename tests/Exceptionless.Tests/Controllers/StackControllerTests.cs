@@ -10,7 +10,6 @@ using Exceptionless.Web.Controllers;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Controllers;
 

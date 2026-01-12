@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core;
+using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
@@ -11,7 +11,6 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
 using Foundatio.Queues;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Mail;
 

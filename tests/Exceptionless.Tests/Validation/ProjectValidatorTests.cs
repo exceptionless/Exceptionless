@@ -1,7 +1,6 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Validation;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Validation;
 
@@ -143,7 +142,7 @@ public sealed class ProjectValidatorTests : TestWithServices
         var project = CreateValidProject();
 
         // Act
-        var result = await _validator.ValidateAsync(project);
+        var result = await _validator.ValidateAsync(project, TestCancellationToken);
 
         // Assert
         Assert.True(result.IsValid);

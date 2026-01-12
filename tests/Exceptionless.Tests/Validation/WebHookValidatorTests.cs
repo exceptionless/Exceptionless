@@ -1,7 +1,6 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Validation;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Validation;
 
@@ -281,7 +280,7 @@ public sealed class WebHookValidatorTests : TestWithServices
         var webHook = CreateValidWebHook();
 
         // Act
-        var result = await _validator.ValidateAsync(webHook);
+        var result = await _validator.ValidateAsync(webHook, TestCancellationToken);
 
         // Assert
         Assert.True(result.IsValid);

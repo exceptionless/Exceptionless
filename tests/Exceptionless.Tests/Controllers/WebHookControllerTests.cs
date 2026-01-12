@@ -4,7 +4,6 @@ using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Controllers;
 

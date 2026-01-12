@@ -1,6 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Extensions;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Extensions;
 

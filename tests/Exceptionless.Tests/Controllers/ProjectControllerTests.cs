@@ -7,7 +7,6 @@ using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Jobs;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Controllers;
 
@@ -152,7 +151,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.NotNull(workItems);
         Assert.Single(workItems.Workers);
         var workItemJob = GetService<WorkItemJob>();
-        await workItemJob.RunUntilEmptyAsync();
+        await workItemJob.RunUntilEmptyAsync(TestCancellationToken);
         await RefreshDataAsync();
 
         projects = await SendRequestAsAsync<List<ViewProject>>(r => r
@@ -169,7 +168,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.Equal(events.Count, project.EventCount);
 
         var cleanupJob = GetService<CleanupDataJob>();
-        await cleanupJob.RunAsync();
+        await cleanupJob.RunAsync(TestCancellationToken);
 
         projects = await SendRequestAsAsync<List<ViewProject>>(r => r
             .AsTestOrganizationUser()

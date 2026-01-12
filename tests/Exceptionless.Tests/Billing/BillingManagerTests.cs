@@ -1,6 +1,5 @@
-﻿using Exceptionless.Core.Billing;
+using Exceptionless.Core.Billing;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Billing;
 
