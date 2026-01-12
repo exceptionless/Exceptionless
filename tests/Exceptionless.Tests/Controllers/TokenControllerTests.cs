@@ -8,7 +8,6 @@ using FluentRest;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Controllers;
 

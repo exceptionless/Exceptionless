@@ -2,18 +2,20 @@
     import type { PostSuspendOrganizationParams } from '$features/organizations/api.svelte';
     import type { ViewOrganization } from '$features/organizations/models';
 
+    import ErrorMessage from '$comp/error-message.svelte';
     import { P } from '$comp/typography';
     import * as AlertDialog from '$comp/ui/alert-dialog';
     import { buttonVariants } from '$comp/ui/button';
-    import * as Form from '$comp/ui/form';
+    import * as Field from '$comp/ui/field';
     import * as Select from '$comp/ui/select';
     import { Textarea } from '$comp/ui/textarea';
-    import { SuspendOrganizationForm, SuspensionCode } from '$features/organizations/models';
+    import { SuspensionCode } from '$features/organizations/models';
     import { suspensionCodeOptions } from '$features/organizations/options';
-    import { applyServerSideErrors } from '$features/shared/validation';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
-    import { defaults, superForm } from 'sveltekit-superforms';
-    import { classvalidatorClient } from 'sveltekit-superforms/adapters';
+    import { createForm } from '@tanstack/svelte-form';
+
+    import { type SuspendOrganizationFormData, SuspendOrganizationSchema } from '../../schemas';
 
     interface Props {
         open: boolean;
@@ -23,45 +25,39 @@
 
     let { open = $bindable(), organization, suspend }: Props = $props();
 
-    const form = superForm(defaults(new SuspendOrganizationForm(), classvalidatorClient(SuspendOrganizationForm)), {
-        dataType: 'json',
-        id: 'suspend-organization-form',
-        async onUpdate({ form, result }) {
-            if (!form.valid) {
-                return;
-            }
-
-            try {
-                await suspend({
-                    code: Number(form.data.code) as SuspensionCode,
-                    notes: form.data.notes
-                });
-
-                open = false;
-
-                // HACK: This is to prevent sveltekit from stealing focus
-                result.type = 'failure';
-            } catch (error: unknown) {
-                if (error instanceof ProblemDetails) {
-                    applyServerSideErrors(form, error);
-                    result.status = error.status ?? 500;
-                } else {
-                    result.status = 500;
-                }
-            }
-        },
-        SPA: true,
-        validators: classvalidatorClient(SuspendOrganizationForm)
-    });
-
-    const { enhance, form: formData } = form;
-
     // Set default suspension code to Abuse
     let selectedCodeValue = $state(String(SuspensionCode.Abuse));
 
+    const form = createForm(() => ({
+        defaultValues: {
+            code: SuspensionCode.Abuse,
+            notes: ''
+        } as SuspendOrganizationFormData,
+        validators: {
+            onSubmit: SuspendOrganizationSchema,
+            onSubmitAsync: async ({ value }) => {
+                try {
+                    await suspend({
+                        code: value.code,
+                        notes: value.notes
+                    });
+
+                    open = false;
+                    return null;
+                } catch (error: unknown) {
+                    if (error instanceof ProblemDetails) {
+                        return problemDetailsToFormErrors(error);
+                    }
+
+                    return { form: 'An unexpected error occurred, please try again.' };
+                }
+            }
+        }
+    }));
+
     $effect(() => {
-        if (open && !$formData.code) {
-            $formData.code = SuspensionCode.Abuse;
+        if (open) {
+            form.reset();
             selectedCodeValue = String(SuspensionCode.Abuse);
         }
     });
@@ -69,14 +65,20 @@
     function handleCodeChange(value: string | undefined) {
         if (value) {
             selectedCodeValue = value;
-            $formData.code = Number(value) as SuspensionCode;
+            form.setFieldValue('code', Number(value) as SuspensionCode);
         }
     }
 </script>
 
 <AlertDialog.Root bind:open>
     <AlertDialog.Content>
-        <form method="POST" use:enhance>
+        <form
+            onsubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                form.handleSubmit();
+            }}
+        >
             <AlertDialog.Header>
                 <AlertDialog.Title>Suspend Organization</AlertDialog.Title>
                 <AlertDialog.Description>
@@ -84,12 +86,18 @@
                 </AlertDialog.Description>
             </AlertDialog.Header>
 
+            <form.Subscribe selector={(state) => state.errors}>
+                {#snippet children(errors)}
+                    <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
+                {/snippet}
+            </form.Subscribe>
+
             <P class="space-y-4 pb-4">
-                <Form.Field {form} name="code">
-                    <Form.Control>
-                        {#snippet children({ props })}
-                            <Form.Label>Reason for Suspension</Form.Label>
-                            <Select.Root bind:value={selectedCodeValue} onValueChange={handleCodeChange} type="single" {...props}>
+                <form.Field name="code">
+                    {#snippet children(field)}
+                        <Field.Field data-invalid={ariaInvalid(field)}>
+                            <Field.Label for={field.name}>Reason for Suspension</Field.Label>
+                            <Select.Root bind:value={selectedCodeValue} onValueChange={handleCodeChange} type="single">
                                 <Select.Trigger class="w-full">
                                     {suspensionCodeOptions.find((option) => String(option.value) === selectedCodeValue)?.label || 'Select a reason...'}
                                 </Select.Trigger>
@@ -99,22 +107,31 @@
                                     {/each}
                                 </Select.Content>
                             </Select.Root>
-                        {/snippet}
-                    </Form.Control>
-                    <Form.Description>Select a reason for suspending this organization.</Form.Description>
-                    <Form.FieldErrors />
-                </Form.Field>
+                            <Field.Description>Select a reason for suspending this organization.</Field.Description>
+                            <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                        </Field.Field>
+                    {/snippet}
+                </form.Field>
 
-                <Form.Field {form} name="notes">
-                    <Form.Control>
-                        {#snippet children({ props })}
-                            <Form.Label>Additional Details (Optional)</Form.Label>
-                            <Textarea {...props} bind:value={$formData.notes} placeholder="Add any relevant context or details..." rows={3} />
-                        {/snippet}
-                    </Form.Control>
-                    <Form.Description>Provide any relevant context or notes about this suspension.</Form.Description>
-                    <Form.FieldErrors />
-                </Form.Field>
+                <form.Field name="notes">
+                    {#snippet children(field)}
+                        <Field.Field data-invalid={ariaInvalid(field)}>
+                            <Field.Label for={field.name}>Additional Details (Optional)</Field.Label>
+                            <Textarea
+                                id={field.name}
+                                name={field.name}
+                                placeholder="Add any relevant context or details..."
+                                rows={3}
+                                value={field.state.value ?? ''}
+                                onblur={field.handleBlur}
+                                oninput={(e) => field.handleChange(e.currentTarget.value)}
+                                aria-invalid={ariaInvalid(field)}
+                            />
+                            <Field.Description>Provide any relevant context or notes about this suspension.</Field.Description>
+                            <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                        </Field.Field>
+                    {/snippet}
+                </form.Field>
             </P>
 
             <AlertDialog.Footer>

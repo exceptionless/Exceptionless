@@ -19,8 +19,7 @@
     import { invalidateWebhookQueries } from '$features/webhooks/api.svelte';
     import { isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
     import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
-    import { validate } from '$shared/validation';
-    import { setModelValidator, useMiddleware } from '@exceptionless/fetchclient';
+    import { useMiddleware } from '@exceptionless/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
     import { fade } from 'svelte/transition';
 
@@ -41,7 +40,6 @@
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
 
-    setModelValidator(validate);
     useMiddleware(async (ctx, next) => {
         await next();
 

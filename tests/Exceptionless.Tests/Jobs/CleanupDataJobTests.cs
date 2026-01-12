@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core;
+using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Repositories;
@@ -7,7 +7,6 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Jobs;
 
@@ -59,7 +58,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
         var token = await _tokenRepository.AddAsync(_tokenData.GenerateSampleApiKeyToken(), o => o.ImmediateConsistency());
         Assert.False(token.IsSuspended);
 
-        await _job.RunAsync();
+        await _job.RunAsync(TestCancellationToken);
 
         token = await _tokenRepository.GetByIdAsync(token.Id);
         Assert.True(token.IsSuspended);
@@ -76,7 +75,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
         var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
 
-        await _job.RunAsync();
+        await _job.RunAsync(TestCancellationToken);
 
         Assert.Null(await _organizationRepository.GetByIdAsync(organization.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _projectRepository.GetByIdAsync(project.Id, o => o.IncludeSoftDeletes()));
@@ -96,7 +95,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
         var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
 
-        await _job.RunAsync();
+        await _job.RunAsync(TestCancellationToken);
 
         Assert.NotNull(await _organizationRepository.GetByIdAsync(organization.Id));
         Assert.Null(await _projectRepository.GetByIdAsync(project.Id, o => o.IncludeSoftDeletes()));
@@ -116,7 +115,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
 
         var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
 
-        await _job.RunAsync();
+        await _job.RunAsync(TestCancellationToken);
 
         Assert.NotNull(await _organizationRepository.GetByIdAsync(organization.Id));
         Assert.NotNull(await _projectRepository.GetByIdAsync(project.Id));
@@ -138,7 +137,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
         var date = DateTimeOffset.UtcNow.SubtractDays(options.MaximumRetentionDays);
         var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id, date, date, date), o => o.ImmediateConsistency());
 
-        await _job.RunAsync();
+        await _job.RunAsync(TestCancellationToken);
 
         Assert.NotNull(await _organizationRepository.GetByIdAsync(organization.Id));
         Assert.NotNull(await _projectRepository.GetByIdAsync(project.Id));
@@ -164,7 +163,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
         var eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
         Assert.Equal(15000, eventCount);
 
-        await GetService<CleanupOrphanedDataJob>().RunAsync();
+        await GetService<CleanupOrphanedDataJob>().RunAsync(TestCancellationToken);
 
         eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
         Assert.Equal(5000, eventCount);

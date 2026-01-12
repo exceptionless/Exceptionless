@@ -1,11 +1,10 @@
-﻿using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Xunit;
-using Xunit.Abstractions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests.Services;
@@ -132,7 +131,7 @@ public class StackServiceTests : IntegrationTestsBase
         DateTime minOccurrenceDate = utcNow.AddMinutes(-1), maxOccurrenceDate = utcNow;
         await _stackService.IncrementStackUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, minOccurrenceDate, maxOccurrenceDate, 10);
 
-        await _stackService.SaveStackUsagesAsync(false);
+        await _stackService.SaveStackUsagesAsync(false, TestCancellationToken);
 
         // Assert state in cache after save stack usage
         Assert.Equal(0, await _cache.GetAsync<long>(StackService.GetStackOccurrenceCountCacheKey(stack.Id), 0));

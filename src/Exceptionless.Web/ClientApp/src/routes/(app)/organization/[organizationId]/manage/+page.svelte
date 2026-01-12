@@ -6,25 +6,22 @@
     import { H3, Muted } from '$comp/typography';
     import { Button, buttonVariants } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import * as Form from '$comp/ui/form';
+    import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import { Separator } from '$comp/ui/separator';
     import { Spinner } from '$comp/ui/spinner';
     import { deleteOrganization, getOrganizationQuery, patchOrganization } from '$features/organizations/api.svelte';
     import RemoveOrganizationDialog from '$features/organizations/components/dialogs/remove-organization-dialog.svelte';
-    import { NewOrganization } from '$features/organizations/models';
-    import { structuredCloneState } from '$features/shared/utils/state.svelte';
-    import { applyServerSideErrors } from '$features/shared/validation';
+    import { type NewOrganizationFormData, NewOrganizationSchema } from '$features/organizations/schemas';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import Issues from '@lucide/svelte/icons/bug';
     import X from '@lucide/svelte/icons/x';
+    import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
-    import { defaults, superForm } from 'sveltekit-superforms';
-    import { classvalidatorClient } from 'sveltekit-superforms/adapters';
     import { debounce } from 'throttle-debounce';
 
     let toastId = $state<number | string>();
-    let previousOrganizationRef: NewOrganization | undefined;
 
     const organizationId = $derived(page.params.organizationId || '');
     const organizationQuery = getOrganizationQuery({
@@ -65,48 +62,31 @@
         }
     }
 
-    const form = superForm(defaults(structuredCloneState(organizationQuery.data) ?? new NewOrganization(), classvalidatorClient(NewOrganization)), {
-        dataType: 'json',
-        id: 'manage-organization',
-        async onUpdate({ form, result }) {
-            if (!form.valid) {
-                return;
-            }
-
-            try {
-                await update.mutateAsync(form.data);
-
+    const form = createForm(() => ({
+        defaultValues: {
+            name: organizationQuery.data?.name
+        } as NewOrganizationFormData,
+        validators: {
+            onSubmit: NewOrganizationSchema,
+            onSubmitAsync: async ({ value }) => {
                 toast.dismiss(toastId);
-                toastId = toast.success('Successfully updated Organization name');
-            } catch (error: unknown) {
-                if (error instanceof ProblemDetails) {
-                    applyServerSideErrors(form, error);
-                    result.status = error.status ?? 500;
-                } else {
-                    result.status = 500;
+                try {
+                    await update.mutateAsync(value);
+                    toastId = toast.success('Successfully updated Organization name');
+                    return null;
+                } catch (error: unknown) {
+                    toastId = toast.error('Error saving organization name. Please try again.');
+                    if (error instanceof ProblemDetails) {
+                        return problemDetailsToFormErrors(error);
+                    }
+
+                    return { form: 'An unexpected error occurred.' };
                 }
-
-                toastId = toast.error(form.message ?? 'Error saving organization name. Please try again.');
             }
-        },
-        SPA: true,
-        validators: classvalidatorClient(NewOrganization)
-    });
-
-    const { enhance, form: formData, message, submit, submitting, tainted } = form;
-    const debouncedFormSubmit = debounce(1000, submit);
-
-    $effect(() => {
-        if (!organizationQuery.isSuccess) {
-            return;
         }
+    }));
 
-        if (!$submitting && !$tainted && organizationQuery.data !== previousOrganizationRef) {
-            const clonedData = structuredCloneState(organizationQuery.data);
-            form.reset({ data: clonedData, keepMessage: true });
-            previousOrganizationRef = organizationQuery.data;
-        }
-    });
+    const debouncedFormSubmit = debounce(1000, () => form.handleSubmit());
 
     // TODO: Add Skeleton
 </script>
@@ -118,18 +98,40 @@
     </div>
     <Separator />
 
-    <form method="POST" use:enhance>
-        <ErrorMessage message={$message}></ErrorMessage>
-        <Form.Field {form} name="name">
-            <Form.Control>
-                {#snippet children({ props })}
-                    <Form.Label>Organization name</Form.Label>
-                    <Input {...props} bind:value={$formData.name} type="text" placeholder="Enter organization name" required oninput={debouncedFormSubmit} />
-                {/snippet}
-            </Form.Control>
-            <Form.Description />
-            <Form.FieldErrors />
-        </Form.Field>
+    <form
+        onsubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+        }}
+    >
+        <form.Subscribe selector={(state) => state.errors}>
+            {#snippet children(errors)}
+                <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
+            {/snippet}
+        </form.Subscribe>
+        <form.Field name="name">
+            {#snippet children(field)}
+                <Field.Field data-invalid={ariaInvalid(field)}>
+                    <Field.Label for={field.name}>Organization name</Field.Label>
+                    <Input
+                        id={field.name}
+                        name={field.name}
+                        type="text"
+                        placeholder="Enter organization name"
+                        required
+                        value={field.state.value}
+                        onblur={field.handleBlur}
+                        oninput={(e) => {
+                            field.handleChange(e.currentTarget.value);
+                            debouncedFormSubmit();
+                        }}
+                        aria-invalid={ariaInvalid(field)}
+                    />
+                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                </Field.Field>
+            {/snippet}
+        </form.Field>
     </form>
 
     <div class="flex w-full items-center justify-between">

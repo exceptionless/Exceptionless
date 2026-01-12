@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -44,7 +44,7 @@ jobs:
       - name: Version
         id: version
         run: |
-          dotnet tool install --global minver-cli --version 6.0.0
+          dotnet tool install --global minver-cli --version 7.0.0
           version=$(minver --tag-prefix v)
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "### $version" >> $GITHUB_STEP_SUMMARY
@@ -55,7 +55,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -119,12 +119,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Setup Node.js environment
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: 22
 
@@ -163,7 +163,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
             fetch-depth: 0
 
@@ -192,12 +192,6 @@ jobs:
         run: |
           echo "::remove-matcher owner=csc::"
           docker buildx build . --target exceptionless --platform linux/amd64 --tag exceptionless/exceptionless-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
-
-      - name: Build all-in-one Elasticsearch 7 docker image
-        if: "${{ env.DOCKER_USERNAME != '' && startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}"
-        run: |
-          echo "::remove-matcher owner=csc::"
-          docker buildx build . --target exceptionless7 --platform linux/amd64 --tag exceptionless/exceptionless:latest-elasticsearch7 --cache-from type=gha --cache-to type=gha,mode=max --load
 
       - name: Login to GitHub Container Registry
         if: "${{ env.DOCKER_USERNAME != '' }}"
@@ -241,9 +235,6 @@ jobs:
           echo "::remove-matcher owner=csc::"
           # tag and push docker images
 
-          # only build elasticsearch 7 all-in-one image for release builds
-          docker image tag exceptionless/exceptionless:latest-elasticsearch7 exceptionless/exceptionless:$VERSION-elasticsearch7
-
           for image in {"api","job","app","exceptionless"}; do
             docker image tag exceptionless/$image-ci:latest exceptionless/$image:$VERSION
             docker image tag exceptionless/$image-ci:latest exceptionless/$image:latest
@@ -261,7 +252,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
             fetch-depth: 0
 

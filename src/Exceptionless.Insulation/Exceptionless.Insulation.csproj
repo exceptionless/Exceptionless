@@ -2,18 +2,18 @@
   <ItemGroup>
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
     <PackageReference Include="MaxMind.GeoIP2" Version="5.4.1" />
-    <PackageReference Include="Foundatio.Aliyun" Version="12.0.0" />
-    <PackageReference Include="Foundatio.AWS" Version="12.0.0" />
-    <PackageReference Include="Foundatio.AzureStorage" Version="12.0.0" />
-    <PackageReference Include="Foundatio.Minio" Version="12.0.0" />
-    <PackageReference Include="Foundatio.RabbitMQ" Version="12.0.0" />
-    <PackageReference Include="Foundatio.Redis" Version="12.0.1-alpha.0.9" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
+    <PackageReference Include="Foundatio.Aliyun" Version="12.0.1-preview.0.6" />
+    <PackageReference Include="Foundatio.AWS" Version="12.0.1-preview.0.9" />
+    <PackageReference Include="Foundatio.AzureStorage" Version="12.0.1-preview.0.7" />
+    <PackageReference Include="Foundatio.Minio" Version="12.0.1-preview.0.8" />
+    <PackageReference Include="Foundatio.RabbitMQ" Version="12.0.1-preview.0.9" />
+    <PackageReference Include="Foundatio.Redis" Version="12.0.1-preview.0.20" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.1" />
     <PackageReference Include="MailKit" Version="4.14.1" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
     <PackageReference Include="Serilog.Formatting.Compact" Version="3.0.0" />

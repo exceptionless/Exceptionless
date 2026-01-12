@@ -37,7 +37,7 @@ export default ts.config(
         }
     },
     {
-        ignores: ['build/', '.svelte-kit/', 'dist/', 'src/lib/generated/api.ts', 'src/lib/features/shared/components/ui/']
+        ignores: ['build/', '.svelte-kit/', 'dist/', 'src/lib/generated/', 'src/lib/features/shared/components/ui/']
     },
     {
         rules: {
@@ -51,12 +51,6 @@ export default ts.config(
     },
     {
         rules: {
-            'perfectionist/sort-enums': [
-                'error',
-                {
-                    forceNumericSort: true
-                }
-            ],
             'perfectionist/sort-svelte-attributes': 'off'
         }
     },

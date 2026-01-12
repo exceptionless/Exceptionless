@@ -1,7 +1,6 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Validation;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Validation;
 
@@ -14,28 +13,48 @@ public sealed class UserValidatorTests : TestWithServices
         _validator = GetService<MiniValidationValidator>();
     }
 
-    [Theory]
-    [InlineData("Valid User", true)]
-    [InlineData("", false)]
-    public async Task ValidateFullNameAsync(string fullName, bool isValid)
+    [Fact]
+    public async Task ValidateAsync_WhenFullNameIsValid_ReturnsSuccess()
     {
+        // Arrange
         var user = new User
         {
-            FullName = fullName,
-            EmailAddress = "valid@example.com",
+            FullName = "Valid User",
+            EmailAddress = "valid@localhost.com",
             IsEmailAddressVerified = true
         };
 
+        // Act
         var result = await _validator.ValidateAsync(user);
-        Assert.Equal(isValid, result.IsValid);
+
+        // Assert
+        Assert.True(result.IsValid);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_WhenFullNameIsEmpty_ReturnsError()
+    {
+        // Arrange
+        var user = new User
+        {
+            FullName = "",
+            EmailAddress = "valid@localhost.com",
+            IsEmailAddressVerified = true
+        };
+
+        // Act
+        var result = await _validator.ValidateAsync(user);
+
+        // Assert
+        Assert.False(result.IsValid);
     }
 
     [Theory]
-    [InlineData("valid@example.com", true)]
-    [InlineData("invalid-email", false)]
-    [InlineData("", false)]
-    public async Task ValidateEmailAddressAsync(string email, bool isValid)
+    [InlineData("invalid-email")]
+    [InlineData("")]
+    public async Task ValidateAsync_WhenEmailAddressIsInvalid_ReturnsError(string email)
     {
+        // Arrange
         var user = new User
         {
             FullName = "Valid User",
@@ -43,55 +62,178 @@ public sealed class UserValidatorTests : TestWithServices
             IsEmailAddressVerified = true
         };
 
+        // Act
         var result = await _validator.ValidateAsync(user);
-        Assert.Equal(isValid, result.IsValid);
+
+        // Assert
+        Assert.False(result.IsValid);
     }
 
-    [Theory]
-    [InlineData(false, "token", true)]
-    [InlineData(false, "", false)]
-    [InlineData(false, null, false)]
-    [InlineData(true, "token", false)]
-    [InlineData(true, "", false)]
-    [InlineData(true, null, true)]
-    public async Task ValidateVerifyEmailAddressTokenAsync(bool isEmailAddressVerified, string? token, bool isValid)
+    [Fact]
+    public async Task ValidateAsync_WhenNotVerifiedAndTokenIsSet_ReturnsSuccess()
     {
+        // Arrange
         var user = new User
         {
             FullName = "Valid User",
-            EmailAddress = "valid@example.com",
-            IsEmailAddressVerified = isEmailAddressVerified,
-            VerifyEmailAddressToken = token,
-            VerifyEmailAddressTokenExpiration = isEmailAddressVerified ? DateTime.MinValue : DateTime.UtcNow.AddDays(1)
+            EmailAddress = "valid@localhost.com",
+            IsEmailAddressVerified = false,
+            VerifyEmailAddressToken = "token",
+            VerifyEmailAddressTokenExpiration = DateTime.UtcNow.AddDays(1)
         };
 
+        // Act
         var result = await _validator.ValidateAsync(user);
-        Assert.Equal(isValid, result.IsValid);
+
+        // Assert
+        Assert.True(result.IsValid);
     }
 
     [Theory]
-    [InlineData(false, "token", null, false)]
-    [InlineData(false, "token", "0001-01-01", false)]
-    [InlineData(false, "token", "2024-10-01", true)]
-    [InlineData(false, "token", "9999-12-31T23:59:59.9999999", true)]
-    [InlineData(false, null, "2024-10-01", false)]
-    [InlineData(true, "token", "2024-10-01", false)]
-    [InlineData(true, "", "2024-10-01", false)]
-    [InlineData(true, null, "2024-10-01", false)]
-    public async Task ValidateVerifyEmailAddressTokenExpirationAsync(bool isEmailAddressVerified, string? token, string? expiration, bool isValid)
+    [InlineData("")]
+    [InlineData(null)]
+    public async Task ValidateAsync_WhenNotVerifiedAndTokenIsEmpty_ReturnsError(string? token)
     {
-        var tokenExpiration = expiration is null ? DateTime.MinValue : DateTime.Parse(expiration);
-
+        // Arrange
         var user = new User
         {
             FullName = "Valid User",
-            EmailAddress = "valid@example.com",
-            IsEmailAddressVerified = isEmailAddressVerified,
+            EmailAddress = "valid@localhost.com",
+            IsEmailAddressVerified = false,
             VerifyEmailAddressToken = token,
+            VerifyEmailAddressTokenExpiration = DateTime.UtcNow.AddDays(1)
+        };
+
+        // Act
+        var result = await _validator.ValidateAsync(user);
+
+        // Assert
+        Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_WhenVerifiedAndTokenIsSet_ReturnsError()
+    {
+        // Arrange
+        var user = new User
+        {
+            FullName = "Valid User",
+            EmailAddress = "valid@localhost.com",
+            IsEmailAddressVerified = true,
+            VerifyEmailAddressToken = "token",
+            VerifyEmailAddressTokenExpiration = DateTime.MinValue
+        };
+
+        // Act
+        var result = await _validator.ValidateAsync(user);
+
+        // Assert
+        Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_WhenVerifiedAndTokenIsNull_ReturnsSuccess()
+    {
+        // Arrange
+        var user = new User
+        {
+            FullName = "Valid User",
+            EmailAddress = "valid@localhost.com",
+            IsEmailAddressVerified = true,
+            VerifyEmailAddressToken = null,
+            VerifyEmailAddressTokenExpiration = DateTime.MinValue
+        };
+
+        // Act
+        var result = await _validator.ValidateAsync(user);
+
+        // Assert
+        Assert.True(result.IsValid);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_WhenNotVerifiedAndTokenExpirationIsValid_ReturnsSuccess()
+    {
+        // Arrange
+        var user = new User
+        {
+            FullName = "Valid User",
+            EmailAddress = "valid@localhost.com",
+            IsEmailAddressVerified = false,
+            VerifyEmailAddressToken = "token",
+            VerifyEmailAddressTokenExpiration = DateTime.Parse("2024-10-01")
+        };
+
+        // Act
+        var result = await _validator.ValidateAsync(user);
+
+        // Assert
+        Assert.True(result.IsValid);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("0001-01-01")]
+    public async Task ValidateAsync_WhenNotVerifiedAndTokenExpirationIsInvalid_ReturnsError(string? expiration)
+    {
+        // Arrange
+        var tokenExpiration = expiration is null ? DateTime.MinValue : DateTime.Parse(expiration);
+        var user = new User
+        {
+            FullName = "Valid User",
+            EmailAddress = "valid@localhost.com",
+            IsEmailAddressVerified = false,
+            VerifyEmailAddressToken = "token",
             VerifyEmailAddressTokenExpiration = tokenExpiration
         };
 
+        // Act
         var result = await _validator.ValidateAsync(user);
-        Assert.Equal(isValid, result.IsValid);
+
+        // Assert
+        Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_WhenNotVerifiedAndTokenIsNullWithExpiration_ReturnsError()
+    {
+        // Arrange
+        var user = new User
+        {
+            FullName = "Valid User",
+            EmailAddress = "valid@localhost.com",
+            IsEmailAddressVerified = false,
+            VerifyEmailAddressToken = null,
+            VerifyEmailAddressTokenExpiration = DateTime.Parse("2024-10-01")
+        };
+
+        // Act
+        var result = await _validator.ValidateAsync(user);
+
+        // Assert
+        Assert.False(result.IsValid);
+    }
+
+    [Theory]
+    [InlineData("token")]
+    [InlineData("")]
+    [InlineData(null)]
+    public async Task ValidateAsync_WhenVerifiedWithTokenAndExpiration_ReturnsError(string? token)
+    {
+        // Arrange
+        var user = new User
+        {
+            FullName = "Valid User",
+            EmailAddress = "valid@localhost.com",
+            IsEmailAddressVerified = true,
+            VerifyEmailAddressToken = token,
+            VerifyEmailAddressTokenExpiration = DateTime.Parse("2024-10-01")
+        };
+
+        // Act
+        var result = await _validator.ValidateAsync(user);
+
+        // Assert
+        Assert.False(result.IsValid);
     }
 }

@@ -1,10 +1,9 @@
-﻿using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Services;
 using Exceptionless.Tests.Utility;
 using Xunit;
-using Xunit.Abstractions;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Tests.Services;

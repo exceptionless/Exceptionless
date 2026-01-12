@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Billing;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
@@ -11,7 +11,6 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Repositories;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Jobs;
 
@@ -78,7 +77,7 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
         await _cache.SetAsync($"Project:{sessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}", utcNow.SubtractMinutes(1));
 
         _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
-        Assert.Equal(JobResult.Success, await _job.RunAsync());
+        Assert.Equal(JobResult.Success, await _job.RunAsync(TestCancellationToken));
         await RefreshDataAsync();
         events = await _eventRepository.GetAllAsync();
         Assert.Equal(4, events.Total);
@@ -115,7 +114,7 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
         await _cache.SetAsync($"Project:{sessionStarts.First().ProjectId}:heartbeat:{sessionId.ToSHA1()}", utcNow.SubtractMinutes(1));
 
         _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
-        Assert.Equal(JobResult.Success, await _job.RunAsync());
+        Assert.Equal(JobResult.Success, await _job.RunAsync(TestCancellationToken));
         await RefreshDataAsync();
         events = await _eventRepository.GetAllAsync();
         Assert.Equal(4, events.Total);
@@ -159,7 +158,7 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
         }
 
         _job.DefaultInactivePeriod = TimeSpan.FromMinutes(defaultInactivePeriodInMinutes);
-        Assert.Equal(JobResult.Success, await _job.RunAsync());
+        Assert.Equal(JobResult.Success, await _job.RunAsync(TestCancellationToken));
         await RefreshDataAsync();
         events = await _eventRepository.GetAllAsync();
         Assert.Equal(2, events.Total);

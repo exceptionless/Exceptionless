@@ -13,7 +13,6 @@ using Foundatio.Repositories;
 using Foundatio.Serializer;
 using Foundatio.Storage;
 using Xunit;
-using Xunit.Abstractions;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Tests.Jobs;
@@ -74,10 +73,10 @@ public class EventPostJobTests : IntegrationTestsBase
         var ev = GenerateEvent();
         Assert.NotNull(await EnqueueEventPostAsync(ev));
         Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
-        var files = await _storage.GetFileListAsync();
+        var files = await _storage.GetFileListAsync(cancellationToken: TestCancellationToken);
         Assert.Single(files);
 
-        var result = await _job.RunAsync();
+        var result = await _job.RunAsync(TestCancellationToken);
         Assert.True(result.IsSuccess);
 
         var stats = await _eventQueue.GetQueueStatsAsync();
@@ -87,7 +86,7 @@ public class EventPostJobTests : IntegrationTestsBase
         await RefreshDataAsync();
         Assert.Equal(1, await _eventRepository.CountAsync());
 
-        files = await _storage.GetFileListAsync();
+        files = await _storage.GetFileListAsync(cancellationToken: TestCancellationToken);
         Assert.Empty(files);
     }
 
@@ -105,7 +104,7 @@ public class EventPostJobTests : IntegrationTestsBase
         var ev = GenerateEvent(type: Event.KnownTypes.Log, source: "test", userIdentity: "test1");
         Assert.NotNull(await EnqueueEventPostAsync(ev));
 
-        var result = await _job.RunAsync();
+        var result = await _job.RunAsync(TestCancellationToken);
         Assert.True(result.IsSuccess);
 
         await RefreshDataAsync();
@@ -136,7 +135,7 @@ public class EventPostJobTests : IntegrationTestsBase
             GenerateEvent(type: Event.KnownTypes.Log, source: "test", userIdentity: "test3")
         ]));
 
-        result = await _job.RunAsync();
+        result = await _job.RunAsync(TestCancellationToken);
         Assert.True(result.IsSuccess);
 
         await RefreshDataAsync();
@@ -159,17 +158,17 @@ public class EventPostJobTests : IntegrationTestsBase
 
         Assert.NotNull(await EnqueueEventPostAsync(ev));
         Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
-        var files = await _storage.GetFileListAsync();
+        var files = await _storage.GetFileListAsync(cancellationToken: TestCancellationToken);
         Assert.Single(files);
 
-        var result = await _job.RunAsync();
+        var result = await _job.RunAsync(TestCancellationToken);
         Assert.False(result.IsSuccess);
 
         var stats = await _eventQueue.GetQueueStatsAsync();
         Assert.Equal(1, stats.Dequeued);
         Assert.Equal(1, stats.Completed);
 
-        files = await _storage.GetFileListAsync();
+        files = await _storage.GetFileListAsync(cancellationToken: TestCancellationToken);
         Assert.Empty(files);
     }
 
@@ -180,9 +179,9 @@ public class EventPostJobTests : IntegrationTestsBase
         Assert.NotNull(await EnqueueEventPostAsync(ev));
         Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
 
-        await _storage.DeleteFilesAsync(await _storage.GetFileListAsync());
+        await _storage.DeleteFilesAsync(await _storage.GetFileListAsync(cancellationToken: TestCancellationToken));
 
-        var result = await _job.RunAsync();
+        var result = await _job.RunAsync(TestCancellationToken);
         Assert.False(result.IsSuccess);
 
         var stats = await _eventQueue.GetQueueStatsAsync();

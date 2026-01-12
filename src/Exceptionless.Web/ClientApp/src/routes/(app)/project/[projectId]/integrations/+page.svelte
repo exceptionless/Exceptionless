@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { NotificationSettings } from '$features/projects/models';
+    import type { NewWebhook, Webhook } from '$features/webhooks/models';
 
     import { page } from '$app/state';
     import SlackIcon from '$comp/icons/SlackIcon.svelte';
@@ -24,7 +25,6 @@
     import AddWebhookDialog from '$features/webhooks/components/dialogs/add-webhook-dialog.svelte';
     import { getTableOptions } from '$features/webhooks/components/table/options.svelte';
     import WebhooksDataTable from '$features/webhooks/components/table/webhooks-data-table.svelte';
-    import { NewWebhook, Webhook } from '$features/webhooks/models';
     import Plus from '@lucide/svelte/icons/plus';
     import Zapier from '@lucide/svelte/icons/zap';
     import { createTable } from '@tanstack/svelte-table';

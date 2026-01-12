@@ -18,11 +18,11 @@
     let { changed, open = $bindable(), remove, title, value }: Props = $props();
 
     // eslint-disable-next-line svelte/prefer-writable-derived
-    let updatedValue = $state(value);
+    let updatedValue = $state<boolean | undefined>();
 
     let radioValue = $derived(updatedValue === undefined ? 'no-value' : updatedValue === true ? 'yes' : 'no');
 
-    $effect(() => {
+    $effect.pre(() => {
         updatedValue = value;
     });
 

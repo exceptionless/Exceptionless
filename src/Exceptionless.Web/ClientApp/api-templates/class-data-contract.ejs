@@ -1,11 +1,22 @@
 <%
 const { contract, utils } = it;
 const { formatDescription, require, _ } = utils;
+
+const buildGenerics = (contract) => {
+  if (!contract.genericArgs || !contract.genericArgs.length) return '';
+
+  return '<' + contract.genericArgs.map(({ name, default: defaultType, extends: extendsType }) => {
+    return [
+      name,
+      extendsType && `extends ${extendsType}`,
+      defaultType && `= ${defaultType}`,
+    ].join('')
+  }).join(',') + '>'
+}
 %>
-class <%~ contract.name %> {
-  <% for (const field of contract.$content) { %>
-    <%~ includeFile('@base/object-field-jsdoc.ejs', { ...it, field }) %>
-    <%~ includeFile('./object-field-class-validator.ejs', { ...it, field }) %>
-    <%~ field.name %><%~ (field.isRequired && !field.nullable) || !field.nullable || !field.nullable ? '!' : '' %><%~ field.nullable ? '?' : '' %>: <%~ field.value.replaceAll('any', 'unknown') %>;
-  <% } %>
+interface <%~ contract.name %><%~ buildGenerics(contract) %> {
+<% for (const field of contract.$content) { %>
+<%~ includeFile('@base/object-field-jsdoc.ejs', { ...it, field }) %>
+    <%~ field.name %><%~ field.nullable ? '?' : '' %>: <%~ field.value.replaceAll('any', 'unknown') %>;
+<% } %>
 }

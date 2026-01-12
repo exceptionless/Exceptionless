@@ -2867,7 +2867,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "description": "A class the tracks changes (i.e. the Delta) for a particular <typeparamref name=\"TEntityType\" />."
+                "$ref": "#/components/schemas/NewOrganization"
               }
             }
           }
@@ -2913,7 +2913,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "description": "A class the tracks changes (i.e. the Delta) for a particular <typeparamref name=\"TEntityType\" />."
+                "$ref": "#/components/schemas/NewOrganization"
               }
             }
           }
@@ -3635,7 +3635,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "description": "A class the tracks changes (i.e. the Delta) for a particular <typeparamref name=\"TEntityType\" />."
+                "$ref": "#/components/schemas/UpdateProject"
               }
             }
           }
@@ -3681,7 +3681,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "description": "A class the tracks changes (i.e. the Delta) for a particular <typeparamref name=\"TEntityType\" />."
+                "$ref": "#/components/schemas/UpdateProject"
               }
             }
           }
@@ -5449,7 +5449,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "description": "A class the tracks changes (i.e. the Delta) for a particular <typeparamref name=\"TEntityType\" />."
+                "$ref": "#/components/schemas/UpdateToken"
               }
             }
           }
@@ -5495,7 +5495,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "description": "A class the tracks changes (i.e. the Delta) for a particular <typeparamref name=\"TEntityType\" />."
+                "$ref": "#/components/schemas/UpdateToken"
               }
             }
           }
@@ -5699,7 +5699,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "description": "A class the tracks changes (i.e. the Delta) for a particular <typeparamref name=\"TEntityType\" />."
+                "$ref": "#/components/schemas/UpdateUser"
               }
             }
           }
@@ -5745,7 +5745,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "description": "A class the tracks changes (i.e. the Delta) for a particular <typeparamref name=\"TEntityType\" />."
+                "$ref": "#/components/schemas/UpdateUser"
               }
             }
           }
@@ -6887,6 +6887,47 @@
         },
         "additionalProperties": false
       },
+      "UpdateProject": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "delete_bot_data_enabled": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateToken": {
+        "type": "object",
+        "properties": {
+          "is_disabled": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateUser": {
+        "required": [
+          "full_name"
+        ],
+        "type": "object",
+        "properties": {
+          "full_name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "email_notifications_enabled": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "UsageHourInfo": {
         "type": "object",
         "properties": {
@@ -7108,6 +7149,10 @@
             "type": "string"
           },
           "created_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_utc": {
             "type": "string",
             "format": "date-time"
           },

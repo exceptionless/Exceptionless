@@ -1,10 +1,11 @@
 <script lang="ts">
+    import type { ViewOrganization } from '$features/organizations/models';
+
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { deleteOrganization, deleteOrganizationUser } from '$features/organizations/api.svelte';
-    import { ViewOrganization } from '$features/organizations/models';
     import { getMeQuery } from '$features/users/api.svelte';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import ChangePlan from '@lucide/svelte/icons/credit-card';

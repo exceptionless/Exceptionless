@@ -31,8 +31,6 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         _projectRepository = projectRepository;
     }
 
-    #region CRUD
-
     /// <summary>
     /// Get by organization
     /// </summary>
@@ -232,8 +230,6 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
 
         return await DeleteImplAsync(ids.FromDelimitedString());
     }
-
-    #endregion
 
     protected override async Task<Token?> GetModelAsync(string id, bool useCache = true)
     {

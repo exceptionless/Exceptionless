@@ -28,19 +28,19 @@ public class EnqueueOrganizationNotificationOnPlanOverage : IStartupAction
         _logger = loggerFactory.CreateLogger<EnqueueOrganizationNotificationOnPlanOverage>();
     }
 
-    public Task RunAsync(CancellationToken token)
+    public Task RunAsync(CancellationToken shutdownToken = default)
     {
-        return _subscriber.SubscribeAsync<PlanOverage>(overage =>
+        return _subscriber.SubscribeAsync<PlanOverage>(async overage =>
         {
             _logger.LogInformation("Enqueueing plan overage work item for organization: {OrganizationId} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", overage.OrganizationId, overage.IsHourly, !overage.IsHourly);
 
-            return _workItemQueue.EnqueueAsync(new OrganizationNotificationWorkItem
+            await _workItemQueue.EnqueueAsync(new OrganizationNotificationWorkItem
             {
                 OrganizationId = overage.OrganizationId,
                 IsOverHourlyLimit = overage.IsHourly,
                 IsOverMonthlyLimit = !overage.IsHourly
             });
-        }, token);
+        }, shutdownToken);
     }
 }
 
