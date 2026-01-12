@@ -35,7 +35,7 @@
     <PackageReference Include="Stripe.net" Version="47.4.0" />
     <PackageReference Include="System.DirectoryServices" Version="10.0.1" />
     <PackageReference Include="UAParser" Version="3.1.47" />
-    <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="7.17.18-preview.0.20" Condition="'$(ReferenceFoundatioRepositoriesSource)' == '' OR '$(ReferenceFoundatioRepositoriesSource)' == 'false'" />
+    <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="7.17.18-preview.time-provider-not-flowed-throw-for-time-extensions.0.9" Condition="'$(ReferenceFoundatioRepositoriesSource)' == '' OR '$(ReferenceFoundatioRepositoriesSource)' == 'false'" />
     <ProjectReference Include="..\..\..\..\Foundatio\Foundatio.Repositories\src\Foundatio.Repositories.Elasticsearch\Foundatio.Repositories.Elasticsearch.csproj" Condition="'$(ReferenceFoundatioRepositoriesSource)' == 'true'" />
   </ItemGroup>
 </Project>
