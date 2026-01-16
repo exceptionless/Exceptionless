@@ -87,7 +87,7 @@ jobs:
         run: docker compose up --wait elasticsearch
 
       - name: Run .NET Tests
-        run: dotnet test --no-restore --no-build --configuration Release --collect:"XPlat Code Coverage" -m:1 --logger trx --results-directory coverage --logger GitHubActions
+        run: dotnet test --no-restore --no-build --configuration Release --collect:"XPlat Code Coverage" -m:1 --logger trx --results-directory coverage --report-github
 
       - name: Copy Coverage to Predictable Location
         run: cp coverage/*/coverage.cobertura.xml coverage/coverage.cobertura.xml
