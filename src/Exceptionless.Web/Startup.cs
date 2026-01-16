@@ -328,10 +328,12 @@ public class Startup
         app.UseEndpoints(endpoints =>
         {
             endpoints.MapOpenApi("/docs/v2/openapi.json");
-            endpoints.MapScalarApiReference("docs", o =>
+            endpoints.MapScalarApiReference("/docs", o =>
             {
                 o.WithTitle("Exceptionless API")
                     .WithTheme(ScalarTheme.Default)
+                    .WithOpenApiRoutePattern("/docs/{documentName}/openapi.json")
+                    .AddDocument("v2", "Exceptionless API", "/docs/{documentName}/openapi.json", true)
                     .AddHttpAuthentication("BasicAuth", auth =>
                     {
                         auth.Username = "your-username";
