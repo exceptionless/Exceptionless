@@ -334,20 +334,11 @@ public class Startup
                     .WithTheme(ScalarTheme.Default)
                     .WithOpenApiRoutePattern("/docs/{documentName}/openapi.json")
                     .AddDocument("v2", "Exceptionless API", "/docs/{documentName}/openapi.json", true)
-                    .AddHttpAuthentication("BasicAuth", auth =>
+                    .AddApiKeyAuthentication("Token", apiKey =>
                     {
-                        auth.Username = "your-username";
-                        auth.Password = "your-password";
+                        apiKey.Name = "Authorization";
                     })
-                    .AddHttpAuthentication("BearerAuth", auth =>
-                    {
-                        auth.Token = "apikey";
-                    })
-                    .AddApiKeyAuthentication("ApiKey", apiKey =>
-                    {
-                        apiKey.Value = "access_token";
-                    })
-                    .AddPreferredSecuritySchemes("BearerAuth");
+                    .AddPreferredSecuritySchemes("Bearer");
             });
 
             endpoints.MapControllers();
