@@ -128,3 +128,5 @@ src/Exceptionless\.Web/ClientApp/build/
 src/Exceptionless\.Web/ClientApp.angular/dist/
 
 *.DotSettings
+
+coverage/
