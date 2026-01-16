@@ -11,7 +11,7 @@
     <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.1.0" />
     <PackageReference Include="Aspire.Hosting.Redis" Version="13.1.0" />
     <PackageReference Include="AspNetCore.HealthChecks.Elasticsearch" Version="9.0.0" />
-    <PackageReference Include="Foundatio.Minio" Version="12.0.1-preview.0.8" />
+    <PackageReference Include="Foundatio.Minio" Version="13.0.0-beta1" />
   </ItemGroup>
 
   <ItemGroup>

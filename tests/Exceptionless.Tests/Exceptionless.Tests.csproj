@@ -6,16 +6,16 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Exceptionless.RandomData" Version="1.2.2" />
-    <PackageReference Include="Foundatio.Xunit.v3" Version="12.0.1-preview.0.71" />
+    <PackageReference Include="Foundatio.Xunit.v3" Version="13.0.0-beta1.1" />
 
     <PackageReference Include="FluentRest.NewtonsoftJson" Version="11.0.0" />
 
     <PackageReference Include="Aspire.Hosting.Testing" Version="13.1.0" />
     <PackageReference Include="GitHubActionsTestLogger" Version="3.0.1" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.1" />
-    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.2.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-    <PackageReference Include="xunit.v3.mtp-off" Version="3.2.1" />
+    <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" PrivateAssets="All" />
     <PackageReference Include="coverlet.collector" Version="6.0.4">
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
