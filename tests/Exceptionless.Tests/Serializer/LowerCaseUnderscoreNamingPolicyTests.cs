@@ -5,7 +5,6 @@ using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Xunit;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Exceptionless.Tests.Serializer;
 
