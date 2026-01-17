@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Exceptionless.Core.Extensions;
 
-namespace Exceptionless.Web.Utility;
+namespace Exceptionless.Core.Serialization;
 
 /// <summary>
 /// A JSON naming policy that converts PascalCase to lower_case_underscore format.

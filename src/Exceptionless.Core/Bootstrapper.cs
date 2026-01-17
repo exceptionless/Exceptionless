@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using System.Text.Json;
+using AutoMapper;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
@@ -47,6 +48,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
+using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 using MaintainIndexesJob = Foundatio.Repositories.Elasticsearch.Jobs.MaintainIndexesJob;
 
 namespace Exceptionless.Core;
@@ -55,6 +57,12 @@ public class Bootstrapper
 {
     public static void RegisterServices(IServiceCollection services, AppOptions appOptions)
     {
+        services.AddSingleton<JsonSerializerOptions>(_ => new()
+        {
+            PropertyNamingPolicy = LowerCaseUnderscoreNamingPolicy.Instance
+            //Converters = { new DeltaJsonConverterFactory() }
+        });
+
         JsonConvert.DefaultSettings = () => new JsonSerializerSettings
         {
             DateParseHandling = DateParseHandling.DateTimeOffset

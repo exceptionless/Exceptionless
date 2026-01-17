@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Serialization;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Xunit;
@@ -11,15 +12,14 @@ namespace Exceptionless.Tests.Serializer;
 /// <summary>
 /// Tests for LowerCaseUnderscoreNamingPolicy and System.Text.Json serialization for the API layer.
 /// </summary>
-public class LowerCaseUnderscoreNamingPolicyTests : TestWithLoggingBase
+public class LowerCaseUnderscoreNamingPolicyTests : TestWithServices
 {
-    public LowerCaseUnderscoreNamingPolicyTests(ITestOutputHelper output) : base(output) { }
+    private readonly JsonSerializerOptions _jsonSerializerOptions;
 
-    private static readonly JsonSerializerOptions ApiOptions = new()
+    public LowerCaseUnderscoreNamingPolicyTests(ITestOutputHelper output) : base(output)
     {
-        PropertyNamingPolicy = LowerCaseUnderscoreNamingPolicy.Instance,
-        Converters = { new DeltaJsonConverterFactory() }
-    };
+        _jsonSerializerOptions = GetService<JsonSerializerOptions>();
+    }
 
     [Fact]
     public void NamingPolicy_Instance_ReturnsSingleton()
@@ -41,7 +41,7 @@ public class LowerCaseUnderscoreNamingPolicyTests : TestWithLoggingBase
             WebsiteMode = "production"
         };
 
-        string json = JsonSerializer.Serialize(model, ApiOptions);
+        string json = JsonSerializer.Serialize(model, _jsonSerializerOptions);
 
         Assert.Contains("\"base_u_r_l\":\"https://example.com\"", json);
         Assert.Contains("\"enable_s_s_l\":true", json);
@@ -61,7 +61,7 @@ public class LowerCaseUnderscoreNamingPolicyTests : TestWithLoggingBase
             MachineName = "TEST-MACHINE"
         };
 
-        string json = JsonSerializer.Serialize(model, ApiOptions);
+        string json = JsonSerializer.Serialize(model, _jsonSerializerOptions);
 
         Assert.Contains("\"o_s_name\":\"Windows 11\"", json);
         Assert.Contains("\"o_s_version\":\"10.0.22621\"", json);
@@ -80,7 +80,7 @@ public class LowerCaseUnderscoreNamingPolicyTests : TestWithLoggingBase
             InviteToken = "token123"
         };
 
-        string json = JsonSerializer.Serialize(authInfo, ApiOptions);
+        string json = JsonSerializer.Serialize(authInfo, _jsonSerializerOptions);
 
         // ExternalAuthInfo uses explicit JsonPropertyName attributes (camelCase)
         Assert.Contains("\"clientId\":\"test-client\"", json);
@@ -94,7 +94,7 @@ public class LowerCaseUnderscoreNamingPolicyTests : TestWithLoggingBase
     {
         string json = """{"clientId":"my-client","code":"my-code","redirectUri":"https://test.com"}""";
 
-        var authInfo = JsonSerializer.Deserialize<ExternalAuthInfo>(json, ApiOptions);
+        var authInfo = JsonSerializer.Deserialize<ExternalAuthInfo>(json, _jsonSerializerOptions);
 
         Assert.NotNull(authInfo);
         Assert.Equal("my-client", authInfo.ClientId);
@@ -108,7 +108,7 @@ public class LowerCaseUnderscoreNamingPolicyTests : TestWithLoggingBase
     {
         string json = """{"data":"TestValue","is_active":true}""";
 
-        var delta = JsonSerializer.Deserialize<Delta<SimpleModel>>(json, ApiOptions);
+        var delta = JsonSerializer.Deserialize<Delta<SimpleModel>>(json, _jsonSerializerOptions);
 
         Assert.NotNull(delta);
         Assert.True(delta.TryGetPropertyValue("Data", out object? dataValue));
@@ -122,7 +122,7 @@ public class LowerCaseUnderscoreNamingPolicyTests : TestWithLoggingBase
     {
         string json = """{"is_active":false}""";
 
-        var delta = JsonSerializer.Deserialize<Delta<SimpleModel>>(json, ApiOptions);
+        var delta = JsonSerializer.Deserialize<Delta<SimpleModel>>(json, _jsonSerializerOptions);
 
         Assert.NotNull(delta);
         var changedProperties = delta.GetChangedPropertyNames();
@@ -135,7 +135,7 @@ public class LowerCaseUnderscoreNamingPolicyTests : TestWithLoggingBase
     {
         var stack = new StackStatusModel { Status = StackStatus.Fixed };
 
-        string json = JsonSerializer.Serialize(stack, ApiOptions);
+        string json = JsonSerializer.Serialize(stack, _jsonSerializerOptions);
 
         Assert.Contains("\"status\":\"fixed\"", json);
     }
@@ -145,7 +145,7 @@ public class LowerCaseUnderscoreNamingPolicyTests : TestWithLoggingBase
     {
         string json = """{"status":"regressed"}""";
 
-        var model = JsonSerializer.Deserialize<StackStatusModel>(json, ApiOptions);
+        var model = JsonSerializer.Deserialize<StackStatusModel>(json, _jsonSerializerOptions);
 
         Assert.NotNull(model);
         Assert.Equal(StackStatus.Regressed, model.Status);
