@@ -26,7 +26,9 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// <summary>
     /// Initializes a new instance of <see cref="Delta{TEntityType}" />.
     /// </summary>
-    public Delta() : this(typeof(TEntityType)) { }
+    public Delta() : this(typeof(TEntityType))
+    {
+    }
 
     /// <summary>
     /// Initializes a new instance of <see cref="Delta{TEntityType}" />.

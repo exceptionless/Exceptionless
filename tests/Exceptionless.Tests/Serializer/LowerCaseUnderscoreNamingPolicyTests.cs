@@ -12,13 +12,17 @@ namespace Exceptionless.Tests.Serializer;
 /// <summary>
 /// Tests for LowerCaseUnderscoreNamingPolicy and System.Text.Json serialization for the API layer.
 /// </summary>
-public class LowerCaseUnderscoreNamingPolicyTests : TestWithServices
+public class LowerCaseUnderscoreNamingPolicyTests : TestWithLoggingBase
 {
     private readonly JsonSerializerOptions _jsonSerializerOptions;
 
     public LowerCaseUnderscoreNamingPolicyTests(ITestOutputHelper output) : base(output)
     {
-        _jsonSerializerOptions = GetService<JsonSerializerOptions>();
+        _jsonSerializerOptions = new()
+        {
+            PropertyNamingPolicy = LowerCaseUnderscoreNamingPolicy.Instance,
+            Converters = { new DeltaJsonConverterFactory() }
+        };
     }
 
     [Fact]
