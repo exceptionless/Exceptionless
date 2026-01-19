@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 using AutoMapper;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Billing;
@@ -77,6 +78,7 @@ public class Bootstrapper
 
         services.AddSingleton<JsonSerializerOptions>(_ => new()
         {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             PropertyNamingPolicy = LowerCaseUnderscoreNamingPolicy.Instance,
             //Converters = { new DeltaJsonConverterFactory() }
         });
