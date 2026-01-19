@@ -20,6 +20,7 @@ npm run test:unit
 
 - **Framework**: Vitest + @testing-library/svelte
 - **Location**: Co-locate with code as `.test.ts` or `.spec.ts`
+- **TDD workflow**: When fixing bugs or adding features, write a failing test first
 
 ## AAA Pattern
 
