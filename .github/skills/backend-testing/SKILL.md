@@ -178,6 +178,7 @@ services.ReplaceSingleton<TimeProvider>(_ => new ProxyTimeProvider());
 
 ## Test Principles
 
+- **TDD workflow** — When fixing bugs or adding features, write a failing test first
 - **Use real serializer** — Tests use the same JSON serializer as production
 - **Use real time provider** — Manipulate via `ProxyTimeProvider` when needed
 - **Refresh after writes** — Call `RefreshDataAsync()` after database changes
