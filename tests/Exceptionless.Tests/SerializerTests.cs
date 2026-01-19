@@ -12,7 +12,9 @@ namespace Exceptionless.Tests;
 
 public class SerializerTests : TestWithServices
 {
-    public SerializerTests(ITestOutputHelper output) : base(output) { }
+    public SerializerTests(ITestOutputHelper output) : base(output)
+    {
+    }
 
     [Fact]
     public void CanDeserializeEventWithUnknownNamesAndProperties()

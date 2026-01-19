@@ -13,12 +13,12 @@ public class OpenApiControllerTests : IntegrationTestsBase
     public async Task GetSwaggerJson_Default_ReturnsExpectedBaseline()
     {
         // Arrange
-        string baselinePath = Path.Combine("..", "..", "..", "Controllers", "Data", "swagger.json");
+        string baselinePath = Path.Combine("..", "..", "..", "Controllers", "Data", "openapi.json");
 
         // Act
         var response = await SendRequestAsync(r => r
             .BaseUri(_server.BaseAddress)
-            .AppendPaths("docs", "v2", "swagger.json")
+            .AppendPaths("docs", "v2", "openapi.json")
             .StatusCodeShouldBeOk()
         );
 
