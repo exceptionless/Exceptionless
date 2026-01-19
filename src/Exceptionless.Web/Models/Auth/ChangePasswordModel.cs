@@ -5,10 +5,10 @@ namespace Exceptionless.Web.Models;
 public record ChangePasswordModel : IValidatableObject
 {
     [Required, StringLength(100, MinimumLength = 6)]
-    public required string CurrentPassword { get; init; }
+    public string CurrentPassword { get; init; } = null!;
 
     [Required, StringLength(100, MinimumLength = 6)]
-    public required string Password { get; init; }
+    public string Password { get; init; } = null!;
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

@@ -8,15 +8,15 @@ public record ExternalAuthInfo
 {
     [Required]
     [JsonPropertyName("clientId")]
-    public required string ClientId { get; init; }
+    public string ClientId { get; init; } = null!;
 
     [Required]
     [JsonPropertyName("code")]
-    public required string Code { get; init; }
+    public string Code { get; init; } = null!;
 
     [Required]
     [JsonPropertyName("redirectUri")]
-    public required string RedirectUri { get; init; }
+    public string RedirectUri { get; init; } = null!;
 
     [JsonPropertyName("inviteToken")]
     public string? InviteToken { get; init; }
