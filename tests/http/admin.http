@@ -25,7 +25,7 @@ Authorization: Bearer {{token}}
 
 ### Get OpenApi schema
 # @name openapi
-GET {{url}}/openapi/v1.json
+GET {{url}}/docs/v2/openapi.json
 
 ###
 @userId = {{currentUser.response.body.$.id}}
