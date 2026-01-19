@@ -45,10 +45,7 @@ using Foundatio.Serializer;
 using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
-using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 using MaintainIndexesJob = Foundatio.Repositories.Elasticsearch.Jobs.MaintainIndexesJob;
 
 namespace Exceptionless.Core;
@@ -57,38 +54,38 @@ public class Bootstrapper
 {
     public static void RegisterServices(IServiceCollection services, AppOptions appOptions)
     {
-        services.AddSingleton<JsonSerializerOptions>(_ => new()
+        // PERF: Word towards getting rid of JSON.NET.
+        Newtonsoft.Json.JsonConvert.DefaultSettings = () => new Newtonsoft.Json.JsonSerializerSettings
         {
-            PropertyNamingPolicy = LowerCaseUnderscoreNamingPolicy.Instance
-            //Converters = { new DeltaJsonConverterFactory() }
-        });
-
-        JsonConvert.DefaultSettings = () => new JsonSerializerSettings
-        {
-            DateParseHandling = DateParseHandling.DateTimeOffset
+            DateParseHandling = Newtonsoft.Json.DateParseHandling.DateTimeOffset
         };
 
-        services.AddSingleton<IContractResolver>(_ => GetJsonContractResolver());
-        services.AddSingleton<JsonSerializerSettings>(s =>
+        services.AddSingleton<Newtonsoft.Json.Serialization.IContractResolver>(_ => GetJsonContractResolver());
+        services.AddSingleton<Newtonsoft.Json.JsonSerializerSettings>(s =>
         {
             // NOTE: These settings may need to be synced in the Elastic Configuration.
-            var settings = new JsonSerializerSettings
+            var settings = new Newtonsoft.Json.JsonSerializerSettings
             {
-                MissingMemberHandling = MissingMemberHandling.Ignore,
-                DateParseHandling = DateParseHandling.DateTimeOffset,
-                ContractResolver = s.GetRequiredService<IContractResolver>()
+                MissingMemberHandling = Newtonsoft.Json.MissingMemberHandling.Ignore,
+                DateParseHandling = Newtonsoft.Json.DateParseHandling.DateTimeOffset,
+                ContractResolver = s.GetRequiredService<Newtonsoft.Json.Serialization.IContractResolver>()
             };
 
             settings.AddModelConverters(s.GetRequiredService<ILogger<Bootstrapper>>());
             return settings;
         });
 
+        services.AddSingleton<JsonSerializerOptions>(_ => new()
+        {
+            PropertyNamingPolicy = LowerCaseUnderscoreNamingPolicy.Instance,
+            //Converters = { new DeltaJsonConverterFactory() }
+        });
+
+        services.AddSingleton<ISerializer>(s => s.GetRequiredService<ITextSerializer>());
+        services.AddSingleton<ITextSerializer>(s => new SystemTextJsonSerializer(s.GetRequiredService<JsonSerializerOptions>()));
+
         services.ReplaceSingleton<TimeProvider>(_ => TimeProvider.System);
         services.AddSingleton<IResiliencePolicyProvider, ResiliencePolicyProvider>();
-        services.AddSingleton<JsonSerializer>(s => JsonSerializer.Create(s.GetRequiredService<JsonSerializerSettings>()));
-        services.AddSingleton<ISerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
-        services.AddSingleton<ITextSerializer>(s => new JsonNetSerializer(s.GetRequiredService<JsonSerializerSettings>()));
-
         services.AddSingleton<ICacheClient>(s => new InMemoryCacheClient(new InMemoryCacheClientOptions
         {
             CloneValues = true,

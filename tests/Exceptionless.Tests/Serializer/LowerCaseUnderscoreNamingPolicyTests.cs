@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
