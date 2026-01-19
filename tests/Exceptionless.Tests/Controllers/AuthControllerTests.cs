@@ -47,8 +47,6 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CannotSignupWithoutPassword()
     {
-        // With System.Text.Json's RespectNullableAnnotations, missing required properties
-        // fail at deserialization (400 BadRequest) rather than validation (422 UnprocessableEntity)
         var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
             .Post()
             .AppendPath("auth/signup")
@@ -58,13 +56,12 @@ public class AuthControllerTests : IntegrationTestsBase
                 Email = "test@domain.com",
                 Password = null!
             })
-            .StatusCodeShouldBeBadRequest()
+            .StatusCodeShouldBeUnprocessableEntity()
         );
 
         Assert.NotNull(problemDetails);
-        Assert.NotEmpty(problemDetails.Errors);
-        // System.Text.Json deserialization errors use the property name as the key
-        Assert.Contains(problemDetails.Errors, error => error.Key.Contains("password", StringComparison.OrdinalIgnoreCase));
+        Assert.Single(problemDetails.Errors);
+        Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "password"));
     }
 
     [Theory]
@@ -452,8 +449,6 @@ public class AuthControllerTests : IntegrationTestsBase
         user.MarkEmailAddressVerified();
         await _userRepository.AddAsync(user);
 
-        // With System.Text.Json's RespectNullableAnnotations, missing required properties
-        // fail at deserialization (400 BadRequest) rather than validation (422 UnprocessableEntity)
         var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
             .Post()
             .AppendPath("auth/signup")
@@ -463,13 +458,12 @@ public class AuthControllerTests : IntegrationTestsBase
                 Email = email,
                 Password = null!
             })
-            .StatusCodeShouldBeBadRequest()
+            .StatusCodeShouldBeUnprocessableEntity()
         );
 
         Assert.NotNull(problemDetails);
-        Assert.NotEmpty(problemDetails.Errors);
-        // System.Text.Json deserialization errors use the property name as the key
-        Assert.Contains(problemDetails.Errors, error => error.Key.Contains("password", StringComparison.OrdinalIgnoreCase));
+        Assert.Single(problemDetails.Errors);
+        Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "password"));
 
         await SendRequestAsync(r => r
             .Post()
