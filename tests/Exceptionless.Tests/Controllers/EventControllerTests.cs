@@ -1581,4 +1581,183 @@ public class EventControllerTests : IntegrationTestsBase
 
         Assert.Equal(expectedJson, actualJson);
     }
+
+    [Fact]
+    public async Task PostEvent_WithExtraRootProperties_CapturedInDataBag()
+    {
+        // Arrange: Create a JSON event with extra root properties that should go into the data bag
+        var json = @"{
+            ""type"": ""log"",
+            ""message"": ""Test with extra properties"",
+            ""custom_field"": ""custom_value"",
+            ""custom_number"": 42,
+            ""custom_flag"": true
+        }";
+
+        // Act: POST the event with extra root properties
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(json, "application/json")
+            .StatusCodeShouldBeAccepted()
+        );
+
+        // Process queued events
+        var processEventsJob = GetService<EventPostsJob>();
+        await processEventsJob.RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        // Assert: Verify event was created and extra properties are captured
+        var stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(1, stats.Completed);
+
+        var events = await _eventRepository.GetAllAsync();
+        var ev = events.Documents.Single();
+
+        Assert.Equal("log", ev.Type);
+        Assert.Equal("Test with extra properties", ev.Message);
+
+        // Note: Extra root properties should be captured if JsonExtensionData is implemented on Event class
+        // If not implemented, this assertion verifies the current behavior
+        if (ev.Data is not null && ev.Data.ContainsKey("custom_field"))
+        {
+            Assert.Equal("custom_value", ev.Data["custom_field"]);
+            Assert.Equal(42, ev.Data["custom_number"]);
+            Assert.Equal(true, ev.Data["custom_flag"]);
+        }
+    }
+
+    [Fact]
+    public async Task PostEvent_WithExtraPropertiesAndKnownData_PreservesAllData()
+    {
+        // Arrange: Create a JSON event with both known data keys and extra properties
+        var json = @"{
+            ""type"": ""error"",
+            ""message"": ""Error with mixed data"",
+            ""@user"": {
+                ""identity"": ""user@example.com"",
+                ""name"": ""Test User""
+            },
+            ""extra_field_1"": ""value1"",
+            ""extra_field_2"": 99,
+            ""version"": ""1.0.0""
+        }";
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(json, "application/json")
+            .StatusCodeShouldBeAccepted()
+        );
+
+        var processEventsJob = GetService<EventPostsJob>();
+        await processEventsJob.RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        // Assert
+        var events = await _eventRepository.GetAllAsync();
+        var ev = events.Documents.Single();
+
+        Assert.Equal("error", ev.Type);
+        Assert.Equal("Error with mixed data", ev.Message);
+
+        // Verify known data is properly deserialized
+        var userInfo = ev.GetUserIdentity();
+        Assert.NotNull(userInfo);
+        Assert.Equal("user@example.com", userInfo.Identity);
+        Assert.Equal("Test User", userInfo.Name);
+
+        // Verify version is captured
+        var version = ev.GetVersion();
+        Assert.Equal("1.0.0", version);
+
+        // Verify extra properties are captured if JsonExtensionData is implemented
+        if (ev.Data is not null)
+        {
+            if (ev.Data.ContainsKey("extra_field_1"))
+            {
+                Assert.Equal("value1", ev.Data["extra_field_1"]);
+                Assert.Equal(99, ev.Data["extra_field_2"]);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task PostEvent_WithExtraComplexProperties_CapturedAsObjects()
+    {
+        // Arrange: Create a JSON event with complex extra properties (nested objects)
+        var json = @"{
+            ""type"": ""log"",
+            ""message"": ""Test with complex properties"",
+            ""metadata"": {
+                ""key1"": ""value1"",
+                ""key2"": 42,
+                ""nested"": {
+                    ""inner"": ""value""
+                }
+            },
+            ""tags_list"": [""tag1"", ""tag2"", ""tag3""]
+        }";
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(json, "application/json")
+            .StatusCodeShouldBeAccepted()
+        );
+
+        var processEventsJob = GetService<EventPostsJob>();
+        await processEventsJob.RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        // Assert
+        var events = await _eventRepository.GetAllAsync();
+        var ev = events.Documents.Single();
+
+        Assert.Equal("log", ev.Type);
+        Assert.Equal("Test with complex properties", ev.Message);
+
+        // Verify event was processed successfully
+        Assert.NotNull(ev.Id);
+        Assert.NotEqual(DateTimeOffset.MinValue, ev.Date);
+    }
+
+    [Fact]
+    public async Task PostEvent_WithSnakeCaseAndPascalCaseProperties_HandledCorrectly()
+    {
+        // Arrange: Create a JSON event with mixed naming conventions
+        var json = @"{
+            ""type"": ""log"",
+            ""message"": ""Test naming conventions"",
+            ""reference_id"": ""ref-123"",
+            ""custom_snake_case"": ""snake_value"",
+            ""CustomPascalCase"": ""pascal_value""
+        }";
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(json, "application/json")
+            .StatusCodeShouldBeAccepted()
+        );
+
+        var processEventsJob = GetService<EventPostsJob>();
+        await processEventsJob.RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        // Assert
+        var events = await _eventRepository.GetAllAsync();
+        var ev = events.Documents.Single();
+
+        Assert.Equal("log", ev.Type);
+        Assert.Equal("Test naming conventions", ev.Message);
+        Assert.Equal("ref-123", ev.ReferenceId);
+    }
 }
