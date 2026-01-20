@@ -1545,6 +1545,163 @@ public class EventControllerTests : IntegrationTestsBase
         return result;
     }
 
+    /// <summary>
+    /// Tests that when a parent event has a ReferenceId set, child events that reference it
+    /// via ref.parent can be properly linked, and the parent can be found via the /events/by-ref endpoint.
+    /// This validates the expected behavior for parent-child event relationships.
+    /// </summary>
+    [Fact]
+    public async Task GetByReferenceId_WithParentAndChildEvents_ReturnsParentAndChildren()
+    {
+        const string parentReferenceId = "parent-ref-12345678";
+
+        // Create parent event with a ReferenceId, and child events that reference it
+        await CreateDataAsync(d =>
+        {
+            // Parent event - this is the "scope" or parent operation
+            d.Event()
+                .TestProject()
+                .Type(Event.KnownTypes.Log)
+                .Message("Parent Event")
+                .ReferenceId(parentReferenceId);
+
+            // Child event 1 - references the parent via ref.parent
+            d.Event()
+                .TestProject()
+                .Type(Event.KnownTypes.Log)
+                .Message("Child Event 1")
+                .Reference("parent", parentReferenceId);
+
+            // Child event 2 - also references the parent
+            d.Event()
+                .TestProject()
+                .Type(Event.KnownTypes.Log)
+                .Message("Child Event 2")
+                .Reference("parent", parentReferenceId);
+        });
+
+        Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+
+        // Test 1: Verify we can find the parent event by its ReferenceId using /events/by-ref endpoint
+        var parentResults = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("events", "by-ref", parentReferenceId)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(parentResults);
+        Assert.Single(parentResults);
+        Assert.Equal("Parent Event", parentResults.First().Message);
+        Assert.Equal(parentReferenceId, parentResults.First().ReferenceId);
+
+        // Test 2: Verify we can find child events that reference this parent using ref.parent filter
+        var childResults = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("filter", $"ref.parent:{parentReferenceId}")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(childResults);
+        Assert.Equal(2, childResults.Count);
+        Assert.All(childResults, e => Assert.Contains("Child Event", e.Message));
+
+        // Verify each child has the parent reference in their data
+        foreach (var child in childResults)
+        {
+            string? parentRef = child.GetEventReference("parent");
+            Assert.Equal(parentReferenceId, parentRef);
+        }
+    }
+
+    /// <summary>
+    /// Tests the scenario from issue #1287 where child events have ref.parent set,
+    /// but there is no parent event with a matching ReferenceId.
+    /// The /events/by-ref endpoint should return empty in this case (current expected behavior).
+    /// </summary>
+    [Fact]
+    public async Task GetByReferenceId_WhenNoParentEventExists_ReturnsEmpty()
+    {
+        const string orphanedParentRef = "orphan-parent-ref-1234";
+
+        // Create child events that reference a parent that doesn't exist
+        // This simulates logging scope behavior where children reference a scope ID
+        // but no parent event was created with that ReferenceId
+        await CreateDataAsync(d =>
+        {
+            d.Event()
+                .TestProject()
+                .Type(Event.KnownTypes.Log)
+                .Message("Orphaned Child 1")
+                .Reference("parent", orphanedParentRef);
+
+            d.Event()
+                .TestProject()
+                .Type(Event.KnownTypes.Log)
+                .Message("Orphaned Child 2")
+                .Reference("parent", orphanedParentRef);
+        });
+
+        Log.SetLogLevel<EventRepository>(LogLevel.Trace);
+
+        // Searching for the parent by reference ID should return empty
+        // because no event has ReferenceId = orphanedParentRef
+        var parentResults = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("events", "by-ref", orphanedParentRef)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(parentResults);
+        Assert.Empty(parentResults);
+
+        // However, we CAN find the children using ref.parent filter
+        var childResults = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("filter", $"ref.parent:{orphanedParentRef}")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(childResults);
+        Assert.Equal(2, childResults.Count);
+    }
+
+    /// <summary>
+    /// Tests the project-scoped by-ref endpoint works correctly for parent reference navigation.
+    /// </summary>
+    [Fact]
+    public async Task GetByReferenceId_ProjectScoped_ReturnsParent()
+    {
+        const string parentReferenceId = "project-scoped-parent-123";
+
+        await CreateDataAsync(d =>
+        {
+            d.Event()
+                .TestProject()
+                .Type(Event.KnownTypes.Log)
+                .Message("Parent Event")
+                .ReferenceId(parentReferenceId);
+
+            d.Event()
+                .TestProject()
+                .Type(Event.KnownTypes.Log)
+                .Message("Child Event")
+                .Reference("parent", parentReferenceId);
+        });
+
+        // Test project-scoped by-ref endpoint
+        var parentResults = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "events", "by-ref", parentReferenceId)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(parentResults);
+        Assert.Single(parentResults);
+        Assert.Equal("Parent Event", parentResults.First().Message);
+    }
+
     [Fact(Skip = "Foundatio bug with not passing in time provider to extension methods.")]
     public async Task PostEvent_WithEnvironmentAndRequestInfo_ReturnsCorrectSnakeCaseSerialization()
     {
