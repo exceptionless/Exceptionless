@@ -8,22 +8,25 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
-namespace Exceptionless.Tests;
+namespace Exceptionless.Tests.Serializer;
 
 public class SerializerTests : TestWithServices
 {
-    public SerializerTests(ITestOutputHelper output) : base(output) { }
+    public SerializerTests(ITestOutputHelper output) : base(output)
+    {
+    }
 
     [Fact]
     public void CanDeserializeEventWithUnknownNamesAndProperties()
     {
         const string json = @"{""tags"":[""One"",""Two""],""reference_id"":""12"",""Message"":""Hello"",""SomeString"":""Hi"",""SomeBool"":false,""SomeNum"":1,""UnknownProp"":{""Blah"":""SomeVal""},""Some"":{""Blah"":""SomeVal""},""@error"":{""Message"":""SomeVal"",""SomeProp"":""SomeVal""},""Some2"":""{\""Blah\"":\""SomeVal\""}"",""UnknownSerializedProp"":""{\""Blah\"":\""SomeVal\""}""}";
         var settings = new JsonSerializerSettings();
-        var knownDataTypes = new Dictionary<string, Type> {
-                { "Some", typeof(SomeModel) },
-                { "Some2", typeof(SomeModel) },
-                { Event.KnownDataKeys.Error, typeof(Error) }
-            };
+        var knownDataTypes = new Dictionary<string, Type>
+        {
+            { "Some", typeof(SomeModel) },
+            { "Some2", typeof(SomeModel) },
+            { Event.KnownDataKeys.Error, typeof(Error) }
+        };
         settings.Converters.Add(new DataObjectConverter<Event>(_logger, knownDataTypes));
         settings.Converters.Add(new DataObjectConverter<Error>(_logger));
 
