@@ -1,19 +1,24 @@
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Jobs;
+using Foundatio.Repositories;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
 
 public sealed class ProjectControllerTests : IntegrationTestsBase
 {
+    private readonly IProjectRepository _projectRepository;
+
     public ProjectControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
+        _projectRepository = GetService<IProjectRepository>();
     }
 
     protected override async Task ResetDataAsync()
@@ -21,6 +26,57 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         await base.ResetDataAsync();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
+    }
+
+    [Fact]
+    public async Task PostAsync_NewProject_MapsAllPropertiesToProject()
+    {
+        // Arrange - Test Mapping: NewProject -> Project
+        var newProject = new NewProject
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            Name = "Mapped Test Project",
+            DeleteBotDataEnabled = true
+        };
+
+        // Act
+        var viewProject = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(newProject)
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert - Verify mapping worked correctly
+        Assert.NotNull(viewProject);
+        Assert.NotNull(viewProject.Id);
+        Assert.Equal("Mapped Test Project", viewProject.Name);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, viewProject.OrganizationId);
+        Assert.True(viewProject.DeleteBotDataEnabled);
+        Assert.True(viewProject.CreatedUtc > DateTime.MinValue);
+
+        // Verify persisted entity
+        var project = await _projectRepository.GetByIdAsync(viewProject.Id);
+        Assert.NotNull(project);
+        Assert.Equal("Mapped Test Project", project.Name);
+        Assert.True(project.DeleteBotDataEnabled);
+    }
+
+    [Fact]
+    public async Task GetAsync_ExistingProject_MapsToViewProjectWithSlackIntegration()
+    {
+        // Act - Test Mapping: Project -> ViewProject (with AfterMap for HasSlackIntegration)
+        var viewProject = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert - ViewProject should include computed HasSlackIntegration property
+        Assert.NotNull(viewProject);
+        Assert.Equal(SampleDataService.TEST_PROJECT_ID, viewProject.Id);
+        Assert.IsType<bool>(viewProject.HasSlackIntegration);
     }
 
     [Fact]

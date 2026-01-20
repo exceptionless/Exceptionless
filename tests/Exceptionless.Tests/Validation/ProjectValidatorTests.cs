@@ -156,7 +156,7 @@ public sealed class ProjectValidatorTests : TestWithServices
         {
             Id = ValidObjectId,
             OrganizationId = "invalid",
-            Name = "",
+            Name = String.Empty,
             NextSummaryEndOfDayTicks = 0
         };
 
