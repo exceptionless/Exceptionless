@@ -1,7 +1,9 @@
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
+using Foundatio.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
 
@@ -9,13 +11,82 @@ namespace Exceptionless.Tests.Controllers;
 
 public sealed class WebHookControllerTests : IntegrationTestsBase
 {
-    public WebHookControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) { }
+    private readonly IWebHookRepository _webHookRepository;
+
+    public WebHookControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
+        _webHookRepository = GetService<IWebHookRepository>();
+    }
 
     protected override async Task ResetDataAsync()
     {
         await base.ResetDataAsync();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
+    }
+
+    [Fact]
+    public async Task PostAsync_NewWebHook_MapsAllPropertiesToWebHook()
+    {
+        // Arrange - Test AutoMapper: NewWebHook -> WebHook
+        var newWebHook = new NewWebHook
+        {
+            EventTypes = [WebHook.KnownEventTypes.StackPromoted, WebHook.KnownEventTypes.NewError],
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            ProjectId = SampleDataService.TEST_PROJECT_ID,
+            Url = "https://example.com/webhook"
+        };
+
+        // Act
+        var webHook = await SendRequestAsAsync<WebHook>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("webhooks")
+            .Content(newWebHook)
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert - Verify mapping worked correctly
+        Assert.NotNull(webHook);
+        Assert.NotNull(webHook.Id);
+        Assert.Equal("https://example.com/webhook", webHook.Url);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, webHook.OrganizationId);
+        Assert.Equal(SampleDataService.TEST_PROJECT_ID, webHook.ProjectId);
+        Assert.Equal(2, webHook.EventTypes.Length);
+        Assert.Contains(WebHook.KnownEventTypes.StackPromoted, webHook.EventTypes);
+        Assert.Contains(WebHook.KnownEventTypes.NewError, webHook.EventTypes);
+
+        // Verify persisted entity
+        var persistedHook = await _webHookRepository.GetByIdAsync(webHook.Id);
+        Assert.NotNull(persistedHook);
+        Assert.Equal("https://example.com/webhook", persistedHook.Url);
+    }
+
+    [Fact]
+    public async Task PostAsync_NewWebHookWithVersion_MapsVersionCorrectly()
+    {
+        // Arrange - Test that Version is mapped correctly
+        var newWebHook = new NewWebHook
+        {
+            EventTypes = [WebHook.KnownEventTypes.NewError],
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            ProjectId = SampleDataService.TEST_PROJECT_ID,
+            Url = "https://example.com/v2webhook",
+            Version = new Version(2, 0)
+        };
+
+        // Act
+        var webHook = await SendRequestAsAsync<WebHook>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("webhooks")
+            .Content(newWebHook)
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert - Version 2.0 should map to "v2"
+        Assert.NotNull(webHook);
+        Assert.Equal(WebHook.KnownVersions.Version2, webHook.Version);
     }
 
     [Fact]
