@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
@@ -8,7 +9,12 @@ namespace Exceptionless.Core.Plugins.Formatting;
 [Priority(99)]
 public sealed class DefaultFormattingPlugin : FormattingPluginBase
 {
-    public DefaultFormattingPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
+    private readonly JsonSerializerOptions _jsonOptions;
+
+    public DefaultFormattingPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(jsonOptions, options, loggerFactory)
+    {
+        _jsonOptions = jsonOptions;
+    }
 
     public override string GetStackTitle(PersistentEvent ev)
     {
@@ -67,7 +73,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
         if (!String.IsNullOrEmpty(ev.Source))
             data.Add("Source", ev.Source.Truncate(60));
 
-        var requestInfo = ev.GetRequestInfo();
+        var requestInfo = ev.GetRequestInfo(_jsonOptions);
         if (requestInfo is not null)
             data.Add("Url", requestInfo.GetFullPath(true, true, true));
 

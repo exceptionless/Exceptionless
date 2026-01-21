@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
@@ -8,7 +9,7 @@ namespace Exceptionless.Core.Plugins.Formatting;
 [Priority(40)]
 public sealed class UsageFormattingPlugin : FormattingPluginBase
 {
-    public UsageFormattingPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
+    public UsageFormattingPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(jsonOptions, options, loggerFactory) { }
 
     private bool ShouldHandle(PersistentEvent ev)
     {

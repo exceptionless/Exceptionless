@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -38,6 +39,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     private readonly IUserRepository _userRepository;
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
+    private readonly JsonSerializerOptions _jsonOptions;
 
     public EventPipelineTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -53,6 +55,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         _pipeline = GetService<EventPipeline>();
         _billingManager = GetService<BillingManager>();
         _plans = GetService<BillingPlans>();
+        _jsonOptions = GetService<JsonSerializerOptions>();
     }
 
     protected override async Task ResetDataAsync()
@@ -890,8 +893,8 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         var context = contexts.Single();
         Assert.False(context.HasError);
 
-        var requestInfo = context.Event.GetRequestInfo();
-        var environmentInfo = context.Event.GetEnvironmentInfo();
+        var requestInfo = context.Event.GetRequestInfo(_jsonOptions);
+        var environmentInfo = context.Event.GetEnvironmentInfo(_jsonOptions);
         var userInfo = context.Event.GetUserIdentity();
         var userDescription = context.Event.GetUserDescription();
 
@@ -1169,7 +1172,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     ev.SetUserIdentity(mappedUsers[identity.Identity]);
                 }
 
-                var request = ev.GetRequestInfo();
+                var request = ev.GetRequestInfo(_jsonOptions);
                 if (request is not null)
                 {
                     request.Cookies?.Clear();
@@ -1189,7 +1192,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     }
                 }
 
-                InnerError? error = ev.GetError();
+                InnerError? error = ev.GetError(_jsonOptions);
                 while (error is not null)
                 {
                     error.Message = RandomData.GetSentence();
@@ -1199,13 +1202,13 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     error = error.Inner;
                 }
 
-                var environment = ev.GetEnvironmentInfo();
+                var environment = ev.GetEnvironmentInfo(_jsonOptions);
                 environment?.Data?.Clear();
             }
 
             // inject random session start events.
             if (currentBatchCount % 10 == 0)
-                events.Insert(0, events[0].ToSessionStartEvent());
+                events.Insert(0, events[0].ToSessionStartEvent(_jsonOptions));
 
             await storage.SaveObjectAsync(Path.Combine(dataDirectory, $"{currentBatchCount++}.json"), events, TestCancellationToken);
         }

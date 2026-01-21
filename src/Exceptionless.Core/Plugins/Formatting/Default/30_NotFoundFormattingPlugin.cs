@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
@@ -8,7 +9,12 @@ namespace Exceptionless.Core.Plugins.Formatting;
 [Priority(30)]
 public sealed class NotFoundFormattingPlugin : FormattingPluginBase
 {
-    public NotFoundFormattingPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
+    private readonly JsonSerializerOptions _jsonOptions;
+
+    public NotFoundFormattingPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(jsonOptions, options, loggerFactory)
+    {
+        _jsonOptions = jsonOptions;
+    }
 
     private bool ShouldHandle(PersistentEvent ev)
     {
@@ -39,7 +45,7 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
         var data = new Dictionary<string, object?> { { "Source", ev.Source } };
         AddUserIdentitySummaryData(data, ev.GetUserIdentity());
 
-        var ips = ev.GetIpAddresses().ToList();
+        var ips = ev.GetIpAddresses(_jsonOptions).ToList();
         if (ips.Count > 0)
             data.Add("IpAddress", ips);
 
@@ -61,7 +67,7 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
             notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
 
         string subject = String.Concat(notificationType, ": ", ev.Source).Truncate(120);
-        var requestInfo = ev.GetRequestInfo();
+        var requestInfo = ev.GetRequestInfo(_jsonOptions);
         var data = new Dictionary<string, object?> {
                 { "Url", requestInfo?.GetFullPath(true, true, true) ?? ev.Source?.Truncate(60) }
             };
@@ -83,7 +89,7 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
         if (isCritical)
             notificationType = String.Concat("critical ", notificationType);
 
-        var requestInfo = ev.GetRequestInfo();
+        var requestInfo = ev.GetRequestInfo(_jsonOptions);
         var attachment = new SlackMessage.SlackAttachment(ev)
         {
             Color = "#BB423F",

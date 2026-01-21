@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
@@ -14,11 +15,13 @@ namespace Exceptionless.Tests.Serializer.Models;
 public class PersistentEventSerializerTests : TestWithServices
 {
     private readonly ITextSerializer _serializer;
+    private readonly JsonSerializerOptions _jsonOptions;
     private static readonly DateTimeOffset FixedDate = new(2024, 1, 15, 12, 0, 0, TimeSpan.Zero);
 
     public PersistentEventSerializerTests(ITestOutputHelper output) : base(output)
     {
         _serializer = GetService<ITextSerializer>();
+        _jsonOptions = GetService<JsonSerializerOptions>();
         TimeProvider.SetUtcNow(FixedDate);
     }
 
@@ -144,7 +147,7 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized);
-        var error = deserialized.GetError();
+        var error = deserialized.GetError(_jsonOptions);
         Assert.NotNull(error);
         Assert.Equal("Test exception", error.Message);
         Assert.Equal("System.InvalidOperationException", error.Type);
@@ -181,7 +184,7 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized);
-        var request = deserialized.GetRequestInfo();
+        var request = deserialized.GetRequestInfo(_jsonOptions);
         Assert.NotNull(request);
         Assert.Equal("POST", request.HttpMethod);
         Assert.Equal("/api/events", request.Path);
@@ -213,7 +216,7 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized);
-        var env = deserialized.GetEnvironmentInfo();
+        var env = deserialized.GetEnvironmentInfo(_jsonOptions);
         Assert.NotNull(env);
         Assert.Equal("PROD-SERVER-01", env.MachineName);
         Assert.Equal(8, env.ProcessorCount);
@@ -269,8 +272,8 @@ public class PersistentEventSerializerTests : TestWithServices
         // Assert
         Assert.NotNull(deserialized);
         Assert.NotNull(deserialized.GetUserIdentity());
-        Assert.NotNull(deserialized.GetRequestInfo());
-        Assert.NotNull(deserialized.GetEnvironmentInfo());
+        Assert.NotNull(deserialized.GetRequestInfo(_jsonOptions));
+        Assert.NotNull(deserialized.GetEnvironmentInfo(_jsonOptions));
         Assert.Equal("1.0.0", deserialized.GetVersion());
         Assert.Equal("Error", deserialized.GetLevel());
     }

@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Pipeline;
@@ -24,10 +25,12 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase
     ];
 
     private readonly UserAgentParser _parser;
+    private readonly JsonSerializerOptions _jsonOptions;
 
-    public RequestInfoPlugin(UserAgentParser parser, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    public RequestInfoPlugin(UserAgentParser parser, JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _parser = parser;
+        _jsonOptions = jsonOptions;
     }
 
     public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts)
@@ -36,7 +39,7 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase
         var exclusions = DefaultExclusions.Union(project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions)).ToList();
         foreach (var context in contexts)
         {
-            var request = context.Event.GetRequestInfo();
+            var request = context.Event.GetRequestInfo(_jsonOptions);
             if (request is null)
                 continue;
 

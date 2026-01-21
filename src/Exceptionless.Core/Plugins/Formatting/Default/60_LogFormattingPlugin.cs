@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
@@ -8,7 +9,12 @@ namespace Exceptionless.Core.Plugins.Formatting;
 [Priority(60)]
 public sealed class LogFormattingPlugin : FormattingPluginBase
 {
-    public LogFormattingPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
+    private readonly JsonSerializerOptions _jsonOptions;
+
+    public LogFormattingPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(jsonOptions, options, loggerFactory)
+    {
+        _jsonOptions = jsonOptions;
+    }
 
     private bool ShouldHandle(PersistentEvent ev)
     {
@@ -91,7 +97,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
         if (!String.IsNullOrEmpty(level))
             data.Add("Level", level.Truncate(60));
 
-        var requestInfo = ev.GetRequestInfo();
+        var requestInfo = ev.GetRequestInfo(_jsonOptions);
         if (requestInfo is not null)
             data.Add("Url", requestInfo.GetFullPath(true, true, true));
 
@@ -148,7 +154,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
             attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Level", Value = level.Truncate(60) });
         }
 
-        var requestInfo = ev.GetRequestInfo();
+        var requestInfo = ev.GetRequestInfo(_jsonOptions);
         if (requestInfo is not null)
             attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Url", Value = requestInfo.GetFullPath(true, true, true) });
 

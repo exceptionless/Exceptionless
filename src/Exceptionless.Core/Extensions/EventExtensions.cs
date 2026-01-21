@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
@@ -13,14 +14,14 @@ public static class EventExtensions
         return ev.Data is not null && ev.Data.ContainsKey(Event.KnownDataKeys.Error);
     }
 
-    public static Error? GetError(this Event ev)
+    public static Error? GetError(this Event ev, JsonSerializerOptions options)
     {
         if (!ev.HasError())
             return null;
 
         try
         {
-            return ev.Data!.GetValue<Error>(Event.KnownDataKeys.Error);
+            return ev.Data!.GetValue<Error>(Event.KnownDataKeys.Error, options);
         }
         catch (Exception) { }
 
@@ -32,42 +33,42 @@ public static class EventExtensions
     }
 
 
-    public static SimpleError? GetSimpleError(this Event ev)
+    public static SimpleError? GetSimpleError(this Event ev, JsonSerializerOptions options)
     {
         if (!ev.HasSimpleError())
             return null;
 
         try
         {
-            return ev.Data!.GetValue<SimpleError>(Event.KnownDataKeys.SimpleError);
+            return ev.Data!.GetValue<SimpleError>(Event.KnownDataKeys.SimpleError, options);
         }
         catch (Exception) { }
 
         return null;
     }
 
-    public static RequestInfo? GetRequestInfo(this Event ev)
+    public static RequestInfo? GetRequestInfo(this Event ev, JsonSerializerOptions options)
     {
         if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.RequestInfo))
             return null;
 
         try
         {
-            return ev.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo);
+            return ev.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo, options);
         }
         catch (Exception) { }
 
         return null;
     }
 
-    public static EnvironmentInfo? GetEnvironmentInfo(this Event ev)
+    public static EnvironmentInfo? GetEnvironmentInfo(this Event ev, JsonSerializerOptions options)
     {
         if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.EnvironmentInfo))
             return null;
 
         try
         {
-            return ev.Data.GetValue<EnvironmentInfo>(Event.KnownDataKeys.EnvironmentInfo);
+            return ev.Data.GetValue<EnvironmentInfo>(Event.KnownDataKeys.EnvironmentInfo, options);
         }
         catch (Exception) { }
 

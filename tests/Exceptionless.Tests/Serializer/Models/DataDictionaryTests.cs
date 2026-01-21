@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
@@ -14,10 +15,12 @@ namespace Exceptionless.Tests.Serializer.Models;
 public class DataDictionaryTests : TestWithServices
 {
     private readonly ITextSerializer _serializer;
+    private readonly JsonSerializerOptions _jsonOptions;
 
     public DataDictionaryTests(ITestOutputHelper output) : base(output)
     {
         _serializer = GetService<ITextSerializer>();
+        _jsonOptions = GetService<JsonSerializerOptions>();
     }
 
     [Fact]
@@ -28,7 +31,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary { { "user", userInfo } };
 
         // Act
-        var result = data.GetValue<UserInfo>("user");
+        var result = data.GetValue<UserInfo>("user", _jsonOptions);
 
         // Assert
         Assert.NotNull(result);
@@ -43,7 +46,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary { { "version", "1.0.0" } };
 
         // Act
-        string? result = data.GetValue<string>("version");
+        string? result = data.GetValue<string>("version", _jsonOptions);
 
         // Assert
         Assert.Equal("1.0.0", result);
@@ -56,7 +59,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary { { "count", 42 } };
 
         // Act
-        int result = data.GetValue<int>("count");
+        int result = data.GetValue<int>("count", _jsonOptions);
 
         // Assert
         Assert.Equal(42, result);
@@ -71,7 +74,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary { { "user", jObject } };
 
         // Act
-        var result = data.GetValue<UserInfo>("user");
+        var result = data.GetValue<UserInfo>("user", _jsonOptions);
 
         // Assert
         Assert.NotNull(result);
@@ -95,7 +98,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary { { "@error", jObject } };
 
         // Act
-        var result = data.GetValue<Error>("@error");
+        var result = data.GetValue<Error>("@error", _jsonOptions);
 
         // Assert
         Assert.NotNull(result);
@@ -121,7 +124,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary { { "@request", jObject } };
 
         // Act
-        var result = data.GetValue<RequestInfo>("@request");
+        var result = data.GetValue<RequestInfo>("@request", _jsonOptions);
 
         // Assert
         Assert.NotNull(result);
@@ -147,7 +150,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary { { "@environment", jObject } };
 
         // Act
-        var result = data.GetValue<EnvironmentInfo>("@environment");
+        var result = data.GetValue<EnvironmentInfo>("@environment", _jsonOptions);
 
         // Assert
         Assert.NotNull(result);
@@ -174,7 +177,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary { { "@error", jObject } };
 
         // Act
-        var result = data.GetValue<Error>("@error");
+        var result = data.GetValue<Error>("@error", _jsonOptions);
 
         // Assert
         Assert.NotNull(result);
@@ -193,7 +196,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary { { "user", json } };
 
         // Act
-        var result = data.GetValue<UserInfo>("user");
+        var result = data.GetValue<UserInfo>("user", _jsonOptions);
 
         // Assert
         Assert.NotNull(result);
@@ -210,7 +213,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary { { "@error", json } };
 
         // Act
-        var result = data.GetValue<Error>("@error");
+        var result = data.GetValue<Error>("@error", _jsonOptions);
 
         // Assert
         Assert.NotNull(result);
@@ -227,7 +230,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary { { "@request", json } };
 
         // Act
-        var result = data.GetValue<RequestInfo>("@request");
+        var result = data.GetValue<RequestInfo>("@request", _jsonOptions);
 
         // Assert
         Assert.NotNull(result);
@@ -244,7 +247,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary { { "@environment", json } };
 
         // Act
-        var result = data.GetValue<EnvironmentInfo>("@environment");
+        var result = data.GetValue<EnvironmentInfo>("@environment", _jsonOptions);
 
         // Assert
         Assert.NotNull(result);
@@ -261,7 +264,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary { { "@simple_error", json } };
 
         // Act
-        var result = data.GetValue<SimpleError>("@simple_error");
+        var result = data.GetValue<SimpleError>("@simple_error", _jsonOptions);
 
         // Assert
         Assert.NotNull(result);
@@ -278,7 +281,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary { { "@error", json } };
 
         // Act
-        var result = data.GetValue<Error>("@error");
+        var result = data.GetValue<Error>("@error", _jsonOptions);
 
         // Assert
         Assert.NotNull(result);
@@ -294,7 +297,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary { { "text", "not json" } };
 
         // Act
-        var result = data.GetValue<UserInfo>("text");
+        var result = data.GetValue<UserInfo>("text", _jsonOptions);
 
         // Assert
         Assert.Null(result);
@@ -308,7 +311,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary();
 
         // Act & Assert
-        Assert.Throws<KeyNotFoundException>(() => data.GetValue<UserInfo>("nonexistent"));
+        Assert.Throws<KeyNotFoundException>(() => data.GetValue<UserInfo>("nonexistent", _jsonOptions));
     }
 
     [Fact]
@@ -318,7 +321,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary { { "nullable", null! } };
 
         // Act
-        var result = data.GetValue<UserInfo>("nullable");
+        var result = data.GetValue<UserInfo>("nullable", _jsonOptions);
 
         // Assert
         Assert.Null(result);
@@ -331,7 +334,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary { { "number", 42 } };
 
         // Act
-        var result = data.GetValue<UserInfo>("number");
+        var result = data.GetValue<UserInfo>("number", _jsonOptions);
 
         // Assert
         Assert.Null(result);
@@ -346,7 +349,7 @@ public class DataDictionaryTests : TestWithServices
         var data = new DataDictionary { { "user", json } };
 
         // Act
-        var result = data.GetValue<UserInfo>("user");
+        var result = data.GetValue<UserInfo>("user", _jsonOptions);
 
         // Assert
         Assert.NotNull(result);
@@ -370,7 +373,7 @@ public class DataDictionaryTests : TestWithServices
         // Assert
         Assert.NotNull(deserialized);
         Assert.True(deserialized.ContainsKey("@user"));
-        var userInfo = deserialized.GetValue<UserInfo>("@user");
+        var userInfo = deserialized.GetValue<UserInfo>("@user", _jsonOptions);
         Assert.NotNull(userInfo);
         Assert.Equal("user@test.com", userInfo.Identity);
         Assert.Equal("Test User", userInfo.Name);

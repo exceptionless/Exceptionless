@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
@@ -10,10 +11,12 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default;
 public sealed class GeoPlugin : EventProcessorPluginBase
 {
     private readonly IGeoIpService _geoIpService;
+    private readonly JsonSerializerOptions _jsonOptions;
 
-    public GeoPlugin(IGeoIpService geoIpService, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    public GeoPlugin(IGeoIpService geoIpService, JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _geoIpService = geoIpService;
+        _jsonOptions = jsonOptions;
     }
 
     public override Task EventBatchProcessingAsync(ICollection<EventContext> contexts)
@@ -32,7 +35,7 @@ public sealed class GeoPlugin : EventProcessorPluginBase
             // The geo coordinates are all the same, set the location from the result of any of the ip addresses.
             if (!String.IsNullOrEmpty(group.Key))
             {
-                var ips = group.SelectMany(c => c.Event.GetIpAddresses()).Union(new[] { group.First().EventPostInfo?.IpAddress }).Distinct().ToList();
+                var ips = group.SelectMany(c => c.Event.GetIpAddresses(_jsonOptions)).Union(new[] { group.First().EventPostInfo?.IpAddress }).Distinct().ToList();
                 if (ips.Count > 0)
                     tasks.Add(UpdateGeoInformationAsync(group, ips));
                 continue;
@@ -41,7 +44,7 @@ public sealed class GeoPlugin : EventProcessorPluginBase
             // Each event in the group could be a different user;
             foreach (var context in group)
             {
-                var ips = context.Event.GetIpAddresses().Union(new[] { context.EventPostInfo?.IpAddress }).ToList();
+                var ips = context.Event.GetIpAddresses(_jsonOptions).Union(new[] { context.EventPostInfo?.IpAddress }).ToList();
                 if (ips.Count > 0)
                     tasks.Add(UpdateGeoInformationAsync(context, ips));
             }
