@@ -80,7 +80,7 @@ public class Bootstrapper
         {
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             PropertyNamingPolicy = LowerCaseUnderscoreNamingPolicy.Instance,
-            //Converters = { new DeltaJsonConverterFactory() }
+            Converters = { new ObjectToInferredTypesConverter() }
         });
 
         services.AddSingleton<ISerializer>(s => s.GetRequiredService<ITextSerializer>());
