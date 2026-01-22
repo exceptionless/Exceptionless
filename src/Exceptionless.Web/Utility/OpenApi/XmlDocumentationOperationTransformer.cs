@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Xml.Linq;
+using Foundatio.AsyncEx;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -12,95 +13,72 @@ namespace Exceptionless.Web.Utility.OpenApi;
 public class XmlDocumentationOperationTransformer : IOpenApiOperationTransformer
 {
     private static readonly Dictionary<string, XDocument> _xmlDocCache = new();
-    private static readonly object _lock = new();
+    private static readonly AsyncLock _lock = new();
 
-    public Task TransformAsync(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+    public async Task TransformAsync(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
         var methodInfo = context.Description.ActionDescriptor.EndpointMetadata
             .OfType<MethodInfo>()
             .FirstOrDefault();
 
-        if (methodInfo is null)
+        if (methodInfo is null && context.Description.ActionDescriptor is Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor controllerDescriptor)
         {
             // For controller actions, try to get from ControllerActionDescriptor
-            if (context.Description.ActionDescriptor is Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor controllerDescriptor)
-            {
-                methodInfo = controllerDescriptor.MethodInfo;
-            }
+            methodInfo = controllerDescriptor.MethodInfo;
         }
 
         if (methodInfo is null)
-        {
-            return Task.CompletedTask;
-        }
+            return;
 
-        var xmlDoc = GetXmlDocumentation(methodInfo.DeclaringType?.Assembly);
+        var xmlDoc = await GetXmlDocumentationAsync(methodInfo.DeclaringType?.Assembly);
         if (xmlDoc is null)
-        {
-            return Task.CompletedTask;
-        }
+            return;
 
-        var methodMemberName = GetMemberName(methodInfo);
+        string methodMemberName = GetMemberName(methodInfo);
         var memberElement = xmlDoc.Descendants("member")
             .FirstOrDefault(m => m.Attribute("name")?.Value == methodMemberName);
 
         if (memberElement is null)
-        {
-            return Task.CompletedTask;
-        }
+            return;
 
         var responseElements = memberElement.Elements("response");
         foreach (var responseElement in responseElements)
         {
             var codeAttribute = responseElement.Attribute("code");
             if (codeAttribute is null)
-            {
                 continue;
-            }
 
-            var statusCode = codeAttribute.Value;
-            var description = responseElement.Value.Trim();
+            string statusCode = codeAttribute.Value;
+            string description = responseElement.Value.Trim();
 
             // Skip if Responses is null or this response already exists
             if (operation.Responses is null || operation.Responses.ContainsKey(statusCode))
-            {
                 continue;
-            }
 
             operation.Responses[statusCode] = new OpenApiResponse
             {
                 Description = description
             };
         }
-
-        return Task.CompletedTask;
     }
 
-    private static XDocument? GetXmlDocumentation(Assembly? assembly)
+    private async Task<XDocument?> GetXmlDocumentationAsync(Assembly? assembly)
     {
         if (assembly is null)
-        {
             return null;
-        }
 
-        var assemblyName = assembly.GetName().Name;
+        string? assemblyName = assembly.GetName().Name;
         if (assemblyName is null)
-        {
             return null;
-        }
 
-        lock (_lock)
+        using (await _lock.LockAsync())
         {
             if (_xmlDocCache.TryGetValue(assemblyName, out var cachedDoc))
-            {
                 return cachedDoc;
-            }
 
-            var xmlPath = Path.Combine(AppContext.BaseDirectory, $"{assemblyName}.xml");
+            string xmlPath = Path.Combine(AppContext.BaseDirectory, $"{assemblyName}.xml");
             if (!File.Exists(xmlPath))
-            {
                 return null;
-            }
 
             try
             {
@@ -119,19 +97,15 @@ public class XmlDocumentationOperationTransformer : IOpenApiOperationTransformer
     {
         var declaringType = methodInfo.DeclaringType;
         if (declaringType is null)
-        {
-            return string.Empty;
-        }
+            return String.Empty;
 
-        var typeName = declaringType.FullName?.Replace('+', '.');
+        string? typeName = declaringType.FullName?.Replace('+', '.');
         var parameters = methodInfo.GetParameters();
 
         if (parameters.Length == 0)
-        {
             return $"M:{typeName}.{methodInfo.Name}";
-        }
 
-        var parameterTypes = string.Join(",", parameters.Select(p => GetParameterTypeName(p.ParameterType)));
+        string parameterTypes = String.Join(",", parameters.Select(p => GetParameterTypeName(p.ParameterType)));
         return $"M:{typeName}.{methodInfo.Name}({parameterTypes})";
     }
 
@@ -139,26 +113,20 @@ public class XmlDocumentationOperationTransformer : IOpenApiOperationTransformer
     {
         if (type.IsGenericType)
         {
-            var genericTypeName = type.GetGenericTypeDefinition().FullName;
+            string? genericTypeName = type.GetGenericTypeDefinition().FullName;
             if (genericTypeName is null)
-            {
                 return type.Name;
-            }
 
-            var backtickIndex = genericTypeName.IndexOf('`');
+            int backtickIndex = genericTypeName.IndexOf('`');
             if (backtickIndex > 0)
-            {
                 genericTypeName = genericTypeName[..backtickIndex];
-            }
 
-            var genericArgs = string.Join(",", type.GetGenericArguments().Select(GetParameterTypeName));
+            string genericArgs = String.Join(",", type.GetGenericArguments().Select(GetParameterTypeName));
             return $"{genericTypeName}{{{genericArgs}}}";
         }
 
         if (type.IsArray)
-        {
             return $"{GetParameterTypeName(type.GetElementType()!)}[]";
-        }
 
         return type.FullName ?? type.Name;
     }

@@ -124,8 +124,8 @@ public class Startup
 
                 return OpenApiOptions.CreateDefaultSchemaReferenceId(typeInfo);
             };
-
-            o.AddDocumentTransformer<DocumentInfoTransformer>();
+            // TODO: Figure out if there is a better way to handle document info.
+            //o.AddDocumentTransformer<DocumentInfoTransformer>();
             o.AddDocumentTransformer<RemoveProblemJsonFromSuccessResponsesTransformer>();
             o.AddOperationTransformer<RequestBodyContentOperationTransformer>();
             o.AddOperationTransformer<XmlDocumentationOperationTransformer>();

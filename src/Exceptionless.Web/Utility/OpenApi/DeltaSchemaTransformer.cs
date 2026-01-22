@@ -17,16 +17,12 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
 
         // Check if this is a Delta<T> type
         if (!IsDeltaType(type))
-        {
             return Task.CompletedTask;
-        }
 
         // Get the inner type T from Delta<T>
         var innerType = type.GetGenericArguments().FirstOrDefault();
         if (innerType is null)
-        {
             return Task.CompletedTask;
-        }
 
         // Set the type to object
         schema.Type = JsonSchemaType.Object;
@@ -37,12 +33,10 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
         foreach (var property in innerType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
             if (!property.CanRead || !property.CanWrite)
-            {
                 continue;
-            }
 
             var propertySchema = CreateSchemaForType(property.PropertyType);
-            var propertyName = property.Name.ToLowerUnderscoredWords();
+            string propertyName = property.Name.ToLowerUnderscoredWords();
 
             schema.Properties[propertyName] = propertySchema;
         }

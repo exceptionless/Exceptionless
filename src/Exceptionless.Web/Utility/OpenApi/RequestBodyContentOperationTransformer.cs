@@ -18,31 +18,22 @@ public class RequestBodyContentOperationTransformer : IOpenApiOperationTransform
             .OfType<MethodInfo>()
             .FirstOrDefault();
 
-        if (methodInfo is null)
+        if (methodInfo is null && context.Description.ActionDescriptor is Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor controllerDescriptor)
         {
             // For controller actions, try to get from ControllerActionDescriptor
-            if (context.Description.ActionDescriptor is Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor controllerDescriptor)
-            {
-                methodInfo = controllerDescriptor.MethodInfo;
-            }
+            methodInfo = controllerDescriptor.MethodInfo;
         }
 
         if (methodInfo is null)
-        {
             return Task.CompletedTask;
-        }
 
-        var hasRequestBodyContent = methodInfo.GetCustomAttributes(typeof(RequestBodyContentAttribute), true).Any();
+        bool hasRequestBodyContent = methodInfo.GetCustomAttributes(typeof(RequestBodyContentAttribute), true).Any();
         if (!hasRequestBodyContent)
-        {
             return Task.CompletedTask;
-        }
 
         var consumesAttribute = methodInfo.GetCustomAttributes(typeof(ConsumesAttribute), true).FirstOrDefault() as ConsumesAttribute;
         if (consumesAttribute is null)
-        {
             return Task.CompletedTask;
-        }
 
         operation.RequestBody = new OpenApiRequestBody
         {

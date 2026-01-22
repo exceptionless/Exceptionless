@@ -15,9 +15,7 @@ public class UniqueItemsSchemaTransformer : IOpenApiSchemaTransformer
 
         // Check if this is a Set type (HashSet<T>, ISet<T>, etc.)
         if (IsSetType(type))
-        {
             schema.UniqueItems = true;
-        }
 
         return Task.CompletedTask;
     }

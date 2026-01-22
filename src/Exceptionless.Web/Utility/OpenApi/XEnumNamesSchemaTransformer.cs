@@ -15,22 +15,16 @@ public class XEnumNamesSchemaTransformer : IOpenApiSchemaTransformer
     {
         var type = context.JsonTypeInfo.Type;
         if (!type.IsEnum)
-        {
             return Task.CompletedTask;
-        }
 
         if (schema.Enum is null || schema.Enum.Count == 0)
-        {
             return Task.CompletedTask;
-        }
 
-        var names = Enum.GetNames(type);
+        string[] names = Enum.GetNames(type);
         var enumNamesArray = new JsonArray();
 
-        foreach (var name in names)
-        {
+        foreach (string name in names)
             enumNamesArray.Add(name);
-        }
 
         schema.Extensions ??= new Dictionary<string, IOpenApiExtension>();
         schema.Extensions["x-enumNames"] = new JsonNodeExtension(enumNamesArray);
