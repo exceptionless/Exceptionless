@@ -34,7 +34,7 @@ namespace Exceptionless.Core.Serialization;
 /// {
 ///     Converters = { new ObjectToInferredTypesConverter() }
 /// };
-/// 
+///
 /// // Deserializing { "count": 42, "name": "test" } into Dictionary&lt;string, object&gt;
 /// // Results in: { "count": (long)42, "name": "test" } instead of JsonElement
 /// </code>
@@ -83,9 +83,16 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
     /// </summary>
     private static object ReadNumber(ref Utf8JsonReader reader)
     {
-        // Prefer long for integer values (covers most IDs, counts, timestamps)
-        if (reader.TryGetInt64(out long longValue))
-            return longValue;
+        // Try smallest to largest integer types first for optimal boxing
+        if (reader.TryGetInt32(out int i))
+            return i;
+
+        if (reader.TryGetInt64(out long l))
+            return l;
+
+        // Try decimal for precise values (e.g., financial data) before double
+        if (reader.TryGetDecimal(out decimal d))
+            return d;
 
         // Fall back to double for floating-point
         return reader.GetDouble();
@@ -99,6 +106,9 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
         // Attempt DateTimeOffset parsing for ISO 8601 formatted strings
         if (reader.TryGetDateTimeOffset(out DateTimeOffset dateTimeOffset))
             return dateTimeOffset;
+
+        if (reader.TryGetDateTime(out var dt))
+            return dt;
 
         return reader.GetString();
     }
