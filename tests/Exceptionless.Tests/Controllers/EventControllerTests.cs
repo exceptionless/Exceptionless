@@ -1641,7 +1641,7 @@ public class EventControllerTests : IntegrationTestsBase
             },
             ""extra_field_1"": ""value1"",
             ""extra_field_2"": 99,
-            ""version"": ""1.0.0""
+            ""@version"": ""1.0.0""
         }";
 
         // Act
@@ -1659,7 +1659,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         // Assert
         var events = await _eventRepository.GetAllAsync();
-        var ev = events.Documents.Single();
+        var ev = events.Documents.Single(e => !e.IsSessionStart());
 
         Assert.Equal("error", ev.Type);
         Assert.Equal("Error with mixed data", ev.Message);
