@@ -9,6 +9,44 @@ description: |
 
 # Backend Testing
 
+## Test Naming Standards
+
+Follow Microsoft's [unit testing best practices](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices#follow-test-naming-standards):
+
+**Pattern**: `MethodUnderTest_Scenario_ExpectedBehavior`
+
+- **MethodUnderTest** — The actual method on the class being tested, not necessarily the entry point you call. For example, when testing `ObjectToInferredTypesConverter`, use `Read` (the converter's method) even though you invoke it via `_serializer.Deserialize()`.
+- **Scenario** — The input, state, or condition being tested.
+- **ExpectedBehavior** — What the method should do or return.
+
+```csharp
+// ✅ Good: Clear method, scenario, and expected behavior
+[Fact]
+public void GetValue_JObjectWithUserInfo_ReturnsTypedUserInfo() { }
+
+[Fact]
+public void GetValue_MissingKey_ThrowsKeyNotFoundException() { }
+
+[Fact]
+public void Read_EmptyArray_ReturnsEmptyList() { }  // Tests ObjectToInferredTypesConverter.Read()
+
+[Fact]
+public void Write_NestedDictionary_SerializesCorrectly() { }  // Tests ObjectToInferredTypesConverter.Write()
+
+[Fact]
+public async Task PostEvent_WithValidPayload_ReturnsAccepted() { }
+
+// ❌ Bad: Vague or missing context
+[Fact]
+public void TestGetValue() { }
+
+[Fact]
+public void CanGetValue() { }
+
+[Fact]
+public void Deserialize_EmptyArray_ReturnsEmptyList() { }  // Wrong: Deserialize is the entry point, not the method under test
+```
+
 ## Running Tests
 
 ```bash
@@ -16,7 +54,7 @@ description: |
 dotnet test
 
 # By test name
-dotnet test --filter "FullyQualifiedName~CanPostUserDescriptionAsync"
+dotnet test --filter "FullyQualifiedName~PostEvent_WithValidPayload_ReturnsAccepted"
 
 # By class name
 dotnet test --filter "ClassName~EventControllerTests"
@@ -91,10 +129,13 @@ public class EventControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task CanPostUserDescriptionAsync()
+    public async Task PostEvent_WithValidPayload_EnqueuesAndProcessesEvent()
     {
-        const string json = "{\"message\":\"test\",\"reference_id\":\"TestReferenceId\"}";
+        // Arrange
+        /* language=json */
+        const string json = """{"message":"test","reference_id":"TestReferenceId"}""";
 
+        // Act
         await SendRequestAsync(r => r
             .Post()
             .AsTestOrganizationClientUser()
@@ -110,10 +151,55 @@ public class EventControllerTests : IntegrationTestsBase
         await processEventsJob.RunAsync();
         await RefreshDataAsync();
 
+        // Assert
         var events = await _eventRepository.GetAllAsync();
         var ev = events.Documents.Single(e => e.Type == Event.KnownTypes.Log);
         Assert.Equal("test", ev.Message);
     }
+}
+```
+
+## Test Structure (Arrange-Act-Assert)
+
+Use clear `// Arrange`, `// Act`, `// Assert` comments for readability:
+
+```csharp
+[Fact]
+public void GetValue_DirectUserInfoType_ReturnsTypedValue()
+{
+    // Arrange
+    var userInfo = new UserInfo("test@example.com", "Test User");
+    var data = new DataDictionary { { "user", userInfo } };
+
+    // Act
+    var result = data.GetValue<UserInfo>("user", _jsonOptions);
+
+    // Assert
+    Assert.NotNull(result);
+    Assert.Equal("test@example.com", result.Identity);
+    Assert.Equal("Test User", result.Name);
+}
+```
+
+## JSON String Literals
+
+Use `/* language=json */` comment before JSON strings for IDE syntax highlighting and validation:
+
+```csharp
+[Fact]
+public void GetValue_JsonStringWithError_ReturnsTypedError()
+{
+    // Arrange
+    /* language=json */
+    const string json = """{"message":"Test error","type":"System.Exception"}""";
+    var data = new DataDictionary { { "@error", json } };
+
+    // Act
+    var result = data.GetValue<Error>("@error", _jsonOptions);
+
+    // Assert
+    Assert.NotNull(result);
+    Assert.Equal("Test error", result.Message);
 }
 ```
 
