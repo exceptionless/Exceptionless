@@ -1623,7 +1623,7 @@ public class EventControllerTests : IntegrationTestsBase
         if (ev.Data is not null && ev.Data.ContainsKey("custom_field"))
         {
             Assert.Equal("custom_value", ev.Data["custom_field"]);
-            Assert.Equal(42, ev.Data["custom_number"]);
+            Assert.Equal(42L, ev.Data["custom_number"]);
             Assert.Equal(true, ev.Data["custom_flag"]);
         }
     }
@@ -1680,7 +1680,7 @@ public class EventControllerTests : IntegrationTestsBase
             if (ev.Data.ContainsKey("extra_field_1"))
             {
                 Assert.Equal("value1", ev.Data["extra_field_1"]);
-                Assert.Equal(99, ev.Data["extra_field_2"]);
+                Assert.Equal(99L, ev.Data["extra_field_2"]);
             }
         }
     }
@@ -1734,7 +1734,7 @@ public class EventControllerTests : IntegrationTestsBase
         var json = @"{
             ""type"": ""log"",
             ""message"": ""Test naming conventions"",
-            ""reference_id"": ""ref-123"",
+            ""reference_id"": ""ref-1234567890"",
             ""custom_snake_case"": ""snake_value"",
             ""CustomPascalCase"": ""pascal_value""
         }";
@@ -1758,6 +1758,6 @@ public class EventControllerTests : IntegrationTestsBase
 
         Assert.Equal("log", ev.Type);
         Assert.Equal("Test naming conventions", ev.Message);
-        Assert.Equal("ref-123", ev.ReferenceId);
+        Assert.Equal("ref-1234567890", ev.ReferenceId);
     }
 }
