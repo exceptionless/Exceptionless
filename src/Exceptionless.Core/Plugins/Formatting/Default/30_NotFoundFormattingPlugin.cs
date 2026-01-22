@@ -38,7 +38,7 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
             return null;
 
         var data = new Dictionary<string, object?> { { "Source", ev.Source } };
-        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_jsonSerializerOptions));
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_jsonOptions));
 
         var ips = ev.GetIpAddresses(_jsonOptions).ToList();
         if (ips.Count > 0)

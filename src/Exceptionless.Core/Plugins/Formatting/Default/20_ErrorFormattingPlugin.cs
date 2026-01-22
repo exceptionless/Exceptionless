@@ -64,7 +64,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
             return null;
 
         var data = new Dictionary<string, object?> { { "Message", ev.Message } };
-        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_jsonSerializerOptions));
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_jsonOptions));
 
         if (!String.IsNullOrEmpty(stackingTarget.Error.Type))
         {
@@ -148,7 +148,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         if (isCritical)
             notificationType = String.Concat("critical ", notificationType);
 
-        var attachment = new SlackMessage.SlackAttachment(ev, _jsonSerializerOptions)
+        var attachment = new SlackMessage.SlackAttachment(ev, _jsonOptions)
         {
             Color = "#BB423F",
             Fields =
