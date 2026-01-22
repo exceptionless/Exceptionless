@@ -106,7 +106,7 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized);
-        var userInfo = deserialized.GetUserIdentity();
+        var userInfo = deserialized.GetUserIdentity(_jsonOptions);
         Assert.NotNull(userInfo);
         Assert.Equal("user@example.com", userInfo.Identity);
         Assert.Equal("Test User", userInfo.Name);
@@ -271,7 +271,7 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized);
-        Assert.NotNull(deserialized.GetUserIdentity());
+        Assert.NotNull(deserialized.GetUserIdentity(_jsonOptions));
         Assert.NotNull(deserialized.GetRequestInfo(_jsonOptions));
         Assert.NotNull(deserialized.GetEnvironmentInfo(_jsonOptions));
         Assert.Equal("1.0.0", deserialized.GetVersion());
@@ -329,7 +329,7 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(ev);
-        var userInfo = ev.GetUserIdentity();
+        var userInfo = ev.GetUserIdentity(_jsonOptions);
         Assert.NotNull(userInfo);
         Assert.Equal("parsed@example.com", userInfo.Identity);
         Assert.Equal("Parsed User", userInfo.Name);

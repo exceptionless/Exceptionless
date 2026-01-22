@@ -45,7 +45,7 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase
 
             if (context.IncludePrivateInformation)
             {
-                var submissionClient = context.Event.GetSubmissionClient();
+                var submissionClient = context.Event.GetSubmissionClient(_jsonOptions);
                 AddClientIpAddress(request, submissionClient);
             }
             else

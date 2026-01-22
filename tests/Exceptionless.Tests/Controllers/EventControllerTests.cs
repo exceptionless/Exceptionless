@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Web;
 using Exceptionless.Core.Billing;
@@ -65,9 +66,11 @@ public class EventControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task CanPostUserDescriptionAsync()
+    public async Task PostEvent_WithValidPayload_EnqueuesAndProcessesEventAsync()
     {
-        const string json = "{\"message\":\"test\",\"reference_id\":\"TestReferenceId\",\"@user\":{\"identity\":\"Test user\",\"name\":null}}";
+        var jsonOptions = GetService<JsonSerializerOptions>();
+        /* language=json */
+        const string json = """{"message":"test","reference_id":"TestReferenceId","@user":{"identity":"Test user","name":null}}""";
         await SendRequestAsync(r => r
             .Post()
             .AsTestOrganizationClientUser()
@@ -92,12 +95,12 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("test", ev.Message);
         Assert.Equal("TestReferenceId", ev.ReferenceId);
 
-        var identity = ev.GetUserIdentity();
+        var identity = ev.GetUserIdentity(jsonOptions);
         Assert.NotNull(identity);
         Assert.Equal("Test user", identity.Identity);
         Assert.Null(identity.Name);
         Assert.Null(identity.Name);
-        Assert.Null(ev.GetUserDescription());
+        Assert.Null(ev.GetUserDescription(jsonOptions));
 
         // post description
         await _eventUserDescriptionQueue.DeleteQueueAsync();
@@ -122,20 +125,20 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal(1, stats.Completed);
 
         ev = await _eventRepository.GetByIdAsync(ev.Id);
-        identity = ev.GetUserIdentity();
+        identity = ev.GetUserIdentity(jsonOptions);
         Assert.NotNull(identity);
         Assert.Equal("Test user", identity.Identity);
         Assert.Null(identity.Name);
         Assert.Null(identity.Name);
 
-        var description = ev.GetUserDescription();
+        var description = ev.GetUserDescription(jsonOptions);
         Assert.NotNull(description);
         Assert.Equal("Test Description", description.Description);
         Assert.Equal(TestConstants.UserEmail, description.EmailAddress);
     }
 
     [Fact]
-    public async Task CanPostUserDescriptionWithNoMatchingEventAsync()
+    public async Task PostEvent_WithNoMatchingEvent_UserDescriptionIsAbandonedAsync()
     {
         await SendRequestAsync(r => r
             .Post()
@@ -224,7 +227,9 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CanPostJsonWithUserInfoAsync()
     {
-        const string json = "{\"message\":\"test\",\"@user\":{\"identity\":\"Test user\",\"name\":null}}";
+        var jsonOptions = GetService<JsonSerializerOptions>();
+        /* language=json */
+        const string json = """{"message":"test","@user":{"identity":"Test user","name":null}}""";
         await SendRequestAsync(r => r
             .Post()
             .AsTestOrganizationClientUser()
@@ -248,7 +253,7 @@ public class EventControllerTests : IntegrationTestsBase
         var ev = events.Documents.Single(e => String.Equals(e.Type, Event.KnownTypes.Log));
         Assert.Equal("test", ev.Message);
 
-        var userInfo = ev.GetUserIdentity();
+        var userInfo = ev.GetUserIdentity(jsonOptions);
         Assert.NotNull(userInfo);
         Assert.Equal("Test user", userInfo.Identity);
         Assert.Null(userInfo.Name);
@@ -1587,13 +1592,16 @@ public class EventControllerTests : IntegrationTestsBase
     public async Task PostEvent_WithExtraRootProperties_CapturedInDataBag()
     {
         // Arrange: Create a JSON event with extra root properties that should go into the data bag
-        var json = @"{
-            ""type"": ""log"",
-            ""message"": ""Test with extra properties"",
-            ""custom_field"": ""custom_value"",
-            ""custom_number"": 42,
-            ""custom_flag"": true
-        }";
+        /* language=json */
+        const string json = """
+                            {
+                                "type": "log",
+                                "message": "Test with extra properties",
+                                "custom_field": "custom_value",
+                                "custom_number": 42,
+                                "custom_flag": true
+                            }
+                            """;
 
         // Act: POST the event with extra root properties
         await SendRequestAsync(r => r
@@ -1624,8 +1632,8 @@ public class EventControllerTests : IntegrationTestsBase
         if (ev.Data is not null && ev.Data.ContainsKey("custom_field"))
         {
             Assert.Equal("custom_value", ev.Data["custom_field"]);
-            Assert.Equal(42, ev.Data["custom_number"]);
-            Assert.Equal(true, ev.Data["custom_flag"]);
+            Assert.Equal(42L, ev.Data["custom_number"]);
+            Assert.True(ev.Data["custom_flag"] as bool?);
         }
     }
 
@@ -1633,17 +1641,20 @@ public class EventControllerTests : IntegrationTestsBase
     public async Task PostEvent_WithExtraPropertiesAndKnownData_PreservesAllData()
     {
         // Arrange: Create a JSON event with both known data keys and extra properties
-        var json = @"{
-            ""type"": ""error"",
-            ""message"": ""Error with mixed data"",
-            ""@user"": {
-                ""identity"": ""user@example.com"",
-                ""name"": ""Test User""
-            },
-            ""extra_field_1"": ""value1"",
-            ""extra_field_2"": 99,
-            ""version"": ""1.0.0""
-        }";
+        /* language=json */
+        const string json = """
+                            {
+                                "type": "error",
+                                "message": "Error with mixed data",
+                                "@user": {
+                                    "identity": "user@example.com",
+                                    "name": "Test User"
+                                },
+                                "extra_field_1": "value1",
+                                "extra_field_2": 99,
+                                "@version": "1.0.0"
+                            }
+                            """;
 
         // Act
         await SendRequestAsync(r => r
@@ -1658,31 +1669,30 @@ public class EventControllerTests : IntegrationTestsBase
         await processEventsJob.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
+        var jsonOptions = GetService<JsonSerializerOptions>();
+
         // Assert
         var events = await _eventRepository.GetAllAsync();
-        var ev = events.Documents.Single();
+        var ev = events.Documents.Single(e => !e.IsSessionStart());
 
         Assert.Equal("error", ev.Type);
         Assert.Equal("Error with mixed data", ev.Message);
 
         // Verify known data is properly deserialized
-        var userInfo = ev.GetUserIdentity();
+        var userInfo = ev.GetUserIdentity(jsonOptions);
         Assert.NotNull(userInfo);
         Assert.Equal("user@example.com", userInfo.Identity);
         Assert.Equal("Test User", userInfo.Name);
 
         // Verify version is captured
-        var version = ev.GetVersion();
+        string? version = ev.GetVersion();
         Assert.Equal("1.0.0", version);
 
         // Verify extra properties are captured if JsonExtensionData is implemented
-        if (ev.Data is not null)
+        if (ev.Data is not null && ev.Data.TryGetValue("extra_field_1", out object? value))
         {
-            if (ev.Data.ContainsKey("extra_field_1"))
-            {
-                Assert.Equal("value1", ev.Data["extra_field_1"]);
-                Assert.Equal(99, ev.Data["extra_field_2"]);
-            }
+            Assert.Equal("value1", value);
+            Assert.Equal(99L, ev.Data["extra_field_2"]);
         }
     }
 
@@ -1690,18 +1700,21 @@ public class EventControllerTests : IntegrationTestsBase
     public async Task PostEvent_WithExtraComplexProperties_CapturedAsObjects()
     {
         // Arrange: Create a JSON event with complex extra properties (nested objects)
-        var json = @"{
-            ""type"": ""log"",
-            ""message"": ""Test with complex properties"",
-            ""metadata"": {
-                ""key1"": ""value1"",
-                ""key2"": 42,
-                ""nested"": {
-                    ""inner"": ""value""
-                }
-            },
-            ""tags_list"": [""tag1"", ""tag2"", ""tag3""]
-        }";
+        /* language=json */
+        const string json = """
+                            {
+                                "type": "log",
+                                "message": "Test with complex properties",
+                                "metadata": {
+                                    "key1": "value1",
+                                    "key2": 42,
+                                    "nested": {
+                                        "inner": "value"
+                                    }
+                                },
+                                "tags_list": ["tag1", "tag2", "tag3"]
+                            }
+                            """;
 
         // Act
         await SendRequestAsync(r => r
@@ -1732,13 +1745,16 @@ public class EventControllerTests : IntegrationTestsBase
     public async Task PostEvent_WithSnakeCaseAndPascalCaseProperties_HandledCorrectly()
     {
         // Arrange: Create a JSON event with mixed naming conventions
-        var json = @"{
-            ""type"": ""log"",
-            ""message"": ""Test naming conventions"",
-            ""reference_id"": ""ref-123"",
-            ""custom_snake_case"": ""snake_value"",
-            ""CustomPascalCase"": ""pascal_value""
-        }";
+        /* language=json */
+        const string json = """
+                            {
+                                "type": "log",
+                                "message": "Test naming conventions",
+                                "reference_id": "ref-1234567890",
+                                "custom_snake_case": "snake_value",
+                                "CustomPascalCase": "pascal_value"
+                            }
+                            """;
 
         // Act
         await SendRequestAsync(r => r
@@ -1759,6 +1775,6 @@ public class EventControllerTests : IntegrationTestsBase
 
         Assert.Equal("log", ev.Type);
         Assert.Equal("Test naming conventions", ev.Message);
-        Assert.Equal("ref-123", ev.ReferenceId);
+        Assert.Equal("ref-1234567890", ev.ReferenceId);
     }
 }

@@ -224,19 +224,19 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         var results = await _eventRepository.GetAllAsync(o => o.PageLimit(15));
         Assert.Equal(9, results.Total);
         Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
-        Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd() && e.GetUserIdentity()?.Identity == "blake@exceptionless.io"));
-        Assert.Single(results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId()) && e.GetUserIdentity()?.Identity == "eric@exceptionless.io").Select(e => e.GetSessionId()).Distinct());
+        Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd() && e.GetUserIdentity(_jsonOptions)?.Identity == "blake@exceptionless.io"));
+        Assert.Single(results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId()) && e.GetUserIdentity(_jsonOptions)?.Identity == "eric@exceptionless.io").Select(e => e.GetSessionId()).Distinct());
         Assert.Equal(1, results.Documents.Count(e => String.IsNullOrEmpty(e.GetSessionId())));
         Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
 
         var sessionStarts = results.Documents.Where(e => e.IsSessionStart()).ToList();
         Assert.Equal(2, sessionStarts.Count);
 
-        var firstUserSessionStartEvents = sessionStarts.Single(e => e.GetUserIdentity()?.Identity == "blake@exceptionless.io");
+        var firstUserSessionStartEvents = sessionStarts.Single(e => e.GetUserIdentity(_jsonOptions)?.Identity == "blake@exceptionless.io");
         Assert.Equal((decimal)(lastEventDate - firstEventDate).TotalSeconds, firstUserSessionStartEvents.Value);
         Assert.True(firstUserSessionStartEvents.HasSessionEndTime());
 
-        var secondUserSessionStartEvents = sessionStarts.Single(e => e.GetUserIdentity()?.Identity == "eric@exceptionless.io");
+        var secondUserSessionStartEvents = sessionStarts.Single(e => e.GetUserIdentity(_jsonOptions)?.Identity == "eric@exceptionless.io");
         Assert.Equal((decimal)(lastEventDate - firstEventDate).TotalSeconds, secondUserSessionStartEvents.Value);
         Assert.False(secondUserSessionStartEvents.HasSessionEndTime());
     }
@@ -895,8 +895,8 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         var requestInfo = context.Event.GetRequestInfo(_jsonOptions);
         var environmentInfo = context.Event.GetEnvironmentInfo(_jsonOptions);
-        var userInfo = context.Event.GetUserIdentity();
-        var userDescription = context.Event.GetUserDescription();
+        var userInfo = context.Event.GetUserIdentity(_jsonOptions);
+        var userDescription = context.Event.GetUserDescription(_jsonOptions);
 
         Assert.Equal("/test", requestInfo?.Path);
         Assert.Equal("Windows", environmentInfo?.OSName);
@@ -1163,7 +1163,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     ev.Data.Remove(key);
 
                 ev.Data.Remove(Event.KnownDataKeys.UserDescription);
-                var identity = ev.GetUserIdentity();
+                var identity = ev.GetUserIdentity(_jsonOptions);
                 if (identity?.Identity is not null)
                 {
                     if (!mappedUsers.ContainsKey(identity.Identity))

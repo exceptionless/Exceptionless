@@ -9,12 +9,7 @@ namespace Exceptionless.Core.Plugins.Formatting;
 [Priority(30)]
 public sealed class NotFoundFormattingPlugin : FormattingPluginBase
 {
-    private readonly JsonSerializerOptions _jsonOptions;
-
-    public NotFoundFormattingPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(jsonOptions, options, loggerFactory)
-    {
-        _jsonOptions = jsonOptions;
-    }
+    public NotFoundFormattingPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(jsonOptions, options, loggerFactory) { }
 
     private bool ShouldHandle(PersistentEvent ev)
     {
@@ -43,7 +38,7 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
             return null;
 
         var data = new Dictionary<string, object?> { { "Source", ev.Source } };
-        AddUserIdentitySummaryData(data, ev.GetUserIdentity());
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_jsonSerializerOptions));
 
         var ips = ev.GetIpAddresses(_jsonOptions).ToList();
         if (ips.Count > 0)
@@ -90,7 +85,7 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
             notificationType = String.Concat("critical ", notificationType);
 
         var requestInfo = ev.GetRequestInfo(_jsonOptions);
-        var attachment = new SlackMessage.SlackAttachment(ev)
+        var attachment = new SlackMessage.SlackAttachment(ev, _jsonOptions)
         {
             Color = "#BB423F",
             Fields =

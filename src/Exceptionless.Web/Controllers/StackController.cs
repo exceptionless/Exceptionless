@@ -1,3 +1,4 @@
+using System.Text.Json;
 using AutoMapper;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
@@ -21,7 +22,6 @@ using Foundatio.Repositories.Models;
 using McSherry.SemanticVersioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 
 namespace Exceptionless.Web.Controllers;
 

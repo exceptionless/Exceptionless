@@ -23,15 +23,18 @@ public static class EventExtensions
         {
             return ev.Data!.GetValue<Error>(Event.KnownDataKeys.Error, options);
         }
-        catch (Exception) { }
+        catch (Exception)
+        {
+            // Ignored
+        }
 
         return null;
     }
+
     public static bool HasSimpleError(this Event ev)
     {
         return ev.Data is not null && ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError);
     }
-
 
     public static SimpleError? GetSimpleError(this Event ev, JsonSerializerOptions options)
     {
@@ -42,7 +45,10 @@ public static class EventExtensions
         {
             return ev.Data!.GetValue<SimpleError>(Event.KnownDataKeys.SimpleError, options);
         }
-        catch (Exception) { }
+        catch (Exception)
+        {
+            // Ignored
+        }
 
         return null;
     }
@@ -56,7 +62,10 @@ public static class EventExtensions
         {
             return ev.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo, options);
         }
-        catch (Exception) { }
+        catch (Exception)
+        {
+            // Ignored
+        }
 
         return null;
     }
@@ -70,7 +79,10 @@ public static class EventExtensions
         {
             return ev.Data.GetValue<EnvironmentInfo>(Event.KnownDataKeys.EnvironmentInfo, options);
         }
-        catch (Exception) { }
+        catch (Exception)
+        {
+            // Ignored
+        }
 
         return null;
     }
@@ -171,9 +183,21 @@ public static class EventExtensions
     /// <summary>
     /// Gets the user info object from extended data.
     /// </summary>
-    public static UserInfo? GetUserIdentity(this Event ev)
+    public static UserInfo? GetUserIdentity(this Event ev, JsonSerializerOptions options)
     {
-        return ev.Data != null && ev.Data.TryGetValue(Event.KnownDataKeys.UserInfo, out object? value) ? value as UserInfo : null;
+        if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.UserInfo))
+            return null;
+
+        try
+        {
+            return ev.Data.GetValue<UserInfo>(Event.KnownDataKeys.UserInfo, options);
+        }
+        catch (Exception)
+        {
+            // Ignored
+        }
+
+        return null;
     }
 
     public static string? GetVersion(this Event ev)
@@ -195,9 +219,21 @@ public static class EventExtensions
             ev.Data[Event.KnownDataKeys.Version] = version.Trim();
     }
 
-    public static SubmissionClient? GetSubmissionClient(this Event ev)
+    public static SubmissionClient? GetSubmissionClient(this Event ev, JsonSerializerOptions options)
     {
-        return ev.Data != null && ev.Data.TryGetValue(Event.KnownDataKeys.SubmissionClient, out object? value) ? value as SubmissionClient : null;
+        if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.SubmissionClient))
+            return null;
+
+        try
+        {
+            return ev.Data.GetValue<SubmissionClient>(Event.KnownDataKeys.SubmissionClient, options);
+        }
+        catch (Exception)
+        {
+            // Ignored
+        }
+
+        return null;
     }
 
     public static bool HasLocation(this Event ev)
@@ -205,9 +241,21 @@ public static class EventExtensions
         return ev.Data != null && ev.Data.ContainsKey(Event.KnownDataKeys.Location);
     }
 
-    public static Location? GetLocation(this Event ev)
+    public static Location? GetLocation(this Event ev, JsonSerializerOptions options)
     {
-        return ev.Data != null && ev.Data.TryGetValue(Event.KnownDataKeys.Location, out object? value) ? value as Location : null;
+        if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.Location))
+            return null;
+
+        try
+        {
+            return ev.Data.GetValue<Location>(Event.KnownDataKeys.Location, options);
+        }
+        catch (Exception)
+        {
+            // Ignored
+        }
+
+        return null;
     }
 
     public static string? GetLevel(this Event ev)
@@ -253,9 +301,21 @@ public static class EventExtensions
     /// <summary>
     /// Gets the stacking info from extended data.
     /// </summary>
-    public static ManualStackingInfo? GetManualStackingInfo(this Event ev)
+    public static ManualStackingInfo? GetManualStackingInfo(this Event ev, JsonSerializerOptions options)
     {
-        return ev.Data != null && ev.Data.TryGetValue(Event.KnownDataKeys.ManualStackingInfo, out object? value) ? value as ManualStackingInfo : null;
+        if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.ManualStackingInfo))
+            return null;
+
+        try
+        {
+            return ev.Data.GetValue<ManualStackingInfo>(Event.KnownDataKeys.ManualStackingInfo, options);
+        }
+        catch (Exception)
+        {
+            // Ignored
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -363,9 +423,21 @@ public static class EventExtensions
     /// <summary>
     /// Gets the user description from extended data.
     /// </summary>
-    public static UserDescription? GetUserDescription(this Event ev)
+    public static UserDescription? GetUserDescription(this Event ev, JsonSerializerOptions options)
     {
-        return ev.Data != null && ev.Data.TryGetValue(Event.KnownDataKeys.UserDescription, out object? value) ? value as UserDescription : null;
+        if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.UserDescription))
+            return null;
+
+        try
+        {
+            return ev.Data.GetValue<UserDescription>(Event.KnownDataKeys.UserDescription, options);
+        }
+        catch (Exception)
+        {
+            // Ignored
+        }
+
+        return null;
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
@@ -17,14 +18,16 @@ public class Mailer : IMailer
     private readonly FormattingPluginManager _pluginManager;
     private readonly AppOptions _appOptions;
     private readonly TimeProvider _timeProvider;
+    private readonly JsonSerializerOptions _jsonOptions;
     private readonly ILogger _logger;
 
-    public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, AppOptions appOptions, TimeProvider timeProvider, ILogger<Mailer> logger)
+    public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, JsonSerializerOptions jsonOptions, AppOptions appOptions, TimeProvider timeProvider, ILogger<Mailer> logger)
     {
         _queue = queue;
         _pluginManager = pluginManager;
         _appOptions = appOptions;
         _timeProvider = timeProvider;
+        _jsonOptions = jsonOptions;
         _logger = logger;
     }
 
@@ -56,7 +59,7 @@ public class Mailer : IMailer
             };
 
         AddDefaultFields(ev, result.Data);
-        AddUserInfo(ev, messageData);
+        AddUserInfo(ev, messageData, _jsonOptions);
 
         const string template = "event-notice";
         await QueueMessageAsync(new MailMessage
@@ -68,10 +71,10 @@ public class Mailer : IMailer
         return true;
     }
 
-    private static void AddUserInfo(PersistentEvent ev, Dictionary<string, object?> data)
+    private static void AddUserInfo(PersistentEvent ev, Dictionary<string, object?> data, JsonSerializerOptions jsonOptions)
     {
-        var ud = ev.GetUserDescription();
-        var ui = ev.GetUserIdentity();
+        var ud = ev.GetUserDescription(jsonOptions);
+        var ui = ev.GetUserIdentity(jsonOptions);
         if (!String.IsNullOrEmpty(ud?.Description))
             data["UserDescription"] = ud.Description;
 

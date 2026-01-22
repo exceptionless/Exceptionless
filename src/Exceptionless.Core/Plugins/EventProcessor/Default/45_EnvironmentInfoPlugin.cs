@@ -24,7 +24,7 @@ public sealed class EnvironmentInfoPlugin : EventProcessorPluginBase
 
         if (context.IncludePrivateInformation)
         {
-            var submissionClient = context.Event.GetSubmissionClient();
+            var submissionClient = context.Event.GetSubmissionClient(_jsonOptions);
             AddClientIpAddress(environment, submissionClient);
         }
         else

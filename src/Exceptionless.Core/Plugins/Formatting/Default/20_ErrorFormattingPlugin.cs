@@ -9,12 +9,7 @@ namespace Exceptionless.Core.Plugins.Formatting;
 [Priority(20)]
 public sealed class ErrorFormattingPlugin : FormattingPluginBase
 {
-    private readonly JsonSerializerOptions _jsonOptions;
-
-    public ErrorFormattingPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(jsonOptions, options, loggerFactory)
-    {
-        _jsonOptions = jsonOptions;
-    }
+    public ErrorFormattingPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(jsonOptions, options, loggerFactory) { }
 
     private bool ShouldHandle(PersistentEvent ev)
     {
@@ -69,7 +64,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
             return null;
 
         var data = new Dictionary<string, object?> { { "Message", ev.Message } };
-        AddUserIdentitySummaryData(data, ev.GetUserIdentity());
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_jsonSerializerOptions));
 
         if (!String.IsNullOrEmpty(stackingTarget.Error.Type))
         {
@@ -153,7 +148,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         if (isCritical)
             notificationType = String.Concat("critical ", notificationType);
 
-        var attachment = new SlackMessage.SlackAttachment(ev)
+        var attachment = new SlackMessage.SlackAttachment(ev, _jsonSerializerOptions)
         {
             Color = "#BB423F",
             Fields =

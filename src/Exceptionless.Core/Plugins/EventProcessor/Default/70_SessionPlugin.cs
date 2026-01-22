@@ -32,7 +32,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
 
     public override Task EventBatchProcessingAsync(ICollection<EventContext> contexts)
     {
-        var autoSessionEvents = contexts.Where(c => !String.IsNullOrWhiteSpace(c.Event.GetUserIdentity()?.Identity) && String.IsNullOrEmpty(c.Event.GetSessionId())).ToList();
+        var autoSessionEvents = contexts.Where(c => !String.IsNullOrWhiteSpace(c.Event.GetUserIdentity(_jsonOptions)?.Identity) && String.IsNullOrEmpty(c.Event.GetSessionId())).ToList();
         var manualSessionsEvents = contexts.Where(c => !String.IsNullOrEmpty(c.Event.GetSessionId())).ToList();
 
         return Task.WhenAll(
@@ -125,7 +125,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
     {
         var identityGroups = contexts
             .OrderBy(c => c.Event.Date)
-            .GroupBy(c => c.Event.GetUserIdentity()?.Identity);
+            .GroupBy(c => c.Event.GetUserIdentity(_jsonOptions)?.Identity);
 
         foreach (var identityGroup in identityGroups)
         {

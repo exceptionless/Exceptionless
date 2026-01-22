@@ -192,8 +192,8 @@ public static class PersistentEventExtensions
         if (sessionId is not null)
             startEvent.SetSessionId(sessionId);
         if (includePrivateInformation)
-            startEvent.SetUserIdentity(source.GetUserIdentity());
-        startEvent.SetLocation(source.GetLocation());
+            startEvent.SetUserIdentity(source.GetUserIdentity(jsonOptions));
+        startEvent.SetLocation(source.GetLocation(jsonOptions));
         startEvent.SetVersion(source.GetVersion());
 
         var ei = source.GetEnvironmentInfo(jsonOptions);

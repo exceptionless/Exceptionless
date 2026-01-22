@@ -9,12 +9,7 @@ namespace Exceptionless.Core.Plugins.Formatting;
 [Priority(99)]
 public sealed class DefaultFormattingPlugin : FormattingPluginBase
 {
-    private readonly JsonSerializerOptions _jsonOptions;
-
-    public DefaultFormattingPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(jsonOptions, options, loggerFactory)
-    {
-        _jsonOptions = jsonOptions;
-    }
+    public DefaultFormattingPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(jsonOptions, options, loggerFactory) { }
 
     public override string GetStackTitle(PersistentEvent ev)
     {
@@ -42,7 +37,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
                 { "Type", ev.Type }
             };
 
-        AddUserIdentitySummaryData(data, ev.GetUserIdentity());
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_jsonSerializerOptions));
 
         return new SummaryData { Id = ev.Id, TemplateKey = "event-summary", Data = data };
     }
@@ -73,7 +68,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
         if (!String.IsNullOrEmpty(ev.Source))
             data.Add("Source", ev.Source.Truncate(60));
 
-        var requestInfo = ev.GetRequestInfo(_jsonOptions);
+        var requestInfo = ev.GetRequestInfo(_jsonSerializerOptions);
         if (requestInfo is not null)
             data.Add("Url", requestInfo.GetFullPath(true, true, true));
 
@@ -95,7 +90,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
         if (isCritical)
             notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
 
-        var attachment = new SlackMessage.SlackAttachment(ev);
+        var attachment = new SlackMessage.SlackAttachment(ev, _jsonSerializerOptions);
         if (!String.IsNullOrEmpty(ev.Message))
             attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Message", Value = ev.Message.Truncate(60) });
 

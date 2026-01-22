@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Plugins.Formatting;
@@ -37,6 +38,7 @@ public class EventDataBuilder
     private readonly FormattingPluginManager _formattingPluginManager;
     private readonly ISerializer _serializer;
     private readonly TimeProvider _timeProvider;
+    private readonly JsonSerializerOptions _jsonOptions;
     private readonly ICollection<Action<Stack>> _stackMutations;
     private int _additionalEventsToCreate = 0;
     private readonly PersistentEvent _event = new();
@@ -44,11 +46,12 @@ public class EventDataBuilder
     private EventDataBuilder? _stackEventBuilder;
     private bool _isFirstOccurrenceSet = false;
 
-    public EventDataBuilder(FormattingPluginManager formattingPluginManager, ISerializer serializer, TimeProvider timeProvider)
+    public EventDataBuilder(FormattingPluginManager formattingPluginManager, ISerializer serializer, JsonSerializerOptions jsonOptions, TimeProvider timeProvider)
     {
         _stackMutations = new List<Action<Stack>>();
         _formattingPluginManager = formattingPluginManager;
         _serializer = serializer;
+        _jsonOptions = jsonOptions;
         _timeProvider = timeProvider;
     }
 
@@ -531,7 +534,7 @@ public class EventDataBuilder
         if (_stack.FirstOccurrence < _event.Date)
             _event.IsFirstOccurrence = false;
 
-        var msi = _event.GetManualStackingInfo();
+        var msi = _event.GetManualStackingInfo(_jsonOptions);
         if (msi is not null)
         {
             _stack.Title = msi.Title!;

@@ -29,7 +29,7 @@ public class ITextSerializerContractTests : TestWithServices
         const string expectedJson = """{"name":"test","value":42}""";
 
         // Act
-        var json = _serializer.SerializeToString(model);
+        string? json = _serializer.SerializeToString(model);
 
         // Assert
         Assert.Equal(expectedJson, json);
@@ -42,7 +42,7 @@ public class ITextSerializerContractTests : TestWithServices
         SimpleModel? model = null;
 
         // Act
-        var json = _serializer.SerializeToString(model);
+        string? json = _serializer.SerializeToString(model);
 
         // Assert
         Assert.Null(json);
@@ -58,7 +58,7 @@ public class ITextSerializerContractTests : TestWithServices
         const string expectedJson = """{"name":"","value":0}""";
 
         // Act
-        var json = _serializer.SerializeToString(model);
+        string? json = _serializer.SerializeToString(model);
 
         // Assert
         Assert.Equal(expectedJson, json);
@@ -74,7 +74,7 @@ public class ITextSerializerContractTests : TestWithServices
         const string expectedJson = """{"name":"line1\nline2\ttab\"quote","value":0}""";
 
         // Act
-        var json = _serializer.SerializeToString(model);
+        string? json = _serializer.SerializeToString(model);
 
         // Assert
         Assert.Equal(expectedJson, json);
@@ -88,10 +88,10 @@ public class ITextSerializerContractTests : TestWithServices
 
         /* language=json */
         const string expectedJson = """{"name":"test","value":42}""";
-        var expectedBytes = System.Text.Encoding.UTF8.GetBytes(expectedJson);
+        byte[] expectedBytes = System.Text.Encoding.UTF8.GetBytes(expectedJson);
 
         // Act
-        var bytes = _serializer.SerializeToBytes(model);
+        byte[]? bytes = _serializer.SerializeToBytes(model);
 
         // Assert
         Assert.Equal(expectedBytes, bytes.ToArray());
@@ -105,10 +105,10 @@ public class ITextSerializerContractTests : TestWithServices
 
         /* language=json */
         const string expectedJson = """{"name":"日本語","value":1}""";
-        var expectedBytes = System.Text.Encoding.UTF8.GetBytes(expectedJson);
+        byte[] expectedBytes = System.Text.Encoding.UTF8.GetBytes(expectedJson);
 
         // Act
-        var bytes = _serializer.SerializeToBytes(model);
+        byte[]? bytes = _serializer.SerializeToBytes(model);
 
         // Assert
         Assert.Equal(expectedBytes, bytes.ToArray());
@@ -130,7 +130,7 @@ public class ITextSerializerContractTests : TestWithServices
         // Assert
         stream.Position = 0;
         using var reader = new StreamReader(stream);
-        var json = reader.ReadToEnd();
+        string json = reader.ReadToEnd();
         Assert.Equal(expectedJson, json);
     }
 
@@ -168,7 +168,7 @@ public class ITextSerializerContractTests : TestWithServices
     public void Deserialize_WithEmptyString_ReturnsNull()
     {
         // Arrange
-        var json = string.Empty;
+        string json = String.Empty;
 
         // Act
         var model = _serializer.Deserialize<SimpleModel>(json);
@@ -242,7 +242,7 @@ public class ITextSerializerContractTests : TestWithServices
         const string expectedJson = """{"name":"round-trip","value":789}""";
 
         // Act
-        var json = _serializer.SerializeToString(original);
+        string? json = _serializer.SerializeToString(original);
         var deserialized = _serializer.Deserialize<SimpleModel>(json);
 
         // Assert
@@ -259,7 +259,7 @@ public class ITextSerializerContractTests : TestWithServices
         var original = new SimpleModel("bytes-trip", 321);
 
         // Act
-        var bytes = _serializer.SerializeToBytes(original);
+        byte[]? bytes = _serializer.SerializeToBytes(original);
         using var stream = new MemoryStream(bytes.ToArray());
         var deserialized = _serializer.Deserialize<SimpleModel>(stream);
 
@@ -325,7 +325,7 @@ public class ITextSerializerContractTests : TestWithServices
         const string expectedJson = """{"id":"complex1","tags":["tag1","tag2"],"metadata":{"key1":"value1","key2":42},"nested":{"description":"nested desc","priority":5}}""";
 
         // Act
-        var json = _serializer.SerializeToString(model);
+        string? json = _serializer.SerializeToString(model);
 
         // Assert
         Assert.Equal(expectedJson, json);
