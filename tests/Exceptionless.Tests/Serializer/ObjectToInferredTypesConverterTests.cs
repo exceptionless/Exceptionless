@@ -111,7 +111,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
         // Assert
         Assert.NotNull(result);
         Assert.IsType<decimal>(result["price"]);
-        Assert.Equal(99.95, result["price"]);
+        Assert.Equal(99.95m, result["price"]);
     }
 
     [Fact]
@@ -127,7 +127,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
         // Assert
         Assert.NotNull(result);
         Assert.IsType<decimal>(result["value"]);
-        Assert.Equal(1.23e10, result["value"]);
+        Assert.Equal(12300000000m, (decimal)result["value"]!);
     }
 
     [Fact]
@@ -572,7 +572,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
         Assert.Equal("test", roundTripped["name"]);
         Assert.Equal(42, roundTripped["count"]);
         Assert.True((bool)roundTripped["active"]!);
-        Assert.Equal(99.95, roundTripped["price"]);
+        Assert.Equal(99.95m, (decimal)roundTripped["price"]!);
 
         var tags = Assert.IsType<List<object?>>(roundTripped["tags"]);
         Assert.Equal(2, tags.Count);
