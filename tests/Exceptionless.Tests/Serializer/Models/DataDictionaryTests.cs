@@ -394,7 +394,7 @@ public class DataDictionaryTests : TestWithServices
         // Assert
         Assert.NotNull(deserialized);
         Assert.Equal("hello", deserialized["string_value"]);
-        Assert.Equal(42L, deserialized["int_value"]);
+        Assert.Equal(42, deserialized["int_value"]);
         Assert.True(deserialized["bool_value"] as bool?);
     }
 
@@ -587,8 +587,8 @@ public class DataDictionaryTests : TestWithServices
         Assert.Equal("user@test.com", userInfo.Identity);
 
         Assert.Equal("1.0.0", deserialized["@version"]);
-        Assert.Equal(42L, deserialized["count"]);
-        Assert.Equal(true, deserialized["enabled"]);
+        Assert.Equal(42, deserialized["count"]);
+        Assert.True(deserialized["enabled"] as bool?);
     }
 
     [Fact]
@@ -616,7 +616,7 @@ public class DataDictionaryTests : TestWithServices
         Assert.Equal("user@test.com", result.Identity);
         Assert.NotNull(result.Data);
         Assert.Equal("custom_value", result.Data["custom_field"]);
-        Assert.Equal(100L, result.Data["score"]);
+        Assert.Equal(100, result.Data["score"]);
     }
 
     [Fact]

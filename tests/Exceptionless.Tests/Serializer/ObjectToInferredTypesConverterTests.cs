@@ -62,8 +62,8 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
 
         // Assert
         Assert.NotNull(result);
-        Assert.IsType<long>(result["count"]);
-        Assert.Equal(42L, result["count"]);
+        Assert.IsType<int>(result["count"]);
+        Assert.Equal(42, result["count"]);
     }
 
     [Fact]
@@ -94,8 +94,8 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
 
         // Assert
         Assert.NotNull(result);
-        Assert.IsType<long>(result["negative"]);
-        Assert.Equal(-12345L, result["negative"]);
+        Assert.IsType<int>(result["negative"]);
+        Assert.Equal(-12345, result["negative"]);
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
 
         // Assert
         Assert.NotNull(result);
-        Assert.IsType<double>(result["price"]);
+        Assert.IsType<decimal>(result["price"]);
         Assert.Equal(99.95, result["price"]);
     }
 
@@ -126,7 +126,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
 
         // Assert
         Assert.NotNull(result);
-        Assert.IsType<double>(result["value"]);
+        Assert.IsType<decimal>(result["value"]);
         Assert.Equal(1.23e10, result["value"]);
     }
 
@@ -335,7 +335,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
         Assert.NotNull(result);
         var data = Assert.IsType<Dictionary<string, object?>>(result["data"]);
 
-        Assert.IsType<long>(data["count"]);
+        Assert.IsType<int>(data["count"]);
         Assert.IsType<string>(data["name"]);
         Assert.IsType<bool>(data["active"]);
         Assert.Null(data["nullable"]);
@@ -374,8 +374,8 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
         // Assert
         Assert.NotNull(result);
         var numbers = Assert.IsType<List<object?>>(result["numbers"]);
-        Assert.All(numbers, n => Assert.IsType<long>(n));
-        Assert.Equal(new List<object?> { 1L, 2L, 3L, 4L, 5L }, numbers);
+        Assert.All(numbers, n => Assert.IsType<int>(n));
+        Assert.Equal([1, 2, 3, 4, 5], numbers);
     }
 
     [Fact]
@@ -393,10 +393,10 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
         var mixed = Assert.IsType<List<object?>>(result["mixed"]);
         Assert.Equal(5, mixed.Count);
         Assert.IsType<string>(mixed[0]);
-        Assert.IsType<long>(mixed[1]);
+        Assert.IsType<int>(mixed[1]);
         Assert.IsType<bool>(mixed[2]);
         Assert.Null(mixed[3]);
-        Assert.IsType<double>(mixed[4]);
+        Assert.IsType<decimal>(mixed[4]);
     }
 
     [Fact]
@@ -423,11 +423,11 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
 
         var first = Assert.IsType<Dictionary<string, object?>>(items[0]);
         Assert.Equal("first", first["name"]);
-        Assert.Equal(1L, first["value"]);
+        Assert.Equal(1, first["value"]);
 
         var second = Assert.IsType<Dictionary<string, object?>>(items[1]);
         Assert.Equal("second", second["name"]);
-        Assert.Equal(2L, second["value"]);
+        Assert.Equal(2, second["value"]);
     }
 
     [Fact]
@@ -446,7 +446,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
         Assert.Equal(3, matrix.Count);
 
         var row1 = Assert.IsType<List<object?>>(matrix[0]);
-        Assert.Equal(new List<object?> { 1L, 2L }, row1);
+        Assert.Equal([1, 2], row1);
     }
 
     [Fact]
@@ -482,7 +482,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
         // Nested dictionaries created by our converter ARE case-insensitive
         Assert.Equal("test", result["username"]);
         Assert.Equal("test@example.com", result["USER_EMAIL"]);
-        Assert.Equal(123L, result["USERID"]);
+        Assert.Equal(123, result["USERID"]);
     }
 
     [Fact]
@@ -570,7 +570,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
         // Assert
         Assert.NotNull(roundTripped);
         Assert.Equal("test", roundTripped["name"]);
-        Assert.Equal(42L, roundTripped["count"]);
+        Assert.Equal(42, roundTripped["count"]);
         Assert.True((bool)roundTripped["active"]!);
         Assert.Equal(99.95, roundTripped["price"]);
 
@@ -579,7 +579,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
 
         var nested = Assert.IsType<Dictionary<string, object?>>(roundTripped["nested"]);
         Assert.Equal("value", nested["inner"]);
-        Assert.Equal(123L, nested["number"]);
+        Assert.Equal(123, nested["number"]);
     }
 
     [Fact]
@@ -647,6 +647,6 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
 
         // Assert - Number exceeding long.MaxValue becomes double
         Assert.NotNull(result2);
-        Assert.IsType<double>(result2["value"]);
+        Assert.IsType<decimal>(result2["value"]);
     }
 }

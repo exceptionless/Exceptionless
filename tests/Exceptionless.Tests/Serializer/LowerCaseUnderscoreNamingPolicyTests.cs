@@ -27,15 +27,20 @@ public class LowerCaseUnderscoreNamingPolicyTests : TestWithLoggingBase
     [Fact]
     public void NamingPolicy_Instance_ReturnsSingleton()
     {
+        // Arrange
         var instance1 = LowerCaseUnderscoreNamingPolicy.Instance;
+
+        // Act
         var instance2 = LowerCaseUnderscoreNamingPolicy.Instance;
 
+        // Assert
         Assert.Same(instance1, instance2);
     }
 
     [Fact]
     public void NamingPolicy_AppOptionsProperties_SerializesCorrectly()
     {
+        // Arrange
         var model = new AppOptionsModel
         {
             BaseURL = "https://example.com",
@@ -44,17 +49,19 @@ public class LowerCaseUnderscoreNamingPolicyTests : TestWithLoggingBase
             WebsiteMode = "production"
         };
 
+        // Act
         string json = JsonSerializer.Serialize(model, _jsonSerializerOptions);
 
-        Assert.Contains("\"base_u_r_l\":\"https://example.com\"", json);
-        Assert.Contains("\"enable_s_s_l\":true", json);
-        Assert.Contains("\"maximum_retention_days\":180", json);
-        Assert.Contains("\"website_mode\":\"production\"", json);
+        // Assert
+        /* language=json */
+        const string expected = """{"base_u_r_l":"https://example.com","enable_s_s_l":true,"maximum_retention_days":180,"website_mode":"production"}""";
+        Assert.Equal(expected, json);
     }
 
     [Fact]
     public void NamingPolicy_EnvironmentProperties_SerializesCorrectly()
     {
+        // Arrange
         // Properties from event-serialization-input.json
         var model = new EnvironmentModel
         {
@@ -64,17 +71,19 @@ public class LowerCaseUnderscoreNamingPolicyTests : TestWithLoggingBase
             MachineName = "TEST-MACHINE"
         };
 
+        // Act
         string json = JsonSerializer.Serialize(model, _jsonSerializerOptions);
 
-        Assert.Contains("\"o_s_name\":\"Windows 11\"", json);
-        Assert.Contains("\"o_s_version\":\"10.0.22621\"", json);
-        Assert.Contains("\"i_p_address\":\"192.168.1.100\"", json);
-        Assert.Contains("\"machine_name\":\"TEST-MACHINE\"", json);
+        // Assert
+        /* language=json */
+        const string expected = """{"o_s_name":"Windows 11","o_s_version":"10.0.22621","i_p_address":"192.168.1.100","machine_name":"TEST-MACHINE"}""";
+        Assert.Equal(expected, json);
     }
 
     [Fact]
     public void ExternalAuthInfo_Serialize_UsesCamelCasePropertyNames()
     {
+        // Arrange
         var authInfo = new ExternalAuthInfo
         {
             ClientId = "test-client",
@@ -83,22 +92,27 @@ public class LowerCaseUnderscoreNamingPolicyTests : TestWithLoggingBase
             InviteToken = "token123"
         };
 
+        // Act
         string json = JsonSerializer.Serialize(authInfo, _jsonSerializerOptions);
 
+        // Assert
         // ExternalAuthInfo uses explicit JsonPropertyName attributes (camelCase)
-        Assert.Contains("\"clientId\":\"test-client\"", json);
-        Assert.Contains("\"code\":\"auth-code\"", json);
-        Assert.Contains("\"redirectUri\":\"https://example.com/callback\"", json);
-        Assert.Contains("\"inviteToken\":\"token123\"", json);
+        /* language=json */
+        const string expected = """{"clientId":"test-client","code":"auth-code","redirectUri":"https://example.com/callback","inviteToken":"token123"}""";
+        Assert.Equal(expected, json);
     }
 
     [Fact]
     public void ExternalAuthInfo_Deserialize_ParsesCamelCaseJson()
     {
-        string json = """{"clientId":"my-client","code":"my-code","redirectUri":"https://test.com"}""";
+        // Arrange
+        /* language=json */
+        const string json = """{"clientId": "my-client", "code": "my-code", "redirectUri": "https://test.com"}""";
 
+        // Act
         var authInfo = JsonSerializer.Deserialize<ExternalAuthInfo>(json, _jsonSerializerOptions);
 
+        // Assert
         Assert.NotNull(authInfo);
         Assert.Equal("my-client", authInfo.ClientId);
         Assert.Equal("my-code", authInfo.Code);
@@ -109,24 +123,32 @@ public class LowerCaseUnderscoreNamingPolicyTests : TestWithLoggingBase
     [Fact]
     public void Delta_Deserialize_SnakeCaseJson_SetsPropertyValues()
     {
-        string json = """{"data":"TestValue","is_active":true}""";
+        // Arrange
+        /* language=json */
+        const string json = """{"data": "TestValue", "is_active": true}""";
 
+        // Act
         var delta = JsonSerializer.Deserialize<Delta<SimpleModel>>(json, _jsonSerializerOptions);
 
+        // Assert
         Assert.NotNull(delta);
         Assert.True(delta.TryGetPropertyValue("Data", out object? dataValue));
         Assert.Equal("TestValue", dataValue);
         Assert.True(delta.TryGetPropertyValue("IsActive", out object? isActiveValue));
-        Assert.Equal(true, isActiveValue);
+        Assert.True(isActiveValue as bool?);
     }
 
     [Fact]
     public void Delta_Deserialize_PartialUpdate_OnlyTracksProvidedProperties()
     {
-        string json = """{"is_active":false}""";
+        // Arrange
+        /* language=json */
+        const string json = """{"is_active": false}""";
 
+        // Act
         var delta = JsonSerializer.Deserialize<Delta<SimpleModel>>(json, _jsonSerializerOptions);
 
+        // Assert
         Assert.NotNull(delta);
         var changedProperties = delta.GetChangedPropertyNames();
         Assert.Single(changedProperties);
@@ -136,20 +158,29 @@ public class LowerCaseUnderscoreNamingPolicyTests : TestWithLoggingBase
     [Fact]
     public void StackStatus_Serialize_UsesStringValue()
     {
+        // Arrange
         var stack = new StackStatusModel { Status = StackStatus.Fixed };
 
+        // Act
         string json = JsonSerializer.Serialize(stack, _jsonSerializerOptions);
 
-        Assert.Contains("\"status\":\"fixed\"", json);
+        // Assert
+        /* language=json */
+        const string expected = """{"status":"fixed"}""";
+        Assert.Equal(expected, json);
     }
 
     [Fact]
     public void StackStatus_Deserialize_ParsesStringValue()
     {
-        string json = """{"status":"regressed"}""";
+        // Arrange
+        /* language=json */
+        const string json = """{"status": "regressed"}""";
 
+        // Act
         var model = JsonSerializer.Deserialize<StackStatusModel>(json, _jsonSerializerOptions);
 
+        // Assert
         Assert.NotNull(model);
         Assert.Equal(StackStatus.Regressed, model.Status);
     }
