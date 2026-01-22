@@ -32,6 +32,7 @@ description: |
 - **Namespaces**: File-scoped (`namespace Foo;`)
 - **Usings**: Outside namespace
 - **Braces**: Always use, even for single-line blocks
+- **No `#region`**: Never use `#region`/`#endregion` directives — they hide code and discourage refactoring
 
 ## Async Patterns
 
