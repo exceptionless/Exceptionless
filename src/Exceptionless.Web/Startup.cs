@@ -124,8 +124,8 @@ public class Startup
 
                 return OpenApiOptions.CreateDefaultSchemaReferenceId(typeInfo);
             };
-            // TODO: Figure out if there is a better way to handle document info.
-            //o.AddDocumentTransformer<DocumentInfoTransformer>();
+
+            o.AddDocumentTransformer<DocumentInfoTransformer>();
             o.AddDocumentTransformer<RemoveProblemJsonFromSuccessResponsesTransformer>();
             o.AddOperationTransformer<RequestBodyContentOperationTransformer>();
             o.AddOperationTransformer<XmlDocumentationOperationTransformer>();
@@ -330,23 +330,8 @@ public class Startup
             endpoints.MapOpenApi("/docs/v2/openapi.json");
             endpoints.MapScalarApiReference("/docs", o =>
             {
-                o.WithTitle("Exceptionless API")
-                    .WithTheme(ScalarTheme.Default)
-                    .WithOpenApiRoutePattern("/docs/{documentName}/openapi.json")
+                o.WithOpenApiRoutePattern("/docs/{documentName}/openapi.json")
                     .AddDocument("v2", "Exceptionless API", "/docs/{documentName}/openapi.json", true)
-                    .AddHttpAuthentication("Basic", basic =>
-                    {
-                        basic.Description = "Basic HTTP Authentication";
-                    })
-                    .AddHttpAuthentication("Bearer", bearer =>
-                    {
-                        bearer.Description = "Authorization token. Example: \"Bearer {apikey}\"";
-                    })
-                    .AddApiKeyAuthentication("Token", apiKey =>
-                    {
-                        apiKey.Description = "Authorization token. Example: \"Bearer {apikey}\"";
-                        apiKey.Name = "Authorization";
-                    })
                     .AddPreferredSecuritySchemes("Bearer");
             });
 

@@ -41,6 +41,7 @@ public class DocumentInfoTransformer : IOpenApiDocumentTransformer
             {
                 Description = "Authorization token. Example: \"Bearer {apikey}\"",
                 Scheme = "bearer",
+                In = ParameterLocation.Header,
                 Type = SecuritySchemeType.Http
             },
             ["Token"] = new OpenApiSecurityScheme
@@ -52,15 +53,7 @@ public class DocumentInfoTransformer : IOpenApiDocumentTransformer
             }
         };
 
-        // Add top-level security requirement (applies to all operations)
         document.Security ??= [];
-        document.Security.Add(new OpenApiSecurityRequirement
-        {
-            [new OpenApiSecuritySchemeReference("Basic", document)] = [],
-            [new OpenApiSecuritySchemeReference("Bearer", document)] = [],
-            [new OpenApiSecuritySchemeReference("Token", document)] = []
-        });
-
         return Task.CompletedTask;
     }
 }
