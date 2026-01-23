@@ -334,8 +334,17 @@ public class Startup
                     .WithTheme(ScalarTheme.Default)
                     .WithOpenApiRoutePattern("/docs/{documentName}/openapi.json")
                     .AddDocument("v2", "Exceptionless API", "/docs/{documentName}/openapi.json", true)
+                    .AddHttpAuthentication("Basic", basic =>
+                    {
+                        basic.Description = "Basic HTTP Authentication";
+                    })
+                    .AddHttpAuthentication("Bearer", bearer =>
+                    {
+                        bearer.Description = "Authorization token. Example: \"Bearer {apikey}\"";
+                    })
                     .AddApiKeyAuthentication("Token", apiKey =>
                     {
+                        apiKey.Description = "Authorization token. Example: \"Bearer {apikey}\"";
                         apiKey.Name = "Authorization";
                     })
                     .AddPreferredSecuritySchemes("Bearer");
