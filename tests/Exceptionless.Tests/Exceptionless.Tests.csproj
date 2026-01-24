@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Exceptionless.RandomData" Version="1.2.2" />
-    <PackageReference Include="Foundatio.Xunit.v3" Version="13.0.0-beta1.1" />
+    <PackageReference Include="Foundatio.Xunit.v3" Version="13.0.0-beta1.7" />
 
     <PackageReference Include="FluentRest.NewtonsoftJson" Version="11.0.0" />
 
