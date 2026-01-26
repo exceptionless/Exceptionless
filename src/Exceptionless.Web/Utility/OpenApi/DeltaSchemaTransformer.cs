@@ -11,6 +11,8 @@ namespace Exceptionless.Web.Utility.OpenApi;
 /// </summary>
 public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
 {
+    private static readonly NullabilityInfoContext NullabilityContext = new();
+
     public Task TransformAsync(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
     {
         var type = context.JsonTypeInfo.Type;
@@ -35,7 +37,8 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
             if (!property.CanRead || !property.CanWrite)
                 continue;
 
-            var propertySchema = CreateSchemaForType(property.PropertyType);
+            bool isNullable = IsPropertyNullable(property);
+            var propertySchema = CreateSchemaForType(property.PropertyType, isNullable);
             string propertyName = property.Name.ToLowerUnderscoredWords();
 
             schema.Properties[propertyName] = propertySchema;
@@ -52,16 +55,41 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
         return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Delta<>);
     }
 
-    private static OpenApiSchema CreateSchemaForType(Type type)
+    private static bool IsPropertyNullable(PropertyInfo property)
+    {
+        // Check for Nullable<T> value types
+        if (Nullable.GetUnderlyingType(property.PropertyType) is not null)
+            return true;
+
+        // Check for nullable reference types using NullabilityInfo
+        try
+        {
+            var nullabilityInfo = NullabilityContext.Create(property);
+            return nullabilityInfo.WriteState == NullabilityState.Nullable;
+        }
+        catch
+        {
+            // If we can't determine nullability, assume not nullable
+            return false;
+        }
+    }
+
+    private static OpenApiSchema CreateSchemaForType(Type type, bool isNullable)
     {
         var schema = new OpenApiSchema();
         JsonSchemaType schemaType = default;
 
-        // Handle nullable types
+        // Handle nullable value types (int?, DateTime?, etc.)
         var underlyingType = Nullable.GetUnderlyingType(type);
         if (underlyingType is not null)
         {
             type = underlyingType;
+            isNullable = true;
+        }
+
+        // Add null type if nullable
+        if (isNullable)
+        {
             schemaType |= JsonSchemaType.Null;
         }
 
