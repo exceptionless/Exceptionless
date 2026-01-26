@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generateApi } from 'swagger-typescript-api';
@@ -9,12 +9,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 const outputDir = path.resolve(rootDir, 'src/lib/generated');
 
-const swaggerUrl = process.env.SWAGGER_URL || 'http://localhost:5200/docs/v2/swagger.json';
+// SWAGGER_URL can be an HTTP URL or a file path (for regenerating from baseline during development)
+const swaggerSource = process.env.SWAGGER_URL || 'http://localhost:5200/docs/v2/openapi.json';
+const isLocalFile = swaggerSource.startsWith('/') || swaggerSource.startsWith('.');
+
+if (isLocalFile && !existsSync(swaggerSource)) {
+    console.error(`Error: File not found: ${swaggerSource}`);
+    process.exit(1);
+}
 
 const FILE_PREFIX_PATTERN = /^\/\* eslint-disable \*\/\n\/\* tslint:disable \*\/\n\/\/ @ts-nocheck\n\/\*[\s\S]*?\*\/\n\n/;
 
 async function generate() {
-    console.log('Generating API types and schemas from:', swaggerUrl);
+    console.log('Generating API types and schemas from:', swaggerSource, isLocalFile ? '(local file)' : '(URL)');
 
     try {
         const result = await generateApi({
@@ -38,7 +45,7 @@ async function generate() {
             templates: path.resolve(rootDir, 'api-templates'),
             toJS: false,
             typeSuffix: '',
-            url: swaggerUrl
+            ...(isLocalFile ? { input: path.resolve(swaggerSource) } : { url: swaggerSource })
         });
 
         console.log('Generated files:');
