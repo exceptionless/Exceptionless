@@ -28,6 +28,15 @@ src/
 tests/                         # C# tests + HTTP samples
 ```
 
+## Continuous Improvement
+
+Each time you complete a task or learn important information about the project, you must update the `AGENTS.md`, `README.md`, or relevant skill files. **Only update skills if they are owned by us** (verify via `.github/update-skills.ps1` which lists third-party skills). You are **forbidden** from updating skills, configurations, or instructions maintained by third parties/external libraries.
+
+If you encounter recurring questions or patterns during planning, document them:
+
+- Project-specific knowledge → `AGENTS.md` or relevant skill file
+- Reusable domain patterns → Create/update appropriate skill in `.github/skills/`
+
 ## Skills
 
 Load from `.github/skills/<name>/SKILL.md` when working in that domain:
