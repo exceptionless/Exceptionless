@@ -129,6 +129,7 @@ public class Startup
             o.AddDocumentTransformer<RemoveProblemJsonFromSuccessResponsesTransformer>();
             o.AddOperationTransformer<RequestBodyContentOperationTransformer>();
             o.AddOperationTransformer<XmlDocumentationOperationTransformer>();
+            o.AddSchemaTransformer<NumericTypeSchemaTransformer>();
             o.AddSchemaTransformer<XEnumNamesSchemaTransformer>();
             o.AddSchemaTransformer<UniqueItemsSchemaTransformer>();
             o.AddSchemaTransformer<ReadOnlyPropertySchemaTransformer>();
