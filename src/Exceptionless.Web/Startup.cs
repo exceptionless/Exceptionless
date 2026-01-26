@@ -68,22 +68,15 @@ public class Startup
         })
         .AddJsonOptions(o =>
         {
-            o.JsonSerializerOptions.PropertyNamingPolicy = LowerCaseUnderscoreNamingPolicy.Instance;
+            o.JsonSerializerOptions.ConfigureExceptionlessDefaults();
             o.JsonSerializerOptions.Converters.Add(new DeltaJsonConverterFactory());
-#if DEBUG
-            o.JsonSerializerOptions.RespectNullableAnnotations = true;
-#endif
         });
 
         // Have to add this to get the open api json file to be snake case.
         services.ConfigureHttpJsonOptions(o =>
         {
-            o.SerializerOptions.PropertyNamingPolicy = LowerCaseUnderscoreNamingPolicy.Instance;
+            o.SerializerOptions.ConfigureExceptionlessDefaults();
             o.SerializerOptions.Converters.Add(new DeltaJsonConverterFactory());
-            //o.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
-#if DEBUG
-            o.SerializerOptions.RespectNullableAnnotations = true;
-#endif
         });
 
         services.AddProblemDetails(o => o.CustomizeProblemDetails = CustomizeProblemDetails);

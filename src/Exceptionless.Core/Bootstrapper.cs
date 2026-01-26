@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-using System.Text.Json.Serialization;
 using AutoMapper;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Billing;
@@ -76,12 +75,7 @@ public class Bootstrapper
             return settings;
         });
 
-        services.AddSingleton<JsonSerializerOptions>(_ => new()
-        {
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-            PropertyNamingPolicy = LowerCaseUnderscoreNamingPolicy.Instance,
-            Converters = { new ObjectToInferredTypesConverter() }
-        });
+        services.AddSingleton(_ => new JsonSerializerOptions().ConfigureExceptionlessDefaults());
 
         services.AddSingleton<ISerializer>(s => s.GetRequiredService<ITextSerializer>());
         services.AddSingleton<ITextSerializer>(s => new SystemTextJsonSerializer(s.GetRequiredService<JsonSerializerOptions>()));
