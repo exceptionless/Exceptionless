@@ -195,7 +195,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .Post()
             .AppendPath("organizations")
             .Content(newOrg)
-            .StatusCodeShouldBeBadRequest()
+            .StatusCodeShouldBeUnprocessableEntity()
         );
     }
 
