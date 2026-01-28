@@ -39,8 +39,11 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
 
             bool isNullable = IsPropertyNullable(property);
             var propertySchema = CreateSchemaForType(property.PropertyType, isNullable);
-            string propertyName = property.Name.ToLowerUnderscoredWords();
 
+            // Apply data annotations from the inner type's property
+            DataAnnotationHelper.ApplyToSchema(propertySchema, property);
+
+            string propertyName = property.Name.ToLowerUnderscoredWords();
             schema.Properties[propertyName] = propertySchema;
         }
 

@@ -105,28 +105,30 @@ public class Startup
 
         services.AddOpenApi(o =>
         {
-            // Customize schema names to strip "DeltaOf" prefix (e.g., DeltaOfUpdateToken -> UpdateToken)
-            o.CreateSchemaReferenceId = typeInfo =>
-            {
-                var type = typeInfo.Type;
-                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Delta<>))
-                {
-                    var innerType = type.GetGenericArguments()[0];
-                    return innerType.Name;
-                }
+            // Use OpenAPI 3.0 for better compatibility with swagger-typescript-api
+            o.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi3_0;
 
-                return OpenApiOptions.CreateDefaultSchemaReferenceId(typeInfo);
-            };
+            // Customize schema names to match legacy SwashBuckle naming for backwards compatibility
+            o.CreateSchemaReferenceId = SchemaReferenceIdHelper.CreateSchemaReferenceId;
 
+            // Document transformers (run on entire document)
+            o.AddDocumentTransformer<AggregateDocumentTransformer>();
             o.AddDocumentTransformer<DocumentInfoTransformer>();
             o.AddDocumentTransformer<RemoveProblemJsonFromSuccessResponsesTransformer>();
+
+            // Operation transformers (run on each operation)
             o.AddOperationTransformer<RequestBodyContentOperationTransformer>();
             o.AddOperationTransformer<XmlDocumentationOperationTransformer>();
-            o.AddSchemaTransformer<NumericTypeSchemaTransformer>();
-            o.AddSchemaTransformer<XEnumNamesSchemaTransformer>();
-            o.AddSchemaTransformer<UniqueItemsSchemaTransformer>();
-            o.AddSchemaTransformer<ReadOnlyPropertySchemaTransformer>();
+
+            // Schema transformers (run on each schema) - alphabetical order
+            o.AddSchemaTransformer<DataAnnotationsSchemaTransformer>();
             o.AddSchemaTransformer<DeltaSchemaTransformer>();
+            o.AddSchemaTransformer<DictionarySubclassSchemaTransformer>();
+            o.AddSchemaTransformer<NumericTypeSchemaTransformer>();
+            o.AddSchemaTransformer<ReadOnlyPropertySchemaTransformer>();
+            o.AddSchemaTransformer<RequiredPropertySchemaTransformer>();
+            o.AddSchemaTransformer<UniqueItemsSchemaTransformer>();
+            o.AddSchemaTransformer<XEnumNamesSchemaTransformer>();
         });
 
         var appOptions = AppOptions.ReadFromConfiguration(Configuration);

@@ -5,7 +5,7 @@ using Microsoft.OpenApi;
 namespace Exceptionless.Web.Utility.OpenApi;
 
 /// <summary>
-/// Schema transformer that adds x-enumNames extension to enum schemas.
+/// Schema transformer that adds enum values and x-enumNames extension to enum schemas.
 /// This enables swagger-typescript-api and similar generators to create
 /// meaningful enum member names instead of Value0, Value1, etc.
 /// </summary>
@@ -17,12 +17,18 @@ public class XEnumNamesSchemaTransformer : IOpenApiSchemaTransformer
         if (!type.IsEnum)
             return Task.CompletedTask;
 
-        if (schema.Enum is null || schema.Enum.Count == 0)
-            return Task.CompletedTask;
-
+        // Get enum names and values
         string[] names = Enum.GetNames(type);
-        var enumNamesArray = new JsonArray();
+        var values = Enum.GetValuesAsUnderlyingType(type).Cast<object>().ToArray();
 
+        // Add enum values if not already present
+        if (schema.Enum is null || schema.Enum.Count == 0)
+        {
+            schema.Enum = values.Select(v => JsonValue.Create(v)).Cast<JsonNode>().ToList();
+        }
+
+        // Add x-enumNames extension for TypeScript generator
+        var enumNamesArray = new JsonArray();
         foreach (string name in names)
             enumNamesArray.Add(name);
 
