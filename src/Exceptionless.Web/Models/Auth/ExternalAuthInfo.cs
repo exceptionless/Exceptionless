@@ -15,6 +15,7 @@ public record ExternalAuthInfo
     public string Code { get; init; } = null!;
 
     [Required]
+    [Url]
     [JsonPropertyName("redirectUri")]
     public string RedirectUri { get; init; } = null!;
 

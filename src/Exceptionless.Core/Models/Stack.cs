@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
@@ -63,6 +64,7 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     /// <summary>
     /// The stack title.
     /// </summary>
+    [StringLength(1000)]
     public string Title { get; set; } = null!;
 
     /// <summary>
