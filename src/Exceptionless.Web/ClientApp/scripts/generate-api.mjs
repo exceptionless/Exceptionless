@@ -20,6 +20,35 @@ if (isLocalFile && !existsSync(swaggerSource)) {
 
 const FILE_PREFIX_PATTERN = /^\/\* eslint-disable \*\/\n\/\* tslint:disable \*\/\n\/\/ @ts-nocheck\n\/\*[\s\S]*?\*\/\n\n/;
 
+/**
+ * Workaround for swagger-typescript-api bug with OpenAPI 3.1 nullable arrays.
+ * See: https://github.com/acacode/swagger-typescript-api/issues/1536
+ *
+ * When OpenAPI 3.1 uses `type: ["null", "array"]` with `items`, swagger-typescript-api
+ * loses the items type info and generates `unknown[]` instead of the proper type.
+ * This function converts to the equivalent `type: "array"` + `nullable: true` format.
+ */
+function fixNullableArrays(obj) {
+    if (!obj || typeof obj !== 'object') return;
+
+    if (Array.isArray(obj)) {
+        for (const item of obj) {
+            fixNullableArrays(item);
+        }
+
+        return;
+    }
+
+    if (Array.isArray(obj.type) && obj.type.includes('array') && obj.type.includes('null') && obj.items) {
+        obj.type = 'array';
+        obj.nullable = true;
+    }
+
+    for (const value of Object.values(obj)) {
+        fixNullableArrays(value);
+    }
+}
+
 async function generate() {
     console.log('Generating API types and schemas from:', swaggerSource, isLocalFile ? '(local file)' : '(URL)');
 
@@ -37,6 +66,12 @@ async function generate() {
             ],
             fileName: 'api.ts',
             generateClient: false,
+            hooks: {
+                onInit(config) {
+                    fixNullableArrays(config.swaggerSchema);
+                    return config;
+                }
+            },
             output: outputDir,
             primitiveTypeConstructs: (struct) => ({
                 ...struct
@@ -49,6 +84,7 @@ async function generate() {
         });
 
         console.log('Generated files:');
+
         for (const file of result.files) {
             const fileName = `${file.fileName}${file.fileExtension}`;
             console.log(`  - ${fileName}`);

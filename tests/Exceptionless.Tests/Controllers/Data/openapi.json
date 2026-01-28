@@ -42,11 +42,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 1
             }
@@ -56,11 +52,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -174,11 +166,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 1
             }
@@ -188,11 +176,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -568,11 +552,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 1
             }
@@ -582,11 +562,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -1026,12 +1002,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ValueFromBodyOfstring"
+                "$ref": "#/components/schemas/StringValueFromBody"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/ValueFromBodyOfstring"
+                "$ref": "#/components/schemas/StringValueFromBody"
               }
             }
           },
@@ -1510,11 +1486,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -1523,11 +1495,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -1682,11 +1650,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -1695,11 +1659,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -1809,11 +1769,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -1822,11 +1778,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -1994,11 +1946,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -2007,11 +1955,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -2097,11 +2041,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -2110,11 +2050,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -2207,11 +2143,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -2220,11 +2152,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -2334,11 +2262,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -2347,11 +2271,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -2468,11 +2388,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -2481,11 +2397,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -2585,11 +2497,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -2598,11 +2506,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -2706,11 +2610,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -2719,11 +2619,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -2833,11 +2729,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -2846,11 +2738,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -3111,7 +2999,7 @@
             "schema": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/KeyValuePairOfstringAndStringValues"
+                "$ref": "#/components/schemas/StringStringValuesKeyValuePair"
               }
             }
           }
@@ -3154,7 +3042,7 @@
             "schema": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/KeyValuePairOfstringAndStringValues"
+                "$ref": "#/components/schemas/StringStringValuesKeyValuePair"
               }
             }
           }
@@ -3197,7 +3085,7 @@
             "schema": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/KeyValuePairOfstringAndStringValues"
+                "$ref": "#/components/schemas/StringStringValuesKeyValuePair"
               }
             }
           }
@@ -3249,7 +3137,7 @@
             "schema": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/KeyValuePairOfstringAndStringValues"
+                "$ref": "#/components/schemas/StringStringValuesKeyValuePair"
               }
             }
           }
@@ -3317,11 +3205,7 @@
             "in": "query",
             "description": "The number of duplicated events.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -3330,11 +3214,7 @@
             "in": "query",
             "description": "The value of the event if any.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-              "type": [
-                "number",
-                "string"
-              ],
+              "type": "number",
               "format": "double"
             }
           },
@@ -3385,7 +3265,7 @@
             "schema": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/KeyValuePairOfstringAndStringValues"
+                "$ref": "#/components/schemas/StringStringValuesKeyValuePair"
               }
             }
           }
@@ -3461,11 +3341,7 @@
             "in": "query",
             "description": "The number of duplicated events.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -3474,11 +3350,7 @@
             "in": "query",
             "description": "The value of the event if any.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-              "type": [
-                "number",
-                "string"
-              ],
+              "type": "number",
               "format": "double"
             }
           },
@@ -3529,7 +3401,7 @@
             "schema": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/KeyValuePairOfstringAndStringValues"
+                "$ref": "#/components/schemas/StringStringValuesKeyValuePair"
               }
             }
           }
@@ -3605,11 +3477,7 @@
             "in": "query",
             "description": "The number of duplicated events.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -3618,11 +3486,7 @@
             "in": "query",
             "description": "The value of the event if any.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-              "type": [
-                "number",
-                "string"
-              ],
+              "type": "number",
               "format": "double"
             }
           },
@@ -3673,7 +3537,7 @@
             "schema": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/KeyValuePairOfstringAndStringValues"
+                "$ref": "#/components/schemas/StringStringValuesKeyValuePair"
               }
             }
           }
@@ -3759,11 +3623,7 @@
             "in": "query",
             "description": "The number of duplicated events.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -3772,11 +3632,7 @@
             "in": "query",
             "description": "The value of the event if any.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-              "type": [
-                "number",
-                "string"
-              ],
+              "type": "number",
               "format": "double"
             }
           },
@@ -3827,7 +3683,7 @@
             "schema": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/KeyValuePairOfstringAndStringValues"
+                "$ref": "#/components/schemas/StringStringValuesKeyValuePair"
               }
             }
           }
@@ -4356,11 +4212,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 12
             }
@@ -4616,12 +4468,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ValueFromBodyOfstring"
+                "$ref": "#/components/schemas/StringValueFromBody"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/ValueFromBodyOfstring"
+                "$ref": "#/components/schemas/StringValueFromBody"
               }
             }
           },
@@ -4739,11 +4591,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 1
             }
@@ -4753,11 +4601,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -4866,11 +4710,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 1
             }
@@ -4880,11 +4720,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -5117,11 +4953,7 @@
             "name": "v",
             "in": "query",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           }
@@ -5152,11 +4984,7 @@
             "in": "query",
             "description": "The client configuration version.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           }
@@ -5203,11 +5031,7 @@
             "in": "query",
             "description": "The client configuration version.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           }
@@ -5261,12 +5085,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ValueFromBodyOfstring"
+                "$ref": "#/components/schemas/StringValueFromBody"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/ValueFromBodyOfstring"
+                "$ref": "#/components/schemas/StringValueFromBody"
               }
             }
           },
@@ -5922,12 +5746,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ValueFromBodyOfstring"
+                "$ref": "#/components/schemas/StringValueFromBody"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/ValueFromBodyOfstring"
+                "$ref": "#/components/schemas/StringValueFromBody"
               }
             }
           },
@@ -6135,12 +5959,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ValueFromBodyOfstring"
+                "$ref": "#/components/schemas/StringValueFromBody"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/ValueFromBodyOfstring"
+                "$ref": "#/components/schemas/StringValueFromBody"
               }
             }
           },
@@ -6185,12 +6009,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ValueFromBodyOfstring"
+                "$ref": "#/components/schemas/StringValueFromBody"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/ValueFromBodyOfstring"
+                "$ref": "#/components/schemas/StringValueFromBody"
               }
             }
           },
@@ -6441,11 +6265,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 1
             }
@@ -6455,11 +6275,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -6547,11 +6363,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 1
             }
@@ -6561,11 +6373,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -6659,11 +6467,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 1
             }
@@ -6673,11 +6477,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -6705,460 +6505,6 @@
           },
           "426": {
             "description": "Unable to view stack occurrences for the suspended organization."
-          }
-        }
-      }
-    },
-    "/api/v2/organizations/{organizationId}/tokens": {
-      "get": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Get by organization",
-        "parameters": [
-          {
-            "name": "organizationId",
-            "in": "path",
-            "description": "The identifier of the organization.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d]{24,36}$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "description": "The page parameter is used for pagination. This value must be greater than 0.",
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 1
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 10
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ViewToken"
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The organization could not be found."
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Create for organization",
-        "description": "This is a helper action that makes it easier to create a token for a specific organization.\nYou may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
-        "parameters": [
-          {
-            "name": "organizationId",
-            "in": "path",
-            "description": "The identifier of the organization.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d]{24,36}$",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "The token.",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewToken"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ViewToken"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred while creating the token."
-          },
-          "409": {
-            "description": "The token already exists."
-          }
-        }
-      }
-    },
-    "/api/v2/projects/{projectId}/tokens": {
-      "get": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Get by project",
-        "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "description": "The identifier of the project.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d]{24,36}$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "description": "The page parameter is used for pagination. This value must be greater than 0.",
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 1
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 10
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ViewToken"
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The project could not be found."
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Create for project",
-        "description": "This is a helper action that makes it easier to create a token for a specific project.\nYou may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
-        "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "description": "The identifier of the project.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d]{24,36}$",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "The token.",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewToken"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ViewToken"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred while creating the token."
-          },
-          "404": {
-            "description": "The project could not be found."
-          },
-          "409": {
-            "description": "The token already exists."
-          }
-        }
-      }
-    },
-    "/api/v2/projects/{projectId}/tokens/default": {
-      "get": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Get a projects default token",
-        "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "description": "The identifier of the project.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d]{24,36}$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ViewToken"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The project could not be found."
-          }
-        }
-      }
-    },
-    "/api/v2/tokens/{id}": {
-      "get": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Get by id",
-        "operationId": "GetTokenById",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The identifier of the token.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d-]{24,40}$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ViewToken"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The token could not be found."
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Update",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The identifier of the token.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d-]{24,40}(,[a-zA-Z\\d-]{24,40})*$",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "The changes",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateToken"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ViewToken"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred while updating the token."
-          },
-          "404": {
-            "description": "The token could not be found."
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Update",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The identifier of the token.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d-]{24,40}(,[a-zA-Z\\d-]{24,40})*$",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "The changes",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateToken"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ViewToken"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred while updating the token."
-          },
-          "404": {
-            "description": "The token could not be found."
-          }
-        }
-      }
-    },
-    "/api/v2/tokens": {
-      "post": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Create",
-        "description": "To create a new token, you must specify an organization_id. There are three valid scopes: client, user and admin.",
-        "requestBody": {
-          "description": "The token.",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewToken"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ViewToken"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred while creating the token."
-          },
-          "409": {
-            "description": "The token already exists."
-          }
-        }
-      }
-    },
-    "/api/v2/tokens/{ids}": {
-      "delete": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Remove",
-        "parameters": [
-          {
-            "name": "ids",
-            "in": "path",
-            "description": "A comma-delimited list of token identifiers.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d-]{24,40}(,[a-zA-Z\\d-]{24,40})*$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "202": {
-            "description": "Accepted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkInProgressResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "One or more validation errors occurred."
-          },
-          "404": {
-            "description": "One or more tokens were not found."
-          },
-          "500": {
-            "description": "An error occurred while deleting one or more tokens."
           }
         }
       }
@@ -7369,11 +6715,7 @@
             "in": "query",
             "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 1
             }
@@ -7383,11 +6725,7 @@
             "in": "query",
             "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32",
               "default": 10
             }
@@ -7577,7 +6915,14 @@
         "required": [
           "id",
           "name",
-          "description"
+          "description",
+          "price",
+          "max_projects",
+          "max_users",
+          "retention_days",
+          "max_events_per_month",
+          "has_premium_features",
+          "is_hidden"
         ],
         "type": "object",
         "properties": {
@@ -7591,43 +6936,23 @@
             "type": "string"
           },
           "price": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
+            "type": "number",
             "format": "double"
           },
           "max_projects": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "max_users": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "retention_days": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "max_events_per_month": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "has_premium_features": {
@@ -7639,7 +6964,21 @@
         }
       },
       "BillingStatus": {
-        "type": "integer"
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "type": "integer",
+        "x-enumNames": [
+          "Trialing",
+          "Active",
+          "PastDue",
+          "Canceled",
+          "Unpaid"
+        ]
       },
       "ChangePasswordModel": {
         "required": [
@@ -7661,6 +7000,9 @@
         }
       },
       "ChangePlanResult": {
+        "required": [
+          "success"
+        ],
         "type": "object",
         "properties": {
           "success": {
@@ -7675,14 +7017,14 @@
         }
       },
       "ClientConfiguration": {
+        "required": [
+          "version",
+          "settings"
+        ],
         "type": "object",
         "properties": {
           "version": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "settings": {
@@ -7694,21 +7036,27 @@
         }
       },
       "CountResult": {
+        "required": [
+          "total"
+        ],
         "type": "object",
         "properties": {
           "total": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int64",
             "default": 0
           },
           "aggregations": {
-            "type": [
-              "null",
-              "object"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/IAggregate"
+                }
+              }
             ]
           },
           "data": {
@@ -7728,16 +7076,14 @@
         "type": "object",
         "properties": {
           "clientId": {
-            "minLength": 1,
             "type": "string"
           },
           "code": {
-            "minLength": 1,
             "type": "string"
           },
           "redirectUri": {
-            "minLength": 1,
-            "type": "string"
+            "type": "string",
+            "format": "uri"
           },
           "inviteToken": {
             "type": [
@@ -7746,6 +7092,17 @@
             ]
           }
         }
+      },
+      "IAggregate": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": { },
+            "description": "Additional data associated with the aggregate."
+          }
+        },
+        "description": "Base interface for aggregation results. Concrete types include ValueAggregate, BucketAggregate, StatsAggregate, etc. See client-side type definitions for full type information."
       },
       "Invite": {
         "required": [
@@ -7759,7 +7116,8 @@
             "type": "string"
           },
           "email_address": {
-            "type": "string"
+            "type": "string",
+            "format": "email"
           },
           "date_added": {
             "type": "string",
@@ -7774,7 +7132,8 @@
           "organization_name",
           "date",
           "paid",
-          "total"
+          "total",
+          "items"
         ],
         "type": "object",
         "properties": {
@@ -7782,6 +7141,9 @@
             "type": "string"
           },
           "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "organization_name": {
@@ -7795,11 +7157,7 @@
             "type": "boolean"
           },
           "total": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
+            "type": "number",
             "format": "double"
           },
           "items": {
@@ -7847,33 +7205,8 @@
             ]
           },
           "amount": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
+            "type": "number",
             "format": "double"
-          }
-        }
-      },
-      "KeyValuePairOfstringAndStringValues": {
-        "required": [
-          "key",
-          "value"
-        ],
-        "type": "object",
-        "properties": {
-          "key": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "value": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           }
         }
       },
@@ -7904,18 +7237,28 @@
         }
       },
       "NewOrganization": {
+        "required": [
+          "name"
+        ],
         "type": "object",
         "properties": {
           "name": {
             "type": "string"
           }
-        },
-        "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
+        }
       },
       "NewProject": {
+        "required": [
+          "organization_id",
+          "name",
+          "delete_bot_data_enabled"
+        ],
         "type": "object",
         "properties": {
           "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "name": {
@@ -7927,15 +7270,33 @@
         }
       },
       "NewToken": {
+        "required": [
+          "scopes"
+        ],
         "type": "object",
         "properties": {
           "organization_id": {
-            "type": "string"
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "project_id": {
-            "type": "string"
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "default_project_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": [
               "null",
               "string"
@@ -7964,16 +7325,29 @@
         }
       },
       "NewWebHook": {
+        "required": [
+          "organization_id",
+          "project_id",
+          "url",
+          "event_types"
+        ],
         "type": "object",
         "properties": {
           "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "project_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "url": {
-            "type": "string"
+            "type": "string",
+            "format": "uri"
           },
           "event_types": {
             "type": "array",
@@ -7992,6 +7366,14 @@
         }
       },
       "NotificationSettings": {
+        "required": [
+          "send_daily_summary",
+          "report_new_errors",
+          "report_critical_errors",
+          "report_event_regressions",
+          "report_new_events",
+          "report_critical_events"
+        ],
         "type": "object",
         "properties": {
           "send_daily_summary": {
@@ -8044,21 +7426,43 @@
         }
       },
       "PersistentEvent": {
+        "required": [
+          "id",
+          "organization_id",
+          "project_id",
+          "stack_id",
+          "is_first_occurrence",
+          "created_utc",
+          "idx",
+          "date"
+        ],
         "type": "object",
         "properties": {
           "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string",
             "description": "Unique id that identifies an event."
           },
           "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string",
             "description": "The organization that the event belongs to."
           },
           "project_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string",
             "description": "The project that the event belongs to."
           },
           "stack_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string",
             "description": "The stack that the event belongs to."
           },
@@ -8073,9 +7477,12 @@
           },
           "idx": {
             "type": "object",
+            "additionalProperties": { },
             "description": "Used to store primitive data type custom data values for searching the event."
           },
           "type": {
+            "maxLength": 100,
+            "minLength": 0,
             "type": [
               "null",
               "string"
@@ -8083,6 +7490,8 @@
             "description": "The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types."
           },
           "source": {
+            "maxLength": 2000,
+            "minLength": 0,
             "type": [
               "null",
               "string"
@@ -8106,6 +7515,8 @@
             "description": "A list of tags used to categorize this event."
           },
           "message": {
+            "maxLength": 2000,
+            "minLength": 0,
             "type": [
               "null",
               "string"
@@ -8120,21 +7531,17 @@
             "description": "The geo coordinates where the event happened."
           },
           "value": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "description": "The value of the event if any.",
             "format": "double"
           },
           "count": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "description": "The number of duplicated events.",
             "format": "int32"
@@ -8144,6 +7551,7 @@
               "null",
               "object"
             ],
+            "additionalProperties": { },
             "description": "Optional data entries that contain additional information about this event."
           },
           "reference_id": {
@@ -8205,21 +7613,53 @@
         }
       },
       "Stack": {
+        "required": [
+          "id",
+          "organization_id",
+          "project_id",
+          "type",
+          "status",
+          "signature_hash",
+          "signature_info",
+          "title",
+          "total_occurrences",
+          "first_occurrence",
+          "last_occurrence",
+          "occurrences_are_critical",
+          "references",
+          "tags",
+          "duplicate_signature",
+          "created_utc",
+          "updated_utc",
+          "is_deleted",
+          "allow_notifications"
+        ],
         "type": "object",
         "properties": {
           "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string",
             "description": "Unique id that identifies a stack."
           },
           "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string",
             "description": "The organization that the stack belongs to."
           },
           "project_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string",
             "description": "The project that the stack belongs to."
           },
           "type": {
+            "maxLength": 100,
+            "minLength": 0,
             "type": "string",
             "description": "The stack type (ie. error, log message, feature usage). Check KnownTypes for standard stack types."
           },
@@ -8262,15 +7702,13 @@
             "format": "date-time"
           },
           "title": {
+            "maxLength": 1000,
+            "minLength": 0,
             "type": "string",
             "description": "The stack title."
           },
           "total_occurrences": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "description": "The total number of occurrences in the stack.",
             "format": "int32"
           },
@@ -8349,6 +7787,41 @@
           "Discarded"
         ]
       },
+      "StringStringValuesKeyValuePair": {
+        "required": [
+          "key",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "StringValueFromBody": {
+        "required": [
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "TokenResult": {
         "required": [
           "token"
@@ -8375,10 +7848,17 @@
         "type": "object",
         "properties": {
           "email_address": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "email"
           },
           "description": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
@@ -8402,7 +7882,10 @@
             "type": "boolean"
           },
           "notes": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
@@ -8418,49 +7901,15 @@
           }
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
-      },
-      "UpdateProject": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "delete_bot_data_enabled": {
-            "type": "boolean"
-          }
-        },
-        "additionalProperties": false
-      },
-      "UpdateToken": {
-        "type": "object",
-        "properties": {
-          "is_disabled": {
-            "type": "boolean"
-          },
-          "notes": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "UpdateUser": {
-        "required": [
-          "full_name"
-        ],
-        "type": "object",
-        "properties": {
-          "full_name": {
-            "minLength": 1,
-            "type": "string"
-          },
-          "email_notifications_enabled": {
-            "type": "boolean"
-          }
-        },
-        "additionalProperties": false
       },
       "UsageHourInfo": {
+        "required": [
+          "date",
+          "total",
+          "blocked",
+          "discarded",
+          "too_big"
+        ],
         "type": "object",
         "properties": {
           "date": {
@@ -8468,40 +7917,32 @@
             "format": "date-time"
           },
           "total": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "blocked": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "discarded": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "too_big": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           }
         }
       },
       "UsageInfo": {
+        "required": [
+          "date",
+          "limit",
+          "total",
+          "blocked",
+          "discarded",
+          "too_big"
+        ],
         "type": "object",
         "properties": {
           "date": {
@@ -8509,43 +7950,23 @@
             "format": "date-time"
           },
           "limit": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "total": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "blocked": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "discarded": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "too_big": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           }
         }
@@ -8553,20 +7974,29 @@
       "User": {
         "required": [
           "full_name",
-          "email_address"
+          "email_address",
+          "id",
+          "password_reset_token_expiration",
+          "email_notifications_enabled",
+          "is_email_address_verified",
+          "verify_email_address_token_expiration",
+          "is_active",
+          "roles",
+          "created_utc",
+          "updated_utc"
         ],
         "type": "object",
         "properties": {
           "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string",
             "description": "Unique id that identifies an user."
           },
           "organization_ids": {
             "uniqueItems": true,
-            "type": [
-              "null",
-              "array"
-            ],
+            "type": "array",
             "items": {
               "type": "string"
             },
@@ -8596,10 +8026,7 @@
             "format": "date-time"
           },
           "o_auth_accounts": {
-            "type": [
-              "null",
-              "array"
-            ],
+            "type": "array",
             "items": {
               "$ref": "#/components/schemas/OAuthAccount"
             },
@@ -8610,7 +8037,8 @@
             "description": "Gets or sets the users Full Name."
           },
           "email_address": {
-            "type": "string"
+            "type": "string",
+            "format": "email"
           },
           "email_notifications_enabled": {
             "type": "boolean"
@@ -8656,7 +8084,8 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "format": "email"
           },
           "description": {
             "type": [
@@ -8669,25 +8098,25 @@
               "null",
               "object"
             ],
+            "additionalProperties": { },
             "description": "Extended data entries for this user description."
           }
         }
       },
-      "ValueFromBodyOfstring": {
-        "required": [
-          "value"
-        ],
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
       "ViewCurrentUser": {
+        "required": [
+          "has_local_account",
+          "o_auth_accounts",
+          "id",
+          "organization_ids",
+          "full_name",
+          "email_address",
+          "email_notifications_enabled",
+          "is_email_address_verified",
+          "is_active",
+          "is_invite",
+          "roles"
+        ],
         "type": "object",
         "properties": {
           "hash": {
@@ -8706,6 +8135,9 @@
             }
           },
           "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "organization_ids": {
@@ -8719,7 +8151,8 @@
             "type": "string"
           },
           "email_address": {
-            "type": "string"
+            "type": "string",
+            "format": "email"
           },
           "email_notifications_enabled": {
             "type": "boolean"
@@ -8743,9 +8176,39 @@
         }
       },
       "ViewOrganization": {
+        "required": [
+          "id",
+          "created_utc",
+          "updated_utc",
+          "name",
+          "plan_id",
+          "plan_name",
+          "plan_description",
+          "billing_status",
+          "billing_price",
+          "max_events_per_month",
+          "bonus_events_per_month",
+          "retention_days",
+          "is_suspended",
+          "has_premium_features",
+          "max_users",
+          "max_projects",
+          "project_count",
+          "stack_count",
+          "event_count",
+          "invites",
+          "usage_hours",
+          "usage",
+          "is_throttled",
+          "is_over_monthly_limit",
+          "is_over_request_limit"
+        ],
         "type": "object",
         "properties": {
           "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "created_utc": {
@@ -8789,6 +8252,9 @@
             "format": "date-time"
           },
           "billing_changed_by_user_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": [
               "null",
               "string"
@@ -8798,27 +8264,15 @@
             "$ref": "#/components/schemas/BillingStatus"
           },
           "billing_price": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
+            "type": "number",
             "format": "double"
           },
           "max_events_per_month": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "bonus_events_per_month": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "bonus_expiration": {
@@ -8829,11 +8283,7 @@
             "format": "date-time"
           },
           "retention_days": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "is_suspended": {
@@ -8862,43 +8312,23 @@
             "type": "boolean"
           },
           "max_users": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "max_projects": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "project_count": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int64"
           },
           "stack_count": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int64"
           },
           "event_count": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int64"
           },
           "invites": {
@@ -8923,7 +8353,8 @@
             "type": [
               "null",
               "object"
-            ]
+            ],
+            "additionalProperties": { }
           },
           "is_throttled": {
             "type": "boolean"
@@ -8937,9 +8368,27 @@
         }
       },
       "ViewProject": {
+        "required": [
+          "id",
+          "created_utc",
+          "organization_id",
+          "organization_name",
+          "name",
+          "delete_bot_data_enabled",
+          "promoted_tabs",
+          "stack_count",
+          "event_count",
+          "has_premium_features",
+          "has_slack_integration",
+          "usage_hours",
+          "usage"
+        ],
         "type": "object",
         "properties": {
           "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "created_utc": {
@@ -8947,6 +8396,9 @@
             "format": "date-time"
           },
           "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "organization_name": {
@@ -8962,7 +8414,8 @@
             "type": [
               "null",
               "object"
-            ]
+            ],
+            "additionalProperties": { }
           },
           "promoted_tabs": {
             "uniqueItems": true,
@@ -8978,19 +8431,11 @@
             ]
           },
           "stack_count": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int64"
           },
           "event_count": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int64"
           },
           "has_premium_features": {
@@ -9014,24 +8459,49 @@
         }
       },
       "ViewToken": {
+        "required": [
+          "id",
+          "organization_id",
+          "project_id",
+          "scopes",
+          "is_disabled",
+          "is_suspended",
+          "created_utc",
+          "updated_utc"
+        ],
         "type": "object",
         "properties": {
           "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "project_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "user_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": [
               "null",
               "string"
             ]
           },
           "default_project_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": [
               "null",
               "string"
@@ -9074,9 +8544,23 @@
         }
       },
       "ViewUser": {
+        "required": [
+          "id",
+          "organization_ids",
+          "full_name",
+          "email_address",
+          "email_notifications_enabled",
+          "is_email_address_verified",
+          "is_active",
+          "is_invite",
+          "roles"
+        ],
         "type": "object",
         "properties": {
           "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "organization_ids": {
@@ -9090,7 +8574,8 @@
             "type": "string"
           },
           "email_address": {
-            "type": "string"
+            "type": "string",
+            "format": "email"
           },
           "email_notifications_enabled": {
             "type": "boolean"
@@ -9114,19 +8599,39 @@
         }
       },
       "WebHook": {
+        "required": [
+          "id",
+          "organization_id",
+          "project_id",
+          "url",
+          "event_types",
+          "is_enabled",
+          "version",
+          "created_utc"
+        ],
         "type": "object",
         "properties": {
           "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "project_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "url": {
-            "type": "string"
+            "type": "string",
+            "format": "uri"
           },
           "event_types": {
             "type": "array",
@@ -9151,10 +8656,7 @@
         "type": "object",
         "properties": {
           "workers": {
-            "type": [
-              "null",
-              "array"
-            ],
+            "type": "array",
             "items": {
               "type": "string"
             },
@@ -9182,13 +8684,6 @@
       }
     }
   },
-  "security": [
-    {
-      "Basic": [ ],
-      "Bearer": [ ],
-      "Token": [ ]
-    }
-  ],
   "tags": [
     {
       "name": "Token"

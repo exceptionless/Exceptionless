@@ -81,7 +81,24 @@ public class AggregateDocumentTransformer : IOpenApiDocumentTransformer
         {
             if (schema.Properties.TryGetValue("aggregations", out var aggSchema) && aggSchema is OpenApiSchema aggregationsSchema)
             {
-                aggregationsSchema.AdditionalProperties = new OpenApiSchemaReference("IAggregate", document);
+                // For OpenAPI 3.1, we need to use oneOf to properly represent nullable dictionaries
+                // Clear the type array and use oneOf instead
+                aggregationsSchema.Type = JsonSchemaType.Null; // Will be combined with the object schema
+                aggregationsSchema.AdditionalProperties = null;
+
+                // Replace with a proper nullable dictionary representation
+                schema.Properties["aggregations"] = new OpenApiSchema
+                {
+                    OneOf = new List<IOpenApiSchema>
+                    {
+                        new OpenApiSchema { Type = JsonSchemaType.Null },
+                        new OpenApiSchema
+                        {
+                            Type = JsonSchemaType.Object,
+                            AdditionalProperties = new OpenApiSchemaReference("IAggregate", document)
+                        }
+                    }
+                };
             }
         }
     }

@@ -105,9 +105,6 @@ public class Startup
 
         services.AddOpenApi(o =>
         {
-            // Use OpenAPI 3.0 for better compatibility with swagger-typescript-api
-            o.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi3_0;
-
             // Customize schema names to match legacy SwashBuckle naming for backwards compatibility
             o.CreateSchemaReferenceId = SchemaReferenceIdHelper.CreateSchemaReferenceId;
 

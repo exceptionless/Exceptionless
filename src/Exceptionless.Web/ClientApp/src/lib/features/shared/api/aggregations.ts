@@ -16,23 +16,25 @@ import type {
     ValueAggregate
 } from '../models';
 
-export function average(aggregations: Record<string, IAggregate> | undefined, key: string): undefined | ValueAggregate {
+type Aggregations = Record<string, IAggregate> | null | undefined;
+
+export function average(aggregations: Aggregations, key: string): undefined | ValueAggregate {
     return tryGet<ValueAggregate>(aggregations, key);
 }
 
-export function cardinality(aggregations: Record<string, IAggregate> | undefined, key: string): undefined | ValueAggregate {
+export function cardinality(aggregations: Aggregations, key: string): undefined | ValueAggregate {
     return tryGet<ValueAggregate>(aggregations, key);
 }
 
-export function dateHistogram(aggregations: Record<string, IAggregate> | undefined, key: string): MultiBucketAggregate<DateHistogramBucket> | undefined {
+export function dateHistogram(aggregations: Aggregations, key: string): MultiBucketAggregate<DateHistogramBucket> | undefined {
     return getMultiBucketAggregate<DateHistogramBucket>(aggregations, key);
 }
 
-export function extendedStats(aggregations: Record<string, IAggregate> | undefined, key: string): ExtendedStatsAggregate | undefined {
+export function extendedStats(aggregations: Aggregations, key: string): ExtendedStatsAggregate | undefined {
     return tryGet<ExtendedStatsAggregate>(aggregations, key);
 }
 
-export function geoHash(aggregations: Record<string, IAggregate> | undefined, key: string): MultiBucketAggregate<KeyedBucket<string>> | undefined {
+export function geoHash(aggregations: Aggregations, key: string): MultiBucketAggregate<KeyedBucket<string>> | undefined {
     return getMultiKeyedBucketAggregate<string>(aggregations, key);
 }
 
@@ -40,11 +42,11 @@ export function getPercentile(agg: PercentilesAggregate, percentile: number): Pe
     return agg.items.find((i) => i.percentile === percentile); // Checked
 }
 
-export function max<T = number>(aggregations: Record<string, IAggregate> | undefined, key: string): undefined | ValueAggregate<T> {
+export function max<T = number>(aggregations: Aggregations, key: string): undefined | ValueAggregate<T> {
     return tryGet<ValueAggregate<T>>(aggregations, key);
 }
 
-export function metric(aggregations: Record<string, IAggregate> | undefined, key: string): ObjectValueAggregate | undefined {
+export function metric(aggregations: Aggregations, key: string): ObjectValueAggregate | undefined {
     const valueMetric = tryGet<ValueAggregate>(aggregations, key);
     if (valueMetric) {
         return <ObjectValueAggregate>{
@@ -56,27 +58,27 @@ export function metric(aggregations: Record<string, IAggregate> | undefined, key
     return tryGet<ObjectValueAggregate>(aggregations, key);
 }
 
-export function min<T = number>(aggregations: Record<string, IAggregate> | undefined, key: string): undefined | ValueAggregate<T> {
+export function min<T = number>(aggregations: Aggregations, key: string): undefined | ValueAggregate<T> {
     return tryGet<ValueAggregate<T>>(aggregations, key);
 }
 
-export function missing(aggregations: Record<string, IAggregate> | undefined, key: string): SingleBucketAggregate | undefined {
+export function missing(aggregations: Aggregations, key: string): SingleBucketAggregate | undefined {
     return tryGet<SingleBucketAggregate>(aggregations, key);
 }
 
-export function percentiles(aggregations: Record<string, IAggregate> | undefined, key: string): PercentilesAggregate | undefined {
+export function percentiles(aggregations: Aggregations, key: string): PercentilesAggregate | undefined {
     return tryGet<PercentilesAggregate>(aggregations, key);
 }
 
-export function stats(aggregations: Record<string, IAggregate> | undefined, key: string): StatsAggregate | undefined {
+export function stats(aggregations: Aggregations, key: string): StatsAggregate | undefined {
     return tryGet<StatsAggregate>(aggregations, key);
 }
 
-export function sum(aggregations: Record<string, IAggregate> | undefined, key: string): undefined | ValueAggregate {
+export function sum(aggregations: Aggregations, key: string): undefined | ValueAggregate {
     return tryGet<ValueAggregate>(aggregations, key);
 }
 
-export function terms<TKey = string>(aggregations: Record<string, IAggregate> | undefined, key: string): TermsAggregate<TKey> | undefined {
+export function terms<TKey = string>(aggregations: Aggregations, key: string): TermsAggregate<TKey> | undefined {
     const bucket = tryGet<BucketAggregate>(aggregations, key);
     if (!bucket) {
         return;
@@ -88,7 +90,7 @@ export function terms<TKey = string>(aggregations: Record<string, IAggregate> | 
     };
 }
 
-export function topHits<T = unknown>(aggregations: Record<string, IAggregate>): TopHitsAggregate<T> | undefined {
+export function topHits<T = unknown>(aggregations: Aggregations): TopHitsAggregate<T> | undefined {
     return tryGet<TopHitsAggregate<T>>(aggregations, 'tophits');
 }
 
@@ -104,7 +106,7 @@ function getKeyedBuckets<TKey>(items: IBucket[]): KeyedBucket<TKey>[] {
 }
 
 function getMultiBucketAggregate<TBucket extends IBucket>(
-    aggregations: Record<string, IAggregate> | undefined,
+    aggregations: Aggregations,
     key: string
 ): MultiBucketAggregate<TBucket> | undefined {
     const bucket = tryGet<BucketAggregate>(aggregations, key);
@@ -119,7 +121,7 @@ function getMultiBucketAggregate<TBucket extends IBucket>(
 }
 
 function getMultiKeyedBucketAggregate<TKey>(
-    aggregations: Record<string, IAggregate> | undefined,
+    aggregations: Aggregations,
     key: string
 ): MultiBucketAggregate<KeyedBucket<TKey>> | undefined {
     const bucket = tryGet<BucketAggregate>(aggregations, key);
@@ -133,6 +135,6 @@ function getMultiKeyedBucketAggregate<TKey>(
     };
 }
 
-function tryGet<TAggregate extends IAggregate>(aggregations: Record<string, IAggregate> | undefined, key: string): TAggregate | undefined {
+function tryGet<TAggregate extends IAggregate>(aggregations: Aggregations, key: string): TAggregate | undefined {
     return aggregations?.[key] as TAggregate;
 }
