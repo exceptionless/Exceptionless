@@ -114,6 +114,7 @@ public class Startup
             o.AddDocumentTransformer<RemoveProblemJsonFromSuccessResponsesTransformer>();
 
             // Operation transformers (run on each operation)
+            o.AddOperationTransformer<ObsoleteOperationTransformer>();
             o.AddOperationTransformer<RequestBodyContentOperationTransformer>();
             o.AddOperationTransformer<XmlDocumentationOperationTransformer>();
 

@@ -2936,7 +2936,8 @@
               "application/json": { }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/api/v2/events/session/heartbeat": {
@@ -3011,7 +3012,8 @@
               "application/json": { }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/api/v1/events/submit/{type}": {
@@ -3054,7 +3056,8 @@
               "application/json": { }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/api/v1/projects/{projectId}/events/submit": {
@@ -3097,7 +3100,8 @@
               "application/json": { }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/api/v1/projects/{projectId}/events/submit/{type}": {
@@ -3149,7 +3153,8 @@
               "application/json": { }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/api/v2/events/submit": {
@@ -3742,7 +3747,8 @@
               "application/json": { }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/api/v1/events": {
@@ -3783,7 +3789,8 @@
               "application/json": { }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/api/v1/projects/{projectId}/events": {
@@ -3833,7 +3840,8 @@
               "application/json": { }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/api/v2/events/{ids}": {
@@ -4969,7 +4977,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/api/v2/projects/config": {
@@ -7271,6 +7280,8 @@
       },
       "NewToken": {
         "required": [
+          "organization_id",
+          "project_id",
           "scopes"
         ],
         "type": "object",
@@ -7279,19 +7290,13 @@
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           },
           "project_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           },
           "default_project_id": {
             "maxLength": 24,
