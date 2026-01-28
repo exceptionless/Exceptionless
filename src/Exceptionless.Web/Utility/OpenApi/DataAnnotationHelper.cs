@@ -11,7 +11,7 @@ namespace Exceptionless.Web.Utility.OpenApi;
 /// <remarks>
 /// <para>
 /// This helper applies format/pattern annotations that ASP.NET Core's OpenAPI doesn't handle automatically.
-/// The built-in OpenAPI support already handles common annotations like [Required], [StringLength], 
+/// The built-in OpenAPI support already handles common annotations like [Required], [StringLength],
 /// [MinLength], [MaxLength], and [Range], but does NOT handle format-related attributes.
 /// </para>
 /// <para>

@@ -18,6 +18,7 @@ public record ViewOrganization : IIdentity, IData, IHaveDates
     public string? CardLast4 { get; set; }
     public DateTime? SubscribeDate { get; set; }
     public DateTime? BillingChangeDate { get; set; }
+    [ObjectId]
     public string? BillingChangedByUserId { get; set; }
     public BillingStatus BillingStatus { get; set; }
     public decimal BillingPrice { get; set; }
