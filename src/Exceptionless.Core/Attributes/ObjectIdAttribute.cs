@@ -14,5 +14,6 @@ public sealed class ObjectIdAttribute : StringLengthAttribute
     {
         MinimumLength = 24;
     }
+
     public string Pattern => ObjectIdPattern;
 }
