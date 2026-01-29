@@ -1,4 +1,3 @@
-using Exceptionless.Core.Extensions;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -8,6 +7,13 @@ namespace Exceptionless.Web.Utility.OpenApi;
 /// Schema transformer that fixes dictionary subclass properties (e.g., DataDictionary, SettingsDictionary)
 /// to generate additionalProperties instead of opaque object types.
 /// </summary>
+/// <remarks>
+/// <para>
+/// This transformer resolves property names using the effective JSON property name
+/// (respecting <c>[JsonPropertyName]</c> and the active naming policy) rather than
+/// assuming a fixed naming convention.
+/// </para>
+/// </remarks>
 public class DictionarySubclassSchemaTransformer : IOpenApiSchemaTransformer
 {
     public Task TransformAsync(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
@@ -39,9 +45,9 @@ public class DictionarySubclassSchemaTransformer : IOpenApiSchemaTransformer
             if (dictionaryTypes.Value.keyType != typeof(string))
                 continue;
 
-            // Find the matching schema property
-            string schemaPropertyName = property.Name.ToLowerUnderscoredWords();
-            if (!schema.Properties.TryGetValue(schemaPropertyName, out var propertySchema) || propertySchema is not OpenApiSchema mutableSchema)
+            // Use JsonTypeInfo to get the effective JSON property name (respects [JsonPropertyName] and naming policy)
+            if (!JsonPropertyNameResolver.TryGetSchemaProperty(context.JsonTypeInfo, property, schema.Properties, out IOpenApiSchema? propertySchema) ||
+                propertySchema is not OpenApiSchema mutableSchema)
                 continue;
 
             // If it's an object type (possibly nullable) without additionalProperties, add them

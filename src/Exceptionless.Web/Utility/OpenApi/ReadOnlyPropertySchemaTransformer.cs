@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Reflection;
-using Exceptionless.Core.Extensions;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -28,6 +27,11 @@ namespace Exceptionless.Web.Utility.OpenApi;
 /// that indicates the property has an inline initializer. It uses interface checks for broad
 /// compatibility with different collection implementations.
 /// </para>
+/// <para>
+/// This transformer resolves property names using the effective JSON property name
+/// (respecting <c>[JsonPropertyName]</c> and the active naming policy) rather than
+/// assuming a fixed naming convention.
+/// </para>
 /// </remarks>
 public class ReadOnlyPropertySchemaTransformer : IOpenApiSchemaTransformer
 {
@@ -43,20 +47,20 @@ public class ReadOnlyPropertySchemaTransformer : IOpenApiSchemaTransformer
         foreach (var property in type.GetProperties()
             .Where(p => p.CanRead && !p.CanWrite))
         {
-            // Find the matching schema property (property names are in snake_case in the schema)
-            string schemaPropertyName = property.Name.ToLowerUnderscoredWords();
-            if (schema.Properties.TryGetValue(schemaPropertyName, out var propertySchema) && propertySchema is OpenApiSchema mutableSchema)
-            {
-                // Mark as read-only since there's no setter
-                mutableSchema.ReadOnly = true;
+            // Use JsonTypeInfo to get the effective JSON property name (respects [JsonPropertyName] and naming policy)
+            if (!JsonPropertyNameResolver.TryGetSchemaProperty(context.JsonTypeInfo, property, schema.Properties, out IOpenApiSchema? propertySchema) ||
+                propertySchema is not OpenApiSchema mutableSchema)
+                continue;
 
-                // If the property has an initializer (backing field exists), it's never null
-                // Remove nullable flag for properties with initializers
-                if (HasBackingFieldWithInitializer(type, property) && mutableSchema.Type.HasValue)
-                {
-                    // Remove the Null type flag to indicate the property is not nullable
-                    mutableSchema.Type = mutableSchema.Type.Value & ~JsonSchemaType.Null;
-                }
+            // Mark as read-only since there's no setter
+            mutableSchema.ReadOnly = true;
+
+            // If the property has an initializer (backing field exists), it's never null
+            // Remove nullable flag for properties with initializers
+            if (HasBackingFieldWithInitializer(type, property) && mutableSchema.Type.HasValue)
+            {
+                // Remove the Null type flag to indicate the property is not nullable
+                mutableSchema.Type = mutableSchema.Type.Value & ~JsonSchemaType.Null;
             }
         }
 

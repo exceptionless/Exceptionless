@@ -1,6 +1,4 @@
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using Exceptionless.Core.Extensions;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -25,6 +23,11 @@ namespace Exceptionless.Web.Utility.OpenApi;
 /// <para>
 /// The <c>[Required]</c> attribute is also respected for explicit marking.
 /// </para>
+/// <para>
+/// This transformer resolves property names using the effective JSON property name
+/// (respecting <c>[JsonPropertyName]</c> and the active naming policy) rather than
+/// assuming a fixed naming convention.
+/// </para>
 /// </remarks>
 public class RequiredPropertySchemaTransformer : IOpenApiSchemaTransformer
 {
@@ -46,8 +49,10 @@ public class RequiredPropertySchemaTransformer : IOpenApiSchemaTransformer
 
         foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
-            // Convert property name to snake_case to match schema
-            string schemaPropertyName = property.Name.ToLowerUnderscoredWords();
+            // Use JsonTypeInfo to get the effective JSON property name (respects [JsonPropertyName] and naming policy)
+            var schemaPropertyName = JsonPropertyNameResolver.GetJsonPropertyName(context.JsonTypeInfo, property);
+            if (schemaPropertyName is null)
+                continue;
 
             // Check if property exists in schema
             if (!schema.Properties.ContainsKey(schemaPropertyName))

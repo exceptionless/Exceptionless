@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using Exceptionless.Core.Attributes;
-using Exceptionless.Core.Extensions;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -11,6 +10,13 @@ namespace Exceptionless.Web.Utility.OpenApi;
 /// Schema transformer that applies DataAnnotation attributes to OpenAPI schemas.
 /// Handles [EmailAddress], [Url], and [ObjectId] for both classes and records.
 /// </summary>
+/// <remarks>
+/// <para>
+/// This transformer resolves property names using the effective JSON property name
+/// (respecting <c>[JsonPropertyName]</c> and the active naming policy) rather than
+/// assuming a fixed naming convention.
+/// </para>
+/// </remarks>
 public class DataAnnotationsSchemaTransformer : IOpenApiSchemaTransformer
 {
     public Task TransformAsync(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
@@ -29,8 +35,9 @@ public class DataAnnotationsSchemaTransformer : IOpenApiSchemaTransformer
             if (underlyingType != typeof(string))
                 continue;
 
-            string schemaPropertyName = property.Name.ToLowerUnderscoredWords();
-            if (!schema.Properties.TryGetValue(schemaPropertyName, out var propertySchema) || propertySchema is not OpenApiSchema mutableSchema)
+            // Use JsonTypeInfo to get the effective JSON property name (respects [JsonPropertyName] and naming policy)
+            if (!JsonPropertyNameResolver.TryGetSchemaProperty(context.JsonTypeInfo, property, schema.Properties, out IOpenApiSchema? propertySchema) ||
+                propertySchema is not OpenApiSchema mutableSchema)
                 continue;
 
             // Get attributes from property or record constructor parameter
