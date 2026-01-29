@@ -30,7 +30,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PostAsync_NewToken_MapsAllPropertiesToToken()
     {
-        // Arrange - Test Mapping: NewToken -> Token
+        // Arrange
         var newToken = new NewToken
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
@@ -48,7 +48,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeCreated()
         );
 
-        // Assert - Verify mapping worked correctly
+        // Assert
         Assert.NotNull(viewToken);
         Assert.NotNull(viewToken.Id);
         Assert.Equal(SampleDataService.TEST_ORG_ID, viewToken.OrganizationId);
@@ -57,7 +57,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
         Assert.Equal("Mapped test token", viewToken.Notes);
         Assert.True(viewToken.CreatedUtc > DateTime.MinValue);
 
-        // Verify persisted entity
+        // Verify persisted
         var token = await _tokenRepository.GetByIdAsync(viewToken.Id);
         Assert.NotNull(token);
         Assert.Equal("Mapped test token", token.Notes);
@@ -66,7 +66,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
     [Fact]
     public async Task GetAsync_ExistingToken_MapsToViewToken()
     {
-        // Arrange - Create a token first
+        // Arrange
         var newToken = new NewToken
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
@@ -85,7 +85,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
 
         Assert.NotNull(createdToken);
 
-        // Act - Test Mapping: Token -> ViewToken
+        // Act
         var viewToken = await SendRequestAsAsync<ViewToken>(r => r
             .AsGlobalAdminUser()
             .AppendPaths("tokens", createdToken.Id)
@@ -103,7 +103,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PostAsync_NewTokenWithExpiry_MapsExpiresUtc()
     {
-        // Arrange - Test that ExpiresUtc is mapped correctly
+        // Arrange
         var expiryDate = DateTime.UtcNow.AddDays(30);
         var newToken = new NewToken
         {
@@ -313,5 +313,129 @@ public sealed class TokenControllerTests : IntegrationTestsBase
         Assert.NotNull(problemDetails);
         Assert.Single(problemDetails.Errors);
         Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "scopes"));
+    }
+
+    [Fact]
+    public async Task PostByOrganizationAsync_WithUnauthorizedOrganizationId_ReturnsBadRequest()
+    {
+        // Arrange
+        var newToken = new NewToken
+        {
+            OrganizationId = SampleDataService.FREE_ORG_ID,
+            Scopes = [AuthorizationRoles.Client]
+        };
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "tokens")
+            .Content(newToken)
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.NotNull(response);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithProjectFromUnauthorizedOrganization_ReturnsValidationError()
+    {
+        // Arrange
+        var newToken = new NewToken
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            ProjectId = SampleDataService.FREE_PROJECT_ID,
+            Scopes = [AuthorizationRoles.Client]
+        };
+
+        // Act
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("tokens")
+            .Content(newToken)
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Contains(problemDetails.Errors, error => error.Key.Equals("project_id", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task PostAsync_WithMismatchedOrgAndProjectId_UsesProjectOrganization()
+    {
+        // Arrange - Global admin creates token with wrong org but valid project
+        // The system should overwrite OrganizationId to match the project's actual org
+        var newToken = new NewToken
+        {
+            OrganizationId = SampleDataService.FREE_ORG_ID,
+            ProjectId = SampleDataService.TEST_PROJECT_ID,
+            Scopes = [AuthorizationRoles.Client]
+        };
+
+        // Act
+        var viewToken = await SendRequestAsAsync<ViewToken>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("tokens")
+            .Content(newToken)
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert - OrganizationId should be overwritten to match the project's org
+        Assert.NotNull(viewToken);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, viewToken.OrganizationId);
+        Assert.Equal(SampleDataService.TEST_PROJECT_ID, viewToken.ProjectId);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithInvalidOrganizationIdFormat_ReturnsValidationError()
+    {
+        // Arrange
+        var newToken = new NewToken
+        {
+            OrganizationId = "invalid-org-id",
+            Scopes = [AuthorizationRoles.Client]
+        };
+
+        // Act
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("tokens")
+            .Content(newToken)
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Contains(problemDetails.Errors, error => error.Key.Equals("organization_id", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task PostAsync_WithInvalidProjectIdFormat_ReturnsValidationError()
+    {
+        // Arrange
+        var newToken = new NewToken
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            ProjectId = "invalid-project-id",
+            Scopes = [AuthorizationRoles.Client]
+        };
+
+        // Act
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("tokens")
+            .Content(newToken)
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Contains(problemDetails.Errors, error => error.Key.Equals("project_id", StringComparison.OrdinalIgnoreCase));
     }
 }
