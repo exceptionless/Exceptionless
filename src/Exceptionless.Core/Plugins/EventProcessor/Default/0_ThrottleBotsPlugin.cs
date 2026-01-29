@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.DateTimeExtensions;
@@ -15,13 +16,15 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
     private readonly ICacheClient _cache;
     private readonly IQueue<WorkItemData> _workItemQueue;
     private readonly TimeProvider _timeProvider;
+    private readonly JsonSerializerOptions _jsonOptions;
     private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(5);
 
     public ThrottleBotsPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue,
-        TimeProvider timeProvider, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+        JsonSerializerOptions jsonOptions, TimeProvider timeProvider, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _cache = cacheClient;
         _workItemQueue = workItemQueue;
+        _jsonOptions = jsonOptions;
         _timeProvider = timeProvider;
     }
 
@@ -35,7 +38,7 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
             return;
 
         // Throttle errors by client ip address to no more than X every 5 minutes.
-        var clientIpAddressGroups = contexts.GroupBy(c => c.Event.GetRequestInfo()?.ClientIpAddress);
+        var clientIpAddressGroups = contexts.GroupBy(c => c.Event.GetRequestInfo(_jsonOptions)?.ClientIpAddress);
         foreach (var clientIpAddressGroup in clientIpAddressGroups)
         {
             if (String.IsNullOrEmpty(clientIpAddressGroup.Key) || clientIpAddressGroup.Key.IsPrivateNetwork())

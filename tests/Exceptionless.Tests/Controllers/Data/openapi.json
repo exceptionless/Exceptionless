@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.4",
+  "openapi": "3.1.1",
   "info": {
     "title": "Exceptionless API",
     "termsOfService": "https://exceptionless.com/terms/",
@@ -14,22 +14,720 @@
     },
     "version": "v2"
   },
+  "servers": [
+    {
+      "url": "http://localhost/"
+    }
+  ],
   "paths": {
+    "/api/v2/organizations/{organizationId}/tokens": {
+      "get": {
+        "tags": [
+          "Token"
+        ],
+        "summary": "Get by organization",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ViewToken"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Token"
+        ],
+        "summary": "Create for organization",
+        "description": "This is a helper action that makes it easier to create a token for a specific organization.\nYou may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The token.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NewToken"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NewToken"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewToken"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred while creating the token."
+          },
+          "409": {
+            "description": "The token already exists."
+          }
+        }
+      }
+    },
+    "/api/v2/projects/{projectId}/tokens": {
+      "get": {
+        "tags": [
+          "Token"
+        ],
+        "summary": "Get by project",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "description": "The identifier of the project.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ViewToken"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Token"
+        ],
+        "summary": "Create for project",
+        "description": "This is a helper action that makes it easier to create a token for a specific project.\nYou may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "description": "The identifier of the project.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The token.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NewToken"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NewToken"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewToken"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred while creating the token."
+          },
+          "404": {
+            "description": "The project could not be found."
+          },
+          "409": {
+            "description": "The token already exists."
+          }
+        }
+      }
+    },
+    "/api/v2/projects/{projectId}/tokens/default": {
+      "get": {
+        "tags": [
+          "Token"
+        ],
+        "summary": "Get a projects default token",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "description": "The identifier of the project.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewToken"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found."
+          }
+        }
+      }
+    },
+    "/api/v2/tokens/{id}": {
+      "get": {
+        "tags": [
+          "Token"
+        ],
+        "summary": "Get by id",
+        "operationId": "GetTokenById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the token.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d-]{24,40}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewToken"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The token could not be found."
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Token"
+        ],
+        "summary": "Update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the token.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d-]{24,40}(,[a-zA-Z\\d-]{24,40})*$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The changes",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateToken"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateToken"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewToken"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred while updating the token."
+          },
+          "404": {
+            "description": "The token could not be found."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Token"
+        ],
+        "summary": "Update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the token.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d-]{24,40}(,[a-zA-Z\\d-]{24,40})*$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The changes",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateToken"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateToken"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewToken"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred while updating the token."
+          },
+          "404": {
+            "description": "The token could not be found."
+          }
+        }
+      }
+    },
+    "/api/v2/tokens": {
+      "post": {
+        "tags": [
+          "Token"
+        ],
+        "summary": "Create",
+        "description": "To create a new token, you must specify an organization_id. There are three valid scopes: client, user and admin.",
+        "requestBody": {
+          "description": "The token.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewToken"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewToken"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewToken"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred while creating the token."
+          },
+          "409": {
+            "description": "The token already exists."
+          }
+        }
+      }
+    },
+    "/api/v2/tokens/{ids}": {
+      "delete": {
+        "tags": [
+          "Token"
+        ],
+        "summary": "Remove",
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "path",
+            "description": "A comma-delimited list of token identifiers.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d-]{24,40}(,[a-zA-Z\\d-]{24,40})*$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkInProgressResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "One or more validation errors occurred."
+          },
+          "404": {
+            "description": "One or more tokens were not found."
+          },
+          "500": {
+            "description": "An error occurred while deleting one or more tokens."
+          }
+        }
+      }
+    },
+    "/api/v2/projects/{projectId}/webhooks": {
+      "get": {
+        "tags": [
+          "WebHook"
+        ],
+        "summary": "Get by project",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "description": "The identifier of the project.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebHook"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found."
+          }
+        }
+      }
+    },
+    "/api/v2/webhooks/{id}": {
+      "get": {
+        "tags": [
+          "WebHook"
+        ],
+        "summary": "Get by id",
+        "operationId": "GetWebHookById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the web hook.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebHook"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The web hook could not be found."
+          }
+        }
+      }
+    },
+    "/api/v2/webhooks": {
+      "post": {
+        "tags": [
+          "WebHook"
+        ],
+        "summary": "Create",
+        "requestBody": {
+          "description": "The web hook.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewWebHook"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewWebHook"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebHook"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred while creating the web hook."
+          },
+          "409": {
+            "description": "The web hook already exists."
+          }
+        }
+      }
+    },
+    "/api/v2/webhooks/{ids}": {
+      "delete": {
+        "tags": [
+          "WebHook"
+        ],
+        "summary": "Remove",
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "path",
+            "description": "A comma-delimited list of web hook identifiers.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}(,[a-zA-Z\\d]{24,36})*$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkInProgressResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "One or more validation errors occurred."
+          },
+          "404": {
+            "description": "One or more web hooks were not found."
+          },
+          "500": {
+            "description": "An error occurred while deleting one or more web hooks."
+          }
+        }
+      }
+    },
     "/api/v2/auth/login": {
       "post": {
         "tags": [
           "Auth"
         ],
         "summary": "Login",
-        "description": "Log in with your email address and password to generate a token scoped with your users roles.\n            \n```{ \"email\": \"noreply@exceptionless.io\", \"password\": \"exceptionless\" }```\n            \nThis token can then be used to access the api. You can use this token in the header (bearer authentication)\nor append it onto the query string: ?access_token=MY_TOKEN\n            \nPlease note that you can also use this token on the documentation site by placing it in the\nheaders api_key input box.",
+        "description": "Log in with your email address and password to generate a token scoped with your users roles.\n\n```{ \"email\": \"noreply@exceptionless.io\", \"password\": \"exceptionless\" }```\n\nThis token can then be used to access the api. You can use this token in the header (bearer authentication)\nor append it onto the query string: ?access_token=MY_TOKEN\n\nPlease note that you can also use this token on the documentation site by placing it in the\nheaders api_key input box.",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/Login"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Login"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -59,7 +757,10 @@
         "summary": "Logout the current user and remove the current access token",
         "responses": {
           "200": {
-            "description": "User successfully logged-out"
+            "description": "User successfully logged-out",
+            "content": {
+              "application/json": { }
+            }
           },
           "401": {
             "description": "User not logged in"
@@ -82,8 +783,14 @@
               "schema": {
                 "$ref": "#/components/schemas/Signup"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Signup"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -120,8 +827,14 @@
               "schema": {
                 "$ref": "#/components/schemas/ExternalAuthInfo"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalAuthInfo"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -155,8 +868,14 @@
               "schema": {
                 "$ref": "#/components/schemas/ExternalAuthInfo"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalAuthInfo"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -190,8 +909,14 @@
               "schema": {
                 "$ref": "#/components/schemas/ExternalAuthInfo"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalAuthInfo"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -225,8 +950,14 @@
               "schema": {
                 "$ref": "#/components/schemas/ExternalAuthInfo"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalAuthInfo"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -273,8 +1004,14 @@
               "schema": {
                 "$ref": "#/components/schemas/StringValueFromBody"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/StringValueFromBody"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -305,8 +1042,14 @@
               "schema": {
                 "$ref": "#/components/schemas/ChangePasswordModel"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordModel"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -345,7 +1088,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Forgot password email was sent."
+            "description": "Forgot password email was sent.",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "Invalid email address."
@@ -365,12 +1111,21 @@
               "schema": {
                 "$ref": "#/components/schemas/ResetPasswordModel"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordModel"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
-            "description": "Password reset email was sent."
+            "description": "Password reset email was sent.",
+            "content": {
+              "application/json": { }
+            }
           },
           "422": {
             "description": "Invalid reset password model."
@@ -398,7 +1153,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Password reset email was cancelled."
+            "description": "Password reset email was cancelled.",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "Invalid password reset token."
@@ -786,7 +1544,7 @@
           "Event"
         ],
         "summary": "Submit event by POST",
-        "description": "You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it\nwe will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON\nobject into the events data collection.\n            \nYou can also post a multi-line string. We automatically split strings by the \\n character and create a new log event for every line.\n            \nSimple event:\n```\n{ \"message\": \"Exceptionless is amazing!\" }\n```\n            \nSimple log event with user identity:\n```\n{\n    \"type\": \"log\",\n    \"message\": \"Exceptionless is amazing!\",\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\n    \"@user\":{ \"identity\":\"123456789\", \"name\": \"Test User\" }\n}\n```\n            \nMultiple events from string content:\n```\nExceptionless is amazing!\nExceptionless is really amazing!\n```\n            \nSimple error:\n```\n{\n    \"type\": \"error\",\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\n    \"@simple_error\": {\n        \"message\": \"Simple Exception\",\n        \"type\": \"System.Exception\",\n        \"stack_trace\": \"   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77\"\n    }\n}\n```",
+        "description": "      You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it\n      we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON\n      object into the events data collection.\n\n      You can also post a multi-line string. We automatically split strings by the \\n character and create a new log event for every line.\n\n      Simple event:\n      ```{ \"message\": \"Exceptionless is amazing!\" }```\n\n      Simple log event with user identity:\n      ```{\n    \"type\": \"log\",\n    \"message\": \"Exceptionless is amazing!\",\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\n    \"@user\":{ \"identity\":\"123456789\", \"name\": \"Test User\" }\n}```\n\n      Multiple events from string content:\n      ```Exceptionless is amazing!\nExceptionless is really amazing!```\n\n      Simple error:\n      ```{\n    \"type\": \"error\",\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\n    \"@simple_error\": {\n        \"message\": \"Simple Exception\",\n        \"type\": \"System.Exception\",\n        \"stack_trace\": \"   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77\"\n    }\n}```",
         "parameters": [
           {
             "name": "userAgent",
@@ -816,7 +1574,10 @@
         },
         "responses": {
           "202": {
-            "description": "Accepted"
+            "description": "Accepted",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "No project id specified and no default project was found."
@@ -1069,7 +1830,7 @@
           "Event"
         ],
         "summary": "Submit event by POST for a specific project",
-        "description": "You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it\nwe will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON\nobject into the events data collection.\n            \nYou can also post a multi-line string. We automatically split strings by the \\n character and create a new log event for every line.\n            \nSimple event:\n```\n{ \"message\": \"Exceptionless is amazing!\" }\n```\n            \nSimple log event with user identity:\n```\n{\n    \"type\": \"log\",\n    \"message\": \"Exceptionless is amazing!\",\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\n    \"@user\":{ \"identity\":\"123456789\", \"name\": \"Test User\" }\n}\n```\n            \nMultiple events from string content:\n```\nExceptionless is amazing!\nExceptionless is really amazing!\n```\n            \nSimple error:\n```\n{\n    \"type\": \"error\",\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\n    \"@simple_error\": {\n        \"message\": \"Simple Exception\",\n        \"type\": \"System.Exception\",\n        \"stack_trace\": \"   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77\"\n    }\n}\n```",
+        "description": "      You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it\n      we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON\n      object into the events data collection.\n\n      You can also post a multi-line string. We automatically split strings by the \\n character and create a new log event for every line.\n\n      Simple event:\n      ```{ \"message\": \"Exceptionless is amazing!\" }```\n\n      Simple log event with user identity:\n      ```{\n    \"type\": \"log\",\n    \"message\": \"Exceptionless is amazing!\",\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\n    \"@user\":{ \"identity\":\"123456789\", \"name\": \"Test User\" }\n}```\n\n      Multiple events from string content:\n      ```Exceptionless is amazing!\nExceptionless is really amazing!```\n\n      Simple error:\n      ```{\n    \"type\": \"error\",\n    \"date\":\"2030-01-01T12:00:00.0000000-05:00\",\n    \"@simple_error\": {\n        \"message\": \"Simple Exception\",\n        \"type\": \"System.Exception\",\n        \"stack_trace\": \"   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77\"\n    }\n}```",
         "parameters": [
           {
             "name": "projectId",
@@ -1109,7 +1870,10 @@
         },
         "responses": {
           "202": {
-            "description": "Accepted"
+            "description": "Accepted",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "No project id specified and no default project was found."
@@ -2042,18 +2806,27 @@
           }
         ],
         "requestBody": {
-          "description": "The user description.",
+          "description": "The identifier of the project.",
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UserDescription"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserDescription"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "202": {
-            "description": "Accepted"
+            "description": "Accepted",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "Description must be specified."
@@ -2100,12 +2873,21 @@
               "schema": {
                 "$ref": "#/components/schemas/UserDescription"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserDescription"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "202": {
-            "description": "Accepted"
+            "description": "Accepted",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "Description must be specified."
@@ -2114,6 +2896,48 @@
             "description": "The event occurrence with the specified reference id could not be found."
           }
         }
+      }
+    },
+    "/api/v1/error/{id}": {
+      "patch": {
+        "tags": [
+          "Event"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEvent"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEvent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          }
+        },
+        "deprecated": true
       }
     },
     "/api/v2/events/session/heartbeat": {
@@ -2143,7 +2967,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "No project id specified and no default project was found."
@@ -2154,13 +2981,189 @@
         }
       }
     },
+    "/api/v1/events/submit": {
+      "get": {
+        "tags": [
+          "Event"
+        ],
+        "parameters": [
+          {
+            "name": "userAgent",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "parameters",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/StringStringValuesKeyValuePair"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/api/v1/events/submit/{type}": {
+      "get": {
+        "tags": [
+          "Event"
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "userAgent",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "parameters",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/StringStringValuesKeyValuePair"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/api/v1/projects/{projectId}/events/submit": {
+      "get": {
+        "tags": [
+          "Event"
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "userAgent",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "parameters",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/StringStringValuesKeyValuePair"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/api/v1/projects/{projectId}/events/submit/{type}": {
+      "get": {
+        "tags": [
+          "Event"
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "userAgent",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "parameters",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/StringStringValuesKeyValuePair"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
     "/api/v2/events/submit": {
       "get": {
         "tags": [
           "Event"
         ],
         "summary": "Submit event by GET",
-        "description": "You can submit an event using an HTTP GET and query string parameters. Any unknown query string parameters will be added to the extended data of the event.\n            \nFeature usage named build with a duration of 10:\n```/events/submit?access_token=YOUR_API_KEY&type=usage&source=build&value=10```\n            \nLog with message, geo and extended data\n```/events/submit?access_token=YOUR_API_KEY&type=log&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true```",
+        "description": "You can submit an event using an HTTP GET and query string parameters. Any unknown query string parameters will be added to the extended data of the event.\n\nFeature usage named build with a duration of 10:\n```/events/submit?access_token=YOUR_API_KEY&amp;type=usage&amp;source=build&amp;value=10```\n\nLog with message, geo and extended data\n```/events/submit?access_token=YOUR_API_KEY&amp;type=log&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
         "parameters": [
           {
             "name": "type",
@@ -2274,7 +3277,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "No project id specified and no default project was found."
@@ -2291,7 +3297,7 @@
           "Event"
         ],
         "summary": "Submit event type by GET",
-        "description": "You can submit an event using an HTTP GET and query string parameters.\n            \nFeature usage event named build with a value of 10:\n```/events/submit/usage?access_token=YOUR_API_KEY&source=build&value=10```\n            \nLog event with message, geo and extended data\n```/events/submit/log?access_token=YOUR_API_KEY&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true```",
+        "description": "You can submit an event using an HTTP GET and query string parameters.\n\nFeature usage event named build with a value of 10:\n```/events/submit/usage?access_token=YOUR_API_KEY&amp;source=build&amp;value=10```\n\nLog event with message, geo and extended data\n```/events/submit/log?access_token=YOUR_API_KEY&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
         "parameters": [
           {
             "name": "type",
@@ -2407,7 +3413,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "No project id specified and no default project was found."
@@ -2424,7 +3433,7 @@
           "Event"
         ],
         "summary": "Submit event type by GET for a specific project",
-        "description": "You can submit an event using an HTTP GET and query string parameters.\n            \nFeature usage named build with a duration of 10:\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&type=usage&source=build&value=10```\n            \nLog with message, geo and extended data\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&type=log&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true```",
+        "description": "You can submit an event using an HTTP GET and query string parameters.\n\nFeature usage named build with a duration of 10:\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=usage&amp;source=build&amp;value=10```\n\nLog with message, geo and extended data\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=log&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
         "parameters": [
           {
             "name": "projectId",
@@ -2540,7 +3549,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "No project id specified and no default project was found."
@@ -2557,7 +3569,7 @@
           "Event"
         ],
         "summary": "Submit event type by GET for a specific project",
-        "description": "You can submit an event using an HTTP GET and query string parameters.\n            \nFeature usage named build with a duration of 10:\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&type=usage&source=build&value=10```\n            \nLog with message, geo and extended data\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&type=log&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true```",
+        "description": "You can submit an event using an HTTP GET and query string parameters.\n\nFeature usage named build with a duration of 10:\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=usage&amp;source=build&amp;value=10```\n\nLog with message, geo and extended data\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&amp;type=log&amp;message=Hello World&amp;source=server01&amp;geo=32.85,-96.9613&amp;randomproperty=true```",
         "parameters": [
           {
             "name": "projectId",
@@ -2683,7 +3695,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "No project id specified and no default project was found."
@@ -2692,6 +3707,141 @@
             "description": "No project was found."
           }
         }
+      }
+    },
+    "/api/v1/error": {
+      "post": {
+        "tags": [
+          "Event"
+        ],
+        "parameters": [
+          {
+            "name": "userAgent",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string",
+                "example": ""
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "example": ""
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/api/v1/events": {
+      "post": {
+        "tags": [
+          "Event"
+        ],
+        "parameters": [
+          {
+            "name": "userAgent",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string",
+                "example": ""
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "example": ""
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": { }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/api/v1/projects/{projectId}/events": {
+      "post": {
+        "tags": [
+          "Event"
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "userAgent",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string",
+                "example": ""
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "example": ""
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": { }
+            }
+          }
+        },
+        "deprecated": true
       }
     },
     "/api/v2/events/{ids}": {
@@ -2779,8 +3929,14 @@
               "schema": {
                 "$ref": "#/components/schemas/NewOrganization"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewOrganization"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
@@ -2869,8 +4025,14 @@
               "schema": {
                 "$ref": "#/components/schemas/NewOrganization"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewOrganization"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -2915,8 +4077,14 @@
               "schema": {
                 "$ref": "#/components/schemas/NewOrganization"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewOrganization"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -3261,7 +4429,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "The error occurred while removing the user from your organization"
@@ -3307,12 +4478,21 @@
               "schema": {
                 "$ref": "#/components/schemas/StringValueFromBody"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/StringValueFromBody"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "404": {
             "description": "The organization was not found."
@@ -3348,7 +4528,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "404": {
             "description": "The organization was not found."
@@ -3374,7 +4557,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "201": {
             "description": "The organization name is available."
@@ -3465,8 +4651,14 @@
               "schema": {
                 "$ref": "#/components/schemas/NewProject"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewProject"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
@@ -3637,8 +4829,14 @@
               "schema": {
                 "$ref": "#/components/schemas/UpdateProject"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProject"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -3683,8 +4881,14 @@
               "schema": {
                 "$ref": "#/components/schemas/UpdateProject"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProject"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -3745,6 +4949,36 @@
             "description": "An error occurred while deleting one or more projects."
           }
         }
+      }
+    },
+    "/api/v1/project/config": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "parameters": [
+          {
+            "name": "v",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientConfiguration"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
       }
     },
     "/api/v2/projects/config": {
@@ -3862,12 +5096,21 @@
               "schema": {
                 "$ref": "#/components/schemas/StringValueFromBody"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/StringValueFromBody"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "Invalid configuration value."
@@ -3904,7 +5147,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "Invalid key value."
@@ -4028,12 +5274,21 @@
               "schema": {
                 "$ref": "#/components/schemas/NotificationSettings"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationSettings"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "404": {
             "description": "The project could not be found."
@@ -4074,12 +5329,21 @@
               "schema": {
                 "$ref": "#/components/schemas/NotificationSettings"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationSettings"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "404": {
             "description": "The project could not be found."
@@ -4115,7 +5379,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "404": {
             "description": "The project could not be found."
@@ -4156,14 +5423,36 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NotificationSettings"
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NotificationSettings"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NotificationSettings"
+                  }
+                ]
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "404": {
             "description": "The project or integration could not be found."
@@ -4205,14 +5494,36 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NotificationSettings"
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NotificationSettings"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NotificationSettings"
+                  }
+                ]
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "404": {
             "description": "The project or integration could not be found."
@@ -4251,7 +5562,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "Invalid tab name."
@@ -4288,7 +5602,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "Invalid tab name."
@@ -4325,7 +5642,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "Invalid tab name."
@@ -4354,7 +5674,10 @@
         ],
         "responses": {
           "201": {
-            "description": "The project name is available."
+            "description": "The project name is available.",
+            "content": {
+              "application/json": { }
+            }
           },
           "204": {
             "description": "The project name is not available."
@@ -4390,7 +5713,10 @@
         ],
         "responses": {
           "201": {
-            "description": "The project name is available."
+            "description": "The project name is available.",
+            "content": {
+              "application/json": { }
+            }
           },
           "204": {
             "description": "The project name is not available."
@@ -4431,12 +5757,21 @@
               "schema": {
                 "$ref": "#/components/schemas/StringValueFromBody"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/StringValueFromBody"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "Invalid key or value."
@@ -4473,7 +5808,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "Invalid key or value."
@@ -4556,7 +5894,10 @@
         ],
         "responses": {
           "202": {
-            "description": "Accepted"
+            "description": "Accepted",
+            "content": {
+              "application/json": { }
+            }
           },
           "404": {
             "description": "One or more stacks could not be found."
@@ -4593,7 +5934,10 @@
         ],
         "responses": {
           "202": {
-            "description": "Accepted"
+            "description": "Accepted",
+            "content": {
+              "application/json": { }
+            }
           },
           "404": {
             "description": "One or more stacks could not be found."
@@ -4626,12 +5970,21 @@
               "schema": {
                 "$ref": "#/components/schemas/StringValueFromBody"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/StringValueFromBody"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "Invalid reference link."
@@ -4667,12 +6020,21 @@
               "schema": {
                 "$ref": "#/components/schemas/StringValueFromBody"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/StringValueFromBody"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "204": {
-            "description": "The reference link was removed."
+            "description": "The reference link was removed.",
+            "content": {
+              "application/json": { }
+            }
           },
           "400": {
             "description": "Invalid reference link."
@@ -4703,7 +6065,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "404": {
             "description": "One or more stacks could not be found."
@@ -4729,7 +6094,10 @@
         ],
         "responses": {
           "204": {
-            "description": "The stacks were marked as not critical."
+            "description": "The stacks were marked as not critical.",
+            "content": {
+              "application/json": { }
+            }
           },
           "404": {
             "description": "One or more stacks could not be found."
@@ -4765,7 +6133,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "404": {
             "description": "One or more stacks could not be found."
@@ -4793,7 +6164,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "404": {
             "description": "The stack could not be found."
@@ -5144,460 +6518,6 @@
         }
       }
     },
-    "/api/v2/organizations/{organizationId}/tokens": {
-      "get": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Get by organization",
-        "parameters": [
-          {
-            "name": "organizationId",
-            "in": "path",
-            "description": "The identifier of the organization.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d]{24,36}$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "description": "The page parameter is used for pagination. This value must be greater than 0.",
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 1
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 10
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ViewToken"
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The organization could not be found."
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Create for organization",
-        "description": "This is a helper action that makes it easier to create a token for a specific organization.\nYou may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
-        "parameters": [
-          {
-            "name": "organizationId",
-            "in": "path",
-            "description": "The identifier of the organization.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d]{24,36}$",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "The token.",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewToken"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ViewToken"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred while creating the token."
-          },
-          "409": {
-            "description": "The token already exists."
-          }
-        }
-      }
-    },
-    "/api/v2/projects/{projectId}/tokens": {
-      "get": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Get by project",
-        "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "description": "The identifier of the project.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d]{24,36}$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "description": "The page parameter is used for pagination. This value must be greater than 0.",
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 1
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 10
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ViewToken"
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The project could not be found."
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Create for project",
-        "description": "This is a helper action that makes it easier to create a token for a specific project.\nYou may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
-        "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "description": "The identifier of the project.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d]{24,36}$",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "The token.",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewToken"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ViewToken"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred while creating the token."
-          },
-          "404": {
-            "description": "The project could not be found."
-          },
-          "409": {
-            "description": "The token already exists."
-          }
-        }
-      }
-    },
-    "/api/v2/projects/{projectId}/tokens/default": {
-      "get": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Get a projects default token",
-        "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "description": "The identifier of the project.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d]{24,36}$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ViewToken"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The project could not be found."
-          }
-        }
-      }
-    },
-    "/api/v2/tokens/{id}": {
-      "get": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Get by id",
-        "operationId": "GetTokenById",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The identifier of the token.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d-]{24,40}$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ViewToken"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The token could not be found."
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Update",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The identifier of the token.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d-]{24,40}(,[a-zA-Z\\d-]{24,40})*$",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "The changes",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateToken"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ViewToken"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred while updating the token."
-          },
-          "404": {
-            "description": "The token could not be found."
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Update",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The identifier of the token.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d-]{24,40}(,[a-zA-Z\\d-]{24,40})*$",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "The changes",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateToken"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ViewToken"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred while updating the token."
-          },
-          "404": {
-            "description": "The token could not be found."
-          }
-        }
-      }
-    },
-    "/api/v2/tokens": {
-      "post": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Create",
-        "description": "To create a new token, you must specify an organization_id. There are three valid scopes: client, user and admin.",
-        "requestBody": {
-          "description": "The token.",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewToken"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ViewToken"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred while creating the token."
-          },
-          "409": {
-            "description": "The token already exists."
-          }
-        }
-      }
-    },
-    "/api/v2/tokens/{ids}": {
-      "delete": {
-        "tags": [
-          "Token"
-        ],
-        "summary": "Remove",
-        "parameters": [
-          {
-            "name": "ids",
-            "in": "path",
-            "description": "A comma-delimited list of token identifiers.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d-]{24,40}(,[a-zA-Z\\d-]{24,40})*$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "202": {
-            "description": "Accepted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkInProgressResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "One or more validation errors occurred."
-          },
-          "404": {
-            "description": "One or more tokens were not found."
-          },
-          "500": {
-            "description": "An error occurred while deleting one or more tokens."
-          }
-        }
-      }
-    },
     "/api/v2/users/me": {
       "get": {
         "tags": [
@@ -5701,8 +6621,14 @@
               "schema": {
                 "$ref": "#/components/schemas/UpdateUser"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUser"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -5747,8 +6673,14 @@
               "schema": {
                 "$ref": "#/components/schemas/UpdateUser"
               }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUser"
+              }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -5940,7 +6872,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
           },
           "404": {
             "description": "The user could not be found."
@@ -5971,181 +6906,13 @@
         ],
         "responses": {
           "200": {
-            "description": "The user verification email has been sent."
+            "description": "The user verification email has been sent.",
+            "content": {
+              "application/json": { }
+            }
           },
           "404": {
             "description": "The user could not be found."
-          }
-        }
-      }
-    },
-    "/api/v2/projects/{projectId}/webhooks": {
-      "get": {
-        "tags": [
-          "WebHook"
-        ],
-        "summary": "Get by project",
-        "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "description": "The identifier of the project.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d]{24,36}$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "description": "The page parameter is used for pagination. This value must be greater than 0.",
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 1
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 10
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/WebHook"
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The project could not be found."
-          }
-        }
-      }
-    },
-    "/api/v2/webhooks/{id}": {
-      "get": {
-        "tags": [
-          "WebHook"
-        ],
-        "summary": "Get by id",
-        "operationId": "GetWebHookById",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The identifier of the web hook.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d]{24,36}$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WebHook"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The web hook could not be found."
-          }
-        }
-      }
-    },
-    "/api/v2/webhooks": {
-      "post": {
-        "tags": [
-          "WebHook"
-        ],
-        "summary": "Create",
-        "requestBody": {
-          "description": "The web hook.",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewWebHook"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WebHook"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred while creating the web hook."
-          },
-          "409": {
-            "description": "The web hook already exists."
-          }
-        }
-      }
-    },
-    "/api/v2/webhooks/{ids}": {
-      "delete": {
-        "tags": [
-          "WebHook"
-        ],
-        "summary": "Remove",
-        "parameters": [
-          {
-            "name": "ids",
-            "in": "path",
-            "description": "A comma-delimited list of web hook identifiers.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d]{24,36}(,[a-zA-Z\\d]{24,36})*$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "202": {
-            "description": "Accepted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkInProgressResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "One or more validation errors occurred."
-          },
-          "404": {
-            "description": "One or more web hooks were not found."
-          },
-          "500": {
-            "description": "An error occurred while deleting one or more web hooks."
           }
         }
       }
@@ -6155,9 +6922,16 @@
     "schemas": {
       "BillingPlan": {
         "required": [
-          "description",
           "id",
-          "name"
+          "name",
+          "description",
+          "price",
+          "max_projects",
+          "max_users",
+          "retention_days",
+          "max_events_per_month",
+          "has_premium_features",
+          "is_hidden"
         ],
         "type": "object",
         "properties": {
@@ -6196,8 +6970,7 @@
           "is_hidden": {
             "type": "boolean"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "BillingStatus": {
         "enum": [
@@ -6208,7 +6981,6 @@
           4
         ],
         "type": "integer",
-        "format": "int32",
         "x-enumNames": [
           "Trialing",
           "Active",
@@ -6234,23 +7006,30 @@
             "minLength": 6,
             "type": "string"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "ChangePlanResult": {
+        "required": [
+          "success"
+        ],
         "type": "object",
         "properties": {
           "success": {
             "type": "boolean"
           },
           "message": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
-        },
-        "additionalProperties": false
+        }
       },
       "ClientConfiguration": {
+        "required": [
+          "version",
+          "settings"
+        ],
         "type": "object",
         "properties": {
           "version": {
@@ -6261,35 +7040,41 @@
             "type": "object",
             "additionalProperties": {
               "type": "string"
-            },
-            "readOnly": true
+            }
           }
-        },
-        "additionalProperties": false
+        }
       },
       "CountResult": {
+        "required": [
+          "total"
+        ],
         "type": "object",
         "properties": {
           "total": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "default": 0
           },
           "aggregations": {
-            "type": "object",
-            "additionalProperties": {
-              "$ref": "#/components/schemas/IAggregate"
-            },
-            "nullable": true
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/IAggregate"
+                }
+              }
+            ]
           },
           "data": {
-            "type": "object",
-            "additionalProperties": {
-              "nullable": true
-            },
-            "nullable": true
+            "type": [
+              "null",
+              "object"
+            ]
           }
-        },
-        "additionalProperties": false
+        }
       },
       "ExternalAuthInfo": {
         "required": [
@@ -6300,42 +7085,39 @@
         "type": "object",
         "properties": {
           "clientId": {
-            "minLength": 1,
             "type": "string"
           },
           "code": {
-            "minLength": 1,
             "type": "string"
           },
           "redirectUri": {
-            "minLength": 1,
-            "type": "string"
+            "type": "string",
+            "format": "uri"
           },
           "inviteToken": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
-        },
-        "additionalProperties": false
+        }
       },
       "IAggregate": {
         "type": "object",
         "properties": {
           "data": {
             "type": "object",
-            "additionalProperties": {
-              "nullable": true
-            },
-            "nullable": true
+            "additionalProperties": { },
+            "description": "Additional data associated with the aggregate."
           }
         },
-        "additionalProperties": false
+        "description": "Base interface for aggregation results. Concrete types include ValueAggregate, BucketAggregate, StatsAggregate, etc. See client-side type definitions for full type information."
       },
       "Invite": {
         "required": [
-          "date_added",
+          "token",
           "email_address",
-          "token"
+          "date_added"
         ],
         "type": "object",
         "properties": {
@@ -6343,23 +7125,24 @@
             "type": "string"
           },
           "email_address": {
-            "type": "string"
+            "type": "string",
+            "format": "email"
           },
           "date_added": {
             "type": "string",
             "format": "date-time"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "Invoice": {
         "required": [
-          "date",
           "id",
           "organization_id",
           "organization_name",
+          "date",
           "paid",
-          "total"
+          "total",
+          "items"
         ],
         "type": "object",
         "properties": {
@@ -6367,6 +7150,9 @@
             "type": "string"
           },
           "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "organization_name": {
@@ -6389,13 +7175,12 @@
               "$ref": "#/components/schemas/InvoiceLineItem"
             }
           }
-        },
-        "additionalProperties": false
+        }
       },
       "InvoiceGridModel": {
         "required": [
-          "date",
           "id",
+          "date",
           "paid"
         ],
         "type": "object",
@@ -6410,13 +7195,12 @@
           "paid": {
             "type": "boolean"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "InvoiceLineItem": {
         "required": [
-          "amount",
-          "description"
+          "description",
+          "amount"
         ],
         "type": "object",
         "properties": {
@@ -6424,15 +7208,16 @@
             "type": "string"
           },
           "date": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "amount": {
             "type": "number",
             "format": "double"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "Login": {
         "required": [
@@ -6442,7 +7227,6 @@
         "type": "object",
         "properties": {
           "email": {
-            "minLength": 1,
             "type": "string",
             "description": "The email address or domain username"
           },
@@ -6454,25 +7238,36 @@
           "invite_token": {
             "maxLength": 40,
             "minLength": 40,
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
-        },
-        "additionalProperties": false
+        }
       },
       "NewOrganization": {
+        "required": [
+          "name"
+        ],
         "type": "object",
         "properties": {
           "name": {
             "type": "string"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "NewProject": {
+        "required": [
+          "organization_id",
+          "name",
+          "delete_bot_data_enabled"
+        ],
         "type": "object",
         "properties": {
           "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "name": {
@@ -6481,21 +7276,36 @@
           "delete_bot_data_enabled": {
             "type": "boolean"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "NewToken": {
+        "required": [
+          "organization_id",
+          "project_id",
+          "scopes"
+        ],
         "type": "object",
         "properties": {
           "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "project_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "default_project_id": {
-            "type": "string",
-            "nullable": true
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "scopes": {
             "uniqueItems": true,
@@ -6505,28 +7315,44 @@
             }
           },
           "expires_utc": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "notes": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
-        },
-        "additionalProperties": false
+        }
       },
       "NewWebHook": {
+        "required": [
+          "organization_id",
+          "project_id",
+          "url",
+          "event_types"
+        ],
         "type": "object",
         "properties": {
           "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "project_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "url": {
-            "type": "string"
+            "type": "string",
+            "format": "uri"
           },
           "event_types": {
             "type": "array",
@@ -6535,14 +7361,24 @@
             }
           },
           "version": {
-            "type": "string",
-            "description": "The schema version that should be used.",
-            "nullable": true
+            "pattern": "^\\d+(\\.\\d+){1,3}$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The schema version that should be used."
           }
-        },
-        "additionalProperties": false
+        }
       },
       "NotificationSettings": {
+        "required": [
+          "send_daily_summary",
+          "report_new_errors",
+          "report_critical_errors",
+          "report_event_regressions",
+          "report_new_events",
+          "report_critical_events"
+        ],
         "type": "object",
         "properties": {
           "send_daily_summary": {
@@ -6563,8 +7399,7 @@
           "report_critical_events": {
             "type": "boolean"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "OAuthAccount": {
         "required": [
@@ -6584,95 +7419,159 @@
             "type": "string"
           },
           "extra_data": {
-            "type": "object",
+            "type": [
+              "null",
+              "object"
+            ],
             "additionalProperties": {
               "type": "string"
             },
             "readOnly": true
           }
-        },
-        "additionalProperties": false
+        }
       },
       "PersistentEvent": {
+        "required": [
+          "id",
+          "organization_id",
+          "project_id",
+          "stack_id",
+          "is_first_occurrence",
+          "created_utc",
+          "idx",
+          "date"
+        ],
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string",
+            "description": "Unique id that identifies an event."
           },
           "organization_id": {
-            "type": "string"
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string",
+            "description": "The organization that the event belongs to."
           },
           "project_id": {
-            "type": "string"
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string",
+            "description": "The project that the event belongs to."
           },
           "stack_id": {
-            "type": "string"
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string",
+            "description": "The stack that the event belongs to."
           },
           "is_first_occurrence": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the event resulted in the creation of a new stack."
           },
           "created_utc": {
             "type": "string",
+            "description": "The date that the event was created in the system.",
             "format": "date-time"
           },
           "idx": {
             "type": "object",
-            "additionalProperties": { }
+            "additionalProperties": { },
+            "description": "Used to store primitive data type custom data values for searching the event."
           },
           "type": {
-            "type": "string",
-            "nullable": true
+            "maxLength": 100,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types."
           },
           "source": {
-            "type": "string",
-            "nullable": true
+            "maxLength": 2000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The event source (ie. machine name, log name, feature name)."
           },
           "date": {
             "type": "string",
+            "description": "The date that the event occurred on.",
             "format": "date-time"
           },
           "tags": {
             "uniqueItems": true,
-            "type": "array",
+            "type": [
+              "null",
+              "array"
+            ],
             "items": {
               "type": "string"
             },
-            "nullable": true
+            "description": "A list of tags used to categorize this event."
           },
           "message": {
-            "type": "string",
-            "nullable": true
+            "maxLength": 2000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The event message."
           },
           "geo": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The geo coordinates where the event happened."
           },
           "value": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
+            "type": [
+              "null",
+              "number"
+            ],
+            "description": "The value of the event if any.",
+            "format": "double"
           },
           "count": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "The number of duplicated events.",
+            "format": "int32"
           },
           "data": {
-            "type": "object",
+            "type": [
+              "null",
+              "object"
+            ],
             "additionalProperties": { },
-            "nullable": true
+            "description": "Optional data entries that contain additional information about this event."
           },
           "reference_id": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "An optional identifier to be used for referencing this event instance at a later time."
           }
-        },
-        "additionalProperties": false
+        }
       },
       "ResetPasswordModel": {
         "required": [
-          "password",
-          "password_reset_token"
+          "password_reset_token",
+          "password"
         ],
         "type": "object",
         "properties": {
@@ -6686,23 +7585,20 @@
             "minLength": 6,
             "type": "string"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "Signup": {
         "required": [
-          "email",
           "name",
+          "email",
           "password"
         ],
         "type": "object",
         "properties": {
           "name": {
-            "minLength": 1,
             "type": "string"
           },
           "email": {
-            "minLength": 1,
             "type": "string",
             "description": "The email address or domain username"
           },
@@ -6714,90 +7610,152 @@
           "invite_token": {
             "maxLength": 40,
             "minLength": 40,
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
-        },
-        "additionalProperties": false
+        }
       },
       "Stack": {
+        "required": [
+          "id",
+          "organization_id",
+          "project_id",
+          "type",
+          "status",
+          "signature_hash",
+          "signature_info",
+          "title",
+          "total_occurrences",
+          "first_occurrence",
+          "last_occurrence",
+          "occurrences_are_critical",
+          "references",
+          "tags",
+          "duplicate_signature",
+          "created_utc",
+          "updated_utc",
+          "is_deleted",
+          "allow_notifications"
+        ],
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string",
+            "description": "Unique id that identifies a stack."
           },
           "organization_id": {
-            "type": "string"
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string",
+            "description": "The organization that the stack belongs to."
           },
           "project_id": {
-            "type": "string"
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string",
+            "description": "The project that the stack belongs to."
           },
           "type": {
-            "type": "string"
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string",
+            "description": "The stack type (ie. error, log message, feature usage). Check KnownTypes for standard stack types."
           },
           "status": {
+            "description": "The stack status (ie. open, fixed, regressed,",
             "$ref": "#/components/schemas/StackStatus"
           },
           "snooze_until_utc": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The date that the stack should be snoozed until.",
+            "format": "date-time"
           },
           "signature_hash": {
-            "type": "string"
+            "type": "string",
+            "description": "The signature used for stacking future occurrences."
           },
           "signature_info": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
-            }
+            },
+            "description": "The collection of information that went into creating the signature hash for the stack."
           },
           "fixed_in_version": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The version the stack was fixed in."
           },
           "date_fixed": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The date the stack was fixed.",
+            "format": "date-time"
           },
           "title": {
-            "type": "string"
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string",
+            "description": "The stack title."
           },
           "total_occurrences": {
             "type": "integer",
+            "description": "The total number of occurrences in the stack.",
             "format": "int32"
           },
           "first_occurrence": {
             "type": "string",
+            "description": "The date of the 1st occurrence of this stack in UTC time.",
             "format": "date-time"
           },
           "last_occurrence": {
             "type": "string",
+            "description": "The date of the last occurrence of this stack in UTC time.",
             "format": "date-time"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The stack description."
           },
           "occurrences_are_critical": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "If true, all future occurrences will be marked as critical."
           },
           "references": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "A list of references."
           },
           "tags": {
             "uniqueItems": true,
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "A list of tags used to categorize this stack."
           },
           "duplicate_signature": {
-            "type": "string"
+            "type": "string",
+            "description": "The signature used for finding duplicate stacks. (ProjectId, SignatureHash)"
           },
           "created_utc": {
             "type": "string",
@@ -6814,8 +7772,7 @@
             "type": "boolean",
             "readOnly": true
           }
-        },
-        "additionalProperties": false
+        }
       },
       "StackStatus": {
         "enum": [
@@ -6826,7 +7783,6 @@
           "ignored",
           "discarded"
         ],
-        "type": "string",
         "x-enumNames": [
           "Open",
           "Fixed",
@@ -6837,11 +7793,17 @@
         ]
       },
       "StringStringValuesKeyValuePair": {
+        "required": [
+          "key",
+          "value"
+        ],
         "type": "object",
         "properties": {
           "key": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "value": {
             "type": "array",
@@ -6849,18 +7811,21 @@
               "type": "string"
             }
           }
-        },
-        "additionalProperties": false
+        }
       },
       "StringValueFromBody": {
+        "required": [
+          "value"
+        ],
         "type": "object",
         "properties": {
           "value": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
-        },
-        "additionalProperties": false
+        }
       },
       "TokenResult": {
         "required": [
@@ -6869,11 +7834,9 @@
         "type": "object",
         "properties": {
           "token": {
-            "minLength": 1,
             "type": "string"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "UpdateEmailAddressResult": {
         "required": [
@@ -6884,8 +7847,26 @@
           "is_verified": {
             "type": "boolean"
           }
+        }
+      },
+      "UpdateEvent": {
+        "type": "object",
+        "properties": {
+          "email_address": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "email"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
         },
-        "additionalProperties": false
+        "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
       },
       "UpdateProject": {
         "type": "object",
@@ -6897,7 +7878,7 @@
             "type": "boolean"
           }
         },
-        "additionalProperties": false
+        "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
       },
       "UpdateToken": {
         "type": "object",
@@ -6906,29 +7887,34 @@
             "type": "boolean"
           },
           "notes": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
-        "additionalProperties": false
+        "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
       },
       "UpdateUser": {
-        "required": [
-          "full_name"
-        ],
         "type": "object",
         "properties": {
           "full_name": {
-            "minLength": 1,
             "type": "string"
           },
           "email_notifications_enabled": {
             "type": "boolean"
           }
         },
-        "additionalProperties": false
+        "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
       },
       "UsageHourInfo": {
+        "required": [
+          "date",
+          "total",
+          "blocked",
+          "discarded",
+          "too_big"
+        ],
         "type": "object",
         "properties": {
           "date": {
@@ -6951,10 +7937,17 @@
             "type": "integer",
             "format": "int32"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "UsageInfo": {
+        "required": [
+          "date",
+          "limit",
+          "total",
+          "blocked",
+          "discarded",
+          "too_big"
+        ],
         "type": "object",
         "properties": {
           "date": {
@@ -6981,18 +7974,30 @@
             "type": "integer",
             "format": "int32"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "User": {
         "required": [
+          "full_name",
           "email_address",
-          "full_name"
+          "id",
+          "password_reset_token_expiration",
+          "email_notifications_enabled",
+          "is_email_address_verified",
+          "verify_email_address_token_expiration",
+          "is_active",
+          "roles",
+          "created_utc",
+          "updated_utc"
         ],
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string",
+            "description": "Unique id that identifies an user."
           },
           "organization_ids": {
             "uniqueItems": true,
@@ -7000,19 +8005,26 @@
             "items": {
               "type": "string"
             },
+            "description": "The organizations that the user has access to.",
             "readOnly": true
           },
           "password": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "salt": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "password_reset_token": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "password_reset_token_expiration": {
             "type": "string",
@@ -7026,11 +8038,10 @@
             "readOnly": true
           },
           "full_name": {
-            "minLength": 1,
-            "type": "string"
+            "type": "string",
+            "description": "Gets or sets the users Full Name."
           },
           "email_address": {
-            "minLength": 1,
             "type": "string",
             "format": "email"
           },
@@ -7041,15 +8052,18 @@
             "type": "boolean"
           },
           "verify_email_address_token": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "verify_email_address_token_expiration": {
             "type": "string",
             "format": "date-time"
           },
           "is_active": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Gets or sets the users active state."
           },
           "roles": {
             "uniqueItems": true,
@@ -7066,34 +8080,55 @@
             "type": "string",
             "format": "date-time"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "UserDescription": {
         "type": "object",
         "properties": {
           "email_address": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "email"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "data": {
-            "type": "object",
+            "type": [
+              "null",
+              "object"
+            ],
             "additionalProperties": { },
-            "nullable": true
+            "description": "Extended data entries for this user description."
           }
-        },
-        "additionalProperties": false
+        }
       },
       "ViewCurrentUser": {
+        "required": [
+          "has_local_account",
+          "o_auth_accounts",
+          "id",
+          "organization_ids",
+          "full_name",
+          "email_address",
+          "email_notifications_enabled",
+          "is_email_address_verified",
+          "is_active",
+          "is_invite",
+          "roles"
+        ],
         "type": "object",
         "properties": {
           "hash": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "has_local_account": {
             "type": "boolean"
@@ -7105,6 +8140,9 @@
             }
           },
           "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "organization_ids": {
@@ -7118,7 +8156,8 @@
             "type": "string"
           },
           "email_address": {
-            "type": "string"
+            "type": "string",
+            "format": "email"
           },
           "email_notifications_enabled": {
             "type": "boolean"
@@ -7139,13 +8178,42 @@
               "type": "string"
             }
           }
-        },
-        "additionalProperties": false
+        }
       },
       "ViewOrganization": {
+        "required": [
+          "id",
+          "created_utc",
+          "updated_utc",
+          "name",
+          "plan_id",
+          "plan_name",
+          "plan_description",
+          "billing_status",
+          "billing_price",
+          "max_events_per_month",
+          "bonus_events_per_month",
+          "retention_days",
+          "is_suspended",
+          "has_premium_features",
+          "max_users",
+          "max_projects",
+          "project_count",
+          "stack_count",
+          "event_count",
+          "invites",
+          "usage_hours",
+          "usage",
+          "is_throttled",
+          "is_over_monthly_limit",
+          "is_over_request_limit"
+        ],
         "type": "object",
         "properties": {
           "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "created_utc": {
@@ -7169,22 +8237,33 @@
             "type": "string"
           },
           "card_last4": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "subscribe_date": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "billing_change_date": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "billing_changed_by_user_id": {
-            "type": "string",
-            "nullable": true
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "billing_status": {
             "$ref": "#/components/schemas/BillingStatus"
@@ -7202,9 +8281,11 @@
             "format": "int32"
           },
           "bonus_expiration": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "retention_days": {
             "type": "integer",
@@ -7214,17 +8295,23 @@
             "type": "boolean"
           },
           "suspension_code": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "suspension_notes": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "suspension_date": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "has_premium_features": {
             "type": "boolean"
@@ -7268,9 +8355,11 @@
             }
           },
           "data": {
-            "type": "object",
-            "additionalProperties": { },
-            "nullable": true
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": { }
           },
           "is_throttled": {
             "type": "boolean"
@@ -7281,13 +8370,30 @@
           "is_over_request_limit": {
             "type": "boolean"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "ViewProject": {
+        "required": [
+          "id",
+          "created_utc",
+          "organization_id",
+          "organization_name",
+          "name",
+          "delete_bot_data_enabled",
+          "promoted_tabs",
+          "stack_count",
+          "event_count",
+          "has_premium_features",
+          "has_slack_integration",
+          "usage_hours",
+          "usage"
+        ],
         "type": "object",
         "properties": {
           "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "created_utc": {
@@ -7295,6 +8401,9 @@
             "format": "date-time"
           },
           "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "organization_name": {
@@ -7307,9 +8416,11 @@
             "type": "boolean"
           },
           "data": {
-            "type": "object",
-            "additionalProperties": { },
-            "nullable": true
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": { }
           },
           "promoted_tabs": {
             "uniqueItems": true,
@@ -7319,8 +8430,10 @@
             }
           },
           "is_configured": {
-            "type": "boolean",
-            "nullable": true
+            "type": [
+              "null",
+              "boolean"
+            ]
           },
           "stack_count": {
             "type": "integer",
@@ -7348,28 +8461,56 @@
               "$ref": "#/components/schemas/UsageInfo"
             }
           }
-        },
-        "additionalProperties": false
+        }
       },
       "ViewToken": {
+        "required": [
+          "id",
+          "organization_id",
+          "project_id",
+          "scopes",
+          "is_disabled",
+          "is_suspended",
+          "created_utc",
+          "updated_utc"
+        ],
         "type": "object",
         "properties": {
           "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "project_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "user_id": {
-            "type": "string",
-            "nullable": true
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "default_project_id": {
-            "type": "string",
-            "nullable": true
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "scopes": {
             "uniqueItems": true,
@@ -7379,13 +8520,17 @@
             }
           },
           "expires_utc": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "notes": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "is_disabled": {
             "type": "boolean"
@@ -7401,13 +8546,26 @@
             "type": "string",
             "format": "date-time"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "ViewUser": {
+        "required": [
+          "id",
+          "organization_ids",
+          "full_name",
+          "email_address",
+          "email_notifications_enabled",
+          "is_email_address_verified",
+          "is_active",
+          "is_invite",
+          "roles"
+        ],
         "type": "object",
         "properties": {
           "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "organization_ids": {
@@ -7421,7 +8579,8 @@
             "type": "string"
           },
           "email_address": {
-            "type": "string"
+            "type": "string",
+            "format": "email"
           },
           "email_notifications_enabled": {
             "type": "boolean"
@@ -7442,23 +8601,42 @@
               "type": "string"
             }
           }
-        },
-        "additionalProperties": false
+        }
       },
       "WebHook": {
+        "required": [
+          "id",
+          "organization_id",
+          "project_id",
+          "url",
+          "event_types",
+          "is_enabled",
+          "version",
+          "created_utc"
+        ],
         "type": "object",
         "properties": {
           "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "project_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
           "url": {
-            "type": "string"
+            "type": "string",
+            "format": "uri"
           },
           "event_types": {
             "type": "array",
@@ -7470,14 +8648,14 @@
             "type": "boolean"
           },
           "version": {
-            "type": "string"
+            "type": "string",
+            "description": "The schema version that should be used."
           },
           "created_utc": {
             "type": "string",
             "format": "date-time"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "WorkInProgressResult": {
         "type": "object",
@@ -7486,10 +8664,10 @@
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "readOnly": true
           }
-        },
-        "additionalProperties": false
+        }
       }
     },
     "securitySchemes": {
@@ -7511,14 +8689,13 @@
       }
     }
   },
-  "security": [
-    {
-      "Basic": [ ],
-      "Bearer": [ ],
-      "Token": [ ]
-    }
-  ],
   "tags": [
+    {
+      "name": "Token"
+    },
+    {
+      "name": "WebHook"
+    },
     {
       "name": "Auth"
     },
@@ -7535,13 +8712,7 @@
       "name": "Stack"
     },
     {
-      "name": "Token"
-    },
-    {
       "name": "User"
-    },
-    {
-      "name": "WebHook"
     }
   ]
 }

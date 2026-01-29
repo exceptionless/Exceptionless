@@ -2,10 +2,9 @@
 
 using System.Collections.Concurrent;
 using System.Dynamic;
+using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Reflection;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Web.Utility;
 
@@ -27,7 +26,9 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// <summary>
     /// Initializes a new instance of <see cref="Delta{TEntityType}" />.
     /// </summary>
-    public Delta() : this(typeof(TEntityType)) { }
+    public Delta() : this(typeof(TEntityType))
+    {
+    }
 
     /// <summary>
     /// Initializes a new instance of <see cref="Delta{TEntityType}" />.
@@ -79,11 +80,11 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
 
         if (value is not null)
         {
-            if (value is JToken jToken)
+            if (value is JsonElement jsonElement)
             {
                 try
                 {
-                    value = JsonConvert.DeserializeObject(jToken.ToString(), cacheHit.MemberType);
+                    value = JsonSerializer.Deserialize(jsonElement.GetRawText(), cacheHit.MemberType);
                 }
                 catch (Exception)
                 {

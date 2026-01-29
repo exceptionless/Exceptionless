@@ -72,7 +72,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         // Assert - Verify mapped Organization -> ViewOrganization correctly
         Assert.NotNull(viewOrg);
         Assert.Equal(SampleDataService.TEST_ORG_ID, viewOrg.Id);
-        Assert.False(string.IsNullOrEmpty(viewOrg.Name));
+        Assert.False(String.IsNullOrEmpty(viewOrg.Name));
         Assert.NotNull(viewOrg.PlanId);
         Assert.NotNull(viewOrg.PlanName);
     }
@@ -195,7 +195,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .Post()
             .AppendPath("organizations")
             .Content(newOrg)
-            .StatusCodeShouldBeBadRequest()
+            .StatusCodeShouldBeUnprocessableEntity()
         );
     }
 

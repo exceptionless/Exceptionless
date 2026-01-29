@@ -1,12 +1,21 @@
-﻿using Foundatio.Repositories.Models;
+﻿using System.ComponentModel.DataAnnotations;
+using Exceptionless.Core.Attributes;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
 
 public class WebHook : IOwnedByOrganizationAndProjectWithIdentity, IHaveCreatedDate
 {
+    [ObjectId]
     public string Id { get; set; } = null!;
+
+    [ObjectId]
     public string OrganizationId { get; set; } = null!;
+
+    [ObjectId]
     public string ProjectId { get; set; } = null!;
+
+    [Url]
     public string Url { get; set; } = null!;
     public string[] EventTypes { get; set; } = null!;
 

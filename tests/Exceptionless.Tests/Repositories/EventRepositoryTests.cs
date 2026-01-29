@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
@@ -20,6 +22,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     private readonly IEventRepository _repository;
     private readonly StackData _stackData;
     private readonly IStackRepository _stackRepository;
+    private readonly JsonSerializerOptions _jsonOptions;
 
     public EventRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -28,6 +31,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         _repository = GetService<IEventRepository>();
         _stackData = GetService<StackData>();
         _stackRepository = GetService<IStackRepository>();
+        _jsonOptions = GetService<JsonSerializerOptions>();
     }
 
     [Fact(Skip = "https://github.com/elastic/elasticsearch-net/issues/2463")]
@@ -216,7 +220,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
         events.ForEach(e =>
         {
-            var ri = e.GetRequestInfo();
+            var ri = e.GetRequestInfo(_jsonOptions);
             Assert.NotNull(ri);
             Assert.Equal(_clientIpAddress, ri.ClientIpAddress);
         });

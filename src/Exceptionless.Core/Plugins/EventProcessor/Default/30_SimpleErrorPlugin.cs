@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
@@ -8,14 +9,19 @@ namespace Exceptionless.Core.Plugins.EventProcessor;
 [Priority(30)]
 public sealed class SimpleErrorPlugin : EventProcessorPluginBase
 {
-    public SimpleErrorPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
+    private readonly JsonSerializerOptions _jsonOptions;
+
+    public SimpleErrorPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    {
+        _jsonOptions = jsonOptions;
+    }
 
     public override Task EventProcessingAsync(EventContext context)
     {
         if (!context.Event.IsError())
             return Task.CompletedTask;
 
-        var error = context.Event.GetSimpleError();
+        var error = context.Event.GetSimpleError(_jsonOptions);
         if (error is null)
             return Task.CompletedTask;
 

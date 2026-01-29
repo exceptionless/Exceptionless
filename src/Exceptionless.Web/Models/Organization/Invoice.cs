@@ -1,8 +1,11 @@
-﻿namespace Exceptionless.Web.Models;
+﻿using Exceptionless.Core.Attributes;
+
+namespace Exceptionless.Web.Models;
 
 public record Invoice
 {
     public required string Id { get; set; }
+    [ObjectId]
     public required string OrganizationId { get; set; }
     public required string OrganizationName { get; set; }
 

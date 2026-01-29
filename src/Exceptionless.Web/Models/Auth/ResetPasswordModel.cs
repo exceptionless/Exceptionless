@@ -5,8 +5,8 @@ namespace Exceptionless.Web.Models;
 public record ResetPasswordModel
 {
     [Required, StringLength(40, MinimumLength = 40)]
-    public required string PasswordResetToken { get; init; }
+    public string PasswordResetToken { get; init; } = null!;
 
     [Required, StringLength(100, MinimumLength = 6)]
-    public required string Password { get; init; }
+    public string Password { get; init; } = null!;
 }

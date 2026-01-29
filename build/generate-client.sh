@@ -1,7 +1,7 @@
 curl -X POST https://generator3.swagger.io/api/generate \
   -H 'content-type: application/json' \
   -d '{
-    "specURL" : "https://collector.exceptionless.io/docs/v2/swagger.json",
+    "specURL" : "https://collector.exceptionless.io/docs/v2/openapi.json",
     "lang" : "typescript-fetch",
     "type" : "CLIENT",
     "options" : {

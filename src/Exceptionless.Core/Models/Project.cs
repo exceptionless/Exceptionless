@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using Exceptionless.Core.Attributes;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
@@ -20,8 +21,10 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
     /// <summary>
     /// Unique id that identifies an project.
     /// </summary>
+    [ObjectId]
     public string Id { get; set; } = null!;
 
+    [ObjectId]
     public string OrganizationId { get; set; } = null!;
 
     public string Name { get; set; } = null!;

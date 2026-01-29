@@ -50,18 +50,29 @@ for (const contract of modelTypes) {
     }
 }
 
-// Known webhook event types for typed enum validation
+// Known webhook event types for typed enum validation (domain knowledge not in OpenAPI spec)
 const webhookEventTypes = ['CriticalError', 'CriticalEvent', 'NewError', 'NewEvent', 'StackPromoted', 'StackRegression'];
 
-const typeToZod = (rawType, isRequired, nullable, fieldName) => {
+const typeToZod = (rawType, isRequired, nullable, field) => {
     let type = cleanType(rawType);
+    const fieldName = field && field.name;
 
-    if (type.includes(' | null')) {
-        let innerType = type.replace(/\s*\|\s*null/g, '').trim();
+    // Handle nullable unions: swagger-typescript-api outputs "null | X" for most nullable fields,
+    // but outputs "X | null" for nullable arrays fixed via generate-api.mjs workaround.
+    if (type.startsWith('null | ')) {
+        let innerType = type.replace('null | ', '');
         if (innerType.startsWith('(') && innerType.endsWith(')') && !innerType.endsWith('[]')) {
             innerType = innerType.slice(1, -1);
         }
-        return `${typeToZod(innerType, true, false, fieldName)}.nullable()`;
+        return `${typeToZod(innerType, true, false, field)}.nullable()`;
+    }
+
+    if (type.endsWith(' | null')) {
+        let innerType = type.replace(' | null', '');
+        if (innerType.startsWith('(') && innerType.endsWith(')') && !innerType.endsWith('[]')) {
+            innerType = innerType.slice(1, -1);
+        }
+        return `${typeToZod(innerType, true, false, field)}.nullable()`;
     }
 
     if (type.startsWith('(') && type.endsWith(')') && !type.includes('[]')) {
@@ -71,7 +82,7 @@ const typeToZod = (rawType, isRequired, nullable, fieldName) => {
     const arrayMatch = type.match(/^\((.+)\)\[\]$/) || type.match(/^(.+)\[\]$/);
     if (arrayMatch) {
         const innerType = arrayMatch[1];
-        // Special handling for event_types array - use typed enum values
+        // Special handling for event_types array - use typed enum values (domain knowledge)
         if (fieldName === 'event_types') {
             usedZodFunctions.add('array');
             usedZodFunctions.add('enum');
@@ -84,7 +95,7 @@ const typeToZod = (rawType, isRequired, nullable, fieldName) => {
 
     if (type.startsWith('Array<') && type.endsWith('>')) {
         const innerType = type.slice(6, -1);
-        // Special handling for event_types array - use typed enum values
+        // Special handling for event_types array - use typed enum values (domain knowledge)
         if (fieldName === 'event_types') {
             usedZodFunctions.add('array');
             usedZodFunctions.add('enum');
@@ -98,9 +109,10 @@ const typeToZod = (rawType, isRequired, nullable, fieldName) => {
     if (type.includes(' | ')) {
         const unionTypes = type.split(' | ').map(t => t.trim()).filter(t => t !== 'null');
         if (unionTypes.length === 1) {
-            return typeToZod(unionTypes[0], true, false, fieldName);
+            return typeToZod(unionTypes[0], true, false, field);
         }
-        const zodTypes = unionTypes.map(t => typeToZod(t, true, false, fieldName));
+
+        const zodTypes = unionTypes.map(t => typeToZod(t, true, false, field));
         if (zodTypes.every(t => !t.includes('unknown()'))) {
             usedZodFunctions.add('union');
             return `union([${zodTypes.join(', ')}])`;
@@ -187,20 +199,20 @@ const buildZodField = (field) => {
         fieldNameLower.endsWith('_date') || fieldNameLower.endsWith('_at');
     const isUuidField = field.format === 'uuid' || fieldNameLower.endsWith('_uuid');
 
-    // Check if this is an array type
-    const isArray = cleanedType.endsWith('[]') || cleanedType.startsWith('Array<');
-
-    // Check if this is a nullable union type
-    const isNullableUnion = cleanedType.includes(' | null');
+    // Check if this is a nullable union type (e.g., "null | string" or "string | null")
+    const isNullableUnion = cleanedType.startsWith('null | ') || cleanedType.endsWith(' | null');
 
     // Get the base type (without null union)
     let baseType = cleanedType;
     if (isNullableUnion) {
-        baseType = cleanedType.replace(/\s*\|\s*null/g, '').trim();
+        baseType = cleanedType.replace('null | ', '').replace(' | null', '');
         if (baseType.startsWith('(') && baseType.endsWith(')') && !baseType.endsWith('[]')) {
             baseType = baseType.slice(1, -1);
         }
     }
+
+    // Check if this is an array type (check baseType for nullable arrays)
+    const isArray = baseType.endsWith('[]') || baseType.startsWith('Array<');
 
     // Get inner type for arrays
     let innerType = baseType;
@@ -318,7 +330,7 @@ const buildZodField = (field) => {
     }
     // Handle other types using the base converter
     else {
-        zodType = typeToZod(type, field.isRequired, field.nullable, field.name);
+        zodType = typeToZod(type, field.isRequired, field.nullable, field);
     }
 
     // Handle nullable (adds .nullable())

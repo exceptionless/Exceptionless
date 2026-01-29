@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using Exceptionless.Core.Attributes;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
@@ -9,21 +10,25 @@ public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWith
     /// <summary>
     /// Unique id that identifies an event.
     /// </summary>
+    [ObjectId]
     public string Id { get; set; } = null!;
 
     /// <summary>
     /// The organization that the event belongs to.
     /// </summary>
+    [ObjectId]
     public string OrganizationId { get; set; } = null!;
 
     /// <summary>
     /// The project that the event belongs to.
     /// </summary>
+    [ObjectId]
     public string ProjectId { get; set; } = null!;
 
     /// <summary>
     /// The stack that the event belongs to.
     /// </summary>
+    [ObjectId]
     public string StackId { get; set; } = null!;
 
     /// <summary>

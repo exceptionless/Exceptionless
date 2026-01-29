@@ -13,10 +13,15 @@ const buildGenerics = (contract) => {
     ].join('')
   }).join(',') + '>'
 }
+
+// Check if field is optional: either explicitly nullable, or its value includes 'null' (OpenAPI 3.1 style)
+const isOptional = (field) => {
+  return field.nullable || field.isNullable || (field.value && field.value.includes('null'));
+}
 %>
 interface <%~ contract.name %><%~ buildGenerics(contract) %> {
 <% for (const field of contract.$content) { %>
 <%~ includeFile('@base/object-field-jsdoc.ejs', { ...it, field }) %>
-    <%~ field.name %><%~ field.nullable ? '?' : '' %>: <%~ field.value.replaceAll('any', 'unknown') %>;
+    <%~ field.name %><%~ isOptional(field) ? '?' : '' %>: <%~ field.value.replaceAll('any', 'unknown') %>;
 <% } %>
 }

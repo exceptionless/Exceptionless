@@ -143,8 +143,7 @@ public class RequestInfoSerializerTests : TestWithServices
         var deserialized = _serializer.Deserialize<RequestInfo>(json);
 
         // Assert
-        Assert.NotNull(deserialized);
-        Assert.NotNull(deserialized.Cookies);
+        Assert.NotNull(deserialized?.Cookies);
         Assert.Equal("abc123", deserialized.Cookies["session_id"]);
         Assert.Equal("dark", deserialized.Cookies["theme"]);
     }
@@ -170,10 +169,9 @@ public class RequestInfoSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized);
-        Assert.NotNull(deserialized.PostData);
-        // PostData deserializes as JObject, verify it contains expected values
-        string? postData = deserialized.PostData.ToString();
-        Assert.Contains("testuser", postData);
+        var postData = Assert.IsAssignableFrom<IDictionary<string, object>>(deserialized.PostData);
+        Assert.Equal("testuser", postData["username"]);
+        Assert.Equal("true", postData["remember_me"]);
     }
 
     [Fact]

@@ -1,8 +1,11 @@
 ﻿using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
+using System.Text.Json;
 using Exceptionless.Core;
-using Newtonsoft.Json;
+using Exceptionless.Core.Serialization;
+using Exceptionless.Web.Utility;
+using Foundatio.Serializer;
 
 namespace Exceptionless.Web.Hubs;
 
@@ -11,13 +14,14 @@ public class WebSocketConnectionManager : IDisposable
     private static readonly ArraySegment<byte> _keepAliveMessage = new(Encoding.ASCII.GetBytes("{}"), 0, 2);
     private readonly ConcurrentDictionary<string, WebSocket> _connections = new();
     private readonly Timer? _timer;
-    private readonly JsonSerializerSettings _serializerSettings;
+    private readonly ITextSerializer _serializer;
     private readonly ILogger _logger;
 
-    public WebSocketConnectionManager(AppOptions options, JsonSerializerSettings serializerSettings, ILoggerFactory loggerFactory)
+    public WebSocketConnectionManager(AppOptions options, ITextSerializer serializer, ILoggerFactory loggerFactory)
     {
-        _serializerSettings = serializerSettings;
+        _serializer = serializer;
         _logger = loggerFactory.CreateLogger<WebSocketConnectionManager>();
+
         if (!options.EnableWebSockets)
             return;
 
@@ -107,6 +111,7 @@ public class WebSocketConnectionManager : IDisposable
         }
         catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
         {
+            // Ignored
         }
         catch (Exception ex)
         {
@@ -119,7 +124,7 @@ public class WebSocketConnectionManager : IDisposable
         if (!CanSendWebSocketMessage(socket))
             return Task.CompletedTask;
 
-        string serializedMessage = JsonConvert.SerializeObject(message, _serializerSettings);
+        string serializedMessage = _serializer.SerializeToString(message);
         Task.Factory.StartNew(async () =>
         {
             if (!CanSendWebSocketMessage(socket))
@@ -134,6 +139,7 @@ public class WebSocketConnectionManager : IDisposable
             }
             catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
             {
+                // Ignored
             }
             catch (Exception ex)
             {

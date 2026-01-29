@@ -1,13 +1,19 @@
-﻿using Foundatio.Repositories.Models;
+﻿using Exceptionless.Core.Attributes;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
 
 public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates
 {
+    [ObjectId]
     public string Id { get; set; } = null!;
+    [ObjectId]
     public string OrganizationId { get; set; } = null!;
+    [ObjectId]
     public string ProjectId { get; set; } = null!;
+    [ObjectId]
     public string? UserId { get; set; }
+    [ObjectId]
     public string? DefaultProjectId { get; set; }
     public string? Refresh { get; set; }
     public TokenType Type { get; set; }

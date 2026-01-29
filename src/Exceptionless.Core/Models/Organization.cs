@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
+using Exceptionless.Core.Attributes;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
@@ -19,6 +20,7 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     /// <summary>
     /// Unique id that identifies the organization.
     /// </summary>
+    [ObjectId]
     public string Id { get; set; } = null!;
 
     /// <summary>
@@ -64,6 +66,7 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     /// <summary>
     /// User id that the billing information was last changed by.
     /// </summary>
+    [ObjectId]
     public string? BillingChangedByUserId { get; set; }
 
     /// <summary>
@@ -119,6 +122,7 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     /// <summary>
     /// User id that suspended the account.
     /// </summary>
+    [ObjectId]
     public string? SuspendedByUserId { get; set; }
 
     /// <summary>

@@ -252,21 +252,23 @@ public static class JsonExtensions
 
     public static void AddModelConverters(this JsonSerializerSettings settings, ILogger logger)
     {
-        var knownEventDataTypes = new Dictionary<string, Type> {
-                { Event.KnownDataKeys.Error, typeof(Error) },
-                { Event.KnownDataKeys.EnvironmentInfo, typeof(EnvironmentInfo) },
-                { Event.KnownDataKeys.Location, typeof(Location) },
-                { Event.KnownDataKeys.RequestInfo, typeof(RequestInfo) },
-                { Event.KnownDataKeys.SimpleError, typeof(SimpleError) },
-                { Event.KnownDataKeys.SubmissionClient, typeof(SubmissionClient) },
-                { Event.KnownDataKeys.ManualStackingInfo, typeof(ManualStackingInfo) },
-                { Event.KnownDataKeys.UserDescription, typeof(UserDescription) },
-                { Event.KnownDataKeys.UserInfo, typeof(UserInfo) }
-            };
+        var knownEventDataTypes = new Dictionary<string, Type>
+        {
+            { Event.KnownDataKeys.Error, typeof(Error) },
+            { Event.KnownDataKeys.EnvironmentInfo, typeof(EnvironmentInfo) },
+            { Event.KnownDataKeys.Location, typeof(Location) },
+            { Event.KnownDataKeys.RequestInfo, typeof(RequestInfo) },
+            { Event.KnownDataKeys.SimpleError, typeof(SimpleError) },
+            { Event.KnownDataKeys.SubmissionClient, typeof(SubmissionClient) },
+            { Event.KnownDataKeys.ManualStackingInfo, typeof(ManualStackingInfo) },
+            { Event.KnownDataKeys.UserDescription, typeof(UserDescription) },
+            { Event.KnownDataKeys.UserInfo, typeof(UserInfo) }
+        };
 
-        var knownProjectDataTypes = new Dictionary<string, Type> {
-                { Project.KnownDataKeys.SlackToken, typeof(SlackToken) }
-            };
+        var knownProjectDataTypes = new Dictionary<string, Type>
+        {
+            { Project.KnownDataKeys.SlackToken, typeof(SlackToken) }
+        };
 
         settings.Converters.Add(new DataObjectConverter<Organization>(logger));
         settings.Converters.Add(new DataObjectConverter<Project>(logger, knownProjectDataTypes));
