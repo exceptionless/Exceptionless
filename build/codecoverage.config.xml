@@ -6,7 +6,7 @@
         <ModulePath>.*Exceptionless.*\.dll$</ModulePath>
       </Include>
       <Exclude>
-        <ModulePath>.*Exceptionless\.Tests.*\.dll$</ModulePath>
+        <ModulePath>.*\.Tests\.dll$</ModulePath>
       </Exclude>
     </ModulePaths>
   </CodeCoverage>
