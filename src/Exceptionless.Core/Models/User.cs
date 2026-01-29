@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
+using Exceptionless.Core.Attributes;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
@@ -9,6 +10,7 @@ public record User : IIdentity, IHaveDates, IValidatableObject
     /// <summary>
     /// Unique id that identifies an user.
     /// </summary>
+    [ObjectId]
     public string Id { get; set; } = null!;
 
     /// <summary>

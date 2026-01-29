@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -19,9 +20,11 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
     private readonly IEventRepository _eventRepository;
     private readonly ICacheClient _cache;
     private readonly ILockProvider _lockProvider;
+    private readonly JsonSerializerOptions _jsonOptions;
     private DateTime? _lastActivity;
 
     public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient,
+        JsonSerializerOptions jsonOptions,
         TimeProvider timeProvider,
         IResiliencePolicyProvider resiliencePolicyProvider,
         ILoggerFactory loggerFactory
@@ -30,6 +33,7 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
         _eventRepository = eventRepository;
         _cache = cacheClient;
         _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(1), timeProvider, resiliencePolicyProvider, loggerFactory);
+        _jsonOptions = jsonOptions;
     }
 
     protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)
@@ -118,7 +122,7 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
                 return result;
         }
 
-        var user = sessionStart.GetUserIdentity();
+        var user = sessionStart.GetUserIdentity(_jsonOptions);
         if (String.IsNullOrWhiteSpace(user?.Identity))
             return null;
 

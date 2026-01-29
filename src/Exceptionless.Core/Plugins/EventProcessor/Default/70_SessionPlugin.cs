@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
@@ -17,19 +18,21 @@ public sealed class SessionPlugin : EventProcessorPluginBase
     private readonly UpdateStatsAction _updateStats;
     private readonly AssignToStackAction _assignToStack;
     private readonly LocationPlugin _locationPlugin;
+    private readonly JsonSerializerOptions _jsonOptions;
 
-    public SessionPlugin(ICacheClient cacheClient, IEventRepository eventRepository, AssignToStackAction assignToStack, UpdateStatsAction updateStats, LocationPlugin locationPlugin, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    public SessionPlugin(ICacheClient cacheClient, IEventRepository eventRepository, AssignToStackAction assignToStack, UpdateStatsAction updateStats, LocationPlugin locationPlugin, JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _cache = new ScopedCacheClient(cacheClient, "session");
         _eventRepository = eventRepository;
         _assignToStack = assignToStack;
         _updateStats = updateStats;
         _locationPlugin = locationPlugin;
+        _jsonOptions = jsonOptions;
     }
 
     public override Task EventBatchProcessingAsync(ICollection<EventContext> contexts)
     {
-        var autoSessionEvents = contexts.Where(c => !String.IsNullOrWhiteSpace(c.Event.GetUserIdentity()?.Identity) && String.IsNullOrEmpty(c.Event.GetSessionId())).ToList();
+        var autoSessionEvents = contexts.Where(c => !String.IsNullOrWhiteSpace(c.Event.GetUserIdentity(_jsonOptions)?.Identity) && String.IsNullOrEmpty(c.Event.GetSessionId())).ToList();
         var manualSessionsEvents = contexts.Where(c => !String.IsNullOrEmpty(c.Event.GetSessionId())).ToList();
 
         return Task.WhenAll(
@@ -122,7 +125,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
     {
         var identityGroups = contexts
             .OrderBy(c => c.Event.Date)
-            .GroupBy(c => c.Event.GetUserIdentity()?.Identity);
+            .GroupBy(c => c.Event.GetUserIdentity(_jsonOptions)?.Identity);
 
         foreach (var identityGroup in identityGroups)
         {
@@ -283,7 +286,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
 
     private async Task<PersistentEvent> CreateSessionStartEventAsync(EventContext startContext, DateTime? lastActivityUtc, bool? isSessionEnd)
     {
-        var startEvent = startContext.Event.ToSessionStartEvent(lastActivityUtc, isSessionEnd, startContext.Organization.HasPremiumFeatures, startContext.IncludePrivateInformation);
+        var startEvent = startContext.Event.ToSessionStartEvent(_jsonOptions, lastActivityUtc, isSessionEnd, startContext.Organization.HasPremiumFeatures, startContext.IncludePrivateInformation);
         var startEventContexts = new List<EventContext> {
                 new(startEvent, startContext.Organization, startContext.Project)
             };

@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Attributes;
+using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories.Models;
 
@@ -6,6 +7,7 @@ namespace Exceptionless.Web.Models;
 
 public record ViewOrganization : IIdentity, IData, IHaveDates
 {
+    [ObjectId]
     public string Id { get; set; } = null!;
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }
@@ -16,6 +18,7 @@ public record ViewOrganization : IIdentity, IData, IHaveDates
     public string? CardLast4 { get; set; }
     public DateTime? SubscribeDate { get; set; }
     public DateTime? BillingChangeDate { get; set; }
+    [ObjectId]
     public string? BillingChangedByUserId { get; set; }
     public BillingStatus BillingStatus { get; set; }
     public decimal BillingPrice { get; set; }

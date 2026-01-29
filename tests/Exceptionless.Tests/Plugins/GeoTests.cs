@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Geo;
@@ -28,6 +29,7 @@ public sealed class GeoTests : TestWithServices
     private readonly AppOptions _options;
     private readonly OrganizationData _organizationData;
     private readonly ProjectData _projectData;
+    private readonly JsonSerializerOptions _jsonOptions;
 
     public GeoTests(ITestOutputHelper output) : base(output)
     {
@@ -36,6 +38,7 @@ public sealed class GeoTests : TestWithServices
         _options = GetService<AppOptions>();
         _organizationData = GetService<OrganizationData>();
         _projectData = GetService<ProjectData>();
+        _jsonOptions = GetService<JsonSerializerOptions>();
     }
 
     private async Task<IGeoIpService> GetResolverAsync(ILoggerFactory loggerFactory)
@@ -71,12 +74,12 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options, Log);
+        var plugin = new GeoPlugin(resolver, _jsonOptions, _options, Log);
         var ev = new PersistentEvent { Geo = GREEN_BAY_COORDINATES };
         await plugin.EventBatchProcessingAsync(new List<EventContext> { new(ev, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject()) });
 
         Assert.Equal(GREEN_BAY_COORDINATES, ev.Geo);
-        Assert.Null(ev.GetLocation());
+        Assert.Null(ev.GetLocation(_jsonOptions));
     }
 
     [Theory]
@@ -91,12 +94,12 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options, Log);
+        var plugin = new GeoPlugin(resolver, _jsonOptions, _options, Log);
         var ev = new PersistentEvent { Geo = geo };
         await plugin.EventBatchProcessingAsync(new List<EventContext> { new(ev, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject()) });
 
         Assert.Null(ev.Geo);
-        Assert.Null(ev.GetLocation());
+        Assert.Null(ev.GetLocation(_jsonOptions));
     }
 
     [Fact]
@@ -106,14 +109,14 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options, Log);
+        var plugin = new GeoPlugin(resolver, _jsonOptions, _options, Log);
         var ev = new PersistentEvent { Geo = GREEN_BAY_IP };
         await plugin.EventBatchProcessingAsync(new List<EventContext> { new(ev, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject()) });
 
         Assert.NotNull(ev.Geo);
         Assert.NotEqual(GREEN_BAY_IP, ev.Geo);
 
-        var location = ev.GetLocation();
+        var location = ev.GetLocation(_jsonOptions);
         Assert.Equal("US", location?.Country);
         Assert.Equal("WI", location?.Level1);
         Assert.Equal("Green Bay", location?.Locality);
@@ -126,14 +129,14 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options, Log);
+        var plugin = new GeoPlugin(resolver, _jsonOptions, _options, Log);
         var ev = new PersistentEvent();
         ev.AddRequestInfo(new RequestInfo { ClientIpAddress = GREEN_BAY_IP });
         await plugin.EventBatchProcessingAsync(new List<EventContext> { new(ev, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject()) });
 
         Assert.NotNull(ev.Geo);
 
-        var location = ev.GetLocation();
+        var location = ev.GetLocation(_jsonOptions);
         Assert.Equal("US", location?.Country);
         Assert.Equal("WI", location?.Level1);
         Assert.Equal("Green Bay", location?.Locality);
@@ -146,14 +149,14 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options, Log);
+        var plugin = new GeoPlugin(resolver, _jsonOptions, _options, Log);
         var ev = new PersistentEvent();
         ev.SetEnvironmentInfo(new EnvironmentInfo { IpAddress = $"127.0.0.1,{GREEN_BAY_IP}" });
         await plugin.EventBatchProcessingAsync(new List<EventContext> { new(ev, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject()) });
 
         Assert.NotNull(ev.Geo);
 
-        var location = ev.GetLocation();
+        var location = ev.GetLocation(_jsonOptions);
         Assert.Equal("US", location?.Country);
         Assert.Equal("WI", location?.Level1);
         Assert.Equal("Green Bay", location?.Locality);
@@ -166,7 +169,7 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options, Log);
+        var plugin = new GeoPlugin(resolver, _jsonOptions, _options, Log);
 
         var contexts = new List<EventContext> {
                 new(new PersistentEvent { Geo = GREEN_BAY_IP }, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject()),
@@ -179,7 +182,7 @@ public sealed class GeoTests : TestWithServices
         {
             AssertCoordinatesAreEqual(GREEN_BAY_COORDINATES, context.Event.Geo);
 
-            var location = context.Event.GetLocation();
+            var location = context.Event.GetLocation(_jsonOptions);
             Assert.Equal("US", location?.Country);
             Assert.Equal("WI", location?.Level1);
             Assert.Equal("Green Bay", location?.Locality);
@@ -193,7 +196,7 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options, Log);
+        var plugin = new GeoPlugin(resolver, _jsonOptions, _options, Log);
 
         var ev = new PersistentEvent();
         var greenBayEvent = new PersistentEvent { Geo = GREEN_BAY_IP };
@@ -205,13 +208,13 @@ public sealed class GeoTests : TestWithServices
             });
 
         AssertCoordinatesAreEqual(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
-        var location = greenBayEvent.GetLocation();
+        var location = greenBayEvent.GetLocation(_jsonOptions);
         Assert.Equal("US", location?.Country);
         Assert.Equal("WI", location?.Level1);
         Assert.Equal("Green Bay", location?.Locality);
 
         AssertCoordinatesAreEqual(IRVING_COORDINATES, irvingEvent.Geo);
-        location = irvingEvent.GetLocation();
+        location = irvingEvent.GetLocation(_jsonOptions);
         Assert.Equal("US", location?.Country);
         Assert.Equal("TX", location?.Level1);
         Assert.Equal("Irving", location?.Locality);
@@ -239,7 +242,7 @@ public sealed class GeoTests : TestWithServices
         if (resolver is NullGeoIpService)
             return;
 
-        var plugin = new GeoPlugin(resolver, _options, Log);
+        var plugin = new GeoPlugin(resolver, _jsonOptions, _options, Log);
 
         var ev = new PersistentEvent();
         var greenBayEvent = new PersistentEvent();
@@ -253,13 +256,13 @@ public sealed class GeoTests : TestWithServices
             });
 
         AssertCoordinatesAreEqual(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
-        var location = greenBayEvent.GetLocation();
+        var location = greenBayEvent.GetLocation(_jsonOptions);
         Assert.Equal("US", location?.Country);
         Assert.Equal("WI", location?.Level1);
         Assert.Equal("Green Bay", location?.Locality);
 
         AssertCoordinatesAreEqual(IRVING_COORDINATES, irvingEvent.Geo);
-        location = irvingEvent.GetLocation();
+        location = irvingEvent.GetLocation(_jsonOptions);
         Assert.Equal("US", location?.Country);
         Assert.Equal("TX", location?.Level1);
         Assert.Equal("Irving", location?.Locality);

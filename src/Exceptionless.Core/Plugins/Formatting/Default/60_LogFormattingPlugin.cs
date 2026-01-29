@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
@@ -8,7 +9,7 @@ namespace Exceptionless.Core.Plugins.Formatting;
 [Priority(60)]
 public sealed class LogFormattingPlugin : FormattingPluginBase
 {
-    public LogFormattingPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
+    public LogFormattingPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(jsonOptions, options, loggerFactory) { }
 
     private bool ShouldHandle(PersistentEvent ev)
     {
@@ -49,7 +50,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
             return null;
 
         var data = new Dictionary<string, object?> { { "Message", ev.Message } };
-        AddUserIdentitySummaryData(data, ev.GetUserIdentity());
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_jsonOptions));
 
         if (!String.IsNullOrWhiteSpace(ev.Source))
         {
@@ -91,7 +92,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
         if (!String.IsNullOrEmpty(level))
             data.Add("Level", level.Truncate(60));
 
-        var requestInfo = ev.GetRequestInfo();
+        var requestInfo = ev.GetRequestInfo(_jsonOptions);
         if (requestInfo is not null)
             data.Add("Url", requestInfo.GetFullPath(true, true, true));
 
@@ -113,7 +114,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
             notificationType = String.Concat("critical ", notificationType);
 
         string source = !String.IsNullOrEmpty(ev.Source) ? ev.Source : "(Global)";
-        var attachment = new SlackMessage.SlackAttachment(ev)
+        var attachment = new SlackMessage.SlackAttachment(ev, _jsonOptions)
         {
             Fields =
             [
@@ -148,7 +149,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
             attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Level", Value = level.Truncate(60) });
         }
 
-        var requestInfo = ev.GetRequestInfo();
+        var requestInfo = ev.GetRequestInfo(_jsonOptions);
         if (requestInfo is not null)
             attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Url", Value = requestInfo.GetFullPath(true, true, true) });
 

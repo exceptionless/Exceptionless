@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
@@ -8,20 +9,25 @@ namespace Exceptionless.Core.Plugins.WebHook;
 [Priority(10)]
 public sealed class VersionOnePlugin : WebHookDataPluginBase
 {
-    public VersionOnePlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
+    private readonly JsonSerializerOptions _jsonOptions;
+
+    public VersionOnePlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    {
+        _jsonOptions = jsonOptions;
+    }
 
     public override Task<object?> CreateFromEventAsync(WebHookDataContext ctx)
     {
         if (!String.Equals(ctx.WebHook.Version, Models.WebHook.KnownVersions.Version1))
             return Task.FromResult<object?>(null);
 
-        var error = ctx.Event?.GetError();
+        var error = ctx.Event?.GetError(_jsonOptions);
         if (error is null)
             return Task.FromResult<object?>(null);
 
         var ev = ctx.Event!;
-        var requestInfo = ev.GetRequestInfo();
-        var environmentInfo = ev.GetEnvironmentInfo();
+        var requestInfo = ev.GetRequestInfo(_jsonOptions);
+        var environmentInfo = ev.GetEnvironmentInfo(_jsonOptions);
 
         return Task.FromResult<object?>(new VersionOneWebHookEvent(_options.BaseURL)
         {

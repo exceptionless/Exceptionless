@@ -87,7 +87,7 @@ jobs:
         run: docker compose up --wait elasticsearch
 
       - name: Run .NET Tests with Coverage
-        run: dotnet test --no-restore --no-build --configuration Release --results-directory coverage -- --report-github --coverage --coverage-output coverage/coverage.cobertura.xml --coverage-output-format cobertura
+        run: dotnet test --no-restore --no-build --configuration Release --results-directory coverage --max-parallel-test-modules 1 -- --report-github --report-xunit-trx --report-xunit-trx-filename test-results.trx --coverage --coverage-output coverage/coverage.cobertura.xml --coverage-output-format cobertura
 
       - name: Code Coverage Summary Report
         uses: irongut/CodeCoverageSummary@v1.3.0
@@ -123,7 +123,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Cache node_modules
         uses: actions/cache@v4

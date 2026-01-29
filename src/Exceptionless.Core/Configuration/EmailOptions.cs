@@ -1,8 +1,7 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json.Serialization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace Exceptionless.Core.Configuration;
 
@@ -26,7 +25,7 @@ public class EmailOptions
 
     public int SmtpPort { get; internal set; }
 
-    [JsonConverter(typeof(StringEnumConverter))]
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public SmtpEncryption SmtpEncryption { get; internal set; }
 
     public string? SmtpUser { get; internal set; }
