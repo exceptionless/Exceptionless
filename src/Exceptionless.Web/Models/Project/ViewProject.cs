@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Attributes;
+using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories.Models;
 
@@ -6,8 +7,11 @@ namespace Exceptionless.Web.Models;
 
 public class ViewProject : IIdentity, IData, IHaveCreatedDate
 {
+    [ObjectId]
     public string Id { get; set; } = null!;
     public DateTime CreatedUtc { get; set; }
+
+    [ObjectId]
     public string OrganizationId { get; set; } = null!;
     public string OrganizationName { get; set; } = null!;
     public string Name { get; set; } = null!;

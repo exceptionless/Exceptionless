@@ -1,3 +1,4 @@
+using System.Text.Json;
 using AutoMapper;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
@@ -21,7 +22,6 @@ using Foundatio.Repositories.Models;
 using McSherry.SemanticVersioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Web.Controllers;
 
@@ -131,14 +131,14 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [HttpPost("mark-fixed")]
     [Consumes("application/json")]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<ActionResult> MarkFixedAsync(JObject data)
+    public async Task<ActionResult> MarkFixedAsync(JsonDocument data)
     {
         string? id = null;
-        if (data.TryGetValue("ErrorStack", out var value))
-            id = value.Value<string>();
+        if (data.RootElement.TryGetProperty("ErrorStack", out var errorStackProp))
+            id = errorStackProp.GetString();
 
-        if (data.TryGetValue("Stack", out value))
-            id = value.Value<string>();
+        if (data.RootElement.TryGetProperty("Stack", out var stackProp))
+            id = stackProp.GetString();
 
         if (String.IsNullOrEmpty(id))
             return NotFound();
@@ -215,14 +215,14 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
     [HttpPost("add-link")]
     [Consumes("application/json")]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<IActionResult> AddLinkAsync(JObject data)
+    public async Task<IActionResult> AddLinkAsync(JsonDocument data)
     {
         string? id = null;
-        if (data.TryGetValue("ErrorStack", out var value))
-            id = value.Value<string>();
+        if (data.RootElement.TryGetProperty("ErrorStack", out var errorStackProp))
+            id = errorStackProp.GetString();
 
-        if (data.TryGetValue("Stack", out value))
-            id = value.Value<string>();
+        if (data.RootElement.TryGetProperty("Stack", out var stackProp))
+            id = stackProp.GetString();
 
         if (String.IsNullOrEmpty(id))
             return NotFound();
@@ -230,7 +230,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (id.StartsWith("http"))
             id = id.Substring(id.LastIndexOf('/') + 1);
 
-        string? url = data.GetValue("Link")?.Value<string>();
+        string? url = data.RootElement.TryGetProperty("Link", out var linkProp) ? linkProp.GetString() : null;
         return await AddLinkAsync(id, new ValueFromBody<string?>(url));
     }
 

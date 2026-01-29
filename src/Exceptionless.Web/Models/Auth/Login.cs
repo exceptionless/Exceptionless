@@ -8,10 +8,10 @@ public record Login
     /// The email address or domain username
     /// </summary>
     [Required]
-    public required string Email { get; init; }
+    public string Email { get; init; } = null!;
 
     [Required, StringLength(100, MinimumLength = 6)]
-    public required string Password { get; init; }
+    public string Password { get; init; } = null!;
 
     [StringLength(40, MinimumLength = 40)]
     public string? InviteToken { get; init; }

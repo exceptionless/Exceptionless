@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.ComponentModel.DataAnnotations;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Models.Data;
 
@@ -18,6 +19,7 @@ public class UserDescription : IData
             Description = description.Trim();
     }
 
+    [EmailAddress]
     public string? EmailAddress { get; set; }
     public string? Description { get; set; }
 

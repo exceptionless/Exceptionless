@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 
@@ -58,9 +59,9 @@ public static class ErrorExtensions
         };
     }
 
-    public static StackingTarget? GetStackingTarget(this Event ev)
+    public static StackingTarget? GetStackingTarget(this Event ev, JsonSerializerOptions options)
     {
-        var error = ev.GetError();
+        var error = ev.GetError(options);
         return error?.GetStackingTarget();
     }
 

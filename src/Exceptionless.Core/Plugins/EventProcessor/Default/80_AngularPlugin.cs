@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
@@ -8,14 +9,19 @@ namespace Exceptionless.Core.Plugins.EventProcessor;
 [Priority(80)]
 public sealed class AngularPlugin : EventProcessorPluginBase
 {
-    public AngularPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
+    private readonly JsonSerializerOptions _jsonOptions;
+
+    public AngularPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    {
+        _jsonOptions = jsonOptions;
+    }
 
     public override Task EventProcessingAsync(EventContext context)
     {
         if (!context.Event.IsError())
             return Task.CompletedTask;
 
-        var error = context.Event.GetError();
+        var error = context.Event.GetError(_jsonOptions);
         if (error is null)
             return Task.CompletedTask;
 

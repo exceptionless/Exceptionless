@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using System.Text.Json;
+using AutoMapper;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -11,7 +12,6 @@ using Exceptionless.Web.Models;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.App.Controllers.API;
 
@@ -101,10 +101,10 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     [HttpPost("~/api/v1/projecthook/subscribe")]
     [Consumes("application/json")]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<ActionResult<WebHook>> SubscribeAsync(JObject data, int apiVersion = 1)
+    public async Task<ActionResult<WebHook>> SubscribeAsync(JsonDocument data, int apiVersion = 1)
     {
-        string? eventType = data.GetValue("event")?.Value<string>();
-        string? url = data.GetValue("target_url")?.Value<string>();
+        string? eventType = data.RootElement.TryGetProperty("event", out var eventProp) ? eventProp.GetString() : null;
+        string? url = data.RootElement.TryGetProperty("target_url", out var urlProp) ? urlProp.GetString() : null;
         if (String.IsNullOrEmpty(eventType) || String.IsNullOrEmpty(url))
             return BadRequest();
 
@@ -139,9 +139,9 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     [HttpPost("~/api/v1/projecthook/unsubscribe")]
     [Consumes("application/json")]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<IActionResult> UnsubscribeAsync(JObject data)
+    public async Task<IActionResult> UnsubscribeAsync(JsonDocument data)
     {
-        string? targetUrl = data.GetValue("target_url")?.Value<string>();
+        string? targetUrl = data.RootElement.TryGetProperty("target_url", out var urlProp) ? urlProp.GetString() : null;
 
         // don't let this anon method delete non-zapier hooks
         if (targetUrl is null || !targetUrl.StartsWith("https://hooks.zapier.com"))

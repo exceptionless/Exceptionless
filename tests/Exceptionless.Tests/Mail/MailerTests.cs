@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -39,7 +40,7 @@ public sealed class MailerTests : TestWithServices
         _plans = GetService<BillingPlans>();
 
         if (_mailer is NullMailer)
-            _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), _options, TimeProvider, Log.CreateLogger<Mailer>());
+            _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), GetService<JsonSerializerOptions>(), _options, TimeProvider, Log.CreateLogger<Mailer>());
     }
 
     [Fact]

@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Models;
@@ -9,11 +10,13 @@ public class Event : IData
     /// <summary>
     /// The event type (ie. error, log message, feature usage). Check <see cref="KnownTypes">Event.KnownTypes</see> for standard event types.
     /// </summary>
+    [StringLength(100)]
     public string? Type { get; set; }
 
     /// <summary>
     /// The event source (ie. machine name, log name, feature name).
     /// </summary>
+    [StringLength(2000)]
     public string? Source { get; set; }
 
     /// <summary>
@@ -29,6 +32,7 @@ public class Event : IData
     /// <summary>
     /// The event message.
     /// </summary>
+    [StringLength(2000)]
     public string? Message { get; set; }
 
     /// <summary>

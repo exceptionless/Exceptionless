@@ -41,7 +41,6 @@ public static class TypeExtensions
         ArgumentNullException.ThrowIfNull(value);
 
         var targetType = typeof(T);
-        var converter = TypeDescriptor.GetConverter(targetType);
         var valueType = value.GetType();
 
         if (targetType.IsAssignableFrom(valueType))
@@ -63,7 +62,8 @@ public static class TypeExtensions
         if (valueType.IsNumeric() && targetType.IsEnum)
             return (T)Enum.ToObject(targetType, value);
 
-        if (converter is not null && converter.CanConvertFrom(valueType))
+        var converter = TypeDescriptor.GetConverter(targetType);
+        if (converter.CanConvertFrom(valueType))
         {
             object? convertedValue = converter.ConvertFrom(value);
             return (convertedValue is T convertedValue1 ? convertedValue1 : default)

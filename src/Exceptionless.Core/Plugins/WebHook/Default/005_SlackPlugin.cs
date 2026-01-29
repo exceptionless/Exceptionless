@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Pipeline;
+﻿using System.Text.Json;
+using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.Formatting;
 using Microsoft.Extensions.Logging;
 
@@ -8,10 +9,12 @@ namespace Exceptionless.Core.Plugins.WebHook;
 public sealed class SlackPlugin : WebHookDataPluginBase
 {
     private readonly FormattingPluginManager _pluginManager;
+    private readonly JsonSerializerOptions _jsonOptions;
 
-    public SlackPlugin(FormattingPluginManager pluginManager, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    public SlackPlugin(FormattingPluginManager pluginManager, JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _pluginManager = pluginManager;
+        _jsonOptions = jsonOptions;
     }
 
     public override Task<object?> CreateFromEventAsync(WebHookDataContext ctx)
@@ -19,7 +22,7 @@ public sealed class SlackPlugin : WebHookDataPluginBase
         if (String.IsNullOrEmpty(ctx.WebHook.Url) || !ctx.WebHook.Url.EndsWith("/slack"))
             return Task.FromResult<object?>(null);
 
-        var error = ctx.Event?.GetError();
+        var error = ctx.Event?.GetError(_jsonOptions);
         if (error is null)
         {
             ctx.IsCancelled = true;

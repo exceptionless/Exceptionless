@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Utility;
@@ -9,14 +10,19 @@ namespace Exceptionless.Core.Plugins.EventProcessor;
 [Priority(20)]
 public sealed class ErrorPlugin : EventProcessorPluginBase
 {
-    public ErrorPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
+    private readonly JsonSerializerOptions _jsonOptions;
+
+    public ErrorPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    {
+        _jsonOptions = jsonOptions;
+    }
 
     public override Task EventProcessingAsync(EventContext context)
     {
         if (!context.Event.IsError())
             return Task.CompletedTask;
 
-        var error = context.Event.GetError();
+        var error = context.Event.GetError(_jsonOptions);
         if (error is null)
             return Task.CompletedTask;
 
@@ -34,7 +40,7 @@ public sealed class ErrorPlugin : EventProcessorPluginBase
         if (context.HasProperty("UserNamespaces"))
             userNamespaces = context.GetProperty<string>("UserNamespaces")?.SplitAndTrim([',']);
 
-        var signature = new ErrorSignature(error, userNamespaces, userCommonMethods);
+        var signature = new ErrorSignature(error, _jsonOptions, userNamespaces, userCommonMethods);
         if (signature.SignatureInfo.Count <= 0)
             return Task.CompletedTask;
 

@@ -1,8 +1,10 @@
 ﻿using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
+using Exceptionless.Core.Attributes;
 using Foundatio.Repositories.Models;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
 namespace Exceptionless.Core.Models;
@@ -13,21 +15,25 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     /// <summary>
     /// Unique id that identifies a stack.
     /// </summary>
+    [ObjectId]
     public string Id { get; set; } = null!;
 
     /// <summary>
     /// The organization that the stack belongs to.
     /// </summary>
+    [ObjectId]
     public string OrganizationId { get; set; } = null!;
 
     /// <summary>
     /// The project that the stack belongs to.
     /// </summary>
+    [ObjectId]
     public string ProjectId { get; set; } = null!;
 
     /// <summary>
     /// The stack type (ie. error, log message, feature usage). Check <see cref="KnownTypes">Stack.KnownTypes</see> for standard stack types.
     /// </summary>
+    [StringLength(100)]
     public string Type { get; set; } = null!;
 
     /// <summary>
@@ -63,6 +69,7 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     /// <summary>
     /// The stack title.
     /// </summary>
+    [StringLength(1000)]
     public string Title { get; set; } = null!;
 
     /// <summary>
@@ -123,13 +130,26 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     }
 }
 
-[JsonConverter(typeof(StringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter))]
+[Newtonsoft.Json.JsonConverter(typeof(StringEnumConverter))]
 public enum StackStatus
 {
-    [EnumMember(Value = "open")] Open,
-    [EnumMember(Value = "fixed")] Fixed,
-    [EnumMember(Value = "regressed")] Regressed,
-    [EnumMember(Value = "snoozed")] Snoozed,
-    [EnumMember(Value = "ignored")] Ignored,
-    [EnumMember(Value = "discarded")] Discarded
+    [JsonStringEnumMemberName("open")]
+    [EnumMember(Value = "open")]
+    Open,
+    [JsonStringEnumMemberName("fixed")]
+    [EnumMember(Value = "fixed")]
+    Fixed,
+    [JsonStringEnumMemberName("regressed")]
+    [EnumMember(Value = "regressed")]
+    Regressed,
+    [JsonStringEnumMemberName("snoozed")]
+    [EnumMember(Value = "snoozed")]
+    Snoozed,
+    [JsonStringEnumMemberName("ignored")]
+    [EnumMember(Value = "ignored")]
+    Ignored,
+    [JsonStringEnumMemberName("discarded")]
+    [EnumMember(Value = "discarded")]
+    Discarded
 }

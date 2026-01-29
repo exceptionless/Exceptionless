@@ -7,7 +7,6 @@ export enum StackStatus {
   Discarded = "discarded",
 }
 
-/** @format int32 */
 export enum BillingStatus {
   Trialing = 0,
   Active = 1,
@@ -41,7 +40,7 @@ export interface ChangePasswordModel {
 
 export interface ChangePlanResult {
   success: boolean;
-  message?: string | null;
+  message?: null | string;
 }
 
 export interface ClientConfiguration {
@@ -53,8 +52,8 @@ export interface ClientConfiguration {
 export interface CountResult {
   /** @format int64 */
   total: number;
-  aggregations?: Record<string, IAggregate>;
-  data?: Record<string, unknown>;
+  aggregations?: null | Record<string, IAggregate>;
+  data?: null | object;
 }
 
 export interface ExternalAuthInfo {
@@ -62,15 +61,18 @@ export interface ExternalAuthInfo {
   code: string;
   /** @format uri */
   redirectUri: string;
-  inviteToken?: string | null;
+  inviteToken?: null | string;
 }
 
+/** Base interface for aggregation results. Concrete types include ValueAggregate, BucketAggregate, StatsAggregate, etc. See client-side type definitions for full type information. */
 export interface IAggregate {
-  data?: Record<string, unknown>;
+  /** Additional data associated with the aggregate. */
+  data: Record<string, unknown>;
 }
 
 export interface Invite {
   token: string;
+  /** @format email */
   email_address: string;
   /** @format date-time */
   date_added: string;
@@ -78,6 +80,7 @@ export interface Invite {
 
 export interface Invoice {
   id: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
   organization_id: string;
   organization_name: string;
   /** @format date-time */
@@ -97,7 +100,7 @@ export interface InvoiceGridModel {
 
 export interface InvoiceLineItem {
   description: string;
-  date?: string | null;
+  date?: null | string;
   /** @format double */
   amount: number;
 }
@@ -106,7 +109,7 @@ export interface Login {
   /** The email address or domain username */
   email: string;
   password: string;
-  invite_token?: string | null;
+  invite_token?: null | string;
 }
 
 export interface NewOrganization {
@@ -114,30 +117,38 @@ export interface NewOrganization {
 }
 
 export interface NewProject {
-  /** The organization ID. Optional - defaults to user's first associated organization if not specified. */
+  /** @pattern ^[a-fA-F0-9]{24}$ */
   organization_id: string;
   name: string;
   delete_bot_data_enabled: boolean;
 }
 
 export interface NewToken {
-  organization_id: string;
-  project_id: string;
-  default_project_id?: string | null;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  organization_id?: null | string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  project_id?: null | string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  default_project_id?: null | string;
   scopes: string[];
   /** @format date-time */
-  expires_utc?: string | null;
-  notes?: string | null;
+  expires_utc?: null | string;
+  notes?: null | string;
 }
 
 export interface NewWebHook {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
   organization_id: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
   project_id: string;
   /** @format uri */
   url: string;
   event_types: string[];
-  /** The schema version that should be used. */
-  version: string;
+  /**
+   * The schema version that should be used.
+   * @pattern ^\d+(\.\d+){1,3}$
+   */
+  version?: null | string;
 }
 
 export interface NotificationSettings {
@@ -153,31 +164,68 @@ export interface OAuthAccount {
   provider: string;
   provider_user_id: string;
   username: string;
-  extra_data: Record<string, string>;
+  extra_data?: null | object;
 }
 
 export interface PersistentEvent {
+  /**
+   * Unique id that identifies an event.
+   * @pattern ^[a-fA-F0-9]{24}$
+   */
   id: string;
+  /**
+   * The organization that the event belongs to.
+   * @pattern ^[a-fA-F0-9]{24}$
+   */
   organization_id: string;
+  /**
+   * The project that the event belongs to.
+   * @pattern ^[a-fA-F0-9]{24}$
+   */
   project_id: string;
+  /**
+   * The stack that the event belongs to.
+   * @pattern ^[a-fA-F0-9]{24}$
+   */
   stack_id: string;
+  /** Whether the event resulted in the creation of a new stack. */
   is_first_occurrence: boolean;
-  /** @format date-time */
+  /**
+   * The date that the event was created in the system.
+   * @format date-time
+   */
   created_utc: string;
+  /** Used to store primitive data type custom data values for searching the event. */
   idx: Record<string, unknown>;
-  type?: string | null;
-  source?: string | null;
-  /** @format date-time */
+  /** The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types. */
+  type?: null | string;
+  /** The event source (ie. machine name, log name, feature name). */
+  source?: null | string;
+  /**
+   * The date that the event occurred on.
+   * @format date-time
+   */
   date: string;
+  /** A list of tags used to categorize this event. */
   tags?: string[] | null;
-  message?: string | null;
-  geo?: string | null;
-  /** @format double */
-  value?: number | null;
-  /** @format int32 */
-  count?: number | null;
-  data?: Record<string, unknown>;
-  reference_id?: string | null;
+  /** The event message. */
+  message?: null | string;
+  /** The geo coordinates where the event happened. */
+  geo?: null | string;
+  /**
+   * The value of the event if any.
+   * @format double
+   */
+  value?: null | number;
+  /**
+   * The number of duplicated events.
+   * @format int32
+   */
+  count?: null | number;
+  /** Optional data entries that contain additional information about this event. */
+  data?: null | object;
+  /** An optional identifier to be used for referencing this event instance at a later time. */
+  reference_id?: null | string;
 }
 
 export interface ResetPasswordModel {
@@ -190,33 +238,71 @@ export interface Signup {
   /** The email address or domain username */
   email: string;
   password: string;
-  invite_token?: string | null;
+  invite_token?: null | string;
 }
 
 export interface Stack {
+  /**
+   * Unique id that identifies a stack.
+   * @pattern ^[a-fA-F0-9]{24}$
+   */
   id: string;
+  /**
+   * The organization that the stack belongs to.
+   * @pattern ^[a-fA-F0-9]{24}$
+   */
   organization_id: string;
+  /**
+   * The project that the stack belongs to.
+   * @pattern ^[a-fA-F0-9]{24}$
+   */
   project_id: string;
+  /** The stack type (ie. error, log message, feature usage). Check KnownTypes for standard stack types. */
   type: string;
+  /** The stack status (ie. open, fixed, regressed, */
   status: StackStatus;
-  /** @format date-time */
-  snooze_until_utc?: string | null;
+  /**
+   * The date that the stack should be snoozed until.
+   * @format date-time
+   */
+  snooze_until_utc?: null | string;
+  /** The signature used for stacking future occurrences. */
   signature_hash: string;
+  /** The collection of information that went into creating the signature hash for the stack. */
   signature_info: Record<string, string>;
-  fixed_in_version?: string | null;
-  /** @format date-time */
-  date_fixed?: string | null;
+  /** The version the stack was fixed in. */
+  fixed_in_version?: null | string;
+  /**
+   * The date the stack was fixed.
+   * @format date-time
+   */
+  date_fixed?: null | string;
+  /** The stack title. */
   title: string;
-  /** @format int32 */
+  /**
+   * The total number of occurrences in the stack.
+   * @format int32
+   */
   total_occurrences: number;
-  /** @format date-time */
+  /**
+   * The date of the 1st occurrence of this stack in UTC time.
+   * @format date-time
+   */
   first_occurrence: string;
-  /** @format date-time */
+  /**
+   * The date of the last occurrence of this stack in UTC time.
+   * @format date-time
+   */
   last_occurrence: string;
-  description?: string | null;
+  /** The stack description. */
+  description?: null | string;
+  /** If true, all future occurrences will be marked as critical. */
   occurrences_are_critical: boolean;
+  /** A list of references. */
   references: string[];
+  /** A list of tags used to categorize this stack. */
   tags: string[];
+  /** The signature used for finding duplicate stacks. (ProjectId, SignatureHash) */
   duplicate_signature: string;
   /** @format date-time */
   created_utc: string;
@@ -227,12 +313,12 @@ export interface Stack {
 }
 
 export interface StringStringValuesKeyValuePair {
-  key?: string | null;
+  key?: null | string;
   value: string[];
 }
 
 export interface StringValueFromBody {
-  value?: string | null;
+  value?: null | string;
 }
 
 export interface TokenResult {
@@ -243,16 +329,26 @@ export interface UpdateEmailAddressResult {
   is_verified: boolean;
 }
 
+/** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
+export interface UpdateEvent {
+  /** @format email */
+  email_address?: null | string;
+  description?: null | string;
+}
+
+/** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
 export interface UpdateProject {
   name: string;
   delete_bot_data_enabled: boolean;
 }
 
+/** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
 export interface UpdateToken {
   is_disabled: boolean;
-  notes?: string | null;
+  notes?: null | string;
 }
 
+/** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
 export interface UpdateUser {
   full_name: string;
   email_notifications_enabled: boolean;
@@ -287,22 +383,29 @@ export interface UsageInfo {
 }
 
 export interface User {
+  /**
+   * Unique id that identifies an user.
+   * @pattern ^[a-fA-F0-9]{24}$
+   */
   id: string;
+  /** The organizations that the user has access to. */
   organization_ids: string[];
-  password?: string | null;
-  salt?: string | null;
-  password_reset_token?: string | null;
+  password?: null | string;
+  salt?: null | string;
+  password_reset_token?: null | string;
   /** @format date-time */
   password_reset_token_expiration: string;
   o_auth_accounts: OAuthAccount[];
+  /** Gets or sets the users Full Name. */
   full_name: string;
   /** @format email */
   email_address: string;
   email_notifications_enabled: boolean;
   is_email_address_verified: boolean;
-  verify_email_address_token?: string | null;
+  verify_email_address_token?: null | string;
   /** @format date-time */
   verify_email_address_token_expiration: string;
+  /** Gets or sets the users active state. */
   is_active: boolean;
   roles: string[];
   /** @format date-time */
@@ -313,18 +416,21 @@ export interface User {
 
 export interface UserDescription {
   /** @format email */
-  email_address?: string | null;
-  description: string;
-  data?: Record<string, unknown>;
+  email_address?: null | string;
+  description?: null | string;
+  /** Extended data entries for this user description. */
+  data?: null | object;
 }
 
 export interface ViewCurrentUser {
-  hash?: string | null;
+  hash?: null | string;
   has_local_account: boolean;
   o_auth_accounts: OAuthAccount[];
+  /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
   organization_ids: string[];
   full_name: string;
+  /** @format email */
   email_address: string;
   email_notifications_enabled: boolean;
   is_email_address_verified: boolean;
@@ -334,6 +440,7 @@ export interface ViewCurrentUser {
 }
 
 export interface ViewOrganization {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
   /** @format date-time */
   created_utc: string;
@@ -343,12 +450,13 @@ export interface ViewOrganization {
   plan_id: string;
   plan_name: string;
   plan_description: string;
-  card_last4?: string | null;
+  card_last4?: null | string;
   /** @format date-time */
-  subscribe_date?: string | null;
+  subscribe_date?: null | string;
   /** @format date-time */
-  billing_change_date?: string | null;
-  billing_changed_by_user_id?: string | null;
+  billing_change_date?: null | string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  billing_changed_by_user_id?: null | string;
   billing_status: BillingStatus;
   /** @format double */
   billing_price: number;
@@ -357,14 +465,14 @@ export interface ViewOrganization {
   /** @format int32 */
   bonus_events_per_month: number;
   /** @format date-time */
-  bonus_expiration?: string | null;
+  bonus_expiration?: null | string;
   /** @format int32 */
   retention_days: number;
   is_suspended: boolean;
-  suspension_code?: string | null;
-  suspension_notes?: string | null;
+  suspension_code?: null | string;
+  suspension_notes?: null | string;
   /** @format date-time */
-  suspension_date?: string | null;
+  suspension_date?: null | string;
   has_premium_features: boolean;
   /** @format int32 */
   max_users: number;
@@ -379,23 +487,25 @@ export interface ViewOrganization {
   invites: Invite[];
   usage_hours: UsageHourInfo[];
   usage: UsageInfo[];
-  data?: Record<string, unknown>;
+  data?: null | object;
   is_throttled: boolean;
   is_over_monthly_limit: boolean;
   is_over_request_limit: boolean;
 }
 
 export interface ViewProject {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
   /** @format date-time */
   created_utc: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
   organization_id: string;
   organization_name: string;
   name: string;
   delete_bot_data_enabled: boolean;
-  data?: Record<string, unknown>;
+  data?: null | object;
   promoted_tabs: string[];
-  is_configured?: boolean | null;
+  is_configured?: null | boolean;
   /** @format int64 */
   stack_count: number;
   /** @format int64 */
@@ -407,15 +517,20 @@ export interface ViewProject {
 }
 
 export interface ViewToken {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
   organization_id: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
   project_id: string;
-  user_id?: string | null;
-  default_project_id?: string | null;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  user_id?: null | string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  default_project_id?: null | string;
   scopes: string[];
   /** @format date-time */
-  expires_utc?: string | null;
-  notes?: string | null;
+  expires_utc?: null | string;
+  notes?: null | string;
   is_disabled: boolean;
   is_suspended: boolean;
   /** @format date-time */
@@ -425,9 +540,11 @@ export interface ViewToken {
 }
 
 export interface ViewUser {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
   organization_ids: string[];
   full_name: string;
+  /** @format email */
   email_address: string;
   email_notifications_enabled: boolean;
   is_email_address_verified: boolean;
@@ -437,13 +554,17 @@ export interface ViewUser {
 }
 
 export interface WebHook {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
   organization_id: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
   project_id: string;
   /** @format uri */
   url: string;
   event_types: string[];
   is_enabled: boolean;
+  /** The schema version that should be used. */
   version: string;
   /** @format date-time */
   created_utc: string;

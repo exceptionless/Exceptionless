@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
@@ -28,6 +29,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
     private readonly IEventRepository _eventRepository;
     private readonly ICacheClient _cache;
     private readonly UserAgentParser _parser;
+    private readonly JsonSerializerOptions _jsonOptions;
 
     public EventNotificationsJob(IQueue<EventNotification> queue,
         SlackService slackService,
@@ -39,6 +41,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
         IEventRepository eventRepository,
         ICacheClient cacheClient,
         UserAgentParser parser,
+        JsonSerializerOptions jsonOptions,
         TimeProvider timeProvider,
         IResiliencePolicyProvider resiliencePolicyProvider,
         ILoggerFactory loggerFactory) : base(queue, timeProvider, resiliencePolicyProvider, loggerFactory)
@@ -52,6 +55,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
         _eventRepository = eventRepository;
         _cache = cacheClient;
         _parser = parser;
+        _jsonOptions = jsonOptions;
     }
 
     protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventNotification> context)
@@ -112,7 +116,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
                     _logger.LogTrace("Settings: new error={ReportNewErrors} critical error={ReportCriticalErrors} regression={ReportEventRegressions} new={ReportNewEvents} critical={ReportCriticalEvents}", settings.ReportNewErrors, settings.ReportCriticalErrors, settings.ReportEventRegressions, settings.ReportNewEvents, settings.ReportCriticalEvents);
                     _logger.LogTrace("Should process: new error={ShouldReportNewError} critical error={ShouldReportCriticalError} regression={ShouldReportRegression} new={ShouldReportNewEvent} critical={ShouldReportCriticalEvent}", shouldReportNewError, shouldReportCriticalError, shouldReportRegression, shouldReportNewEvent, shouldReportCriticalEvent);
                 }
-                var request = ev.GetRequestInfo();
+                var request = ev.GetRequestInfo(_jsonOptions);
                 // check for known bots if the user has elected to not report them
                 if (shouldReport && !String.IsNullOrEmpty(request?.UserAgent))
                 {

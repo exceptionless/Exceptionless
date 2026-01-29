@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
@@ -8,7 +9,7 @@ namespace Exceptionless.Core.Plugins.Formatting;
 [Priority(20)]
 public sealed class ErrorFormattingPlugin : FormattingPluginBase
 {
-    public ErrorFormattingPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
+    public ErrorFormattingPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(jsonOptions, options, loggerFactory) { }
 
     private bool ShouldHandle(PersistentEvent ev)
     {
@@ -20,7 +21,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         if (!ShouldHandle(ev))
             return null;
 
-        var error = ev.GetError();
+        var error = ev.GetError(_jsonOptions);
         return error?.Message;
     }
 
@@ -58,12 +59,12 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         if (!ShouldHandle(ev))
             return null;
 
-        var stackingTarget = ev.GetStackingTarget();
+        var stackingTarget = ev.GetStackingTarget(_jsonOptions);
         if (stackingTarget?.Error is null)
             return null;
 
         var data = new Dictionary<string, object?> { { "Message", ev.Message } };
-        AddUserIdentitySummaryData(data, ev.GetUserIdentity());
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_jsonOptions));
 
         if (!String.IsNullOrEmpty(stackingTarget.Error.Type))
         {
@@ -77,7 +78,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
             data.Add("MethodFullName", stackingTarget.Method.GetFullName());
         }
 
-        var requestInfo = ev.GetRequestInfo();
+        var requestInfo = ev.GetRequestInfo(_jsonOptions);
         if (!String.IsNullOrEmpty(requestInfo?.Path))
             data.Add("Path", requestInfo.Path);
 
@@ -89,7 +90,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         if (!ShouldHandle(ev))
             return null;
 
-        var error = ev.GetError();
+        var error = ev.GetError(_jsonOptions);
         var stackingTarget = error?.GetStackingTarget();
         if (stackingTarget?.Error is null)
             return null;
@@ -116,7 +117,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         if (stackingTarget.Method?.Name is not null)
             data.Add("Method", stackingTarget.Method.Name.Truncate(60));
 
-        var requestInfo = ev.GetRequestInfo();
+        var requestInfo = ev.GetRequestInfo(_jsonOptions);
         if (requestInfo is not null)
             data.Add("Url", requestInfo.GetFullPath(true, true, true));
 
@@ -128,7 +129,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         if (!ShouldHandle(ev))
             return null;
 
-        var error = ev.GetError();
+        var error = ev.GetError(_jsonOptions);
         var stackingTarget = error?.GetStackingTarget();
         if (stackingTarget?.Error is null)
             return null;
@@ -147,7 +148,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         if (isCritical)
             notificationType = String.Concat("critical ", notificationType);
 
-        var attachment = new SlackMessage.SlackAttachment(ev)
+        var attachment = new SlackMessage.SlackAttachment(ev, _jsonOptions)
         {
             Color = "#BB423F",
             Fields =

@@ -204,7 +204,7 @@ public class FilterScenario : IXunitSerializable
 
     public void Deserialize(IXunitSerializationInfo info)
     {
-        var jsonValue = info.GetValue<string>("objValue") ?? throw new InvalidOperationException("Missing objValue");
+        string jsonValue = info.GetValue<string>("objValue") ?? throw new InvalidOperationException("Missing objValue");
         var value = JsonConvert.DeserializeObject<FilterScenario>(jsonValue) ?? throw new InvalidOperationException("Failed to deserialize");
         Source = value.Source;
         Stack = value.Stack;

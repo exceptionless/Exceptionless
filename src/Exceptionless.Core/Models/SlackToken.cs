@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json;
+using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Models;
 
@@ -34,12 +35,12 @@ public record SlackMessage
 
     public class SlackAttachment
     {
-        public SlackAttachment(PersistentEvent ev)
+        public SlackAttachment(PersistentEvent ev, JsonSerializerOptions jsonOptions)
         {
             TimeStamp = ev.Date.ToUnixTimeSeconds();
 
-            var ud = ev.GetUserDescription();
-            var ui = ev.GetUserIdentity();
+            var ud = ev.GetUserDescription(jsonOptions);
+            var ui = ev.GetUserIdentity(jsonOptions);
             Text = ud?.Description;
 
             string? displayName = null;

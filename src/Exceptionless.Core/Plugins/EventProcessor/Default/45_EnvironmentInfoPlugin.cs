@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
@@ -8,17 +9,22 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default;
 [Priority(45)]
 public sealed class EnvironmentInfoPlugin : EventProcessorPluginBase
 {
-    public EnvironmentInfoPlugin(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
+    private readonly JsonSerializerOptions _jsonOptions;
+
+    public EnvironmentInfoPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    {
+        _jsonOptions = jsonOptions;
+    }
 
     public override Task EventProcessingAsync(EventContext context)
     {
-        var environment = context.Event.GetEnvironmentInfo();
+        var environment = context.Event.GetEnvironmentInfo(_jsonOptions);
         if (environment is null)
             return Task.CompletedTask;
 
         if (context.IncludePrivateInformation)
         {
-            var submissionClient = context.Event.GetSubmissionClient();
+            var submissionClient = context.Event.GetSubmissionClient(_jsonOptions);
             AddClientIpAddress(environment, submissionClient);
         }
         else
