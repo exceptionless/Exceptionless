@@ -54,7 +54,7 @@ public class Bootstrapper
 {
     public static void RegisterServices(IServiceCollection services, AppOptions appOptions)
     {
-        // PERF: Word towards getting rid of JSON.NET.
+        // PERF: Work towards getting rid of JSON.NET.
         Newtonsoft.Json.JsonConvert.DefaultSettings = () => new Newtonsoft.Json.JsonSerializerSettings
         {
             DateParseHandling = Newtonsoft.Json.DateParseHandling.DateTimeOffset
