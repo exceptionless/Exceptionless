@@ -29,9 +29,9 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
 
         // Assert
         Assert.NotNull(result);
-        Assert.True(result.ContainsKey("value"));
-        Assert.IsType<bool>(result["value"]);
-        Assert.True((bool)result["value"]!);
+        Assert.True(result.TryGetValue("value", out var value));
+        Assert.IsType<bool>(value);
+        Assert.True((bool)value!);
     }
 
     [Fact]
@@ -174,8 +174,8 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
 
         // Assert
         Assert.NotNull(result);
-        Assert.True(result.ContainsKey("nothing"));
-        Assert.Null(result["nothing"]);
+        Assert.True(result.TryGetValue("nothing", out var value));
+        Assert.Null(value);
     }
 
     [Fact]

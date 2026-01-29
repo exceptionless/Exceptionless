@@ -42,10 +42,10 @@ public static class DataDictionaryExtensions
             data = jsonDocument.RootElement;
 
         // JsonElement (from STJ deserialization when ObjectToInferredTypesConverter wasn't used)
-        if (data is JsonElement jsonElement)
+        if (data is JsonElement jsonElement &&
+            TryDeserialize(jsonElement, options, out T? jsonElementResult))
         {
-            if (TryDeserialize(jsonElement, options, out T? result))
-                return result;
+            return jsonElementResult;
         }
 
         // JsonNode (JsonObject/JsonArray/JsonValue)

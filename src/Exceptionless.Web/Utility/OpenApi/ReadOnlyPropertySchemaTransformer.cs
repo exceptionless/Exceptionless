@@ -40,11 +40,9 @@ public class ReadOnlyPropertySchemaTransformer : IOpenApiSchemaTransformer
         if (!type.IsClass)
             return Task.CompletedTask;
 
-        foreach (var property in type.GetProperties())
+        foreach (var property in type.GetProperties()
+            .Where(p => p.CanRead && !p.CanWrite))
         {
-            if (!property.CanRead || property.CanWrite)
-                continue;
-
             // Find the matching schema property (property names are in snake_case in the schema)
             string schemaPropertyName = property.Name.ToLowerUnderscoredWords();
             if (schema.Properties.TryGetValue(schemaPropertyName, out var propertySchema) && propertySchema is OpenApiSchema mutableSchema)
@@ -108,25 +106,19 @@ public class ReadOnlyPropertySchemaTransformer : IOpenApiSchemaTransformer
                 }
 
                 // Check if it implements any of these interfaces
-                var interfaces = propertyType.GetInterfaces();
-                foreach (var iface in interfaces)
-                {
-                    if (!iface.IsGenericType)
-                        continue;
-
-                    var ifaceGenericDef = iface.GetGenericTypeDefinition();
-                    if (ifaceGenericDef == typeof(ICollection<>) ||
-                        ifaceGenericDef == typeof(IList<>) ||
-                        ifaceGenericDef == typeof(ISet<>) ||
-                        ifaceGenericDef == typeof(IDictionary<,>) ||
-                        ifaceGenericDef == typeof(IReadOnlyCollection<>) ||
-                        ifaceGenericDef == typeof(IReadOnlyList<>) ||
-                        ifaceGenericDef == typeof(IReadOnlySet<>) ||
-                        ifaceGenericDef == typeof(IReadOnlyDictionary<,>))
-                    {
-                        return true;
-                    }
-                }
+                return propertyType.GetInterfaces()
+                    .Where(iface => iface.IsGenericType)
+                    .Any(iface => {
+                        var ifaceGenericDef = iface.GetGenericTypeDefinition();
+                        return ifaceGenericDef == typeof(ICollection<>) ||
+                               ifaceGenericDef == typeof(IList<>) ||
+                               ifaceGenericDef == typeof(ISet<>) ||
+                               ifaceGenericDef == typeof(IDictionary<,>) ||
+                               ifaceGenericDef == typeof(IReadOnlyCollection<>) ||
+                               ifaceGenericDef == typeof(IReadOnlyList<>) ||
+                               ifaceGenericDef == typeof(IReadOnlySet<>) ||
+                               ifaceGenericDef == typeof(IReadOnlyDictionary<,>);
+                    });
             }
 
             // Non-generic collections

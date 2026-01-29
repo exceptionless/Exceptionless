@@ -26,13 +26,11 @@ public class ObsoleteOperationTransformer : IOpenApiOperationTransformer
             .OfType<MethodInfo>()
             .FirstOrDefault();
 
-        if (methodInfo is null)
+        // For controller actions, try to get from ControllerActionDescriptor
+        if (methodInfo is null &&
+            context.Description.ActionDescriptor is Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor controllerDescriptor)
         {
-            // Try to get method info from the action descriptor
-            if (context.Description.ActionDescriptor is Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor controllerDescriptor)
-            {
-                methodInfo = controllerDescriptor.MethodInfo;
-            }
+            methodInfo = controllerDescriptor.MethodInfo;
         }
 
         if (methodInfo?.GetCustomAttribute<ObsoleteAttribute>() is not null)

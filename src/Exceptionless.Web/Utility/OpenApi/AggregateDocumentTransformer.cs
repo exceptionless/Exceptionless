@@ -75,9 +75,9 @@ public class AggregateDocumentTransformer : IOpenApiDocumentTransformer
             return;
 
         // Find CountResult schema and fix aggregations property
-        if (document.Components.Schemas.TryGetValue("CountResult", out var countResultSchema)
-            && countResultSchema is OpenApiSchema schema
-            && schema.Properties is not null)
+        if (document.Components.Schemas.TryGetValue("CountResult", out var countResultSchema) &&
+            countResultSchema is OpenApiSchema schema &&
+            schema.Properties is not null)
         {
             if (schema.Properties.TryGetValue("aggregations", out var aggSchema) && aggSchema is OpenApiSchema aggregationsSchema)
             {

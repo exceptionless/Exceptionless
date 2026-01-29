@@ -76,7 +76,8 @@ public class XmlDocumentationOperationTransformer : IOpenApiOperationTransformer
             if (_xmlDocCache.TryGetValue(assemblyName, out var cachedDoc))
                 return cachedDoc;
 
-            string xmlPath = Path.Combine(AppContext.BaseDirectory, $"{assemblyName}.xml");
+            string xmlFileName = Path.GetFileName($"{assemblyName}.xml");
+            string xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFileName);
             if (!File.Exists(xmlPath))
                 return null;
 
