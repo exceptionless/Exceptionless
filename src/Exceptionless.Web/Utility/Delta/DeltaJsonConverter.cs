@@ -110,15 +110,15 @@ public class DeltaJsonConverter<TEntityType> : JsonConverter<Delta<TEntityType>>
     {
         writer.WriteStartObject();
 
-        foreach (var propertyName in value.GetChangedPropertyNames())
+        foreach (var (propertyName, propertyValue) in value.GetChangedPropertyNames()
+            .Select(name => (Name: name, HasValue: value.TryGetPropertyValue(name, out var val), Value: val))
+            .Where(x => x.HasValue)
+            .Select(x => (x.Name, x.Value)))
         {
-            if (value.TryGetPropertyValue(propertyName, out var propertyValue))
-            {
-                // Convert property name to snake_case if needed
-                var jsonPropertyName = options.PropertyNamingPolicy?.ConvertName(propertyName) ?? propertyName;
-                writer.WritePropertyName(jsonPropertyName);
-                JsonSerializer.Serialize(writer, propertyValue, _options);
-            }
+            // Convert property name to snake_case if needed
+            var jsonPropertyName = options.PropertyNamingPolicy?.ConvertName(propertyName) ?? propertyName;
+            writer.WritePropertyName(jsonPropertyName);
+            JsonSerializer.Serialize(writer, propertyValue, _options);
         }
 
         foreach (var kvp in value.UnknownProperties)

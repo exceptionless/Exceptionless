@@ -21,7 +21,6 @@ public class NumericTypeSchemaTransformer : IOpenApiSchemaTransformer
         bool hasString = schemaType.HasFlag(JsonSchemaType.String);
         bool hasNumber = schemaType.HasFlag(JsonSchemaType.Number);
         bool hasInteger = schemaType.HasFlag(JsonSchemaType.Integer);
-        bool hasNull = schemaType.HasFlag(JsonSchemaType.Null);
 
         // If it has (number or integer) AND string, remove the string
         if (hasString && (hasNumber || hasInteger))

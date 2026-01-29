@@ -16,7 +16,7 @@ import type {
     ValueAggregate
 } from '../models';
 
-type Aggregations = Record<string, IAggregate> | null | undefined;
+type Aggregations = null | Record<string, IAggregate> | undefined;
 
 export function average(aggregations: Aggregations, key: string): undefined | ValueAggregate {
     return tryGet<ValueAggregate>(aggregations, key);
@@ -105,10 +105,7 @@ function getKeyedBuckets<TKey>(items: IBucket[]): KeyedBucket<TKey>[] {
         }));
 }
 
-function getMultiBucketAggregate<TBucket extends IBucket>(
-    aggregations: Aggregations,
-    key: string
-): MultiBucketAggregate<TBucket> | undefined {
+function getMultiBucketAggregate<TBucket extends IBucket>(aggregations: Aggregations, key: string): MultiBucketAggregate<TBucket> | undefined {
     const bucket = tryGet<BucketAggregate>(aggregations, key);
     if (!bucket) {
         return;
@@ -120,10 +117,7 @@ function getMultiBucketAggregate<TBucket extends IBucket>(
     };
 }
 
-function getMultiKeyedBucketAggregate<TKey>(
-    aggregations: Aggregations,
-    key: string
-): MultiBucketAggregate<KeyedBucket<TKey>> | undefined {
+function getMultiKeyedBucketAggregate<TKey>(aggregations: Aggregations, key: string): MultiBucketAggregate<KeyedBucket<TKey>> | undefined {
     const bucket = tryGet<BucketAggregate>(aggregations, key);
     if (!bucket) {
         return;

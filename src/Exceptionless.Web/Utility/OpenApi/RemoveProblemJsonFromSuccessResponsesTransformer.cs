@@ -13,16 +13,15 @@ public class RemoveProblemJsonFromSuccessResponsesTransformer : IOpenApiDocument
 
     public Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
-        foreach (var operations in document.Paths.Select(p => p.Value.Operations))
+        foreach (var response in document.Paths
+            .Select(p => p.Value.Operations)
+            .Where(operations => operations is not null)
+            .SelectMany(operations => operations!.Values)
+            .SelectMany(v => v.Responses ?? [])
+            .Where(r => r.Key.StartsWith('2') && r.Value.Content is not null))
         {
-            if (operations is null)
-                continue;
-
-            foreach (var response in operations.Values.SelectMany(v => v.Responses ?? []).Where(r => r.Key.StartsWith('2') && r.Value.Content is not null))
-            {
-                // Only process 2xx success responses
-                response.Value.Content?.Remove(ProblemJsonContentType);
-            }
+            // Only process 2xx success responses
+            response.Value.Content?.Remove(ProblemJsonContentType);
         }
 
         return Task.CompletedTask;

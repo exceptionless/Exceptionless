@@ -168,9 +168,8 @@ public class RequestInfoSerializerTests : TestWithServices
         var deserialized = _serializer.Deserialize<RequestInfo>(json);
 
         // Assert
-        Assert.NotNull(deserialized?.PostData);
-        var postData = deserialized.PostData as IDictionary<string, object>;
-        Assert.NotNull(postData);
+        Assert.NotNull(deserialized);
+        var postData = Assert.IsAssignableFrom<IDictionary<string, object>>(deserialized.PostData);
         Assert.Equal("testuser", postData["username"]);
         Assert.Equal("true", postData["remember_me"]);
     }
