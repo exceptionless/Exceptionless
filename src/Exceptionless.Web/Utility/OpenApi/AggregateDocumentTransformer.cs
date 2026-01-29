@@ -77,29 +77,28 @@ public class AggregateDocumentTransformer : IOpenApiDocumentTransformer
         // Find CountResult schema and fix aggregations property
         if (document.Components.Schemas.TryGetValue("CountResult", out var countResultSchema) &&
             countResultSchema is OpenApiSchema schema &&
-            schema.Properties is not null)
+            schema.Properties is not null &&
+            schema.Properties.TryGetValue("aggregations", out var aggSchema) &&
+            aggSchema is OpenApiSchema aggregationsSchema)
         {
-            if (schema.Properties.TryGetValue("aggregations", out var aggSchema) && aggSchema is OpenApiSchema aggregationsSchema)
-            {
-                // For OpenAPI 3.1, we need to use oneOf to properly represent nullable dictionaries
-                // Clear the type array and use oneOf instead
-                aggregationsSchema.Type = JsonSchemaType.Null; // Will be combined with the object schema
-                aggregationsSchema.AdditionalProperties = null;
+            // For OpenAPI 3.1, we need to use oneOf to properly represent nullable dictionaries
+            // Clear the type array and use oneOf instead
+            aggregationsSchema.Type = JsonSchemaType.Null; // Will be combined with the object schema
+            aggregationsSchema.AdditionalProperties = null;
 
-                // Replace with a proper nullable dictionary representation
-                schema.Properties["aggregations"] = new OpenApiSchema
+            // Replace with a proper nullable dictionary representation
+            schema.Properties["aggregations"] = new OpenApiSchema
+            {
+                OneOf = new List<IOpenApiSchema>
                 {
-                    OneOf = new List<IOpenApiSchema>
+                    new OpenApiSchema { Type = JsonSchemaType.Null },
+                    new OpenApiSchema
                     {
-                        new OpenApiSchema { Type = JsonSchemaType.Null },
-                        new OpenApiSchema
-                        {
-                            Type = JsonSchemaType.Object,
-                            AdditionalProperties = new OpenApiSchemaReference("IAggregate", document)
-                        }
+                        Type = JsonSchemaType.Object,
+                        AdditionalProperties = new OpenApiSchemaReference("IAggregate", document)
                     }
-                };
-            }
+                }
+            };
         }
     }
 }
