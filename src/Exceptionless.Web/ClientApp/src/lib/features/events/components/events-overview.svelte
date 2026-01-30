@@ -22,6 +22,7 @@
     import Overview from './views/overview.svelte';
     import PromotedExtendedData from './views/promoted-extended-data.svelte';
     import Request from './views/request.svelte';
+    import SessionEvents from './views/session-events.svelte';
     import TraceLog from './views/trace-log.svelte';
 
     interface Props {
@@ -32,12 +33,23 @@
 
     let { filterChanged, handleError, id }: Props = $props();
 
+    // Helper to get session ID from event
+    function getSessionId(event?: null | PersistentEvent): string | undefined {
+        if (!event) return undefined;
+        // For session start events, use reference_id
+        if (event.type === 'session') {
+            return event.reference_id ?? undefined;
+        }
+        // For other events, check @ref:session in data
+        return event.data?.['@ref:session'] as string | undefined;
+    }
+
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
             return [];
         }
 
-        const tabs = ['Overview'];
+        const tabs: TabType[] = ['Overview'];
         if (hasErrorOrSimpleError(event)) {
             tabs.push('Exception');
         }
@@ -52,6 +64,11 @@
 
         if (event.data?.['@trace']) {
             tabs.push('Trace Log');
+        }
+
+        // Add Session Events tab if event has a session reference
+        if (getSessionId(event)) {
+            tabs.push('Session Events');
         }
 
         if (!project) {
@@ -168,6 +185,8 @@
                     <Request {filterChanged} event={eventQuery.data}></Request>
                 {:else if tab === 'Trace Log'}
                     <TraceLog logs={eventQuery.data.data?.['@trace']}></TraceLog>
+                {:else if tab === 'Session Events'}
+                    <SessionEvents event={eventQuery.data}></SessionEvents>
                 {:else if tab === 'Extended Data'}
                     <ExtendedData event={eventQuery.data} project={projectQuery.data} promoted={onPromoted}></ExtendedData>
                 {:else}
