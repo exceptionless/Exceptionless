@@ -22,6 +22,7 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="14.0.0" />
     <PackageReference Include="Exceptionless.DateTimeExtensions" Version="6.0.1" />
+    <PackageReference Include="Exceptionless.DateTimeExtensions" Version="4.0.1" />
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="Foundatio.Extensions.Hosting" Version="13.0.0-beta3.5" />
     <PackageReference Include="Foundatio.JsonNet" Version="13.0.0-beta3.5" />
