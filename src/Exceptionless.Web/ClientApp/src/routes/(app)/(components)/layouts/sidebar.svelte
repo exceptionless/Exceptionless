@@ -20,6 +20,7 @@
 
     let { footer, header, routes, ...props }: Props = $props();
     const dashboardRoutes = $derived(routes.filter((route) => route.group === 'Dashboards'));
+    const reportRoutes = $derived(routes.filter((route) => route.group === 'Reports'));
 
     const settingsRoutes = $derived(routes.filter((route) => route.group === 'Settings'));
     const settingsIsActive = $derived(settingsRoutes.some((route) => route.href === page.url.pathname));
@@ -61,6 +62,27 @@
                 {/each}
             </Sidebar.Menu>
         </Sidebar.Group>
+
+        {#if reportRoutes.length > 0}
+            <Sidebar.Group>
+                <Sidebar.GroupLabel>Reports</Sidebar.GroupLabel>
+                <Sidebar.Menu>
+                    {#each reportRoutes as route (route.href)}
+                        {@const Icon = route.icon}
+                        <Sidebar.MenuItem>
+                            <Sidebar.MenuButton isActive={route.href === page.url.pathname}>
+                                {#snippet child({ props })}
+                                    <a href={route.href} title={route.title} onclick={onMenuClick} {...props}>
+                                        <Icon />
+                                        <span>{route.title}</span>
+                                    </a>
+                                {/snippet}
+                            </Sidebar.MenuButton>
+                        </Sidebar.MenuItem>
+                    {/each}
+                </Sidebar.Menu>
+            </Sidebar.Group>
+        {/if}
 
         <Sidebar.Group>
             <Sidebar.Menu>
