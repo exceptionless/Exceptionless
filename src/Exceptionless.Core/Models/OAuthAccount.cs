@@ -6,7 +6,7 @@ public record OAuthAccount
     public required string ProviderUserId { get; init; }
     public required string Username { get; init; }
 
-    public SettingsDictionary ExtraData { get; } = new();
+    public SettingsDictionary ExtraData { get; init; } = new();
 
     public string? EmailAddress()
     {

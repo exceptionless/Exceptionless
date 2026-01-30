@@ -16,13 +16,13 @@ public record User : IIdentity, IHaveDates, IValidatableObject
     /// <summary>
     /// The organizations that the user has access to.
     /// </summary>
-    public ISet<string> OrganizationIds { get; } = new HashSet<string>();
+    public ISet<string> OrganizationIds { get; init; } = new HashSet<string>();
 
     public string? Password { get; set; }
     public string? Salt { get; set; }
     public string? PasswordResetToken { get; set; }
     public DateTime PasswordResetTokenExpiration { get; set; }
-    public ICollection<OAuthAccount> OAuthAccounts { get; } = new Collection<OAuthAccount>();
+    public ICollection<OAuthAccount> OAuthAccounts { get; init; } = new Collection<OAuthAccount>();
 
     /// <summary>
     /// Gets or sets the users Full Name.

@@ -11,5 +11,5 @@ public record WorkInProgressResult
         Workers.AddRange(workers);
     }
 
-    public List<string> Workers { get; } = new();
+    public List<string> Workers { get; init; } = new();
 }
