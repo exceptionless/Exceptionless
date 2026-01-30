@@ -1,8 +1,8 @@
-﻿using AutoMapper;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Web.Extensions;
+using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
@@ -10,17 +10,27 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Exceptionless.Web.Controllers;
 
-public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> where TRepository : ISearchableRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() where TNewModel : class, new() where TUpdateModel : class, new()
+public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel>
+    where TRepository : ISearchableRepository<TModel>
+    where TModel : class, IIdentity, new()
+    where TViewModel : class, IIdentity, new()
+    where TNewModel : class, new()
+    where TUpdateModel : class, new()
 {
-    public RepositoryApiController(TRepository repository, IMapper mapper, IAppQueryValidator validator,
+    public RepositoryApiController(TRepository repository, ApiMapper mapper, IAppQueryValidator validator,
         TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(repository, mapper, validator, timeProvider, loggerFactory) { }
+
+    /// <summary>
+    /// Maps a new model (from API input) to a domain model. Override in derived controllers.
+    /// </summary>
+    protected abstract TModel MapToModel(TNewModel newModel);
 
     protected async Task<ActionResult<TViewModel>> PostImplAsync(TNewModel value)
     {
         if (value is null)
             return BadRequest();
 
-        var mapped = await MapAsync<TModel>(value);
+        var mapped = MapToModel(value);
         // if no organization id is specified, default to the user's 1st associated org.
         if (!_isOrganization && mapped is IOwnedByOrganization orgModel && String.IsNullOrEmpty(orgModel.OrganizationId) && GetAssociatedOrganizationIds().Count > 0)
             orgModel.OrganizationId = Request.GetDefaultOrganizationId()!;
@@ -32,7 +42,9 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         var model = await AddModelAsync(mapped);
         await AfterAddAsync(model);
 
-        return Created(new Uri(GetEntityLink(model.Id) ?? throw new InvalidOperationException()), await MapAsync<TViewModel>(model, true));
+        var viewModel = MapToViewModel(model);
+        await AfterResultMapAsync([viewModel]);
+        return Created(new Uri(GetEntityLink(model.Id) ?? throw new InvalidOperationException()), viewModel);
     }
 
     protected async Task<ActionResult<TViewModel>> UpdateModelAsync(string id, Func<TModel, Task<TModel>> modelUpdateFunc)
@@ -50,7 +62,9 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         if (typeof(TViewModel) == typeof(TModel))
             return Ok(model);
 
-        return Ok(await MapAsync<TViewModel>(model, true));
+        var viewModel = MapToViewModel(model);
+        await AfterResultMapAsync([viewModel]);
+        return Ok(viewModel);
     }
 
     protected async Task<ActionResult<TViewModel>> UpdateModelsAsync(string[] ids, Func<TModel, Task<TModel>> modelUpdateFunc)
@@ -70,7 +84,9 @@ public abstract class RepositoryApiController<TRepository, TModel, TViewModel, T
         if (typeof(TViewModel) == typeof(TModel))
             return Ok(models);
 
-        return Ok(await MapAsync<TViewModel>(models, true));
+        var viewModels = MapToViewModels(models);
+        await AfterResultMapAsync(viewModels);
+        return Ok(viewModels);
     }
 
     protected virtual string? GetEntityLink(string id)

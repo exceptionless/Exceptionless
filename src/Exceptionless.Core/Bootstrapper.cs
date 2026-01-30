@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-using AutoMapper;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
@@ -197,21 +196,6 @@ public class Bootstrapper
         services.AddSingleton<StackService>();
 
         services.AddTransient<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
-
-        services.AddTransient<Profile, CoreMappings>();
-        services.AddSingleton<IMapper>(s =>
-        {
-            var profiles = s.GetServices<Profile>();
-            var c = new MapperConfiguration(cfg =>
-            {
-                cfg.ConstructServicesUsing(s.GetRequiredService);
-
-                foreach (var profile in profiles)
-                    cfg.AddProfile(profile);
-            });
-
-            return c.CreateMapper();
-        });
     }
 
     public static void LogConfiguration(IServiceProvider serviceProvider, AppOptions appOptions, ILogger logger)
