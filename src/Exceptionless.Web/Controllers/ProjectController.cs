@@ -1,4 +1,3 @@
-using AutoMapper;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -10,6 +9,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
 using Exceptionless.Web.Extensions;
+using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Jobs;
@@ -46,7 +46,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         IQueue<WorkItemData> workItemQueue,
         BillingManager billingManager,
         SlackService slackService,
-        IMapper mapper,
+        ApiMapper mapper,
         IAppQueryValidator validator,
         AppOptions options,
         UsageService usageService,
@@ -65,6 +65,11 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         _options = options;
         _usageService = usageService;
     }
+
+    // Mapping implementations
+    protected override Project MapToModel(NewProject newModel) => _mapper.MapToProject(newModel);
+    protected override ViewProject MapToViewModel(Project model) => _mapper.MapToViewProject(model);
+    protected override List<ViewProject> MapToViewModels(IEnumerable<Project> models) => _mapper.MapToViewProjects(models);
 
     /// <summary>
     /// Get all
@@ -87,10 +92,11 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
 
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
         var projects = await _repository.GetByFilterAsync(sf, filter, sort, o => o.PageNumber(page).PageLimit(limit));
-        var viewProjects = await MapCollectionAsync<ViewProject>(projects.Documents, true);
+        var viewProjects = MapToViewModels(projects.Documents);
+        await AfterResultMapAsync(viewProjects);
 
         if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
-            return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects.ToList()), projects.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
+            return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects), projects.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
 
         return OkWithResourceLinks(viewProjects, projects.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
     }
@@ -117,7 +123,8 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         limit = GetLimit(limit, 1000);
         var sf = new AppFilter(organization);
         var projects = await _repository.GetByFilterAsync(sf, filter, sort, o => o.PageNumber(page).PageLimit(limit));
-        var viewProjects = (await MapCollectionAsync<ViewProject>(projects.Documents, true)).ToList();
+        var viewProjects = MapToViewModels(projects.Documents);
+        await AfterResultMapAsync(viewProjects);
 
         if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
             return OkWithResourceLinks(await PopulateProjectStatsAsync(viewProjects), projects.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
@@ -139,7 +146,9 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (project is null)
             return NotFound();
 
-        var viewProject = await MapAsync<ViewProject>(project, true);
+        var viewProject = MapToViewModel(project);
+        await AfterResultMapAsync<ViewProject>([viewProject]);
+
         if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
             return Ok(await PopulateProjectStatsAsync(viewProject));
 
