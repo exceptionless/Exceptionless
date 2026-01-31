@@ -8,6 +8,7 @@
     import { env } from '$env/dynamic/public';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
+    import { buildIntercomBootOptions, getIntercom, IntercomInitializer } from '$features/intercom';
     import { getOrganizationQuery, getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
     import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
     import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
@@ -21,6 +22,7 @@
     import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
     import { useMiddleware } from '@exceptionless/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
+    import { IntercomProvider } from 'svelte-intercom';
     import { fade } from 'svelte/transition';
 
     import { type NavigationItemContext, routes } from '../routes.svelte';
@@ -183,6 +185,16 @@
     });
     const impersonatedOrganization = $derived(impersonatingOrganizationId ? impersonatedOrganizationQuery.data : undefined);
 
+    // Query for current organization details (for Intercom company data)
+    const currentOrganizationQuery = getOrganizationQuery({
+        route: {
+            get id() {
+                return organization.current;
+            }
+        }
+    });
+    const currentOrganization = $derived(currentOrganizationQuery.data);
+
     // Simple organization selection - pick first available if none selected
     $effect(() => {
         if (!organizationsQuery.isSuccess) {
@@ -214,13 +226,19 @@
         return routes().filter((route) => (route.show ? route.show(context) : true));
     });
 
-    const isChatEnabled = $derived(!!env.PUBLIC_INTERCOM_APPID);
-    function openChat() {
-        // TODO: Implement chat opening logic
+    // Intercom configuration
+    const intercomAppId = $derived(env.PUBLIC_INTERCOM_APPID ?? '');
+    const intercomBootOptions = $derived(buildIntercomBootOptions(meQuery.data, currentOrganization));
+    const isChatEnabled = $derived(!!intercomAppId && !!intercomBootOptions);
+    const shouldBootIntercom = $derived(!!intercomAppId && !!intercomBootOptions);
+
+    // Fallback openChat for when Intercom is not enabled
+    function openChatFallback() {
+        // No-op when chat is disabled
     }
 </script>
 
-{#if isAuthenticated}
+{#snippet appShell(openChat: () => void)}
     <Navbar bind:isCommandOpen></Navbar>
     <Sidebar routes={filteredRoutes}>
         {#snippet header()}
@@ -254,4 +272,18 @@
             <Footer></Footer>
         </div>
     </div>
+{/snippet}
+
+{#if isAuthenticated}
+    {#if isChatEnabled}
+        <IntercomProvider appId={intercomAppId} autoboot={shouldBootIntercom} bootOptions={intercomBootOptions}>
+            <IntercomInitializer bootOptions={intercomBootOptions} routeKey={page.url.pathname}>
+                {@const intercom = getIntercom()}
+                {@const openChat = () => intercom?.showNewMessage('')}
+                {@render appShell(openChat)}
+            </IntercomInitializer>
+        </IntercomProvider>
+    {:else}
+        {@render appShell(openChatFallback)}
+    {/if}
 {/if}

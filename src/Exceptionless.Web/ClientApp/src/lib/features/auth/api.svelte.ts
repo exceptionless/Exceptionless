@@ -72,7 +72,6 @@ export async function login(email: string, password: string) {
 export async function logout() {
     const client = useFetchClient();
     await client.get('auth/logout', { expectedStatusCodes: [200, 401] });
-
     accessToken.current = '';
 }
 

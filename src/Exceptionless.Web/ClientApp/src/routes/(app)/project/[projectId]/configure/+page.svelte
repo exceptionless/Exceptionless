@@ -8,6 +8,7 @@
     import * as Select from '$comp/ui/select';
     import { Separator } from '$comp/ui/separator';
     import { env } from '$env/dynamic/public';
+    import { getIntercom } from '$features/intercom';
     import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
     import EnableTokenDialog from '$features/tokens/components/dialogs/enable-token-dialog.svelte';
     import { queryParamsState } from 'kit-query-params';
@@ -222,8 +223,11 @@ public partial class App : Application {
         }
     });
 
+    // Use Intercom from parent provider context
+    const intercom = getIntercom();
+
     function openChat() {
-        // TODO: Implement chat opening logic
+        intercom?.showNewMessage('');
     }
 </script>
 
