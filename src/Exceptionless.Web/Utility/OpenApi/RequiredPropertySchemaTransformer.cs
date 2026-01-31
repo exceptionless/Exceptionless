@@ -100,7 +100,7 @@ public class RequiredPropertySchemaTransformer : IOpenApiSchemaTransformer
         // since they can be omitted during construction. However, we can't reliably detect initializers via reflection.
         // Instead, we only mark reference types as required if they have the 'required' modifier (checked above).
         // This means non-nullable reference types without 'required' are treated as optional.
-        
+
         // For backwards compatibility and to match expected behavior, we do NOT mark non-nullable
         // reference types as required unless they have the explicit 'required' modifier.
         return false;
