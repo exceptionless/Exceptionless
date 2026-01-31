@@ -87,12 +87,12 @@ jobs:
         run: docker compose up --wait elasticsearch
 
       - name: Run .NET Tests with Coverage
-        run: dotnet test --no-restore --no-build --configuration Release --results-directory coverage --max-parallel-test-modules 1 -- --report-github --report-xunit-trx --report-xunit-trx-filename test-results.trx --coverage --coverage-output coverage.cobertura.xml --coverage-output-format cobertura
+        run: dotnet test --no-restore --no-build --configuration Release --results-directory coverage --max-parallel-test-modules 1 -- --report-github --report-xunit-trx --report-xunit-trx-filename test-results.trx --coverage --coverage-output cobertura.xml --coverage-output-format cobertura
 
       - name: Code Coverage Summary Report
         uses: irongut/CodeCoverageSummary@v1.3.0
         with:
-            filename: coverage/coverage.cobertura.xml
+            filename: coverage/cobertura.xml
             badge: true
             format: "markdown"
             output: "both"
