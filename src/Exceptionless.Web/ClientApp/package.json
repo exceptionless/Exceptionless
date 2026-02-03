@@ -22,7 +22,9 @@
         "test": "npm run test:unit -- --run && npm run test:e2e",
         "storybook": "storybook dev -p 6006",
         "build-storybook": "storybook build",
-        "upgrade": "ncu -i"
+        "update": "ncu -i",
+        "update:shadcn": "npx shadcn-svelte@latest update",
+        "update:skills": "npx skills update"
     },
     "devDependencies": {
         "@chromatic-com/storybook": "^5.0.1",
