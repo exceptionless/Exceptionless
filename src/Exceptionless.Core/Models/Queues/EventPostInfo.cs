@@ -14,9 +14,9 @@ public record EventPostInfo
 
 public record EventPost : EventPostInfo
 {
-    public EventPost(bool enableArchive)
+    public EventPost(bool shouldArchive)
     {
-        ShouldArchive = enableArchive;
+        ShouldArchive = shouldArchive;
     }
 
     public bool ShouldArchive { get; init; }
