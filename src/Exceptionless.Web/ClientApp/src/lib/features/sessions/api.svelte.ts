@@ -82,7 +82,7 @@ export function getOrganizationSessionsCountQuery(request: GetOrganizationSessio
         queryClient,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<CountResult>(`/organizations/${request.route.organizationId}/events/sessions/count`, {
+            const response = await client.getJSON<CountResult>(`/organizations/${request.route.organizationId}/events/count`, {
                 params: {
                     ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
                     ...request.params
