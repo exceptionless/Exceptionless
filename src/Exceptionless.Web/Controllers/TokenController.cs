@@ -1,10 +1,10 @@
-using AutoMapper;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Web.Controllers;
+using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Repositories;
@@ -23,13 +23,18 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
     public TokenController(
         ITokenRepository repository,
         IProjectRepository projectRepository,
-        IMapper mapper,
+        ApiMapper mapper,
         IAppQueryValidator validator,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory) : base(repository, mapper, validator, timeProvider, loggerFactory)
     {
         _projectRepository = projectRepository;
     }
+
+    // Mapping implementations
+    protected override Token MapToModel(NewToken newModel) => _mapper.MapToToken(newModel);
+    protected override ViewToken MapToViewModel(Token model) => _mapper.MapToViewToken(model);
+    protected override List<ViewToken> MapToViewModels(IEnumerable<Token> models) => _mapper.MapToViewTokens(models);
 
     /// <summary>
     /// Get by organization
@@ -50,7 +55,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         page = GetPage(page);
         limit = GetLimit(limit);
         var tokens = await _repository.GetByTypeAndOrganizationIdAsync(TokenType.Access, organizationId, o => o.PageNumber(page).PageLimit(limit));
-        var viewTokens = (await MapCollectionAsync<ViewToken>(tokens.Documents, true)).ToList();
+        var viewTokens = MapToViewModels(tokens.Documents);
+        await AfterResultMapAsync(viewTokens);
         return OkWithResourceLinks(viewTokens, tokens.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
     }
 
@@ -74,7 +80,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         page = GetPage(page);
         limit = GetLimit(limit);
         var tokens = await _repository.GetByTypeAndProjectIdAsync(TokenType.Access, projectId, o => o.PageNumber(page).PageLimit(limit));
-        var viewTokens = (await MapCollectionAsync<ViewToken>(tokens.Documents, true)).ToList();
+        var viewTokens = MapToViewModels(tokens.Documents);
+        await AfterResultMapAsync(viewTokens);
         return OkWithResourceLinks(viewTokens, tokens.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
     }
 

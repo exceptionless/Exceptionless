@@ -1,4 +1,3 @@
-using AutoMapper;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
@@ -8,6 +7,7 @@ using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
+using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
@@ -31,7 +31,7 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
     public UserController(
         IUserRepository userRepository,
         IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer,
-        IMapper mapper, IAppQueryValidator validator, IntercomOptions intercomOptions,
+        ApiMapper mapper, IAppQueryValidator validator, IntercomOptions intercomOptions,
         TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(userRepository, mapper, validator, timeProvider, loggerFactory)
     {
         _organizationRepository = organizationRepository;
@@ -40,6 +40,11 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
         _mailer = mailer;
         _intercomOptions = intercomOptions;
     }
+
+    // Mapping implementations - User uses ViewUser as both TViewModel and TNewModel (no NewUser type)
+    protected override User MapToModel(ViewUser newModel) => throw new NotSupportedException("Users cannot be created via API mapping.");
+    protected override ViewUser MapToViewModel(User model) => _mapper.MapToViewUser(model);
+    protected override List<ViewUser> MapToViewModels(IEnumerable<User> models) => _mapper.MapToViewUsers(models);
 
     /// <summary>
     /// Get current user
@@ -90,7 +95,8 @@ public class UserController : RepositoryApiController<IUserRepository, User, Vie
             return Ok(Enumerable.Empty<ViewUser>());
 
         var results = await _repository.GetByOrganizationIdAsync(organizationId, o => o.PageLimit(MAXIMUM_SKIP));
-        var users = (await MapCollectionAsync<ViewUser>(results.Documents, true)).ToList();
+        var users = MapToViewModels(results.Documents);
+        await AfterResultMapAsync(users);
         if (!Request.IsGlobalAdmin())
             users.ForEach(u => u.Roles.Remove(AuthorizationRoles.GlobalAdmin));
 

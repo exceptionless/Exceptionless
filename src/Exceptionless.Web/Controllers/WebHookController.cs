@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-using AutoMapper;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -8,6 +7,7 @@ using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Extensions;
+using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -22,12 +22,17 @@ public class WebHookController : RepositoryApiController<IWebHookRepository, Web
     private readonly IProjectRepository _projectRepository;
     private readonly BillingManager _billingManager;
 
-    public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager, IMapper mapper, IAppQueryValidator validator,
+    public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager, ApiMapper mapper, IAppQueryValidator validator,
         TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(repository, mapper, validator, timeProvider, loggerFactory)
     {
         _projectRepository = projectRepository;
         _billingManager = billingManager;
     }
+
+    // Mapping implementations
+    protected override WebHook MapToModel(NewWebHook newModel) => _mapper.MapToWebHook(newModel);
+    protected override WebHook MapToViewModel(WebHook model) => model;
+    protected override List<WebHook> MapToViewModels(IEnumerable<WebHook> models) => models.ToList();
 
     /// <summary>
     /// Get by project
