@@ -2,10 +2,10 @@
   <ItemGroup>
     <PackageReference Include="Geocoding.Google" Version="4.0.1" />
     <PackageReference Include="MaxMind.GeoIP2" Version="5.4.1" />
-    <PackageReference Include="Foundatio.Aliyun" Version="13.0.0-beta1.2" />
-    <PackageReference Include="Foundatio.AWS" Version="13.0.0-beta1.10" />
-    <PackageReference Include="Foundatio.AzureStorage" Version="13.0.0-beta1.2" />
-    <PackageReference Include="Foundatio.Minio" Version="13.0.0-beta1.2" />
+    <PackageReference Include="Foundatio.Aliyun" Version="13.0.0-beta1.3" />
+    <PackageReference Include="Foundatio.AWS" Version="13.0.0-beta1.11" />
+    <PackageReference Include="Foundatio.AzureStorage" Version="13.0.0-beta1.3" />
+    <PackageReference Include="Foundatio.Minio" Version="13.0.0-beta1.3" />
     <PackageReference Include="Foundatio.RabbitMQ" Version="13.0.0-beta1.24" />
     <PackageReference Include="Foundatio.Redis" Version="13.0.0-beta1.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="10.0.2" />
