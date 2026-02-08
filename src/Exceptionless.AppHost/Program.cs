@@ -6,9 +6,16 @@ var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
     .WithDataVolume("exceptionless.data.v1")
     .WithKibana(b => b.WithLifetime(ContainerLifetime.Persistent).WithContainerName("Exceptionless-Kibana"));
 
-var storage = builder.AddMinIo("Storage", s => s.WithCredentials("guest", "password").WithPorts(9000).WithBucket("ex-events"))
-    .WithLifetime(ContainerLifetime.Persistent)
-    .WithContainerName("Exceptionless-Storage");
+var storage = builder.AddAzureStorage("Storage")
+    .RunAsEmulator(c =>
+    {
+        c.WithLifetime(ContainerLifetime.Persistent);
+        c.WithContainerName("Exceptionless-Storage");
+        c.WithDataVolume();
+    });
+
+var storageBlobs = storage.AddBlobs("StorageBlobs");
+var storageQueues = storage.AddQueues("StorageQueues");
 
 var cache = builder.AddRedis("Redis", port: 6379)
     .WithImageTag("7.4")
@@ -28,7 +35,8 @@ var mail = builder.AddContainer("Mail", "axllent/mailpit")
 builder.AddProject<Projects.Exceptionless_Job>("Jobs", "AllJobs")
     .WithReference(cache)
     .WithReference(elastic)
-    .WithReference(storage, "MinIO")
+    .WithReference(storageBlobs, "AzureStorage")
+    .WithReference(storageQueues, "AzureQueues")
     .WithEnvironment("ConnectionStrings:Email", "smtp://localhost:1025")
     .WaitFor(elastic)
     .WaitFor(cache)
@@ -39,7 +47,8 @@ builder.AddProject<Projects.Exceptionless_Job>("Jobs", "AllJobs")
 var api = builder.AddProject<Projects.Exceptionless_Web>("Api", "Exceptionless")
     .WithReference(cache)
     .WithReference(elastic)
-    .WithReference(storage, "MinIO")
+    .WithReference(storageBlobs, "AzureStorage")
+    .WithReference(storageQueues, "AzureQueues")
     .WithEnvironment("ConnectionStrings:Email", "smtp://localhost:1025")
     .WithEnvironment("RunJobsInProcess", "false")
     .WaitFor(elastic)

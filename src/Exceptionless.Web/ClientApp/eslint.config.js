@@ -37,7 +37,7 @@ export default ts.config(
         }
     },
     {
-        ignores: ['build/', '.svelte-kit/', 'dist/', 'src/lib/generated/', 'src/lib/features/shared/components/ui/']
+        ignores: ['.agents/', 'build/', '.svelte-kit/', 'dist/', 'src/lib/generated/', 'src/lib/features/shared/components/ui/']
     },
     {
         rules: {
