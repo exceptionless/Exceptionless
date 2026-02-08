@@ -6,5 +6,8 @@ yarn.lock
 # Generated files
 src/lib/generated
 
+# Third-party
+.agents/
+
 # UI components (shadcn)
 src/lib/features/shared/components/ui
