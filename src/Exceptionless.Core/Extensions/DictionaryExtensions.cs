@@ -4,6 +4,15 @@ namespace Exceptionless.Core.Extensions;
 
 public static class DictionaryExtensions
 {
+    public static void AddRange<TKey, TValue>(this IDictionary<TKey, TValue>? dictionary, IDictionary<TKey, TValue>? range)
+    {
+        if (dictionary is null || range is null)
+            return;
+
+        foreach (var r in range)
+            dictionary[r.Key] = r.Value;
+    }
+
     public static void Trim(this HashSet<string?> items, Predicate<string?> itemsToRemove, Predicate<string?> itemsToAlwaysInclude, int maxLength)
     {
         items.RemoveWhere(itemsToRemove);

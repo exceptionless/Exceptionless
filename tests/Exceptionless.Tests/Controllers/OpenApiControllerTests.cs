@@ -10,7 +10,7 @@ public class OpenApiControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetSwaggerJson_Default_ReturnsExpectedBaseline()
+    public async Task GetOpenApiJson_Default_ReturnsExpectedBaseline()
     {
         // Arrange
         string baselinePath = Path.Combine(AppContext.BaseDirectory, "Controllers", "Data", "openapi.json");
