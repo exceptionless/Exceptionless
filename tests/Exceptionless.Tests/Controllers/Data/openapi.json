@@ -7405,7 +7405,8 @@
         "required": [
           "provider",
           "provider_user_id",
-          "username"
+          "username",
+          "extra_data"
         ],
         "type": "object",
         "properties": {
@@ -7419,14 +7420,10 @@
             "type": "string"
           },
           "extra_data": {
-            "type": [
-              "null",
-              "object"
-            ],
+            "type": "object",
             "additionalProperties": {
               "type": "string"
-            },
-            "readOnly": true
+            }
           }
         }
       },
@@ -7981,7 +7978,9 @@
           "full_name",
           "email_address",
           "id",
+          "organization_ids",
           "password_reset_token_expiration",
+          "o_auth_accounts",
           "email_notifications_enabled",
           "is_email_address_verified",
           "verify_email_address_token_expiration",
@@ -8005,8 +8004,7 @@
             "items": {
               "type": "string"
             },
-            "description": "The organizations that the user has access to.",
-            "readOnly": true
+            "description": "The organizations that the user has access to."
           },
           "password": {
             "type": [
@@ -8034,8 +8032,7 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/OAuthAccount"
-            },
-            "readOnly": true
+            }
           },
           "full_name": {
             "type": "string",
@@ -8658,14 +8655,16 @@
         }
       },
       "WorkInProgressResult": {
+        "required": [
+          "workers"
+        ],
         "type": "object",
         "properties": {
           "workers": {
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "readOnly": true
+            }
           }
         }
       }

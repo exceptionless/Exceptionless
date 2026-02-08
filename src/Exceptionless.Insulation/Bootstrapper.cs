@@ -230,17 +230,6 @@ public class Bootstrapper
                 return storage;
             });
         }
-        else if (String.Equals(options.Provider, "minio"))
-        {
-            container.ReplaceSingleton<IFileStorage>(s => new MinioFileStorage(new MinioFileStorageOptions
-            {
-                ConnectionString = options.ConnectionString,
-                Serializer = s.GetRequiredService<ITextSerializer>(),
-                TimeProvider = s.GetRequiredService<TimeProvider>(),
-                ResiliencePolicyProvider = s.GetRequiredService<IResiliencePolicyProvider>(),
-                LoggerFactory = s.GetRequiredService<ILoggerFactory>()
-            }));
-        }
         else if (String.Equals(options.Provider, "s3"))
         {
             container.ReplaceSingleton<IFileStorage>(s => new S3FileStorage(o => o

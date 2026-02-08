@@ -8,10 +8,10 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" Version="13.1.0" />
+    <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.1.0" />
     <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.1.0" />
     <PackageReference Include="Aspire.Hosting.Redis" Version="13.1.0" />
     <PackageReference Include="AspNetCore.HealthChecks.Elasticsearch" Version="9.0.0" />
-    <PackageReference Include="Foundatio.Minio" Version="13.0.0-beta1.3" />
   </ItemGroup>
 
   <ItemGroup>
