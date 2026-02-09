@@ -1,5 +1,4 @@
 using System.Text.Json;
-using AutoMapper;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -13,6 +12,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
+using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Foundatio.Caching;
 using Foundatio.Queues;
@@ -52,7 +52,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         ICacheClient cacheClient,
         FormattingPluginManager formattingPluginManager,
         SemanticVersionParser semanticVersionParser,
-        IMapper mapper,
+        ApiMapper mapper,
         StackQueryValidator validator,
         AppOptions options,
         TimeProvider timeProvider,
@@ -74,6 +74,11 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         AllowedDateFields.AddRange([StackIndex.Alias.FirstOccurrence, StackIndex.Alias.LastOccurrence]);
         DefaultDateField = StackIndex.Alias.LastOccurrence;
     }
+
+    // Mapping implementations - Stack uses itself as view model (no mapping needed)
+    protected override Stack MapToModel(Stack newModel) => newModel;
+    protected override Stack MapToViewModel(Stack model) => model;
+    protected override List<Stack> MapToViewModels(IEnumerable<Stack> models) => models.ToList();
 
     /// <summary>
     /// Get by id
