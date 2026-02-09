@@ -66,7 +66,11 @@ builder.AddViteApp("Web", "../../src/Exceptionless.Web/ClientApp")
         e.TargetPort = 5173;
         e.IsProxied = false;
     })
-    .WithUrlForEndpoint("http", u => u.DisplayText = "Web");
+    .WithUrlForEndpoint("http", u =>
+    {
+        u.DisplayText = "Web";
+        u.Url += "/next/";
+    });
 
 builder.AddJavaScriptApp("AngularWeb", "../../src/Exceptionless.Web/ClientApp.angular", "serve")
     .WithReference(api)
