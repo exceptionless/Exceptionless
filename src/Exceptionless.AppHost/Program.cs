@@ -60,8 +60,13 @@ var api = builder.AddProject<Projects.Exceptionless_Web>("Api", "Exceptionless")
 builder.AddViteApp("Web", "../../src/Exceptionless.Web/ClientApp")
     .WithReference(api)
     .WithEnvironment("ASPNETCORE_URLS", "http://localhost:5200")
-    .WithUrlForEndpoint("Web", u => u.DisplayText = "Web")
-    .WithHttpEndpoint(port: 5173, targetPort: 5173, name: "Web", env: "PORT", isProxied: false);
+    .WithEndpoint("http", e =>
+    {
+        e.Port = 5173;
+        e.TargetPort = 5173;
+        e.IsProxied = false;
+    })
+    .WithUrlForEndpoint("http", u => u.DisplayText = "Web");
 
 builder.AddJavaScriptApp("AngularWeb", "../../src/Exceptionless.Web/ClientApp.angular", "serve")
     .WithReference(api)
