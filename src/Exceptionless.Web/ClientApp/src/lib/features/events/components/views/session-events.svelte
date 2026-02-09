@@ -63,9 +63,7 @@
     <Alert.Root variant="destructive" class="mb-4">
         <InfoIcon class="h-4 w-4" />
         <Alert.Title>Premium Feature</Alert.Title>
-        <Alert.Description>
-            Sessions are a premium feature. Upgrade your plan to view session events.
-        </Alert.Description>
+        <Alert.Description>Sessions are a premium feature. Upgrade your plan to view session events.</Alert.Description>
     </Alert.Root>
 {/if}
 
@@ -120,7 +118,7 @@
             </Table.Header>
             <Table.Body>
                 {#each sessionEventsQuery.data as sessionEvent (sessionEvent.id)}
-                    <Table.Row class="cursor-pointer hover:bg-muted/50">
+                    <Table.Row class="hover:bg-muted/50 cursor-pointer">
                         <Table.Cell>
                             <A href={resolve('/(app)/event/[eventId]', { eventId: sessionEvent.id })}>
                                 {sessionEvent.id}
