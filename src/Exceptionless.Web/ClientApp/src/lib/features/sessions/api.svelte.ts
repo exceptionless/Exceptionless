@@ -1,11 +1,10 @@
+import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 import type { CountResult } from '$shared/models';
 
 import { accessToken } from '$features/auth/index.svelte';
 import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-
-import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
 export const queryKeys = {
     organizations: (id: string | undefined) => [...queryKeys.type, 'organizations', id] as const,
@@ -16,18 +15,6 @@ export const queryKeys = {
     sessionEvents: (id: string | undefined) => [...queryKeys.type, 'session', id] as const,
     type: ['Session'] as const
 };
-
-export interface GetSessionsParams {
-    after?: string;
-    before?: string;
-    filter?: string;
-    limit?: number;
-    mode?: 'summary';
-    offset?: string;
-    page?: number;
-    sort?: string;
-    time?: string;
-}
 
 export interface GetOrganizationSessionsCountRequest {
     enabled?: () => boolean;
@@ -68,6 +55,18 @@ export interface GetSessionEventsRequest {
     route: {
         sessionId: string | undefined;
     };
+}
+
+export interface GetSessionsParams {
+    after?: string;
+    before?: string;
+    filter?: string;
+    limit?: number;
+    mode?: 'summary';
+    offset?: string;
+    page?: number;
+    sort?: string;
+    time?: string;
 }
 
 /**
