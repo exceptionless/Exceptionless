@@ -16,6 +16,7 @@
 
     import type { PersistentEvent } from '../models/index';
 
+    import { getSessionId } from "../utils";
     import Environment from './views/environment.svelte';
     import Error from './views/error.svelte';
     import ExtendedData from './views/extended-data.svelte';
@@ -32,17 +33,6 @@
     }
 
     let { filterChanged, handleError, id }: Props = $props();
-
-    // Helper to get session ID from event
-    function getSessionId(event?: null | PersistentEvent): string | undefined {
-        if (!event) return undefined;
-        // For session start events, use reference_id
-        if (event.type === 'session') {
-            return event.reference_id ?? undefined;
-        }
-        // For other events, check @ref:session in data
-        return event.data?.['@ref:session'] as string | undefined;
-    }
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -66,7 +56,6 @@
             tabs.push('Trace Log');
         }
 
-        // Add Session Events tab if event has a session reference
         if (getSessionId(event)) {
             tabs.push('Session Events');
         }
