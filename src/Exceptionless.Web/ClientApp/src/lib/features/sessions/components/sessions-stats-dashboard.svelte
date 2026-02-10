@@ -23,7 +23,7 @@
     <Card.Root class="relative overflow-hidden">
         <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
             <Card.Title class="text-sm font-medium">Sessions</Card.Title>
-            <AreaChart class="text-muted-foreground h-4 w-4" />
+            <AreaChart class="text-muted-foreground size-4" />
         </Card.Header>
         <Card.Content>
             {#if isLoading}
@@ -39,7 +39,7 @@
     <Card.Root class="relative overflow-hidden">
         <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
             <Card.Title class="text-sm font-medium">Sessions Per Hour</Card.Title>
-            <LineChart class="text-muted-foreground h-4 w-4" />
+            <LineChart class="text-muted-foreground size-4" />
         </Card.Header>
         <Card.Content>
             {#if isLoading}
@@ -55,7 +55,7 @@
     <Card.Root class="relative overflow-hidden">
         <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
             <Card.Title class="text-sm font-medium">Users</Card.Title>
-            <Users class="text-muted-foreground h-4 w-4" />
+            <Users class="text-muted-foreground size-4" />
         </Card.Header>
         <Card.Content>
             {#if isLoading}
@@ -71,7 +71,7 @@
     <Card.Root class="relative overflow-hidden">
         <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
             <Card.Title class="text-sm font-medium">Average Duration</Card.Title>
-            <Clock class="text-muted-foreground h-4 w-4" />
+            <Clock class="text-muted-foreground size-4" />
         </Card.Header>
         <Card.Content>
             {#if isLoading}
