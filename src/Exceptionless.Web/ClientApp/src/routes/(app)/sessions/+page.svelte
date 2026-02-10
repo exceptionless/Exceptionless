@@ -31,7 +31,7 @@
     import { getColumns } from '$features/events/components/table/options.svelte';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
-    import { getOrganizationSessionsCountQuery, queryKeys } from '$features/sessions/api.svelte';
+    import { getOrganizationSessionsCountQuery } from '$features/sessions/api.svelte';
     import SessionsDashboardChart from '$features/sessions/components/sessions-dashboard-chart.svelte';
     import SessionsStatsDashboard from '$features/sessions/components/sessions-stats-dashboard.svelte';
     import * as agg from '$features/shared/api/aggregations';
@@ -43,13 +43,10 @@
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import InfoIcon from '@lucide/svelte/icons/info';
-    import { useQueryClient } from '@tanstack/svelte-query';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
     import { throttle } from 'throttle-debounce';
-
-    const queryClient = useQueryClient();
 
     let selectedEventId: null | string = $state(null);
     function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
@@ -138,13 +135,13 @@
     }
 
     // Build filter with active sessions toggle
-    const activeFilter = $derived(() => {
+    function activeFilter(): string {
         let filter = queryParams.filter ?? 'type:session';
         if (viewActive) {
             filter += ' _missing_:data.sessionend';
         }
         return filter;
-    });
+    }
 
     const eventsQueryParameters: GetEventsParams = $state({
         get filter() {
@@ -205,15 +202,6 @@
         }
 
         await loadData();
-
-        // Invalidate and refetch the stats query to ensure aggregations are updated
-        await queryClient.invalidateQueries({
-            queryKey: queryKeys.organizationsCount(organization.current, {
-                aggregations: `avg:value cardinality:user date:(date${DEFAULT_OFFSET ? `^${DEFAULT_OFFSET}` : ''} cardinality:user)`,
-                filter: activeFilter(),
-                time: eventsQueryParameters.time
-            })
-        });
     }
 
     async function loadData() {
@@ -245,21 +233,6 @@
 
     $effect(() => {
         loadData();
-    });
-
-    // Refetch stats when time or filter changes
-    $effect(() => {
-        const time = eventsQueryParameters.time;
-        const filter = eventsQueryParameters.filter;
-
-        // Invalidate the stats query to trigger a refetch with new params
-        queryClient.invalidateQueries({
-            queryKey: queryKeys.organizationsCount(organization.current, {
-                aggregations: `avg:value cardinality:user date:(date${DEFAULT_OFFSET ? `^${DEFAULT_OFFSET}` : ''} cardinality:user)`,
-                filter: activeFilter(),
-                time
-            })
-        });
     });
 
     // Session stats query with aggregations
@@ -348,7 +321,7 @@
 <div class="flex flex-col">
     {#if organizationQuery.isSuccess && !hasPremiumFeatures}
         <Alert.Root variant="destructive" class="mb-4">
-            <InfoIcon class="h-4 w-4" />
+            <InfoIcon class="size-4" />
             <Alert.Title>Premium Feature</Alert.Title>
             <Alert.Description>
                 <A onclick={handleUpgrade}>Upgrade now</A> to enable sessions and other premium features!

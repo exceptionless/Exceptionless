@@ -175,6 +175,7 @@
         if (!userOrgIds || userOrgIds.length === 0 || !organization.current) {
             return undefined;
         }
+
         const isUserOrganization = userOrgIds.includes(organization.current);
         return isUserOrganization ? undefined : organization.current;
     });

@@ -8,6 +8,7 @@
     import * as Alert from '$comp/ui/alert';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
+    import { getSessionId } from "$features/events/utils";
     import { getSessionEventsQuery } from '$features/sessions/api.svelte';
     import InfoIcon from '@lucide/svelte/icons/info';
 
@@ -18,16 +19,7 @@
 
     let { event, hasPremiumFeatures = true }: Props = $props();
 
-    // Determine session ID from event
-    // For session start events, use reference_id
-    // For other events, check @ref:session in data
-    const sessionId = $derived(() => {
-        if (event.type === 'session') {
-            return event.reference_id ?? undefined;
-        }
-        return event.data?.['@ref:session'] as string | undefined;
-    });
-
+    const sessionId = $derived(getSessionId(event));
     const isSessionStart = $derived(event.type === 'session');
 
     // Calculate session duration for session start events
@@ -44,16 +36,15 @@
     });
 
     const isActiveSession = $derived(isSessionStart && !event.data?.sessionend);
-
-    // Query for session events
     const sessionEventsQuery = getSessionEventsQuery({
         params: {
-            filter: '-type:heartbeat', // Exclude heartbeats like legacy
+            filter: '-type:heartbeat',
             limit: 10
         },
         route: {
             get sessionId() {
-                return sessionId();
+                // Only provide sessionId if user has access to sessions feature
+                return hasPremiumFeatures ? sessionId : undefined;
             }
         }
     });
@@ -61,7 +52,7 @@
 
 {#if !hasPremiumFeatures}
     <Alert.Root variant="destructive" class="mb-4">
-        <InfoIcon class="h-4 w-4" />
+        <InfoIcon class="size-4" />
         <Alert.Title>Premium Feature</Alert.Title>
         <Alert.Description>Sessions are a premium feature. Upgrade your plan to view session events.</Alert.Description>
     </Alert.Root>

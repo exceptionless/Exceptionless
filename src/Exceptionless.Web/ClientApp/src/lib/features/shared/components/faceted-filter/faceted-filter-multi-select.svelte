@@ -120,11 +120,11 @@
                             <Command.Item id={option.value} onSelect={() => onValueSelected(option.value)} value={option.value}>
                                 <div
                                     class={cn(
-                                        'border-primary mr-2 flex h-4 w-4 items-center justify-center rounded-sm border',
+                                        'border-primary mr-2 flex size-4 items-center justify-center rounded-sm border',
                                         updatedValues.includes(option.value) ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
                                     )}
                                 >
-                                    <Check className={cn('h-4 w-4')} />
+                                    <Check className={cn('size-4')} />
                                 </div>
                                 <span>
                                     {option.label}

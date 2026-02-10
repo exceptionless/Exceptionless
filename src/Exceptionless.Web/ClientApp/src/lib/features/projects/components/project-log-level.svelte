@@ -1,8 +1,10 @@
 <script lang="ts">
+    import type { LogLevel } from '$features/events/models/event-data';
+
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { Skeleton } from '$comp/ui/skeleton';
-    import { getLogLevel, getLogLevelDisplayName, type LogLevel } from '$features/events/models/event-data';
     import { logLevels } from '$features/events/options';
+    import { getLogLevel, getLogLevelDisplayName } from "$features/events/utils";
     import { deleteProjectConfig, getProjectConfig, postProjectConfig } from '$features/projects/api.svelte';
     import { Button } from '$features/shared/components/ui/button';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
