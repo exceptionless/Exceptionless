@@ -22,6 +22,7 @@
         ignoreFree?: boolean;
         isChatEnabled: boolean;
         openChat: () => void;
+        premiumFeatureName?: string;
         requiresPremium?: boolean;
     }
 
