@@ -1,5 +1,7 @@
+export { getSessionStartDuration } from '../utils';
 import type { PersistentEvent } from '../models';
 import type { LogLevel } from '../models/event-data';
+
 import { logLevels } from '../options';
 
 export function getLogLevel(level?: LogLevel | null): LogLevel | null {

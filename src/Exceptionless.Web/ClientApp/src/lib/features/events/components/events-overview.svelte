@@ -16,7 +16,7 @@
 
     import type { PersistentEvent } from '../models/index';
 
-    import { getSessionId } from "../utils";
+    import { getSessionId } from '../utils';
     import Environment from './views/environment.svelte';
     import Error from './views/error.svelte';
     import ExtendedData from './views/extended-data.svelte';

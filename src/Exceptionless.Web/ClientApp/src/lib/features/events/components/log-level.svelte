@@ -2,7 +2,7 @@
     import { Badge } from '$comp/ui/badge';
     import { type LogLevel } from '$features/events/models/event-data';
 
-    import { getLogLevel } from "../utils";
+    import { getLogLevel } from '../utils';
 
     interface Props {
         level?: LogLevel;
