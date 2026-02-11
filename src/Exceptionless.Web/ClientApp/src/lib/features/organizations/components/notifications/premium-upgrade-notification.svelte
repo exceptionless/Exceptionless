@@ -11,7 +11,7 @@
         premiumFeatureName?: string;
     }
 
-    let { name, organizationId, premiumFeatureName = "search", ...restProps }: Props = $props();
+    let { name, organizationId, premiumFeatureName = 'search', ...restProps }: Props = $props();
 </script>
 
 <Notification variant="information" {...restProps}>

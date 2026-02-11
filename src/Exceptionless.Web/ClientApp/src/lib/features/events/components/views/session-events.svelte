@@ -4,49 +4,47 @@
     import { resolve } from '$app/paths';
     import Duration from '$comp/formatters/duration.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
+    import Live from '$comp/live.svelte';
     import { A } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
-    import { getSessionId } from "$features/events/utils";
+    import { getSessionStartDuration } from '$features/events/utils';
+    import { getSessionId } from '$features/events/utils/index';
+    import { usePremiumFeature } from '$features/organizations/hooks/use-premium-feature.svelte';
     import { getSessionEventsQuery } from '$features/sessions/api.svelte';
     import InfoIcon from '@lucide/svelte/icons/info';
 
     interface Props {
         event: PersistentEvent;
         hasPremiumFeatures?: boolean;
+        time?: string;
     }
 
-    let { event, hasPremiumFeatures = true }: Props = $props();
+    let { event, hasPremiumFeatures = true, time }: Props = $props();
 
     const sessionId = $derived(getSessionId(event));
     const isSessionStart = $derived(event.type === 'session');
 
-    // Calculate session duration for session start events
-    const sessionDuration = $derived(() => {
-        if (!isSessionStart) return 0;
-        const sessionEnd = event.data?.sessionend as string | undefined;
-        if (sessionEnd) {
-            // Duration is stored in value field (in seconds)
-            return (event.data?.Value as number) ?? 0;
-        }
-        // Active session - calculate from now
-        const startDate = new Date(event.date);
-        return Math.floor((Date.now() - startDate.getTime()) / 1000);
-    });
+    const userInfo = $derived(event.data?.['@user']);
+    const userIdentity = $derived(userInfo?.identity);
+    const userName = $derived(userInfo?.name);
 
-    const isActiveSession = $derived(isSessionStart && !event.data?.sessionend);
-    const sessionEventsQuery = getSessionEventsQuery({
-        params: {
-            filter: '-type:heartbeat',
-            limit: 10
-        },
-        route: {
-            get sessionId() {
-                // Only provide sessionId if user has access to sessions feature
-                return hasPremiumFeatures ? sessionId : undefined;
+    const sessionEventsQuery = $derived(() =>
+        getSessionEventsQuery({
+            params: {
+                filter: '-type:heartbeat',
+                limit: 10,
+                ...(time ? { time } : {})
+            },
+            route: {
+                sessionId: hasPremiumFeatures ? sessionId : undefined
             }
-        }
+        })
+    );
+
+    $effect(() => {
+        if (!hasPremiumFeatures) usePremiumFeature('Sessions');
     });
 </script>
 
@@ -62,53 +60,63 @@
     {#if isSessionStart}
         <Table.Root class="mb-4">
             <Table.Body>
-                <Table.Row class="group">
-                    <Table.Head class="w-40 font-semibold whitespace-nowrap">Occurred On</Table.Head>
-                    <Table.Cell class="w-4 pr-0"></Table.Cell>
-                    <Table.Cell class="flex items-center gap-2">
-                        <TimeAgo value={event.date} />
-                    </Table.Cell>
-                </Table.Row>
-                <Table.Row class="group">
+                <Table.Row>
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">Duration</Table.Head>
                     <Table.Cell class="w-4 pr-0"></Table.Cell>
-                    <Table.Cell class="flex items-center gap-2">
-                        {#if isActiveSession}
-                            <span class="inline-block h-2 w-2 rounded-full bg-green-500" title="Online"></span>
-                        {/if}
-                        <Duration value={sessionDuration() * 1000} />
+                    <Table.Cell>
+                        <Live live={!event.data?.sessionend} liveTitle="Online" notLiveTitle="Ended" />
+                        <Duration value={getSessionStartDuration(event)} />
                         {#if event.data?.sessionend}
-                            <span class="text-muted-foreground">(ended <TimeAgo value={event.data.sessionend as string} />)</span>
+                            (ended <TimeAgo value={event.data.sessionend} />)
+                        {/if}
+                        <Live live={!event.data?.sessionend} liveTitle="Online" notLiveTitle="Ended" />
+                        <Duration value={getSessionStartDuration(event)} />
+                        {#if event.data?.sessionend}
+                            (ended <TimeAgo value={event.data.sessionend} />)
                         {/if}
                     </Table.Cell>
                 </Table.Row>
+                {#if userIdentity}
+                    <Table.Row>
+                        <Table.Head class="w-40 font-semibold whitespace-nowrap">User Identity</Table.Head>
+                        <Table.Cell class="w-4 pr-0"></Table.Cell>
+                        <Table.Cell>{userIdentity}</Table.Cell>
+                    </Table.Row>
+                {/if}
+                {#if userName}
+                    <Table.Row>
+                        <Table.Head class="w-40 font-semibold whitespace-nowrap">User Name</Table.Head>
+                        <Table.Cell class="w-4 pr-0"></Table.Cell>
+                        <Table.Cell>{userName}</Table.Cell>
+                    </Table.Row>
+                {/if}
             </Table.Body>
         </Table.Root>
     {/if}
 
     <h3 class="mb-2 text-lg font-semibold">Session Events</h3>
 
-    {#if sessionEventsQuery.isLoading}
+    {#if sessionEventsQuery().isPending}
         <div class="space-y-2">
             {#each Array.from({ length: 5 }, (_, i) => i) as i (i)}
                 <Skeleton class="h-10 w-full" />
             {/each}
         </div>
-    {:else if sessionEventsQuery.isError}
+    {:else if sessionEventsQuery().isError}
         <Alert.Root variant="destructive">
             <Alert.Title>Error loading session events</Alert.Title>
-            <Alert.Description>{sessionEventsQuery.error?.message ?? 'Unknown error'}</Alert.Description>
+            <Alert.Description>{sessionEventsQuery().error?.message ?? 'Unknown error'}</Alert.Description>
         </Alert.Root>
-    {:else if sessionEventsQuery.data && sessionEventsQuery.data.length > 0}
+    {:else if (sessionEventsQuery().data ?? []).length > 0}
         <Table.Root>
             <Table.Header>
                 <Table.Row>
                     <Table.Head>Summary</Table.Head>
-                    <Table.Head class="w-32">When</Table.Head>
+                    <Table.Head class="w-32">Session Time</Table.Head>
                 </Table.Row>
             </Table.Header>
             <Table.Body>
-                {#each sessionEventsQuery.data as sessionEvent (sessionEvent.id)}
+                {#each sessionEventsQuery().data ?? [] as sessionEvent (sessionEvent.id)}
                     <Table.Row class="hover:bg-muted/50 cursor-pointer">
                         <Table.Cell>
                             <A href={resolve('/(app)/event/[eventId]', { eventId: sessionEvent.id })}>
