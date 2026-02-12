@@ -214,7 +214,7 @@ public class UserSerializerTests : TestWithServices
         // This test validates that OAuthAccounts survive a round-trip serialization
         // (the actual cache scenario) rather than parsing hand-crafted JSON.
         // Hand-crafted JSON may not match the exact format the serializer produces.
-        
+
         // Arrange - Create user with OAuth account
         var original = new User
         {

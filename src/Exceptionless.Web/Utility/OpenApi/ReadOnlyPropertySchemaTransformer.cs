@@ -112,7 +112,8 @@ public class ReadOnlyPropertySchemaTransformer : IOpenApiSchemaTransformer
                 // Check if it implements any of these interfaces
                 return propertyType.GetInterfaces()
                     .Where(iface => iface.IsGenericType)
-                    .Any(iface => {
+                    .Any(iface =>
+                    {
                         var ifaceGenericDef = iface.GetGenericTypeDefinition();
                         return ifaceGenericDef == typeof(ICollection<>) ||
                                ifaceGenericDef == typeof(IList<>) ||
