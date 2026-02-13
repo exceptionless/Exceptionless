@@ -171,5 +171,5 @@
         </DropdownMenu.Content>
     </DropdownMenu.Root>
 {:else}
-    <Skeleton class="h-[36px] w-[135px]" />
+    <Skeleton class="h-9 w-33.75" />
 {/if}

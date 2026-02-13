@@ -34,10 +34,10 @@ export const TIME_UNIT_NAMES: Record<TimeUnit, string> = {
  * Enhanced to match all backend test cases exactly
  */
 const DATE_MATH_REGEX =
-    /^(?<anchor>now|\*|(?<date>\d{4}-?\d{2}-?\d{2}(?:[T\s](?:\d{1,2}(?::?\d{2}(?::?\d{2})?)?(?:\.\d{1,3})?)?(?:[+-]\d{2}:?\d{2}|Z)?)?)(?:\|\|)?)(?<operations>(?:[+\-/]\d*[yMwdhHms])*)$/i;
+    /^(?<anchor>now|\*|(?<date>\d{4}-?\d{2}-?\d{2}(?:[T\s](?:\d{1,2}(?::?\d{2}(?::?\d{2})?)?(?:\.\d{1,3})?)?(?:[+-]\d{2}:?\d{2}|Z)?)?)(?:\|\|)?)(?<operations>(?:[+\-/]\d*[yMwdhHms])*)$/;
 
 /** Pre-compiled regex for operation parsing - more strict validation */
-const OPERATION_REGEX = /([+\-/])(\d*)([yMwdhHms])/gi;
+const OPERATION_REGEX = /([+\-/])(\d*)([yMwdhHms])/g;
 
 /** Result of parsing a date math expression */
 export interface DateMathResult {
