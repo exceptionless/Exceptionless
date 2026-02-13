@@ -506,4 +506,60 @@ describe('DateMath Library', () => {
             });
         });
     });
+
+    describe('Elastic date-math unit enforcement (lowercase d)', () => {
+        it('should accept now-7d as a valid expression', () => {
+            const result = parseDateMath('now-7d');
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-09-13T14:30:00Z'));
+        });
+
+        it('should reject now-7D (uppercase D is not a valid Elastic unit)', () => {
+            const result = parseDateMath('now-7D');
+            expect(result.success).toBe(false);
+        });
+
+        it('should accept now-1d and resolve correctly', () => {
+            const result = parseDateMath('now-1d');
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-09-19T14:30:00Z'));
+        });
+
+        it('should reject now-1D (uppercase D)', () => {
+            const result = parseDateMath('now-1D');
+            expect(result.success).toBe(false);
+        });
+
+        it('should parse [now-7d TO now] range correctly', () => {
+            const range = parseDateMathRange('[now-7d TO now]');
+            expect(range.start).toEqual(new Date('2025-09-13T14:30:00Z'));
+            expect(range.end).toEqual(new Date('2025-09-20T14:30:00Z'));
+        });
+
+        it('should fail to parse [now-7D TO now] range (uppercase D)', () => {
+            const range = parseDateMathRange('[now-7D TO now]');
+            // Should fall back to default range since uppercase D is invalid
+            expect(range.start).toEqual(new Date('2012-02-01'));
+            expect(range.end.getTime()).toBeCloseTo(new Date().getTime(), -3);
+        });
+
+        it('should accept rounding with lowercase d: now/d', () => {
+            const result = parseDateMath('now/d');
+            expect(result.success).toBe(true);
+        });
+
+        it('should accept now-1d/d (subtraction + rounding with lowercase d)', () => {
+            const result = parseDateMath('now-1d/d');
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-09-19T00:00:00Z'));
+        });
+
+        it('should only accept documented Elastic units: y, M, w, d, h, H, m, s', () => {
+            const validUnits = ['y', 'M', 'w', 'd', 'h', 'H', 'm', 's'];
+            validUnits.forEach((unit) => {
+                const result = parseDateMath(`now-1${unit}`);
+                expect(result.success).toBe(true);
+            });
+        });
+    });
 });
