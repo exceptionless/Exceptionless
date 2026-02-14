@@ -205,7 +205,7 @@
                         }
                     }}
                 >
-                    <Select.Trigger class="h-8 w-[120px]">
+                    <Select.Trigger class="h-8 w-30">
                         {#if paidFilter === undefined}
                             All Plans
                         {:else if paidFilter}
@@ -232,7 +232,7 @@
                         }
                     }}
                 >
-                    <Select.Trigger class="h-8 w-[120px]">
+                    <Select.Trigger class="h-8 w-30">
                         {#if suspendedFilter === undefined}
                             All Status
                         {:else if suspendedFilter}

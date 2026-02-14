@@ -134,9 +134,9 @@
                     ><DateTime value={eventQuery.data.date}></DateTime> (<TimeAgo value={eventQuery.data.date}></TimeAgo>)</Table.Cell
                 >
             {:else}
-                <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
-                <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>{/if}
+                <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>{/if}
         </Table.Row>
         <Table.Row class="group">
             {#if projectQuery.isSuccess}
@@ -146,9 +146,9 @@
                 >
                 <Table.Cell>{projectQuery.data.name}</Table.Cell>
             {:else}
-                <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
-                <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>
+                <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>
             {/if}
         </Table.Row>
     </Table.Body>
@@ -185,14 +185,14 @@
         {/each}
     </Tabs.Root>
 {:else}
-    <Skeleton class="mt-4 h-[30px] w-full rounded-full" />
+    <Skeleton class="mt-4 h-7.5 w-full rounded-full" />
     <Table.Root class="mt-4">
         <Table.Body>
             {#each { length: 5 } as name, index (`${name}-${index}`)}
                 <Table.Row class="group">
-                    <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
+                    <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
                     <Table.Cell class="w-4 pr-0"></Table.Cell>
-                    <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>
+                    <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>
                 </Table.Row>
             {/each}
         </Table.Body>
