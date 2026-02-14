@@ -359,10 +359,6 @@ export function postOrganization() {
         onSuccess: (organization: ViewOrganization) => {
             queryClient.setQueryData(queryKeys.id(organization.id, 'stats'), organization);
             queryClient.setQueryData(queryKeys.id(organization.id, undefined), organization);
-            // Invalidate organizations list so it includes the new org
-            queryClient.invalidateQueries({ queryKey: queryKeys.type });
-            // Invalidate user query since organization_ids changed on the backend
-            queryClient.invalidateQueries({ queryKey: userQueryKeys });
         }
     }));
 }
