@@ -170,7 +170,13 @@
     const organizations = $derived(organizationsQuery.data?.data ?? []);
 
     const impersonatingOrganizationId = $derived.by(() => {
-        const isUserOrganization = meQuery.data?.organization_ids.includes(organization.current ?? '');
+        // Only consider impersonation if user data is loaded and user has organizations
+        const userOrgIds = meQuery.data?.organization_ids;
+        if (!userOrgIds || userOrgIds.length === 0 || !organization.current) {
+            return undefined;
+        }
+
+        const isUserOrganization = userOrgIds.includes(organization.current);
         return isUserOrganization ? undefined : organization.current;
     });
 

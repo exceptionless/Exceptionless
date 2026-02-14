@@ -18,7 +18,7 @@ export function getColumns<TUser extends ViewUser>(organizationId: string): Colu
             enableSorting: false,
             header: 'Email Address',
             meta: {
-                class: 'w-[200px]'
+                class: 'w-50'
             }
         },
         {
@@ -28,7 +28,7 @@ export function getColumns<TUser extends ViewUser>(organizationId: string): Colu
             enableSorting: false,
             header: 'Name',
             meta: {
-                class: 'w-[200px]'
+                class: 'w-50'
             }
         },
         {
@@ -38,7 +38,7 @@ export function getColumns<TUser extends ViewUser>(organizationId: string): Colu
             enableSorting: false,
             header: 'Invited',
             meta: {
-                class: 'w-[100px]'
+                class: 'w-25'
             }
         }
     ];
