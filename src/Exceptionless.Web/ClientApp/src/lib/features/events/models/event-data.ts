@@ -1,5 +1,3 @@
-import { logLevels } from '../options';
-
 export interface EnvironmentInfo {
     architecture?: string;
     available_physical_memory?: number;

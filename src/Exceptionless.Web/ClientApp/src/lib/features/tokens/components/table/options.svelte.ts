@@ -18,7 +18,7 @@ export function getColumns<TToken extends ViewToken>(): ColumnDef<TToken>[] {
             enableSorting: false,
             header: 'API Key',
             meta: {
-                class: 'w-[180px]'
+                class: 'w-45'
             }
         },
         {
@@ -28,7 +28,7 @@ export function getColumns<TToken extends ViewToken>(): ColumnDef<TToken>[] {
             enableSorting: false,
             header: 'Notes',
             meta: {
-                class: 'w-[200px]'
+                class: 'w-50'
             }
         },
         {
