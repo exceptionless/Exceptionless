@@ -30,7 +30,7 @@
         "@eslint/js": "^9.39.2",
         "@iconify-json/lucide": "^1.2.87",
         "@playwright/test": "^1.58.0",
-        "@storybook/addon-a11y": "^10.2.1",
+        "@storybook/addon-a11y": "^10.2.8",
         "@storybook/addon-docs": "^10.2.1",
         "@storybook/addon-svelte-csf": "^5.0.10",
         "@storybook/sveltekit": "^10.2.1",
