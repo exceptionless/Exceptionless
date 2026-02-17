@@ -2,6 +2,7 @@ import { includeIgnoreFile } from '@eslint/compat';
 import js from '@eslint/js';
 import pluginQuery from '@tanstack/eslint-plugin-query';
 import prettier from 'eslint-config-prettier';
+import oxlint from 'eslint-plugin-oxlint';
 import perfectionist from 'eslint-plugin-perfectionist';
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 import storybook from 'eslint-plugin-storybook';
@@ -54,5 +55,7 @@ export default ts.config(
             'perfectionist/sort-svelte-attributes': 'off'
         }
     },
-    storybook.configs['flat/recommended']
+    storybook.configs['flat/recommended'],
+    // Must be last — disables ESLint rules already covered by oxlint
+    oxlint.buildFromOxlintConfigFile('./.oxlintrc.json')
 );
