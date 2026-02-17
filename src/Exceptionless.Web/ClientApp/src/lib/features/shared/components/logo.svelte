@@ -8,5 +8,5 @@
     let { class: className, ...props }: HTMLAttributes<HTMLImageElement> = $props();
 </script>
 
-<img alt="Exceptionless Logo" class={cn('mx-auto h-[100px] dark:hidden', className)} src={logo} {...props} />
-<img alt="Exceptionless Logo" class={cn('mx-auto hidden h-[100px] dark:block', className)} src={logoDark} {...props} />
+<img alt="Exceptionless Logo" class={cn('mx-auto max-h-25 w-auto dark:hidden', className)} src={logo} {...props} />
+<img alt="Exceptionless Logo" class={cn('mx-auto hidden max-h-25 w-auto dark:block', className)} src={logoDark} {...props} />
