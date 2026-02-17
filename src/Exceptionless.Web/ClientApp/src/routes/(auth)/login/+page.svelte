@@ -98,7 +98,10 @@
             <form.Field name="password">
                 {#snippet children(field)}
                     <Field.Field data-invalid={ariaInvalid(field)}>
-                        <Field.Label for={field.name}>Password <Muted class="float-right"><A href={resolve('/(auth)/forgot-password')} tabindex={6}>Forgot password?</A></Muted></Field.Label>
+                        <Field.Label for={field.name}
+                            >Password <Muted class="float-right"><A href={resolve('/(auth)/forgot-password')} tabindex={6}>Forgot password?</A></Muted
+                            ></Field.Label
+                        >
                         <Input
                             id={field.name}
                             name={field.name}

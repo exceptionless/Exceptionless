@@ -7,7 +7,9 @@ export { type SignupFormData, SignupSchema } from '$generated/schemas';
 // In dev mode, allow addresses like test@localhost (no TLD required)
 export const LoginSchema = dev
     ? GeneratedLoginSchema.extend({
-          email: string().min(1, 'Email is required').regex(/^[^\s@]+@[^\s@]+$/, 'Please enter a valid email address')
+          email: string()
+              .min(1, 'Email is required')
+              .regex(/^[^\s@]+@[^\s@]+$/, 'Please enter a valid email address')
       })
     : GeneratedLoginSchema;
 export type LoginFormData = Infer<typeof GeneratedLoginSchema>;
