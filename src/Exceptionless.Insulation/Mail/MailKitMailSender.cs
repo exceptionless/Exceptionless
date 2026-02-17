@@ -96,8 +96,10 @@ public class MailKitMailSender : IMailSender, IHealthCheck
 
         if (!String.IsNullOrEmpty(notification.From))
             message.From.AddRange(InternetAddressList.Parse(notification.From));
-        else
+        else if (!String.IsNullOrEmpty(_emailOptions.SmtpFrom))
             message.From.AddRange(InternetAddressList.Parse(_emailOptions.SmtpFrom));
+        else
+            throw new ArgumentException("Email SmtpFrom not configured", nameof(notification));
 
         if (!String.IsNullOrEmpty(notification.Body))
             builder.HtmlBody = notification.Body;
@@ -123,7 +125,7 @@ public class MailKitMailSender : IMailSender, IHealthCheck
             int port = _emailOptions.SmtpPort;
             var encryption = GetSecureSocketOption(_emailOptions.SmtpEncryption);
 
-            await client.ConnectAsync(host, port, encryption);
+            await client.ConnectAsync(host, port, encryption, cancellationToken);
 
             // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
             client.AuthenticationMechanisms.Remove("XOAUTH2");
@@ -131,11 +133,10 @@ public class MailKitMailSender : IMailSender, IHealthCheck
             string? user = _emailOptions.SmtpUser;
             if (!String.IsNullOrEmpty(user))
             {
-                await client.AuthenticateAsync(user, _emailOptions.SmtpPassword);
+                await client.AuthenticateAsync(user, _emailOptions.SmtpPassword, cancellationToken);
             }
 
-            await client.DisconnectAsync(true);
-
+            await client.DisconnectAsync(true, cancellationToken);
             _lastSuccessfulConnection = _timeProvider.GetUtcNow().UtcDateTime;
         }
         catch (Exception ex)
