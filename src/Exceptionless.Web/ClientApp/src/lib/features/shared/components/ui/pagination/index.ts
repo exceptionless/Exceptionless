@@ -16,10 +16,10 @@ export {
     Item,
     Link,
     PrevButton, //old
-    NextButton, //old
-    Ellipsis,
-    Previous,
-    Next,
+	NextButton, //old
+	Ellipsis,
+	Previous,
+	Next,
     //
     Root as Pagination,
     Content as PaginationContent,
@@ -27,8 +27,8 @@ export {
     Item as PaginationItem,
     Link as PaginationLink,
     PrevButton as PaginationPrevButton, //old
-    NextButton as PaginationNextButton, //old
-    Ellipsis as PaginationEllipsis,
-    Previous as PaginationPrevious,
-    Next as PaginationNext
+	NextButton as PaginationNextButton, //old
+	Ellipsis as PaginationEllipsis,
+	Previous as PaginationPrevious,
+	Next as PaginationNext,
 };

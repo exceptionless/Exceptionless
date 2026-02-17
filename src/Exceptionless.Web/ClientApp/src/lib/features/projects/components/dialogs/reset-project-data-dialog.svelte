@@ -21,8 +21,8 @@
         <AlertDialog.Header>
             <AlertDialog.Title>Reset Project Data</AlertDialog.Title>
             <AlertDialog.Description>
-                Are you sure you want to reset all project data for "<span class="inline-block max-w-[200px] truncate align-bottom" title={name}>{name}</span>"?
-                This action cannot be undone and will permanently erase all events, stacks, and associated data.
+                Are you sure you want to reset all project data for "<span class="inline-block max-w-50 truncate align-bottom" title={name}>{name}</span>"? This
+                action cannot be undone and will permanently erase all events, stacks, and associated data.
             </AlertDialog.Description>
         </AlertDialog.Header>
         <AlertDialog.Footer>

@@ -17,7 +17,7 @@ export function getColumns<TWebhook extends Webhook>(): ColumnDef<TWebhook>[] {
             enableSorting: false,
             header: 'Url',
             meta: {
-                class: 'w-[200px]'
+                class: 'w-50'
             }
         },
         {
@@ -27,7 +27,7 @@ export function getColumns<TWebhook extends Webhook>(): ColumnDef<TWebhook>[] {
             enableSorting: false,
             header: 'Event Types',
             meta: {
-                class: 'w-[200px]'
+                class: 'w-50'
             }
         },
         {

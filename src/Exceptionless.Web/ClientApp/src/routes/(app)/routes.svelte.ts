@@ -6,6 +6,7 @@ import EventStream from '@lucide/svelte/icons/calendar-arrow-down';
 import Events from '@lucide/svelte/icons/calendar-days';
 import Support from '@lucide/svelte/icons/circle-help';
 import GitHub from '@lucide/svelte/icons/github';
+import Sessions from '@lucide/svelte/icons/timer';
 
 import type { NavigationItem } from '../routes.svelte';
 
@@ -33,6 +34,12 @@ export function routes(): NavigationItem[] {
             href: resolve('/(app)/stream'),
             icon: EventStream,
             title: 'Event Stream'
+        },
+        {
+            group: 'Reports',
+            href: resolve('/(app)/sessions'),
+            icon: Sessions,
+            title: 'Sessions'
         },
         {
             group: 'Help',

@@ -16,12 +16,14 @@
 
     import type { PersistentEvent } from '../models/index';
 
+    import { getSessionId } from '../utils';
     import Environment from './views/environment.svelte';
     import Error from './views/error.svelte';
     import ExtendedData from './views/extended-data.svelte';
     import Overview from './views/overview.svelte';
     import PromotedExtendedData from './views/promoted-extended-data.svelte';
     import Request from './views/request.svelte';
+    import SessionEvents from './views/session-events.svelte';
     import TraceLog from './views/trace-log.svelte';
 
     interface Props {
@@ -37,7 +39,7 @@
             return [];
         }
 
-        const tabs = ['Overview'];
+        const tabs: TabType[] = ['Overview'];
         if (hasErrorOrSimpleError(event)) {
             tabs.push('Exception');
         }
@@ -52,6 +54,10 @@
 
         if (event.data?.['@trace']) {
             tabs.push('Trace Log');
+        }
+
+        if (getSessionId(event)) {
+            tabs.push('Session Events');
         }
 
         if (!project) {
@@ -128,9 +134,9 @@
                     ><DateTime value={eventQuery.data.date}></DateTime> (<TimeAgo value={eventQuery.data.date}></TimeAgo>)</Table.Cell
                 >
             {:else}
-                <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
-                <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>{/if}
+                <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>{/if}
         </Table.Row>
         <Table.Row class="group">
             {#if projectQuery.isSuccess}
@@ -140,9 +146,9 @@
                 >
                 <Table.Cell>{projectQuery.data.name}</Table.Cell>
             {:else}
-                <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
-                <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>
+                <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>
             {/if}
         </Table.Row>
     </Table.Body>
@@ -168,6 +174,8 @@
                     <Request {filterChanged} event={eventQuery.data}></Request>
                 {:else if tab === 'Trace Log'}
                     <TraceLog logs={eventQuery.data.data?.['@trace']}></TraceLog>
+                {:else if tab === 'Session Events'}
+                    <SessionEvents event={eventQuery.data}></SessionEvents>
                 {:else if tab === 'Extended Data'}
                     <ExtendedData event={eventQuery.data} project={projectQuery.data} promoted={onPromoted}></ExtendedData>
                 {:else}
@@ -177,14 +185,14 @@
         {/each}
     </Tabs.Root>
 {:else}
-    <Skeleton class="mt-4 h-[30px] w-full rounded-full" />
+    <Skeleton class="mt-4 h-7.5 w-full rounded-full" />
     <Table.Root class="mt-4">
         <Table.Body>
             {#each { length: 5 } as name, index (`${name}-${index}`)}
                 <Table.Row class="group">
-                    <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Head>
+                    <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
                     <Table.Cell class="w-4 pr-0"></Table.Cell>
-                    <Table.Cell class="flex items-center"><Skeleton class="h-[24px] w-full rounded-full" /></Table.Cell>
+                    <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>
                 </Table.Row>
             {/each}
         </Table.Body>

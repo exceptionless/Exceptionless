@@ -17,7 +17,7 @@ export function getColumns<TProject extends ViewProject>(mode: GetProjectsMode =
             enableHiding: false,
             header: 'Name',
             meta: {
-                class: 'w-[200px]'
+                class: 'w-50'
             }
         }
     ];

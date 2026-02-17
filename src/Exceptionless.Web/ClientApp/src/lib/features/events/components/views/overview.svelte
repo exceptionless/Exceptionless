@@ -18,6 +18,7 @@
         getStackTrace,
         hasErrorOrSimpleError
     } from '$features/events/persistent-event';
+    import { getSessionStartDuration } from '$features/events/utils';
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import Filter from '@lucide/svelte/icons/filter';
     import Email from '@lucide/svelte/icons/mail';
@@ -66,22 +67,6 @@
     let requestUrl = $derived(getRequestInfoUrl(event));
     let requestUrlPath = $derived(getRequestInfoPath(event));
     let version = $derived(event.data?.['@version']);
-
-    function getSessionStartDuration(event: PersistentEvent): Date | number | string | undefined {
-        if (event.data?.sessionend) {
-            if (event.value) {
-                return event.value * 1000;
-            }
-
-            if (event.date) {
-                return new Date(event.data.sessionend).getTime() - new Date(event.date).getTime();
-            }
-
-            throw new Error('Completed session start event has no value or date');
-        }
-
-        return event.date;
-    }
 </script>
 
 <Table.Root>
@@ -252,7 +237,7 @@
             <CopyToClipboardButton title="Copy Stack Trace to Clipboard" value={stackTrace}></CopyToClipboardButton>
         </div>
     </div>
-    <div class="mt-2 max-h-[300px] grow overflow-auto text-xs">
+    <div class="mt-2 max-h-75 grow overflow-auto text-xs">
         {#if event.data?.['@error']}
             <StackTrace error={event.data['@error']} />
         {:else if event.data?.['@simple_error']}
