@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { dev } from '$app/environment';
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
@@ -59,7 +60,6 @@
 <Card.Root class="mx-auto w-sm">
     <Card.Header>
         <Logo />
-        <Card.Title class="text-center text-2xl">Log in to your account</Card.Title>
     </Card.Header>
     <Card.Content>
         <form
@@ -81,10 +81,11 @@
                         <Input
                             id={field.name}
                             name={field.name}
-                            type="email"
+                            type={dev ? 'text' : 'email'}
                             placeholder="Enter email address"
                             autocomplete="email"
                             required
+                            tabindex={1}
                             value={field.state.value}
                             onblur={field.handleBlur}
                             oninput={(e) => field.handleChange(e.currentTarget.value)}
@@ -97,12 +98,7 @@
             <form.Field name="password">
                 {#snippet children(field)}
                     <Field.Field data-invalid={ariaInvalid(field)}>
-                        <Field.Label for={field.name}
-                            >Password
-                            <Muted class="float-right">
-                                <A href={resolve('/(auth)/forgot-password')}>Forgot password?</A>
-                            </Muted></Field.Label
-                        >
+                        <Field.Label for={field.name}>Password <Muted class="float-right"><A href={resolve('/(auth)/forgot-password')} tabindex={6}>Forgot password?</A></Muted></Field.Label>
                         <Input
                             id={field.name}
                             name={field.name}
@@ -112,6 +108,7 @@
                             maxlength={100}
                             minlength={6}
                             required
+                            tabindex={2}
                             value={field.state.value}
                             onblur={field.handleBlur}
                             oninput={(e) => field.handleChange(e.currentTarget.value)}
@@ -123,7 +120,7 @@
             </form.Field>
             <form.Subscribe selector={(state) => state.isSubmitting}>
                 {#snippet children(isSubmitting)}
-                    <Button type="submit" class="mt-4 w-full" disabled={isSubmitting}>
+                    <Button type="submit" class="mt-4 w-full" tabindex={3} disabled={isSubmitting}>
                         {#if isSubmitting}
                             <Spinner /> Logging in...
                         {:else}
@@ -142,22 +139,22 @@
             </div>
             <div class="auto-cols-2 grid grid-flow-col grid-rows-2 gap-4">
                 {#if microsoftClientId}
-                    <Button aria-label="Login with Microsoft" onclick={() => liveLogin(redirectUrl)}>
+                    <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => liveLogin(redirectUrl)}>
                         <MicrosoftIcon class="size-4" /> Microsoft
                     </Button>
                 {/if}
                 {#if googleClientId}
-                    <Button aria-label="Login with Google" onclick={() => googleLogin(redirectUrl)}>
+                    <Button aria-label="Login with Google" tabindex={4} onclick={() => googleLogin(redirectUrl)}>
                         <GoogleIcon class="size-4" /> Google
                     </Button>
                 {/if}
                 {#if facebookClientId}
-                    <Button aria-label="Login with Facebook" onclick={() => facebookLogin(redirectUrl)}>
+                    <Button aria-label="Login with Facebook" tabindex={4} onclick={() => facebookLogin(redirectUrl)}>
                         <Facebook class="size-4" /> Facebook
                     </Button>
                 {/if}
                 {#if gitHubClientId}
-                    <Button aria-label="Login with GitHub" onclick={() => githubLogin(redirectUrl)}>
+                    <Button aria-label="Login with GitHub" tabindex={4} onclick={() => githubLogin(redirectUrl)}>
                         <GitHub class="size-4" /> GitHub
                     </Button>
                 {/if}
@@ -167,7 +164,7 @@
         {#if enableAccountCreation}
             <P class="text-center text-sm">
                 Not a member?
-                <A href={resolve('/(auth)/signup')}>Start a free trial</A>
+                <A href={resolve('/(auth)/signup')} tabindex={5}>Start a free trial</A>
             </P>
 
             <P class="text-center text-sm">
