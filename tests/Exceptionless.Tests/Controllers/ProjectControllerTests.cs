@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.Json;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -145,23 +147,306 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task CanGetProjectConfiguration()
+    public async Task GetConfigAsync_WithClientAuth_ReturnsConfigurationWithSettings()
     {
+        // Act
         var response = await SendRequestAsync(r => r
            .AsFreeOrganizationClientUser()
            .AppendPath("projects/config")
            .StatusCodeShouldBeOk()
         );
 
+        // Assert - response headers
         Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
         Assert.Equal("utf-8", response.Content.Headers.ContentType?.CharSet);
         Assert.True(response.Content.Headers.ContentLength.HasValue);
         Assert.True(response.Content.Headers.ContentLength > 0);
 
+        // Assert - deserialized model
         var config = await response.DeserializeAsync<ClientConfiguration>();
         Assert.NotNull(config);
         Assert.True(config.Settings.GetBoolean("IncludeConditionalData"));
         Assert.Equal(0, config.Version);
+
+        // Assert - raw JSON uses snake_case and correct structure
+        string json = await response.Content.ReadAsStringAsync(TestCancellationToken);
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        Assert.True(root.TryGetProperty("version", out var versionProp), "Expected snake_case property 'version' in JSON");
+        Assert.Equal(0, versionProp.GetInt32());
+        Assert.True(root.TryGetProperty("settings", out var settingsProp), "Expected snake_case property 'settings' in JSON");
+        Assert.Equal(JsonValueKind.Object, settingsProp.ValueKind);
+        Assert.True(settingsProp.TryGetProperty("IncludeConditionalData", out var settingValue), "Expected 'IncludeConditionalData' key in settings");
+        Assert.Equal("true", settingValue.GetString());
+    }
+
+    [Fact]
+    public async Task GetConfigAsync_WithCurrentVersion_ReturnsNotModified()
+    {
+        // Arrange - get the current config version
+        var config = await SendRequestAsAsync<ClientConfiguration>(r => r
+            .AsFreeOrganizationClientUser()
+            .AppendPath("projects/config")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(config);
+
+        // Act - request with the current version
+        var response = await SendRequestAsync(r => r
+            .AsFreeOrganizationClientUser()
+            .AppendPath("projects/config")
+            .QueryString("v", config.Version.ToString())
+            .ExpectedStatus(HttpStatusCode.NotModified)
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotModified, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetConfigAsync_WithStaleVersion_ReturnsUpdatedConfig()
+    {
+        // Arrange - get initial config
+        var config = await SendRequestAsAsync<ClientConfiguration>(r => r
+            .AsFreeOrganizationClientUser()
+            .AppendPath("projects/config")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(config);
+        int initialVersion = config.Version;
+
+        // Increment the version by setting a new config value
+        await SendRequestAsync(r => r
+            .AsFreeOrganizationUser()
+            .Post()
+            .AppendPaths("projects", SampleDataService.FREE_PROJECT_ID, "config")
+            .QueryString("key", "StaleVersionTest")
+            .Content(new ValueFromBody<string>("StaleValue"))
+            .StatusCodeShouldBeOk()
+        );
+
+        // Act - request with the old (stale) version
+        var updatedConfig = await SendRequestAsAsync<ClientConfiguration>(r => r
+            .AsFreeOrganizationClientUser()
+            .AppendPath("projects/config")
+            .QueryString("v", initialVersion.ToString())
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedConfig);
+        Assert.True(updatedConfig.Version > initialVersion);
+        Assert.Equal("StaleValue", updatedConfig.Settings.GetString("StaleVersionTest"));
+    }
+
+    [Fact]
+    public async Task SetConfigAsync_WithValidKeyAndValue_PersistsAndIncrementsVersion()
+    {
+        // Arrange - get initial config
+        var initialConfig = await SendRequestAsAsync<ClientConfiguration>(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(initialConfig);
+
+        // Act - set a new config value
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
+            .QueryString("key", "MyNewSetting")
+            .Content(new ValueFromBody<string>("MyNewValue"))
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert - verify the setting was persisted
+        var updatedConfig = await SendRequestAsAsync<ClientConfiguration>(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(updatedConfig);
+        Assert.Equal("MyNewValue", updatedConfig.Settings.GetString("MyNewSetting"));
+        Assert.Equal(initialConfig.Version + 1, updatedConfig.Version);
+    }
+
+    [Fact]
+    public async Task SetConfigAsync_WithEmptyKey_ReturnsBadRequest()
+    {
+        // Arrange - get initial config version
+        var configBefore = await SendRequestAsAsync<ClientConfiguration>(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(configBefore);
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
+            .QueryString("key", "")
+            .Content(new ValueFromBody<string>("SomeValue"))
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert - version should not change
+        var configAfter = await SendRequestAsAsync<ClientConfiguration>(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(configAfter);
+        Assert.Equal(configBefore.Version, configAfter.Version);
+    }
+
+    [Fact]
+    public async Task SetConfigAsync_WithEmptyValue_ReturnsBadRequest()
+    {
+        // Arrange - get initial config version
+        var configBefore = await SendRequestAsAsync<ClientConfiguration>(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(configBefore);
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
+            .QueryString("key", "TestKey")
+            .Content(new ValueFromBody<string>(""))
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert - version should not change
+        var configAfter = await SendRequestAsAsync<ClientConfiguration>(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(configAfter);
+        Assert.Equal(configBefore.Version, configAfter.Version);
+    }
+
+    [Fact]
+    public async Task SetConfigAsync_RoundTrip_JsonSerializesCorrectly()
+    {
+        // Arrange - set a config value
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
+            .QueryString("key", "SerializationTest")
+            .Content(new ValueFromBody<string>("TestValue123"))
+            .StatusCodeShouldBeOk()
+        );
+
+        // Act - get raw JSON from the API
+        var response = await SendRequestAsync(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
+            .StatusCodeShouldBeOk()
+        );
+
+        string json = await response.Content.ReadAsStringAsync(TestCancellationToken);
+
+        // Assert - validate JSON structure matches client expectations
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        // Should have snake_case property names
+        Assert.True(root.TryGetProperty("version", out _), "Expected 'version' property (snake_case)");
+        Assert.False(root.TryGetProperty("Version", out _), "Should not have PascalCase 'Version' property");
+        Assert.True(root.TryGetProperty("settings", out var settings), "Expected 'settings' property (snake_case)");
+        Assert.False(root.TryGetProperty("Settings", out _), "Should not have PascalCase 'Settings' property");
+
+        // Settings should be a flat dictionary, not a wrapped object
+        Assert.Equal(JsonValueKind.Object, settings.ValueKind);
+        Assert.True(settings.TryGetProperty("SerializationTest", out var testValue));
+        Assert.Equal("TestValue123", testValue.GetString());
+
+        // Settings keys should preserve original casing (not be snake_cased)
+        Assert.True(settings.TryGetProperty("IncludeConditionalData", out _),
+            "Settings dictionary keys should preserve original casing");
+    }
+
+    [Fact]
+    public async Task DeleteConfigAsync_WithExistingKey_RemovesSettingAndIncrementsVersion()
+    {
+        // Arrange - add a config setting first
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
+            .QueryString("key", "ToBeDeleted")
+            .Content(new ValueFromBody<string>("DeleteMe"))
+            .StatusCodeShouldBeOk()
+        );
+
+        var configBeforeDelete = await SendRequestAsAsync<ClientConfiguration>(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(configBeforeDelete);
+        Assert.Equal("DeleteMe", configBeforeDelete.Settings.GetString("ToBeDeleted"));
+
+        // Act - delete the config setting
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Delete()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
+            .QueryString("key", "ToBeDeleted")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert - verify the setting was removed and version incremented
+        var configAfterDelete = await SendRequestAsAsync<ClientConfiguration>(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(configAfterDelete);
+        Assert.Null(configAfterDelete.Settings.GetString("ToBeDeleted", null));
+        Assert.Equal(configBeforeDelete.Version + 1, configAfterDelete.Version);
+    }
+
+    [Fact]
+    public async Task DeleteConfigAsync_WithNonExistentKey_ReturnsOkWithoutVersionChange()
+    {
+        // Arrange - get current config version
+        var configBefore = await SendRequestAsAsync<ClientConfiguration>(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(configBefore);
+
+        // Act - delete a key that doesn't exist
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Delete()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
+            .QueryString("key", "NonExistentKey12345")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert - version should not change
+        var configAfter = await SendRequestAsAsync<ClientConfiguration>(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(configAfter);
+        Assert.Equal(configBefore.Version, configAfter.Version);
     }
 
     [Fact]
