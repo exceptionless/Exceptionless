@@ -3,7 +3,7 @@
 public class ClientConfiguration
 {
     public int Version { get; set; }
-    public SettingsDictionary Settings { get; private set; } = new();
+    public SettingsDictionary Settings { get; init; } = new();
 
     public void IncrementVersion()
     {

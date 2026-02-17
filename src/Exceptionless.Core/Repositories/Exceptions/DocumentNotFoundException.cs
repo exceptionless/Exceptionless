@@ -7,7 +7,7 @@ public class DocumentNotFoundException : ApplicationException
         Id = id;
     }
 
-    public string Id { get; private set; }
+    public string Id { get; init; }
 
     public override string ToString()
     {
