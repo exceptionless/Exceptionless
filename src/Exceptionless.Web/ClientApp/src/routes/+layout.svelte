@@ -53,7 +53,7 @@
                 return;
             }
 
-            await goto(`${resolve('/status/')}?redirect=${url.pathname}`, { replaceState: true });
+            await goto(`${resolve('/status')}?redirect=${url.pathname}`, { replaceState: true });
         }
     });
 
