@@ -57,12 +57,14 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
             var cacheKeysToRemove = new List<string>(results.Documents.Count * 2);
             var existingSessionHeartbeatIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            var heartbeats = await GetHeartbeatsBatchAsync(results.Documents);
+            var documents = results.Documents as IReadOnlyList<PersistentEvent> ?? [.. results.Documents];
+            var heartbeats = await GetHeartbeatsBatchAsync(documents);
 
-            foreach (var sessionStart in results.Documents)
+            for (int i = 0; i < documents.Count; i++)
             {
+                var sessionStart = documents[i];
                 var lastActivityUtc = sessionStart.Date.UtcDateTime.AddSeconds((double)sessionStart.Value.GetValueOrDefault());
-                heartbeats.TryGetValue(sessionStart, out var heartbeatResult);
+                var heartbeatResult = heartbeats[i];
 
                 bool closeDuplicate = heartbeatResult?.CacheKey is not null && existingSessionHeartbeatIds.Contains(heartbeatResult.CacheKey);
                 if (heartbeatResult?.CacheKey is not null && !closeDuplicate)
@@ -114,43 +116,45 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
         return JobResult.Success;
     }
 
-    private async Task<Dictionary<PersistentEvent, HeartbeatResult>> GetHeartbeatsBatchAsync(IReadOnlyCollection<PersistentEvent> sessions)
+    private async Task<HeartbeatResult?[]> GetHeartbeatsBatchAsync(IReadOnlyList<PersistentEvent> sessions)
     {
         var allHeartbeatKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var sessionKeyMap = new List<(PersistentEvent Session, string? SessionIdKey, string? UserIdentityKey)>(sessions.Count);
+        var sessionKeyMap = new (string? SessionIdKey, string? UserIdentityKey)[sessions.Count];
 
-        foreach (var sessionStart in sessions)
+        for (int i = 0; i < sessions.Count; i++)
         {
+            var session = sessions[i];
             string? sessionIdKey = null;
             string? userIdentityKey = null;
 
-            string? sessionId = sessionStart.GetSessionId();
+            string? sessionId = session.GetSessionId();
             if (!String.IsNullOrWhiteSpace(sessionId))
             {
-                sessionIdKey = $"Project:{sessionStart.ProjectId}:heartbeat:{sessionId.ToSHA1()}";
+                sessionIdKey = $"Project:{session.ProjectId}:heartbeat:{sessionId.ToSHA1()}";
                 allHeartbeatKeys.Add(sessionIdKey);
             }
 
-            var user = sessionStart.GetUserIdentity(_jsonOptions);
+            var user = session.GetUserIdentity(_jsonOptions);
             if (!String.IsNullOrWhiteSpace(user?.Identity))
             {
-                userIdentityKey = $"Project:{sessionStart.ProjectId}:heartbeat:{user.Identity.ToSHA1()}";
+                userIdentityKey = $"Project:{session.ProjectId}:heartbeat:{user.Identity.ToSHA1()}";
                 allHeartbeatKeys.Add(userIdentityKey);
             }
 
-            sessionKeyMap.Add((sessionStart, sessionIdKey, userIdentityKey));
+            sessionKeyMap[i] = (sessionIdKey, userIdentityKey);
         }
 
         if (allHeartbeatKeys.Count == 0)
-            return new Dictionary<PersistentEvent, HeartbeatResult>();
+            return new HeartbeatResult?[sessions.Count];
 
         var heartbeatValues = await _cache.GetAllAsync<DateTime>(allHeartbeatKeys);
 
         var closeKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var resolved = new Dictionary<PersistentEvent, (DateTime ActivityUtc, string CacheKey)>(sessions.Count);
+        var resolved = new (DateTime ActivityUtc, string CacheKey)?[sessions.Count];
 
-        foreach (var (session, sessionIdKey, userIdentityKey) in sessionKeyMap)
+        for (int i = 0; i < sessionKeyMap.Length; i++)
         {
+            var (sessionIdKey, userIdentityKey) = sessionKeyMap[i];
             string? matchedKey = null;
             DateTime activityUtc = default;
 
@@ -167,7 +171,7 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
 
             if (matchedKey is not null)
             {
-                resolved[session] = (activityUtc, matchedKey);
+                resolved[i] = (activityUtc, matchedKey);
                 closeKeys.Add($"{matchedKey}-close");
             }
         }
@@ -176,11 +180,14 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
             ? await _cache.GetAllAsync<bool>(closeKeys)
             : new Dictionary<string, CacheValue<bool>>();
 
-        var results = new Dictionary<PersistentEvent, HeartbeatResult>(resolved.Count);
-        foreach (var (session, (activityUtc, cacheKey)) in resolved)
+        var results = new HeartbeatResult?[sessions.Count];
+        for (int i = 0; i < resolved.Length; i++)
         {
-            bool close = closeValues.TryGetValue($"{cacheKey}-close", out var closeVal) && closeVal.HasValue && closeVal.Value;
-            results[session] = new HeartbeatResult { ActivityUtc = activityUtc, Close = close, CacheKey = cacheKey };
+            if (resolved[i] is not { } r)
+                continue;
+
+            bool close = closeValues.TryGetValue($"{r.CacheKey}-close", out var closeVal) && closeVal.HasValue && closeVal.Value;
+            results[i] = new HeartbeatResult { ActivityUtc = r.ActivityUtc, Close = close, CacheKey = r.CacheKey };
         }
 
         return results;
