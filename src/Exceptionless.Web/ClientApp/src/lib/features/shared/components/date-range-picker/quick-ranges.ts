@@ -43,9 +43,9 @@ export const quickRanges: QuickRangeSection[] = [
     {
         label: 'Complete periods',
         options: [
-            { label: 'Previous day', value: '[now-1d/d TO now/d}' },
-            { label: 'Previous week', value: '[now-1w/w TO now/w}' },
-            { label: 'Previous month', value: '[now-1M/M TO now/M}' }
+            { label: 'Previous day', value: '[now-1d/d TO now-1d/d]' },
+            { label: 'Previous week', value: '[now-1w/w TO now-1w/w]' },
+            { label: 'Previous month', value: '[now-1M/M TO now-1M/M]' }
         ]
     }
 ];
