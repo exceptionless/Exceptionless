@@ -179,7 +179,17 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
 
         IReadOnlyCollection<Stack>? newest = null;
         if (newTotal > 0)
-            newest = (await _stackRepository.FindAsync(q => q.AppFilter(sf).FilterExpression(filter).SortExpression("-first").DateRange(data.UtcStartTime, data.UtcEndTime, "first"), o => o.PageLimit(3))).Documents;
+        {
+            var stackResults = await _stackRepository.FindAsync(
+                q => q.AppFilter(sf)
+                    .FilterExpression(filter)
+                    .SortExpression("-first")
+                    .DateRange(data.UtcStartTime, data.UtcEndTime, "first")
+                    .Index(data.UtcStartTime, data.UtcEndTime),
+                o => o.PageLimit(3));
+
+            newest = stackResults.Documents;
+        }
 
         foreach (var user in users)
         {
