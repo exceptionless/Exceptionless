@@ -130,3 +130,5 @@ src/Exceptionless\.Web/ClientApp.angular/dist/
 *.DotSettings
 
 coverage/
+nul
+tmpclaude*
