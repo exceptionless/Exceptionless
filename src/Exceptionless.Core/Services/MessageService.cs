@@ -3,6 +3,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Foundatio.Extensions.Hosting.Startup;
+using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -11,16 +12,37 @@ namespace Exceptionless.Core.Services;
 
 public class MessageService : IDisposable, IStartupAction
 {
+    private readonly IOrganizationRepository _organizationRepository;
+    private readonly IProjectRepository _projectRepository;
+    private readonly IUserRepository _userRepository;
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
+    private readonly ITokenRepository _tokenRepository;
+    private readonly IWebHookRepository _webHookRepository;
     private readonly IConnectionMapping _connectionMapping;
     private readonly AppOptions _options;
     private readonly ILogger _logger;
+    private readonly List<Action> _disposeActions = [];
 
-    public MessageService(IStackRepository stackRepository, IEventRepository eventRepository, IConnectionMapping connectionMapping, AppOptions options, ILoggerFactory loggerFactory)
+    public MessageService(
+        IOrganizationRepository organizationRepository,
+        IProjectRepository projectRepository,
+        IUserRepository userRepository,
+        IStackRepository stackRepository,
+        IEventRepository eventRepository,
+        ITokenRepository tokenRepository,
+        IWebHookRepository webHookRepository,
+        IConnectionMapping connectionMapping,
+        AppOptions options,
+        ILoggerFactory loggerFactory)
     {
+        _organizationRepository = organizationRepository;
+        _projectRepository = projectRepository;
+        _userRepository = userRepository;
         _stackRepository = stackRepository;
         _eventRepository = eventRepository;
+        _tokenRepository = tokenRepository;
+        _webHookRepository = webHookRepository;
         _connectionMapping = connectionMapping;
         _options = options;
         _logger = loggerFactory.CreateLogger<MessageService>() ?? NullLogger<MessageService>.Instance;
@@ -31,26 +53,34 @@ public class MessageService : IDisposable, IStartupAction
         if (!_options.EnableRepositoryNotifications)
             return Task.CompletedTask;
 
-        if (_stackRepository is StackRepository sr)
-            sr.BeforePublishEntityChanged.AddHandler(BeforePublishStackEntityChanged);
-        if (_eventRepository is EventRepository er)
-            er.BeforePublishEntityChanged.AddHandler(BeforePublishEventEntityChanged);
+        RegisterHandler<Organization>(_organizationRepository);
+        RegisterHandler<User>(_userRepository);
+        RegisterHandler<Project>(_projectRepository);
+        RegisterHandler<Stack>(_stackRepository);
+        RegisterHandler<PersistentEvent>(_eventRepository);
+        RegisterHandler<Token>(_tokenRepository);
+        RegisterHandler<WebHook>(_webHookRepository);
 
         return Task.CompletedTask;
     }
 
-    private async Task BeforePublishStackEntityChanged(object sender, BeforePublishEntityChangedEventArgs<Stack> args)
+    private void RegisterHandler<T>(object repository) where T : class, IIdentity, new()
     {
-        args.Cancel = await GetNumberOfListeners(args.Message) == 0;
-        if (args.Cancel)
-            _logger.LogTrace("Cancelled Stack Entity Changed Message: {@Message}", args.Message);
+        if (repository is not ElasticRepositoryBase<T> repo)
+            return;
+
+        Func<object, BeforePublishEntityChangedEventArgs<T>, Task> handler = OnBeforePublishEntityChangedAsync;
+        repo.BeforePublishEntityChanged.AddHandler(handler);
+        _disposeActions.Add(() => repo.BeforePublishEntityChanged.RemoveHandler(handler));
     }
 
-    private async Task BeforePublishEventEntityChanged(object sender, BeforePublishEntityChangedEventArgs<PersistentEvent> args)
+    private async Task OnBeforePublishEntityChangedAsync<T>(object sender, BeforePublishEntityChangedEventArgs<T> args)
+        where T : class, IIdentity, new()
     {
-        args.Cancel = await GetNumberOfListeners(args.Message) == 0;
+        var listenerCount = await GetNumberOfListeners(args.Message);
+        args.Cancel = listenerCount == 0;
         if (args.Cancel)
-            _logger.LogTrace("Cancelled Persistent Event Entity Changed Message: {@Message}", args.Message);
+            _logger.LogTrace("Cancelled {EntityType} Entity Changed Message: {@Message}", typeof(T).Name, args.Message);
     }
 
     private Task<int> GetNumberOfListeners(EntityChanged message)
@@ -64,9 +94,8 @@ public class MessageService : IDisposable, IStartupAction
 
     public void Dispose()
     {
-        if (_stackRepository is StackRepository sr)
-            sr.BeforePublishEntityChanged.RemoveHandler(BeforePublishStackEntityChanged);
-        if (_eventRepository is EventRepository er)
-            er.BeforePublishEntityChanged.RemoveHandler(BeforePublishEventEntityChanged);
+        foreach (var disposeAction in _disposeActions)
+            disposeAction();
+        _disposeActions.Clear();
     }
 }
