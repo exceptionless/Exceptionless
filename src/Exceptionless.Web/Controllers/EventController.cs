@@ -410,7 +410,8 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 .FilterExpression(filter)
                 .EnforceEventStackFilter()
                 .SortExpression(sort)
-                .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field),
+                .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field)
+                .Index(ti.Range.UtcStart, ti.Range.UtcEnd),
             o => page.HasValue
                 ? o.PageNumber(page).PageLimit(limit)
                 : o.SearchBeforeToken(before).SearchAfterToken(after).PageLimit(limit));

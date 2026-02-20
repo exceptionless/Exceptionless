@@ -485,7 +485,14 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
 
         try
         {
-            var results = await _repository.FindAsync(q => q.AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).FilterExpression(filter).SortExpression(sort).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field), o => o.PageNumber(page).PageLimit(limit));
+            var results = await _repository.FindAsync(
+                q => q.AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null)
+                    .FilterExpression(filter)
+                    .SortExpression(sort)
+                    .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field)
+                    .Index(ti.Range.UtcStart, ti.Range.UtcEnd),
+                o => o.PageNumber(page).PageLimit(limit)
+            );
 
             var stacks = results.Documents.Select(s => s.ApplyOffset(ti.Offset)).ToList();
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase))
