@@ -77,7 +77,7 @@ public class MessageService : IDisposable, IStartupAction
     private async Task OnBeforePublishEntityChangedAsync<T>(object sender, BeforePublishEntityChangedEventArgs<T> args)
         where T : class, IIdentity, new()
     {
-        var listenerCount = await GetNumberOfListeners(args.Message);
+        int listenerCount = await GetNumberOfListeners(args.Message);
         args.Cancel = listenerCount == 0;
         if (args.Cancel)
             _logger.LogTrace("Cancelled {EntityType} Entity Changed Message: {@Message}", typeof(T).Name, args.Message);
@@ -96,6 +96,7 @@ public class MessageService : IDisposable, IStartupAction
     {
         foreach (var disposeAction in _disposeActions)
             disposeAction();
+
         _disposeActions.Clear();
     }
 }
