@@ -184,8 +184,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
                 q => q.AppFilter(sf)
                     .FilterExpression(filter)
                     .SortExpression("-first")
-                    .DateRange(data.UtcStartTime, data.UtcEndTime, "first")
-                    .Index(data.UtcStartTime, data.UtcEndTime),
+                    .DateRange(data.UtcStartTime, data.UtcEndTime, "first"),
                 o => o.PageLimit(3));
 
             newest = stackResults.Documents;

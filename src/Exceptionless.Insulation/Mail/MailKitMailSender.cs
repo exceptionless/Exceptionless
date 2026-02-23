@@ -139,7 +139,7 @@ public class MailKitMailSender : IMailSender, IHealthCheck
             await client.DisconnectAsync(true, cancellationToken);
             _lastSuccessfulConnection = _timeProvider.GetUtcNow().UtcDateTime;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return HealthCheckResult.Unhealthy("Email Not Working.", ex);
         }
