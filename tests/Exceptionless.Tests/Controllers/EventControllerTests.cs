@@ -522,9 +522,16 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task WillGetStackEvents()
     {
+        var now = TimeProvider.GetUtcNow();
+
+        // Create events on different days for the same stack so they land in different
+        // daily index partitions. Dates must stay within org.CreatedUtc - 3d to avoid
+        // being filtered by the org creation cutoff (see GetRetentionUtcCutoff).
         var (stacks, _) = await CreateDataAsync(d =>
         {
-            d.Event().TestProject();
+            var ev = d.Event().TestProject().Date(now);
+            d.Event().Stack(ev).Date(now.AddDays(-1));
+            d.Event().Stack(ev).Date(now.AddDays(-2));
         });
 
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
@@ -538,7 +545,7 @@ public class EventControllerTests : IntegrationTestsBase
         );
 
         Assert.NotNull(result);
-        Assert.Single(result);
+        Assert.Equal(3, result.Count);
     }
 
     [Fact]

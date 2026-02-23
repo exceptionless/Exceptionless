@@ -337,7 +337,8 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                         .SystemFilter(systemFilter)
                         .FilterExpression(filter)
                         .EnforceEventStackFilter()
-                        .AggregationsExpression($"terms:(stack_id~{GetSkip(resolvedPage + 1, limit) + 1} {stackAggregations})"));
+                        .AggregationsExpression($"terms:(stack_id~{GetSkip(resolvedPage + 1, limit) + 1} {stackAggregations})")
+                    );
 
                     var stackTerms = countResponse.Aggregations.Terms<string>("terms_stack_id");
                     if (stackTerms is null || stackTerms.Buckets.Count == 0)
