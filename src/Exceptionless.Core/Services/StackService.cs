@@ -5,6 +5,11 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Exceptionless.Core.Services;
 
+/// <summary>
+/// Identifies a stack for deferred usage counter updates.
+/// </summary>
+public record StackUsageKey(string OrganizationId, string ProjectId, string StackId);
+
 public class StackService
 {
     private readonly ILogger<UsageService> _logger;
@@ -30,7 +35,7 @@ public class StackService
             return;
 
         await Task.WhenAll(
-            _cache.ListAddAsync(GetStackOccurrenceSetCacheKey(), (organizationId, projectId, stackId)),
+            _cache.ListAddAsync(GetStackOccurrenceSetCacheKey(), new StackUsageKey(organizationId, projectId, stackId)),
             _cache.IncrementAsync(GetStackOccurrenceCountCacheKey(stackId), count, _expireTimeout),
             _cache.SetIfLowerAsync(GetStackOccurrenceMinDateCacheKey(stackId), minOccurrenceDateUtc, _expireTimeout),
             _cache.SetIfHigherAsync(GetStackOccurrenceMaxDateCacheKey(stackId), maxOccurrenceDateUtc, _expireTimeout)
@@ -40,16 +45,20 @@ public class StackService
     public async Task SaveStackUsagesAsync(bool sendNotifications = true, CancellationToken cancellationToken = default)
     {
         string occurrenceSetCacheKey = GetStackOccurrenceSetCacheKey();
-        var stackUsageSet = await _cache.GetListAsync<(string OrganizationId, string ProjectId, string StackId)>(occurrenceSetCacheKey);
+        var stackUsageSet = await _cache.GetListAsync<StackUsageKey>(occurrenceSetCacheKey);
         if (!stackUsageSet.HasValue)
             return;
 
-        foreach ((string? organizationId, string? projectId, string? stackId) in stackUsageSet.Value)
+        foreach (var usage in stackUsageSet.Value)
         {
             if (cancellationToken.IsCancellationRequested)
                 break;
 
-            var removeFromSetTask = _cache.ListRemoveAsync(occurrenceSetCacheKey, (organizationId, projectId, stackId));
+            string organizationId = usage.OrganizationId;
+            string projectId = usage.ProjectId;
+            string stackId = usage.StackId;
+
+            var removeFromSetTask = _cache.ListRemoveAsync(occurrenceSetCacheKey, new StackUsageKey(organizationId, projectId, stackId));
             string countCacheKey = GetStackOccurrenceCountCacheKey(stackId);
             var countTask = _cache.GetAsync<long>(countCacheKey, 0);
             string minDateCacheKey = GetStackOccurrenceMinDateCacheKey(stackId);

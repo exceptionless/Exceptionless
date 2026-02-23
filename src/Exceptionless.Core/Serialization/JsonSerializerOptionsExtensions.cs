@@ -20,6 +20,9 @@ public static class JsonSerializerOptionsExtensions
         options.PropertyNamingPolicy = LowerCaseUnderscoreNamingPolicy.Instance;
         options.Converters.Add(new ObjectToInferredTypesConverter());
 
+        // Ensures tuples and records are serialized with their field names instead of "Item1", "Item2", etc.
+        options.IncludeFields = true;
+
         // Enforces C# nullable annotations (string vs string?) during serialization/deserialization.
         // If you see "cannot be null" errors, fix the model's nullability annotation or the data.
         options.RespectNullableAnnotations = true;
