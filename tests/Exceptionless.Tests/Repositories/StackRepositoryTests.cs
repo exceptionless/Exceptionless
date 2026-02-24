@@ -207,8 +207,6 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
             totalOccurrences: 10), o => o.ImmediateConsistency());
         // Act
         await _repository.SetEventCounterAsync(
-            TestConstants.OrganizationId,
-            TestConstants.ProjectId,
             stack.Id,
             originalFirst.AddDays(1),
             originalLast.AddDays(-1),
@@ -224,8 +222,6 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
 
         // Act
         await _repository.SetEventCounterAsync(
-            TestConstants.OrganizationId,
-            TestConstants.ProjectId,
             stack.Id,
             originalFirst.AddDays(-1),
             originalLast.AddDays(1),
@@ -271,11 +267,16 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         var openStack10DaysOldWithReference = _stackData.GenerateStack(id: TestConstants.StackId3, utcLastOccurrence: utcNow.SubtractDays(10), status: StackStatus.Open);
         openStack10DaysOldWithReference.References.Add("test");
 
-        await _repository.AddAsync(new List<Stack> {
-                _stackData.GenerateStack(id: TestConstants.StackId, utcLastOccurrence: utcNow.SubtractDays(5), status: StackStatus.Open),
-                _stackData.GenerateStack(id: TestConstants.StackId2, utcLastOccurrence: utcNow.SubtractDays(10), status: StackStatus.Open),
+        await _repository.AddAsync(
+            new List<Stack>
+            {
+                _stackData.GenerateStack(id: TestConstants.StackId, utcLastOccurrence: utcNow.SubtractDays(5),
+                    status: StackStatus.Open),
+                _stackData.GenerateStack(id: TestConstants.StackId2, utcLastOccurrence: utcNow.SubtractDays(10),
+                    status: StackStatus.Open),
                 openStack10DaysOldWithReference,
-                _stackData.GenerateStack(id: TestConstants.StackId4, utcLastOccurrence: utcNow.SubtractDays(10), status: StackStatus.Fixed)
+                _stackData.GenerateStack(id: TestConstants.StackId4, utcLastOccurrence: utcNow.SubtractDays(10),
+                    status: StackStatus.Fixed)
             }, o => o.ImmediateConsistency());
 
         var stacks = await _repository.GetStacksForCleanupAsync(TestConstants.OrganizationId, utcNow.SubtractDays(8));

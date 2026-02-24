@@ -77,17 +77,13 @@ public class FixStackStatsWorkItemHandler : WorkItemHandlerBase
                     stack.LastOccurrence, lastOccurrenceToSet,
                     stack.TotalOccurrences, totalOccurrencesToSet);
 
-                await _stackRepository.SetEventCounterAsync(
-                    stack.OrganizationId, stack.ProjectId, stack.Id,
-                    firstOccurrenceToSet, lastOccurrenceToSet, totalOccurrencesToSet,
-                    sendNotifications: false);
-
+                await _stackRepository.SetEventCounterAsync(stack.Id, firstOccurrenceToSet, lastOccurrenceToSet, totalOccurrencesToSet, sendNotifications: false);
                 totalFixed++;
             }
 
             pagesProcessed++;
             int stacksProcessed = totalFixed + totalSkipped;
-            int percentage = totalStacks > 0 ? (int)Math.Min(99, stacksProcessed * 100.0 / totalStacks) : (int)Math.Min(99, pagesProcessed * 5);
+            int percentage = totalStacks > 0 ? (int)Math.Min(99, stacksProcessed * 100.0 / totalStacks) : Math.Min(99, pagesProcessed * 5);
             Log.LogDebug("Processed page {Page} ({Percentage}%): fixed={Fixed} skipped={Skipped}", pagesProcessed, percentage, totalFixed, totalSkipped);
             await context.ReportProgressAsync(percentage, $"Page {pagesProcessed} ({percentage}%): fixed {totalFixed}, skipped {totalSkipped}");
 

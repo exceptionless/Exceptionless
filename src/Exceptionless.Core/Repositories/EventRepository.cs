@@ -97,11 +97,8 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 
         while (results.Documents.Count > 0)
         {
-            foreach (var ev in results.Documents)
+            foreach (var ev in results.Documents.Where(e => !String.IsNullOrEmpty(e.StackId)))
             {
-                if (String.IsNullOrEmpty(ev.StackId))
-                    continue;
-
                 var occurrenceUtc = ev.Date.UtcDateTime;
                 if (!statsByStackId.TryGetValue(ev.StackId, out var current))
                 {

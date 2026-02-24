@@ -105,7 +105,7 @@ ctx._source.total_occurrences += params.count;";
         return true;
     }
 
-    public async Task<bool> SetEventCounterAsync(string organizationId, string projectId, string stackId, DateTime firstOccurrenceUtc, DateTime lastOccurrenceUtc, long totalOccurrences, bool sendNotifications = true)
+    public async Task<bool> SetEventCounterAsync(string stackId, DateTime firstOccurrenceUtc, DateTime lastOccurrenceUtc, long totalOccurrences, bool sendNotifications = true)
     {
         if (!await ExistsAsync(stackId))
             return false;
@@ -138,7 +138,8 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
 
         var operation = new ScriptPatch(script.TrimScript())
         {
-            Params = new Dictionary<string, object>(4) {
+            Params = new Dictionary<string, object>(4)
+            {
                 { "firstOccurrenceUtc", firstOccurrenceUtc },
                 { "lastOccurrenceUtc", lastOccurrenceUtc },
                 { "totalOccurrences", totalOccurrences },

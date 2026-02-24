@@ -18,7 +18,7 @@ public class FixStackStatsJobTests : IntegrationTestsBase
     private readonly EventData _eventData;
 
     private static readonly DateTime DefaultWindowStart = new(2026, 2, 10, 0, 0, 0, DateTimeKind.Utc);
-    private static readonly DateTime DefaultWindowEnd = new(2026, 2, 24, 0, 0, 0, DateTimeKind.Utc);
+    private static readonly DateTime DefaultWindowEnd = new(2026, 2, 23, 0, 0, 0, DateTimeKind.Utc);
     private static readonly DateTime InWindowDate = new(2026, 2, 15, 12, 0, 0, DateTimeKind.Utc);
 
     public FixStackStatsJobTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
