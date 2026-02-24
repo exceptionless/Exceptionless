@@ -39,7 +39,7 @@ public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, I
             .SortAscending(f => f.CreatedUtc)
             .SortAscending(f => f.Id)
             .Include(f => f.Id, f => f.OrganizationId, f => f.ProjectId, f => f.CreatedUtc, f => f.FirstOccurrence, f => f.LastOccurrence, f => f.TotalOccurrences)
-        , o => o.SearchAfterPaging().PageLimit(10));
+        , o => o.SearchAfterPaging().PageLimit(100));
     }
 
     public Task<FindResults<Stack>> GetStacksForCleanupAsync(string organizationId, DateTime cutoff)
