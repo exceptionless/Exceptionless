@@ -85,3 +85,11 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/admin/maintenance/update-project-default-bot-lists
 Authorization: Bearer {{token}}
 
+### Fix Stack Stats (defaults: utcStart=2026-02-10T00:00:00Z, utcEnd=null=>now)
+GET {{apiUrl}}/admin/maintenance/fix-stack-stats
+Authorization: Bearer {{token}}
+
+### Fix Stack Stats (explicit UTC window)
+GET {{apiUrl}}/admin/maintenance/fix-stack-stats?utcStart=2026-02-10T00:00:00Z&utcEnd=2026-02-23T00:00:00Z
+Authorization: Bearer {{token}}
+

@@ -3,9 +3,9 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
-using Microsoft.Extensions.Logging;
 using Nest;
 
 namespace Exceptionless.Core.Repositories;
@@ -63,37 +63,90 @@ Instant parseDate(def dt) {
 if (ctx._source.total_occurrences == 0 || parseDate(ctx._source.first_occurrence).isAfter(parseDate(params.minOccurrenceDateUtc))) {
   ctx._source.first_occurrence = params.minOccurrenceDateUtc;
 }
+
 if (parseDate(ctx._source.last_occurrence).isBefore(parseDate(params.maxOccurrenceDateUtc))) {
   ctx._source.last_occurrence = params.maxOccurrenceDateUtc;
 }
+
 if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
   ctx._source.updated_utc = params.updatedUtc;
 }
+
 ctx._source.total_occurrences += params.count;";
 
-        var request = new UpdateRequest<Stack, Stack>(ElasticIndex.GetIndex(stackId), stackId)
+        var operation = new ScriptPatch(script.TrimScript())
         {
-            Script = new InlineScript(script.TrimScript())
+            Params = new Dictionary<string, object>(4)
             {
-                Params = new Dictionary<string, object>(3) {
-                        { "minOccurrenceDateUtc", minOccurrenceDateUtc },
-                        { "maxOccurrenceDateUtc", maxOccurrenceDateUtc },
-                        { "count", count },
-                        { "updatedUtc", _timeProvider.GetUtcNow().UtcDateTime }
-                    }
+                { "minOccurrenceDateUtc", minOccurrenceDateUtc },
+                { "maxOccurrenceDateUtc", maxOccurrenceDateUtc },
+                { "count", count },
+                { "updatedUtc", _timeProvider.GetUtcNow().UtcDateTime }
             }
         };
 
-        var result = await _client.UpdateAsync(request);
-        if (!result.IsValid)
+        try
         {
-            _logger.LogError(result.OriginalException, "Error occurred incrementing total event occurrences on stack {Stack}. Error: {Message}", stackId, result.ServerError?.Error);
-            return result.ServerError?.Status == 404;
+            await PatchAsync(stackId, operation, o => o.Notifications(false));
+        }
+        catch (DocumentNotFoundException)
+        {
+            return true;
         }
 
-        await Cache.RemoveAsync(stackId);
         if (sendNotifications)
-            await PublishMessageAsync(CreateEntityChanged(ChangeType.Saved, organizationId, projectId, null, stackId), TimeSpan.FromSeconds(1.5));
+            await PublishMessageAsync(CreateEntityChanged(ChangeType.Saved, organizationId, projectId, null, stackId));
+
+        return true;
+    }
+
+    public async Task<bool> SetEventCounterAsync(string stackId, DateTime firstOccurrenceUtc, DateTime lastOccurrenceUtc, long totalOccurrences, bool sendNotifications = true)
+    {
+        const string script = @"
+Instant parseDate(def dt) {
+    if (dt != null) {
+        try {
+            return Instant.parse(dt);
+        } catch(DateTimeParseException e) {}
+    }
+    return Instant.MIN;
+}
+
+if (ctx._source.total_occurrences == null || ctx._source.total_occurrences < params.totalOccurrences) {
+    ctx._source.total_occurrences = params.totalOccurrences;
+}
+
+if (parseDate(ctx._source.first_occurrence).isAfter(parseDate(params.firstOccurrenceUtc))) {
+    ctx._source.first_occurrence = params.firstOccurrenceUtc;
+}
+
+if (parseDate(ctx._source.last_occurrence).isBefore(parseDate(params.lastOccurrenceUtc))) {
+    ctx._source.last_occurrence = params.lastOccurrenceUtc;
+}
+
+if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
+    ctx._source.updated_utc = params.updatedUtc;
+}";
+
+        var operation = new ScriptPatch(script.TrimScript())
+        {
+            Params = new Dictionary<string, object>(4)
+            {
+                { "firstOccurrenceUtc", firstOccurrenceUtc },
+                { "lastOccurrenceUtc", lastOccurrenceUtc },
+                { "totalOccurrences", totalOccurrences },
+                { "updatedUtc", _timeProvider.GetUtcNow().UtcDateTime }
+            }
+        };
+
+        try
+        {
+            await PatchAsync(stackId, operation, o => o.Notifications(sendNotifications));
+        }
+        catch (DocumentNotFoundException)
+        {
+            return true;
+        }
 
         return true;
     }

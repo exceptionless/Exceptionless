@@ -102,14 +102,15 @@ public class Bootstrapper
         services.AddSingleton<WorkItemHandlers>(s =>
         {
             var handlers = new WorkItemHandlers();
-            handlers.Register<ReindexWorkItem>(s.GetRequiredService<ReindexWorkItemHandler>);
-            handlers.Register<RemoveStacksWorkItem>(s.GetRequiredService<RemoveStacksWorkItemHandler>);
-            handlers.Register<RemoveBotEventsWorkItem>(s.GetRequiredService<RemoveBotEventsWorkItemHandler>);
-            handlers.Register<SetLocationFromGeoWorkItem>(s.GetRequiredService<SetLocationFromGeoWorkItemHandler>);
-            handlers.Register<SetProjectIsConfiguredWorkItem>(s.GetRequiredService<SetProjectIsConfiguredWorkItemHandler>);
+            handlers.Register<FixStackStatsWorkItem>(s.GetRequiredService<FixStackStatsWorkItemHandler>);
             handlers.Register<OrganizationMaintenanceWorkItem>(s.GetRequiredService<OrganizationMaintenanceWorkItemHandler>);
             handlers.Register<OrganizationNotificationWorkItem>(s.GetRequiredService<OrganizationNotificationWorkItemHandler>);
             handlers.Register<ProjectMaintenanceWorkItem>(s.GetRequiredService<ProjectMaintenanceWorkItemHandler>);
+            handlers.Register<ReindexWorkItem>(s.GetRequiredService<ReindexWorkItemHandler>);
+            handlers.Register<RemoveBotEventsWorkItem>(s.GetRequiredService<RemoveBotEventsWorkItemHandler>);
+            handlers.Register<RemoveStacksWorkItem>(s.GetRequiredService<RemoveStacksWorkItemHandler>);
+            handlers.Register<SetLocationFromGeoWorkItem>(s.GetRequiredService<SetLocationFromGeoWorkItemHandler>);
+            handlers.Register<SetProjectIsConfiguredWorkItem>(s.GetRequiredService<SetProjectIsConfiguredWorkItemHandler>);
             handlers.Register<UserMaintenanceWorkItem>(s.GetRequiredService<UserMaintenanceWorkItemHandler>);
             return handlers;
         });
