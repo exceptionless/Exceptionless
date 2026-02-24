@@ -102,9 +102,6 @@ ctx._source.total_occurrences += params.count;";
 
     public async Task<bool> SetEventCounterAsync(string stackId, DateTime firstOccurrenceUtc, DateTime lastOccurrenceUtc, long totalOccurrences, bool sendNotifications = true)
     {
-        if (!await ExistsAsync(stackId))
-            return false;
-
         const string script = @"
 Instant parseDate(def dt) {
     if (dt != null) {
@@ -142,7 +139,14 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
             }
         };
 
-        await PatchAsync(stackId, operation, o => o.Notifications(sendNotifications));
+        try
+        {
+            await PatchAsync(stackId, operation, o => o.Notifications(sendNotifications));
+        }
+        catch (DocumentNotFoundException)
+        {
+            return true;
+        }
 
         return true;
     }
