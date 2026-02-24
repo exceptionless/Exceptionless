@@ -1,7 +1,6 @@
 using System.Text.Json.Serialization.Metadata;
 using Exceptionless.Web.Models;
 using Microsoft.AspNetCore.OpenApi;
-using Microsoft.Extensions.Primitives;
 
 namespace Exceptionless.Web.Utility.OpenApi;
 

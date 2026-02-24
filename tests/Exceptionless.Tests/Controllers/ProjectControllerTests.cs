@@ -9,7 +9,6 @@ using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Jobs;
-using Foundatio.Repositories;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
