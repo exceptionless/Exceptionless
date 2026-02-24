@@ -84,7 +84,10 @@ ctx._source.total_occurrences += params.count;";
             }
         };
 
-        await PatchAsync(stackId, operation, o => o.Notifications(sendNotifications));
+        await PatchAsync(stackId, operation, o => o.Notifications(false));
+
+        if (sendNotifications)
+            await PublishMessageAsync(CreateEntityChanged(ChangeType.Saved, organizationId, projectId, null, stackId));
 
         return true;
     }
