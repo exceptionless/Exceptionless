@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Text.Json;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
@@ -204,6 +203,46 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
         var results = await _repository.GetOpenSessionsAsync(DateTime.UtcNow.SubtractMinutes(30));
         Assert.Equal(3, results.Total);
+    }
+
+    [Fact]
+    public async Task GetEventStatsForStacksAsync_WhenStacksHaveEvents_ShouldReturnExpectedAggregates()
+    {
+        // Arrange
+        var stack1 = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
+        var stack2 = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
+
+        var stack1First = new DateTimeOffset(2026, 2, 12, 0, 0, 0, TimeSpan.Zero);
+        var stack1Last = new DateTimeOffset(2026, 2, 13, 0, 0, 0, TimeSpan.Zero);
+        var stack2Only = new DateTimeOffset(2026, 2, 14, 0, 0, 0, TimeSpan.Zero);
+
+        await _repository.AddAsync([
+            _eventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, stack1.Id, occurrenceDate: stack1First),
+            _eventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, stack1.Id, occurrenceDate: stack1Last),
+            _eventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, stack2.Id, occurrenceDate: stack2Only)
+        ], o => o.ImmediateConsistency());
+
+        // Act
+        var stats = await _repository.GetEventStatsForStacksAsync([stack1.Id, stack2.Id]);
+
+        // Assert
+        Assert.Equal(2, stats.Count);
+        Assert.Equal(2, stats[stack1.Id].TotalOccurrences);
+        Assert.Equal(stack1First.UtcDateTime, stats[stack1.Id].FirstOccurrence);
+        Assert.Equal(stack1Last.UtcDateTime, stats[stack1.Id].LastOccurrence);
+        Assert.Equal(1, stats[stack2.Id].TotalOccurrences);
+        Assert.Equal(stack2Only.UtcDateTime, stats[stack2.Id].FirstOccurrence);
+        Assert.Equal(stack2Only.UtcDateTime, stats[stack2.Id].LastOccurrence);
+    }
+
+    [Fact]
+    public async Task GetEventStatsForStacksAsync_WhenAllStackIdsAreUnknown_ShouldReturnEmptyResult()
+    {
+        // Act
+        var stats = await _repository.GetEventStatsForStacksAsync(["missing-stack-id"]);
+
+        // Assert
+        Assert.Empty(stats);
     }
 
     [Fact]

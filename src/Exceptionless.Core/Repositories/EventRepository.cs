@@ -80,6 +80,47 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return FindAsync(q => q.Project(projectId).ElasticFilter(filter).SortDescending(e => e.Date), o => o.PageLimit(10));
     }
 
+    public async Task<Dictionary<string, StackEventStats>> GetEventStatsForStacksAsync(IReadOnlyCollection<string> stackIds)
+    {
+        ArgumentNullException.ThrowIfNull(stackIds);
+        if (stackIds.Count is 0)
+            return new Dictionary<string, StackEventStats>();
+
+        var statsByStackId = new Dictionary<string, StackEventStats>(stackIds.Count);
+
+        var results = await FindAsync(q => q
+            .Stack(stackIds.ToArray())
+            .Include(e => e.Id, e => e.StackId, e => e.Date)
+            .SortAscending(e => e.Date)
+            .SortAscending(e => e.Id),
+            o => o.SearchAfterPaging().PageLimit(500));
+
+        while (results.Documents.Count > 0)
+        {
+            foreach (var ev in results.Documents)
+            {
+                if (String.IsNullOrEmpty(ev.StackId))
+                    continue;
+
+                var occurrenceUtc = ev.Date.UtcDateTime;
+                if (!statsByStackId.TryGetValue(ev.StackId, out var current))
+                {
+                    statsByStackId[ev.StackId] = new StackEventStats(occurrenceUtc, occurrenceUtc, 1);
+                    continue;
+                }
+
+                var firstOccurrence = current.FirstOccurrence.IsAfter(occurrenceUtc) ? occurrenceUtc : current.FirstOccurrence;
+                var lastOccurrence = current.LastOccurrence.IsBefore(occurrenceUtc) ? occurrenceUtc : current.LastOccurrence;
+                statsByStackId[ev.StackId] = new StackEventStats(firstOccurrence, lastOccurrence, current.TotalOccurrences + 1);
+            }
+
+            if (!await results.NextPageAsync())
+                break;
+        }
+
+        return statsByStackId;
+    }
+
     public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter? systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)
     {
         var previous = GetPreviousEventIdAsync(ev, systemFilter, utcStart, utcEnd);

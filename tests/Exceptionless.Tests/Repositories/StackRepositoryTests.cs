@@ -169,6 +169,78 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetByCreatedUtcRangeAsync_WhenDateWindowIsProvided_ShouldReturnOnlyStacksInWindow()
+    {
+        // Arrange
+        TimeProvider.SetUtcNow(new DateTime(2026, 2, 5, 12, 0, 0, DateTimeKind.Utc));
+        var before = await _repository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
+
+        TimeProvider.SetUtcNow(new DateTime(2026, 2, 15, 12, 0, 0, DateTimeKind.Utc));
+        var inRange = await _repository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
+
+        TimeProvider.SetUtcNow(new DateTime(2026, 2, 24, 12, 0, 0, DateTimeKind.Utc));
+        var after = await _repository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
+
+        // Act
+        var results = await _repository.GetByCreatedUtcRangeAsync(
+            new DateTime(2026, 2, 10, 0, 0, 0, DateTimeKind.Utc),
+            new DateTime(2026, 2, 23, 0, 0, 0, DateTimeKind.Utc));
+
+        // Assert
+        Assert.Contains(results.Documents, s => s.Id == inRange.Id);
+        Assert.DoesNotContain(results.Documents, s => s.Id == before.Id);
+        Assert.DoesNotContain(results.Documents, s => s.Id == after.Id);
+    }
+
+    [Fact]
+    public async Task SetEventCounterAsync_WhenIncomingValuesAreOlderOrLower_ShouldOnlyApplyMonotonicUpdates()
+    {
+        // Arrange
+        var originalFirst = new DateTime(2026, 2, 15, 0, 0, 0, DateTimeKind.Utc);
+        var originalLast = new DateTime(2026, 2, 16, 0, 0, 0, DateTimeKind.Utc);
+        var stack = await _repository.AddAsync(_stackData.GenerateStack(
+            generateId: true,
+            organizationId: TestConstants.OrganizationId,
+            projectId: TestConstants.ProjectId,
+            utcFirstOccurrence: originalFirst,
+            utcLastOccurrence: originalLast,
+            totalOccurrences: 10), o => o.ImmediateConsistency());
+        // Act
+        await _repository.SetEventCounterAsync(
+            TestConstants.OrganizationId,
+            TestConstants.ProjectId,
+            stack.Id,
+            originalFirst.AddDays(1),
+            originalLast.AddDays(-1),
+            5,
+            sendNotifications: false);
+
+        var unchanged = await _repository.GetByIdAsync(stack.Id);
+
+        // Assert
+        Assert.Equal(10, unchanged.TotalOccurrences);
+        Assert.Equal(originalFirst, unchanged.FirstOccurrence);
+        Assert.Equal(originalLast, unchanged.LastOccurrence);
+
+        // Act
+        await _repository.SetEventCounterAsync(
+            TestConstants.OrganizationId,
+            TestConstants.ProjectId,
+            stack.Id,
+            originalFirst.AddDays(-1),
+            originalLast.AddDays(1),
+            15,
+            sendNotifications: false);
+
+        var updated = await _repository.GetByIdAsync(stack.Id);
+
+        // Assert
+        Assert.Equal(15, updated.TotalOccurrences);
+        Assert.Equal(originalFirst.AddDays(-1), updated.FirstOccurrence);
+        Assert.Equal(originalLast.AddDays(1), updated.LastOccurrence);
+    }
+
+    [Fact]
     public async Task CanFindManyAsync()
     {
         await _repository.AddAsync(_stackData.GenerateSampleStacks(), o => o.ImmediateConsistency());

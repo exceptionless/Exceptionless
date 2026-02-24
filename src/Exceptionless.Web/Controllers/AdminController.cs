@@ -9,6 +9,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Utility;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
@@ -155,8 +156,11 @@ public class AdminController : ExceptionlessApiController
     }
 
     [HttpGet("maintenance/{name:minlength(1)}")]
-    public async Task<IActionResult> RunJobAsync(string name)
+    public async Task<IActionResult> RunJobAsync(string name, DateTime? utcStart = null, DateTime? utcEnd = null)
     {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
         switch (name.ToLowerInvariant())
         {
             case "indexes":
@@ -183,6 +187,22 @@ public class AdminController : ExceptionlessApiController
                 break;
             case "reset-verify-email-address-token-and-expiration":
                 await _workItemQueue.EnqueueAsync(new UserMaintenanceWorkItem { ResetVerifyEmailAddressToken = true });
+                break;
+            case "fix-stack-stats":
+                var defaultUtcStart = new DateTime(2026, 2, 10, 0, 0, 0, DateTimeKind.Utc);
+                var effectiveUtcStart = utcStart ?? defaultUtcStart;
+
+                if (utcEnd.HasValue && utcEnd.Value.IsBefore(effectiveUtcStart))
+                {
+                    ModelState.AddModelError(nameof(utcEnd), "utcEnd must be greater than or equal to utcStart.");
+                    return ValidationProblem(ModelState);
+                }
+
+                await _workItemQueue.EnqueueAsync(new FixStackStatsWorkItem
+                {
+                    UtcStart = effectiveUtcStart,
+                    UtcEnd = utcEnd
+                });
                 break;
             default:
                 return NotFound();
