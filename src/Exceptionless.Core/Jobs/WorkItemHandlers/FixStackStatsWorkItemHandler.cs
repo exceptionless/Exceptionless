@@ -1,8 +1,11 @@
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Jobs;
 using Foundatio.Lock;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers;
@@ -33,27 +36,89 @@ public class FixStackStatsWorkItemHandler : WorkItemHandlerBase
         var wi = context.GetData<FixStackStatsWorkItem>();
         var utcEnd = wi.UtcEnd ?? _timeProvider.GetUtcNow().UtcDateTime;
 
-        Log.LogInformation("Fixing stack stats for stacks created between {UtcStart:O} and {UtcEnd:O}", wi.UtcStart, utcEnd);
+        Log.LogInformation("Starting stack stats repair for {UtcStart:O} to {UtcEnd:O}. OrganizationId={Organization}", wi.UtcStart, utcEnd, wi.Organization);
         await context.ReportProgressAsync(0, $"Starting stack stats repair for window {wi.UtcStart:O} – {utcEnd:O}");
 
-        int pagesProcessed = 0;
-        int totalFixed = 0;
-        int totalSkipped = 0;
+        var organizationIds = await GetOrganizationIdsAsync(wi, utcEnd);
+        Log.LogInformation("Found {OrganizationCount} organizations to process", organizationIds.Count);
 
-        var results = await _stackRepository.GetByCreatedUtcRangeAsync(wi.UtcStart, utcEnd);
-        long totalStacks = results.Total;
+        int repaired = 0;
+        int skipped = 0;
 
-        while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
+        for (int index = 0; index < organizationIds.Count; index++)
         {
+            if (context.CancellationToken.IsCancellationRequested)
+                break;
+
+            var (organizationRepaired, organizationSkipped) = await ProcessOrganizationAsync(context, organizationIds[index], wi.UtcStart, utcEnd);
+            repaired += organizationRepaired;
+            skipped += organizationSkipped;
+
+            int percentage = (int)Math.Min(99, (index + 1) * 100.0 / organizationIds.Count);
+            await context.ReportProgressAsync(percentage, $"Organization {index + 1}/{organizationIds.Count} ({percentage}%): repaired {repaired}, skipped {skipped}");
+        }
+
+        Log.LogInformation("Stack stats repair complete: Repaired={Repaired} Skipped={Skipped}", repaired, skipped);
+        await context.ReportProgressAsync(100, $"Done. Repaired {repaired} stacks, skipped={skipped}.");
+    }
+
+    private async Task<IReadOnlyList<string>> GetOrganizationIdsAsync(FixStackStatsWorkItem wi, DateTime utcEnd)
+    {
+        if (wi.Organization is not null)
+            return [wi.Organization];
+
+        var countResult = await _eventRepository.CountAsync(q => q
+            .DateRange(wi.UtcStart, utcEnd, (PersistentEvent e) => e.Date)
+            .Index(wi.UtcStart, utcEnd)
+            .AggregationsExpression("terms:(organization_id~65536)"));
+
+        return countResult.Aggregations.Terms<string>("terms_organization_id")?.Buckets
+            .Select(b => b.Key)
+            .ToList() ?? [];
+    }
+
+    private async Task<(int Repaired, int Skipped)> ProcessOrganizationAsync(WorkItemContext context, string organizationId, DateTime utcStart, DateTime utcEnd)
+    {
+        using var _ = Log.BeginScope(new ExceptionlessState().Organization(organizationId));
+        await context.RenewLockAsync();
+
+        var countResult = await _eventRepository.CountAsync(q => q
+            .Organization(organizationId)
+            .DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date)
+            .Index(utcStart, utcEnd)
+            .AggregationsExpression("terms:(stack_id~65536 min:date max:date)"));
+
+        var stackBuckets = countResult.Aggregations.Terms<string>("terms_stack_id")?.Buckets ?? [];
+        if (stackBuckets.Count is 0)
+            return (0, 0);
+
+        var statsByStackId = new Dictionary<string, StackEventStats>(stackBuckets.Count);
+        foreach (var bucket in stackBuckets)
+        {
+            var firstOccurrence = bucket.Aggregations.Min<DateTime>("min_date")?.Value;
+            var lastOccurrence = bucket.Aggregations.Max<DateTime>("max_date")?.Value;
+            if (firstOccurrence is null || lastOccurrence is null || bucket.Total is null)
+                continue;
+
+            statsByStackId[bucket.Key] = new StackEventStats(firstOccurrence.Value, lastOccurrence.Value, bucket.Total.Value);
+        }
+
+        int repaired = 0;
+        int skipped = 0;
+
+        foreach (string[] batch in statsByStackId.Keys.Chunk(100))
+        {
+            if (context.CancellationToken.IsCancellationRequested)
+                break;
+
             await context.RenewLockAsync();
 
-            var stackIds = results.Documents.Select(s => s.Id).ToList();
-            var statsByStackId = await _eventRepository.GetEventStatsForStacksAsync(stackIds);
-            foreach (var stack in results.Documents)
+            var stacks = await _stackRepository.GetByIdsAsync(batch);
+            foreach (var stack in stacks)
             {
                 if (!statsByStackId.TryGetValue(stack.Id, out var stats))
                 {
-                    totalSkipped++;
+                    skipped++;
                     continue;
                 }
 
@@ -62,36 +127,29 @@ public class FixStackStatsWorkItemHandler : WorkItemHandlerBase
                 bool shouldUpdateTotal = stats.TotalOccurrences > stack.TotalOccurrences;
                 if (!shouldUpdateFirst && !shouldUpdateLast && !shouldUpdateTotal)
                 {
-                    totalSkipped++;
+                    skipped++;
                     continue;
                 }
 
-                DateTime firstOccurrenceToSet = shouldUpdateFirst ? stats.FirstOccurrence : stack.FirstOccurrence;
-                DateTime lastOccurrenceToSet = shouldUpdateLast ? stats.LastOccurrence : stack.LastOccurrence;
-                long totalOccurrencesToSet = shouldUpdateTotal ? stats.TotalOccurrences : stack.TotalOccurrences;
+                var newFirst = shouldUpdateFirst ? stats.FirstOccurrence : stack.FirstOccurrence;
+                var newLast = shouldUpdateLast ? stats.LastOccurrence : stack.LastOccurrence;
+                long newTotal = shouldUpdateTotal ? stats.TotalOccurrences : stack.TotalOccurrences;
 
                 Log.LogInformation(
-                    "Fixing stack {StackId}: first={OldFirst:O}→{NewFirst:O} last={OldLast:O}→{NewLast:O} total={OldTotal}→{NewTotal}",
+                    "Repairing stack {StackId}: first={OldFirst:O}->{NewFirst:O} last={OldLast:O}->{NewLast:O} total={OldTotal}->{NewTotal}",
                     stack.Id,
-                    stack.FirstOccurrence, firstOccurrenceToSet,
-                    stack.LastOccurrence, lastOccurrenceToSet,
-                    stack.TotalOccurrences, totalOccurrencesToSet);
+                    stack.FirstOccurrence, newFirst,
+                    stack.LastOccurrence, newLast,
+                    stack.TotalOccurrences, newTotal);
 
-                await _stackRepository.SetEventCounterAsync(stack.Id, firstOccurrenceToSet, lastOccurrenceToSet, totalOccurrencesToSet, sendNotifications: false);
-                totalFixed++;
+                await _stackRepository.SetEventCounterAsync(stack.Id, newFirst, newLast, newTotal, sendNotifications: false);
+                repaired++;
             }
-
-            pagesProcessed++;
-            int stacksProcessed = totalFixed + totalSkipped;
-            int percentage = totalStacks > 0 ? (int)Math.Min(99, stacksProcessed * 100.0 / totalStacks) : Math.Min(99, pagesProcessed * 5);
-            Log.LogDebug("Processed page {Page} ({Percentage}%): fixed={Fixed} skipped={Skipped}", pagesProcessed, percentage, totalFixed, totalSkipped);
-            await context.ReportProgressAsync(percentage, $"Page {pagesProcessed} ({percentage}%): fixed {totalFixed}, skipped {totalSkipped}");
-
-            if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
-                break;
         }
 
-        Log.LogInformation("Stack stats repair complete. Fixed={Fixed} Skipped={Skipped} Pages={Pages}", totalFixed, totalSkipped, pagesProcessed);
-        await context.ReportProgressAsync(100, $"Done. Fixed {totalFixed} stacks, skipped {totalSkipped} stacks across {pagesProcessed} pages.");
+        Log.LogDebug("Processed organization: Repaired={Repaired} Skipped={Skipped}", repaired, skipped);
+        return (repaired, skipped);
     }
 }
+
+internal record StackEventStats(DateTime FirstOccurrence, DateTime LastOccurrence, long TotalOccurrences);

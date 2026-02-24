@@ -156,7 +156,7 @@ public class AdminController : ExceptionlessApiController
     }
 
     [HttpGet("maintenance/{name:minlength(1)}")]
-    public async Task<IActionResult> RunJobAsync(string name, DateTime? utcStart = null, DateTime? utcEnd = null)
+    public async Task<IActionResult> RunJobAsync(string name, DateTime? utcStart = null, DateTime? utcEnd = null, string? organizationId = null)
     {
         if (!ModelState.IsValid)
             return ValidationProblem(ModelState);
@@ -201,7 +201,8 @@ public class AdminController : ExceptionlessApiController
                 await _workItemQueue.EnqueueAsync(new FixStackStatsWorkItem
                 {
                     UtcStart = effectiveUtcStart,
-                    UtcEnd = utcEnd
+                    UtcEnd = utcEnd,
+                    Organization = organizationId
                 });
                 break;
             default:

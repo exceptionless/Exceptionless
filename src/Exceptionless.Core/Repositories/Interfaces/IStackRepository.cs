@@ -8,7 +8,6 @@ public interface IStackRepository : IRepositoryOwnedByOrganizationAndProject<Sta
 {
     Task<Stack?> GetStackBySignatureHashAsync(string projectId, string signatureHash);
     Task<FindResults<Stack>> GetIdsByQueryAsync(RepositoryQueryDescriptor<Stack> query, CommandOptionsDescriptor<Stack>? options = null);
-    Task<FindResults<Stack>> GetByCreatedUtcRangeAsync(DateTime utcStart, DateTime utcEnd);
     Task<FindResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack>? options = null);
     Task MarkAsRegressedAsync(string stackId);
     Task<bool> IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true);

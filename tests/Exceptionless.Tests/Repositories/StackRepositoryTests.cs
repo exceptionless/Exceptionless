@@ -169,30 +169,6 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetByCreatedUtcRangeAsync_WhenDateWindowIsProvided_ShouldReturnOnlyStacksInWindow()
-    {
-        // Arrange
-        TimeProvider.SetUtcNow(new DateTime(2026, 2, 5, 12, 0, 0, DateTimeKind.Utc));
-        var before = await _repository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
-
-        TimeProvider.SetUtcNow(new DateTime(2026, 2, 15, 12, 0, 0, DateTimeKind.Utc));
-        var inRange = await _repository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
-
-        TimeProvider.SetUtcNow(new DateTime(2026, 2, 24, 12, 0, 0, DateTimeKind.Utc));
-        var after = await _repository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
-
-        // Act
-        var results = await _repository.GetByCreatedUtcRangeAsync(
-            new DateTime(2026, 2, 10, 0, 0, 0, DateTimeKind.Utc),
-            new DateTime(2026, 2, 23, 0, 0, 0, DateTimeKind.Utc));
-
-        // Assert
-        Assert.Contains(results.Documents, s => s.Id == inRange.Id);
-        Assert.DoesNotContain(results.Documents, s => s.Id == before.Id);
-        Assert.DoesNotContain(results.Documents, s => s.Id == after.Id);
-    }
-
-    [Fact]
     public async Task SetEventCounterAsync_WhenIncomingValuesAreOlderOrLower_ShouldOnlyApplyMonotonicUpdates()
     {
         // Arrange

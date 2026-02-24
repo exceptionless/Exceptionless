@@ -80,30 +80,6 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return FindAsync(q => q.Project(projectId).ElasticFilter(filter).SortDescending(e => e.Date), o => o.PageLimit(10));
     }
 
-    public async Task<Dictionary<string, StackEventStats>> GetEventStatsForStacksAsync(IReadOnlyCollection<string> stackIds)
-    {
-        ArgumentNullException.ThrowIfNull(stackIds);
-        if (stackIds.Count is 0)
-            return new Dictionary<string, StackEventStats>();
-
-        var countResult = await CountAsync(q => q
-            .Stack(stackIds)
-            .AggregationsExpression($"terms:(stack_id~{stackIds.Count} min:date max:date)"));
-
-        var result = new Dictionary<string, StackEventStats>(stackIds.Count);
-        foreach (var bucket in countResult.Aggregations.Terms<string>("terms_stack_id")?.Buckets ?? [])
-        {
-            var first = bucket.Aggregations.Min<DateTime>("min_date")?.Value;
-            var last = bucket.Aggregations.Max<DateTime>("max_date")?.Value;
-            if (first is null || last is null || bucket.Total is null)
-                continue;
-
-            result[bucket.Key] = new StackEventStats(first.Value, last.Value, bucket.Total.Value);
-        }
-
-        return result;
-    }
-
     public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter? systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)
     {
         var previous = GetPreviousEventIdAsync(ev, systemFilter, utcStart, utcEnd);

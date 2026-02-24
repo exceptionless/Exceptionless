@@ -80,10 +80,11 @@ public class FixStackStatsJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RunUntilEmptyAsync_WhenStackCreatedBeforeBugWindow_ShouldSkipRepair()
+    public async Task RunUntilEmptyAsync_WhenAllEventsAreBeforeWindowStart_ShouldSkipRepair()
     {
         // Arrange
-        // Stack created before the window start; its stats should not be touched even if wrong.
+        // All events for this stack are before the window start — the handler won't find them
+        // in the event aggregation, so the stack should not be touched.
         TimeProvider.SetUtcNow(new DateTime(2026, 2, 5, 12, 0, 0, DateTimeKind.Utc));
 
         var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true,
@@ -102,7 +103,7 @@ public class FixStackStatsJobTests : IntegrationTestsBase
         // Act
         await _workItemQueue.EnqueueAsync(new FixStackStatsWorkItem
         {
-            UtcStart = DefaultWindowStart, // Feb 10 — after this stack's CreatedUtc (Feb 5)
+            UtcStart = DefaultWindowStart, // Feb 10 — after this stack's events (Feb 5)
             UtcEnd = DefaultWindowEnd
         });
         await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
@@ -111,14 +112,14 @@ public class FixStackStatsJobTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(stack);
-        Assert.Equal(0, stack.TotalOccurrences); // Not touched — outside window
+        Assert.Equal(0, stack.TotalOccurrences); // Not touched — events outside window
     }
 
     [Fact]
-    public async Task RunUntilEmptyAsync_WhenStackCreatedAfterBugWindowEnd_ShouldSkipRepair()
+    public async Task RunUntilEmptyAsync_WhenAllEventsAreAfterWindowEnd_ShouldSkipRepair()
     {
         // Arrange
-        // Stack created after the window end; its stats should not be touched.
+        // All events for this stack are after the window end — excluded from the aggregation.
         TimeProvider.SetUtcNow(new DateTime(2026, 2, 24, 0, 0, 0, DateTimeKind.Utc));
 
         var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true,
@@ -138,7 +139,7 @@ public class FixStackStatsJobTests : IntegrationTestsBase
         await _workItemQueue.EnqueueAsync(new FixStackStatsWorkItem
         {
             UtcStart = DefaultWindowStart,
-            UtcEnd = DefaultWindowEnd // Feb 23 — before this stack's CreatedUtc (Feb 24)
+            UtcEnd = DefaultWindowEnd // Feb 23 — before this stack's events (Feb 24)
         });
         await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
 
@@ -146,7 +147,61 @@ public class FixStackStatsJobTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(stack);
-        Assert.Equal(0, stack.TotalOccurrences); // Not touched — outside window
+        Assert.Equal(0, stack.TotalOccurrences); // Not touched — events outside window
+    }
+
+    [Fact]
+    public async Task RunUntilEmptyAsync_WhenOrganizationIdIsSpecified_ShouldOnlyRepairThatOrg()
+    {
+        // Arrange
+        TimeProvider.SetUtcNow(InWindowDate);
+
+        // Stack in the target org with corrupted counters
+        var targetStack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true,
+            organizationId: TestConstants.OrganizationId,
+            projectId: TestConstants.ProjectId,
+            utcFirstOccurrence: InWindowDate.AddDays(1), // wrong: too late
+            utcLastOccurrence: InWindowDate.AddDays(-1),  // wrong: too early
+            totalOccurrences: 0), o => o.ImmediateConsistency());
+
+        await _eventRepository.AddAsync(
+            [_eventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, targetStack.Id,
+                occurrenceDate: new DateTimeOffset(InWindowDate, TimeSpan.Zero))],
+            o => o.ImmediateConsistency());
+
+        // Stack in a different org — should not be touched
+        const string otherOrgId = TestConstants.OrganizationId2;
+        const string otherProjectId = "1ecd0826e447ad1e78877ab9";
+        var otherStack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true,
+            organizationId: otherOrgId,
+            projectId: otherProjectId,
+            utcFirstOccurrence: InWindowDate.AddDays(1),
+            utcLastOccurrence: InWindowDate.AddDays(-1),
+            totalOccurrences: 0), o => o.ImmediateConsistency());
+
+        await _eventRepository.AddAsync(
+            [_eventData.GenerateEvent(otherOrgId, otherProjectId, otherStack.Id,
+                occurrenceDate: new DateTimeOffset(InWindowDate, TimeSpan.Zero))],
+            o => o.ImmediateConsistency());
+
+        // Act: repair only the target org
+        await _workItemQueue.EnqueueAsync(new FixStackStatsWorkItem
+        {
+            UtcStart = DefaultWindowStart,
+            UtcEnd = DefaultWindowEnd,
+            Organization = TestConstants.OrganizationId
+        });
+        await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+
+        targetStack = await _stackRepository.GetByIdAsync(targetStack.Id);
+        otherStack = await _stackRepository.GetByIdAsync(otherStack.Id);
+
+        // Assert
+        Assert.NotNull(targetStack);
+        Assert.Equal(1, targetStack.TotalOccurrences); // Fixed
+
+        Assert.NotNull(otherStack);
+        Assert.Equal(0, otherStack.TotalOccurrences); // Not touched — different org
     }
 
     [Fact]

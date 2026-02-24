@@ -9,14 +9,11 @@ public interface IEventRepository : IRepositoryOwnedByOrganizationAndProject<Per
 {
     Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId);
     Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter? systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
-    Task<Dictionary<string, StackEventStats>> GetEventStatsForStacksAsync(IReadOnlyCollection<string> stackIds);
     Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, CommandOptionsDescriptor<PersistentEvent>? options = null);
     Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false, bool sendNotifications = true);
     Task<long> RemoveAllAsync(string organizationId, string? clientIpAddress, DateTime? utcStart, DateTime? utcEnd, CommandOptionsDescriptor<PersistentEvent>? options = null);
     Task<long> RemoveAllByStackIdsAsync(string[] stackIds);
 }
-
-public record StackEventStats(DateTime FirstOccurrence, DateTime LastOccurrence, long TotalOccurrences);
 
 public static class EventRepositoryExtensions
 {

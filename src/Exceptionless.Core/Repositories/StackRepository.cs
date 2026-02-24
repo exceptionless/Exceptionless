@@ -26,22 +26,6 @@ public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, I
         return FindAsync(q => q.ElasticFilter(Query<Stack>.DateRange(d => d.Field(f => f.SnoozeUntilUtc).LessThanOrEquals(utcNow))), options);
     }
 
-    public Task<FindResults<Stack>> GetByCreatedUtcRangeAsync(DateTime utcStart, DateTime utcEnd)
-    {
-        ArgumentOutOfRangeException.ThrowIfLessThan(utcEnd, utcStart);
-
-        return FindAsync(q => q
-            .ElasticFilter(Query<Stack>.DateRange(d => d
-                .Field(f => f.CreatedUtc)
-                .GreaterThanOrEquals(utcStart)
-                .LessThanOrEquals(utcEnd)
-            ))
-            .SortAscending(f => f.CreatedUtc)
-            .SortAscending(f => f.Id)
-            .Include(f => f.Id, f => f.OrganizationId, f => f.ProjectId, f => f.CreatedUtc, f => f.FirstOccurrence, f => f.LastOccurrence, f => f.TotalOccurrences)
-        , o => o.SearchAfterPaging().PageLimit(100));
-    }
-
     public Task<FindResults<Stack>> GetStacksForCleanupAsync(string organizationId, DateTime cutoff)
     {
         return FindAsync(q => q
