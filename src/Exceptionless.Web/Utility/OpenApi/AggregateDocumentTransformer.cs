@@ -1,4 +1,3 @@
-using Foundatio.Repositories.Models;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 

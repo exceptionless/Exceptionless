@@ -1,10 +1,7 @@
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
-using FluentRest;
-using Foundatio.Repositories;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
