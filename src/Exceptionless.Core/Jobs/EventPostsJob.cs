@@ -5,7 +5,7 @@ using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Repositories.Base;
+using Foundatio.Repositories.Exceptions;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Validation;
 using FluentValidation;

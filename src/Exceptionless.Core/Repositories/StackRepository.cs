@@ -3,6 +3,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
 using Nest;
@@ -84,7 +85,14 @@ ctx._source.total_occurrences += params.count;";
             }
         };
 
-        await PatchAsync(stackId, operation, o => o.Notifications(false));
+        try
+        {
+            await PatchAsync(stackId, operation, o => o.Notifications(false));
+        }
+        catch (DocumentNotFoundException)
+        {
+            return true;
+        }
 
         if (sendNotifications)
             await PublishMessageAsync(CreateEntityChanged(ChangeType.Saved, organizationId, projectId, null, stackId));
