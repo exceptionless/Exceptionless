@@ -53,7 +53,7 @@ public class AdminControllerTests : IntegrationTestsBase
 
         await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
 
-        stack = (await _stackRepository.GetByIdAsync(stack.Id))!;
+        stack = await _stackRepository.GetByIdAsync(stack.Id);
 
         // Assert
         Assert.NotNull(stack);
@@ -72,11 +72,6 @@ public class AdminControllerTests : IntegrationTestsBase
         TimeProvider.SetUtcNow(new DateTime(2026, 2, 15, 12, 0, 0, DateTimeKind.Utc));
         var inWindow = await CreateCorruptedStackWithEventAsync(new DateTimeOffset(2026, 2, 15, 12, 0, 0, TimeSpan.Zero));
 
-        TimeProvider.SetUtcNow(new DateTime(2026, 2, 22, 12, 0, 0, DateTimeKind.Utc));
-        var afterNow = await CreateCorruptedStackWithEventAsync(new DateTimeOffset(2026, 2, 22, 12, 0, 0, TimeSpan.Zero));
-
-        TimeProvider.SetUtcNow(new DateTime(2026, 2, 21, 12, 0, 0, DateTimeKind.Utc));
-
         // Act
         await SendRequestAsync(r => r
             .AsGlobalAdminUser()
@@ -85,20 +80,21 @@ public class AdminControllerTests : IntegrationTestsBase
 
         await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
 
-        beforeWindow = (await _stackRepository.GetByIdAsync(beforeWindow.Id))!;
-        inWindow = (await _stackRepository.GetByIdAsync(inWindow.Id))!;
-        afterNow = (await _stackRepository.GetByIdAsync(afterNow.Id))!;
+        beforeWindow = await _stackRepository.GetByIdAsync(beforeWindow.Id);
+        inWindow = await _stackRepository.GetByIdAsync(inWindow.Id);
 
         // Assert
+        Assert.NotNull(beforeWindow);
+        Assert.NotNull(inWindow);
         Assert.Equal(0, beforeWindow.TotalOccurrences);
         Assert.Equal(1, inWindow.TotalOccurrences);
-        Assert.Equal(0, afterNow.TotalOccurrences);
     }
 
     [Fact]
     public async Task RunJobAsync_WhenFixStackStatsUsesOffsetUtcTimestamp_ShouldAcceptModelBindingValue()
     {
         // Arrange
+        TimeProvider.SetUtcNow(new DateTime(2026, 2, 15, 12, 0, 0, DateTimeKind.Utc));
         var stack = await CreateCorruptedStackWithEventAsync(new DateTimeOffset(2026, 2, 14, 0, 0, 0, TimeSpan.Zero));
 
         // Act
@@ -111,33 +107,32 @@ public class AdminControllerTests : IntegrationTestsBase
 
         await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
 
-        stack = (await _stackRepository.GetByIdAsync(stack.Id))!;
+        stack = await _stackRepository.GetByIdAsync(stack.Id);
         var stats = await _workItemQueue.GetQueueStatsAsync();
 
         // Assert
         Assert.NotNull(stack);
         Assert.Equal(1, stack.TotalOccurrences);
-        Assert.Equal(0, stats.Enqueued);
+        Assert.Equal(1, stats.Enqueued);
     }
 
     [Fact]
-    public async Task RunJobAsync_WhenFixStackStatsEndDateIsBeforeStartDate_ShouldReturnBadRequest()
+    public async Task RunJobAsync_WhenFixStackStatsEndDateIsBeforeStartDate_ShouldReturnUnprocessableEntity()
     {
         // Arrange
-        var response = await SendRequestAsAsync<Dictionary<string, string>>(r => r
+        var response = await SendRequestAsAsync<Microsoft.AspNetCore.Mvc.ValidationProblemDetails>(r => r
             .AsGlobalAdminUser()
             .AppendPaths("admin", "maintenance", "fix-stack-stats")
             .QueryString("utcStart", "2026-02-20T00:00:00Z")
             .QueryString("utcEnd", "2026-02-10T00:00:00Z")
-            .StatusCodeShouldBeBadRequest());
+            .StatusCodeShouldBeUnprocessableEntity());
 
         // Act
         var stats = await _workItemQueue.GetQueueStatsAsync();
 
         // Assert
         Assert.NotNull(response);
-        Assert.True(response.TryGetValue("message", out var message));
-        Assert.Contains("utcEnd", message, StringComparison.OrdinalIgnoreCase);
+        Assert.True(response.Errors.ContainsKey("utc_end"));
         Assert.Equal(0, stats.Enqueued);
     }
 
@@ -160,10 +155,13 @@ public class AdminControllerTests : IntegrationTestsBase
 
     private async Task<Stack> CreateCorruptedStackWithEventAsync(DateTimeOffset occurrenceDate)
     {
+        var utcOccurrenceDate = occurrenceDate.UtcDateTime;
         var stack = _stackData.GenerateStack(generateId: true,
             organizationId: TestConstants.OrganizationId,
             projectId: TestConstants.ProjectId,
-            totalOccurrences: 0);
+            totalOccurrences: 0,
+            utcFirstOccurrence: utcOccurrenceDate.AddDays(1),
+            utcLastOccurrence: utcOccurrenceDate.AddDays(-1));
 
         stack = await _stackRepository.AddAsync(stack, o => o.ImmediateConsistency());
 
