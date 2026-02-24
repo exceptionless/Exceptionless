@@ -10,5 +10,5 @@ public record FixStackStatsWorkItem
     /// When set, only stacks belonging to this organization are repaired.
     /// When null, all organizations with events in the time window are processed.
     /// </summary>
-    public string? Organization { get; init; }
+    public string? OrganizationId { get; init; }
 }

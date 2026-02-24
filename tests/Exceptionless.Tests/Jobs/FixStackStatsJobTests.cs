@@ -189,7 +189,7 @@ public class FixStackStatsJobTests : IntegrationTestsBase
         {
             UtcStart = DefaultWindowStart,
             UtcEnd = DefaultWindowEnd,
-            Organization = TestConstants.OrganizationId
+            OrganizationId = TestConstants.OrganizationId
         });
         await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
 

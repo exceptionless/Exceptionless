@@ -36,7 +36,7 @@ public class FixStackStatsWorkItemHandler : WorkItemHandlerBase
         var wi = context.GetData<FixStackStatsWorkItem>();
         var utcEnd = wi.UtcEnd ?? _timeProvider.GetUtcNow().UtcDateTime;
 
-        Log.LogInformation("Starting stack stats repair for {UtcStart:O} to {UtcEnd:O}. OrganizationId={Organization}", wi.UtcStart, utcEnd, wi.Organization);
+        Log.LogInformation("Starting stack stats repair for {UtcStart:O} to {UtcEnd:O}. OrganizationId={Organization}", wi.UtcStart, utcEnd, wi.OrganizationId);
         await context.ReportProgressAsync(0, $"Starting stack stats repair for window {wi.UtcStart:O} – {utcEnd:O}");
 
         var organizationIds = await GetOrganizationIdsAsync(wi, utcEnd);
@@ -64,8 +64,8 @@ public class FixStackStatsWorkItemHandler : WorkItemHandlerBase
 
     private async Task<IReadOnlyList<string>> GetOrganizationIdsAsync(FixStackStatsWorkItem wi, DateTime utcEnd)
     {
-        if (wi.Organization is not null)
-            return [wi.Organization];
+        if (wi.OrganizationId is not null)
+            return [wi.OrganizationId];
 
         var countResult = await _eventRepository.CountAsync(q => q
             .DateRange(wi.UtcStart, utcEnd, (PersistentEvent e) => e.Date)

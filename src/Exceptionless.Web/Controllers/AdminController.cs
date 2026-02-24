@@ -202,7 +202,7 @@ public class AdminController : ExceptionlessApiController
                 {
                     UtcStart = effectiveUtcStart,
                     UtcEnd = utcEnd,
-                    Organization = organizationId
+                    OrganizationId = organizationId
                 });
                 break;
             default:
