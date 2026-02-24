@@ -86,36 +86,22 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         if (stackIds.Count is 0)
             return new Dictionary<string, StackEventStats>();
 
-        var statsByStackId = new Dictionary<string, StackEventStats>(stackIds.Count);
+        var countResult = await CountAsync(q => q
+            .Stack(stackIds)
+            .AggregationsExpression($"terms:(stack_id~{stackIds.Count} min:date max:date)"));
 
-        var results = await FindAsync(q => q
-            .Stack(stackIds.ToArray())
-            .Include(e => e.Id, e => e.StackId, e => e.Date)
-            .SortAscending(e => e.Date)
-            .SortAscending(e => e.Id),
-            o => o.SearchAfterPaging().PageLimit(500));
-
-        while (results.Documents.Count > 0)
+        var result = new Dictionary<string, StackEventStats>(stackIds.Count);
+        foreach (var bucket in countResult.Aggregations.Terms<string>("terms_stack_id")?.Buckets ?? [])
         {
-            foreach (var ev in results.Documents.Where(e => !String.IsNullOrEmpty(e.StackId)))
-            {
-                var occurrenceUtc = ev.Date.UtcDateTime;
-                if (!statsByStackId.TryGetValue(ev.StackId, out var current))
-                {
-                    statsByStackId[ev.StackId] = new StackEventStats(occurrenceUtc, occurrenceUtc, 1);
-                    continue;
-                }
+            var first = bucket.Aggregations.Min<DateTime>("min_date")?.Value;
+            var last = bucket.Aggregations.Max<DateTime>("max_date")?.Value;
+            if (first is null || last is null || bucket.Total is null)
+                continue;
 
-                var firstOccurrence = current.FirstOccurrence.IsAfter(occurrenceUtc) ? occurrenceUtc : current.FirstOccurrence;
-                var lastOccurrence = current.LastOccurrence.IsBefore(occurrenceUtc) ? occurrenceUtc : current.LastOccurrence;
-                statsByStackId[ev.StackId] = new StackEventStats(firstOccurrence, lastOccurrence, current.TotalOccurrences + 1);
-            }
-
-            if (!await results.NextPageAsync())
-                break;
+            result[bucket.Key] = new StackEventStats(first.Value, last.Value, bucket.Total.Value);
         }
 
-        return statsByStackId;
+        return result;
     }
 
     public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter? systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)
