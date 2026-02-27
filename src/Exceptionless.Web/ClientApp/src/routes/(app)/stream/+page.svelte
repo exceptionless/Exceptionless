@@ -28,6 +28,8 @@
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import { getColumns } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
+    import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import { getSharedTableOptions, isTableEmpty, removeTableData } from '$features/shared/table.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
@@ -42,6 +44,7 @@
     import { redirectToEventsWithFilter } from '../redirect-to-events.svelte';
 
     let selectedEventId: null | string = $state(null);
+
     function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
         selectedEventId = row.id;
     }
@@ -53,7 +56,8 @@
     const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
     const DEFAULT_PARAMS = {
         filter: '(status:open OR status:regressed)',
-        limit: DEFAULT_LIMIT
+        limit: DEFAULT_LIMIT,
+        saved: undefined as string | undefined
     };
 
     function filterCacheKey(filter: null | string): string {
@@ -66,15 +70,25 @@
         pushHistory: true,
         schema: {
             filter: 'string',
-            limit: 'number'
+            limit: 'number',
+            saved: 'string'
         }
+    });
+
+    const VIEW = 'stream';
+    const savedViewsState = useSavedViews({
+        filterCacheKey,
+        getColumnVisibility: () => table.getState().columnVisibility,
+        queryParams,
+        setColumnVisibility: (v) => table.setColumnVisibility(v),
+        updateFilterCache,
+        view: VIEW
     });
 
     watch(
         () => organization.current,
         () => {
             updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
-            //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
             Object.assign(queryParams, DEFAULT_PARAMS);
             paused = false;
         },
@@ -91,13 +105,11 @@
     );
 
     async function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
-        // If this is a stack filter, redirect to the Events page
         if (addedOrUpdated.type === 'string' && addedOrUpdated.key === 'string-stack') {
             await redirectToEventsWithFilter(organization.current, addedOrUpdated);
             return;
         }
 
-        // For all other filters (skipping date filters), apply them to the current page
         if (addedOrUpdated.type !== 'date') {
             updateFilters(filterChanged(filters ?? [], addedOrUpdated));
         }
@@ -253,6 +265,19 @@
             </FacetedFilter.Root>
         </div>
         <div class="ml-auto flex shrink-0 items-start gap-2">
+            {#if savedViewsState.isEnabled}
+                <SavedViewPicker
+                    activeSavedView={savedViewsState.activeSavedView}
+                    columnVisibility={table.getState().columnVisibility}
+                    filters={filters ?? []}
+                    isModified={savedViewsState.isModified}
+                    onLoadView={savedViewsState.handleLoadView}
+                    onResetToSaved={savedViewsState.handleResetToSaved}
+                    onClearSavedView={savedViewsState.handleClearSavedView}
+                    savedViews={savedViewsState.savedViews}
+                    view={VIEW}
+                />
+            {/if}
             <DataTableViewOptions size="icon-lg" {table} />
             <StreamingIndicatorButton onToggle={handleToggle} {paused} size="icon-lg" />
         </div>

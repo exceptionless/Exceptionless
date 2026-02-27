@@ -153,6 +153,7 @@ public class Bootstrapper
         services.AddSingleton<IProjectRepository, ProjectRepository>();
         services.AddSingleton<IUserRepository, UserRepository>();
         services.AddSingleton<IWebHookRepository, WebHookRepository>();
+        services.AddSingleton<ISavedViewRepository, SavedViewRepository>();
         services.AddSingleton<ITokenRepository, TokenRepository>();
 
         services.AddSingleton<IGeocodeService, NullGeocodeService>();

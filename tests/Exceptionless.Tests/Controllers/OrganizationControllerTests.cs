@@ -215,6 +215,130 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SetFeatureAsync_AsGlobalAdmin_EnablesFeature()
+    {
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "features", "feature-saved-views")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert - feature is stored on the organization
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.Contains("feature-saved-views", organization.Features);
+    }
+
+    [Fact]
+    public Task SetFeatureAsync_AsRegularUser_ReturnsForbidden()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "features", "feature-saved-views")
+            .StatusCodeShouldBeForbidden()
+        );
+    }
+
+    [Fact]
+    public Task SetFeatureAsync_NonExistentOrganization_ReturnsNotFound()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", "000000000000000000000001", "features", "feature-saved-views")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public async Task RemoveFeatureAsync_AsGlobalAdmin_DisablesFeature()
+    {
+        // Arrange - enable the feature first
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "features", "feature-saved-views")
+            .StatusCodeShouldBeOk()
+        );
+
+        var afterEnable = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(afterEnable);
+        Assert.Contains("feature-saved-views", afterEnable.Features);
+
+        // Act - disable the feature
+        await SendRequestAsync(r => r
+            .Delete()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "features", "feature-saved-views")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert - feature is removed
+        var afterRemove = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(afterRemove);
+        Assert.DoesNotContain("feature-saved-views", afterRemove.Features);
+    }
+
+    [Fact]
+    public Task RemoveFeatureAsync_AsRegularUser_ReturnsForbidden()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .Delete()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "features", "feature-saved-views")
+            .StatusCodeShouldBeForbidden()
+        );
+    }
+
+    [Fact]
+    public async Task SetFeatureAsync_IsCaseInsensitive()
+    {
+        // Act - enable with different casing (controller normalizes to lowercase)
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "features", "Feature-Saved-Views")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert - stored normalized to lowercase
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.Contains("feature-saved-views", organization.Features);
+        Assert.DoesNotContain("Feature-Saved-Views", organization.Features);
+    }
+
+    [Fact]
+    public async Task GetAsync_ViewOrganization_IncludesFeaturesCollection()
+    {
+        // Arrange - enable a feature
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "features", "feature-saved-views")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Act
+        var viewOrg = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert - Features is included in the ViewOrganization DTO
+        Assert.NotNull(viewOrg);
+        Assert.NotNull(viewOrg.Features);
+        Assert.Contains("feature-saved-views", viewOrg.Features);
+    }
+
+    [Fact]
     public async Task DeleteAsync_ExistingOrganization_RemovesOrganization()
     {
         // Arrange - Create an organization to delete

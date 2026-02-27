@@ -161,17 +161,43 @@ export const NewProjectSchema = object({
 });
 export type NewProjectFormData = Infer<typeof NewProjectSchema>;
 
+export const NewSavedViewSchema = object({
+  organization_id: string()
+    .length(24, "Organization id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Organization id has invalid format"),
+  name: string()
+    .min(1, "Name is required")
+    .max(100, "Name must be at most 100 characters"),
+  filter: string()
+    .min(1, "Filter is required")
+    .max(2000, "Filter must be at most 2000 characters")
+    .nullable()
+    .optional(),
+  time: string()
+    .min(1, "Time is required")
+    .max(100, "Time must be at most 100 characters")
+    .nullable()
+    .optional(),
+  view: string()
+    .min(1, "View is required")
+    .regex(/^(events|issues|stream)$/, "View has invalid format"),
+  filter_definitions: string()
+    .min(1, "Filter definitions is required")
+    .max(10000, "Filter definitions must be at most 10000 characters")
+    .nullable()
+    .optional(),
+  columns: record(string(), boolean()).nullable().optional(),
+  is_default: boolean(),
+});
+export type NewSavedViewFormData = Infer<typeof NewSavedViewSchema>;
+
 export const NewTokenSchema = object({
   organization_id: string()
     .length(24, "Organization id must be exactly 24 characters")
-    .regex(/^[a-fA-F0-9]{24}$/, "Organization id has invalid format")
-    .nullable()
-    .optional(),
+    .regex(/^[a-fA-F0-9]{24}$/, "Organization id has invalid format"),
   project_id: string()
     .length(24, "Project id must be exactly 24 characters")
-    .regex(/^[a-fA-F0-9]{24}$/, "Project id has invalid format")
-    .nullable()
-    .optional(),
+    .regex(/^[a-fA-F0-9]{24}$/, "Project id has invalid format"),
   default_project_id: string()
     .length(24, "Default project id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Default project id has invalid format")
@@ -243,7 +269,7 @@ export const PersistentEventSchema = object({
     .regex(/^[a-fA-F0-9]{24}$/, "Stack id has invalid format"),
   is_first_occurrence: boolean(),
   created_utc: iso.datetime(),
-  idx: record(string(), unknown()),
+  idx: record(string(), unknown()).nullable().optional(),
   type: string()
     .min(1, "Type is required")
     .max(100, "Type must be at most 100 characters")
@@ -372,6 +398,19 @@ export const UpdateProjectSchema = object({
 });
 export type UpdateProjectFormData = Infer<typeof UpdateProjectSchema>;
 
+export const UpdateSavedViewSchema = object({
+  name: string().min(1, "Name is required").nullable().optional(),
+  filter: string().min(1, "Filter is required").nullable().optional(),
+  time: string().min(1, "Time is required").nullable().optional(),
+  filter_definitions: string()
+    .min(1, "Filter definitions is required")
+    .nullable()
+    .optional(),
+  columns: array(unknown()).optional(),
+  is_default: boolean().nullable().optional(),
+});
+export type UpdateSavedViewFormData = Infer<typeof UpdateSavedViewSchema>;
+
 export const UpdateTokenSchema = object({
   is_disabled: boolean().optional(),
   notes: string().min(1, "Notes is required").nullable().optional(),
@@ -492,6 +531,7 @@ export const ViewOrganizationSchema = object({
     .optional(),
   suspension_date: iso.datetime().nullable().optional(),
   has_premium_features: boolean(),
+  features: array(string()),
   max_users: int32(),
   max_projects: int32(),
   project_count: int(),
@@ -529,6 +569,42 @@ export const ViewProjectSchema = object({
   usage: array(lazy(() => UsageInfoSchema)),
 });
 export type ViewProjectFormData = Infer<typeof ViewProjectSchema>;
+
+export const ViewSavedViewSchema = object({
+  id: string()
+    .length(24, "Id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Id has invalid format"),
+  organization_id: string()
+    .length(24, "Organization id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Organization id has invalid format"),
+  user_id: string()
+    .length(24, "User id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "User id has invalid format")
+    .nullable()
+    .optional(),
+  created_by_user_id: string()
+    .length(24, "Created by user id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Created by user id has invalid format"),
+  updated_by_user_id: string()
+    .length(24, "Updated by user id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Updated by user id has invalid format")
+    .nullable()
+    .optional(),
+  filter: string().min(1, "Filter is required").nullable().optional(),
+  filter_definitions: string()
+    .min(1, "Filter definitions is required")
+    .nullable()
+    .optional(),
+  columns: record(string(), boolean()).nullable().optional(),
+  is_default: boolean(),
+  name: string().min(1, "Name is required"),
+  time: string().min(1, "Time is required").nullable().optional(),
+  version: int32(),
+  view: string().min(1, "View is required"),
+  created_utc: iso.datetime(),
+  updated_utc: iso.datetime(),
+});
+export type ViewSavedViewFormData = Infer<typeof ViewSavedViewSchema>;
 
 export const ViewTokenSchema = object({
   id: string()

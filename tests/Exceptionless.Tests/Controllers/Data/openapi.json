@@ -20,6 +20,373 @@
     }
   ],
   "paths": {
+    "/api/v2/organizations/{organizationId}/saved-views": {
+      "get": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Get by organization",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ViewSavedView"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Create",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "is_private",
+            "in": "query",
+            "description": "If true, the view will only be visible to the current user.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The saved view.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewSavedView"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewSavedView"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewSavedView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred while creating the saved view."
+          },
+          "409": {
+            "description": "The saved view already exists."
+          }
+        }
+      }
+    },
+    "/api/v2/organizations/{organizationId}/saved-views/{view}": {
+      "get": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Get by organization and view",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "view",
+            "in": "path",
+            "description": "The dashboard view (events, issues, stream).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ViewSavedView"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found."
+          }
+        }
+      }
+    },
+    "/api/v2/saved-views/{id}": {
+      "get": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Get by id",
+        "operationId": "GetSavedViewById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the saved view.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewSavedView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The saved view could not be found."
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the saved view.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The changes",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedView"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedView"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewSavedView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred while updating the saved view."
+          },
+          "404": {
+            "description": "The saved view could not be found."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the saved view.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The changes",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedView"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedView"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewSavedView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred while updating the saved view."
+          },
+          "404": {
+            "description": "The saved view could not be found."
+          }
+        }
+      }
+    },
+    "/api/v2/saved-views/{ids}": {
+      "delete": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Remove",
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "path",
+            "description": "A comma-delimited list of saved view identifiers.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}(,[a-zA-Z\\d]{24,36})*$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkInProgressResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "One or more validation errors occurred."
+          },
+          "404": {
+            "description": "One or more saved views were not found."
+          },
+          "500": {
+            "description": "An error occurred while deleting one or more saved views."
+          }
+        }
+      }
+    },
     "/api/v2/organizations/{organizationId}/tokens": {
       "get": {
         "tags": [
@@ -7330,6 +7697,65 @@
           }
         }
       },
+      "NewSavedView": {
+        "required": [
+          "name",
+          "view",
+          "organization_id",
+          "is_default"
+        ],
+        "type": "object",
+        "properties": {
+          "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "type": "string"
+          },
+          "filter": {
+            "maxLength": 2000,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "time": {
+            "maxLength": 100,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "view": {
+            "pattern": "^(events|issues|stream)$",
+            "type": "string"
+          },
+          "filter_definitions": {
+            "maxLength": 10000,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "columns": {
+            "maxLength": 50,
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "is_default": {
+            "type": "boolean"
+          }
+        }
+      },
       "NewToken": {
         "required": [
           "organization_id",
@@ -7931,6 +8357,45 @@
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
       },
+      "UpdateSavedView": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "filter": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "time": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "filter_definitions": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "columns": {
+            "type": "array"
+          },
+          "is_default": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        },
+        "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
+      },
       "UpdateToken": {
         "type": "object",
         "properties": {
@@ -8247,6 +8712,7 @@
           "retention_days",
           "is_suspended",
           "has_premium_features",
+          "features",
           "max_users",
           "max_projects",
           "project_count",
@@ -8366,6 +8832,13 @@
           },
           "has_premium_features": {
             "type": "boolean"
+          },
+          "features": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "max_users": {
             "type": "integer",
@@ -8511,6 +8984,106 @@
             "items": {
               "$ref": "#/components/schemas/UsageInfo"
             }
+          }
+        }
+      },
+      "ViewSavedView": {
+        "required": [
+          "id",
+          "organization_id",
+          "created_by_user_id",
+          "is_default",
+          "name",
+          "version",
+          "view",
+          "created_utc",
+          "updated_utc"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "user_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "created_by_user_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "updated_by_user_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "filter": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "filter_definitions": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "columns": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "is_default": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "time": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "view": {
+            "type": "string"
+          },
+          "created_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_utc": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -8743,6 +9316,9 @@
     }
   },
   "tags": [
+    {
+      "name": "SavedView"
+    },
     {
       "name": "Token"
     },

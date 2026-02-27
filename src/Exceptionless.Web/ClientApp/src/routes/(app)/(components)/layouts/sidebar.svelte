@@ -48,16 +48,70 @@
             <Sidebar.Menu>
                 {#each dashboardRoutes as route (route.href)}
                     {@const Icon = route.icon}
-                    <Sidebar.MenuItem>
-                        <Sidebar.MenuButton isActive={route.href === page.url.pathname}>
-                            {#snippet child({ props })}
-                                <a href={route.href} title={route.title} onclick={onMenuClick} {...props}>
-                                    <Icon />
-                                    <span>{route.title}</span>
-                                </a>
+                    {#if route.children?.length}
+                        <Collapsible.Root
+                            open={route.href === page.url.pathname || route.children?.some((c) => page.url.href.includes(c.href))}
+                            class="group/collapsible"
+                        >
+                            {#snippet child({ props: collapsibleProps })}
+                                <Sidebar.MenuItem {...collapsibleProps}>
+                                    <Collapsible.Trigger>
+                                        {#snippet child({ props: triggerProps })}
+                                            <Sidebar.MenuButton isActive={route.href === page.url.pathname} {...triggerProps}>
+                                                {#snippet child({ props: buttonProps })}
+                                                    <a
+                                                        href={route.href}
+                                                        title={route.title}
+                                                        onclick={onMenuClick}
+                                                        class="flex min-w-0 flex-1 items-center gap-2"
+                                                        {...buttonProps}
+                                                    >
+                                                        <Icon />
+                                                        <span>{route.title}</span>
+                                                        <ChevronRight
+                                                            class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                                                        />
+                                                    </a>
+                                                {/snippet}
+                                            </Sidebar.MenuButton>
+                                        {/snippet}
+                                    </Collapsible.Trigger>
+                                    <Collapsible.Content>
+                                        <Sidebar.MenuSub>
+                                            {#each route.children as savedItem (savedItem.href)}
+                                                {@const savedId = new URL(savedItem.href, page.url.origin).searchParams.get('saved')}
+                                                <Sidebar.MenuSubItem>
+                                                    <Sidebar.MenuSubButton
+                                                        isActive={route.href === page.url.pathname &&
+                                                            (savedItem.isDefault
+                                                                ? !page.url.searchParams.has('saved') || page.url.searchParams.get('saved') === savedId
+                                                                : page.url.searchParams.get('saved') === savedId)}
+                                                    >
+                                                        {#snippet child({ props: subProps })}
+                                                            <a href={savedItem.href} title={savedItem.title} onclick={onMenuClick} {...subProps}>
+                                                                <span class="truncate">{savedItem.title}</span>
+                                                            </a>
+                                                        {/snippet}
+                                                    </Sidebar.MenuSubButton>
+                                                </Sidebar.MenuSubItem>
+                                            {/each}
+                                        </Sidebar.MenuSub>
+                                    </Collapsible.Content>
+                                </Sidebar.MenuItem>
                             {/snippet}
-                        </Sidebar.MenuButton>
-                    </Sidebar.MenuItem>
+                        </Collapsible.Root>
+                    {:else}
+                        <Sidebar.MenuItem>
+                            <Sidebar.MenuButton isActive={route.href === page.url.pathname}>
+                                {#snippet child({ props })}
+                                    <a href={route.href} title={route.title} onclick={onMenuClick} {...props}>
+                                        <Icon />
+                                        <span>{route.title}</span>
+                                    </a>
+                                {/snippet}
+                            </Sidebar.MenuButton>
+                        </Sidebar.MenuItem>
+                    {/if}
                 {/each}
             </Sidebar.Menu>
         </Sidebar.Group>

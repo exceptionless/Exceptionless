@@ -218,6 +218,12 @@ import { User } from "$features/users/models"; // $lib/features
 import { formatDate } from "$shared/formatters"; // $lib/features/shared
 ```
 
+## Project Svelte Rules
+
+- Prefer `$derived` for computed state and `$effect` for side effects.
+- Use `untrack()` inside `$effect` when needed to avoid reactive loops.
+- Prefer `kit-query-params` (`queryParamsState`) for route query parameter binding instead of ad-hoc URL parsing.
+
 ## Consistency Rule
 
 **Before creating anything new, search the codebase for existing patterns.** Consistency is the most important quality of a codebase:

@@ -1,0 +1,93 @@
+@apiUrl = http://localhost:5200/api/v2
+@email = test@localhost
+@password = tester
+@organizationId = 537650f3b77efe23a47914f3
+@feature = feature-saved-views
+
+### login to test account
+# @name login
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "{{email}}",
+    "password": "{{password}}"
+}
+
+###
+
+@token = {{login.response.body.$.token}}
+
+### Enable saved views feature flag
+POST {{apiUrl}}/organizations/{{organizationId}}/features/{{feature}}
+Authorization: Bearer {{token}}
+
+### Get saved views by organization
+GET {{apiUrl}}/organizations/{{organizationId}}/saved-views
+Authorization: Bearer {{token}}
+
+### Get saved views by view
+GET {{apiUrl}}/organizations/{{organizationId}}/saved-views/events
+Authorization: Bearer {{token}}
+
+### Create organization-wide saved view
+# @name newSavedView
+POST {{apiUrl}}/organizations/{{organizationId}}/saved-views
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "organization_id": "{{organizationId}}",
+    "name": "Open Events",
+    "filter": "status:open",
+    "time": "[now-7d TO now]",
+    "view": "events",
+    "columns": {
+        "user": true,
+        "date": true
+    },
+    "is_default": false
+}
+
+###
+
+@savedViewId = {{newSavedView.response.body.$.id}}
+
+### Create private saved view
+POST {{apiUrl}}/organizations/{{organizationId}}/saved-views?is_private=true
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "organization_id": "{{organizationId}}",
+    "name": "My Private View",
+    "filter": "type:error",
+    "view": "stream",
+    "columns": {
+        "user": true,
+        "date": true
+    },
+    "is_default": false
+}
+
+### Get saved view by id
+GET {{apiUrl}}/saved-views/{{savedViewId}}
+Authorization: Bearer {{token}}
+
+### Update saved view
+PATCH {{apiUrl}}/saved-views/{{savedViewId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "name": "Open Events (Last 30d)",
+    "time": "[now-30d TO now]"
+}
+
+### Delete saved view
+DELETE {{apiUrl}}/saved-views/{{savedViewId}}
+Authorization: Bearer {{token}}
+
+### Disable saved views feature flag
+DELETE {{apiUrl}}/organizations/{{organizationId}}/features/{{feature}}
+Authorization: Bearer {{token}}

@@ -123,11 +123,24 @@ export interface NewProject {
   delete_bot_data_enabled: boolean;
 }
 
+export interface NewSavedView {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  organization_id: string;
+  name: string;
+  filter?: null | string;
+  time?: null | string;
+  /** @pattern ^(events|issues|stream)$ */
+  view: string;
+  filter_definitions?: null | string;
+  columns?: null | Record<string, boolean>;
+  is_default: boolean;
+}
+
 export interface NewToken {
   /** @pattern ^[a-fA-F0-9]{24}$ */
-  organization_id?: null | string;
+  organization_id: string;
   /** @pattern ^[a-fA-F0-9]{24}$ */
-  project_id?: null | string;
+  project_id: string;
   /** @pattern ^[a-fA-F0-9]{24}$ */
   default_project_id?: null | string;
   scopes: string[];
@@ -196,7 +209,7 @@ export interface PersistentEvent {
    */
   created_utc: string;
   /** Used to store primitive data type custom data values for searching the event. */
-  idx: Record<string, unknown>;
+  idx?: null | Record<string, unknown>;
   /** The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types. */
   type?: null | string;
   /** The event source (ie. machine name, log name, feature name). */
@@ -343,6 +356,16 @@ export interface UpdateProject {
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
+export interface UpdateSavedView {
+  name?: null | string;
+  filter?: null | string;
+  time?: null | string;
+  filter_definitions?: null | string;
+  columns: unknown[];
+  is_default?: null | boolean;
+}
+
+/** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
 export interface UpdateToken {
   is_disabled: boolean;
   notes?: null | string;
@@ -474,6 +497,7 @@ export interface ViewOrganization {
   /** @format date-time */
   suspension_date?: null | string;
   has_premium_features: boolean;
+  features: string[];
   /** @format int32 */
   max_users: number;
   /** @format int32 */
@@ -514,6 +538,32 @@ export interface ViewProject {
   has_slack_integration: boolean;
   usage_hours: UsageHourInfo[];
   usage: UsageInfo[];
+}
+
+export interface ViewSavedView {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  id: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  organization_id: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  user_id?: null | string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  created_by_user_id: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  updated_by_user_id?: null | string;
+  filter?: null | string;
+  filter_definitions?: null | string;
+  columns?: null | Record<string, boolean>;
+  is_default: boolean;
+  name: string;
+  time?: null | string;
+  /** @format int32 */
+  version: number;
+  view: string;
+  /** @format date-time */
+  created_utc: string;
+  /** @format date-time */
+  updated_utc: string;
 }
 
 export interface ViewToken {
