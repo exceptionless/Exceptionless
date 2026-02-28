@@ -1,7 +1,7 @@
-﻿using System.Text.Json;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.Formatting;
@@ -9,7 +9,7 @@ namespace Exceptionless.Core.Plugins.Formatting;
 [Priority(99)]
 public sealed class DefaultFormattingPlugin : FormattingPluginBase
 {
-    public DefaultFormattingPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(jsonOptions, options, loggerFactory) { }
+    public DefaultFormattingPlugin(ITextSerializer serializer, AppOptions options, ILoggerFactory loggerFactory) : base(serializer, options, loggerFactory) { }
 
     public override string GetStackTitle(PersistentEvent ev)
     {
@@ -37,7 +37,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
                 { "Type", ev.Type }
             };
 
-        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_jsonOptions));
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_serializer));
 
         return new SummaryData { Id = ev.Id, TemplateKey = "event-summary", Data = data };
     }
@@ -68,7 +68,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
         if (!String.IsNullOrEmpty(ev.Source))
             data.Add("Source", ev.Source.Truncate(60));
 
-        var requestInfo = ev.GetRequestInfo(_jsonOptions);
+        var requestInfo = ev.GetRequestInfo(_serializer);
         if (requestInfo is not null)
             data.Add("Url", requestInfo.GetFullPath(true, true, true));
 
@@ -90,7 +90,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
         if (isCritical)
             notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
 
-        var attachment = new SlackMessage.SlackAttachment(ev, _jsonOptions);
+        var attachment = new SlackMessage.SlackAttachment(ev, _serializer);
         if (!String.IsNullOrEmpty(ev.Message))
             attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Message", Value = ev.Message.Truncate(60) });
 

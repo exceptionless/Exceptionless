@@ -82,3 +82,26 @@ pr-reviewer → security pre-screen (before build!) → dependency audit
 - Never commit secrets — use environment variables
 - NuGet feeds are in `NuGet.Config` — don't add sources
 - Prefer additive documentation updates — don't replace strategic docs wholesale, extend them
+
+## Serialization Architecture
+
+The project uses **System.Text.Json (STJ)** exclusively. NEST still brings in Newtonsoft.Json transitively, but all application-level serialization uses STJ:
+
+| Component      | Serializer                        | Notes                                       |
+| -------------- | --------------------------------- | -------------------------------------------- |
+| Elasticsearch  | `ElasticSystemTextJsonSerializer` | Custom `IElasticsearchSerializer` using STJ  |
+| Event Upgrader | `System.Text.Json.Nodes`          | JsonObject/JsonArray for mutable DOM         |
+| Data Storage   | `SystemTextJsonSerializer`        | Via Foundatio's STJ support                  |
+| API            | STJ (built-in)                    | ASP.NET Core default with custom options     |
+
+**Key files:**
+
+- `ElasticSystemTextJsonSerializer.cs` - Custom `IElasticsearchSerializer` for NEST
+- `JsonNodeExtensions.cs` - STJ equivalents of JObject helpers
+- `ObjectToInferredTypesConverter.cs` - Handles JObject/JToken from NEST during STJ serialization
+- `V*_EventUpgrade.cs` - Event version upgraders using JsonObject
+
+**Security:**
+
+- Safe JSON encoding used everywhere (escapes `<`, `>`, `&`, `'` for XSS protection)
+- No `UnsafeRelaxedJsonEscaping` in the codebase

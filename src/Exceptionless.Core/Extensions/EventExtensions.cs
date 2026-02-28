@@ -1,9 +1,8 @@
 ﻿using System.Text;
-using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
-using Newtonsoft.Json;
+using Foundatio.Serializer;
 
 namespace Exceptionless;
 
@@ -14,14 +13,14 @@ public static class EventExtensions
         return ev.Data is not null && ev.Data.ContainsKey(Event.KnownDataKeys.Error);
     }
 
-    public static Error? GetError(this Event ev, JsonSerializerOptions options)
+    public static Error? GetError(this Event ev, ITextSerializer serializer)
     {
         if (!ev.HasError())
             return null;
 
         try
         {
-            return ev.Data!.GetValue<Error>(Event.KnownDataKeys.Error, options);
+            return ev.Data!.GetValue<Error>(Event.KnownDataKeys.Error, serializer);
         }
         catch (Exception)
         {
@@ -36,14 +35,14 @@ public static class EventExtensions
         return ev.Data is not null && ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError);
     }
 
-    public static SimpleError? GetSimpleError(this Event ev, JsonSerializerOptions options)
+    public static SimpleError? GetSimpleError(this Event ev, ITextSerializer serializer)
     {
         if (!ev.HasSimpleError())
             return null;
 
         try
         {
-            return ev.Data!.GetValue<SimpleError>(Event.KnownDataKeys.SimpleError, options);
+            return ev.Data!.GetValue<SimpleError>(Event.KnownDataKeys.SimpleError, serializer);
         }
         catch (Exception)
         {
@@ -53,14 +52,14 @@ public static class EventExtensions
         return null;
     }
 
-    public static RequestInfo? GetRequestInfo(this Event ev, JsonSerializerOptions options)
+    public static RequestInfo? GetRequestInfo(this Event ev, ITextSerializer serializer)
     {
         if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.RequestInfo))
             return null;
 
         try
         {
-            return ev.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo, options);
+            return ev.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo, serializer);
         }
         catch (Exception)
         {
@@ -70,14 +69,14 @@ public static class EventExtensions
         return null;
     }
 
-    public static EnvironmentInfo? GetEnvironmentInfo(this Event ev, JsonSerializerOptions options)
+    public static EnvironmentInfo? GetEnvironmentInfo(this Event ev, ITextSerializer serializer)
     {
         if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.EnvironmentInfo))
             return null;
 
         try
         {
-            return ev.Data.GetValue<EnvironmentInfo>(Event.KnownDataKeys.EnvironmentInfo, options);
+            return ev.Data.GetValue<EnvironmentInfo>(Event.KnownDataKeys.EnvironmentInfo, serializer);
         }
         catch (Exception)
         {
@@ -183,14 +182,14 @@ public static class EventExtensions
     /// <summary>
     /// Gets the user info object from extended data.
     /// </summary>
-    public static UserInfo? GetUserIdentity(this Event ev, JsonSerializerOptions options)
+    public static UserInfo? GetUserIdentity(this Event ev, ITextSerializer serializer)
     {
         if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.UserInfo))
             return null;
 
         try
         {
-            return ev.Data.GetValue<UserInfo>(Event.KnownDataKeys.UserInfo, options);
+            return ev.Data.GetValue<UserInfo>(Event.KnownDataKeys.UserInfo, serializer);
         }
         catch (Exception)
         {
@@ -219,14 +218,14 @@ public static class EventExtensions
             ev.Data[Event.KnownDataKeys.Version] = version.Trim();
     }
 
-    public static SubmissionClient? GetSubmissionClient(this Event ev, JsonSerializerOptions options)
+    public static SubmissionClient? GetSubmissionClient(this Event ev, ITextSerializer serializer)
     {
         if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.SubmissionClient))
             return null;
 
         try
         {
-            return ev.Data.GetValue<SubmissionClient>(Event.KnownDataKeys.SubmissionClient, options);
+            return ev.Data.GetValue<SubmissionClient>(Event.KnownDataKeys.SubmissionClient, serializer);
         }
         catch (Exception)
         {
@@ -241,14 +240,14 @@ public static class EventExtensions
         return ev.Data != null && ev.Data.ContainsKey(Event.KnownDataKeys.Location);
     }
 
-    public static Location? GetLocation(this Event ev, JsonSerializerOptions options)
+    public static Location? GetLocation(this Event ev, ITextSerializer serializer)
     {
         if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.Location))
             return null;
 
         try
         {
-            return ev.Data.GetValue<Location>(Event.KnownDataKeys.Location, options);
+            return ev.Data.GetValue<Location>(Event.KnownDataKeys.Location, serializer);
         }
         catch (Exception)
         {
@@ -301,14 +300,14 @@ public static class EventExtensions
     /// <summary>
     /// Gets the stacking info from extended data.
     /// </summary>
-    public static ManualStackingInfo? GetManualStackingInfo(this Event ev, JsonSerializerOptions options)
+    public static ManualStackingInfo? GetManualStackingInfo(this Event ev, ITextSerializer serializer)
     {
         if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.ManualStackingInfo))
             return null;
 
         try
         {
-            return ev.Data.GetValue<ManualStackingInfo>(Event.KnownDataKeys.ManualStackingInfo, options);
+            return ev.Data.GetValue<ManualStackingInfo>(Event.KnownDataKeys.ManualStackingInfo, serializer);
         }
         catch (Exception)
         {
@@ -423,14 +422,14 @@ public static class EventExtensions
     /// <summary>
     /// Gets the user description from extended data.
     /// </summary>
-    public static UserDescription? GetUserDescription(this Event ev, JsonSerializerOptions options)
+    public static UserDescription? GetUserDescription(this Event ev, ITextSerializer serializer)
     {
         if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.UserDescription))
             return null;
 
         try
         {
-            return ev.Data.GetValue<UserDescription>(Event.KnownDataKeys.UserDescription, options);
+            return ev.Data.GetValue<UserDescription>(Event.KnownDataKeys.UserDescription, serializer);
         }
         catch (Exception)
         {
@@ -469,8 +468,11 @@ public static class EventExtensions
             ev.Data[Event.KnownDataKeys.UserDescription] = description;
     }
 
-    public static byte[] GetBytes(this Event ev, JsonSerializerSettings settings)
+    /// <summary>
+    /// Serializes an event to UTF-8 JSON bytes using the specified serializer.
+    /// </summary>
+    public static byte[] GetBytes(this Event ev, ITextSerializer serializer)
     {
-        return Encoding.UTF8.GetBytes(ev.ToJson(Formatting.None, settings));
+        return serializer.SerializeToBytes(ev);
     }
 }

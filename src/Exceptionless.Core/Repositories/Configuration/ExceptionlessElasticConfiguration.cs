@@ -14,19 +14,19 @@ using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Resilience;
 using Microsoft.Extensions.Logging;
 using Nest;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace Exceptionless.Core.Repositories.Configuration;
 
 public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction
 {
     private readonly AppOptions _appOptions;
-    private readonly JsonSerializerSettings _serializerSettings;
+    private readonly JsonSerializerOptions _jsonSerializerOptions;
 
     public ExceptionlessElasticConfiguration(
         AppOptions appOptions,
         IQueue<WorkItemData> workItemQueue,
-        JsonSerializerSettings serializerSettings,
+        JsonSerializerOptions jsonSerializerOptions,
         ICacheClient cacheClient,
         IMessageBus messageBus,
         IServiceProvider serviceProvider,
@@ -36,7 +36,7 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
     ) : base(workItemQueue, cacheClient, messageBus, timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _appOptions = appOptions;
-        _serializerSettings = serializerSettings;
+        _jsonSerializerOptions = jsonSerializerOptions;
 
         _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", _appOptions.ElasticsearchOptions.NumberOfShards, _appOptions.ElasticsearchOptions.NumberOfReplicas);
         AddIndex(Stacks = new StackIndex(this));
@@ -78,7 +78,8 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
     protected override IElasticClient CreateElasticClient()
     {
         var connectionPool = CreateConnectionPool();
-        var settings = new ConnectionSettings(connectionPool, (serializer, values) => new ElasticJsonNetSerializer(serializer, values, _serializerSettings));
+        var serializer = new ElasticSystemTextJsonSerializer(_jsonSerializerOptions);
+        var settings = new ConnectionSettings(connectionPool, (_, _) => serializer);
 
         ConfigureSettings(settings);
         foreach (var index in Indexes)

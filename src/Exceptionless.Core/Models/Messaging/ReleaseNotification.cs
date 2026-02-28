@@ -1,4 +1,4 @@
-﻿namespace Exceptionless.Core.Messaging.Models;
+namespace Exceptionless.Core.Messaging.Models;
 
 public record ReleaseNotification
 {

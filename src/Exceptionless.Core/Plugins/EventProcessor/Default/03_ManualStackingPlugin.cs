@@ -1,6 +1,6 @@
-﻿using System.Text.Json;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor;
@@ -8,16 +8,16 @@ namespace Exceptionless.Core.Plugins.EventProcessor;
 [Priority(3)]
 public sealed class ManualStackingPlugin : EventProcessorPluginBase
 {
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly ITextSerializer _serializer;
 
-    public ManualStackingPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    public ManualStackingPlugin(ITextSerializer serializer, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
-        _jsonOptions = jsonOptions;
+        _serializer = serializer;
     }
 
     public override Task EventProcessingAsync(EventContext context)
     {
-        var msi = context.Event.GetManualStackingInfo(_jsonOptions);
+        var msi = context.Event.GetManualStackingInfo(_serializer);
         if (msi?.SignatureData is not null)
         {
             foreach (var kvp in msi.SignatureData)

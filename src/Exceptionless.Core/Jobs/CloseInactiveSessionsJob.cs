@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -9,6 +8,7 @@ using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Resilience;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
@@ -20,11 +20,11 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
     private readonly IEventRepository _eventRepository;
     private readonly ICacheClient _cache;
     private readonly ILockProvider _lockProvider;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly ITextSerializer _serializer;
     private DateTime? _lastActivity;
 
     public CloseInactiveSessionsJob(IEventRepository eventRepository, ICacheClient cacheClient,
-        JsonSerializerOptions jsonOptions,
+        ITextSerializer serializer,
         TimeProvider timeProvider,
         IResiliencePolicyProvider resiliencePolicyProvider,
         ILoggerFactory loggerFactory
@@ -33,7 +33,7 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
         _eventRepository = eventRepository;
         _cache = cacheClient;
         _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromMinutes(1), timeProvider, resiliencePolicyProvider, loggerFactory);
-        _jsonOptions = jsonOptions;
+        _serializer = serializer;
     }
 
     protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)
@@ -130,7 +130,7 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
                 allHeartbeatKeys.Add(sessionIdKey);
             }
 
-            var user = session.GetUserIdentity(_jsonOptions);
+            var user = session.GetUserIdentity(_serializer);
             if (!String.IsNullOrWhiteSpace(user?.Identity))
             {
                 userIdentityKey = $"Project:{session.ProjectId}:heartbeat:{user.Identity.ToSHA1()}";

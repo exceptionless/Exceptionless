@@ -7,6 +7,7 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Foundatio.Serializer;
 using Xunit;
 
 namespace Exceptionless.Tests.Repositories;
@@ -17,6 +18,7 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
     private readonly OrganizationData _organizationData;
     private readonly ProjectData _projectData;
     private readonly IProjectRepository _repository;
+    private readonly ITextSerializer _serializer;
 
     public ProjectRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -24,6 +26,7 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
         _projectData = GetService<ProjectData>();
         _cache = GetService<ICacheClient>();
         _repository = GetService<IProjectRepository>();
+        _serializer = GetService<ITextSerializer>();
     }
 
     [Fact]
@@ -137,13 +140,13 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
         var actual = await _repository.GetByIdAsync(project.Id, o => o.Cache());
         Assert.NotNull(actual);
         Assert.Equal(project.Name, actual.Name);
-        var actualToken = actual.GetSlackToken();
+        var actualToken = actual.GetSlackToken(_serializer);
         Assert.Equal(token.AccessToken, actualToken?.AccessToken);
 
         var actualCache = await _cache.GetAsync<ICollection<FindHit<Project>>>("Project:" + project.Id);
         Assert.True(actualCache.HasValue);
         Assert.Equal(project.Name, actualCache.Value.Single().Document.Name);
-        var actualCacheToken = actual.GetSlackToken();
+        var actualCacheToken = actual.GetSlackToken(_serializer);
         Assert.Equal(token.AccessToken, actualCacheToken?.AccessToken);
     }
 }

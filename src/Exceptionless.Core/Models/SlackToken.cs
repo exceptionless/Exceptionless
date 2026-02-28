@@ -1,5 +1,5 @@
-﻿using System.Text.Json;
-using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
+using Foundatio.Serializer;
 
 namespace Exceptionless.Core.Models;
 
@@ -28,19 +28,19 @@ public record SlackMessage
         Text = text;
     }
 
-    [JsonProperty("text")]
+    [JsonPropertyName("text")]
     public string Text { get; init; }
-    [JsonProperty("attachments")]
+    [JsonPropertyName("attachments")]
     public List<SlackAttachment> Attachments { get; init; } = [];
 
     public class SlackAttachment
     {
-        public SlackAttachment(PersistentEvent ev, JsonSerializerOptions jsonOptions)
+        public SlackAttachment(PersistentEvent ev, ITextSerializer serializer)
         {
             TimeStamp = ev.Date.ToUnixTimeSeconds();
 
-            var ud = ev.GetUserDescription(jsonOptions);
-            var ui = ev.GetUserIdentity(jsonOptions);
+            var ud = ev.GetUserDescription(serializer);
+            var ui = ev.GetUserIdentity(serializer);
             Text = ud?.Description;
 
             string? displayName = null;
@@ -67,34 +67,34 @@ public record SlackMessage
             }
         }
 
-        [JsonProperty("title")]
+        [JsonPropertyName("title")]
         public string? Title { get; init; }
-        [JsonProperty("text")]
+        [JsonPropertyName("text")]
         public string? Text { get; init; }
-        [JsonProperty("author_name")]
+        [JsonPropertyName("author_name")]
         public string? AuthorName { get; init; }
-        [JsonProperty("author_link")]
+        [JsonPropertyName("author_link")]
         public string? AuthorLink { get; init; }
-        [JsonProperty("author_icon")]
+        [JsonPropertyName("author_icon")]
         public string? AuthorIcon { get; init; }
-        [JsonProperty("color")]
+        [JsonPropertyName("color")]
         public string Color { get; set; } = "#5E9A00";
-        [JsonProperty("fields")]
+        [JsonPropertyName("fields")]
         public List<SlackAttachmentFields> Fields { get; init; } = [];
-        [JsonProperty("mrkdwn_in")]
+        [JsonPropertyName("mrkdwn_in")]
         public string[] SupportedMarkdownFields { get; init; } = ["text", "fields"];
-        [JsonProperty("ts")]
+        [JsonPropertyName("ts")]
         public long TimeStamp { get; init; }
     }
 
     public record SlackAttachmentFields
     {
-        [JsonProperty("title")]
+        [JsonPropertyName("title")]
         public string Title { get; init; } = null!;
 
-        [JsonProperty("value")]
+        [JsonPropertyName("value")]
         public string? Value { get; init; }
-        [JsonProperty("short")]
+        [JsonPropertyName("short")]
         public bool Short { get; init; }
     }
 }

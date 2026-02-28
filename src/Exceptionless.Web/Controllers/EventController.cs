@@ -26,10 +26,10 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
+using Foundatio.Serializer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
-using Newtonsoft.Json;
 
 namespace Exceptionless.Web.Controllers;
 
@@ -47,7 +47,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     private readonly IValidator<UserDescription> _userDescriptionValidator;
     private readonly FormattingPluginManager _formattingPluginManager;
     private readonly ICacheClient _cache;
-    private readonly JsonSerializerSettings _jsonSerializerSettings;
+    private readonly ITextSerializer _serializer;
     private readonly AppOptions _appOptions;
 
     public EventController(IEventRepository repository,
@@ -75,7 +75,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         _userDescriptionValidator = userDescriptionValidator;
         _formattingPluginManager = formattingPluginManager;
         _cache = cacheClient;
-        _jsonSerializerSettings = jsonSerializerSettings;
+        _serializer = serializer;
         _appOptions = appOptions;
 
         AllowedDateFields.Add(EventIndex.Alias.Date);
@@ -1125,7 +1125,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 charSet = contentTypeHeader.Charset.ToString();
             }
 
-            var stream = new MemoryStream(ev.GetBytes(_jsonSerializerSettings));
+            var stream = new MemoryStream(ev.GetBytes(_serializer));
             await _eventPostService.EnqueueAsync(new EventPost(_appOptions.EnableArchive)
             {
                 ApiVersion = apiVersion,

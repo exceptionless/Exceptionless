@@ -1,7 +1,7 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json.Nodes;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader;
 
@@ -15,12 +15,12 @@ public class V1R850EventUpgrade : PluginBase, IEventUpgraderPlugin
         if (ctx.Version > new Version(1, 0, 0, 850))
             return;
 
-        foreach (var doc in ctx.Documents.OfType<JObject>())
+        foreach (var doc in ctx.Documents.OfType<JsonObject>())
         {
             var current = doc;
             while (current is not null)
             {
-                if (doc["ExtendedData"] is JObject extendedData)
+                if (doc["ExtendedData"] is JsonObject extendedData)
                 {
                     if (extendedData["ExtraExceptionProperties"] is not null)
                         extendedData.Rename("ExtraExceptionProperties", "__ExceptionInfo");
@@ -32,7 +32,7 @@ public class V1R850EventUpgrade : PluginBase, IEventUpgraderPlugin
                         extendedData.Rename("TraceInfo", "TraceLog");
                 }
 
-                current = current["Inner"] as JObject;
+                current = current["Inner"] as JsonObject;
             }
         }
     }

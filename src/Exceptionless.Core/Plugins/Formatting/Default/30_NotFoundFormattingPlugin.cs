@@ -1,7 +1,7 @@
-﻿using System.Text.Json;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.Formatting;
@@ -9,7 +9,7 @@ namespace Exceptionless.Core.Plugins.Formatting;
 [Priority(30)]
 public sealed class NotFoundFormattingPlugin : FormattingPluginBase
 {
-    public NotFoundFormattingPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(jsonOptions, options, loggerFactory) { }
+    public NotFoundFormattingPlugin(ITextSerializer serializer, AppOptions options, ILoggerFactory loggerFactory) : base(serializer, options, loggerFactory) { }
 
     private bool ShouldHandle(PersistentEvent ev)
     {
@@ -38,9 +38,9 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
             return null;
 
         var data = new Dictionary<string, object?> { { "Source", ev.Source } };
-        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_jsonOptions));
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_serializer));
 
-        var ips = ev.GetIpAddresses(_jsonOptions).ToList();
+        var ips = ev.GetIpAddresses(_serializer).ToList();
         if (ips.Count > 0)
             data.Add("IpAddress", ips);
 
@@ -62,7 +62,7 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
             notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
 
         string subject = String.Concat(notificationType, ": ", ev.Source).Truncate(120);
-        var requestInfo = ev.GetRequestInfo(_jsonOptions);
+        var requestInfo = ev.GetRequestInfo(_serializer);
         var data = new Dictionary<string, object?> {
                 { "Url", requestInfo?.GetFullPath(true, true, true) ?? ev.Source?.Truncate(60) }
             };
@@ -84,8 +84,8 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
         if (isCritical)
             notificationType = String.Concat("critical ", notificationType);
 
-        var requestInfo = ev.GetRequestInfo(_jsonOptions);
-        var attachment = new SlackMessage.SlackAttachment(ev, _jsonOptions)
+        var requestInfo = ev.GetRequestInfo(_serializer);
+        var attachment = new SlackMessage.SlackAttachment(ev, _serializer)
         {
             Color = "#BB423F",
             Fields =

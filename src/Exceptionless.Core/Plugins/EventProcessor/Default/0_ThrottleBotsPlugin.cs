@@ -1,11 +1,11 @@
-﻿using System.Text.Json;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Queues;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor;
@@ -16,15 +16,15 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
     private readonly ICacheClient _cache;
     private readonly IQueue<WorkItemData> _workItemQueue;
     private readonly TimeProvider _timeProvider;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly ITextSerializer _serializer;
     private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(5);
 
     public ThrottleBotsPlugin(ICacheClient cacheClient, IQueue<WorkItemData> workItemQueue,
-        JsonSerializerOptions jsonOptions, TimeProvider timeProvider, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+        ITextSerializer serializer, TimeProvider timeProvider, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _cache = cacheClient;
         _workItemQueue = workItemQueue;
-        _jsonOptions = jsonOptions;
+        _serializer = serializer;
         _timeProvider = timeProvider;
     }
 
@@ -38,7 +38,7 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
             return;
 
         // Throttle errors by client ip address to no more than X every 5 minutes.
-        var clientIpAddressGroups = contexts.GroupBy(c => c.Event.GetRequestInfo(_jsonOptions)?.ClientIpAddress);
+        var clientIpAddressGroups = contexts.GroupBy(c => c.Event.GetRequestInfo(_serializer)?.ClientIpAddress);
         foreach (var clientIpAddressGroup in clientIpAddressGroups)
         {
             if (String.IsNullOrEmpty(clientIpAddressGroup.Key) || clientIpAddressGroup.Key.IsPrivateNetwork())
