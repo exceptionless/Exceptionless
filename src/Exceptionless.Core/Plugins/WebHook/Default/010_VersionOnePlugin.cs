@@ -1,7 +1,8 @@
-﻿using System.Text.Json;
+﻿using System.Text.Json.Serialization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.WebHook;
@@ -9,11 +10,11 @@ namespace Exceptionless.Core.Plugins.WebHook;
 [Priority(10)]
 public sealed class VersionOnePlugin : WebHookDataPluginBase
 {
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly ITextSerializer _serializer;
 
-    public VersionOnePlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    public VersionOnePlugin(ITextSerializer serializer, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
-        _jsonOptions = jsonOptions;
+        _serializer = serializer;
     }
 
     public override Task<object?> CreateFromEventAsync(WebHookDataContext ctx)
@@ -21,13 +22,13 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase
         if (!String.Equals(ctx.WebHook.Version, Models.WebHook.KnownVersions.Version1))
             return Task.FromResult<object?>(null);
 
-        var error = ctx.Event?.GetError(_jsonOptions);
+        var error = ctx.Event?.GetError(_serializer);
         if (error is null)
             return Task.FromResult<object?>(null);
 
         var ev = ctx.Event!;
-        var requestInfo = ev.GetRequestInfo(_jsonOptions);
-        var environmentInfo = ev.GetEnvironmentInfo(_jsonOptions);
+        var requestInfo = ev.GetRequestInfo(_serializer);
+        var environmentInfo = ev.GetEnvironmentInfo(_serializer);
 
         return Task.FromResult<object?>(new VersionOneWebHookEvent(_options.BaseURL)
         {
@@ -97,33 +98,61 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase
             _baseUrl = baseUrl;
         }
 
+        [JsonPropertyName("Id")]
         public string Id { get; init; } = null!;
+        [JsonPropertyName("Url")]
         public string Url => String.Concat(_baseUrl, "/event/", Id);
+        [JsonPropertyName("OccurrenceDate")]
         public DateTimeOffset OccurrenceDate { get; init; }
+        [JsonPropertyName("Tags")]
         public TagSet? Tags { get; init; } = null!;
+        [JsonPropertyName("MachineName")]
         public string? MachineName { get; init; }
+        [JsonPropertyName("RequestPath")]
         public string? RequestPath { get; init; }
+        [JsonPropertyName("IpAddress")]
         public string? IpAddress { get; init; }
+        [JsonPropertyName("Message")]
         public string? Message { get; init; } = null!;
+        [JsonPropertyName("Type")]
         public string? Type { get; init; } = null!;
+        [JsonPropertyName("Code")]
         public string? Code { get; init; } = null!;
+        [JsonPropertyName("TargetMethod")]
         public string? TargetMethod { get; init; }
+        [JsonPropertyName("ProjectId")]
         public string ProjectId { get; init; } = null!;
+        [JsonPropertyName("ProjectName")]
         public string ProjectName { get; init; } = null!;
+        [JsonPropertyName("OrganizationId")]
         public string OrganizationId { get; init; } = null!;
+        [JsonPropertyName("OrganizationName")]
         public string OrganizationName { get; init; } = null!;
+        [JsonPropertyName("ErrorStackId")]
         public string ErrorStackId { get; init; } = null!;
+        [JsonPropertyName("ErrorStackStatus")]
         public StackStatus ErrorStackStatus { get; init; }
+        [JsonPropertyName("ErrorStackUrl")]
         public string ErrorStackUrl => String.Concat(_baseUrl, "/stack/", ErrorStackId);
+        [JsonPropertyName("ErrorStackTitle")]
         public string ErrorStackTitle { get; init; } = null!;
+        [JsonPropertyName("ErrorStackDescription")]
         public string? ErrorStackDescription { get; init; } = null!;
+        [JsonPropertyName("ErrorStackTags")]
         public TagSet ErrorStackTags { get; init; } = null!;
+        [JsonPropertyName("TotalOccurrences")]
         public int TotalOccurrences { get; init; }
+        [JsonPropertyName("FirstOccurrence")]
         public DateTime FirstOccurrence { get; init; }
+        [JsonPropertyName("LastOccurrence")]
         public DateTime LastOccurrence { get; init; }
+        [JsonPropertyName("DateFixed")]
         public DateTime? DateFixed { get; init; }
+        [JsonPropertyName("IsNew")]
         public bool IsNew { get; init; }
+        [JsonPropertyName("IsRegression")]
         public bool IsRegression { get; init; }
+        [JsonPropertyName("IsCritical")]
         public bool IsCritical => Tags is not null && Tags.Contains("Critical");
     }
 
@@ -136,26 +165,45 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase
             _baseUrl = baseUrl;
         }
 
+        [JsonPropertyName("Id")]
         public string Id { get; init; } = null!;
+        [JsonPropertyName("Status")]
         public StackStatus Status { get; init; }
+        [JsonPropertyName("Url")]
         public string Url => String.Concat(_baseUrl, "/stack/", Id);
+        [JsonPropertyName("Title")]
         public string Title { get; init; } = null!;
+        [JsonPropertyName("Description")]
         public string? Description { get; init; } = null!;
-
+        [JsonPropertyName("Tags")]
         public TagSet Tags { get; init; } = null!;
+        [JsonPropertyName("RequestPath")]
         public string? RequestPath { get; init; }
+        [JsonPropertyName("Type")]
         public string? Type { get; init; }
+        [JsonPropertyName("TargetMethod")]
         public string? TargetMethod { get; init; }
+        [JsonPropertyName("ProjectId")]
         public string ProjectId { get; init; } = null!;
+        [JsonPropertyName("ProjectName")]
         public string ProjectName { get; init; } = null!;
+        [JsonPropertyName("OrganizationId")]
         public string OrganizationId { get; init; } = null!;
+        [JsonPropertyName("OrganizationName")]
         public string OrganizationName { get; init; } = null!;
+        [JsonPropertyName("TotalOccurrences")]
         public int TotalOccurrences { get; init; }
+        [JsonPropertyName("FirstOccurrence")]
         public DateTime FirstOccurrence { get; init; }
+        [JsonPropertyName("LastOccurrence")]
         public DateTime LastOccurrence { get; init; }
+        [JsonPropertyName("DateFixed")]
         public DateTime? DateFixed { get; init; }
+        [JsonPropertyName("FixedInVersion")]
         public string? FixedInVersion { get; init; }
+        [JsonPropertyName("IsRegression")]
         public bool IsRegression { get; init; }
+        [JsonPropertyName("IsCritical")]
         public bool IsCritical { get; init; }
     }
 }

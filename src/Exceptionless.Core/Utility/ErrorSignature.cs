@@ -1,8 +1,8 @@
 using System.Text;
-using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Foundatio.Serializer;
 
 namespace Exceptionless.Core.Utility;
 
@@ -10,14 +10,14 @@ public class ErrorSignature
 {
     private readonly HashSet<string> _userNamespaces;
     private readonly HashSet<string> _userCommonMethods;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly ITextSerializer _serializer;
     private static readonly string[] _defaultNonUserNamespaces = ["System", "Microsoft"];
     // TODO: Add support for user public key token on signed assemblies
 
-    public ErrorSignature(Error error, JsonSerializerOptions jsonOptions, IEnumerable<string>? userNamespaces = null, IEnumerable<string>? userCommonMethods = null, bool emptyNamespaceIsUserMethod = true, bool shouldFlagSignatureTarget = true)
+    public ErrorSignature(Error error, ITextSerializer serializer, IEnumerable<string>? userNamespaces = null, IEnumerable<string>? userCommonMethods = null, bool emptyNamespaceIsUserMethod = true, bool shouldFlagSignatureTarget = true)
     {
         Error = error ?? throw new ArgumentNullException(nameof(error));
-        _jsonOptions = jsonOptions ?? throw new ArgumentNullException(nameof(jsonOptions));
+        _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
 
         _userNamespaces = userNamespaces is null
             ? []
@@ -180,7 +180,7 @@ public class ErrorSignature
         if (!error.Data.ContainsKey(Error.KnownDataKeys.ExtraProperties))
             return;
 
-        var extraProperties = error.Data.GetValue<Dictionary<string, object>>(Error.KnownDataKeys.ExtraProperties, _jsonOptions);
+        var extraProperties = error.Data.GetValue<Dictionary<string, object>>(Error.KnownDataKeys.ExtraProperties, _serializer);
         if (extraProperties is null)
         {
             error.Data.Remove(Error.KnownDataKeys.ExtraProperties);

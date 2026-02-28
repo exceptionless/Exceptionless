@@ -1,35 +1,34 @@
 ﻿using System.Text;
 using Exceptionless.Core.Models.Data;
-using Newtonsoft.Json;
+using Foundatio.Serializer;
 
 namespace Exceptionless.Core.Extensions;
 
 public static class RequestInfoExtensions
 {
-    public static RequestInfo ApplyDataExclusions(this RequestInfo request, IList<string> exclusions, int maxLength = 1000)
+    public static RequestInfo ApplyDataExclusions(this RequestInfo request, ITextSerializer serializer, IList<string> exclusions, int maxLength = 1000)
     {
         request.Cookies = ApplyExclusions(request.Cookies, exclusions, maxLength);
         request.QueryString = ApplyExclusions(request.QueryString, exclusions, maxLength);
-        request.PostData = ApplyPostDataExclusions(request.PostData, exclusions, maxLength);
+        request.PostData = ApplyPostDataExclusions(request.PostData, serializer, exclusions, maxLength);
 
         return request;
     }
 
-    private static object? ApplyPostDataExclusions(object? data, IEnumerable<string> exclusions, int maxLength)
+    private static object? ApplyPostDataExclusions(object? data, ITextSerializer serializer, IEnumerable<string> exclusions, int maxLength)
     {
         if (data is null)
             return null;
 
         var dictionary = data as Dictionary<string, string>;
-        if (dictionary is null && data is string)
+        if (dictionary is null && data is string json)
         {
-            string json = (string)data;
             if (!json.IsJson())
                 return data;
 
             try
             {
-                dictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
+                dictionary = serializer.Deserialize<Dictionary<string, string>>(json);
             }
             catch (Exception) { }
         }

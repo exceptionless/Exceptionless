@@ -25,6 +25,7 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Foundatio.Serializer;
 using Microsoft.Net.Http.Headers;
 using Xunit;
 using MediaTypeHeaderValue = System.Net.Http.Headers.MediaTypeHeaderValue;
@@ -68,7 +69,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PostEvent_WithValidPayload_EnqueuesAndProcessesEventAsync()
     {
-        var jsonOptions = GetService<JsonSerializerOptions>();
+        var serializer = GetService<ITextSerializer>();
         /* language=json */
         const string json = """{"message":"test","reference_id":"TestReferenceId","@user":{"identity":"Test user","name":null}}""";
         await SendRequestAsync(r => r
@@ -95,12 +96,12 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("test", ev.Message);
         Assert.Equal("TestReferenceId", ev.ReferenceId);
 
-        var identity = ev.GetUserIdentity(jsonOptions);
+        var identity = ev.GetUserIdentity(serializer);
         Assert.NotNull(identity);
         Assert.Equal("Test user", identity.Identity);
         Assert.Null(identity.Name);
         Assert.Null(identity.Name);
-        Assert.Null(ev.GetUserDescription(jsonOptions));
+        Assert.Null(ev.GetUserDescription(serializer));
 
         // post description
         await _eventUserDescriptionQueue.DeleteQueueAsync();
@@ -125,13 +126,13 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal(1, stats.Completed);
 
         ev = await _eventRepository.GetByIdAsync(ev.Id);
-        identity = ev.GetUserIdentity(jsonOptions);
+        identity = ev.GetUserIdentity(serializer);
         Assert.NotNull(identity);
         Assert.Equal("Test user", identity.Identity);
         Assert.Null(identity.Name);
         Assert.Null(identity.Name);
 
-        var description = ev.GetUserDescription(jsonOptions);
+        var description = ev.GetUserDescription(serializer);
         Assert.NotNull(description);
         Assert.Equal("Test Description", description.Description);
         Assert.Equal(TestConstants.UserEmail, description.EmailAddress);
@@ -227,7 +228,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CanPostJsonWithUserInfoAsync()
     {
-        var jsonOptions = GetService<JsonSerializerOptions>();
+        var serializer = GetService<ITextSerializer>();
         /* language=json */
         const string json = """{"message":"test","@user":{"identity":"Test user","name":null}}""";
         await SendRequestAsync(r => r
@@ -253,7 +254,7 @@ public class EventControllerTests : IntegrationTestsBase
         var ev = events.Documents.Single(e => String.Equals(e.Type, Event.KnownTypes.Log));
         Assert.Equal("test", ev.Message);
 
-        var userInfo = ev.GetUserIdentity(jsonOptions);
+        var userInfo = ev.GetUserIdentity(serializer);
         Assert.NotNull(userInfo);
         Assert.Equal("Test user", userInfo.Identity);
         Assert.Null(userInfo.Name);
@@ -1676,7 +1677,7 @@ public class EventControllerTests : IntegrationTestsBase
         await processEventsJob.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
-        var jsonOptions = GetService<JsonSerializerOptions>();
+        var serializer = GetService<ITextSerializer>();
 
         // Assert
         var events = await _eventRepository.GetAllAsync();
@@ -1686,7 +1687,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("Error with mixed data", ev.Message);
 
         // Verify known data is properly deserialized
-        var userInfo = ev.GetUserIdentity(jsonOptions);
+        var userInfo = ev.GetUserIdentity(serializer);
         Assert.NotNull(userInfo);
         Assert.Equal("user@example.com", userInfo.Identity);
         Assert.Equal("Test User", userInfo.Name);

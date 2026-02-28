@@ -1,18 +1,18 @@
-﻿using System.Text.Json;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.Formatting;
 
 public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin
 {
-    protected readonly JsonSerializerOptions _jsonOptions;
+    protected readonly ITextSerializer _serializer;
 
-    public FormattingPluginBase(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    public FormattingPluginBase(ITextSerializer serializer, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
-        _jsonOptions = jsonOptions;
+        _serializer = serializer;
     }
 
     public virtual SummaryData? GetStackSummaryData(Stack stack)
@@ -42,7 +42,7 @@ public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin
 
     protected void AddDefaultSlackFields(PersistentEvent ev, List<SlackMessage.SlackAttachmentFields> attachmentFields, bool includeUrl = true)
     {
-        var requestInfo = ev.GetRequestInfo(_jsonOptions);
+        var requestInfo = ev.GetRequestInfo(_serializer);
         if (requestInfo is not null && includeUrl)
             attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Url", Value = requestInfo.GetFullPath(true, true, true) });
 

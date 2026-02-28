@@ -1,7 +1,7 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json.Nodes;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader;
 
@@ -15,14 +15,14 @@ public class GetVersion : PluginBase, IEventUpgraderPlugin
         if (ctx.Version is not null)
             return;
 
-        if (ctx.Documents.Count == 0 || !ctx.Documents.First().HasValues)
+        if (ctx.Documents.Count == 0 || !ctx.Documents.First().HasValues())
         {
             ctx.Version = new Version();
             return;
         }
 
         var doc = ctx.Documents.First();
-        if (!(doc["ExceptionlessClientInfo"] is JObject { HasValues: true } clientInfo) || clientInfo["Version"] is null)
+        if (doc is not JsonObject docObj || docObj["ExceptionlessClientInfo"] is not JsonObject { Count: > 0 } clientInfo || clientInfo["Version"] is null)
         {
             ctx.Version = new Version();
             return;

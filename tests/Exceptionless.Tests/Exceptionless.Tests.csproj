@@ -8,8 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Exceptionless.RandomData" Version="1.2.2" />
     <PackageReference Include="Foundatio.Xunit.v3" Version="13.0.0-beta3.5" />
-
-    <PackageReference Include="FluentRest.NewtonsoftJson" Version="11.0.0" />
+    <PackageReference Include="FluentRest" Version="11.0.0" />
 
     <PackageReference Include="Aspire.Hosting.Testing" Version="13.1.1" />
     <PackageReference Include="GitHubActionsTestLogger" Version="3.0.1" PrivateAssets="All" />
