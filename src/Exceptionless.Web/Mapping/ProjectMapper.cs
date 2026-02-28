@@ -6,6 +6,7 @@ namespace Exceptionless.Web.Mapping;
 
 /// <summary>
 /// Mapperly-based mapper for Project types.
+/// Computed/populated-later properties are explicitly ignored via MapperIgnoreTarget.
 /// </summary>
 [Mapper(RequiredMappingStrategy = RequiredMappingStrategy.None)]
 public partial class ProjectMapper
@@ -13,6 +14,10 @@ public partial class ProjectMapper
     public partial Project MapToProject(NewProject source);
 
     [MapperIgnoreTarget(nameof(ViewProject.HasSlackIntegration))]
+    [MapperIgnoreTarget(nameof(ViewProject.HasPremiumFeatures))]
+    [MapperIgnoreTarget(nameof(ViewProject.OrganizationName))]
+    [MapperIgnoreTarget(nameof(ViewProject.StackCount))]
+    [MapperIgnoreTarget(nameof(ViewProject.EventCount))]
     private partial ViewProject MapToViewProjectCore(Project source);
 
     public ViewProject MapToViewProject(Project source)

@@ -68,6 +68,43 @@ public sealed class OrganizationMapperTests
     }
 
     [Fact]
+    public void MapToViewOrganization_WithSuspensionCode_MapsEnumToString()
+    {
+        // Arrange
+        var source = new Organization
+        {
+            Id = "org123",
+            Name = "Suspended Org",
+            IsSuspended = true,
+            SuspensionCode = SuspensionCode.Billing
+        };
+
+        // Act
+        var result = _mapper.MapToViewOrganization(source);
+
+        // Assert
+        Assert.Equal("Billing", result.SuspensionCode);
+    }
+
+    [Fact]
+    public void MapToViewOrganization_WithNullSuspensionCode_MapsToNull()
+    {
+        // Arrange
+        var source = new Organization
+        {
+            Id = "org123",
+            Name = "Active Org",
+            SuspensionCode = null
+        };
+
+        // Act
+        var result = _mapper.MapToViewOrganization(source);
+
+        // Assert
+        Assert.Null(result.SuspensionCode);
+    }
+
+    [Fact]
     public void MapToViewOrganizations_WithMultipleOrganizations_MapsAll()
     {
         // Arrange

@@ -15,6 +15,5 @@ public partial class TokenMapper
 
     public partial ViewToken MapToViewToken(Token source);
 
-    public List<ViewToken> MapToViewTokens(IEnumerable<Token> source)
-        => source.Select(MapToViewToken).ToList();
+    public partial List<ViewToken> MapToViewTokens(IEnumerable<Token> source);
 }
