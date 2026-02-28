@@ -1,8 +1,9 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader;
 
@@ -16,7 +17,7 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
         if (ctx.Version > new Version(2, 0))
             return;
 
-        foreach (var doc in ctx.Documents.OfType<JObject>())
+        foreach (var doc in ctx.Documents.OfType<JsonObject>())
         {
             bool isNotFound = doc.GetPropertyStringValue("Code") == "404";
 
@@ -36,15 +37,18 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
             doc.Remove("ExceptionlessClientInfo");
             if (!doc.RemoveIfNullOrEmpty("Tags"))
             {
-                var tags = doc.GetValue("Tags");
-                if (tags is not null && tags.Type == JTokenType.Array)
+                var tags = doc["Tags"];
+                if (tags is JsonArray tagsArray)
                 {
-                    foreach (var tag in tags.ToList())
+                    var tagsToRemove = new List<JsonNode?>();
+                    foreach (var tag in tagsArray)
                     {
-                        string t = tag.ToString();
+                        string? t = tag?.ToString();
                         if (String.IsNullOrEmpty(t) || t.Length > 255)
-                            tag.Remove();
+                            tagsToRemove.Add(tag);
                     }
+                    foreach (var tag in tagsToRemove)
+                        tagsArray.Remove(tag);
                 }
             }
 
@@ -58,7 +62,7 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
 
             doc.RenameAll("ExtendedData", "Data");
 
-            var extendedData = doc.Property("Data") is not null ? doc.Property("Data")!.Value as JObject : null;
+            var extendedData = doc["Data"] as JsonObject;
             if (extendedData is not null)
             {
                 if (!isNotFound)
@@ -73,58 +77,62 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
                 if (extendedData?["__ExceptionInfo"] is not null)
                     extendedData.Remove("__ExceptionInfo");
 
-                doc.Add("Type", new JValue("404"));
+                doc.Add("Type", JsonValue.Create("404"));
             }
             else
             {
-                var error = new JObject();
+                var error = new JsonObject();
 
                 if (!doc.RemoveIfNullOrEmpty("Message"))
-                    error.Add("Message", doc["Message"]!.Value<string>());
+                {
+                    var messageValue = doc["Message"]?.GetValue<string>();
+                    if (messageValue is not null)
+                        error.Add("Message", JsonValue.Create(messageValue));
+                }
 
                 error.MoveOrRemoveIfNullOrEmpty(doc, "Code", "Type", "Inner", "StackTrace", "TargetMethod", "Modules");
 
                 // Copy the exception info from root extended data to the current errors extended data.
                 if (extendedData?["__ExceptionInfo"] is not null)
                 {
-                    error.Add("Data", new JObject());
-                    ((JObject)error["Data"]!).MoveOrRemoveIfNullOrEmpty(extendedData, "__ExceptionInfo");
+                    error.Add("Data", new JsonObject());
+                    ((JsonObject)error["Data"]!).MoveOrRemoveIfNullOrEmpty(extendedData, "__ExceptionInfo");
                 }
 
-                string? id = doc["Id"]?.Value<string>();
+                string? id = doc["Id"]?.GetValue<string>();
                 RenameAndValidateExtraExceptionProperties(id, error);
 
-                var inner = error["Inner"] as JObject;
+                var inner = error["Inner"] as JsonObject;
                 while (inner is not null)
                 {
                     RenameAndValidateExtraExceptionProperties(id, inner);
-                    inner = inner["Inner"] as JObject;
+                    inner = inner["Inner"] as JsonObject;
                 }
 
-                doc.Add("Type", new JValue(isNotFound ? "404" : "error"));
+                doc.Add("Type", JsonValue.Create(isNotFound ? "404" : "error"));
                 doc.Add("@error", error);
             }
 
             string? emailAddress = doc.GetPropertyStringValueAndRemove("UserEmail");
             string? userDescription = doc.GetPropertyStringValueAndRemove("UserDescription");
             if (!String.IsNullOrWhiteSpace(emailAddress) && !String.IsNullOrWhiteSpace(userDescription))
-                doc.Add("@user_description", JObject.FromObject(new UserDescription(emailAddress, userDescription)));
+                doc.Add("@user_description", JsonSerializer.SerializeToNode(new UserDescription(emailAddress, userDescription)));
 
             string? identity = doc.GetPropertyStringValueAndRemove("UserName");
             if (!String.IsNullOrWhiteSpace(identity))
-                doc.Add("@user", JObject.FromObject(new UserInfo(identity)));
+                doc.Add("@user", JsonSerializer.SerializeToNode(new UserInfo(identity)));
 
             doc.RemoveAllIfNullOrEmpty("Data", "GenericArguments", "Parameters");
         }
     }
 
-    private void RenameAndValidateExtraExceptionProperties(string? id, JObject error)
+    private void RenameAndValidateExtraExceptionProperties(string? id, JsonObject error)
     {
-        var extendedData = error?["Data"] as JObject;
+        var extendedData = error["Data"] as JsonObject;
         if (extendedData?["__ExceptionInfo"] is null)
             return;
 
-        string json = extendedData["__ExceptionInfo"]!.ToString();
+        string? json = extendedData["__ExceptionInfo"]?.ToString();
         extendedData.Remove("__ExceptionInfo");
 
         if (String.IsNullOrWhiteSpace(json))
@@ -136,20 +144,25 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
             return;
         }
 
-        var ext = new JObject();
+        var ext = new JsonObject();
         try
         {
-            var extraProperties = JObject.Parse(json);
-            foreach (var property in extraProperties.Properties())
+            var extraProperties = JsonNode.Parse(json) as JsonObject;
+            if (extraProperties is not null)
             {
-                if (property.IsNullOrEmpty())
-                    continue;
+                foreach (var property in extraProperties.ToList())
+                {
+                    if (property.Value.IsNullOrEmpty())
+                        continue;
 
-                string dataKey = property.Name;
-                if (extendedData[dataKey] is not null)
-                    dataKey = "_" + dataKey;
+                    string dataKey = property.Key;
+                    if (extendedData[dataKey] is not null)
+                        dataKey = "_" + dataKey;
 
-                ext.Add(dataKey, property.Value);
+                    // Need to detach the node before adding to another parent
+                    extraProperties.Remove(property.Key);
+                    ext.Add(dataKey, property.Value);
+                }
             }
         }
         catch (Exception) { }

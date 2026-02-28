@@ -1,3 +1,6 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Xunit;
@@ -8,11 +11,13 @@ public sealed class EventUpgraderTests : TestWithServices
 {
     private readonly EventUpgraderPluginManager _upgrader;
     private readonly EventParserPluginManager _parser;
+    private readonly JsonSerializerOptions _jsonOptions;
 
     public EventUpgraderTests(ITestOutputHelper output) : base(output)
     {
         _upgrader = GetService<EventUpgraderPluginManager>();
         _parser = GetService<EventParserPluginManager>();
+        _jsonOptions = GetService<JsonSerializerOptions>();
     }
 
     [Theory]
@@ -24,9 +29,12 @@ public sealed class EventUpgraderTests : TestWithServices
 
         _upgrader.Upgrade(ctx);
         string expectedContent = File.ReadAllText(Path.ChangeExtension(errorFilePath, ".expected.json"));
-        Assert.Equal(expectedContent, ctx.Documents.First?.ToString());
+        var expected = JsonNode.Parse(expectedContent);
+        var actual = JsonNode.Parse(ctx.Documents.First().ToFormattedString(_jsonOptions));
+        Assert.True(JsonNode.DeepEquals(expected, actual),
+            $"File: {Path.GetFileName(errorFilePath)}\nExpected:\n{expected?.ToJsonString(new JsonSerializerOptions { WriteIndented = true })}\n\nActual:\n{actual?.ToJsonString(new JsonSerializerOptions { WriteIndented = true })}");
 
-        var events = _parser.ParseEvents(ctx.Documents.ToString(), 2, "exceptionless/2.0.0.0");
+        var events = _parser.ParseEvents(ctx.Documents.ToFormattedString(_jsonOptions), 2, "exceptionless/2.0.0.0");
         Assert.Single(events);
     }
 

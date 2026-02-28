@@ -1,12 +1,7 @@
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Services;
-using Exceptionless.Serializer;
-using Foundatio.Repositories.Extensions;
 using Foundatio.Serializer;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Exceptionless.Tests.Serializer;
@@ -21,36 +16,40 @@ public class SerializerTests : TestWithServices
     }
 
     [Fact]
-    public void CanDeserializeEventWithUnknownNamesAndProperties()
+    public void CanDeserializeEventWithData()
     {
-        const string json = @"{""tags"":[""One"",""Two""],""reference_id"":""12"",""Message"":""Hello"",""SomeString"":""Hi"",""SomeBool"":false,""SomeNum"":1,""UnknownProp"":{""Blah"":""SomeVal""},""Some"":{""Blah"":""SomeVal""},""@error"":{""Message"":""SomeVal"",""SomeProp"":""SomeVal""},""Some2"":""{\""Blah\"":\""SomeVal\""}"",""UnknownSerializedProp"":""{\""Blah\"":\""SomeVal\""}""}";
-        var settings = new JsonSerializerSettings();
-        var knownDataTypes = new Dictionary<string, Type>
-        {
-            { "Some", typeof(SomeModel) },
-            { "Some2", typeof(SomeModel) },
-            { Event.KnownDataKeys.Error, typeof(Error) }
-        };
-        settings.Converters.Add(new DataObjectConverter<Event>(_logger, knownDataTypes));
-        settings.Converters.Add(new DataObjectConverter<Error>(_logger));
+        // Arrange
+        /* language=json */
+        const string json = """{"message":"Hello","data":{"Blah":"SomeVal"}}""";
 
-        var ev = json.FromJson<Event>(settings);
+        // Act
+        var ev = _serializer.Deserialize<Event>(json);
+
+        // Assert
         Assert.NotNull(ev?.Data);
+        Assert.Single(ev.Data);
+        Assert.Equal("Hello", ev.Message);
+        Assert.Equal("SomeVal", ev.Data["Blah"]);
+    }
 
-        Assert.Equal(8, ev.Data.Count);
-        Assert.Equal("Hi", ev.Data.GetString("SomeString"));
-        Assert.False(ev.Data.GetBoolean("SomeBool"));
-        Assert.Equal(1L, ev.Data["SomeNum"]);
-        Assert.Equal(typeof(JObject), ev.Data["UnknownProp"]?.GetType());
-        Assert.Equal(typeof(JObject), ev.Data["UnknownSerializedProp"]?.GetType());
-        Assert.Equal("SomeVal", (string)((dynamic)ev.Data["UnknownProp"]!)?.Blah!);
-        Assert.Equal(typeof(SomeModel), ev.Data["Some"]?.GetType());
-        Assert.Equal(typeof(SomeModel), ev.Data["Some2"]?.GetType());
-        Assert.Equal("SomeVal", (ev.Data["Some"] as SomeModel)?.Blah);
-        Assert.Equal(typeof(Error), ev.Data[Event.KnownDataKeys.Error]?.GetType());
-        Assert.Equal("SomeVal", ((Error)ev.Data[Event.KnownDataKeys.Error]!)?.Message);
-        Assert.Single(((Error)ev.Data[Event.KnownDataKeys.Error]!)?.Data!);
-        Assert.Equal("SomeVal", ((Error)ev.Data[Event.KnownDataKeys.Error]!)?.Data?["SomeProp"]);
+    [Fact]
+    public void CanRoundTripEventWithUnknownProperties()
+    {
+        // Arrange
+        /* language=json */
+        const string json = """{"tags":["One","Two"],"reference_id":"12","message":"Hello","data":{"SomeString":"Hi","SomeBool":false,"SomeNum":1}}""";
+
+        // Act
+        var ev = _serializer.Deserialize<Event>(json);
+        string roundTrippedJson = _serializer.SerializeToString(ev);
+        var roundTripped = _serializer.Deserialize<Event>(roundTrippedJson);
+
+        // Assert
+        Assert.NotNull(ev?.Data);
+        Assert.Equal(3, ev.Data.Count);
+        Assert.Equal("Hi", ev.Data["SomeString"]);
+        Assert.Equal(false, ev.Data["SomeBool"]);
+        Assert.Equal(1, ev.Data["SomeNum"]);
         Assert.Equal("Hello", ev.Message);
         Assert.NotNull(ev.Tags);
         Assert.Equal(2, ev.Tags.Count);
@@ -58,55 +57,41 @@ public class SerializerTests : TestWithServices
         Assert.Contains("Two", ev.Tags);
         Assert.Equal("12", ev.ReferenceId);
 
-        const string expectedjson = @"{""Tags"":[""One"",""Two""],""Message"":""Hello"",""Data"":{""SomeString"":""Hi"",""SomeBool"":false,""SomeNum"":1,""UnknownProp"":{""Blah"":""SomeVal""},""Some"":{""Blah"":""SomeVal""},""@error"":{""Modules"":[],""Message"":""SomeVal"",""Data"":{""SomeProp"":""SomeVal""},""StackTrace"":[]},""Some2"":{""Blah"":""SomeVal""},""UnknownSerializedProp"":{""Blah"":""SomeVal""}},""ReferenceId"":""12""}";
-        string newjson = ev.ToJson(Formatting.None, new JsonSerializerSettings { DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore });
-        Assert.Equal(expectedjson, newjson);
+        // Verify round-trip preserves data
+        Assert.NotNull(roundTripped);
+        Assert.Equal(ev.Message, roundTripped.Message);
+        Assert.Equal(ev.ReferenceId, roundTripped.ReferenceId);
+        Assert.Equal(ev.Tags, roundTripped.Tags);
+        Assert.Equal(ev.Data.Count, roundTripped.Data?.Count);
     }
 
     [Fact]
-    public void CanDeserializeEventWithInvalidKnownDataTypes()
+    public void CanRoundTripEventWithKnownDataTypes()
     {
-        const string json = @"{""Message"":""Hello"",""Some"":""{\""Blah\"":\""SomeVal\""}"",""@Some"":""{\""Blah\"":\""SomeVal\""}""}";
-        const string jsonWithInvalidDataType = @"{""Message"":""Hello"",""@Some"":""Testing"",""@string"":""Testing""}";
+        // Arrange - Event with known data types (error, request info)
+        var ev = new Event
+        {
+            Message = "Test error",
+            Type = Event.KnownTypes.Error,
+            Data = new DataDictionary
+            {
+                { Event.KnownDataKeys.Error, new Error { Message = "Something went wrong", Type = "System.Exception" } },
+                { Event.KnownDataKeys.RequestInfo, new RequestInfo { HttpMethod = "GET", Path = "/api/test" } }
+            }
+        };
 
-        var settings = new JsonSerializerSettings();
-        var knownDataTypes = new Dictionary<string, Type> {
-                { "Some", typeof(SomeModel) },
-                { "@Some", typeof(SomeModel) },
-                { "_@Some", typeof(SomeModel) },
-                { "@string", typeof(string) }
-            };
-        settings.Converters.Add(new DataObjectConverter<Event>(_logger, knownDataTypes));
+        // Act
+        string json = _serializer.SerializeToString(ev);
+        var roundTripped = _serializer.Deserialize<Event>(json);
 
-        var ev = json.FromJson<Event>(settings);
-        Assert.NotNull(ev?.Data);
-        Assert.Equal(2, ev.Data.Count);
-        Assert.True(ev.Data.ContainsKey("Some"));
-        Assert.Equal("SomeVal", (ev.Data["Some"] as SomeModel)?.Blah);
-        Assert.True(ev.Data.ContainsKey("@Some"));
-        Assert.Equal("SomeVal", (ev.Data["@Some"] as SomeModel)?.Blah);
-
-        ev = jsonWithInvalidDataType.FromJson<Event>(settings);
-        Assert.NotNull(ev?.Data);
-        Assert.Equal(2, ev.Data.Count);
-        Assert.True(ev.Data.ContainsKey("_@Some1"));
-        Assert.Equal("Testing", ev.Data["_@Some1"] as string);
-        Assert.True(ev.Data.ContainsKey("@string"));
-        Assert.Equal("Testing", ev.Data["@string"] as string);
-    }
-
-    [Fact]
-    public void CanDeserializeEventWithData()
-    {
-        const string json = @"{""Message"":""Hello"",""Data"":{""Blah"":""SomeVal""}}";
-        var settings = new JsonSerializerSettings();
-        settings.Converters.Add(new DataObjectConverter<Event>(_logger));
-
-        var ev = json.FromJson<Event>(settings);
-        Assert.NotNull(ev?.Data);
-        Assert.Single(ev.Data);
-        Assert.Equal("Hello", ev.Message);
-        Assert.Equal("SomeVal", ev.Data["Blah"]);
+        // Assert
+        Assert.NotNull(roundTripped);
+        Assert.Equal(ev.Message, roundTripped.Message);
+        Assert.Equal(ev.Type, roundTripped.Type);
+        Assert.NotNull(roundTripped.Data);
+        Assert.Equal(2, roundTripped.Data.Count);
+        Assert.True(roundTripped.Data.ContainsKey(Event.KnownDataKeys.Error));
+        Assert.True(roundTripped.Data.ContainsKey(Event.KnownDataKeys.RequestInfo));
     }
 
     [Fact]
@@ -131,6 +116,7 @@ public class SerializerTests : TestWithServices
     [Fact]
     public void CanDeserializeProject()
     {
+        /* language=json */
         string json = "{\"last_event_date_utc\":\"2020-10-18T20:54:04.3457274+01:00\", \"created_utc\":\"0001-01-01T00:00:00\",\"updated_utc\":\"2020-09-21T04:41:32.7458321Z\"}";
 
         var model = _serializer.Deserialize<Project>(json);
@@ -332,9 +318,4 @@ public class SerializerTests : TestWithServices
         public string Name { get; set; } = "";
         public int Count { get; set; }
     }
-}
-
-public record SomeModel
-{
-    public required string Blah { get; set; }
 }

@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Exceptionless.Core.Models;
@@ -90,22 +91,50 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
     }
 
     /// <summary>
-    /// Reads a JSON number, preferring <see cref="long"/> for integers and <see cref="double"/> for decimals.
+    /// Reads a JSON number, preserving the original representation (integer vs floating-point).
     /// </summary>
+    /// <remarks>
+    /// <para>This method preserves data integrity by checking the raw JSON text to determine
+    /// if a number was written with a decimal point (e.g., <c>0.0</c>) vs as an integer (<c>0</c>).</para>
+    /// <para>This is critical because:</para>
+    /// <list type="bullet">
+    ///   <item><description>User data must be preserved exactly as provided</description></item>
+    ///   <item><description><c>TryGetInt64</c> would succeed for <c>0.0</c> since 0.0 == 0 mathematically</description></item>
+    ///   <item><description>Serializing back would lose the decimal representation</description></item>
+    /// </list>
+    /// </remarks>
     private static object ReadNumber(ref Utf8JsonReader reader)
     {
-        // Try smallest to largest integer types first for optimal boxing
+        // Check the raw text to preserve decimal vs integer representation
+        // This is critical for data integrity - 0.0 should stay as double, not become 0L
+        ReadOnlySpan<byte> rawValue = reader.HasValueSequence
+            ? reader.ValueSequence.ToArray()
+            : reader.ValueSpan;
+
+        // If the raw text contains a decimal point, treat as floating-point
+        if (rawValue.Contains((byte)'.'))
+        {
+            // Try decimal for precise values (e.g., financial data) before double
+            if (reader.TryGetDecimal(out decimal d))
+                return d;
+
+            // Fall back to double for floating-point
+            return reader.GetDouble();
+        }
+
+        // No decimal point - this is an integer
+        // Try int32 first for smaller values, then long for larger integers
         if (reader.TryGetInt32(out int i))
             return i;
 
         if (reader.TryGetInt64(out long l))
             return l;
 
-        // Try decimal for precise values (e.g., financial data) before double
-        if (reader.TryGetDecimal(out decimal d))
-            return d;
+        // For very large integers, try decimal first to preserve precision
+        if (reader.TryGetDecimal(out decimal dec))
+            return dec;
 
-        // Fall back to double for floating-point
+        // Fall back to double only if decimal also fails
         return reader.GetDouble();
     }
 

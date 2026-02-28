@@ -24,7 +24,6 @@ using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
-using Exceptionless.Serializer;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Extensions.Hosting.Jobs;
@@ -53,27 +52,7 @@ public class Bootstrapper
 {
     public static void RegisterServices(IServiceCollection services, AppOptions appOptions)
     {
-        // PERF: Work towards getting rid of JSON.NET.
-        Newtonsoft.Json.JsonConvert.DefaultSettings = () => new Newtonsoft.Json.JsonSerializerSettings
-        {
-            DateParseHandling = Newtonsoft.Json.DateParseHandling.DateTimeOffset
-        };
-
-        services.AddSingleton<Newtonsoft.Json.Serialization.IContractResolver>(_ => GetJsonContractResolver());
-        services.AddSingleton<Newtonsoft.Json.JsonSerializerSettings>(s =>
-        {
-            // NOTE: These settings may need to be synced in the Elastic Configuration.
-            var settings = new Newtonsoft.Json.JsonSerializerSettings
-            {
-                MissingMemberHandling = Newtonsoft.Json.MissingMemberHandling.Ignore,
-                DateParseHandling = Newtonsoft.Json.DateParseHandling.DateTimeOffset,
-                ContractResolver = s.GetRequiredService<Newtonsoft.Json.Serialization.IContractResolver>()
-            };
-
-            settings.AddModelConverters(s.GetRequiredService<ILogger<Bootstrapper>>());
-            return settings;
-        });
-
+        // Register System.Text.Json options with Exceptionless defaults (snake_case, null handling)
         services.AddSingleton(_ => new JsonSerializerOptions().ConfigureExceptionlessDefaults());
 
         services.AddSingleton<ISerializer>(s => s.GetRequiredService<ITextSerializer>());
@@ -276,13 +255,6 @@ public class Bootstrapper
 
         var logger = loggerFactory.CreateLogger<Bootstrapper>();
         logger.LogWarning("Jobs running in process");
-    }
-
-    public static DynamicTypeContractResolver GetJsonContractResolver()
-    {
-        var resolver = new DynamicTypeContractResolver(new LowerCaseUnderscorePropertyNamesContractResolver());
-        resolver.UseDefaultResolverFor(typeof(DataDictionary), typeof(SettingsDictionary), typeof(VersionOnePlugin.VersionOneWebHookStack), typeof(VersionOnePlugin.VersionOneWebHookEvent));
-        return resolver;
     }
 
     private static IQueue<T> CreateQueue<T>(IServiceProvider container, TimeSpan? workItemTimeout = null) where T : class

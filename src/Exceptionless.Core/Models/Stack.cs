@@ -5,7 +5,6 @@ using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 using Exceptionless.Core.Attributes;
 using Foundatio.Repositories.Models;
-using Newtonsoft.Json.Converters;
 
 namespace Exceptionless.Core.Models;
 
@@ -131,7 +130,6 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
-[Newtonsoft.Json.JsonConverter(typeof(StringEnumConverter))]
 public enum StackStatus
 {
     [JsonStringEnumMemberName("open")]
