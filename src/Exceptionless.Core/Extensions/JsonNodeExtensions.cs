@@ -1,7 +1,5 @@
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.Unicode;
 
 namespace Exceptionless.Core.Extensions;
 
@@ -11,28 +9,6 @@ namespace Exceptionless.Core.Extensions;
 /// </summary>
 public static class JsonNodeExtensions
 {
-    /// <summary>
-    /// XSS-safe encoder for JSON output formatting.
-    /// This encoder ensures proper XSS protection while allowing Unicode characters
-    /// for internationalization support.
-    ///
-    /// Security features:
-    /// - HTML-sensitive characters (&lt;, &gt;, &amp;) are escaped for XSS protection
-    /// - Single quotes are escaped as \u0027 (per ECMAScript spec)
-    /// - Control characters are escaped for security
-    /// </summary>
-    private static readonly JavaScriptEncoder SafeJsonEncoder = JavaScriptEncoder.Create(new TextEncoderSettings(UnicodeRanges.All));
-
-    /// <summary>
-    /// JSON options with safe XSS encoding for tests.
-    /// Validates that dangerous characters (&lt;, &gt;, &amp;, ') are properly escaped.
-    /// Production code should use <see cref="JsonSerializerOptions"/> from DI.
-    /// </summary>
-    internal static readonly JsonSerializerOptions SafeSerializerOptions = new()
-    {
-        Encoder = SafeJsonEncoder
-    };
-
     /// <summary>
     /// Checks if a JsonNode is null or empty (no values for objects/arrays).
     /// </summary>
@@ -192,11 +168,9 @@ public static class JsonNodeExtensions
     /// </summary>
     public static void MoveOrRemoveIfNullOrEmpty(this JsonObject target, JsonObject source, params string[] names)
     {
-        foreach (string name in names)
+        foreach (string name in names.Where(source.ContainsKey))
         {
-            if (!source.TryGetPropertyValue(name, out var value))
-                continue;
-
+            source.TryGetPropertyValue(name, out var value);
             bool isNullOrEmpty = value.IsNullOrEmpty();
             source.Remove(name);
 
@@ -222,7 +196,7 @@ public static class JsonNodeExtensions
             obj.Rename(currentName, newName);
         }
 
-        return true;
+        return objectsWithProperty.Count > 0;
     }
 
     /// <summary>
@@ -294,14 +268,6 @@ public static class JsonNodeExtensions
     }
 
     /// <summary>
-    /// Converts an object to a JsonNode using System.Text.Json serialization.
-    /// </summary>
-    public static JsonNode? ToJsonNode<T>(T value, JsonSerializerOptions options)
-    {
-        return JsonSerializer.SerializeToNode(value, options);
-    }
-
-    /// <summary>
     /// Checks if a JsonNode has any values (for objects: has properties, for arrays: has items).
     /// </summary>
     public static bool HasValues(this JsonNode? node)
@@ -329,14 +295,6 @@ public static class JsonNodeExtensions
             return null;
 
         return array.Deserialize<List<T>>(options);
-    }
-
-    /// <summary>
-    /// Creates a JsonValue from a primitive value.
-    /// </summary>
-    public static JsonValue? CreateValue<T>(T value)
-    {
-        return JsonValue.Create(value);
     }
 
     /// <summary>

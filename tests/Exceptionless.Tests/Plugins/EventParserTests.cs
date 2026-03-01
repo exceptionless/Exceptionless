@@ -54,14 +54,21 @@ public sealed class EventParserTests : TestWithServices
 
         var events = _parser.ParseEvents(json, 2, "exceptionless/2.0.0.0");
         Assert.Single(events);
+        var ev = events.First();
 
-        // Verify parsed event can round-trip through STJ serialization
-        string serialized = _serializer.SerializeToString(events.First());
+        // Verify round-trip: parse → serialize → deserialize preserves all data.
+        // Must deserialize as PersistentEvent (same type the parser produces) so
+        // PersistentEvent-specific properties don't leak into Data via JsonExtensionData.
+        string serialized = _serializer.SerializeToString(ev);
         Assert.NotNull(serialized);
-        var roundTripped = _serializer.Deserialize<Event>(serialized);
+        var roundTripped = _serializer.Deserialize<PersistentEvent>(serialized);
         Assert.NotNull(roundTripped);
-        Assert.Equal(events.First().Type, roundTripped.Type);
-        Assert.Equal(events.First().Message, roundTripped.Message);
+        Assert.Equal(ev.Type, roundTripped.Type);
+        Assert.Equal(ev.Message, roundTripped.Message);
+        Assert.Equal(ev.Source, roundTripped.Source);
+        Assert.Equal(ev.ReferenceId, roundTripped.ReferenceId);
+        Assert.Equal(ev.Tags?.Count ?? 0, roundTripped.Tags?.Count ?? 0);
+        Assert.Equal(ev.Data?.Count ?? 0, roundTripped.Data?.Count ?? 0);
     }
 
     [Theory]

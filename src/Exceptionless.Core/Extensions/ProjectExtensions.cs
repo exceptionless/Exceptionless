@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.Json;
 using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Serializer;
@@ -58,9 +59,9 @@ public static class ProjectExtensions
         {
             return project.Data.GetValue<SlackToken>(Project.KnownDataKeys.SlackToken, serializer);
         }
-        catch (Exception)
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
         {
-            // Ignored
+            // Ignored — data may be stored in an incompatible format
         }
 
         return null;
