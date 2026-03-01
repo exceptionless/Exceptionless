@@ -59,11 +59,19 @@ public sealed class ElasticSystemTextJsonSerializer : IElasticsearchSerializer
         options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
         options.WriteIndented = writeIndented;
 
-        // Insert Elasticsearch converters at the beginning for priority
+        // Replace the default ObjectToInferredTypesConverter with one that returns Int64
+        // for all integers, matching JSON.NET DataObjectConverter behavior. This ensures
+        // Event.Data values round-trip through Elasticsearch with consistent types.
+        var defaultConverter = options.Converters.FirstOrDefault(c => c is ObjectToInferredTypesConverter);
+        if (defaultConverter is not null)
+            options.Converters.Remove(defaultConverter);
+        options.Converters.Insert(0, new ObjectToInferredTypesConverter(preferInt64: true));
+
+        // Insert Elasticsearch converters for priority
         // Order matters: more specific converters should come first
-        options.Converters.Insert(0, new DynamicDictionaryConverter());
-        options.Converters.Insert(1, new Iso8601DateTimeOffsetConverter());
-        options.Converters.Insert(2, new Iso8601DateTimeConverter());
+        options.Converters.Insert(1, new DynamicDictionaryConverter());
+        options.Converters.Insert(2, new Iso8601DateTimeOffsetConverter());
+        options.Converters.Insert(3, new Iso8601DateTimeConverter());
 
         return options;
     }
@@ -79,8 +87,11 @@ public sealed class ElasticSystemTextJsonSerializer : IElasticsearchSerializer
         if (IsEmptyStream(stream))
             return null;
 
-        var buffer = ReadStreamToSpan(stream);
-        return JsonSerializer.Deserialize(buffer, type, _optionsCompact.Value);
+        // Fast path: MemoryStream with accessible buffer avoids buffering
+        if (stream is MemoryStream ms && ms.TryGetBuffer(out var segment))
+            return JsonSerializer.Deserialize(segment.AsSpan((int)ms.Position), type, _optionsCompact.Value);
+
+        return JsonSerializer.Deserialize(stream, type, _optionsCompact.Value);
     }
 
     /// <inheritdoc />
@@ -89,15 +100,22 @@ public sealed class ElasticSystemTextJsonSerializer : IElasticsearchSerializer
         if (IsEmptyStream(stream))
             return default;
 
-        var buffer = ReadStreamToSpan(stream);
-        return JsonSerializer.Deserialize<T>(buffer, _optionsCompact.Value);
+        // Fast path: MemoryStream with accessible buffer avoids buffering
+        if (stream is MemoryStream ms && ms.TryGetBuffer(out var segment))
+            return JsonSerializer.Deserialize<T>(segment.AsSpan((int)ms.Position), _optionsCompact.Value);
+
+        return JsonSerializer.Deserialize<T>(stream, _optionsCompact.Value);
     }
 
     /// <inheritdoc />
     public void Serialize<T>(T data, Stream stream, SerializationFormatting formatting = SerializationFormatting.None)
     {
-        using var writer = new Utf8JsonWriter(stream);
         var options = GetOptions(formatting);
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions
+        {
+            Indented = formatting == SerializationFormatting.Indented,
+            Encoder = options.Encoder
+        });
 
         if (data is null)
         {
@@ -153,31 +171,10 @@ public sealed class ElasticSystemTextJsonSerializer : IElasticsearchSerializer
 
     #endregion
 
-    #region Stream Helpers
-
     private static bool IsEmptyStream(Stream? stream)
     {
         return stream is null || stream == Stream.Null || (stream.CanSeek && stream.Length == 0);
     }
-
-    private static ReadOnlySpan<byte> ReadStreamToSpan(Stream stream)
-    {
-        // Fast path: if already a MemoryStream with accessible buffer, use it directly
-        if (stream is MemoryStream ms && ms.TryGetBuffer(out var segment))
-        {
-            return segment.AsSpan();
-        }
-
-        // Slow path: copy to new buffer
-        using var buffer = stream.CanSeek
-            ? new MemoryStream((int)stream.Length)
-            : new MemoryStream();
-
-        stream.CopyTo(buffer);
-        return buffer.TryGetBuffer(out var seg) ? seg.AsSpan() : buffer.ToArray();
-    }
-
-    #endregion
 }
 
 #region Elasticsearch-Specific Converters

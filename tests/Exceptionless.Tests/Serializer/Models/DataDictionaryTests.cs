@@ -391,7 +391,7 @@ public class DataDictionaryTests : TestWithServices
         // Assert
         Assert.NotNull(deserialized);
         Assert.Equal("hello", deserialized["string_value"]);
-        Assert.Equal(42, deserialized["int_value"]); // JSON integers deserialize to int when they fit
+        Assert.Equal(42, deserialized["int_value"]);
         Assert.True(deserialized["bool_value"] as bool?);
     }
 
@@ -584,7 +584,7 @@ public class DataDictionaryTests : TestWithServices
         Assert.Equal("user@test.com", userInfo.Identity);
 
         Assert.Equal("1.0.0", deserialized["@version"]);
-        Assert.Equal(42, deserialized["count"]); // JSON integers deserialize to int when they fit
+        Assert.Equal(42, deserialized["count"]);
         Assert.True(deserialized["enabled"] as bool?);
     }
 
@@ -613,7 +613,7 @@ public class DataDictionaryTests : TestWithServices
         Assert.Equal("user@test.com", result.Identity);
         Assert.NotNull(result.Data);
         Assert.Equal("custom_value", result.Data["custom_field"]);
-        Assert.Equal(100, result.Data["score"]); // JSON integers deserialize to int when they fit
+        Assert.Equal(100, result.Data["score"]);
     }
 
     [Fact]

@@ -150,11 +150,8 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
             var extraProperties = JsonNode.Parse(json) as JsonObject;
             if (extraProperties is not null)
             {
-                foreach (var property in extraProperties.ToList())
+                foreach (var property in extraProperties.ToList().Where(p => !p.Value.IsNullOrEmpty()))
                 {
-                    if (property.Value.IsNullOrEmpty())
-                        continue;
-
                     string dataKey = property.Key;
                     if (extendedData[dataKey] is not null)
                         dataKey = "_" + dataKey;
@@ -165,7 +162,7 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
                 }
             }
         }
-        catch (Exception) { }
+        catch (JsonException) { }
 
         if (ext.IsNullOrEmpty())
             return;

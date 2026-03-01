@@ -78,7 +78,7 @@ public static class DataDictionaryExtensions
                 if (result is not null)
                     return result;
             }
-            catch
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
             {
                 // Ignored - fall through to next handler
             }
@@ -94,7 +94,7 @@ public static class DataDictionaryExtensions
                 if (result is not null)
                     return result;
             }
-            catch
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
             {
                 // Ignored - fall through to next handler
             }

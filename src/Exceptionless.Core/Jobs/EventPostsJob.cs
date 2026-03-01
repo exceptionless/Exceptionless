@@ -302,7 +302,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
         {
             try
             {
-                var stream = new MemoryStream(ev.GetBytes(_serializer));
+                using var stream = new MemoryStream(ev.GetBytes(_serializer));
 
                 // Put this single event back into the queue so we can retry it separately.
                 await _eventPostService.EnqueueAsync(new EventPost(false)

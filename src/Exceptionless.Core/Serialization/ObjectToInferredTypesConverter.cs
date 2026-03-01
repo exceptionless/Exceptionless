@@ -18,7 +18,7 @@ namespace Exceptionless.Core.Serialization;
 /// </para>
 /// <list type="bullet">
 ///   <item><description><c>true</c>/<c>false</c> → <see cref="bool"/></description></item>
-///   <item><description>Numbers → <see cref="long"/> (if fits) or <see cref="double"/></description></item>
+///   <item><description>Numbers → <see cref="int"/> (if fits), <see cref="long"/>, or <see cref="decimal"/>; with <c>preferInt64</c>, always <see cref="long"/> for integers and <see cref="double"/> for floats</description></item>
 ///   <item><description>Strings with ISO 8601 date format → <see cref="DateTimeOffset"/></description></item>
 ///   <item><description>Other strings → <see cref="string"/></description></item>
 ///   <item><description><c>null</c> → <c>null</c></description></item>
@@ -44,6 +44,25 @@ namespace Exceptionless.Core.Serialization;
 /// <seealso href="https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/converters-how-to#deserialize-inferred-types-to-object-properties"/>
 public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
 {
+    private readonly bool _preferInt64;
+
+    /// <summary>
+    /// Initializes a new instance with default settings (integers that fit Int32 are returned as <see cref="int"/>).
+    /// </summary>
+    public ObjectToInferredTypesConverter() : this(preferInt64: false) { }
+
+    /// <summary>
+    /// Initializes a new instance with configurable integer handling.
+    /// </summary>
+    /// <param name="preferInt64">
+    /// When <c>true</c>, all integers are returned as <see cref="long"/> to match JSON.NET behavior.
+    /// Used by the Elasticsearch serializer to maintain compatibility with <c>DataObjectConverter</c>.
+    /// </param>
+    public ObjectToInferredTypesConverter(bool preferInt64)
+    {
+        _preferInt64 = preferInt64;
+    }
+
     /// <inheritdoc />
     public override object? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
@@ -103,7 +122,7 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
     ///   <item><description>Serializing back would lose the decimal representation</description></item>
     /// </list>
     /// </remarks>
-    private static object ReadNumber(ref Utf8JsonReader reader)
+    private object ReadNumber(ref Utf8JsonReader reader)
     {
         // Check the raw text to preserve decimal vs integer representation
         // This is critical for data integrity - 0.0 should stay as double, not become 0L
@@ -111,31 +130,37 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
             ? reader.ValueSequence.ToArray()
             : reader.ValueSpan;
 
-        // If the raw text contains a decimal point, treat as floating-point
-        if (rawValue.Contains((byte)'.'))
+        // If the raw text contains a decimal point or exponent, treat as floating-point
+        if (rawValue.Contains((byte)'.') || rawValue.Contains((byte)'e') || rawValue.Contains((byte)'E'))
         {
-            // Try decimal for precise values (e.g., financial data) before double
-            if (reader.TryGetDecimal(out decimal d))
-                return d;
+            if (_preferInt64)
+                return reader.GetDouble();
 
-            // Fall back to double for floating-point
-            return reader.GetDouble();
+            return reader.GetDecimal();
         }
 
         // No decimal point - this is an integer
-        // Try int32 first for smaller values, then long for larger integers
-        if (reader.TryGetInt32(out int i))
-            return i;
+        if (_preferInt64)
+        {
+            // Match JSON.NET DataObjectConverter behavior: always return Int64
+            if (reader.TryGetInt64(out long l))
+                return l;
+        }
+        else
+        {
+            // Default STJ behavior: return smallest fitting integer type
+            if (reader.TryGetInt32(out int i))
+                return i;
 
-        if (reader.TryGetInt64(out long l))
-            return l;
+            if (reader.TryGetInt64(out long l))
+                return l;
+        }
 
-        // For very large integers, try decimal first to preserve precision
-        if (reader.TryGetDecimal(out decimal dec))
-            return dec;
+        // For very large integers that don't fit in long, fall back to decimal/double
+        if (_preferInt64)
+            return reader.GetDouble();
 
-        // Fall back to double only if decimal also fails
-        return reader.GetDouble();
+        return reader.GetDecimal();
     }
 
     /// <summary>
@@ -160,7 +185,7 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
     /// Uses <see cref="StringComparer.OrdinalIgnoreCase"/> for property name matching,
     /// consistent with <see cref="DataDictionary"/> behavior.
     /// </remarks>
-    private static Dictionary<string, object?> ReadObject(ref Utf8JsonReader reader, JsonSerializerOptions options)
+    private Dictionary<string, object?> ReadObject(ref Utf8JsonReader reader, JsonSerializerOptions options)
     {
         var dictionary = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
 
@@ -186,7 +211,7 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
     /// <summary>
     /// Recursively reads a JSON array into a <see cref="List{T}"/> of objects.
     /// </summary>
-    private static List<object?> ReadArray(ref Utf8JsonReader reader, JsonSerializerOptions options)
+    private List<object?> ReadArray(ref Utf8JsonReader reader, JsonSerializerOptions options)
     {
         var list = new List<object?>();
 
@@ -204,7 +229,7 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
     /// <summary>
     /// Reads a single JSON value of any type, dispatching to the appropriate reader method.
     /// </summary>
-    private static object? ReadValue(ref Utf8JsonReader reader, JsonSerializerOptions options)
+    private object? ReadValue(ref Utf8JsonReader reader, JsonSerializerOptions options)
     {
         return reader.TokenType switch
         {

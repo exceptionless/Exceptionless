@@ -235,6 +235,13 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
     {
         var response = await SendRequestAsync(configure);
 
+        // Handle empty response bodies gracefully (e.g., Ok() with no content).
+        // STJ throws on empty input whereas Newtonsoft returned default(T).
+        // ReadAsStringAsync buffers internally, so subsequent reads still work.
+        var body = await response.Content.ReadAsStringAsync();
+        if (String.IsNullOrEmpty(body))
+            return default;
+
         // All errors are returned as problem details so if we are expecting Problem Details we shouldn't ensure success.
         bool ensureSuccess = !typeof(Microsoft.AspNetCore.Mvc.ProblemDetails).IsAssignableFrom(typeof(T));
         return await response.DeserializeAsync<T>(ensureSuccess);
