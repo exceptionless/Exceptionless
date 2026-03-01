@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Services;
@@ -26,30 +28,43 @@ public class SerializerTests : TestWithServices
         var ev = _serializer.Deserialize<Event>(json);
 
         // Assert
-        Assert.NotNull(ev?.Data);
+        Assert.NotNull(ev);
+        Assert.NotNull(ev.Data);
         Assert.Single(ev.Data);
         Assert.Equal("Hello", ev.Message);
         Assert.Equal("SomeVal", ev.Data["Blah"]);
     }
 
     [Fact]
-    public void CanRoundTripEventWithUnknownProperties()
+    public void CanDeserializeEventWithUnknownNamesAndProperties()
     {
-        // Arrange
+        // Arrange - unknown root properties go through [JsonExtensionData] → ConvertJsonElement.
+        // With STJ, unknown nested objects stay as JsonElement (GetValue<T> handles typed access).
+        // Primitives are converted: strings, bools, numbers. Objects/arrays stay as JsonElement.
         /* language=json */
-        const string json = """{"tags":["One","Two"],"reference_id":"12","message":"Hello","data":{"SomeString":"Hi","SomeBool":false,"SomeNum":1}}""";
+        const string json = """{"tags":["One","Two"],"reference_id":"12","message":"Hello","SomeString":"Hi","SomeBool":false,"SomeNum":1,"UnknownProp":{"Blah":"SomeVal"},"UnknownSerializedProp":"{\"Blah\":\"SomeVal\"}"}""";
 
         // Act
         var ev = _serializer.Deserialize<Event>(json);
-        string roundTrippedJson = _serializer.SerializeToString(ev);
-        var roundTripped = _serializer.Deserialize<Event>(roundTrippedJson);
 
-        // Assert
-        Assert.NotNull(ev?.Data);
-        Assert.Equal(3, ev.Data.Count);
+        // Assert — verify all properties captured correctly
+        Assert.NotNull(ev);
+        Assert.NotNull(ev.Data);
+        Assert.Equal(5, ev.Data.Count);
+
+        // Primitive types are converted by ConvertJsonElement
         Assert.Equal("Hi", ev.Data["SomeString"]);
         Assert.Equal(false, ev.Data["SomeBool"]);
-        Assert.Equal(1, ev.Data["SomeNum"]);
+        Assert.Equal(1L, ev.Data["SomeNum"]);
+
+        // Unknown nested objects stay as JsonElement for deferred typed access
+        Assert.IsType<JsonElement>(ev.Data["UnknownProp"]);
+        var unknownProp = (JsonElement)ev.Data["UnknownProp"]!;
+        Assert.Equal("SomeVal", unknownProp.GetProperty("Blah").GetString());
+
+        // Serialized JSON strings stay as strings
+        Assert.IsType<string>(ev.Data["UnknownSerializedProp"]);
+
         Assert.Equal("Hello", ev.Message);
         Assert.NotNull(ev.Tags);
         Assert.Equal(2, ev.Tags.Count);
@@ -58,6 +73,8 @@ public class SerializerTests : TestWithServices
         Assert.Equal("12", ev.ReferenceId);
 
         // Verify round-trip preserves data
+        string roundTrippedJson = _serializer.SerializeToString(ev);
+        var roundTripped = _serializer.Deserialize<Event>(roundTrippedJson);
         Assert.NotNull(roundTripped);
         Assert.Equal(ev.Message, roundTripped.Message);
         Assert.Equal(ev.ReferenceId, roundTripped.ReferenceId);
@@ -69,14 +86,22 @@ public class SerializerTests : TestWithServices
     public void CanRoundTripEventWithKnownDataTypes()
     {
         // Arrange - Event with known data types (error, request info)
+        var originalError = new Error
+        {
+            Message = "Something went wrong",
+            Type = "System.Exception",
+            Data = new DataDictionary { { "SomeProp", "SomeVal" } }
+        };
+        var originalRequest = new RequestInfo { HttpMethod = "GET", Path = "/api/test" };
+
         var ev = new Event
         {
             Message = "Test error",
             Type = Event.KnownTypes.Error,
             Data = new DataDictionary
             {
-                { Event.KnownDataKeys.Error, new Error { Message = "Something went wrong", Type = "System.Exception" } },
-                { Event.KnownDataKeys.RequestInfo, new RequestInfo { HttpMethod = "GET", Path = "/api/test" } }
+                { Event.KnownDataKeys.Error, originalError },
+                { Event.KnownDataKeys.RequestInfo, originalRequest }
             }
         };
 
@@ -92,6 +117,20 @@ public class SerializerTests : TestWithServices
         Assert.Equal(2, roundTripped.Data.Count);
         Assert.True(roundTripped.Data.ContainsKey(Event.KnownDataKeys.Error));
         Assert.True(roundTripped.Data.ContainsKey(Event.KnownDataKeys.RequestInfo));
+
+        // Verify error data round-tripped with values intact
+        var error = roundTripped.Data.GetValue<Error>(Event.KnownDataKeys.Error, _serializer);
+        Assert.NotNull(error);
+        Assert.Equal(originalError.Message, error.Message);
+        Assert.Equal(originalError.Type, error.Type);
+        Assert.NotNull(error.Data);
+        Assert.Equal("SomeVal", error.Data["SomeProp"]);
+
+        // Verify request info round-tripped
+        var request = roundTripped.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo, _serializer);
+        Assert.NotNull(request);
+        Assert.Equal(originalRequest.HttpMethod, request.HttpMethod);
+        Assert.Equal(originalRequest.Path, request.Path);
     }
 
     [Fact]

@@ -1115,7 +1115,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 charSet = contentTypeHeader.Charset.ToString();
             }
 
-            var stream = new MemoryStream(ev.GetBytes(_serializer));
+            using var stream = new MemoryStream(ev.GetBytes(_serializer));
             await _eventPostService.EnqueueAsync(new EventPost(_appOptions.EnableArchive)
             {
                 ApiVersion = apiVersion,
