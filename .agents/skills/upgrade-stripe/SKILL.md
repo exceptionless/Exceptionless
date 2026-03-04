@@ -1,15 +1,18 @@
 ---
 name: upgrade-stripe
 description: Guide for upgrading Stripe API versions and SDKs
+alwaysApply: false
 ---
+
+The latest Stripe API version is 2026-02-25.clover - use this version when upgrading unless the user specifies a different target version.
 
 # Upgrading Stripe Versions
 
-This skill covers upgrading Stripe API versions, server-side SDKs, Stripe.js, and mobile SDKs.
+This guide covers upgrading Stripe API versions, server-side SDKs, Stripe.js, and mobile SDKs.
 
 ## Understanding Stripe API Versioning
 
-Stripe uses date-based API versions (e.g., `2025-12-15.clover`, `2025-08-27.basil`, `2024-12-18.acacia`). Your account's API version determines request/response behavior.
+Stripe uses date-based API versions (e.g., `2026-02-25.clover`, `2025-08-27.basil`, `2024-12-18.acacia`). Your account's API version determines request/response behavior.
 
 ### Types of Changes
 
@@ -38,16 +41,16 @@ These SDKs offer flexible version control:
 **Global Configuration:**
 ```python
 import stripe
-stripe.api_version = '2025-12-15.clover'
+stripe.api_version = '2026-02-25.clover'
 ```
 
 ```ruby
-Stripe.api_version = '2025-12-15.clover'
+Stripe.api_version = '2026-02-25.clover'
 ```
 
 ```javascript
 const stripe = require('stripe')('sk_test_xxx', {
-  apiVersion: '2025-12-15.clover'
+  apiVersion: '2026-02-25.clover'
 });
 ```
 
@@ -55,7 +58,7 @@ const stripe = require('stripe')('sk_test_xxx', {
 ```python
 stripe.Customer.create(
   email="customer@example.com",
-  stripe_version='2025-12-15.clover'
+  stripe_version='2026-02-25.clover'
 )
 ```
 
@@ -70,7 +73,7 @@ Always specify the API version you're integrating against in your code instead o
 ```javascript
 // Good: Explicit version
 const stripe = require('stripe')('sk_test_xxx', {
-  apiVersion: '2025-12-15.clover'
+  apiVersion: '2026-02-25.clover'
 });
 
 // Avoid: Relying on account default
@@ -100,7 +103,7 @@ Major npm versions correspond to specific Stripe.js versions.
 ### API Version Pairing
 
 Each Stripe.js version automatically pairs with its corresponding API version. For instance:
-- Clover Stripe.js uses `2025-12-15.clover` API
+- Clover Stripe.js uses `2026-02-25.clover` API
 - Acacia Stripe.js uses `2024-12-18.acacia` API
 
 You cannot override this association.
@@ -154,14 +157,14 @@ Use the `Stripe-Version` header to test your code against a new version without 
 ```bash
 curl https://api.stripe.com/v1/customers \
   -u sk_test_xxx: \
-  -H "Stripe-Version: 2025-12-15.clover"
+  -H "Stripe-Version: 2026-02-25.clover"
 ```
 
 Or in code:
 
 ```javascript
 const stripe = require('stripe')('sk_test_xxx', {
-  apiVersion: '2025-12-15.clover'  // Test with new version
+  apiVersion: '2026-02-25.clover'  // Test with new version
 });
 ```
 
@@ -171,3 +174,4 @@ const stripe = require('stripe')('sk_test_xxx', {
 - Test webhooks with the new version structure before upgrading
 - Breaking changes are tagged by affected product areas (Payments, Billing, Connect, etc.)
 - Multiple API versions coexist simultaneously, enabling staged adoption
+
