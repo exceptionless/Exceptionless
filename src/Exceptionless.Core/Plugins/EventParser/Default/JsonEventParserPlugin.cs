@@ -1,19 +1,19 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Plugins.EventParser;
 
 [Priority(0)]
 public class JsonEventParserPlugin : PluginBase, IEventParserPlugin
 {
-    private readonly JsonSerializerSettings _settings;
+    private readonly ITextSerializer _serializer;
 
-    public JsonEventParserPlugin(AppOptions options, JsonSerializerSettings settings, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    public JsonEventParserPlugin(AppOptions options, ITextSerializer serializer, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
-        _settings = settings;
+        _serializer = serializer;
     }
 
     public List<PersistentEvent>? ParseEvents(string input, int apiVersion, string? userAgent)
@@ -26,15 +26,30 @@ public class JsonEventParserPlugin : PluginBase, IEventParserPlugin
         {
             case JsonType.Object:
             {
-                if (input.TryFromJson(out PersistentEvent? ev, _settings) && ev is not null)
-                    events.Add(ev);
+                try
+                {
+                    var ev = _serializer.Deserialize<PersistentEvent>(input);
+                    if (ev is not null)
+                        events.Add(ev);
+                }
+                catch
+                {
+                    // Invalid JSON - ignore
+                }
                 break;
             }
             case JsonType.Array:
             {
-                if (input.TryFromJson(out PersistentEvent[]? parsedEvents, _settings) && parsedEvents is { Length: > 0 })
-                    events.AddRange(parsedEvents);
-
+                try
+                {
+                    var parsedEvents = _serializer.Deserialize<PersistentEvent[]>(input);
+                    if (parsedEvents is { Length: > 0 })
+                        events.AddRange(parsedEvents);
+                }
+                catch
+                {
+                    // Invalid JSON - ignore
+                }
                 break;
             }
         }

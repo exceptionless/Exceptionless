@@ -1,6 +1,6 @@
-﻿using Exceptionless.Core.Pipeline;
+﻿using System.Text.Json.Nodes;
+using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader;
 
@@ -19,14 +19,15 @@ public class V1R500EventUpgrade : PluginBase, IEventUpgraderPlugin
 
         foreach (var doc in ctx.Documents)
         {
-            if (!(doc["ExceptionlessClientInfo"] is JObject clientInfo) || !clientInfo.HasValues || clientInfo["InstallDate"] is null)
+            if (doc is not JsonObject docObj || docObj["ExceptionlessClientInfo"] is not JsonObject { Count: > 0 } clientInfo || clientInfo["InstallDate"] is null)
                 return;
 
             // This shouldn't hurt using DateTimeOffset to try and parse a date. It insures you won't lose any info.
-            if (DateTimeOffset.TryParse(clientInfo["InstallDate"]!.ToString(), out var date))
+            if (DateTimeOffset.TryParse(clientInfo["InstallDate"]?.ToString(), out var date))
             {
                 clientInfo.Remove("InstallDate");
-                clientInfo.Add("InstallDate", new JValue(date));
+                // Format date as ISO 8601 with offset (matching Newtonsoft behavior)
+                clientInfo.Add("InstallDate", JsonValue.Create(date.ToString("yyyy-MM-ddTHH:mm:ss.FFFFFFFzzz")));
             }
             else
             {

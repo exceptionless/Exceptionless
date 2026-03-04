@@ -1,6 +1,6 @@
-﻿using Exceptionless.Core.Pipeline;
+﻿using System.Text.Json.Nodes;
+using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader;
 
@@ -16,26 +16,22 @@ public class V1R844EventUpgrade : PluginBase, IEventUpgraderPlugin
 
         foreach (var doc in ctx.Documents)
         {
-
-            if (!(doc["RequestInfo"] is JObject { HasValues: true } requestInfo))
+            if (doc is not JsonObject docObj || docObj["RequestInfo"] is not JsonObject { Count: > 0 } requestInfo)
                 return;
 
-            if (requestInfo["Cookies"] is not null && requestInfo["Cookies"]!.HasValues)
+            if (requestInfo["Cookies"] is JsonObject { Count: > 0 } cookies)
             {
-                if (requestInfo["Cookies"] is JObject cookies)
-                    cookies.Remove("");
+                cookies.Remove("");
             }
 
-            if (requestInfo["Form"] is not null && requestInfo["Form"]!.HasValues)
+            if (requestInfo["Form"] is JsonObject { Count: > 0 } form)
             {
-                if (requestInfo["Form"] is JObject form)
-                    form.Remove("");
+                form.Remove("");
             }
 
-            if (requestInfo["QueryString"] is not null && requestInfo["QueryString"]!.HasValues)
+            if (requestInfo["QueryString"] is JsonObject { Count: > 0 } queryString)
             {
-                if (requestInfo["QueryString"] is JObject queryString)
-                    queryString.Remove("");
+                queryString.Remove("");
             }
         }
     }

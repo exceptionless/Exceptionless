@@ -1,9 +1,9 @@
-﻿using System.Text.Json;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Utility;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor;
@@ -25,12 +25,12 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase
     ];
 
     private readonly UserAgentParser _parser;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly ITextSerializer _serializer;
 
-    public RequestInfoPlugin(UserAgentParser parser, JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    public RequestInfoPlugin(UserAgentParser parser, ITextSerializer serializer, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _parser = parser;
-        _jsonOptions = jsonOptions;
+        _serializer = serializer;
     }
 
     public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts)
@@ -39,13 +39,13 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase
         var exclusions = DefaultExclusions.Union(project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions)).ToList();
         foreach (var context in contexts)
         {
-            var request = context.Event.GetRequestInfo(_jsonOptions);
+            var request = context.Event.GetRequestInfo(_serializer);
             if (request is null)
                 continue;
 
             if (context.IncludePrivateInformation)
             {
-                var submissionClient = context.Event.GetSubmissionClient(_jsonOptions);
+                var submissionClient = context.Event.GetSubmissionClient(_serializer);
                 AddClientIpAddress(request, submissionClient);
             }
             else
@@ -57,7 +57,7 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase
             }
 
             await SetBrowserOsAndDeviceFromUserAgent(request, context);
-            context.Event.AddRequestInfo(request.ApplyDataExclusions(exclusions, MAX_VALUE_LENGTH));
+            context.Event.AddRequestInfo(request.ApplyDataExclusions(_serializer, exclusions, MAX_VALUE_LENGTH));
         }
     }
 

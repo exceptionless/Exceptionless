@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Serializer;
@@ -14,13 +15,11 @@ namespace Exceptionless.Tests.Serializer.Models;
 public class PersistentEventSerializerTests : TestWithServices
 {
     private readonly ITextSerializer _serializer;
-    private readonly JsonSerializerOptions _jsonOptions;
     private static readonly DateTimeOffset FixedDate = new(2024, 1, 15, 12, 0, 0, TimeSpan.Zero);
 
     public PersistentEventSerializerTests(ITestOutputHelper output) : base(output)
     {
         _serializer = GetService<ITextSerializer>();
-        _jsonOptions = GetService<JsonSerializerOptions>();
         TimeProvider.SetUtcNow(FixedDate);
     }
 
@@ -105,7 +104,7 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized);
-        var userInfo = deserialized.GetUserIdentity(_jsonOptions);
+        var userInfo = deserialized.GetUserIdentity(_serializer);
         Assert.NotNull(userInfo);
         Assert.Equal("user@example.com", userInfo.Identity);
         Assert.Equal("Test User", userInfo.Name);
@@ -146,7 +145,7 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized);
-        var error = deserialized.GetError(_jsonOptions);
+        var error = deserialized.GetError(_serializer);
         Assert.NotNull(error);
         Assert.Equal("Test exception", error.Message);
         Assert.Equal("System.InvalidOperationException", error.Type);
@@ -183,7 +182,7 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized);
-        var request = deserialized.GetRequestInfo(_jsonOptions);
+        var request = deserialized.GetRequestInfo(_serializer);
         Assert.NotNull(request);
         Assert.Equal("POST", request.HttpMethod);
         Assert.Equal("/api/events", request.Path);
@@ -215,7 +214,7 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized);
-        var env = deserialized.GetEnvironmentInfo(_jsonOptions);
+        var env = deserialized.GetEnvironmentInfo(_serializer);
         Assert.NotNull(env);
         Assert.Equal("PROD-SERVER-01", env.MachineName);
         Assert.Equal(8, env.ProcessorCount);
@@ -270,9 +269,9 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized);
-        Assert.NotNull(deserialized.GetUserIdentity(_jsonOptions));
-        Assert.NotNull(deserialized.GetRequestInfo(_jsonOptions));
-        Assert.NotNull(deserialized.GetEnvironmentInfo(_jsonOptions));
+        Assert.NotNull(deserialized.GetUserIdentity(_serializer));
+        Assert.NotNull(deserialized.GetRequestInfo(_serializer));
+        Assert.NotNull(deserialized.GetEnvironmentInfo(_serializer));
         Assert.Equal("1.0.0", deserialized.GetVersion());
         Assert.Equal("Error", deserialized.GetLevel());
     }
@@ -328,7 +327,7 @@ public class PersistentEventSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(ev);
-        var userInfo = ev.GetUserIdentity(_jsonOptions);
+        var userInfo = ev.GetUserIdentity(_serializer);
         Assert.NotNull(userInfo);
         Assert.Equal("parsed@example.com", userInfo.Identity);
         Assert.Equal("Parsed User", userInfo.Name);

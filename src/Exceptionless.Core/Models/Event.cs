@@ -1,11 +1,13 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Models;
 
 [DebuggerDisplay("Type: {Type}, Date: {Date}, Message: {Message}, Value: {Value}, Count: {Count}")]
-public class Event : IData
+public class Event : IData, IJsonOnDeserialized
 {
     /// <summary>
     /// The event type (ie. error, log message, feature usage). Check <see cref="KnownTypes">Event.KnownTypes</see> for standard event types.
@@ -56,9 +58,54 @@ public class Event : IData
     public DataDictionary? Data { get; set; } = new();
 
     /// <summary>
+    /// Captures unknown JSON properties during deserialization.
+    /// These are merged into <see cref="Data"/> after deserialization.
+    /// Known data keys like "@error", "@request", "@environment" may appear at root level.
+    /// </summary>
+    [JsonExtensionData]
+    [JsonInclude]
+    internal Dictionary<string, JsonElement>? ExtensionData { get; set; }
+
+    /// <summary>
     /// An optional identifier to be used for referencing this event instance at a later time.
     /// </summary>
     public string? ReferenceId { get; set; }
+
+    /// <summary>
+    /// Called after JSON deserialization to merge extension data into the Data dictionary.
+    /// This handles the case where known data keys like "@error", "@request", "@environment"
+    /// appear at the JSON root level instead of nested under "data".
+    /// </summary>
+    void IJsonOnDeserialized.OnDeserialized()
+    {
+        if (ExtensionData is null || ExtensionData.Count == 0)
+            return;
+
+        Data ??= new DataDictionary();
+        foreach (var kvp in ExtensionData)
+        {
+            Data[kvp.Key] = ConvertJsonElement(kvp.Value);
+        }
+        ExtensionData = null;
+    }
+
+    /// <summary>
+    /// Converts a <see cref="JsonElement"/> to a .NET type so downstream code
+    /// (e.g., <c>value as string</c>) works correctly.
+    /// </summary>
+    private static object? ConvertJsonElement(JsonElement element)
+    {
+        return element.ValueKind switch
+        {
+            JsonValueKind.String => element.GetString(),
+            JsonValueKind.Number => element.TryGetInt64(out long l) ? (object)l : element.GetDouble(),
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Null or JsonValueKind.Undefined => null,
+            // For objects/arrays, keep as JsonElement — GetValue<T> handles these
+            _ => element
+        };
+    }
 
     protected bool Equals(Event other)
     {

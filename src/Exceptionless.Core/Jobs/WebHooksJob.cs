@@ -1,4 +1,7 @@
 ﻿using System.Net;
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
@@ -10,8 +13,8 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Resilience;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Jobs;
 
@@ -32,7 +35,8 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
     private readonly SlackService _slackService;
     private readonly IWebHookRepository _webHookRepository;
     private readonly ICacheClient _cacheClient;
-    private readonly JsonSerializerSettings _jsonSerializerSettings;
+    private readonly ITextSerializer _serializer;
+    private readonly JsonSerializerOptions _jsonOptions;
     private readonly AppOptions _appOptions;
 
     private HttpClient? _client;
@@ -42,14 +46,15 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
         get => _client ??= new HttpClient();
     }
 
-    public WebHooksJob(IQueue<WebHookNotification> queue, IProjectRepository projectRepository, SlackService slackService, IWebHookRepository webHookRepository, ICacheClient cacheClient, JsonSerializerSettings settings, AppOptions appOptions, TimeProvider timeProvider,
+    public WebHooksJob(IQueue<WebHookNotification> queue, IProjectRepository projectRepository, SlackService slackService, IWebHookRepository webHookRepository, ICacheClient cacheClient, ITextSerializer serializer, JsonSerializerOptions jsonOptions, AppOptions appOptions, TimeProvider timeProvider,
         IResiliencePolicyProvider resiliencePolicyProvider, ILoggerFactory loggerFactory) : base(queue, timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _projectRepository = projectRepository;
         _slackService = slackService;
         _webHookRepository = webHookRepository;
         _cacheClient = cacheClient;
-        _jsonSerializerSettings = settings;
+        _serializer = serializer;
+        _jsonOptions = jsonOptions;
         _appOptions = appOptions;
     }
 
@@ -88,7 +93,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
                 {
                     using (var postCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken, timeoutCancellationTokenSource.Token))
                     {
-                        response = await Client.PostAsJsonAsync(body.Url, body.Data.ToJson(Formatting.Indented, _jsonSerializerSettings), postCancellationTokenSource.Token);
+                        response = await Client.PostAsJsonAsync(body.Url, body.Data, _jsonOptions, postCancellationTokenSource.Token);
                         if (!response.IsSuccessStatusCode)
                             successful = false;
                         else if (consecutiveErrors > 0)
@@ -165,7 +170,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
                 return webHook?.IsEnabled ?? false;
             case WebHookType.Slack:
                 var project = await _projectRepository.GetByIdAsync(body.ProjectId, o => o.Cache());
-                var token = project?.GetSlackToken();
+                var token = project?.GetSlackToken(_serializer);
                 return token is not null;
         }
 
@@ -181,7 +186,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
                 break;
             case WebHookType.Slack:
                 var project = await _projectRepository.GetByIdAsync(body.ProjectId);
-                var token = project?.GetSlackToken();
+                var token = project?.GetSlackToken(_serializer);
                 if (token is null)
                     return;
 

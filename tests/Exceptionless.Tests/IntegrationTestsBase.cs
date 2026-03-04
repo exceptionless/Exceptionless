@@ -10,7 +10,6 @@ using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Mail;
 using Exceptionless.Tests.Utility;
 using FluentRest;
-using FluentRest.NewtonsoftJson;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
@@ -23,7 +22,7 @@ using Foundatio.Utility;
 using Foundatio.Xunit;
 using Microsoft.AspNetCore.TestHost;
 using Nest;
-using Newtonsoft.Json;
+using System.Text.Json;
 using Xunit;
 using HttpMethod = System.Net.Http.HttpMethod;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -206,8 +205,8 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
     protected FluentClient CreateFluentClient()
     {
-        var settings = GetService<JsonSerializerSettings>();
-        return new FluentClient(CreateHttpClient(), new NewtonsoftJsonSerializer(settings));
+        var options = GetService<JsonSerializerOptions>();
+        return new FluentClient(CreateHttpClient(), new JsonContentSerializer(options));
     }
 
     protected async Task<HttpResponseMessage> SendRequestAsync(Action<AppSendBuilder> configure)
@@ -235,6 +234,13 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
     protected async Task<T?> SendRequestAsAsync<T>(Action<AppSendBuilder> configure)
     {
         var response = await SendRequestAsync(configure);
+
+        // Handle empty response bodies gracefully (e.g., Ok() with no content).
+        // STJ throws on empty input whereas Newtonsoft returned default(T).
+        // ReadAsStringAsync buffers internally, so subsequent reads still work.
+        var body = await response.Content.ReadAsStringAsync();
+        if (String.IsNullOrEmpty(body))
+            return default;
 
         // All errors are returned as problem details so if we are expecting Problem Details we shouldn't ensure success.
         bool ensureSuccess = !typeof(Microsoft.AspNetCore.Mvc.ProblemDetails).IsAssignableFrom(typeof(T));
