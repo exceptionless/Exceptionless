@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "skills": {
+    "agent-browser": {
+      "source": "vercel-labs/agent-browser",
+      "sourceType": "github",
+      "computedHash": "57bfa07d34f966bccf791d49c9b6ce507fbba08f7dbf9e2ad15809e2dd29041e"
+    },
+    "dogfood": {
+      "source": "vercel-labs/agent-browser",
+      "sourceType": "github",
+      "computedHash": "17a3fc2c1a49df9debce572c7b47521caa96f793597d944c4e648b3aa90738cf"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
+    },
+    "releasenotes": {
+      "source": "OpenHands/skills",
+      "sourceType": "github",
+      "computedHash": "1b12297eacd1cd24b9f1eda16dada205b96d9c75fd3bf07474a54775559fff09"
+    },
+    "stripe-best-practices": {
+      "source": "stripe/ai",
+      "sourceType": "github",
+      "computedHash": "91b23c09854900c0ed1e85a8a3856b4a7294af2076f20b2cf9ca97f6f21dcb7b"
+    },
+    "upgrade-stripe": {
+      "source": "stripe/ai",
+      "sourceType": "github",
+      "computedHash": "83b0068e099b50bd71febd20373e13dc55b2b20cf6daaf36f45089e2fd7c92bb"
+    }
+  }
+}

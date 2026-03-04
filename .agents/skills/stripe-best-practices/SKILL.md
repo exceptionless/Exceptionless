@@ -1,7 +1,10 @@
 ---
 name: stripe-best-practices
-description: Best practices for building a Stripe integrations
+description: Best practices for building Stripe integrations
+alwaysApply: false
 ---
+
+The latest Stripe API version is 2026-02-25.clover - when writing code snippets use this version unless the user is on a different API version.
 
 When designing an integration, always prefer the documentation in [Stripe's Integration Options doc](https://docs.stripe.com/payments/payment-methods/integration-options.md)
 The [API Tour](https://docs.stripe.com/payments-api/tour.md)

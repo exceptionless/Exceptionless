@@ -30,23 +30,25 @@ tests/                         # C# tests + HTTP samples
 
 ## Continuous Improvement
 
-Each time you complete a task or learn important information about the project, you must update the `AGENTS.md`, `README.md`, or relevant skill files. **Only update skills if they are owned by us** (verify via `.github/update-skills.ps1` which lists third-party skills). You are **forbidden** from updating skills, configurations, or instructions maintained by third parties/external libraries.
+Each time you complete a task or learn important information about the project, you must update the `AGENTS.md`, `README.md`, or relevant skill files. **Only update skills if they are owned by us** (verify via `skills-lock.json` which lists third-party skills). You are **forbidden** from updating skills, configurations, or instructions maintained by third parties/external libraries.
 
 If you encounter recurring questions or patterns during planning, document them:
 
 - Project-specific knowledge → `AGENTS.md` or relevant skill file
-- Reusable domain patterns → Create/update appropriate skill in `.github/skills/`
+- Reusable domain patterns → Create/update appropriate skill in `.agents/skills/`
 
 ## Skills
 
-Load from `.github/skills/<name>/SKILL.md` when working in that domain:
+Load from `.agents/skills/<name>/SKILL.md` when working in that domain:
 
-| Domain        | Skills                                                                                                                                   |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Backend       | dotnet-conventions, backend-architecture, dotnet-cli, backend-testing, foundatio                                                         |
-| Frontend      | svelte-components, tanstack-form, tanstack-query, shadcn-svelte, typescript-conventions, frontend-architecture, storybook, accessibility |
-| Testing       | frontend-testing, e2e-testing                                                                                                            |
-| Cross-cutting | security-principles                                                                                                                      |
+| Domain        | Skills                                                                                                                                                    |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backend       | dotnet-conventions, backend-architecture, dotnet-cli, backend-testing, foundatio                                                                          |
+| Frontend      | svelte-components, tanstack-form, tanstack-query, shadcn-svelte, typescript-conventions, frontend-architecture, storybook, accessibility, frontend-design |
+| Testing       | frontend-testing, e2e-testing                                                                                                                             |
+| Cross-cutting | security-principles, releasenotes                                                                                                                         |
+| Billing       | stripe-best-practices, upgrade-stripe                                                                                                                     |
+| Agents        | agent-browser, dogfood                                                                                                                                    |
 
 ## Constraints
 

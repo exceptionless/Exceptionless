@@ -1,13 +1,29 @@
 # Proxy Support
 
-Configure proxy servers for browser automation, useful for geo-testing, rate limiting avoidance, and corporate environments.
+Proxy configuration for geo-testing, rate limiting avoidance, and corporate environments.
+
+**Related**: [commands.md](commands.md) for global options, [SKILL.md](../SKILL.md) for quick start.
+
+## Contents
+
+- [Basic Proxy Configuration](#basic-proxy-configuration)
+- [Authenticated Proxy](#authenticated-proxy)
+- [SOCKS Proxy](#socks-proxy)
+- [Proxy Bypass](#proxy-bypass)
+- [Common Use Cases](#common-use-cases)
+- [Verifying Proxy Connection](#verifying-proxy-connection)
+- [Troubleshooting](#troubleshooting)
+- [Best Practices](#best-practices)
 
 ## Basic Proxy Configuration
 
-Set proxy via environment variable before starting:
+Use the `--proxy` flag or set proxy via environment variable:
 
 ```bash
-# HTTP proxy
+# Via CLI flag
+agent-browser --proxy "http://proxy.example.com:8080" open https://example.com
+
+# Via environment variable
 export HTTP_PROXY="http://proxy.example.com:8080"
 agent-browser open https://example.com
 
@@ -45,10 +61,13 @@ agent-browser open https://example.com
 
 ## Proxy Bypass
 
-Skip proxy for specific domains:
+Skip proxy for specific domains using `--proxy-bypass` or `NO_PROXY`:
 
 ```bash
-# Bypass proxy for local addresses
+# Via CLI flag
+agent-browser --proxy "http://proxy.example.com:8080" --proxy-bypass "localhost,*.internal.com" open https://example.com
+
+# Via environment variable
 export NO_PROXY="localhost,127.0.0.1,.internal.company.com"
 agent-browser open https://internal.company.com  # Direct connection
 agent-browser open https://external.com          # Via proxy
