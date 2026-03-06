@@ -1,6 +1,7 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { svelteTesting } from '@testing-library/svelte/vite';
+import oxlint from 'vite-plugin-oxlint';
 import { defineConfig } from 'vitest/config';
 
 const aspNetConfig = getAspNetConfig();
@@ -11,7 +12,7 @@ export default defineConfig({
         sourcemap: true,
         target: 'esnext'
     },
-    plugins: [tailwindcss(), sveltekit()],
+    plugins: [tailwindcss(), sveltekit(), oxlint()],
     server: {
         hmr: aspNetConfig.hmr,
         host: true,
