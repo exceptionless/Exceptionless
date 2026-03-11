@@ -1,7 +1,7 @@
-﻿using System.Text.Json;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.Formatting;
@@ -9,7 +9,7 @@ namespace Exceptionless.Core.Plugins.Formatting;
 [Priority(40)]
 public sealed class UsageFormattingPlugin : FormattingPluginBase
 {
-    public UsageFormattingPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(jsonOptions, options, loggerFactory) { }
+    public UsageFormattingPlugin(ITextSerializer serializer, AppOptions options, ILoggerFactory loggerFactory) : base(serializer, options, loggerFactory) { }
 
     private bool ShouldHandle(PersistentEvent ev)
     {
@@ -38,7 +38,7 @@ public sealed class UsageFormattingPlugin : FormattingPluginBase
             return null;
 
         var data = new Dictionary<string, object?> { { "Source", ev.Source } };
-        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_jsonOptions));
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_serializer));
 
         return new SummaryData { Id = ev.Id, TemplateKey = "event-feature-summary", Data = data };
     }
@@ -61,7 +61,7 @@ public sealed class UsageFormattingPlugin : FormattingPluginBase
         if (!ShouldHandle(ev))
             return null;
 
-        var attachment = new SlackMessage.SlackAttachment(ev, _jsonOptions)
+        var attachment = new SlackMessage.SlackAttachment(ev, _serializer)
         {
             Fields =
             [

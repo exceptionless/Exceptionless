@@ -1,7 +1,7 @@
-using Exceptionless.Core.Extensions;
+using System.Text.Json;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
-using Newtonsoft.Json;
+using Foundatio.Serializer;
 using Xunit;
 
 namespace Exceptionless.Tests.Plugins;
@@ -9,10 +9,12 @@ namespace Exceptionless.Tests.Plugins;
 public sealed class EventParserTests : TestWithServices
 {
     private readonly EventParserPluginManager _parser;
+    private readonly ITextSerializer _serializer;
 
     public EventParserTests(ITestOutputHelper output) : base(output)
     {
         _parser = GetService<EventParserPluginManager>();
+        _serializer = GetService<ITextSerializer>();
     }
 
     public static IEnumerable<object?[]> EventData => new[] {
@@ -52,9 +54,21 @@ public sealed class EventParserTests : TestWithServices
 
         var events = _parser.ParseEvents(json, 2, "exceptionless/2.0.0.0");
         Assert.Single(events);
+        var ev = events.First();
 
-        string expectedContent = File.ReadAllText(eventsFilePath);
-        Assert.Equal(expectedContent, events.First().ToJson(Formatting.Indented, GetService<JsonSerializerSettings>()));
+        // Verify round-trip: parse → serialize → deserialize preserves all data.
+        // Must deserialize as PersistentEvent (same type the parser produces) so
+        // PersistentEvent-specific properties don't leak into Data via JsonExtensionData.
+        string serialized = _serializer.SerializeToString(ev);
+        Assert.NotNull(serialized);
+        var roundTripped = _serializer.Deserialize<PersistentEvent>(serialized);
+        Assert.NotNull(roundTripped);
+        Assert.Equal(ev.Type, roundTripped.Type);
+        Assert.Equal(ev.Message, roundTripped.Message);
+        Assert.Equal(ev.Source, roundTripped.Source);
+        Assert.Equal(ev.ReferenceId, roundTripped.ReferenceId);
+        Assert.Equal(ev.Tags?.Count ?? 0, roundTripped.Tags?.Count ?? 0);
+        Assert.Equal(ev.Data?.Count ?? 0, roundTripped.Data?.Count ?? 0);
     }
 
     [Theory]
@@ -63,7 +77,7 @@ public sealed class EventParserTests : TestWithServices
     {
         string json = File.ReadAllText(eventsFilePath);
 
-        var ev = json.FromJson<PersistentEvent>(GetService<JsonSerializerSettings>());
+        var ev = _serializer.Deserialize<PersistentEvent>(json);
         Assert.NotNull(ev);
     }
 

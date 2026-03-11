@@ -1,7 +1,7 @@
-using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Foundatio.Serializer;
 
 namespace Exceptionless;
 
@@ -176,7 +176,7 @@ public static class PersistentEventExtensions
         return true;
     }
 
-    public static PersistentEvent ToSessionStartEvent(this PersistentEvent source, JsonSerializerOptions jsonOptions, DateTime? lastActivityUtc = null, bool? isSessionEnd = null, bool hasPremiumFeatures = true, bool includePrivateInformation = true)
+    public static PersistentEvent ToSessionStartEvent(this PersistentEvent source, ITextSerializer serializer, DateTime? lastActivityUtc = null, bool? isSessionEnd = null, bool hasPremiumFeatures = true, bool includePrivateInformation = true)
     {
         var startEvent = new PersistentEvent
         {
@@ -192,11 +192,11 @@ public static class PersistentEventExtensions
         if (sessionId is not null)
             startEvent.SetSessionId(sessionId);
         if (includePrivateInformation)
-            startEvent.SetUserIdentity(source.GetUserIdentity(jsonOptions));
-        startEvent.SetLocation(source.GetLocation(jsonOptions));
+            startEvent.SetUserIdentity(source.GetUserIdentity(serializer));
+        startEvent.SetLocation(source.GetLocation(serializer));
         startEvent.SetVersion(source.GetVersion());
 
-        var ei = source.GetEnvironmentInfo(jsonOptions);
+        var ei = source.GetEnvironmentInfo(serializer);
         if (ei is not null)
         {
             startEvent.SetEnvironmentInfo(new EnvironmentInfo
@@ -217,7 +217,7 @@ public static class PersistentEventExtensions
             });
         }
 
-        var ri = source.GetRequestInfo(jsonOptions);
+        var ri = source.GetRequestInfo(serializer);
         if (ri is not null)
         {
             startEvent.AddRequestInfo(new RequestInfo
@@ -243,19 +243,19 @@ public static class PersistentEventExtensions
         return startEvent;
     }
 
-    public static IEnumerable<string> GetIpAddresses(this PersistentEvent ev, JsonSerializerOptions jsonOptions)
+    public static IEnumerable<string> GetIpAddresses(this PersistentEvent ev, ITextSerializer serializer)
     {
         if (!String.IsNullOrEmpty(ev.Geo) && (ev.Geo.Contains('.') || ev.Geo.Contains(':')))
             yield return ev.Geo.Trim();
 
-        var ri = ev.GetRequestInfo(jsonOptions);
+        var ri = ev.GetRequestInfo(serializer);
         if (!String.IsNullOrEmpty(ri?.ClientIpAddress))
         {
             foreach (string ip in ri.ClientIpAddress.Split(_commaSeparator, StringSplitOptions.RemoveEmptyEntries))
                 yield return ip.Trim();
         }
 
-        var ei = ev.GetEnvironmentInfo(jsonOptions);
+        var ei = ev.GetEnvironmentInfo(serializer);
         if (!String.IsNullOrEmpty(ei?.IpAddress))
         {
             foreach (string ip in ei.IpAddress.Split(_commaSeparator, StringSplitOptions.RemoveEmptyEntries))

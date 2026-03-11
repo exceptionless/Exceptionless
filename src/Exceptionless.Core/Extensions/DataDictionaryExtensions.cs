@@ -1,18 +1,27 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 using Exceptionless.Core.Models;
+using Foundatio.Serializer;
 
 namespace Exceptionless.Core.Extensions;
 
 public static class DataDictionaryExtensions
 {
     /// <summary>
+    /// Options for deserializing JsonElement values that may use PascalCase or snake_case
+    /// property names. Uses case-insensitive matching without a naming policy so both formats work.
+    /// </summary>
+    private static readonly JsonSerializerOptions CaseInsensitiveOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+    /// <summary>
     /// Retrieves a typed value from the <see cref="DataDictionary"/>, deserializing if necessary.
     /// </summary>
     /// <typeparam name="T">The target type to deserialize to.</typeparam>
     /// <param name="extendedData">The data dictionary containing the value.</param>
     /// <param name="key">The key of the value to retrieve.</param>
-    /// <param name="options">The JSON serializer options to use for deserialization.</param>
+    /// <param name="serializer">The text serializer to use for deserialization.</param>
     /// <returns>The deserialized value, or <c>default</c> if deserialization fails.</returns>
     /// <exception cref="KeyNotFoundException">Thrown when the key is not found in the dictionary.</exception>
     /// <remarks>
@@ -20,16 +29,16 @@ public static class DataDictionaryExtensions
     /// <list type="number">
     ///   <item><description>Direct type match - returns value directly</description></item>
     ///   <item><description><see cref="JsonDocument"/> - extracts root element and deserializes</description></item>
-    ///   <item><description><see cref="JsonElement"/> - deserializes using provided options</description></item>
-    ///   <item><description><see cref="JsonNode"/> - deserializes using provided options</description></item>
-    ///   <item><description><see cref="Dictionary{TKey,TValue}"/> - re-serializes to JSON then deserializes (for ObjectToInferredTypesConverter output)</description></item>
-    ///   <item><description><see cref="List{T}"/> of objects - re-serializes to JSON then deserializes</description></item>
-    ///   <item><description><see cref="Newtonsoft.Json.Linq.JObject"/> - uses ToObject for Elasticsearch compatibility (data read from Elasticsearch uses JSON.NET)</description></item>
-    ///   <item><description>JSON string - parses and deserializes</description></item>
+    ///   <item><description><see cref="JsonElement"/> - extracts raw JSON and deserializes via ITextSerializer</description></item>
+    ///   <item><description><see cref="JsonNode"/> - extracts JSON string and deserializes via ITextSerializer</description></item>
+    ///   <item><description><see cref="Dictionary{TKey,TValue}"/> - re-serializes to JSON then deserializes via ITextSerializer</description></item>
+    ///   <item><description><see cref="List{T}"/> of objects - re-serializes to JSON then deserializes via ITextSerializer</description></item>
+    ///   <item><description><see cref="Newtonsoft.Json.Linq.JObject"/> - uses ToObject for Elasticsearch compatibility</description></item>
+    ///   <item><description>JSON string - deserializes via ITextSerializer</description></item>
     ///   <item><description>Fallback - attempts type conversion via ToType</description></item>
     /// </list>
     /// </remarks>
-    public static T? GetValue<T>(this DataDictionary extendedData, string key, JsonSerializerOptions options)
+    public static T? GetValue<T>(this DataDictionary extendedData, string key, ITextSerializer serializer)
     {
         if (!extendedData.TryGetValue(key, out object? data))
             throw new KeyNotFoundException($"Key \"{key}\" not found in the dictionary.");
@@ -42,10 +51,37 @@ public static class DataDictionaryExtensions
             data = jsonDocument.RootElement;
 
         // JsonElement (from STJ deserialization when ObjectToInferredTypesConverter wasn't used)
-        if (data is JsonElement jsonElement &&
-            TryDeserialize(jsonElement, options, out T? jsonElementResult))
+        if (data is JsonElement jsonElement)
         {
-            return jsonElementResult;
+            try
+            {
+                // Fast-path for string type
+                if (typeof(T) == typeof(string))
+                {
+                    object? s = jsonElement.ValueKind switch
+                    {
+                        JsonValueKind.String => jsonElement.GetString(),
+                        JsonValueKind.Number => jsonElement.GetRawText(),
+                        JsonValueKind.True => "true",
+                        JsonValueKind.False => "false",
+                        JsonValueKind.Null => null,
+                        _ => jsonElement.GetRawText()
+                    };
+
+                    return (T?)s;
+                }
+
+                // Deserialize directly from JsonElement using case-insensitive matching.
+                // This handles both snake_case (from Elasticsearch) and PascalCase (from
+                // [JsonExtensionData] which preserves original property names).
+                var result = jsonElement.Deserialize<T>(CaseInsensitiveOptions);
+                if (result is not null)
+                    return result;
+            }
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
+            {
+                // Ignored - fall through to next handler
+            }
         }
 
         // JsonNode (JsonObject/JsonArray/JsonValue)
@@ -53,26 +89,30 @@ public static class DataDictionaryExtensions
         {
             try
             {
-                var result = jsonNode.Deserialize<T>(options);
+                string jsonString = jsonNode.ToJsonString();
+                var result = serializer.Deserialize<T>(jsonString);
                 if (result is not null)
                     return result;
             }
-            catch
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
             {
                 // Ignored - fall through to next handler
             }
         }
 
         // Dictionary<string, object?> from ObjectToInferredTypesConverter
-        // Re-serialize to JSON then deserialize to target type with proper naming policy
+        // Re-serialize to JSON then deserialize to target type via ITextSerializer
         if (data is Dictionary<string, object?> dictionary)
         {
             try
             {
-                string dictJson = JsonSerializer.Serialize(dictionary, options);
-                var result = JsonSerializer.Deserialize<T>(dictJson, options);
-                if (result is not null)
-                    return result;
+                string? dictJson = serializer.SerializeToString(dictionary);
+                if (dictJson is not null)
+                {
+                    var result = serializer.Deserialize<T>(dictJson);
+                    if (result is not null)
+                        return result;
+                }
             }
             catch
             {
@@ -85,10 +125,13 @@ public static class DataDictionaryExtensions
         {
             try
             {
-                string listJson = JsonSerializer.Serialize(list, options);
-                var result = JsonSerializer.Deserialize<T>(listJson, options);
-                if (result is not null)
-                    return result;
+                string? listJson = serializer.SerializeToString(list);
+                if (listJson is not null)
+                {
+                    var result = serializer.Deserialize<T>(listJson);
+                    if (result is not null)
+                        return result;
+                }
             }
             catch
             {
@@ -111,12 +154,12 @@ public static class DataDictionaryExtensions
             }
         }
 
-        // JSON string
+        // JSON string - deserialize via ITextSerializer
         if (data is string json && json.IsJson())
         {
             try
             {
-                var result = JsonSerializer.Deserialize<T>(json, options);
+                var result = serializer.Deserialize<T>(json);
                 if (result is not null)
                     return result;
             }
@@ -142,49 +185,9 @@ public static class DataDictionaryExtensions
         return default;
     }
 
-    private static bool TryDeserialize<T>(JsonElement element, JsonSerializerOptions options, out T? result)
-    {
-        result = default;
-
-        try
-        {
-            // Fast-path for common primitives where the element isn't an object/array
-            // (Deserialize<T> also works for these, but this avoids some edge cases and allocations)
-            if (typeof(T) == typeof(string))
-            {
-                object? s = element.ValueKind switch
-                {
-                    JsonValueKind.String => element.GetString(),
-                    JsonValueKind.Number => element.GetRawText(),
-                    JsonValueKind.True => "true",
-                    JsonValueKind.False => "false",
-                    JsonValueKind.Null => null,
-                    _ => element.GetRawText()
-                };
-
-                result = (T?)s;
-                return true;
-            }
-
-            // General case
-            var deserialized = element.Deserialize<T>(options);
-            if (deserialized is not null)
-            {
-                result = deserialized;
-                return true;
-            }
-        }
-        catch
-        {
-            // Ignored
-        }
-
-        return false;
-    }
-
     public static void RemoveSensitiveData(this DataDictionary extendedData)
     {
-        string[] removeKeys = extendedData.Keys.Where(k => k.StartsWith('-')).ToArray();
+        string[] removeKeys = [.. extendedData.Keys.Where(k => k.StartsWith('-'))];
         foreach (string key in removeKeys)
             extendedData.Remove(key);
     }

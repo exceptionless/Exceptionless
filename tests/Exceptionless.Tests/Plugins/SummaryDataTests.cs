@@ -1,26 +1,31 @@
-using Exceptionless.Core.Extensions;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
-using Newtonsoft.Json;
+using Foundatio.Serializer;
 using Xunit;
 
 namespace Exceptionless.Tests.Plugins;
 
 public class SummaryDataTests : TestWithServices
 {
-    public SummaryDataTests(ITestOutputHelper output) : base(output) { }
+    private readonly ITextSerializer _serializer;
+    private readonly JsonSerializerOptions _jsonOptions;
+
+    public SummaryDataTests(ITestOutputHelper output) : base(output)
+    {
+        _serializer = GetService<ITextSerializer>();
+        _jsonOptions = GetService<JsonSerializerOptions>();
+    }
 
     [Theory]
     [MemberData(nameof(Events))]
     public async Task EventSummaryData(string path)
     {
-        var settings = GetService<JsonSerializerSettings>();
-        settings.Formatting = Formatting.Indented;
-
         string json = await File.ReadAllTextAsync(path, TestCancellationToken);
         Assert.NotNull(json);
 
-        var ev = json.FromJson<PersistentEvent>(settings);
+        var ev = _serializer.Deserialize<PersistentEvent>(json);
         Assert.NotNull(ev);
 
         var data = GetService<FormattingPluginManager>().GetEventSummaryData(ev);
@@ -33,20 +38,20 @@ public class SummaryDataTests : TestWithServices
         };
 
         string expectedContent = await File.ReadAllTextAsync(Path.ChangeExtension(path, "summary.json"), TestCancellationToken);
-        Assert.Equal(expectedContent, JsonConvert.SerializeObject(summary, settings));
+        var expected = JsonNode.Parse(expectedContent);
+        var actual = JsonNode.Parse(JsonSerializer.Serialize(summary, _jsonOptions));
+        Assert.True(JsonNode.DeepEquals(expected, actual),
+            $"File: {Path.GetFileName(path)}\nExpected:\n{expected?.ToJsonString(new JsonSerializerOptions { WriteIndented = true })}\n\nActual:\n{actual?.ToJsonString(new JsonSerializerOptions { WriteIndented = true })}");
     }
 
     [Theory]
     [MemberData(nameof(Stacks))]
     public async Task StackSummaryData(string path)
     {
-        var settings = GetService<JsonSerializerSettings>();
-        settings.Formatting = Formatting.Indented;
-
         string json = await File.ReadAllTextAsync(path, TestCancellationToken);
         Assert.NotNull(json);
 
-        var stack = json.FromJson<Stack>(settings);
+        var stack = _serializer.Deserialize<Stack>(json);
         Assert.NotNull(stack);
 
         var data = GetService<FormattingPluginManager>().GetStackSummaryData(stack);
@@ -61,7 +66,10 @@ public class SummaryDataTests : TestWithServices
         };
 
         string expectedContent = await File.ReadAllTextAsync(Path.ChangeExtension(path, "summary.json"), TestCancellationToken);
-        Assert.Equal(expectedContent, JsonConvert.SerializeObject(summary, settings));
+        var expected = JsonNode.Parse(expectedContent);
+        var actual = JsonNode.Parse(JsonSerializer.Serialize(summary, _jsonOptions));
+        Assert.True(JsonNode.DeepEquals(expected, actual),
+            $"File: {Path.GetFileName(path)}\nExpected:\n{expected?.ToJsonString(new JsonSerializerOptions { WriteIndented = true })}\n\nActual:\n{actual?.ToJsonString(new JsonSerializerOptions { WriteIndented = true })}");
     }
 
     public static IEnumerable<object[]> Events
