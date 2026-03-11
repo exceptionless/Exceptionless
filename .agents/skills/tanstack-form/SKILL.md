@@ -1,8 +1,8 @@
 ---
-name: TanStack Form
+name: tanstack-form
 description: |
-  TanStack Form with Zod validation in Svelte 5. Form state management, field validation,
-  error handling, and ProblemDetails integration.
+    TanStack Form with Zod validation in Svelte 5. Form state management, field validation,
+    error handling, and ProblemDetails integration.
   Keywords: TanStack Form, createForm, Field, form validation, zod schema, form errors,
   onSubmit, onSubmitAsync, problemDetailsToFormErrors
 ---

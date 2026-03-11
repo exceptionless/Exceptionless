@@ -1,8 +1,8 @@
 ---
-name: Security Principles
+name: security-principles
 description: |
-  Security best practices for the Exceptionless codebase. Secrets management, input validation,
-  secure defaults, and avoiding common vulnerabilities.
+    Security best practices for the Exceptionless codebase. Secrets management, input validation,
+    secure defaults, and avoiding common vulnerabilities.
   Keywords: security, secrets, encryption, PII, logging, input validation, secure defaults,
   environment variables, OWASP, cryptography
 ---

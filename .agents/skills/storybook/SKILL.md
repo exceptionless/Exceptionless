@@ -1,8 +1,8 @@
 ---
-name: Storybook
+name: storybook
 description: |
-  Component stories using Storybook with Svelte CSF. Story patterns, defineMeta, argTypes,
-  snippet-based customization, and visual testing.
+    Component stories using Storybook with Svelte CSF. Story patterns, defineMeta, argTypes,
+    snippet-based customization, and visual testing.
   Keywords: storybook, stories.svelte, defineMeta, Story, args, argTypes, autodocs
 ---
 

@@ -1,8 +1,8 @@
 ---
-name: TypeScript Conventions
+name: typescript-conventions
 description: |
-  TypeScript coding standards for the Exceptionless frontend. Naming, imports, error handling,
-  ESLint/Prettier configuration, and type safety.
+    TypeScript coding standards for the Exceptionless frontend. Naming, imports, error handling,
+    ESLint/Prettier configuration, and type safety.
   Keywords: TypeScript, ESLint, Prettier, naming conventions, kebab-case, named imports,
   type guards, interfaces, avoid any, Promise handling, try catch, braces
 ---
