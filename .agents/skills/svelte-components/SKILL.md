@@ -1,10 +1,10 @@
 ---
 name: svelte-components
-description: |
-    Svelte 5 component patterns for the Exceptionless SPA. Runes, reactivity, props,
-    events, snippets, component organization, and shadcn-svelte integration.
-  Keywords: Svelte 5, $state, $derived, $effect, $props, runes, onclick, snippets,
-  {@render}, reactive, component composition, shadcn-svelte
+description: >
+    Use this skill when writing Svelte 5 components — using runes ($state, $derived, $effect,
+    $props), handling events, composing with snippets ({@render}), or integrating with
+    shadcn-svelte. Apply when creating new components, refactoring to Svelte 5 patterns,
+    or debugging reactivity issues in the frontend.
 ---
 
 # Svelte Components
@@ -146,7 +146,7 @@ Use `onclick` instead of `on:click`:
 
 ## Snippets (Content Projection)
 
-Replace `<slot>` with snippets. From [login/+page.svelte](src/Exceptionless.Web/ClientApp/src/routes/(auth)/login/+page.svelte):
+Replace `<slot>` with snippets. From [login/+page.svelte](<src/Exceptionless.Web/ClientApp/src/routes/(auth)/login/+page.svelte>):
 
 ```svelte
 <form.Subscribe selector={(state) => state.errors}>

@@ -1,10 +1,11 @@
 ---
 name: accessibility
-description: |
-    WCAG 2.2 AA accessibility standards for the Exceptionless frontend. Semantic HTML, keyboard
-    navigation, ARIA patterns, focus management, and form accessibility.
-  Keywords: WCAG, accessibility, a11y, ARIA, semantic HTML, keyboard navigation, focus management,
-  screen reader, alt text, aria-label, aria-describedby, skip links, focus trap
+description: >
+    Use this skill when building or reviewing frontend components for accessibility compliance.
+    Covers WCAG 2.2 AA standards including semantic HTML, keyboard navigation, ARIA patterns,
+    focus management, screen reader support, and form accessibility. Apply when creating new
+    UI components, fixing accessibility bugs, adding skip links or focus traps, or ensuring
+    inclusive markup — even if the user doesn't explicitly mention "a11y" or "WCAG."
 ---
 
 # Accessibility (WCAG 2.2 AA)
@@ -110,7 +111,7 @@ description: |
 // When dialog opens, focus first interactive element
 $effect(() => {
     if (open) {
-        dialogRef?.querySelector('input, button')?.focus();
+        dialogRef?.querySelector("input, button")?.focus();
     }
 });
 
@@ -240,10 +241,10 @@ npm run test:e2e
 
 ```typescript
 // In Playwright tests
-import AxeBuilder from '@axe-core/playwright';
+import AxeBuilder from "@axe-core/playwright";
 
-test('page is accessible', async ({ page }) => {
-    await page.goto('/dashboard');
+test("page is accessible", async ({ page }) => {
+    await page.goto("/dashboard");
     const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations).toEqual([]);
 });

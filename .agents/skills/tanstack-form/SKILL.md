@@ -1,10 +1,10 @@
 ---
 name: tanstack-form
-description: |
-    TanStack Form with Zod validation in Svelte 5. Form state management, field validation,
-    error handling, and ProblemDetails integration.
-  Keywords: TanStack Form, createForm, Field, form validation, zod schema, form errors,
-  onSubmit, onSubmitAsync, problemDetailsToFormErrors
+description: >
+    Use this skill when building or modifying forms with TanStack Form and Zod validation.
+    Covers createForm, field-level validation, error handling, and mapping ProblemDetails
+    API errors to form fields. Apply when adding new forms, implementing validation logic,
+    or handling form submission in the Svelte frontend.
 ---
 
 # TanStack Form
@@ -24,23 +24,23 @@ export type LoginFormData = Infer<typeof LoginSchema>;
 
 // Extended in feature schemas.ts
 // From src/lib/features/auth/schemas.ts
-import { ChangePasswordModelSchema } from '$generated/schemas';
+import { ChangePasswordModelSchema } from "$generated/schemas";
 
 export const ChangePasswordSchema = ChangePasswordModelSchema.extend({
-    confirm_password: string().min(6).max(100)
+    confirm_password: string().min(6).max(100),
 }).refine((data) => data.password === data.confirm_password, {
-    message: 'Passwords do not match',
-    path: ['confirm_password']
+    message: "Passwords do not match",
+    path: ["confirm_password"],
 });
 export type ChangePasswordFormData = Infer<typeof ChangePasswordSchema>;
 
 // Re-export generated schemas
-export { LoginSchema, type LoginFormData } from '$generated/schemas';
+export { LoginSchema, type LoginFormData } from "$generated/schemas";
 ```
 
 ## Basic Form Pattern
 
-From [login/+page.svelte](src/Exceptionless.Web/ClientApp/src/routes/(auth)/login/+page.svelte):
+From [login/+page.svelte](<src/Exceptionless.Web/ClientApp/src/routes/(auth)/login/+page.svelte>):
 
 ```svelte
 <script lang="ts">
@@ -107,7 +107,7 @@ onSubmitAsync: async ({ value }) => {
     const response = await login(value.email, value.password);
     if (response.ok) return null;
     return problemDetailsToFormErrors(response.problem);
-}
+};
 ```
 
 ## Form in Dialog Pattern

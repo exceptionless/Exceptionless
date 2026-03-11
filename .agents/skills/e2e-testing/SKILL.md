@@ -1,10 +1,10 @@
 ---
 name: e2e-testing
-description: |
-    End-to-end frontend testing with Playwright. Page Object Model, selectors, fixtures,
-    accessibility audits. Limited E2E coverage currently - area for improvement.
-  Keywords: Playwright, E2E, Page Object Model, POM, data-testid, getByRole, getByLabel,
-  getByText, fixtures, axe-playwright, frontend testing
+description: >
+    Use this skill when writing or running end-to-end browser tests with Playwright. Covers
+    Page Object Model patterns, selector strategies (data-testid, getByRole, getByLabel),
+    fixtures, and accessibility audits with axe-playwright. Apply when adding E2E test coverage,
+    debugging flaky tests, or testing user flows through the browser.
 ---
 
 # E2E Testing (Frontend)
@@ -24,7 +24,7 @@ Create page objects for reusable page interactions:
 
 ```typescript
 // e2e/pages/login-page.ts
-import { type Page, type Locator, expect } from '@playwright/test';
+import { type Page, type Locator, expect } from "@playwright/test";
 
 export class LoginPage {
     readonly page: Page;
@@ -35,14 +35,14 @@ export class LoginPage {
 
     constructor(page: Page) {
         this.page = page;
-        this.emailInput = page.getByLabel('Email');
-        this.passwordInput = page.getByLabel('Password');
-        this.submitButton = page.getByRole('button', { name: /log in/i });
-        this.errorMessage = page.getByRole('alert');
+        this.emailInput = page.getByLabel("Email");
+        this.passwordInput = page.getByLabel("Password");
+        this.submitButton = page.getByRole("button", { name: /log in/i });
+        this.errorMessage = page.getByRole("alert");
     }
 
     async goto() {
-        await this.page.goto('/login');
+        await this.page.goto("/login");
     }
 
     async login(email: string, password: string) {
@@ -61,26 +61,26 @@ export class LoginPage {
 
 ```typescript
 // e2e/auth/login.spec.ts
-import { test, expect } from '@playwright/test';
-import { LoginPage } from '../pages/login-page';
+import { test, expect } from "@playwright/test";
+import { LoginPage } from "../pages/login-page";
 
-test.describe('Login', () => {
-    test('successful login redirects to dashboard', async ({ page }) => {
+test.describe("Login", () => {
+    test("successful login redirects to dashboard", async ({ page }) => {
         const loginPage = new LoginPage(page);
 
         await loginPage.goto();
-        await loginPage.login('user@example.com', 'password123');
+        await loginPage.login("user@example.com", "password123");
 
-        await expect(page).toHaveURL('/');
+        await expect(page).toHaveURL("/");
     });
 
-    test('invalid credentials shows error', async ({ page }) => {
+    test("invalid credentials shows error", async ({ page }) => {
         const loginPage = new LoginPage(page);
 
         await loginPage.goto();
-        await loginPage.login('wrong@example.com', 'wrongpassword');
+        await loginPage.login("wrong@example.com", "wrongpassword");
 
-        await loginPage.expectError('Invalid email or password');
+        await loginPage.expectError("Invalid email or password");
     });
 });
 ```
@@ -89,24 +89,24 @@ test.describe('Login', () => {
 
 1. **Semantic selectors first**:
 
-   ```typescript
-   page.getByRole('button', { name: /submit/i });
-   page.getByLabel('Email address');
-   page.getByText('Welcome back');
-   ```
+    ```typescript
+    page.getByRole("button", { name: /submit/i });
+    page.getByLabel("Email address");
+    page.getByText("Welcome back");
+    ```
 
 2. **Fallback to test IDs**:
 
-   ```typescript
-   page.getByTestId('stack-trace');
-   ```
+    ```typescript
+    page.getByTestId("stack-trace");
+    ```
 
 3. **Avoid implementation details**:
 
-   ```typescript
-   // ❌ Avoid CSS classes and IDs
-   page.locator('.btn-primary');
-   ```
+    ```typescript
+    // ❌ Avoid CSS classes and IDs
+    page.locator(".btn-primary");
+    ```
 
 ## Backend Data Setup
 
@@ -122,13 +122,13 @@ For tests requiring specific data, consider:
 ```typescript
 test.beforeEach(async ({ request }) => {
     // Set up test data via API
-    await request.post('/api/test/seed', {
-        data: { scenario: 'events-with-errors' }
+    await request.post("/api/test/seed", {
+        data: { scenario: "events-with-errors" },
     });
 });
 
 test.afterEach(async ({ request }) => {
-    await request.delete('/api/test/cleanup');
+    await request.delete("/api/test/cleanup");
 });
 ```
 
@@ -137,11 +137,11 @@ test.afterEach(async ({ request }) => {
 ## Accessibility Audits
 
 ```typescript
-import { test, expect } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
+import { test, expect } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
-test('login page has no accessibility violations', async ({ page }) => {
-    await page.goto('/login');
+test("login page has no accessibility violations", async ({ page }) => {
+    await page.goto("/login");
 
     const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations).toEqual([]);

@@ -584,14 +584,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             if ((await _userRepository.GetByOrganizationIdAsync(organization.Id)).Total == 1)
                 return BadRequest("An organization must contain at least one user.");
 
-            var projects = (await _projectRepository.GetByOrganizationIdAsync(organization.Id)).Documents.Where(p => p.NotificationSettings.ContainsKey(user.Id)).ToList();
-            if (projects.Count > 0)
-            {
-                foreach (var project in projects)
-                    project.NotificationSettings.Remove(user.Id);
-
-                await _projectRepository.SaveAsync(projects);
-            }
+            await _organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
 
             user.OrganizationIds.Remove(organization.Id);
             await _userRepository.SaveAsync(user, o => o.Cache());
