@@ -1,10 +1,10 @@
 ---
 name: backend-testing
-description: |
-    Backend testing with xUnit, Foundatio.Xunit, integration tests with AppWebHostFactory,
-    FluentClient, ProxyTimeProvider for time manipulation, and test data builders.
-    Keywords: xUnit, Fact, Theory, integration tests, AppWebHostFactory, FluentClient,
-    ProxyTimeProvider, TimeProvider, Foundatio.Xunit, TestWithLoggingBase, test data builders
+description: >
+  Use this skill when writing or modifying C# tests — unit tests, integration tests, or
+  test fixtures. Covers xUnit patterns, AppWebHostFactory for integration testing, FluentClient
+  for API assertions, ProxyTimeProvider for time manipulation, and test data builders. Apply
+  when adding new test cases, debugging test failures, or setting up test infrastructure.
 ---
 
 # Backend Testing

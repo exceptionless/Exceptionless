@@ -6,6 +6,7 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Utility;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
@@ -16,6 +17,8 @@ public class AdminControllerTests : IntegrationTestsBase
     private readonly IQueue<WorkItemData> _workItemQueue;
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
+    private readonly IProjectRepository _projectRepository;
+    private readonly IUserRepository _userRepository;
     private readonly StackData _stackData;
     private readonly EventData _eventData;
 
@@ -25,6 +28,8 @@ public class AdminControllerTests : IntegrationTestsBase
         _workItemQueue = GetService<IQueue<WorkItemData>>();
         _stackRepository = GetService<IStackRepository>();
         _eventRepository = GetService<IEventRepository>();
+        _projectRepository = GetService<IProjectRepository>();
+        _userRepository = GetService<IUserRepository>();
         _stackData = GetService<StackData>();
         _eventData = GetService<EventData>();
     }
@@ -171,5 +176,155 @@ public class AdminControllerTests : IntegrationTestsBase
 
         await RefreshDataAsync();
         return stack;
+    }
+
+    [Fact]
+    public async Task RunJobAsync_WhenUpdateProjectNotificationSettingsWithOrphanedUser_ShouldRemoveOrphanedEntries()
+    {
+        // Arrange
+        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+
+        string orphanedUserId = ObjectId.GenerateNewId().ToString();
+        project.NotificationSettings[orphanedUserId] = new NotificationSettings { ReportNewErrors = true };
+        await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency());
+
+        int settingsCountBefore = project.NotificationSettings.Count;
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "maintenance", "update-project-notification-settings")
+            .StatusCodeShouldBeOk());
+
+        await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+
+        // Assert
+        project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+        Assert.DoesNotContain(orphanedUserId, project.NotificationSettings.Keys);
+        Assert.Equal(settingsCountBefore - 1, project.NotificationSettings.Count);
+    }
+
+    [Fact]
+    public async Task RunJobAsync_WhenUpdateProjectNotificationSettingsWithValidUser_ShouldPreserveSettings()
+    {
+        // Arrange
+        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+
+        var globalAdmin = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(globalAdmin);
+        Assert.Contains(globalAdmin.Id, project.NotificationSettings.Keys);
+
+        int settingsCountBefore = project.NotificationSettings.Count;
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "maintenance", "update-project-notification-settings")
+            .StatusCodeShouldBeOk());
+
+        await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+
+        // Assert
+        project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+        Assert.Contains(globalAdmin.Id, project.NotificationSettings.Keys);
+        Assert.Equal(settingsCountBefore, project.NotificationSettings.Count);
+    }
+
+    [Fact]
+    public async Task RunJobAsync_WhenUpdateProjectNotificationSettingsWithIntegration_ShouldPreserveIntegrationKey()
+    {
+        // Arrange
+        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+
+        project.NotificationSettings[Project.NotificationIntegrations.Slack] = new NotificationSettings { ReportNewErrors = true };
+        string orphanedUserId = ObjectId.GenerateNewId().ToString();
+        project.NotificationSettings[orphanedUserId] = new NotificationSettings { ReportNewErrors = true };
+        await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency());
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "maintenance", "update-project-notification-settings")
+            .StatusCodeShouldBeOk());
+
+        await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+
+        // Assert
+        project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+        Assert.Contains(Project.NotificationIntegrations.Slack, project.NotificationSettings.Keys);
+        Assert.DoesNotContain(orphanedUserId, project.NotificationSettings.Keys);
+    }
+
+    [Fact]
+    public async Task RunJobAsync_WhenUpdateProjectNotificationSettingsWithDeletedUser_ShouldRemoveOrphanedEntries()
+    {
+        // Arrange
+        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+
+        string deletedUserId = ObjectId.GenerateNewId().ToString();
+        project.NotificationSettings[deletedUserId] = new NotificationSettings { ReportNewErrors = true };
+        await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency());
+
+        Assert.Null(await _userRepository.GetByIdAsync(deletedUserId));
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "maintenance", "update-project-notification-settings")
+            .StatusCodeShouldBeOk());
+
+        await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+
+        // Assert
+        project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+        Assert.DoesNotContain(deletedUserId, project.NotificationSettings.Keys);
+    }
+
+    [Fact]
+    public async Task RunJobAsync_WhenUpdateProjectNotificationSettingsWithOrgFilter_ShouldOnlyProcessTargetOrg()
+    {
+        // Arrange
+        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+
+        string orphanedUserId = ObjectId.GenerateNewId().ToString();
+        project.NotificationSettings[orphanedUserId] = new NotificationSettings { ReportNewErrors = true };
+        await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency());
+
+        // Act: run cleanup for a different org
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "maintenance", "update-project-notification-settings")
+            .QueryString("organizationId", TestConstants.OrganizationId2)
+            .StatusCodeShouldBeOk());
+
+        await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+
+        // Assert: orphaned user in the OTHER org should still be there
+        project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+        Assert.Contains(orphanedUserId, project.NotificationSettings.Keys);
+
+        // Act: now run for the correct org
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "maintenance", "update-project-notification-settings")
+            .QueryString("organizationId", TestConstants.OrganizationId)
+            .StatusCodeShouldBeOk());
+
+        await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+
+        // Assert
+        project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+        Assert.DoesNotContain(orphanedUserId, project.NotificationSettings.Keys);
     }
 }

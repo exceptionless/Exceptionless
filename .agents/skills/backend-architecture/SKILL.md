@@ -1,10 +1,10 @@
 ---
 name: backend-architecture
-description: |
-    Backend architecture for Exceptionless. Project layering, repositories, validation,
-    controllers, authorization, WebSockets, configuration, and Aspire orchestration.
-    Keywords: Core, Insulation, repositories, FluentValidation, MiniValidator, controllers,
-    AuthorizationRoles, ProblemDetails, Aspire, WebSockets, AppOptions
+description: >
+  Use this skill when working on the ASP.NET Core backend — adding controllers, repositories,
+  validators, authorization, WebSocket endpoints, or Aspire orchestration. Apply when modifying
+  project layering (Core, Insulation, Web, Job), configuring services, returning ProblemDetails
+  errors, or understanding how the backend is structured.
 ---
 
 # Backend Architecture

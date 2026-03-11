@@ -1,10 +1,10 @@
 ---
 name: typescript-conventions
-description: |
-    TypeScript coding standards for the Exceptionless frontend. Naming, imports, error handling,
-    ESLint/Prettier configuration, and type safety.
-  Keywords: TypeScript, ESLint, Prettier, naming conventions, kebab-case, named imports,
-  type guards, interfaces, avoid any, Promise handling, try catch, braces
+description: >
+    Use this skill when writing or reviewing TypeScript code in the frontend to follow project
+    conventions. Covers naming standards (kebab-case files), import patterns, error handling,
+    type safety (no any), and ESLint/Prettier configuration. Apply when authoring new TypeScript
+    files, reviewing code style, or resolving linting issues.
 ---
 
 # TypeScript Conventions
@@ -29,22 +29,22 @@ description: |
 
 ```typescript
 // ✅ Good: Named imports
-import { UserService, type User } from '$lib/services/user-service';
-import { formatDate, formatNumber } from '$lib/utils/formatters';
+import { UserService, type User } from "$lib/services/user-service";
+import { formatDate, formatNumber } from "$lib/utils/formatters";
 
 // ❌ Avoid: Namespace imports (except allowed exceptions)
-import * as utils from '$lib/utils';
+import * as utils from "$lib/utils";
 ```
 
 ### Allowed Namespace Imports
 
 ```typescript
 // ✅ Allowed: shadcn-svelte components
-import * as Dialog from '$comp/ui/dialog';
-import * as DropdownMenu from '$comp/ui/dropdown-menu';
+import * as Dialog from "$comp/ui/dialog";
+import * as DropdownMenu from "$comp/ui/dropdown-menu";
 
 // ✅ Allowed: Barrel exports
-import * as Field from '$comp/ui/field';
+import * as Field from "$comp/ui/field";
 ```
 
 ## Type Safety
@@ -78,21 +78,21 @@ function parseResponse(data: unknown): UserData {
 ```typescript
 function isUserData(data: unknown): data is UserData {
     return (
-        typeof data === 'object' &&
+        typeof data === "object" &&
         data !== null &&
-        'id' in data &&
-        'name' in data &&
-        'email' in data
+        "id" in data &&
+        "name" in data &&
+        "email" in data
     );
 }
 
 // Discriminated unions
 type ApiResponse =
-    | { status: 'success'; data: UserData }
-    | { status: 'error'; error: string };
+    | { status: "success"; data: UserData }
+    | { status: "error"; error: string };
 
 function handleResponse(response: ApiResponse) {
-    if (response.status === 'success') {
+    if (response.status === "success") {
         // TypeScript knows response.data exists
         return response.data;
     }
@@ -124,7 +124,7 @@ async function loadUser(id: string): Promise<User | null> {
         return response.data;
     } catch (error) {
         if (error instanceof ApiError) {
-            console.error('API Error:', error.message);
+            console.error("API Error:", error.message);
         }
         return null;
     }
@@ -194,7 +194,7 @@ const { id, name, email } = user;
 const [first, ...rest] = items;
 
 // Nullish coalescing
-const displayName = user.nickname ?? user.name ?? 'Anonymous';
+const displayName = user.nickname ?? user.name ?? "Anonymous";
 
 // Optional chaining
 const city = user?.address?.city;

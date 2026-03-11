@@ -1,10 +1,10 @@
 ---
 name: shadcn-svelte
-description: |
-    UI components with shadcn-svelte and bits-ui. Component patterns, trigger snippets,
-    dialog handling, and accessibility.
-  Keywords: shadcn-svelte, bits-ui, Button, Dialog, Sheet, Popover, DropdownMenu,
-  Tooltip, Form, Input, Select, child snippet, trigger pattern, cn utility
+description: >
+    Use this skill when building UI with shadcn-svelte or bits-ui components — buttons, dialogs,
+    sheets, popovers, dropdowns, tooltips, forms, inputs, or selects. Covers import patterns,
+    trigger snippets, child snippet composition, and the cn utility. Apply when adding or
+    customizing any shadcn-svelte component in the frontend.
 ---
 
 # shadcn-svelte Components
@@ -173,18 +173,18 @@ When using trigger components with custom elements like Button, **always use the
 
 ```typescript
 // options.ts
-import type { DropdownItem } from '$shared/types';
+import type { DropdownItem } from "$shared/types";
 
 export enum Status {
-    Active = 'active',
-    Inactive = 'inactive',
-    Pending = 'pending'
+    Active = "active",
+    Inactive = "inactive",
+    Pending = "pending",
 }
 
 export const statusOptions: DropdownItem<Status>[] = [
-    { value: Status.Active, label: 'Active' },
-    { value: Status.Inactive, label: 'Inactive' },
-    { value: Status.Pending, label: 'Pending' }
+    { value: Status.Active, label: "Active" },
+    { value: Status.Inactive, label: "Inactive" },
+    { value: Status.Pending, label: "Pending" },
 ];
 ```
 

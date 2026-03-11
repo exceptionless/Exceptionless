@@ -1,10 +1,10 @@
 ---
 name: dotnet-conventions
-description: |
-    C# coding standards for the Exceptionless codebase. Naming conventions, async patterns,
-    structured logging, nullable reference types, and formatting rules.
-  Keywords: C# style, naming conventions, _camelCase, PascalCase, async suffix,
-  CancellationToken, nullable annotations, structured logging, ExceptionlessState
+description: >
+    Use this skill when writing or reviewing C# code to follow project conventions. Covers
+    naming standards, async patterns, CancellationToken usage, structured logging, nullable
+    reference types, and formatting rules. Apply when authoring new C# classes, reviewing
+    code style, or ensuring consistency with existing patterns.
 ---
 
 # .NET Conventions

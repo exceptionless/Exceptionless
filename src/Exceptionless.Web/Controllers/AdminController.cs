@@ -163,31 +163,6 @@ public class AdminController : ExceptionlessApiController
 
         switch (name.ToLowerInvariant())
         {
-            case "indexes":
-                if (!_appOptions.ElasticsearchOptions.DisableIndexConfiguration)
-                    await _configuration.ConfigureIndexesAsync(beginReindexingOutdated: false);
-                break;
-            case "update-organization-plans":
-                await _workItemQueue.EnqueueAsync(new OrganizationMaintenanceWorkItem { UpgradePlans = true });
-                break;
-            case "remove-old-organization-usage":
-                await _workItemQueue.EnqueueAsync(new OrganizationMaintenanceWorkItem { RemoveOldUsageStats = true });
-                break;
-            case "update-project-default-bot-lists":
-                await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { UpdateDefaultBotList = true, IncrementConfigurationVersion = true });
-                break;
-            case "increment-project-configuration-version":
-                await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { IncrementConfigurationVersion = true });
-                break;
-            case "remove-old-project-usage":
-                await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { RemoveOldUsageStats = true });
-                break;
-            case "normalize-user-email-address":
-                await _workItemQueue.EnqueueAsync(new UserMaintenanceWorkItem { Normalize = true });
-                break;
-            case "reset-verify-email-address-token-and-expiration":
-                await _workItemQueue.EnqueueAsync(new UserMaintenanceWorkItem { ResetVerifyEmailAddressToken = true });
-                break;
             case "fix-stack-stats":
                 var defaultUtcStart = new DateTime(2026, 2, 10, 0, 0, 0, DateTimeKind.Utc);
                 var effectiveUtcStart = utcStart ?? defaultUtcStart;
@@ -202,6 +177,37 @@ public class AdminController : ExceptionlessApiController
                 {
                     UtcStart = effectiveUtcStart,
                     UtcEnd = utcEnd,
+                    OrganizationId = organizationId
+                });
+                break;
+            case "increment-project-configuration-version":
+                await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { IncrementConfigurationVersion = true });
+                break;
+            case "indexes":
+                if (!_appOptions.ElasticsearchOptions.DisableIndexConfiguration)
+                    await _configuration.ConfigureIndexesAsync(beginReindexingOutdated: false);
+                break;
+            case "normalize-user-email-address":
+                await _workItemQueue.EnqueueAsync(new UserMaintenanceWorkItem { Normalize = true });
+                break;
+            case "remove-old-organization-usage":
+                await _workItemQueue.EnqueueAsync(new OrganizationMaintenanceWorkItem { RemoveOldUsageStats = true });
+                break;
+            case "remove-old-project-usage":
+                await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { RemoveOldUsageStats = true });
+                break;
+            case "reset-verify-email-address-token-and-expiration":
+                await _workItemQueue.EnqueueAsync(new UserMaintenanceWorkItem { ResetVerifyEmailAddressToken = true });
+                break;
+            case "update-organization-plans":
+                await _workItemQueue.EnqueueAsync(new OrganizationMaintenanceWorkItem { UpgradePlans = true });
+                break;
+            case "update-project-default-bot-lists":
+                await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { UpdateDefaultBotList = true, IncrementConfigurationVersion = true });
+                break;
+            case "update-project-notification-settings":
+                await _workItemQueue.EnqueueAsync(new UpdateProjectNotificationSettingsWorkItem
+                {
                     OrganizationId = organizationId
                 });
                 break;
