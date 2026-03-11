@@ -1,8 +1,8 @@
 ---
-name: shadcn-svelte Components
+name: shadcn-svelte
 description: |
-  UI components with shadcn-svelte and bits-ui. Component patterns, trigger snippets,
-  dialog handling, and accessibility.
+    UI components with shadcn-svelte and bits-ui. Component patterns, trigger snippets,
+    dialog handling, and accessibility.
   Keywords: shadcn-svelte, bits-ui, Button, Dialog, Sheet, Popover, DropdownMenu,
   Tooltip, Form, Input, Select, child snippet, trigger pattern, cn utility
 ---
