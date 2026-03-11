@@ -127,7 +127,7 @@ public class OrganizationService : IStartupAction
 
         using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organizationId));
 
-        var userIdsToRemoveSet = userIdsToRemove.Count == 0
+        var userIdsToRemoveSet = userIdsToRemove.Count is 0
             ? new HashSet<string>(StringComparer.Ordinal)
             : new HashSet<string>(userIdsToRemove, StringComparer.Ordinal);
 

@@ -1,10 +1,10 @@
 ---
 name: foundatio
-description: |
-    Foundatio infrastructure abstractions for caching, queuing, messaging, file storage,
-    locking, jobs, and resilience. Use context7 for complete API documentation.
-  Keywords: Foundatio, ICacheClient, IQueue, IMessageBus, IFileStorage, ILockProvider,
-  IJob, QueueJobBase, resilience, retry, Redis, Elasticsearch
+description: >
+    Use this skill when working with Foundatio infrastructure abstractions — caching, queuing,
+    messaging, file storage, locking, or background jobs. Apply when using ICacheClient, IQueue,
+    IMessageBus, IFileStorage, ILockProvider, or IJob, or when implementing retry/resilience
+    patterns. Covers both in-memory and production (Redis, Elasticsearch) implementations.
 ---
 
 # Foundatio

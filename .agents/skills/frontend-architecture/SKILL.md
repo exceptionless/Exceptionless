@@ -1,10 +1,10 @@
 ---
 name: frontend-architecture
-description: |
-    Svelte SPA architecture for Exceptionless. Route groups, lib structure, API client,
-    feature slices, and barrel exports.
-  Keywords: route groups, $lib, feature slices, api-client, barrel exports, index.ts,
-  vertical slices, shared components, generated models, ClientApp structure
+description: >
+    Use this skill when working on the Svelte SPA's project structure — adding routes, creating
+    feature slices, organizing shared components, or understanding the ClientApp directory layout.
+    Covers route groups, $lib conventions, barrel exports, API client organization, and vertical
+    slice architecture. Apply when deciding where to place new files or components.
 ---
 
 # Frontend Architecture
@@ -80,20 +80,25 @@ Centralize API calls per feature:
 
 ```typescript
 // features/organizations/api.svelte.ts
-import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
-import { useFetchClient } from '@exceptionless/fetchclient';
-import type { Organization, CreateOrganizationRequest } from './models';
+import {
+    createQuery,
+    createMutation,
+    useQueryClient,
+} from "@tanstack/svelte-query";
+import { useFetchClient } from "@exceptionless/fetchclient";
+import type { Organization, CreateOrganizationRequest } from "./models";
 
 export function getOrganizationsQuery() {
     const client = useFetchClient();
 
     return createQuery(() => ({
-        queryKey: ['organizations'],
+        queryKey: ["organizations"],
         queryFn: async () => {
-            const response = await client.getJSON<Organization[]>('/organizations');
+            const response =
+                await client.getJSON<Organization[]>("/organizations");
             if (!response.ok) throw response.problem;
             return response.data!;
-        }
+        },
     }));
 }
 
@@ -103,13 +108,16 @@ export function postOrganizationMutation() {
 
     return createMutation(() => ({
         mutationFn: async (data: CreateOrganizationRequest) => {
-            const response = await client.postJSON<Organization>('/organizations', data);
+            const response = await client.postJSON<Organization>(
+                "/organizations",
+                data,
+            );
             if (!response.ok) throw response.problem;
             return response.data!;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['organizations'] });
-        }
+            queryClient.invalidateQueries({ queryKey: ["organizations"] });
+        },
     }));
 }
 ```
@@ -123,8 +131,8 @@ Re-export generated models through feature model folders:
 export type {
     Organization,
     CreateOrganizationRequest,
-    UpdateOrganizationRequest
-} from '$lib/generated';
+    UpdateOrganizationRequest,
+} from "$lib/generated";
 
 // Add feature-specific types
 export interface OrganizationWithStats extends Organization {
@@ -139,9 +147,9 @@ Use `index.ts` for clean imports:
 
 ```typescript
 // features/organizations/index.ts
-export { getOrganizationsQuery, postOrganizationMutation } from './api.svelte';
-export type { Organization, CreateOrganizationRequest } from './models';
-export { organizationSchema } from './schemas';
+export { getOrganizationsQuery, postOrganizationMutation } from "./api.svelte";
+export type { Organization, CreateOrganizationRequest } from "./models";
+export { organizationSchema } from "./schemas";
 ```
 
 ## Shared Components
@@ -176,9 +184,9 @@ Prefer regeneration over hand-writing DTOs. Generated types live in `$lib/genera
 
 ```typescript
 // Configured in svelte.config.js
-import { Button } from '$comp/ui/button';        // $lib/components
-import { User } from '$features/users/models';   // $lib/features
-import { formatDate } from '$shared/formatters'; // $lib/features/shared
+import { Button } from "$comp/ui/button"; // $lib/components
+import { User } from "$features/users/models"; // $lib/features
+import { formatDate } from "$shared/formatters"; // $lib/features/shared
 ```
 
 ## Composite Component Pattern

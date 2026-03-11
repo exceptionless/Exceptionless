@@ -1,10 +1,10 @@
 ---
 name: tanstack-query
-description: |
-    Data fetching and caching with TanStack Query in Svelte. Query patterns, mutations,
-    cache invalidation, WebSocket-driven updates, and optimistic updates.
-  Keywords: createQuery, createMutation, TanStack Query, query keys, cache invalidation,
-  optimistic updates, refetch, stale time, @exceptionless/fetchclient, WebSocket
+description: >
+    Use this skill when fetching data, managing server state, or handling API mutations in
+    the Svelte frontend. Covers createQuery, createMutation, query keys, cache invalidation,
+    optimistic updates, and WebSocket-driven refetching. Apply when adding API calls, managing
+    loading/error states, or coordinating cache updates after mutations.
 ---
 
 # TanStack Query
@@ -17,21 +17,29 @@ Centralize API calls in `api.svelte.ts` per feature using TanStack Query with `@
 
 ```typescript
 // src/lib/features/organizations/api.svelte.ts
-import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
-import { useFetchClient, type ProblemDetails } from '@exceptionless/fetchclient';
+import {
+    createQuery,
+    createMutation,
+    useQueryClient,
+} from "@tanstack/svelte-query";
+import {
+    useFetchClient,
+    type ProblemDetails,
+} from "@exceptionless/fetchclient";
 
 export function getOrganizationsQuery() {
     const client = useFetchClient();
 
     return createQuery(() => ({
-        queryKey: ['organizations'],
+        queryKey: ["organizations"],
         queryFn: async () => {
-            const response = await client.getJSON<Organization[]>('/organizations');
+            const response =
+                await client.getJSON<Organization[]>("/organizations");
             if (!response.ok) {
                 throw response.problem;
             }
             return response.data!;
-        }
+        },
     }));
 }
 ```
@@ -43,12 +51,15 @@ Use a queryKeys factory per feature for type safety and consistency:
 ```typescript
 // From src/lib/features/webhooks/api.svelte.ts
 export const queryKeys = {
-    type: ['Webhook'] as const,
+    type: ["Webhook"] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
-    ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
-    project: (id: string | undefined) => [...queryKeys.type, 'project', id] as const,
-    deleteWebhook: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'delete'] as const,
-    postWebhook: () => [...queryKeys.type, 'post'] as const
+    ids: (ids: string[] | undefined) =>
+        [...queryKeys.type, ...(ids ?? [])] as const,
+    project: (id: string | undefined) =>
+        [...queryKeys.type, "project", id] as const,
+    deleteWebhook: (ids: string[] | undefined) =>
+        [...queryKeys.ids(ids), "delete"] as const,
+    postWebhook: () => [...queryKeys.type, "post"] as const,
 };
 ```
 
@@ -56,19 +67,16 @@ Common patterns:
 
 ```typescript
 // Resource list
-['organizations']
-['projects']
-
-// Single resource
-['organizations', organizationId]
-['projects', projectId]
-
-// Nested resources
-['organizations', organizationId, 'projects']
-['projects', projectId, 'events']
-
-// Filtered queries
-['events', { projectId, status: 'open' }]
+["organizations"]["projects"][
+    // Single resource
+    ("organizations", organizationId)
+][("projects", projectId)][
+    // Nested resources
+    ("organizations", organizationId, "projects")
+][("projects", projectId, "events")][
+    // Filtered queries
+    ("events", { projectId, status: "open" })
+];
 ```
 
 ## Using Queries in Components
@@ -100,7 +108,10 @@ export function createOrganizationMutation() {
 
     return createMutation(() => ({
         mutationFn: async (data: CreateOrganizationRequest) => {
-            const response = await client.postJSON<Organization>('/organizations', data);
+            const response = await client.postJSON<Organization>(
+                "/organizations",
+                data,
+            );
             if (!response.ok) {
                 throw response.problem;
             }
@@ -108,8 +119,8 @@ export function createOrganizationMutation() {
         },
         onSuccess: () => {
             // Invalidate and refetch organizations list
-            queryClient.invalidateQueries({ queryKey: ['organizations'] });
-        }
+            queryClient.invalidateQueries({ queryKey: ["organizations"] });
+        },
     }));
 }
 ```
@@ -163,13 +174,15 @@ export function getProjectQuery(projectId: string) {
     const client = useFetchClient();
 
     return createQuery(() => ({
-        queryKey: ['projects', projectId],
+        queryKey: ["projects", projectId],
         queryFn: async () => {
-            const response = await client.getJSON<Project>(`/projects/${projectId}`);
+            const response = await client.getJSON<Project>(
+                `/projects/${projectId}`,
+            );
             if (!response.ok) throw response.problem;
             return response.data!;
         },
-        enabled: !!projectId // Only run when projectId is truthy
+        enabled: !!projectId, // Only run when projectId is truthy
     }));
 }
 ```
@@ -182,36 +195,56 @@ export function updateOrganizationMutation() {
     const queryClient = useQueryClient();
 
     return createMutation(() => ({
-        mutationFn: async ({ id, data }: { id: string; data: UpdateOrganizationRequest }) => {
-            const response = await client.patchJSON<Organization>(`/organizations/${id}`, data);
+        mutationFn: async ({
+            id,
+            data,
+        }: {
+            id: string;
+            data: UpdateOrganizationRequest;
+        }) => {
+            const response = await client.patchJSON<Organization>(
+                `/organizations/${id}`,
+                data,
+            );
             if (!response.ok) throw response.problem;
             return response.data!;
         },
         onMutate: async ({ id, data }) => {
             // Cancel in-flight queries
-            await queryClient.cancelQueries({ queryKey: ['organizations', id] });
+            await queryClient.cancelQueries({
+                queryKey: ["organizations", id],
+            });
 
             // Snapshot previous value
-            const previous = queryClient.getQueryData<Organization>(['organizations', id]);
+            const previous = queryClient.getQueryData<Organization>([
+                "organizations",
+                id,
+            ]);
 
             // Optimistically update
-            queryClient.setQueryData(['organizations', id], (old: Organization) => ({
-                ...old,
-                ...data
-            }));
+            queryClient.setQueryData(
+                ["organizations", id],
+                (old: Organization) => ({
+                    ...old,
+                    ...data,
+                }),
+            );
 
             return { previous };
         },
         onError: (err, variables, context) => {
             // Rollback on error
             if (context?.previous) {
-                queryClient.setQueryData(['organizations', variables.id], context.previous);
+                queryClient.setQueryData(
+                    ["organizations", variables.id],
+                    context.previous,
+                );
             }
         },
         onSettled: (data, error, { id }) => {
             // Always refetch after mutation
-            queryClient.invalidateQueries({ queryKey: ['organizations', id] });
-        }
+            queryClient.invalidateQueries({ queryKey: ["organizations", id] });
+        },
     }));
 }
 ```
@@ -224,12 +257,14 @@ export function prefetchOrganization(id: string) {
     const queryClient = useQueryClient();
 
     return queryClient.prefetchQuery({
-        queryKey: ['organizations', id],
+        queryKey: ["organizations", id],
         queryFn: async () => {
-            const response = await client.getJSON<Organization>(`/organizations/${id}`);
+            const response = await client.getJSON<Organization>(
+                `/organizations/${id}`,
+            );
             if (!response.ok) throw response.problem;
             return response.data!;
-        }
+        },
     });
 }
 ```
@@ -240,12 +275,12 @@ Invalidate queries when WebSocket messages arrive:
 
 ```typescript
 // From src/lib/features/webhooks/api.svelte.ts
-import type { WebSocketMessageValue } from '$features/websockets/models';
-import { QueryClient } from '@tanstack/svelte-query';
+import type { WebSocketMessageValue } from "$features/websockets/models";
+import { QueryClient } from "@tanstack/svelte-query";
 
 export async function invalidateWebhookQueries(
     queryClient: QueryClient,
-    message: WebSocketMessageValue<'WebhookChanged'>
+    message: WebSocketMessageValue<"WebhookChanged">,
 ) {
     const { id, organization_id, project_id } = message;
 
@@ -254,7 +289,9 @@ export async function invalidateWebhookQueries(
     }
 
     if (project_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.project(project_id) });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.project(project_id),
+        });
     }
 
     // Fallback: invalidate all if no specific keys
@@ -268,7 +305,7 @@ Wire up in WebSocket handler:
 
 ```typescript
 // In WebSocket message handler
-onMessage('WebhookChanged', (message) => {
+onMessage("WebhookChanged", (message) => {
     invalidateWebhookQueries(queryClient, message);
 });
 ```

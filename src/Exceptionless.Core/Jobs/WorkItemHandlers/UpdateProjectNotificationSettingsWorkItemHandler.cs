@@ -88,13 +88,11 @@ public class UpdateProjectNotificationSettingsWorkItemHandler : WorkItemHandlerB
                     : 99;
                 await context.ReportProgressAsync(percentage, $"Processed {organizationsProcessed}/{totalOrganizations} organizations, removed {totalNotificationSettingsRemoved} invalid notification settings");
 
-                await Task.Delay(TimeSpan.FromSeconds(2.5), _timeProvider);
-
                 if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
                     break;
 
                 if (results.Documents.Count > 0)
-                    await context.RenewLockAsync();
+                    await Task.Delay(TimeSpan.FromSeconds(2.5), _timeProvider);
             }
         }
 
