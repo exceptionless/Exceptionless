@@ -16,6 +16,10 @@ Run `Exceptionless.AppHost` from your IDE. Aspire starts all services (Elasticse
 | Frontend test  | `npm run test:unit`                                             |
 | E2E test       | `npm run test:e2e`                                              |
 
+Testing note: `IntegrationTestsBase.ResetDataAsync()` clears indexes, cache, file storage, and queues, but it does not seed sample org/project/user fixtures. Tests that depend on `SampleDataService` constants must override `ResetDataAsync()` and call `SampleDataService.CreateDataAsync()`.
+Work item note: Foundatio `WorkItemJob` already emits the final `100%` progress report for progress-enabled work items, so handlers should only report intermediate progress and avoid a duplicate terminal `ReportProgressAsync(100, ...)`.
+Organization cleanup note: `OrganizationService.RemoveUsersAsync()` is shared by both soft-delete and hard-delete organization flows. Project notification-settings cleanup belongs in `SoftDeleteOrganizationAsync()` or other project-preserving paths, not in the shared user-removal helper.
+
 ## Project Structure
 
 ```text

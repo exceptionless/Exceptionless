@@ -109,8 +109,6 @@ public class OrganizationService : IStartupAction
                 break;
         }
 
-        await CleanupProjectNotificationSettingsAsync(organization, []);
-
         return totalUsersAffected;
     }
 
@@ -192,6 +190,7 @@ public class OrganizationService : IStartupAction
         await RemoveWebHooksAsync(organization);
         await CancelSubscriptionsAsync(organization);
         await RemoveUsersAsync(organization, currentUserId);
+        await CleanupProjectNotificationSettingsAsync(organization, []);
 
         organization.IsDeleted = true;
         await _organizationRepository.SaveAsync(organization);
@@ -208,11 +207,7 @@ public class OrganizationService : IStartupAction
             cancellationToken.ThrowIfCancellationRequested();
 
             var users = await _userRepository.GetByIdsAsync(batch);
-            foreach (var user in users)
-            {
-                if (user.OrganizationIds.Contains(organizationId))
-                    validUserIds.Add(user.Id);
-            }
+            validUserIds.UnionWith(users.Where(user => user.OrganizationIds.Contains(organizationId)).Select(user => user.Id));
         }
 
         return validUserIds;
