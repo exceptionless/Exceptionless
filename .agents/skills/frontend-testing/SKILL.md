@@ -1,8 +1,8 @@
 ---
-name: Frontend Testing
+name: frontend-testing
 description: |
-  Unit and component testing for the frontend with Vitest and Testing Library.
-  Keywords: Vitest, @testing-library/svelte, component tests, vi.mock, render, screen,
+    Unit and component testing for the frontend with Vitest and Testing Library.
+    Keywords: Vitest, @testing-library/svelte, component tests, vi.mock, render, screen,
   fireEvent, userEvent, test.ts, spec.ts, describe, it, AAA pattern
 ---
 

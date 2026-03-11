@@ -1,8 +1,8 @@
 ---
-name: E2E Testing (Frontend)
+name: e2e-testing
 description: |
-  End-to-end frontend testing with Playwright. Page Object Model, selectors, fixtures,
-  accessibility audits. Limited E2E coverage currently - area for improvement.
+    End-to-end frontend testing with Playwright. Page Object Model, selectors, fixtures,
+    accessibility audits. Limited E2E coverage currently - area for improvement.
   Keywords: Playwright, E2E, Page Object Model, POM, data-testid, getByRole, getByLabel,
   getByText, fixtures, axe-playwright, frontend testing
 ---

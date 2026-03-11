@@ -1,10 +1,10 @@
 ---
-name: Backend Architecture
+name: backend-architecture
 description: |
-  Backend architecture for Exceptionless. Project layering, repositories, validation,
-  controllers, authorization, WebSockets, configuration, and Aspire orchestration.
-  Keywords: Core, Insulation, repositories, FluentValidation, MiniValidator, controllers,
-  AuthorizationRoles, ProblemDetails, Aspire, WebSockets, AppOptions
+    Backend architecture for Exceptionless. Project layering, repositories, validation,
+    controllers, authorization, WebSockets, configuration, and Aspire orchestration.
+    Keywords: Core, Insulation, repositories, FluentValidation, MiniValidator, controllers,
+    AuthorizationRoles, ProblemDetails, Aspire, WebSockets, AppOptions
 ---
 
 # Backend Architecture

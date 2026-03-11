@@ -1,8 +1,8 @@
 ---
-name: .NET Conventions
+name: dotnet-conventions
 description: |
-  C# coding standards for the Exceptionless codebase. Naming conventions, async patterns,
-  structured logging, nullable reference types, and formatting rules.
+    C# coding standards for the Exceptionless codebase. Naming conventions, async patterns,
+    structured logging, nullable reference types, and formatting rules.
   Keywords: C# style, naming conventions, _camelCase, PascalCase, async suffix,
   CancellationToken, nullable annotations, structured logging, ExceptionlessState
 ---
@@ -18,13 +18,13 @@ description: |
 
 ## Naming Conventions
 
-| Element | Convention | Example |
-|---------|------------|---------|
-| Private fields | `_camelCase` | `_organizationRepository` |
-| Public members | PascalCase | `GetByIdAsync` |
-| Local variables | camelCase | `organizationId` |
-| Constants | PascalCase | `MaxRetryCount` |
-| Type parameters | `T` prefix | `TModel` |
+| Element         | Convention   | Example                   |
+| --------------- | ------------ | ------------------------- |
+| Private fields  | `_camelCase` | `_organizationRepository` |
+| Public members  | PascalCase   | `GetByIdAsync`            |
+| Local variables | camelCase    | `organizationId`          |
+| Constants       | PascalCase   | `MaxRetryCount`           |
+| Type parameters | `T` prefix   | `TModel`                  |
 
 ## Formatting Rules
 

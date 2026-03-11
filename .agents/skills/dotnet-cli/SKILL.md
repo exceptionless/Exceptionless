@@ -1,8 +1,8 @@
 ---
-name: .NET CLI
+name: dotnet-cli
 description: |
-  .NET command-line tools for building, testing, and formatting. Common dotnet commands
-  and development workflow.
+    .NET command-line tools for building, testing, and formatting. Common dotnet commands
+    and development workflow.
   Keywords: dotnet build, dotnet restore, dotnet test, dotnet format, dotnet run,
   NuGet, package restore, CLI commands, build system
 ---

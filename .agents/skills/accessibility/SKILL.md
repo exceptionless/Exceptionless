@@ -1,8 +1,8 @@
 ---
-name: Accessibility
+name: accessibility
 description: |
-  WCAG 2.2 AA accessibility standards for the Exceptionless frontend. Semantic HTML, keyboard
-  navigation, ARIA patterns, focus management, and form accessibility.
+    WCAG 2.2 AA accessibility standards for the Exceptionless frontend. Semantic HTML, keyboard
+    navigation, ARIA patterns, focus management, and form accessibility.
   Keywords: WCAG, accessibility, a11y, ARIA, semantic HTML, keyboard navigation, focus management,
   screen reader, alt text, aria-label, aria-describedby, skip links, focus trap
 ---

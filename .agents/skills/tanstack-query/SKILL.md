@@ -1,8 +1,8 @@
 ---
-name: TanStack Query
+name: tanstack-query
 description: |
-  Data fetching and caching with TanStack Query in Svelte. Query patterns, mutations,
-  cache invalidation, WebSocket-driven updates, and optimistic updates.
+    Data fetching and caching with TanStack Query in Svelte. Query patterns, mutations,
+    cache invalidation, WebSocket-driven updates, and optimistic updates.
   Keywords: createQuery, createMutation, TanStack Query, query keys, cache invalidation,
   optimistic updates, refetch, stale time, @exceptionless/fetchclient, WebSocket
 ---

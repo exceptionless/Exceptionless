@@ -1,5 +1,5 @@
 ---
-name: Backend Testing
+name: backend-testing
 description: |
     Backend testing with xUnit, Foundatio.Xunit, integration tests with AppWebHostFactory,
     FluentClient, ProxyTimeProvider for time manipulation, and test data builders.

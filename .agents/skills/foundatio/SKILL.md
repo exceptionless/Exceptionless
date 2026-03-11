@@ -1,8 +1,8 @@
 ---
-name: Foundatio
+name: foundatio
 description: |
-  Foundatio infrastructure abstractions for caching, queuing, messaging, file storage,
-  locking, jobs, and resilience. Use context7 for complete API documentation.
+    Foundatio infrastructure abstractions for caching, queuing, messaging, file storage,
+    locking, jobs, and resilience. Use context7 for complete API documentation.
   Keywords: Foundatio, ICacheClient, IQueue, IMessageBus, IFileStorage, ILockProvider,
   IJob, QueueJobBase, resilience, retry, Redis, Elasticsearch
 ---
@@ -15,14 +15,14 @@ Foundatio provides pluggable infrastructure abstractions. Use context7 MCP for c
 
 ## Core Abstractions
 
-| Interface | Purpose | In-Memory | Production |
-| --------- | ------- | --------- | ---------- |
-| `ICacheClient` | Distributed caching | `InMemoryCacheClient` | Redis |
-| `IQueue<T>` | Message queuing | `InMemoryQueue<T>` | Redis/SQS |
-| `IMessageBus` | Pub/sub messaging | `InMemoryMessageBus` | Redis |
-| `IFileStorage` | File storage | `InMemoryFileStorage` | S3/Azure |
-| `ILockProvider` | Distributed locking | `InMemoryLockProvider` | Redis |
-| `IResiliencePolicyProvider` | Retry/circuit breaker | N/A | Polly-based |
+| Interface                   | Purpose               | In-Memory              | Production  |
+| --------------------------- | --------------------- | ---------------------- | ----------- |
+| `ICacheClient`              | Distributed caching   | `InMemoryCacheClient`  | Redis       |
+| `IQueue<T>`                 | Message queuing       | `InMemoryQueue<T>`     | Redis/SQS   |
+| `IMessageBus`               | Pub/sub messaging     | `InMemoryMessageBus`   | Redis       |
+| `IFileStorage`              | File storage          | `InMemoryFileStorage`  | S3/Azure    |
+| `ILockProvider`             | Distributed locking   | `InMemoryLockProvider` | Redis       |
+| `IResiliencePolicyProvider` | Retry/circuit breaker | N/A                    | Polly-based |
 
 ## ICacheClient
 

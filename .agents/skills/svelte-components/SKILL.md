@@ -1,8 +1,8 @@
 ---
-name: Svelte Components
+name: svelte-components
 description: |
-  Svelte 5 component patterns for the Exceptionless SPA. Runes, reactivity, props,
-  events, snippets, component organization, and shadcn-svelte integration.
+    Svelte 5 component patterns for the Exceptionless SPA. Runes, reactivity, props,
+    events, snippets, component organization, and shadcn-svelte integration.
   Keywords: Svelte 5, $state, $derived, $effect, $props, runes, onclick, snippets,
   {@render}, reactive, component composition, shadcn-svelte
 ---

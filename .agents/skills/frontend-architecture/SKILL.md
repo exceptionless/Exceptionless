@@ -1,8 +1,8 @@
 ---
-name: Frontend Architecture
+name: frontend-architecture
 description: |
-  Svelte SPA architecture for Exceptionless. Route groups, lib structure, API client,
-  feature slices, and barrel exports.
+    Svelte SPA architecture for Exceptionless. Route groups, lib structure, API client,
+    feature slices, and barrel exports.
   Keywords: route groups, $lib, feature slices, api-client, barrel exports, index.ts,
   vertical slices, shared components, generated models, ClientApp structure
 ---
