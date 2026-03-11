@@ -111,6 +111,7 @@ public class Bootstrapper
             handlers.Register<RemoveStacksWorkItem>(s.GetRequiredService<RemoveStacksWorkItemHandler>);
             handlers.Register<SetLocationFromGeoWorkItem>(s.GetRequiredService<SetLocationFromGeoWorkItemHandler>);
             handlers.Register<SetProjectIsConfiguredWorkItem>(s.GetRequiredService<SetProjectIsConfiguredWorkItemHandler>);
+            handlers.Register<UpdateProjectNotificationSettingsWorkItem>(s.GetRequiredService<UpdateProjectNotificationSettingsWorkItemHandler>);
             handlers.Register<UserMaintenanceWorkItem>(s.GetRequiredService<UserMaintenanceWorkItemHandler>);
             return handlers;
         });
