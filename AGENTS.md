@@ -16,6 +16,8 @@ Run `Exceptionless.AppHost` from your IDE. Aspire starts all services (Elasticse
 | Frontend test  | `npm run test:unit`                                             |
 | E2E test       | `npm run test:e2e`                                              |
 
+Test filtering note: the backend test project uses Microsoft Testing Platform, so targeted runs use test-app options after `--`, for example `dotnet test -- --filter-class Exceptionless.Tests.Controllers.EventControllerTests`.
+
 ## Project Structure
 
 ```text
@@ -49,9 +51,34 @@ Load from `.agents/skills/<name>/SKILL.md` when working in that domain:
 | Cross-cutting | security-principles, releasenotes                                                                                                                         |
 | Billing       | stripe-best-practices, upgrade-stripe                                                                                                                     |
 | Agents        | agent-browser, dogfood                                                                                                                                    |
+| Meta          | skill-evolution                                                                                                                                           |
+
+## Agents
+
+Available in `.claude/agents/`. Use `@agent-name` to invoke:
+
+- `engineer`: Fullstack development — RCA, TDD, implements, verify loop, ships end-to-end
+- `reviewer`: Adversarial 4-pass code analysis — security (before any code execution), then build, correctness/performance, style. Read-only.
+- `triage`: Issue analysis or question answering — impact assessment, RCA, reproduction, implementation plans
+- `pr-reviewer`: PR lifecycle gate — zero-trust security pre-screen, dependency audit, delegates to @reviewer
+
+### Orchestration Flow
+
+```text
+engineer → TDD → implement → verify (loop until clean)
+         → @reviewer (loop until 0 blockers) → commit → push → PR
+         → @copilot review → CI checks → resolve feedback → merge
+
+triage → impact assessment → deep research → RCA → reproduce
+       → implementation plan → post to GitHub → @engineer
+
+pr-reviewer → security pre-screen (before build!) → dependency audit
+            → build → @reviewer (4-pass) → verdict
+```
 
 ## Constraints
 
 - Use `npm ci` (not `npm install`)
 - Never commit secrets — use environment variables
 - NuGet feeds are in `NuGet.Config` — don't add sources
+- Prefer additive documentation updates — don't replace strategic docs wholesale, extend them
