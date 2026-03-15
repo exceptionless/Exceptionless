@@ -5919,8 +5919,8 @@
           }
         ],
         "responses": {
-          "202": {
-            "description": "Accepted",
+          "200": {
+            "description": "The stacks were marked as fixed.",
             "content": {
               "application/json": { }
             }
@@ -5959,8 +5959,8 @@
           }
         ],
         "responses": {
-          "202": {
-            "description": "Accepted",
+          "200": {
+            "description": "The stacks were snoozed.",
             "content": {
               "application/json": { }
             }
