@@ -19,7 +19,7 @@ public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, I
         : base(configuration.Stacks, validator, options)
     {
         _timeProvider = configuration.TimeProvider;
-        AddPropertyRequiredForRemove(s => s.SignatureHash);
+        AddRequiredField(s => s.SignatureHash);
     }
 
     public Task<FindResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack>? options = null)
@@ -87,7 +87,9 @@ ctx._source.total_occurrences += params.count;";
 
         try
         {
-            await PatchAsync(stackId, operation, o => o.Notifications(false));
+            bool modified = await PatchAsync(stackId, operation, o => o.Notifications(false));
+            if (!modified)
+                return false;
         }
         catch (DocumentNotFoundException)
         {
@@ -141,14 +143,12 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
 
         try
         {
-            await PatchAsync(stackId, operation, o => o.Notifications(sendNotifications));
+            return await PatchAsync(stackId, operation, o => o.Notifications(sendNotifications));
         }
         catch (DocumentNotFoundException)
         {
             return true;
         }
-
-        return true;
     }
 
     public async Task<Stack?> GetStackBySignatureHashAsync(string projectId, string signatureHash)

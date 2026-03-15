@@ -17,5 +17,4 @@
     <ProjectReference Include="..\Exceptionless.Job\Exceptionless.Job.csproj" />
     <ProjectReference Include="..\Exceptionless.Web\Exceptionless.Web.csproj" />
   </ItemGroup>
-
 </Project>
