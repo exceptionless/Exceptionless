@@ -160,7 +160,7 @@ Place truly shared components in appropriate locations:
 lib/
 ├── features/shared/        # Shared between features
 │   ├── components/
-│   │   ├── formatters/     # Boolean, date, number formatters
+│   │   ├── formatters/     # Boolean, date, number, bytes, duration, currency, percentage, time-ago formatters
 │   │   ├── loading/
 │   │   └── error/
 │   └── utils/
@@ -169,6 +169,35 @@ lib/
     ├── layout/
     └── dialogs/            # Global dialogs
 ```
+
+### Formatter Components (MUST use — never write custom formatting functions)
+
+The `formatters/` directory contains Svelte components for displaying formatted values. **Always use these instead of writing custom formatting functions like `formatDateTime()` or `formatBytes()`.**
+
+| Component | Use For |
+|-----------|---------|
+| `<DateTime>` | Date and time display |
+| `<TimeAgo>` | Relative time ("3 hours ago") |
+| `<Duration>` | Time durations |
+| `<Bytes>` | File sizes, memory |
+| `<Number>` | Numeric values with locale formatting |
+| `<Boolean>` | True/false display |
+| `<Currency>` | Money amounts |
+| `<Percentage>` | Percentage values |
+| `<DateMath>` | Elasticsearch date math expressions |
+
+```svelte
+<!-- CORRECT: use the formatter component -->
+<DateTime value={event.date} />
+<TimeAgo value={event.date} />
+<Bytes value={event.size} />
+
+<!-- WRONG: never do this -->
+{formatDateTime(event.date)}
+{new Date(event.date).toLocaleString()}
+```
+
+**Consistency rule**: If a formatter component exists for a data type, you MUST use it. Creating a custom formatting function when a component already exists is a code review BLOCKER.
 
 ## Generated Types
 
@@ -188,6 +217,17 @@ import { Button } from "$comp/ui/button"; // $lib/components
 import { User } from "$features/users/models"; // $lib/features
 import { formatDate } from "$shared/formatters"; // $lib/features/shared
 ```
+
+## Consistency Rule
+
+**Before creating anything new, search the codebase for existing patterns.** Consistency is the most important quality of a codebase:
+
+1. Find the closest existing implementation of what you're building
+2. Match its patterns exactly — file structure, naming, imports, component composition
+3. Reuse shared utilities and components from `$lib/features/shared/` and `$comp/`
+4. If an existing utility almost does what you need, extend it — don't create a parallel one
+
+Pattern divergence is a code review **BLOCKER**, not a nit.
 
 ## Composite Component Pattern
 

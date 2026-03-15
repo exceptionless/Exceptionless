@@ -110,7 +110,7 @@ test.describe("Login", () => {
 
 ## Backend Data Setup
 
-E2E tests run against the full Aspire stack. The backend uses the same `AppWebHostFactory` infrastructure from [backend-testing](backend-testing/SKILL.md).
+E2E tests run against the full Aspire stack. The backend uses the same `AppWebHostFactory` infrastructure from [backend-testing](../backend-testing/SKILL.md).
 
 For tests requiring specific data, consider:
 
@@ -148,4 +148,4 @@ test("login page has no accessibility violations", async ({ page }) => {
 });
 ```
 
-See [accessibility](accessibility/SKILL.md) for WCAG guidelines.
+See [accessibility](../accessibility/SKILL.md) for WCAG guidelines.

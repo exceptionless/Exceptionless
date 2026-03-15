@@ -1,10 +1,10 @@
 ---
 name: backend-testing
 description: >
-  Use this skill when writing or modifying C# tests — unit tests, integration tests, or
-  test fixtures. Covers xUnit patterns, AppWebHostFactory for integration testing, FluentClient
-  for API assertions, ProxyTimeProvider for time manipulation, and test data builders. Apply
-  when adding new test cases, debugging test failures, or setting up test infrastructure.
+    Use this skill when writing or modifying C# tests — unit tests, integration tests, or
+    test fixtures. Covers xUnit patterns, AppWebHostFactory for integration testing, FluentClient
+    for API assertions, ProxyTimeProvider for time manipulation, and test data builders. Apply
+    when adding new test cases, debugging test failures, or setting up test infrastructure.
 ---
 
 # Backend Testing
@@ -106,15 +106,15 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, IAsyncLifetime
 
     protected FluentClient CreateFluentClient()
     {
-        var settings = GetService<JsonSerializerSettings>();
-        return new FluentClient(CreateHttpClient(), new NewtonsoftJsonSerializer(settings));
+        var settings = GetService<JsonSerializerOptions>();
+        return new FluentClient(CreateHttpClient(), new JsonContentSerializer(settings));
     }
 }
 ```
 
 ## Real Test Example
 
-From [EventControllerTests.cs](tests/Exceptionless.Tests/Controllers/EventControllerTests.cs):
+From [EventControllerTests.cs](../../../tests/Exceptionless.Tests/Controllers/EventControllerTests.cs):
 
 ```csharp
 public class EventControllerTests : IntegrationTestsBase

@@ -23,7 +23,7 @@ Co-locate stories with components as `*.stories.svelte`.
 
 ## Basic Story Pattern
 
-From [stack-status-badge.stories.svelte](src/Exceptionless.Web/ClientApp/src/lib/features/stacks/components/stack-status-badge.stories.svelte):
+From [stack-status-badge.stories.svelte](../../../src/Exceptionless.Web/ClientApp/src/lib/features/stacks/components/stack-status-badge.stories.svelte):
 
 ```svelte
 <script module lang="ts">
@@ -52,7 +52,7 @@ From [stack-status-badge.stories.svelte](src/Exceptionless.Web/ClientApp/src/lib
 
 ## Story with Snippets
 
-From [notification.stories.svelte](src/Exceptionless.Web/ClientApp/src/lib/features/shared/components/notification/notification.stories.svelte):
+From [notification.stories.svelte](../../../src/Exceptionless.Web/ClientApp/src/lib/features/shared/components/notification/notification.stories.svelte):
 
 ```svelte
 <script module lang="ts">

@@ -170,4 +170,4 @@ public async Task<ActionResult> ProcessAsync(string id)
 
 ### Domain Validation
 
-See [backend-architecture](backend-architecture/SKILL.md) for validation patterns (FluentValidation for domain models, MiniValidator for API requests).
+See [backend-architecture](../backend-architecture/SKILL.md) for validation patterns (FluentValidation for domain models, MiniValidator for API requests).
