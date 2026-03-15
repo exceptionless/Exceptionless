@@ -28,7 +28,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         AddDefaultExclude(EventIndex.Alias.OperatingSystem);
         AddDefaultExclude(EventIndex.Alias.Error);
 
-        AddPropertyRequiredForRemove(e => e.Date);
+        AddRequiredField(e => e.Date);
     }
 
     public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, CommandOptionsDescriptor<PersistentEvent>? options = null)

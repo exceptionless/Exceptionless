@@ -18,7 +18,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
     {
         _miniValidationValidator = validator;
         DefaultConsistency = Consistency.Immediate;
-        AddPropertyRequiredForRemove(u => u.EmailAddress, u => u.OrganizationIds);
+        AddRequiredField(u => u.EmailAddress, u => u.OrganizationIds);
     }
 
     protected override Task ValidateAndThrowAsync(User document)

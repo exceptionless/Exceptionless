@@ -10,7 +10,7 @@ public abstract class RepositoryOwnedByOrganizationAndProject<T> : RepositoryOwn
 {
     public RepositoryOwnedByOrganizationAndProject(IIndex index, IValidator<T> validator, AppOptions options) : base(index, validator, options)
     {
-        AddPropertyRequiredForRemove(o => o.ProjectId);
+        AddRequiredField(o => o.ProjectId);
     }
 
     public virtual Task<FindResults<T>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<T>? options = null)

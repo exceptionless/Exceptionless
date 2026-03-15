@@ -85,8 +85,9 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
             return;
 
         string script = $"ctx._source.next_summary_end_of_day_ticks += {TimeSpan.TicksPerDay}L;";
-        await PatchAsync(projects.Select(p => p.Id).ToArray(), new ScriptPatch(script), o => o.Notifications(false));
-        await InvalidateCacheAsync(projects);
+        long modifiedCount = await PatchAsync(projects.Select(p => p.Id).ToArray(), new ScriptPatch(script), o => o.Notifications(false));
+        if (modifiedCount > 0)
+            await InvalidateCacheAsync(projects);
     }
 
     protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<Project>> findHits, ICommandOptions options, bool isDirtyRead)

@@ -11,7 +11,7 @@ public abstract class RepositoryOwnedByOrganization<T> : RepositoryBase<T>, IRep
 {
     public RepositoryOwnedByOrganization(IIndex index, IValidator<T> validator, AppOptions options) : base(index, validator, options)
     {
-        AddPropertyRequiredForRemove(o => o.OrganizationId);
+        AddRequiredField(o => o.OrganizationId);
     }
 
     public virtual Task<FindResults<T>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<T>? options = null)
