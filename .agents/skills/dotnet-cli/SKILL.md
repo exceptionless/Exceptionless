@@ -66,7 +66,7 @@ dotnet format --verify-no-changes
 
 ## NuGet Configuration
 
-Feeds are defined in [NuGet.Config](NuGet.Config) — do not add new sources unless explicitly requested.
+Feeds are defined in [NuGet.Config](../../../NuGet.Config) — do not add new sources unless explicitly requested.
 
 ## Directory.Build.props
 

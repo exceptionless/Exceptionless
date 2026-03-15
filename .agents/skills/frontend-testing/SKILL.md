@@ -61,7 +61,7 @@ describe("Calculator", () => {
 
 ### Unit Tests with AAA
 
-From [dates.test.ts](src/Exceptionless.Web/ClientApp/src/lib/features/shared/dates.test.ts):
+From [dates.test.ts](../../../src/Exceptionless.Web/ClientApp/src/lib/features/shared/dates.test.ts):
 
 ```typescript
 import { describe, expect, it } from "vitest";
@@ -99,7 +99,7 @@ describe("getRelativeTimeFormatUnit", () => {
 
 ### Testing with Spies
 
-From [cached-persisted-state.svelte.test.ts](src/Exceptionless.Web/ClientApp/src/lib/features/shared/utils/cached-persisted-state.svelte.test.ts):
+From [cached-persisted-state.svelte.test.ts](../../../src/Exceptionless.Web/ClientApp/src/lib/features/shared/utils/cached-persisted-state.svelte.test.ts):
 
 ```typescript
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -139,7 +139,7 @@ describe("CachedPersistedState", () => {
 
 ### Testing String Transformations
 
-From [helpers.svelte.test.ts](src/Exceptionless.Web/ClientApp/src/lib/features/events/components/filters/helpers.svelte.test.ts):
+From [helpers.svelte.test.ts](../../../src/Exceptionless.Web/ClientApp/src/lib/features/events/components/filters/helpers.svelte.test.ts):
 
 ```typescript
 import { describe, expect, it } from "vitest";

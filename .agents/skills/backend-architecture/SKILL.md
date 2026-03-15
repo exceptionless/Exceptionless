@@ -337,7 +337,7 @@ var esConnection = builder.Configuration.GetConnectionString("elasticsearch");
 
 ## Dependencies
 
-- NuGet feeds configured in [NuGet.Config](NuGet.Config)
+- NuGet feeds configured in [NuGet.Config](../../../NuGet.Config)
 - Version alignment in `src/Directory.Build.props`
 - Avoid deprecated APIs — check for alternatives before using legacy methods
 

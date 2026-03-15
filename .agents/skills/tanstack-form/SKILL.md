@@ -40,7 +40,7 @@ export { LoginSchema, type LoginFormData } from "$generated/schemas";
 
 ## Basic Form Pattern
 
-From [login/+page.svelte](<src/Exceptionless.Web/ClientApp/src/routes/(auth)/login/+page.svelte>):
+From src/Exceptionless.Web/ClientApp/src/routes/(auth)/login/+page.svelte:
 
 ```svelte
 <script lang="ts">
@@ -139,4 +139,4 @@ const form = createForm(() => ({
 
 ## References
 
-See [shadcn-svelte](shadcn-svelte/SKILL.md) for Field component patterns.
+See [shadcn-svelte](../shadcn-svelte/SKILL.md) for Field component patterns.

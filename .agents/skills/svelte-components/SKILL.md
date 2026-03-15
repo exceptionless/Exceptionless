@@ -146,7 +146,7 @@ Use `onclick` instead of `on:click`:
 
 ## Snippets (Content Projection)
 
-Replace `<slot>` with snippets. From [login/+page.svelte](<src/Exceptionless.Web/ClientApp/src/routes/(auth)/login/+page.svelte>):
+Replace `<slot>` with snippets. From src/Exceptionless.Web/ClientApp/src/routes/(auth)/login/+page.svelte:
 
 ```svelte
 <form.Subscribe selector={(state) => state.errors}>
@@ -190,7 +190,7 @@ All interactive components must be keyboard accessible:
 - Ensure custom interactions have `tabindex` and keyboard handlers
 - Test with keyboard-only navigation
 
-See [accessibility](accessibility/SKILL.md) for WCAG guidelines.
+See [accessibility](../accessibility/SKILL.md) for WCAG guidelines.
 
 ## Imports
 
@@ -206,5 +206,5 @@ See [accessibility](accessibility/SKILL.md) for WCAG guidelines.
 
 ## References
 
-- [shadcn-svelte](shadcn-svelte/SKILL.md) — UI component patterns and trigger snippets
-- [accessibility](accessibility/SKILL.md) — WCAG guidelines and keyboard navigation
+- [shadcn-svelte](../shadcn-svelte/SKILL.md) — UI component patterns and trigger snippets
+- [accessibility](../accessibility/SKILL.md) — WCAG guidelines and keyboard navigation

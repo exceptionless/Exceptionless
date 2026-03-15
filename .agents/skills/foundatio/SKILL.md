@@ -241,7 +241,7 @@ services.AddSingleton<IMessageBus, InMemoryMessageBus>();
 services.AddSingleton(typeof(IQueue<>), typeof(InMemoryQueue<>));
 ```
 
-See [backend-testing](backend-testing/SKILL.md) for `ProxyTimeProvider` patterns.
+See [backend-testing](../backend-testing/SKILL.md) for `ProxyTimeProvider` patterns.
 
 ## Resilience & Reliability
 
