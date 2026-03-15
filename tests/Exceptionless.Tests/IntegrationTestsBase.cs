@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
@@ -10,7 +11,6 @@ using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Mail;
 using Exceptionless.Tests.Utility;
 using FluentRest;
-using FluentRest.NewtonsoftJson;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
@@ -23,7 +23,6 @@ using Foundatio.Utility;
 using Foundatio.Xunit;
 using Microsoft.AspNetCore.TestHost;
 using Nest;
-using Newtonsoft.Json;
 using Xunit;
 using HttpMethod = System.Net.Http.HttpMethod;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -206,8 +205,8 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
     protected FluentClient CreateFluentClient()
     {
-        var settings = GetService<JsonSerializerSettings>();
-        return new FluentClient(CreateHttpClient(), new NewtonsoftJsonSerializer(settings));
+        var settings = GetService<JsonSerializerOptions>();
+        return new FluentClient(CreateHttpClient(), new JsonContentSerializer(settings));
     }
 
     protected async Task<HttpResponseMessage> SendRequestAsync(Action<AppSendBuilder> configure)

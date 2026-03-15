@@ -563,8 +563,9 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         ev.SetSessionId("123456789");
 
         ev.CopyDataToIndex([]);
+        Assert.NotNull(ev.Idx);
 
-        Assert.False(ev.Idx.ContainsKey("first-name-s"));
+        Assert.False(ev.Idx!.ContainsKey("first-name-s"));
         Assert.True(ev.Idx.ContainsKey("isverified-b"));
         Assert.True(ev.Idx.ContainsKey("isverified1-b"));
         Assert.True(ev.Idx.ContainsKey("age-n"));

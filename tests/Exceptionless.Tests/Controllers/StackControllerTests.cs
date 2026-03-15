@@ -71,7 +71,7 @@ public class StackControllerTests : IntegrationTestsBase
         Assert.NotNull(stack);
         Assert.False(stack.IsFixed());
 
-        await SendRequestAsAsync<WorkInProgressResult>(r => r
+        await SendRequestAsync(r => r
             .Post()
             .AsGlobalAdminUser()
             .AppendPath($"stacks/{stack.Id}/mark-fixed")

@@ -44,5 +44,5 @@ public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWith
     /// <summary>
     /// Used to store primitive data type custom data values for searching the event.
     /// </summary>
-    public DataDictionary Idx { get; set; } = new();
+    public DataDictionary? Idx { get; set; }
 }
