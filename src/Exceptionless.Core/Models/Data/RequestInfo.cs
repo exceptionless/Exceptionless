@@ -47,12 +47,12 @@ public class RequestInfo : IData
     /// <summary>
     /// The header values from the request.
     /// </summary>
-    public Dictionary<string, string[]>? Headers { get; set; } = new();
+    public Dictionary<string, string[]>? Headers { get; set; }
 
     /// <summary>
     /// The request cookies.
     /// </summary>
-    public Dictionary<string, string>? Cookies { get; set; } = new();
+    public Dictionary<string, string>? Cookies { get; set; }
 
     /// <summary>
     /// The data that was POSTed for the request.
@@ -62,12 +62,12 @@ public class RequestInfo : IData
     /// <summary>
     /// The query string values from the request.
     /// </summary>
-    public Dictionary<string, string>? QueryString { get; set; } = new();
+    public Dictionary<string, string>? QueryString { get; set; }
 
     /// <summary>
     /// Extended data entries for this request.
     /// </summary>
-    public DataDictionary? Data { get; set; } = new();
+    public DataDictionary? Data { get; set; }
 
     protected bool Equals(RequestInfo other)
     {

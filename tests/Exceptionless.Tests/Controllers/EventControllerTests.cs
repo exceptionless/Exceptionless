@@ -34,6 +34,7 @@ namespace Exceptionless.Tests.Controllers;
 
 public class EventControllerTests : IntegrationTestsBase
 {
+    private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly StackData _stackData;
     private readonly RandomEventGenerator _randomEventGenerator;
@@ -45,6 +46,7 @@ public class EventControllerTests : IntegrationTestsBase
 
     public EventControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
+        _jsonSerializerOptions = GetService<JsonSerializerOptions>();
         _organizationRepository = GetService<IOrganizationRepository>();
         _stackData = GetService<StackData>();
         _randomEventGenerator = GetService<RandomEventGenerator>();
@@ -657,7 +659,7 @@ public class EventControllerTests : IntegrationTestsBase
         await CreateStacksAndEventsAsync();
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
-        var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+        var results = await SendRequestAsAsync<List<EventSummaryModel>>(r => r
             .AsGlobalAdminUser()
             .AppendPath("events")
             .QueryString("filter", filter)
@@ -669,7 +671,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal(expected, results.Count);
 
         // @! forces use of opposite of default filter inversion
-        results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+        results = await SendRequestAsAsync<List<EventSummaryModel>>(r => r
             .AsGlobalAdminUser()
             .AppendPath("events")
             .QueryString("filter", $"@!{filter}")
@@ -679,6 +681,53 @@ public class EventControllerTests : IntegrationTestsBase
 
         Assert.NotNull(results);
         Assert.Equal(expected, results.Count);
+    }
+
+    [Fact]
+    public async Task GetEvents_SummaryMode_DeserializesEventSummaryModel()
+    {
+        // Arrange
+        await CreateStacksAndEventsAsync();
+
+        // Act
+        var results = await SendRequestAsAsync<List<EventSummaryModel>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("filter", "status:open")
+            .QueryString("mode", "summary")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(results);
+        Assert.NotEmpty(results);
+        Assert.All(results, summary => Assert.NotEqual(default, summary.Date));
+    }
+
+    [Fact]
+    public async Task GetEvents_StackFrequentMode_DeserializesStackSummaryModelWithRequiredFields()
+    {
+        // Arrange
+        await CreateStacksAndEventsAsync();
+
+        // Act
+        var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("filter", "status:open")
+            .QueryString("mode", "stack_frequent")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(results);
+        Assert.NotEmpty(results);
+        Assert.All(results, summary =>
+        {
+            Assert.False(String.IsNullOrWhiteSpace(summary.Title));
+            Assert.NotEqual(default, summary.FirstOccurrence);
+            Assert.NotEqual(default, summary.LastOccurrence);
+        });
     }
 
     [InlineData(null)]
@@ -1558,7 +1607,7 @@ public class EventControllerTests : IntegrationTestsBase
         return result;
     }
 
-    [Fact(Skip = "Foundatio bug with not passing in time provider to extension methods.")]
+    [Fact]
     public async Task PostEvent_WithEnvironmentAndRequestInfo_ReturnsCorrectSnakeCaseSerialization()
     {
         TimeProvider.SetUtcNow(new DateTime(2026, 1, 15, 12, 0, 0, DateTimeKind.Utc));
@@ -1592,7 +1641,7 @@ public class EventControllerTests : IntegrationTestsBase
             .Replace("<EVENT_ID>", processedEvent.Id)
             .Replace("<STACK_ID>", processedEvent.StackId);
 
-        Assert.Equal(expectedJson, actualJson);
+        Assert.Equal(ToPrettyJson(expectedJson), ToPrettyJson(actualJson));
     }
 
     [Fact]
@@ -1783,5 +1832,14 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("log", ev.Type);
         Assert.Equal("Test naming conventions", ev.Message);
         Assert.Equal("ref-1234567890", ev.ReferenceId);
+    }
+
+    private string ToPrettyJson(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        var prettyJsonOptions = new JsonSerializerOptions(_jsonSerializerOptions) {
+            WriteIndented = true
+        };
+        return JsonSerializer.Serialize(document.RootElement, prettyJsonOptions);
     }
 }
