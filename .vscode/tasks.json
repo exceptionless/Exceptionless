@@ -2,7 +2,25 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build",
+            "label": "build (active file context)",
+            "type": "process",
+            "command": "pwsh",
+            "args": [
+                "-NoProfile",
+                "-Command",
+                "$ext='${fileExtname}'; if ($ext -in @('.svelte', '.ts', '.js', '.tsx', '.jsx', '.css', '.html')) { Write-Host \"Frontend file detected ($ext). Running npm run build...\"; Set-Location 'src/Exceptionless.Web/ClientApp'; npm run build } elseif ($ext -in @('.cs', '.csproj', '.sln', '.slnx')) { Write-Host \"Backend file detected ($ext). Running dotnet build...\"; dotnet build /property:GenerateFullPaths=true /consoleloggerparameters:NoSummary } else { Write-Host \"Unknown or no active file extension ($ext). Defaulting to dotnet build...\"; dotnet build /property:GenerateFullPaths=true /consoleloggerparameters:NoSummary }"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "dotnet build",
             "command": "dotnet",
             "type": "shell",
             "args": [
@@ -12,7 +30,7 @@
             ],
             "group": {
                 "kind": "build",
-                "isDefault": true
+                "isDefault": false
             },
             "presentation": {
                 "reveal": "silent"
@@ -138,7 +156,7 @@
             ],
             "group": {
                 "kind": "build",
-                "isDefault": true
+                "isDefault": false
             },
             "presentation": {
                 "reveal": "always"
@@ -188,7 +206,7 @@
             "script": "lint",
             "group": {
                 "kind": "build",
-                "isDefault": true
+                "isDefault": false
             },
             "presentation": {
                 "reveal": "always"
@@ -220,7 +238,7 @@
             ],
             "group": {
                 "kind": "build",
-                "isDefault": true
+                "isDefault": false
             },
             "presentation": {
                 "reveal": "never"
@@ -252,7 +270,7 @@
             ],
             "group": {
                 "kind": "build",
-                "isDefault": true
+                "isDefault": false
             },
             "presentation": {
                 "reveal": "never"
