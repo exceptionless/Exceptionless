@@ -23,8 +23,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="appsettings.yml" CopyToOutputDirectory="Always" />
-    <Content Include="appsettings.*.yml" DependentUpon="appsettings.yml" CopyToOutputDirectory="Always" />
+    <Content Update="appsettings.yml" CopyToOutputDirectory="Always" />
+    <Content Update="appsettings.*.yml" DependentUpon="appsettings.yml" CopyToOutputDirectory="Always" />
   </ItemGroup>
 
   <ItemGroup>
