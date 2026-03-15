@@ -20,7 +20,7 @@
     let { children, class: className, table }: Props = $props();
 </script>
 
-<div class={['flex w-full items-center justify-between gap-2', className]}>
+<div class={['flex w-full flex-wrap items-center justify-between gap-2', className]}>
     {#if children}
         {@render children()}
     {:else}

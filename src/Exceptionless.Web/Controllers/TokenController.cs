@@ -100,7 +100,8 @@ public class TokenController : RepositoryApiController<ITokenRepository, Token, 
         if (project is null)
             return NotFound();
 
-        var token = (await _repository.GetByTypeAndProjectIdAsync(TokenType.Access, projectId, o => o.PageLimit(1))).Documents.FirstOrDefault();
+        var defaultTokenResults = await _repository.GetByTypeAndProjectIdAsync(TokenType.Access, projectId, o => o.PageLimit(1));
+        var token = defaultTokenResults.Documents.FirstOrDefault();
         if (token is not null)
             return await OkModelAsync(token);
 

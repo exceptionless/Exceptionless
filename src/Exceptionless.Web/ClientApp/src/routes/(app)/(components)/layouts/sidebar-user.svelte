@@ -21,12 +21,16 @@
     import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
     import Help from '@lucide/svelte/icons/circle-help';
     import CreditCard from '@lucide/svelte/icons/credit-card';
+    import Database from '@lucide/svelte/icons/database';
     import Eye from '@lucide/svelte/icons/eye';
     import EyeOff from '@lucide/svelte/icons/eye-off';
     import GitHub from '@lucide/svelte/icons/github';
+    import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
     import LogOut from '@lucide/svelte/icons/log-out';
+    import Play from '@lucide/svelte/icons/play';
     import Plus from '@lucide/svelte/icons/plus';
     import Settings from '@lucide/svelte/icons/settings';
+    import Wrench from '@lucide/svelte/icons/wrench';
 
     interface Props {
         gravatar: Gravatar;
@@ -196,6 +200,32 @@
                     </DropdownMenu.Sub>
                     <GlobalUser>
                         <DropdownMenu.Separator />
+                        <DropdownMenu.Sub>
+                            <DropdownMenu.SubTrigger>
+                                <Wrench />
+                                System
+                            </DropdownMenu.SubTrigger>
+                            <DropdownMenu.SubContent>
+                                <DropdownMenu.Item>
+                                    <LayoutDashboard />
+                                    <A variant="ghost" href={resolve('/(app)/system/overview')} class="w-full" onclick={onMenuClick}>Overview</A>
+                                </DropdownMenu.Item>
+                                <DropdownMenu.Item>
+                                    <Database />
+                                    <A variant="ghost" href={resolve('/(app)/system/elasticsearch/overview')} class="w-full" onclick={onMenuClick}
+                                        >Elasticsearch</A
+                                    >
+                                </DropdownMenu.Item>
+                                <DropdownMenu.Item>
+                                    <Play />
+                                    <A variant="ghost" href={resolve('/(app)/system/actions')} class="w-full" onclick={onMenuClick}>Actions</A>
+                                </DropdownMenu.Item>
+                                <DropdownMenu.Item>
+                                    <Play />
+                                    <A variant="ghost" href={resolve('/(app)/system/migrations')} class="w-full" onclick={onMenuClick}>Migrations</A>
+                                </DropdownMenu.Item>
+                            </DropdownMenu.SubContent>
+                        </DropdownMenu.Sub>
                         {#if isImpersonating}
                             <DropdownMenu.Item
                                 onSelect={stopImpersonating}
