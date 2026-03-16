@@ -1,15 +1,36 @@
 export function healthBadgeClass(status: null | number | string | undefined): string {
     const s = typeof status === 'string' ? status.toLowerCase() : status;
-    if (s === 0 || s === 'green') return 'text-muted-foreground border-muted-foreground/30';
-    if (s === 1 || s === 'yellow') return 'border-amber-500 text-amber-600 dark:text-amber-400';
+
+    if (s === 0 || s === 'green') {
+        return 'text-muted-foreground border-muted-foreground/30';
+    }
+
+    if (s === 1 || s === 'yellow') {
+        return 'border-amber-500 text-amber-600 dark:text-amber-400';
+    }
+
+    if (s === 2 || s === 'red') {
+        return 'border-destructive/50 text-destructive';
+    }
+
     return 'text-muted-foreground border-muted-foreground/30';
 }
 
 export function healthColor(status: null | number | string | undefined): string {
     const s = typeof status === 'string' ? status.toLowerCase() : status;
-    if (s === 0 || s === 'green') return 'text-green-600';
-    if (s === 1 || s === 'yellow') return 'text-amber-500';
-    if (s === 2 || s === 'red') return 'text-destructive';
+
+    if (s === 0 || s === 'green') {
+        return 'text-green-600';
+    }
+
+    if (s === 1 || s === 'yellow') {
+        return 'text-amber-500';
+    }
+
+    if (s === 2 || s === 'red') {
+        return 'text-destructive';
+    }
+
     return 'text-muted-foreground';
 }
 
@@ -31,7 +52,12 @@ export function healthLabel(status: null | number | string | undefined): string 
 
 export function healthVariant(status: null | number | string | undefined): 'default' | 'destructive' | 'outline' | 'secondary' {
     const s = typeof status === 'string' ? status.toLowerCase() : status;
-    return s === 2 || s === 'red' ? 'destructive' : 'outline';
+
+    if (s === 2 || s === 'red') {
+        return 'destructive';
+    }
+
+    return 'outline';
 }
 
 export function snapshotBadgeClass(status: string | undefined): string {
