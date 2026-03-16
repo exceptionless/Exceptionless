@@ -5272,29 +5272,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/NotificationSettings"
-                  }
-                ]
+                "$ref": "#/components/schemas/NotificationSettings"
               }
             },
             "application/*+json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/NotificationSettings"
-                  }
-                ]
+                "$ref": "#/components/schemas/NotificationSettings"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -5340,29 +5327,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/NotificationSettings"
-                  }
-                ]
+                "$ref": "#/components/schemas/NotificationSettings"
               }
             },
             "application/*+json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/NotificationSettings"
-                  }
-                ]
+                "$ref": "#/components/schemas/NotificationSettings"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -7461,7 +7435,6 @@
           "stack_id",
           "is_first_occurrence",
           "created_utc",
-          "idx",
           "date"
         ],
         "type": "object",
@@ -7504,7 +7477,10 @@
             "format": "date-time"
           },
           "idx": {
-            "type": "object",
+            "type": [
+              "null",
+              "object"
+            ],
             "additionalProperties": { },
             "description": "Used to store primitive data type custom data values for searching the event."
           },

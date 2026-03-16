@@ -155,7 +155,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
-        // Assert - IsOverMonthlyLimit is computed by AfterMap in AutoMapper
+        // Assert - IsOverMonthlyLimit is computed by OrganizationMapper
         Assert.NotNull(viewOrg);
         // The value can be true or false depending on usage, but the property should be set
         Assert.IsType<bool>(viewOrg.IsOverMonthlyLimit);

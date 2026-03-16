@@ -1,16 +1,12 @@
-using AutoMapper;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
-using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Web.Hubs;
-using Exceptionless.Web.Models;
+using Exceptionless.Web.Mapping;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
-using Token = Exceptionless.Core.Models.Token;
 
 namespace Exceptionless.Web;
 
@@ -21,7 +17,7 @@ public class Bootstrapper
         services.AddSingleton<WebSocketConnectionManager>();
         services.AddSingleton<MessageBusBroker>();
 
-        services.AddTransient<Profile, ApiMappings>();
+        services.AddSingleton<ApiMapper>();
 
         Core.Bootstrapper.RegisterServices(services, appOptions);
         Insulation.Bootstrapper.RegisterServices(services, appOptions, appOptions.RunJobsInProcess);
@@ -45,35 +41,5 @@ public class Bootstrapper
 
         services.AddSingleton<EnqueueOrganizationNotificationOnPlanOverage>();
         services.AddStartupAction<EnqueueOrganizationNotificationOnPlanOverage>();
-    }
-
-    public class ApiMappings : Profile
-    {
-        public ApiMappings(TimeProvider timeProvider)
-        {
-            CreateMap<UserDescription, EventUserDescription>();
-
-            CreateMap<NewOrganization, Organization>();
-            CreateMap<Organization, ViewOrganization>().AfterMap((o, vo) =>
-            {
-                vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit(timeProvider);
-            });
-
-            CreateMap<Stripe.Invoice, InvoiceGridModel>().AfterMap((si, igm) =>
-            {
-                igm.Id = igm.Id.Substring(3);
-                igm.Date = si.Created;
-            });
-
-            CreateMap<NewProject, Project>();
-            CreateMap<Project, ViewProject>().AfterMap((p, vp) => vp.HasSlackIntegration = p.Data is not null && p.Data.ContainsKey(Project.KnownDataKeys.SlackToken));
-
-            CreateMap<NewToken, Token>().ForMember(m => m.Type, m => m.Ignore());
-            CreateMap<Token, ViewToken>();
-
-            CreateMap<User, ViewUser>();
-
-            CreateMap<NewWebHook, WebHook>();
-        }
     }
 }

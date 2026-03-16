@@ -27,7 +27,7 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PostAsync_NewWebHook_MapsAllPropertiesToWebHook()
     {
-        // Arrange - Test AutoMapper: NewWebHook -> WebHook
+        // Arrange - Test Mapperly: NewWebHook -> WebHook
         var newWebHook = new NewWebHook
         {
             EventTypes = [WebHook.KnownEventTypes.StackPromoted, WebHook.KnownEventTypes.NewError],
