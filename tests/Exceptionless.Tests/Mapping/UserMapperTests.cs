@@ -108,4 +108,24 @@ public sealed class UserMapperTests
         // Assert
         Assert.Empty(result);
     }
+
+    [Fact]
+    public void MapToViewUser_MutatingRoles_DoesNotAffectSource()
+    {
+        // Arrange
+        var source = new User
+        {
+            Id = "1ecd0826e447ad1e78822555",
+            EmailAddress = "admin@localhost",
+            Roles = new HashSet<string> { "user", "admin", "global" }
+        };
+
+        // Act
+        var result = _mapper.MapToViewUser(source);
+        result.Roles.Remove("global");
+
+        // Assert — source User.Roles is unaffected
+        Assert.Contains("global", source.Roles);
+        Assert.DoesNotContain("global", result.Roles);
+    }
 }
