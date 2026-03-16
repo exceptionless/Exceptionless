@@ -39,7 +39,7 @@ export function getColumns(): ColumnDef<ElasticsearchSnapshot>[] {
         },
         {
             accessorKey: 'duration',
-            cell: (info) => info.getValue() || '—',
+            cell: (info) => info.getValue() ?? '—',
             enableSorting: false,
             header: 'Duration',
             meta: {
