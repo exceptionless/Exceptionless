@@ -418,5 +418,3 @@ public class AdminController : ExceptionlessApiController
     }
 }
 
-
-
