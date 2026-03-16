@@ -1,5 +1,6 @@
 ---
 name: reviewer
+model: opus
 description: "Adversarial 4-pass code analysis: security (before any execution), machine checks, correctness/performance, style/maintainability. Read-only — reports findings but never edits code."
 disallowedTools:
     - Edit

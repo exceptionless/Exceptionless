@@ -1,5 +1,6 @@
 ---
 name: pr-reviewer
+model: sonnet
 description: "PR lifecycle gate: zero-trust security pre-screen → dependency audit → build → delegate to @reviewer for code analysis → PR-level checks → verdict."
 ---
 
