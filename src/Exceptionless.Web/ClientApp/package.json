@@ -84,7 +84,7 @@
         "kit-query-params": "^0.0.26",
         "layerchart": "^2.0.0-next.46",
         "mode-watcher": "^1.1.0",
-        "oidc-client-ts": "^3.4.1",
+        "oidc-client-ts": "^3.5.0",
         "pretty-ms": "^9.3.0",
         "runed": "^0.37.1",
         "shiki": "^4.0.2",
