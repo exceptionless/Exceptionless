@@ -20,9 +20,9 @@ public sealed class WebHookMapperTests
         // Arrange
         var source = new NewWebHook
         {
-            OrganizationId = "org123",
-            ProjectId = "proj123",
-            Url = "https://example.com/webhook",
+            OrganizationId = "537650f3b77efe23a47914f3",
+            ProjectId = "537650f3b77efe23a47914f4",
+            Url = "https://localhost/webhook",
             EventTypes = ["error", "log"]
         };
 
@@ -30,9 +30,9 @@ public sealed class WebHookMapperTests
         var result = _mapper.MapToWebHook(source);
 
         // Assert
-        Assert.Equal("org123", result.OrganizationId);
-        Assert.Equal("proj123", result.ProjectId);
-        Assert.Equal("https://example.com/webhook", result.Url);
+        Assert.Equal("537650f3b77efe23a47914f3", result.OrganizationId);
+        Assert.Equal("537650f3b77efe23a47914f4", result.ProjectId);
+        Assert.Equal("https://localhost/webhook", result.Url);
         Assert.Contains("error", result.EventTypes);
         Assert.Contains("log", result.EventTypes);
     }
@@ -43,17 +43,17 @@ public sealed class WebHookMapperTests
         // Arrange
         var source = new NewWebHook
         {
-            OrganizationId = "org123",
-            Url = "https://example.com/webhook"
+            OrganizationId = "537650f3b77efe23a47914f3",
+            Url = "https://localhost/webhook"
         };
 
         // Act
         var result = _mapper.MapToWebHook(source);
 
         // Assert
-        Assert.Equal("org123", result.OrganizationId);
+        Assert.Equal("537650f3b77efe23a47914f3", result.OrganizationId);
         Assert.Null(result.ProjectId);
-        Assert.Equal("https://example.com/webhook", result.Url);
+        Assert.Equal("https://localhost/webhook", result.Url);
     }
 
     [Fact]
@@ -62,8 +62,8 @@ public sealed class WebHookMapperTests
         // Arrange
         var source = new NewWebHook
         {
-            OrganizationId = "org123",
-            Url = "https://example.com/webhook",
+            OrganizationId = "537650f3b77efe23a47914f3",
+            Url = "https://localhost/webhook",
             EventTypes = []
         };
 

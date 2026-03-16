@@ -20,16 +20,16 @@ public sealed class ProjectMapperTests
         // Arrange
         var source = new NewProject
         {
-            Name = "Test Project",
-            OrganizationId = "org123"
+            Name = "Disintegrating Pistol",
+            OrganizationId = "537650f3b77efe23a47914f3"
         };
 
         // Act
         var result = _mapper.MapToProject(source);
 
         // Assert
-        Assert.Equal("Test Project", result.Name);
-        Assert.Equal("org123", result.OrganizationId);
+        Assert.Equal("Disintegrating Pistol", result.Name);
+        Assert.Equal("537650f3b77efe23a47914f3", result.OrganizationId);
     }
 
     [Fact]
@@ -38,9 +38,9 @@ public sealed class ProjectMapperTests
         // Arrange
         var source = new Project
         {
-            Id = "proj123",
-            Name = "Test Project",
-            OrganizationId = "org123",
+            Id = "537650f3b77efe23a47914f4",
+            Name = "Disintegrating Pistol",
+            OrganizationId = "537650f3b77efe23a47914f3",
             DeleteBotDataEnabled = true
         };
 
@@ -48,9 +48,9 @@ public sealed class ProjectMapperTests
         var result = _mapper.MapToViewProject(source);
 
         // Assert
-        Assert.Equal("proj123", result.Id);
-        Assert.Equal("Test Project", result.Name);
-        Assert.Equal("org123", result.OrganizationId);
+        Assert.Equal("537650f3b77efe23a47914f4", result.Id);
+        Assert.Equal("Disintegrating Pistol", result.Name);
+        Assert.Equal("537650f3b77efe23a47914f3", result.OrganizationId);
         Assert.True(result.DeleteBotDataEnabled);
     }
 
@@ -60,7 +60,7 @@ public sealed class ProjectMapperTests
         // Arrange
         var source = new Project
         {
-            Id = "proj123",
+            Id = "537650f3b77efe23a47914f4",
             Name = "Project with Slack",
             Data = new DataDictionary { { Project.KnownDataKeys.SlackToken, "test-token" } }
         };
@@ -78,7 +78,7 @@ public sealed class ProjectMapperTests
         // Arrange
         var source = new Project
         {
-            Id = "proj123",
+            Id = "537650f3b77efe23a47914f4",
             Name = "Project without Slack"
         };
 
@@ -95,8 +95,8 @@ public sealed class ProjectMapperTests
         // Arrange
         var projects = new List<Project>
         {
-            new() { Id = "proj1", Name = "Project 1" },
-            new() { Id = "proj2", Name = "Project 2" }
+            new() { Id = "537650f3b77efe23a47914f4", Name = "Project 1" },
+            new() { Id = "1ecd0826e447ad1e78877a66", Name = "Project 2" }
         };
 
         // Act
@@ -104,8 +104,8 @@ public sealed class ProjectMapperTests
 
         // Assert
         Assert.Equal(2, result.Count);
-        Assert.Equal("proj1", result[0].Id);
-        Assert.Equal("proj2", result[1].Id);
+        Assert.Equal("537650f3b77efe23a47914f4", result[0].Id);
+        Assert.Equal("1ecd0826e447ad1e78877a66", result[1].Id);
     }
 
     [Fact]

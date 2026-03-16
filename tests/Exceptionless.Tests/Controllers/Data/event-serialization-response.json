@@ -14,7 +14,7 @@
             "user_agent": "TestAgent/1.0",
             "http_method": "POST",
             "is_secure": true,
-            "host": "test.example.com",
+            "host": "test.localhost",
             "port": 443,
             "path": "/api/test",
             "client_ip_address": "10.0.0.100",

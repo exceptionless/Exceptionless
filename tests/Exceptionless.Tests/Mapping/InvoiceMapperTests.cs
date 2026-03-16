@@ -37,7 +37,7 @@ public sealed class InvoiceMapperTests
         var expectedDate = new DateTime(2025, 1, 15, 12, 0, 0, DateTimeKind.Utc);
         var source = new Stripe.Invoice
         {
-            Id = "in_test123",
+            Id = "in_5f8a3b2c1d4e",
             Created = expectedDate,
             Paid = true
         };

@@ -19,9 +19,9 @@ public sealed class UserMapperTests
         // Arrange
         var source = new User
         {
-            Id = "user123",
-            EmailAddress = "test@example.com",
-            FullName = "Test User",
+            Id = "1ecd0826e447ad1e78822555",
+            EmailAddress = "user@localhost",
+            FullName = "Eric Smith",
             IsEmailAddressVerified = true,
             IsActive = true
         };
@@ -30,9 +30,9 @@ public sealed class UserMapperTests
         var result = _mapper.MapToViewUser(source);
 
         // Assert
-        Assert.Equal("user123", result.Id);
-        Assert.Equal("test@example.com", result.EmailAddress);
-        Assert.Equal("Test User", result.FullName);
+        Assert.Equal("1ecd0826e447ad1e78822555", result.Id);
+        Assert.Equal("user@localhost", result.EmailAddress);
+        Assert.Equal("Eric Smith", result.FullName);
         Assert.True(result.IsEmailAddressVerified);
         Assert.True(result.IsActive);
     }
@@ -43,8 +43,8 @@ public sealed class UserMapperTests
         // Arrange
         var source = new User
         {
-            Id = "user123",
-            EmailAddress = "admin@example.com",
+            Id = "1ecd0826e447ad1e78822555",
+            EmailAddress = "admin@localhost",
             Roles = new HashSet<string> { "user", "admin" }
         };
 
@@ -62,9 +62,9 @@ public sealed class UserMapperTests
         // Arrange
         var source = new User
         {
-            Id = "user123",
-            EmailAddress = "user@example.com",
-            OrganizationIds = new HashSet<string> { "org1", "org2", "org3" }
+            Id = "1ecd0826e447ad1e78822555",
+            EmailAddress = "user@localhost",
+            OrganizationIds = new HashSet<string> { "537650f3b77efe23a47914f3", "1ecd0826e447ad1e78877666", "1ecd0826e447ad1e78877777" }
         };
 
         // Act
@@ -72,9 +72,9 @@ public sealed class UserMapperTests
 
         // Assert
         Assert.Equal(3, result.OrganizationIds.Count);
-        Assert.Contains("org1", result.OrganizationIds);
-        Assert.Contains("org2", result.OrganizationIds);
-        Assert.Contains("org3", result.OrganizationIds);
+        Assert.Contains("537650f3b77efe23a47914f3", result.OrganizationIds);
+        Assert.Contains("1ecd0826e447ad1e78877666", result.OrganizationIds);
+        Assert.Contains("1ecd0826e447ad1e78877777", result.OrganizationIds);
     }
 
     [Fact]
@@ -83,8 +83,8 @@ public sealed class UserMapperTests
         // Arrange
         var users = new List<User>
         {
-            new() { Id = "user1", EmailAddress = "user1@example.com" },
-            new() { Id = "user2", EmailAddress = "user2@example.com" }
+            new() { Id = "1ecd0826e447ad1e78822555", EmailAddress = "user1@localhost" },
+            new() { Id = "1ecd0826e447ad1e78822666", EmailAddress = "user2@localhost" }
         };
 
         // Act
@@ -92,8 +92,8 @@ public sealed class UserMapperTests
 
         // Assert
         Assert.Equal(2, result.Count);
-        Assert.Equal("user1", result[0].Id);
-        Assert.Equal("user2", result[1].Id);
+        Assert.Equal("1ecd0826e447ad1e78822555", result[0].Id);
+        Assert.Equal("1ecd0826e447ad1e78822666", result[1].Id);
     }
 
     [Fact]

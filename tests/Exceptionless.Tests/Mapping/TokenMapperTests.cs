@@ -20,18 +20,18 @@ public sealed class TokenMapperTests
         // Arrange
         var source = new NewToken
         {
-            OrganizationId = "org123",
-            ProjectId = "proj123",
-            Notes = "Test token"
+            OrganizationId = "537650f3b77efe23a47914f3",
+            ProjectId = "537650f3b77efe23a47914f4",
+            Notes = "API access token"
         };
 
         // Act
         var result = _mapper.MapToToken(source);
 
         // Assert
-        Assert.Equal("org123", result.OrganizationId);
-        Assert.Equal("proj123", result.ProjectId);
-        Assert.Equal("Test token", result.Notes);
+        Assert.Equal("537650f3b77efe23a47914f3", result.OrganizationId);
+        Assert.Equal("537650f3b77efe23a47914f4", result.ProjectId);
+        Assert.Equal("API access token", result.Notes);
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public sealed class TokenMapperTests
         // Arrange
         var source = new NewToken
         {
-            OrganizationId = "org123"
+            OrganizationId = "537650f3b77efe23a47914f3"
         };
 
         // Act
@@ -56,11 +56,11 @@ public sealed class TokenMapperTests
         // Arrange
         var source = new Token
         {
-            Id = "token123",
-            OrganizationId = "org123",
-            ProjectId = "proj123",
-            UserId = "user123",
-            Notes = "Test notes",
+            Id = "88cd0826e447a44e78877ab1",
+            OrganizationId = "537650f3b77efe23a47914f3",
+            ProjectId = "537650f3b77efe23a47914f4",
+            UserId = "1ecd0826e447ad1e78822555",
+            Notes = "Access token notes",
             Type = TokenType.Access
         };
 
@@ -68,11 +68,11 @@ public sealed class TokenMapperTests
         var result = _mapper.MapToViewToken(source);
 
         // Assert
-        Assert.Equal("token123", result.Id);
-        Assert.Equal("org123", result.OrganizationId);
-        Assert.Equal("proj123", result.ProjectId);
-        Assert.Equal("user123", result.UserId);
-        Assert.Equal("Test notes", result.Notes);
+        Assert.Equal("88cd0826e447a44e78877ab1", result.Id);
+        Assert.Equal("537650f3b77efe23a47914f3", result.OrganizationId);
+        Assert.Equal("537650f3b77efe23a47914f4", result.ProjectId);
+        Assert.Equal("1ecd0826e447ad1e78822555", result.UserId);
+        Assert.Equal("Access token notes", result.Notes);
     }
 
     [Fact]
@@ -81,9 +81,9 @@ public sealed class TokenMapperTests
         // Arrange
         var tokens = new List<Token>
         {
-            new() { Id = "token1", OrganizationId = "org1" },
-            new() { Id = "token2", OrganizationId = "org2" },
-            new() { Id = "token3", OrganizationId = "org3" }
+            new() { Id = "88cd0826e447a44e78877ab1", OrganizationId = "537650f3b77efe23a47914f3" },
+            new() { Id = "88cd0826e447a44e78877ab2", OrganizationId = "1ecd0826e447ad1e78877666" },
+            new() { Id = "88cd0826e447a44e78877ab3", OrganizationId = "1ecd0826e447ad1e78877777" }
         };
 
         // Act
@@ -91,9 +91,9 @@ public sealed class TokenMapperTests
 
         // Assert
         Assert.Equal(3, result.Count);
-        Assert.Equal("token1", result[0].Id);
-        Assert.Equal("token2", result[1].Id);
-        Assert.Equal("token3", result[2].Id);
+        Assert.Equal("88cd0826e447a44e78877ab1", result[0].Id);
+        Assert.Equal("88cd0826e447a44e78877ab2", result[1].Id);
+        Assert.Equal("88cd0826e447a44e78877ab3", result[2].Id);
     }
 
     [Fact]

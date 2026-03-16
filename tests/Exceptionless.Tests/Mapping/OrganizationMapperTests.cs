@@ -33,8 +33,8 @@ public sealed class OrganizationMapperTests
         // Arrange
         var source = new Organization
         {
-            Id = "org123",
-            Name = "Test Organization",
+            Id = "537650f3b77efe23a47914f3",
+            Name = "Acme Organization",
             PlanId = "free",
             IsSuspended = false
         };
@@ -43,8 +43,8 @@ public sealed class OrganizationMapperTests
         var result = _mapper.MapToViewOrganization(source);
 
         // Assert
-        Assert.Equal("org123", result.Id);
-        Assert.Equal("Test Organization", result.Name);
+        Assert.Equal("537650f3b77efe23a47914f3", result.Id);
+        Assert.Equal("Acme Organization", result.Name);
         Assert.Equal("free", result.PlanId);
         Assert.False(result.IsSuspended);
     }
@@ -55,8 +55,8 @@ public sealed class OrganizationMapperTests
         // Arrange
         var source = new Organization
         {
-            Id = "org123",
-            Name = "Suspended Org",
+            Id = "537650f3b77efe23a47914f3",
+            Name = "Suspended Organization",
             IsSuspended = true
         };
 
@@ -73,8 +73,8 @@ public sealed class OrganizationMapperTests
         // Arrange
         var source = new Organization
         {
-            Id = "org123",
-            Name = "Suspended Org",
+            Id = "537650f3b77efe23a47914f3",
+            Name = "Suspended Organization",
             IsSuspended = true,
             SuspensionCode = SuspensionCode.Billing
         };
@@ -92,8 +92,8 @@ public sealed class OrganizationMapperTests
         // Arrange
         var source = new Organization
         {
-            Id = "org123",
-            Name = "Active Org",
+            Id = "537650f3b77efe23a47914f3",
+            Name = "Active Organization",
             SuspensionCode = null
         };
 
@@ -110,9 +110,9 @@ public sealed class OrganizationMapperTests
         // Arrange
         var organizations = new List<Organization>
         {
-            new() { Id = "org1", Name = "Organization 1" },
-            new() { Id = "org2", Name = "Organization 2" },
-            new() { Id = "org3", Name = "Organization 3" }
+            new() { Id = "537650f3b77efe23a47914f3", Name = "Organization 1" },
+            new() { Id = "1ecd0826e447ad1e78877666", Name = "Organization 2" },
+            new() { Id = "1ecd0826e447ad1e78877777", Name = "Organization 3" }
         };
 
         // Act
@@ -120,9 +120,9 @@ public sealed class OrganizationMapperTests
 
         // Assert
         Assert.Equal(3, result.Count);
-        Assert.Equal("org1", result[0].Id);
-        Assert.Equal("org2", result[1].Id);
-        Assert.Equal("org3", result[2].Id);
+        Assert.Equal("537650f3b77efe23a47914f3", result[0].Id);
+        Assert.Equal("1ecd0826e447ad1e78877666", result[1].Id);
+        Assert.Equal("1ecd0826e447ad1e78877777", result[2].Id);
     }
 
     [Fact]
