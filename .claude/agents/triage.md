@@ -1,5 +1,6 @@
 ---
 name: triage
+model: opus
 description: "Analyze GitHub issues with depth: impact assessment, root cause analysis, reproduction, strategic context, and actionable implementation plans."
 ---
 
