@@ -7,7 +7,6 @@ namespace Exceptionless.Core.Services;
 
 /// <summary>
 /// Identifies a stack for deferred usage counter updates.
-/// Records serialize correctly with STJ unlike ValueTuples which serialize to {}.
 /// </summary>
 public record StackUsageKey(string OrganizationId, string ProjectId, string StackId);
 
