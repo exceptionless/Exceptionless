@@ -71,7 +71,7 @@
         "@exceptionless/fetchclient": "^0.44.0",
         "@internationalized/date": "^3.12.0",
         "@lucide/svelte": "^0.577.0",
-        "@tanstack/svelte-form": "^1.28.4",
+        "@tanstack/svelte-form": "^1.28.5",
         "@tanstack/svelte-query": "^6.1.0",
         "@tanstack/svelte-query-devtools": "^6.0.4",
         "@tanstack/svelte-table": "^9.0.0-alpha.10",
