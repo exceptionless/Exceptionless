@@ -21,8 +21,14 @@
     let { children, rowClick, rowHref, table }: Props = $props();
 
     function getHeaderColumnClass(header: Header<TData, unknown>) {
-        const classes = [(header.column.columnDef.meta as { class?: string })?.class || ''];
-        return classes.filter(Boolean).join(' ');
+        const metaClass = (header.column.columnDef.meta as { class?: string })?.class || '';
+        if (!metaClass) {
+            return '';
+        }
+        if (metaClass.includes('text-right')) {
+            return [metaClass, 'justify-end'].join(' ');
+        }
+        return metaClass;
     }
 
     function getCellClass(cell: Cell<TData, unknown>) {
@@ -30,7 +36,9 @@
             return;
         }
 
-        return 'cursor-pointer hover truncate max-w-sm';
+        const metaClass = (cell.column.columnDef.meta as { class?: string })?.class ?? '';
+        const classes = rowClick ? ['cursor-pointer', 'truncate', 'max-w-sm', metaClass] : ['truncate', 'max-w-sm', metaClass];
+        return classes.filter(Boolean).join(' ');
     }
 
     function onCellClick(event: MouseEvent, cell: Cell<TData, unknown>): void {
@@ -63,8 +71,9 @@
             {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
                 <Table.Row>
                     {#each headerGroup.headers as header (header.id)}
-                        <Table.Head class={getHeaderColumnClass(header)}>
-                            <DataTableColumnHeader column={header.column}
+                        {@const headerClass = getHeaderColumnClass(header)}
+                        <Table.Head class={headerClass}>
+                            <DataTableColumnHeader class={headerClass} column={header.column}
                                 ><FlexRender content={header.column.columnDef.header} context={header.getContext()} /></DataTableColumnHeader
                             >
                         </Table.Head>

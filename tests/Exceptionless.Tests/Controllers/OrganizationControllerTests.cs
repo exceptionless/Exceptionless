@@ -2,7 +2,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
-using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Models;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;

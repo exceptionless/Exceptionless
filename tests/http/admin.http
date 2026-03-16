@@ -85,11 +85,27 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/admin/maintenance/update-project-default-bot-lists
 Authorization: Bearer {{token}}
 
-### Fix Stack Stats (defaults: utcStart=2026-02-10T00:00:00Z, utcEnd=null=>now)
+### Fix Stack Stats (defaults: utcStart=now-90d, utcEnd=null=>now)
 GET {{apiUrl}}/admin/maintenance/fix-stack-stats
 Authorization: Bearer {{token}}
 
 ### Fix Stack Stats (explicit UTC window)
 GET {{apiUrl}}/admin/maintenance/fix-stack-stats?utcStart=2026-02-10T00:00:00Z&utcEnd=2026-02-23T00:00:00Z
+Authorization: Bearer {{token}}
+
+### Admin Stats
+GET {{apiUrl}}/admin/stats
+Authorization: Bearer {{token}}
+
+### Migrations
+GET {{apiUrl}}/admin/migrations
+Authorization: Bearer {{token}}
+
+### Elasticsearch Cluster Info
+GET {{apiUrl}}/admin/elasticsearch
+Authorization: Bearer {{token}}
+
+### Elasticsearch Snapshots
+GET {{apiUrl}}/admin/elasticsearch/snapshots
 Authorization: Bearer {{token}}
 

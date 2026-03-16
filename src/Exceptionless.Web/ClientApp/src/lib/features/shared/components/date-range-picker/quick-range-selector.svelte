@@ -29,7 +29,7 @@
                             value={option.label}
                             onclick={() => selectQuick(option)}
                             aria-selected={option.value === value}
-                            class={['cursor-pointer', option.value === value ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible']}
+                            class={['cursor-pointer', option.value === value ? 'bg-secondary text-secondary-foreground' : 'opacity-50 [&_svg]:invisible']}
                         >
                             {option.label}
                         </Command.Item>

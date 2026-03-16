@@ -13,6 +13,7 @@ import { routes as accountRoutes } from './account/routes.svelte';
 import { routes as eventRoutes } from './event/routes.svelte';
 import { routes as organizationRoutes } from './organization/routes.svelte';
 import { routes as projectRoutes } from './project/routes.svelte';
+import { routes as systemRoutes } from './system/routes.svelte';
 
 export function routes(): NavigationItem[] {
     const items = [
@@ -65,7 +66,8 @@ export function routes(): NavigationItem[] {
         ...accountRoutes(),
         ...eventRoutes(),
         ...organizationRoutes(),
-        ...projectRoutes()
+        ...projectRoutes(),
+        ...systemRoutes()
     ];
 
     return items;

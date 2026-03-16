@@ -11,5 +11,6 @@
 
 {#if code}
     <SuspensionIndicator {code} {notes} />
-{:else}x -
+{:else}
+    -
 {/if}

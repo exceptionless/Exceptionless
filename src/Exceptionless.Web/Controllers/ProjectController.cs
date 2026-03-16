@@ -404,7 +404,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     [HttpPost("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-    public async Task<IActionResult> SetNotificationSettingsAsync(string id, string userId, NotificationSettings settings)
+    public async Task<IActionResult> SetNotificationSettingsAsync(string id, string userId, NotificationSettings? settings)
     {
         var project = await GetModelAsync(id, false);
         if (project is null)

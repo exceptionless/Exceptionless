@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core;
+using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -590,7 +590,8 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             if (!user.OrganizationIds.Contains(organization.Id))
                 return BadRequest();
 
-            if ((await _userRepository.GetByOrganizationIdAsync(organization.Id)).Total == 1)
+            var organizationUsers = await _userRepository.GetByOrganizationIdAsync(organization.Id);
+            if (organizationUsers.Total is 1)
                 return BadRequest("An organization must contain at least one user.");
 
             await _organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
@@ -768,7 +769,8 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (!String.IsNullOrEmpty(value.StripeCustomerId) && !User.IsInRole(AuthorizationRoles.GlobalAdmin))
             return PermissionResult.DenyWithMessage("An organization cannot be deleted if it has a subscription.", value.Id);
 
-        var projects = (await _projectRepository.GetByOrganizationIdAsync(value.Id)).Documents.ToList();
+        var organizationProjects = await _projectRepository.GetByOrganizationIdAsync(value.Id);
+        var projects = organizationProjects.Documents.ToList();
         if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Count > 0)
             return PermissionResult.DenyWithMessage("An organization cannot be deleted if it contains any projects.", value.Id);
 

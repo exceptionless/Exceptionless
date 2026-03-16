@@ -1,31 +1,32 @@
 <script lang="ts">
     import type { ComponentProps, Snippet } from 'svelte';
 
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as Collapsible from '$comp/ui/collapsible';
     import * as Sidebar from '$comp/ui/sidebar';
     import { useSidebar } from '$comp/ui/sidebar';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
     import Settings from '@lucide/svelte/icons/settings-2';
+    import Wrench from '@lucide/svelte/icons/wrench';
 
-    import type { NavigationItem, NavigationItemContext } from '../../../routes.svelte';
+    import type { NavigationItem } from '../../../routes.svelte';
 
     type Props = ComponentProps<typeof Sidebar.Root> & {
         footer?: Snippet;
         header?: Snippet;
-        impersonating?: boolean;
         routes: NavigationItem[];
     };
 
-    let { footer, header, impersonating = false, routes, ...props }: Props = $props();
+    let { footer, header, routes, ...props }: Props = $props();
     const dashboardRoutes = $derived(routes.filter((route) => route.group === 'Dashboards'));
 
-    // Settings routes need additional filtering based on navigation context
-    const navigationContext: NavigationItemContext = $derived({ authenticated: true, impersonating });
-    const settingsRoutes = $derived(
-        routes.filter((route) => route.group === 'Settings').filter((route) => (route.show ? route.show(navigationContext) : true))
-    );
+    const settingsRoutes = $derived(routes.filter((route) => route.group === 'Settings'));
     const settingsIsActive = $derived(settingsRoutes.some((route) => route.href === page.url.pathname));
+
+    const systemRoutes = $derived(routes.filter((route) => route.group === 'System'));
+    const systemBasePath = resolve('/(app)/system');
+    const systemIsActive = $derived(page.url.pathname === systemBasePath || page.url.pathname.startsWith(systemBasePath + '/'));
 
     const sidebar = useSidebar();
 
@@ -82,6 +83,10 @@
                                             <Sidebar.MenuSubButton isActive={subItem.href === page.url.pathname}>
                                                 {#snippet child({ props })}
                                                     <a href={subItem.href} title={subItem.title} onclick={onMenuClick} {...props}>
+                                                        {#if subItem.icon}
+                                                            {@const Icon = subItem.icon}
+                                                            <Icon />
+                                                        {/if}
                                                         <span>{subItem.title}</span>
                                                     </a>
                                                 {/snippet}
@@ -95,6 +100,47 @@
                 </Collapsible.Root>
             </Sidebar.Menu>
         </Sidebar.Group>
+
+        {#if systemRoutes.length > 0}
+            <Sidebar.Group>
+                <Sidebar.Menu>
+                    <Collapsible.Root open={systemIsActive} class="group/collapsible">
+                        {#snippet child({ props })}
+                            <Sidebar.MenuItem {...props}>
+                                <Collapsible.Trigger>
+                                    {#snippet child({ props })}
+                                        <Sidebar.MenuButton {...props}>
+                                            <Wrench />
+                                            <span>System</span>
+                                            <ChevronRight class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                        </Sidebar.MenuButton>
+                                    {/snippet}
+                                </Collapsible.Trigger>
+                                <Collapsible.Content>
+                                    <Sidebar.MenuSub>
+                                        {#each systemRoutes as subItem (subItem.href)}
+                                            <Sidebar.MenuSubItem>
+                                                <Sidebar.MenuSubButton isActive={subItem.href === page.url.pathname}>
+                                                    {#snippet child({ props })}
+                                                        <a href={subItem.href} title={subItem.title} onclick={onMenuClick} {...props}>
+                                                            {#if subItem.icon}
+                                                                {@const Icon = subItem.icon}
+                                                                <Icon />
+                                                            {/if}
+                                                            <span>{subItem.title}</span>
+                                                        </a>
+                                                    {/snippet}
+                                                </Sidebar.MenuSubButton>
+                                            </Sidebar.MenuSubItem>
+                                        {/each}
+                                    </Sidebar.MenuSub>
+                                </Collapsible.Content>
+                            </Sidebar.MenuItem>
+                        {/snippet}
+                    </Collapsible.Root>
+                </Sidebar.Menu>
+            </Sidebar.Group>
+        {/if}
     </Sidebar.Content>
     <Sidebar.Rail />
     <Sidebar.Footer>

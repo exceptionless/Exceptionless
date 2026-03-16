@@ -224,7 +224,7 @@ export const OAuthAccountSchema = object({
   provider: string().min(1, "Provider is required"),
   provider_user_id: string().min(1, "Provider user id is required"),
   username: string().min(1, "Username is required"),
-  extra_data: record(string(), unknown()).nullable().optional(),
+  extra_data: record(string(), string()),
 });
 export type OAuthAccountFormData = Infer<typeof OAuthAccountSchema>;
 
@@ -407,7 +407,7 @@ export const UserSchema = object({
   id: string()
     .length(24, "Id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Id has invalid format"),
-  organization_ids: array(string()).optional(),
+  organization_ids: array(string()),
   password: string().min(1, "Password is required").nullable().optional(),
   salt: string().min(1, "Salt is required").nullable().optional(),
   password_reset_token: string()
@@ -415,7 +415,7 @@ export const UserSchema = object({
     .nullable()
     .optional(),
   password_reset_token_expiration: iso.datetime(),
-  o_auth_accounts: array(lazy(() => OAuthAccountSchema)).optional(),
+  o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
   email_notifications_enabled: boolean(),
@@ -603,7 +603,7 @@ export const WebHookSchema = object({
 export type WebHookFormData = Infer<typeof WebHookSchema>;
 
 export const WorkInProgressResultSchema = object({
-  workers: array(string()).optional(),
+  workers: array(string()),
 });
 export type WorkInProgressResultFormData = Infer<
   typeof WorkInProgressResultSchema

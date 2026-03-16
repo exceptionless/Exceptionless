@@ -222,7 +222,7 @@
 
 {#if isAuthenticated}
     <Navbar bind:isCommandOpen></Navbar>
-    <Sidebar routes={filteredRoutes} impersonating={!!impersonatedOrganization}>
+    <Sidebar routes={filteredRoutes}>
         {#snippet header()}
             <SidebarOrganizationSwitcher
                 class="pt-2"
@@ -237,8 +237,8 @@
             <SidebarUser isLoading={meQuery.isLoading} user={meQuery.data} {gravatar} isImpersonating={!!impersonatedOrganization} {organizations} />
         {/snippet}
     </Sidebar>
-    <div class="flex w-full pt-16">
-        <div class="text-secondary-foreground w-full overflow-y-auto">
+    <div class="flex min-w-0 flex-1 pt-16">
+        <div class="text-secondary-foreground min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
             <main class="px-4 pt-4">
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
 

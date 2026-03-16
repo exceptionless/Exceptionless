@@ -18,7 +18,7 @@
     let { children, size = 'icon', table }: Props = $props();
 </script>
 
-<div class="flex items-center gap-2">
+<div class="flex w-full flex-wrap items-center gap-2">
     {#if children}
         {@render children()}
     {:else}

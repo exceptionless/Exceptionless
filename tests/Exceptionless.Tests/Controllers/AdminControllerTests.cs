@@ -3,9 +3,12 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Models.Admin;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Migrations;
+using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
 using Xunit;
 
@@ -72,7 +75,7 @@ public class AdminControllerTests : IntegrationTestsBase
     {
         // Arrange
         TimeProvider.SetUtcNow(new DateTime(2026, 2, 5, 12, 0, 0, DateTimeKind.Utc));
-        var beforeWindow = await CreateCorruptedStackWithEventAsync(new DateTimeOffset(2026, 2, 5, 12, 0, 0, TimeSpan.Zero));
+        var beforeWindow = await CreateCorruptedStackWithEventAsync(new DateTimeOffset(2025, 11, 1, 12, 0, 0, TimeSpan.Zero));
 
         TimeProvider.SetUtcNow(new DateTime(2026, 2, 15, 12, 0, 0, DateTimeKind.Utc));
         var inWindow = await CreateCorruptedStackWithEventAsync(new DateTimeOffset(2026, 2, 15, 12, 0, 0, TimeSpan.Zero));
@@ -326,5 +329,217 @@ public class AdminControllerTests : IntegrationTestsBase
         project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
         Assert.NotNull(project);
         Assert.DoesNotContain(orphanedUserId, project.NotificationSettings.Keys);
+    }
+
+    [Fact]
+    public async Task GetStats_AsGlobalAdmin_ReturnsAllFieldsPopulated()
+    {
+        // Act
+        var stats = await SendRequestAsAsync<AdminStatsResponse>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "stats")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(stats);
+        Assert.True(stats.Organizations.Total >= 0);
+        Assert.True(stats.Users.Total >= 0);
+        Assert.True(stats.Projects.Total >= 0);
+        Assert.True(stats.Stacks.Total >= 0);
+        Assert.True(stats.Events.Total >= 0);
+
+        Assert.NotNull(stats.Organizations.Aggregations);
+        Assert.NotNull(stats.Stacks.Aggregations);
+        Assert.NotNull(stats.Events.Aggregations);
+    }
+
+    [Fact]
+    public async Task GetStats_AsGlobalAdmin_BillingStatusBreakdownSumsToOrgCount()
+    {
+        // Act
+        var stats = await SendRequestAsAsync<AdminStatsResponse>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "stats")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(stats);
+        var billingTerms = stats.Organizations.Aggregations.Terms<string>("terms_billing_status");
+        Assert.NotNull(billingTerms);
+        var billingBuckets = billingTerms.Buckets;
+        Assert.NotNull(billingBuckets);
+        long billingTotal = billingBuckets.Sum(b => b.Total ?? 0);
+        Assert.Equal(stats.Organizations.Total, billingTotal);
+    }
+
+    [Fact]
+    public async Task GetStats_AsGlobalAdmin_StacksByStatusSumsToStackCount()
+    {
+        // Act
+        var stats = await SendRequestAsAsync<AdminStatsResponse>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "stats")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(stats);
+        var statusTerms = stats.Stacks.Aggregations.Terms<string>("terms_status");
+        Assert.NotNull(statusTerms);
+        var statusBuckets = statusTerms.Buckets;
+        Assert.NotNull(statusBuckets);
+        long statusTotal = statusBuckets.Sum(b => b.Total ?? 0);
+        Assert.Equal(stats.Stacks.Total, statusTotal);
+    }
+
+    [Fact]
+    public async Task GetStats_AsGlobalAdmin_StacksByTypeStatusHasValidStructure()
+    {
+        // Act
+        var stats = await SendRequestAsAsync<AdminStatsResponse>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "stats")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(stats);
+        var typeTerms = stats.Stacks.Aggregations.Terms<string>("terms_type");
+        Assert.NotNull(typeTerms);
+        var typeBuckets = typeTerms.Buckets;
+        Assert.NotNull(typeBuckets);
+        foreach (var typeBucket in typeBuckets)
+        {
+            Assert.NotNull(typeBucket.Key);
+            Assert.True(typeBucket.Total >= 0);
+            var nestedStatusTerms = typeBucket.Aggregations.Terms<string>("terms_status");
+            Assert.NotNull(nestedStatusTerms);
+            var nestedStatusBuckets = nestedStatusTerms.Buckets;
+            Assert.NotNull(nestedStatusBuckets);
+            long subTotal = nestedStatusBuckets.Sum(b => b.Total ?? 0);
+            Assert.Equal(typeBucket.Total, subTotal);
+        }
+    }
+
+    [Fact]
+    public Task GetStats_WithoutAuth_ReturnsUnauthorized()
+    {
+        return SendRequestAsync(r => r
+            .AppendPaths("admin", "stats")
+            .StatusCodeShouldBeUnauthorized());
+    }
+
+    [Fact]
+    public Task RunJobAsync_AsAuthenticatedNonGlobalAdmin_ReturnsForbidden()
+    {
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("admin", "maintenance", "fix-stack-stats")
+            .StatusCodeShouldBeForbidden());
+    }
+
+    [Theory]
+    [InlineData("admin/stats")]
+    [InlineData("admin/migrations")]
+    [InlineData("admin/elasticsearch")]
+    [InlineData("admin/elasticsearch/snapshots")]
+    public Task AdminReadEndpoints_AsAuthenticatedNonGlobalAdmin_ReturnForbidden(string path)
+    {
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPath(path)
+            .StatusCodeShouldBeForbidden());
+    }
+
+    [Fact]
+    public async Task GetMigrations_AsGlobalAdmin_ReturnsAllRegisteredMigrations()
+    {
+        // Act
+        var response = await SendRequestAsAsync<MigrationsResponse>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "migrations")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.NotNull(response.States);
+
+        foreach (var state in response.States)
+        {
+            Assert.NotNull(state.Id);
+            Assert.True(Enum.IsDefined(state.MigrationType));
+        }
+    }
+
+    [Fact]
+    public Task GetMigrations_WithoutAuth_ReturnsUnauthorized()
+    {
+        return SendRequestAsync(r => r
+            .AppendPaths("admin", "migrations")
+            .StatusCodeShouldBeUnauthorized());
+    }
+
+    [Fact]
+    public async Task GetElasticsearch_AsGlobalAdmin_ReturnsClusterHealthAndIndices()
+    {
+        // Act
+        var elasticsearch = await SendRequestAsAsync<ElasticsearchInfoResponse>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "elasticsearch")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(elasticsearch);
+        Assert.NotNull(elasticsearch.Health);
+        Assert.NotNull(elasticsearch.Indices);
+        Assert.NotNull(elasticsearch.IndexDetails);
+    }
+
+    [Fact]
+    public async Task GetElasticsearch_AsGlobalAdmin_IndexDetailsContainExpectedFields()
+    {
+        // Act
+        var elasticsearch = await SendRequestAsAsync<ElasticsearchInfoResponse>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "elasticsearch")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(elasticsearch);
+        Assert.All(elasticsearch.IndexDetails, indexDetail =>
+        {
+            Assert.True(indexDetail.DocsCount >= 0);
+            Assert.True(indexDetail.StoreSizeInBytes >= 0);
+            Assert.True(indexDetail.UnassignedShards >= 0);
+        });
+    }
+
+    [Fact]
+    public Task GetElasticsearch_WithoutAuth_ReturnsUnauthorized()
+    {
+        return SendRequestAsync(r => r
+            .AppendPaths("admin", "elasticsearch")
+            .StatusCodeShouldBeUnauthorized());
+    }
+
+    [Fact]
+    public async Task GetElasticsearchSnapshots_AsGlobalAdmin_ReturnsTypedResponse()
+    {
+        // Act
+        var snapshots = await SendRequestAsAsync<ElasticsearchSnapshotsResponse>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "elasticsearch", "snapshots")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(snapshots);
+        Assert.NotNull(snapshots.Repositories);
+        Assert.NotNull(snapshots.Snapshots);
+    }
+
+    [Fact]
+    public Task GetElasticsearchSnapshots_WithoutAuth_ReturnsUnauthorized()
+    {
+        return SendRequestAsync(r => r
+            .AppendPaths("admin", "elasticsearch", "snapshots")
+            .StatusCodeShouldBeUnauthorized());
     }
 }
