@@ -22,12 +22,12 @@
     import Help from '@lucide/svelte/icons/circle-help';
     import CreditCard from '@lucide/svelte/icons/credit-card';
     import Database from '@lucide/svelte/icons/database';
+    import DatabaseZap from '@lucide/svelte/icons/database-zap';
     import Eye from '@lucide/svelte/icons/eye';
     import EyeOff from '@lucide/svelte/icons/eye-off';
     import GitHub from '@lucide/svelte/icons/github';
     import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
     import LogOut from '@lucide/svelte/icons/log-out';
-    import DatabaseZap from '@lucide/svelte/icons/database-zap';
     import Play from '@lucide/svelte/icons/play';
     import Plus from '@lucide/svelte/icons/plus';
     import Settings from '@lucide/svelte/icons/settings';
