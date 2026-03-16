@@ -69,7 +69,7 @@ export function snapshotBadgeClass(status: string | undefined): string {
         case 'SUCCESS':
             return 'text-muted-foreground border-muted-foreground/30';
         default:
-            return '';
+            return 'text-muted-foreground border-muted-foreground/30';
     }
 }
 

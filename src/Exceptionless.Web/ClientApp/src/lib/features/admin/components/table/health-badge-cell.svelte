@@ -9,6 +9,6 @@
     let { value }: Props = $props();
 </script>
 
-<Badge class="{healthBadgeClass(value ?? '')} text-xs" variant={healthVariant(value ?? '')}>
-    {healthLabel(value ?? '')}
+<Badge class="{healthBadgeClass(value)} text-xs" variant={healthVariant(value)}>
+    {healthLabel(value)}
 </Badge>

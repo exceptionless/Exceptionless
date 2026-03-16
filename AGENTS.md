@@ -57,10 +57,10 @@ Load from `.agents/skills/<name>/SKILL.md` when working in that domain:
 
 Available in `.claude/agents/`. Use `@agent-name` to invoke:
 
-- `engineer`: Fullstack development — RCA, TDD, implements, verify loop, ships end-to-end
-- `reviewer`: Adversarial 4-pass code analysis — security (before any code execution), then build, correctness/performance, style. Read-only.
-- `triage`: Issue analysis or question answering — impact assessment, RCA, reproduction, implementation plans
-- `pr-reviewer`: PR lifecycle gate — zero-trust security pre-screen, dependency audit, delegates to @reviewer
+- `engineer`: Use for implementing features, fixing bugs, or making code changes — plans, TDD, implements, verify loop, ships end-to-end
+- `reviewer`: Use for reviewing code quality — adversarial 4-pass analysis (security → build → correctness → style). Read-only.
+- `triage`: Use for analyzing issues, investigating bugs, or answering codebase questions — impact assessment, RCA, reproduction, implementation plans
+- `pr-reviewer`: Use for end-to-end PR review — zero-trust security pre-screen, dependency audit, delegates to @reviewer, delivers verdict
 
 ### Orchestration Flow
 
