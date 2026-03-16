@@ -87,7 +87,7 @@
                     </Card.Header>
                     <Card.Content>
                         <div class="text-2xl font-bold">{data.current_version >= 0 ? data.current_version : '—'}</div>
-                        <Muted>Highest completed versioned</Muted>
+                        <Muted>Highest completed version</Muted>
                     </Card.Content>
                 </Card.Root>
                 <Card.Root>

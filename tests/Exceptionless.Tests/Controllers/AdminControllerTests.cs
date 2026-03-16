@@ -364,7 +364,9 @@ public class AdminControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(stats);
-        var billingBuckets = stats.Organizations.Aggregations.Terms<string>("terms_billing_status")?.Buckets;
+        var billingTerms = stats.Organizations.Aggregations.Terms<string>("terms_billing_status");
+        Assert.NotNull(billingTerms);
+        var billingBuckets = billingTerms.Buckets;
         Assert.NotNull(billingBuckets);
         long billingTotal = billingBuckets.Sum(b => b.Total ?? 0);
         Assert.Equal(stats.Organizations.Total, billingTotal);
@@ -381,7 +383,9 @@ public class AdminControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(stats);
-        var statusBuckets = stats.Stacks.Aggregations.Terms<string>("terms_status")?.Buckets;
+        var statusTerms = stats.Stacks.Aggregations.Terms<string>("terms_status");
+        Assert.NotNull(statusTerms);
+        var statusBuckets = statusTerms.Buckets;
         Assert.NotNull(statusBuckets);
         long statusTotal = statusBuckets.Sum(b => b.Total ?? 0);
         Assert.Equal(stats.Stacks.Total, statusTotal);
@@ -398,13 +402,17 @@ public class AdminControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(stats);
-        var typeBuckets = stats.Stacks.Aggregations.Terms<string>("terms_type")?.Buckets;
+        var typeTerms = stats.Stacks.Aggregations.Terms<string>("terms_type");
+        Assert.NotNull(typeTerms);
+        var typeBuckets = typeTerms.Buckets;
         Assert.NotNull(typeBuckets);
         foreach (var typeBucket in typeBuckets)
         {
             Assert.NotNull(typeBucket.Key);
             Assert.True(typeBucket.Total >= 0);
-            var nestedStatusBuckets = typeBucket.Aggregations.Terms<string>("terms_status")?.Buckets;
+            var nestedStatusTerms = typeBucket.Aggregations.Terms<string>("terms_status");
+            Assert.NotNull(nestedStatusTerms);
+            var nestedStatusBuckets = nestedStatusTerms.Buckets;
             Assert.NotNull(nestedStatusBuckets);
             long subTotal = nestedStatusBuckets.Sum(b => b.Total ?? 0);
             Assert.Equal(typeBucket.Total, subTotal);

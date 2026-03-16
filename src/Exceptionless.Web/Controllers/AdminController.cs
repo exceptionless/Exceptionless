@@ -28,6 +28,7 @@ namespace Exceptionless.Web.Controllers;
 [ApiExplorerSettings(IgnoreApi = true)]
 public class AdminController : ExceptionlessApiController
 {
+    private readonly ILogger _logger;
     private readonly ExceptionlessElasticConfiguration _configuration;
     private readonly IFileStorage _fileStorage;
     private readonly IMessagePublisher _messagePublisher;
@@ -58,8 +59,10 @@ public class AdminController : ExceptionlessApiController
         BillingManager billingManager,
         BillingPlans plans,
         IMigrationStateRepository migrationStateRepository,
-        TimeProvider timeProvider) : base(timeProvider)
+        TimeProvider timeProvider,
+        ILoggerFactory loggerFactory) : base(timeProvider)
     {
+        _logger = loggerFactory.CreateLogger<AdminController>();
         _configuration = configuration;
         _fileStorage = fileStorage;
         _messagePublisher = messagePublisher;
@@ -407,8 +410,9 @@ public class AdminController : ExceptionlessApiController
 
             return Ok(new ElasticsearchSnapshotsResponse(repositoryNames, snapshots));
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Unable to retrieve snapshot information");
             return Problem(title: "Unable to retrieve snapshot information.");
         }
     }

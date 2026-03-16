@@ -27,6 +27,7 @@
     import GitHub from '@lucide/svelte/icons/github';
     import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
     import LogOut from '@lucide/svelte/icons/log-out';
+    import DatabaseZap from '@lucide/svelte/icons/database-zap';
     import Play from '@lucide/svelte/icons/play';
     import Plus from '@lucide/svelte/icons/plus';
     import Settings from '@lucide/svelte/icons/settings';
@@ -221,7 +222,7 @@
                                     <A variant="ghost" href={resolve('/(app)/system/actions')} class="w-full" onclick={onMenuClick}>Actions</A>
                                 </DropdownMenu.Item>
                                 <DropdownMenu.Item>
-                                    <Play />
+                                    <DatabaseZap />
                                     <A variant="ghost" href={resolve('/(app)/system/migrations')} class="w-full" onclick={onMenuClick}>Migrations</A>
                                 </DropdownMenu.Item>
                             </DropdownMenu.SubContent>
