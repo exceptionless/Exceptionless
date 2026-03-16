@@ -10,5 +10,5 @@
 </script>
 
 <Badge class="{snapshotBadgeClass(value)} text-xs capitalize" variant={snapshotVariant(value)}>
-    {value?.toLowerCase().replace('_', ' ')}
+    {value?.toLowerCase().replaceAll('_', ' ')}
 </Badge>
