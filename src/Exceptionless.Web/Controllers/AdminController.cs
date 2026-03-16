@@ -399,16 +399,34 @@ public class AdminController : ExceptionlessApiController
                 .ToArray();
 
             var snapshotResults = await Task.WhenAll(snapshotTasks);
-            var failedSnapshotResult = snapshotResults.FirstOrDefault(r => r.Error is not null);
-            if (failedSnapshotResult.Error is not null)
-                return Problem(title: failedSnapshotResult.Error);
 
-            var snapshots = snapshotResults
+            var failedSnapshotResults = snapshotResults
+                .Where(r => r.Error is not null)
+                .ToArray();
+
+            if (failedSnapshotResults.Length is > 0)
+            {
+                _logger.LogWarning("Unable to retrieve snapshots for one or more repositories: {Repositories}",
+                    String.Join(", ", failedSnapshotResults.Select(r => r.RepositoryName)));
+            }
+
+            var successfulSnapshotResults = snapshotResults
+                .Where(r => r.Error is null)
+                .ToArray();
+
+            if (successfulSnapshotResults.Length is 0)
+                return Problem(title: "Unable to retrieve snapshot information.");
+
+            var snapshots = successfulSnapshotResults
                 .SelectMany(r => r.Snapshots)
                 .OrderByDescending(s => s.StartTime)
                 .ToArray();
 
-            return Ok(new ElasticsearchSnapshotsResponse(repositoryNames, snapshots));
+            var successfulRepositoryNames = successfulSnapshotResults
+                .Select(r => r.RepositoryName)
+                .ToArray();
+
+            return Ok(new ElasticsearchSnapshotsResponse(successfulRepositoryNames, snapshots));
         }
         catch (Exception ex)
         {

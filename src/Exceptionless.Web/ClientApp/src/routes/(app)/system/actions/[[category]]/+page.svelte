@@ -94,14 +94,16 @@
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-wrap gap-1">
             {#each categories as category (category)}
-                <button
+                <Button
                     class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors {activeCategory === category
                         ? 'bg-secondary text-secondary-foreground'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
                     onclick={() => selectCategory(category)}
+                    size="sm"
+                    variant="ghost"
                 >
                     {category}
-                </button>
+                </Button>
             {/each}
         </div>
         <Input bind:value={searchQuery} class="w-48 text-sm" placeholder="Search actions..." type="search" />
