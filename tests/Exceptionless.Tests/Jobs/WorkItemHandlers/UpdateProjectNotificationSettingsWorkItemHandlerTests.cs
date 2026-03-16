@@ -3,7 +3,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
-using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Jobs;
 using Foundatio.Queues;
