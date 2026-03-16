@@ -35,7 +35,7 @@ public sealed class TokenMapperTests
     }
 
     [Fact]
-    public void MapToToken_WithNewToken_DoesNotSetTokenType()
+    public void MapToToken_TypeNotCarriedFromNewToken_DefaultsToAuthenticationEnumZero()
     {
         // Arrange
         var source = new NewToken
@@ -46,7 +46,9 @@ public sealed class TokenMapperTests
         // Act
         var result = _mapper.MapToToken(source);
 
-        // Assert - TokenType is ignored in mapping, so it defaults to Authentication
+        // Assert - NewToken has no Type property, and TokenMapper explicitly ignores Token.Type
+        // via [MapperIgnoreTarget], so it stays at the C# enum default (Authentication = 0).
+        // The controller sets Type = TokenType.Access in AddModelAsync after mapping.
         Assert.Equal(TokenType.Authentication, result.Type);
     }
 
