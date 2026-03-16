@@ -35,7 +35,7 @@
 {:else if snapshotsQuery.isError}
     <Card.Root>
         <Card.Content class="pt-6">
-            <p class="text-destructive text-sm">Failed to load snapshot information. Ensure you have admin access.</p>
+            <p class="text-destructive text-sm">Failed to load snapshot information. Please try again.</p>
         </Card.Content>
     </Card.Root>
 {:else if !snapshotsData || snapshotsData.repositories.length === 0}

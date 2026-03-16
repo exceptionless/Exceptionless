@@ -58,7 +58,7 @@
 {:else if esQuery.isError}
     <Card.Root>
         <Card.Content class="pt-6">
-            <p class="text-destructive text-sm">Failed to load Elasticsearch info. Ensure you have admin access.</p>
+            <p class="text-destructive text-sm">Failed to load Elasticsearch info. Please try again.</p>
         </Card.Content>
     </Card.Root>
 {:else if data}

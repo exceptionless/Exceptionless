@@ -363,7 +363,7 @@ public class AdminController : ExceptionlessApiController
                 return Ok(new ElasticsearchSnapshotsResponse([], []));
 
             var repositoryNames = repositoryResponse.Records
-                .Where(r => !string.IsNullOrEmpty(r.Id))
+                .Where(r => !String.IsNullOrEmpty(r.Id))
                 .Select(r => r.Id!)
                 .ToArray();
 

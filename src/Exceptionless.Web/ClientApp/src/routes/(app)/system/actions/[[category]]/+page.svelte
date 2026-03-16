@@ -45,7 +45,13 @@
         const query = searchQuery.trim();
         const actionsBase = resolve('/(app)/system/actions');
         const base = category === 'All' ? actionsBase : `${actionsBase}/${category}`;
-        goto(query ? `${base}?q=${encodeURIComponent(query)}` : base, { noScroll: true });
+
+        if (query) {
+            goto(`${base}?q=${encodeURIComponent(query)}`, { noScroll: true });
+            return;
+        }
+
+        goto(base, { noScroll: true });
     }
 
     const filteredActions = $derived(

@@ -26,9 +26,18 @@
     let searchQuery = $state('');
 
     function getStatus(state: MigrationState): MigrationStatus {
-        if (state.error_message) return 'Failed';
-        if (state.completed_utc) return 'Completed';
-        if (state.started_utc) return 'Running';
+        if (state.error_message) {
+            return 'Failed';
+        }
+
+        if (state.completed_utc) {
+            return 'Completed';
+        }
+
+        if (state.started_utc) {
+            return 'Running';
+        }
+
         return 'Pending';
     }
 
