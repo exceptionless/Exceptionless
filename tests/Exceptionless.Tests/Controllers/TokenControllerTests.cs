@@ -366,8 +366,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PostAsync_WithMismatchedOrgAndProjectId_UsesProjectOrganization()
     {
-        // Arrange - Global admin creates token with wrong org but valid project
-        // The system should overwrite OrganizationId to match the project's actual org
+        // Arrange
         var newToken = new NewToken
         {
             OrganizationId = SampleDataService.FREE_ORG_ID,
@@ -384,7 +383,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeCreated()
         );
 
-        // Assert - OrganizationId should be overwritten to match the project's org
+        // Assert
         Assert.NotNull(viewToken);
         Assert.Equal(SampleDataService.TEST_ORG_ID, viewToken.OrganizationId);
         Assert.Equal(SampleDataService.TEST_PROJECT_ID, viewToken.ProjectId);

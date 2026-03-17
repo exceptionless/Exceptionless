@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { goto } from '$app/navigation';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import Number from '$comp/formatters/number.svelte';
@@ -28,10 +29,8 @@
     const remainingEventLimit = $derived(getRemainingEventLimit(organizationQuery.data));
     const nextBillingDate = $derived(getNextBillingDateUtc(organizationQuery.data));
 
-    function handleChangePlan() {
-        // Navigate to plan change page or open modal
-        // This is a placeholder for future implementation
-        console.log('Change plan clicked');
+    async function handleChangePlan() {
+        await goto(`/next/organization/${page.params.organizationId}/billing?changePlan=true`);
     }
 
     const chartConfig = {

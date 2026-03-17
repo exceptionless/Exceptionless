@@ -221,15 +221,16 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             id = "in_" + id;
 
         Stripe.Invoice? stripeInvoice = null;
+        var client = new StripeClient(_options.StripeOptions.StripeApiKey);
+
         try
         {
-            var client = new StripeClient(_options.StripeOptions.StripeApiKey);
             var invoiceService = new InvoiceService(client);
             stripeInvoice = await invoiceService.GetAsync(id);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while getting the invoice: {InvoiceId}", id);
+            _logger.LogError(ex, "An error occurred while getting the invoice: {InvoiceId}. Exception: {Message}", id, ex.Message);
         }
 
         if (String.IsNullOrEmpty(stripeInvoice?.CustomerId))
@@ -245,17 +246,46 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             OrganizationId = organization.Id,
             OrganizationName = organization.Name,
             Date = stripeInvoice.Created,
-            Paid = stripeInvoice.Paid,
+            Paid = String.Equals(stripeInvoice.Status, "paid", StringComparison.Ordinal),
             Total = stripeInvoice.Total / 100.0m
         };
 
+        var priceService = new PriceService(client);
+        var priceCache = new Dictionary<string, Stripe.Price>(StringComparer.Ordinal);
         foreach (var line in stripeInvoice.Lines.Data)
         {
             var item = new InvoiceLineItem { Amount = line.Amount / 100.0m, Description = line.Description };
-            if (line.Plan is not null)
+
+            // In Stripe.net 50.x, Plan was removed from InvoiceLineItem
+            // Fetch full Price object from Stripe to get nickname, interval, and amount
+            var priceId = line.Pricing?.PriceDetails?.Price;
+            if (!String.IsNullOrEmpty(priceId))
             {
-                string planName = line.Plan.Nickname ?? _billingManager.GetBillingPlan(line.Plan.Id)?.Name ?? line.Plan.Id;
-                item.Description = $"Exceptionless - {planName} Plan ({(line.Plan.Amount / 100.0):c}/{line.Plan.Interval})";
+                try
+                {
+                    if (!priceCache.TryGetValue(priceId, out var price))
+                    {
+                        price = await priceService.GetAsync(priceId);
+                        priceCache[priceId] = price;
+                    }
+
+                    var billingPlan = _billingManager.GetBillingPlan(price.Id);
+                    if (billingPlan is null && !String.IsNullOrEmpty(price.LookupKey))
+                        billingPlan = _billingManager.GetBillingPlan(price.LookupKey);
+
+                    // Find the matching billing plan by checking multiple identifiers:
+                    // 1. Price ID (e.g., "EX_SMALL" if using custom IDs)
+                    // 2. Lookup key (alternative identifier set in Stripe)
+                    // 3. Nickname for display fallback
+                    string planName = billingPlan?.Name ?? price.Nickname ?? price.Id;
+                    string interval = price.Recurring?.Interval ?? "one-time";
+                    decimal unitAmountCents = line.Pricing?.UnitAmountDecimal ?? price.UnitAmount ?? 0;
+                    item.Description = $"Exceptionless - {planName} Plan ({unitAmountCents / 100.0m:c}/{interval})";
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to fetch price details for price ID: {PriceId}. Exception: {Message}", priceId, ex.Message);
+                }
             }
 
             var periodStart = line.Period.Start >= DateTime.MinValue ? line.Period.Start : stripeInvoice.PeriodStart;
@@ -264,7 +294,9 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             invoice.Items.Add(item);
         }
 
-        var coupon = stripeInvoice.Discount?.Coupon;
+        // In Stripe.net 50.x, Discount was replaced with Discounts collection
+        // and Discount.Coupon was replaced with Discount.Source.Coupon
+        var coupon = stripeInvoice.Discounts?.FirstOrDefault(d => d.Deleted is not true)?.Source?.Coupon;
         if (coupon is not null)
         {
             if (coupon.AmountOff.HasValue)
@@ -409,6 +441,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         var client = new StripeClient(_options.StripeOptions.StripeApiKey);
         var customerService = new CustomerService(client);
         var subscriptionService = new SubscriptionService(client);
+        var paymentMethodService = new PaymentMethodService(client);
+
+        // Detect if stripeToken is a legacy token (tok_) or modern PaymentMethod (pm_)
+        // This maintains backwards compatibility with the legacy Angular UI
+        bool isPaymentMethod = stripeToken?.StartsWith("pm_", StringComparison.Ordinal) == true;
 
         try
         {
@@ -434,16 +471,44 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
                 var createCustomer = new CustomerCreateOptions
                 {
-                    Source = stripeToken,
-                    Plan = planId,
                     Description = organization.Name,
                     Email = CurrentUser.EmailAddress
                 };
 
-                if (!String.IsNullOrWhiteSpace(couponId))
-                    createCustomer.Coupon = couponId;
+                // Handle both legacy tokens and modern PaymentMethod IDs for backwards compatibility
+                if (isPaymentMethod)
+                {
+                    // Modern Svelte UI: Uses PaymentMethod from createPaymentMethod()
+                    createCustomer.PaymentMethod = stripeToken;
+                    createCustomer.InvoiceSettings = new CustomerInvoiceSettingsOptions
+                    {
+                        DefaultPaymentMethod = stripeToken
+                    };
+                }
+                else
+                {
+                    // Legacy Angular UI: Uses token from createToken()
+                    createCustomer.Source = stripeToken;
+                }
 
                 var customer = await customerService.CreateAsync(createCustomer);
+
+                // Create subscription separately (Plan on CustomerCreateOptions is deprecated)
+                var subscriptionOptions = new SubscriptionCreateOptions
+                {
+                    Customer = customer.Id,
+                    Items = [new SubscriptionItemOptions { Price = planId }]
+                };
+
+                if (isPaymentMethod)
+                    subscriptionOptions.DefaultPaymentMethod = stripeToken;
+
+                // In Stripe.net 50.x, Coupon was removed from SubscriptionCreateOptions
+                // Use Discounts collection with SubscriptionDiscountOptions instead
+                if (!String.IsNullOrWhiteSpace(couponId))
+                    subscriptionOptions.Discounts = [new SubscriptionDiscountOptions { Coupon = couponId }];
+
+                await subscriptionService.CreateAsync(subscriptionOptions);
 
                 organization.BillingStatus = BillingStatus.Active;
                 organization.RemoveSuspension();
@@ -462,7 +527,23 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
                 if (!String.IsNullOrEmpty(stripeToken))
                 {
-                    customerUpdateOptions.Source = stripeToken;
+                    if (isPaymentMethod)
+                    {
+                        // Modern Svelte UI: Attach PaymentMethod and set as default
+                        await paymentMethodService.AttachAsync(stripeToken, new PaymentMethodAttachOptions
+                        {
+                            Customer = organization.StripeCustomerId
+                        });
+                        customerUpdateOptions.InvoiceSettings = new CustomerInvoiceSettingsOptions
+                        {
+                            DefaultPaymentMethod = stripeToken
+                        };
+                    }
+                    else
+                    {
+                        // Legacy Angular UI: Use Source for token
+                        customerUpdateOptions.Source = stripeToken;
+                    }
                     cardUpdated = true;
                 }
 
@@ -472,12 +553,12 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 var subscription = subscriptionList.FirstOrDefault(s => !s.CanceledAt.HasValue);
                 if (subscription is not null)
                 {
-                    update.Items.Add(new SubscriptionItemOptions { Id = subscription.Items.Data[0].Id, Plan = planId });
+                    update.Items.Add(new SubscriptionItemOptions { Id = subscription.Items.Data[0].Id, Price = planId });
                     await subscriptionService.UpdateAsync(subscription.Id, update);
                 }
                 else
                 {
-                    create.Items.Add(new SubscriptionItemOptions { Plan = planId });
+                    create.Items.Add(new SubscriptionItemOptions { Price = planId });
                     await subscriptionService.CreateAsync(create);
                 }
 

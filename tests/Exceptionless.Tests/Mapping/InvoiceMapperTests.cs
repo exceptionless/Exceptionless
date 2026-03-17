@@ -20,7 +20,7 @@ public sealed class InvoiceMapperTests
         {
             Id = "in_abc123",
             Created = new DateTime(2025, 1, 15, 12, 0, 0, DateTimeKind.Utc),
-            Paid = true
+            Status = "paid"
         };
 
         // Act
@@ -39,7 +39,7 @@ public sealed class InvoiceMapperTests
         {
             Id = "in_5f8a3b2c1d4e",
             Created = expectedDate,
-            Paid = true
+            Status = "paid"
         };
 
         // Act
@@ -58,7 +58,7 @@ public sealed class InvoiceMapperTests
         {
             Id = "in_unpaid",
             Created = DateTime.UtcNow,
-            Paid = false
+            Status = "open"
         };
 
         // Act
@@ -74,9 +74,9 @@ public sealed class InvoiceMapperTests
         // Arrange
         var invoices = new List<Stripe.Invoice>
         {
-            new() { Id = "in_invoice1", Created = DateTime.UtcNow, Paid = true },
-            new() { Id = "in_invoice2", Created = DateTime.UtcNow, Paid = false },
-            new() { Id = "in_invoice3", Created = DateTime.UtcNow, Paid = true }
+            new() { Id = "in_invoice1", Created = DateTime.UtcNow, Status = "paid" },
+            new() { Id = "in_invoice2", Created = DateTime.UtcNow, Status = "open" },
+            new() { Id = "in_invoice3", Created = DateTime.UtcNow, Status = "paid" }
         };
 
         // Act

@@ -9,8 +9,8 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import { env } from '$env/dynamic/public';
+    import { ChangePlanDialog } from '$features/billing';
     import { getInvoicesQuery, getOrganizationQuery } from '$features/organizations/api.svelte';
-    import ChangePlanDialog from '$features/organizations/components/dialogs/change-plan-dialog.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import GlobalUser from '$features/users/components/global-user.svelte';
     import CreditCard from '@lucide/svelte/icons/credit-card';
@@ -157,6 +157,6 @@
     {/if}
 </div>
 
-{#if params.changePlan}
-    <ChangePlanDialog bind:open={params.changePlan} />
+{#if params.changePlan && organizationQuery.data}
+    <ChangePlanDialog bind:open={params.changePlan} organization={organizationQuery.data} />
 {/if}
