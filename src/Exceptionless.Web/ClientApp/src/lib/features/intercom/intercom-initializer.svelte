@@ -39,6 +39,8 @@
         immediate: false
     });
 
+    const shouldUpdate = $derived(bootOptions && visibility.visible);
+
     // Sync identity/company data and manage interval when boot options or visibility changes.
     $effect(() => {
         if (!bootOptions) {
@@ -48,20 +50,17 @@
 
         if (visibility.visible) {
             interval.resume();
-            untrack(() => intercom.update(bootOptions!));
         } else {
             interval.pause();
         }
     });
 
-    // Sync on route transitions.
+    // Sync on route transitions and visibility changes.
     $effect(() => {
         void routeKey;
-        untrack(() => {
-            if (bootOptions && visibility.visible) {
-                intercom.update(bootOptions);
-            }
-        });
+        if (shouldUpdate) {
+            untrack(() => intercom.update(bootOptions!));
+        }
     });
 
     // Shutdown when the user logs out.

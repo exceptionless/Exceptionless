@@ -277,13 +277,17 @@
 {#if isAuthenticated}
     {#if isChatEnabled}
         <IntercomProvider appId={intercomAppId} autoboot={shouldBootIntercom} bootOptions={intercomBootOptions}>
-            <IntercomInitializer bootOptions={intercomBootOptions} routeKey={page.url.pathname}>
-                {@const intercom = getIntercom()}
-                {@const openChat = () => intercom?.showNewMessage('')}
-                {@render appShell(openChat)}
-            </IntercomInitializer>
+            {@render intercomShell()}
         </IntercomProvider>
     {:else}
         {@render appShell(openChatFallback)}
     {/if}
 {/if}
+
+{#snippet intercomShell()}
+    <IntercomInitializer bootOptions={intercomBootOptions} routeKey={page.url.pathname}>
+        {@const intercom = getIntercom()}
+        {@const openChat = () => intercom?.showNewMessage('')}
+        {@render appShell(openChat)}
+    </IntercomInitializer>
+{/snippet}
