@@ -10,6 +10,7 @@
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
     import { buildIntercomBootOptions, getIntercom, IntercomInitializer } from '$features/intercom';
     import { openSupportChat } from '$features/intercom/chat';
+    import { shouldLoadIntercomOrganization } from '$features/intercom/config';
     import { getOrganizationQuery, getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
     import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
     import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
@@ -186,15 +187,19 @@
     });
     const impersonatedOrganization = $derived(impersonatingOrganizationId ? impersonatedOrganizationQuery.data : undefined);
 
+    const intercomAppId = $derived(env.PUBLIC_INTERCOM_APPID ?? '');
+    const intercomTokenQuery = getIntercomTokenQuery();
+    const shouldFetchIntercomOrganization = $derived(shouldLoadIntercomOrganization(intercomAppId, intercomTokenQuery.isSuccess));
+
     // Query for current organization details (for Intercom company data)
     const currentOrganizationQuery = getOrganizationQuery({
         route: {
             get id() {
-                return organization.current;
+                return shouldFetchIntercomOrganization ? organization.current : undefined;
             }
         }
     });
-    const currentOrganization = $derived(currentOrganizationQuery.data);
+    const currentOrganization = $derived(shouldFetchIntercomOrganization ? currentOrganizationQuery.data : undefined);
 
     // Simple organization selection - pick first available if none selected
     $effect(() => {
@@ -228,8 +233,6 @@
     });
 
     // Intercom configuration
-    const intercomAppId = $derived(env.PUBLIC_INTERCOM_APPID ?? '');
-    const intercomTokenQuery = getIntercomTokenQuery();
     const intercomToken = $derived(intercomAppId ? intercomTokenQuery.data?.token : undefined);
     const intercomBootOptions = $derived(buildIntercomBootOptions(meQuery.data, currentOrganization, intercomToken));
     let intercomUnreadCount = $state(0);

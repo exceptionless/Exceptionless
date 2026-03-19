@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/public';
-import { intercomTokenRefreshIntervalMs } from '$features/intercom/config';
+import { getIntercomTokenSessionKey, intercomTokenRefreshIntervalMs } from '$features/intercom/config';
 import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createQuery } from '@tanstack/svelte-query';
 
@@ -8,7 +8,7 @@ import type { Login, TokenResult } from './models';
 import { accessToken } from './index.svelte';
 
 const queryKeys = {
-    intercom: () => ['Auth', 'intercom'] as const
+    intercom: (accessToken: null | string) => ['Auth', 'intercom', getIntercomTokenSessionKey(accessToken)] as const
 };
 
 export async function cancelResetPassword(token: string) {
@@ -56,7 +56,7 @@ export function getIntercomTokenQuery() {
 
             return response.data!;
         },
-        queryKey: queryKeys.intercom(),
+        queryKey: queryKeys.intercom(accessToken.current),
         refetchInterval: intercomTokenRefreshIntervalMs,
         staleTime: intercomTokenRefreshIntervalMs
     }));

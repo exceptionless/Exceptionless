@@ -749,6 +749,29 @@
         }
       }
     },
+    "/api/v2/auth/intercom": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Get the current user's Intercom messenger token.",
+        "responses": {
+          "200": {
+            "description": "Intercom messenger token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Intercom is not configured"
+          }
+        }
+      }
+    },
     "/api/v2/auth/logout": {
       "get": {
         "tags": [
