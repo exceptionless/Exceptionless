@@ -9,6 +9,7 @@
     import { accessToken, getIntercomTokenQuery, gotoLogin } from '$features/auth/index.svelte';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
     import { buildIntercomBootOptions, getIntercom, IntercomInitializer } from '$features/intercom';
+    import { openSupportChat } from '$features/intercom/chat';
     import { getOrganizationQuery, getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
     import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
     import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
@@ -241,7 +242,7 @@
 
     // Fallback openChat for when Intercom is not enabled
     function openChatFallback() {
-        // No-op when chat is disabled
+        openSupportChat(undefined);
     }
 </script>
 
@@ -308,7 +309,7 @@
 {#snippet intercomShell()}
     <IntercomInitializer bootOptions={intercomBootOptions} routeKey={page.url.pathname}>
         {@const intercom = getIntercom()}
-        {@const openChat = () => intercom?.showMessages()}
+        {@const openChat = () => openSupportChat(intercom)}
         {@render appShell(openChat)}
     </IntercomInitializer>
 {/snippet}

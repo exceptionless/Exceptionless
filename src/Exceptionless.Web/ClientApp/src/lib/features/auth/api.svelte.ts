@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/public';
+import { intercomTokenRefreshIntervalMs } from '$features/intercom/config';
 import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createQuery } from '@tanstack/svelte-query';
 
@@ -55,7 +56,9 @@ export function getIntercomTokenQuery() {
 
             return response.data!;
         },
-        queryKey: queryKeys.intercom()
+        queryKey: queryKeys.intercom(),
+        refetchInterval: intercomTokenRefreshIntervalMs,
+        staleTime: intercomTokenRefreshIntervalMs
     }));
 }
 

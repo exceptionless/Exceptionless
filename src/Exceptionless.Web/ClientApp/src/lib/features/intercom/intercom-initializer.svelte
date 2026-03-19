@@ -1,7 +1,7 @@
 <script lang="ts" module>
-    import { useIntercom } from 'svelte-intercom';
+    import type { useIntercom as useIntercomHook } from 'svelte-intercom';
 
-    export type IntercomContext = ReturnType<typeof useIntercom>;
+    export type IntercomContext = ReturnType<typeof useIntercomHook>;
 </script>
 
 <script lang="ts">
@@ -13,6 +13,7 @@
     import { useInterval } from 'runed';
     import { untrack } from 'svelte';
     import { setContext } from 'svelte';
+    import { useIntercom } from 'svelte-intercom';
 
     import { INTERCOM_CONTEXT_KEY } from './keys';
 

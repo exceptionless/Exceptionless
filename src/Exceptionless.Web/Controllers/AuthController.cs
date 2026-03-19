@@ -40,6 +40,7 @@ public class AuthController : ExceptionlessApiController
     private readonly ILogger _logger;
 
     private static bool _isFirstUserChecked;
+    private static readonly TimeSpan IntercomJwtLifetime = TimeSpan.FromMinutes(60);
 
     public AuthController(AuthOptions authOptions, IntercomOptions intercomOptions, IOrganizationRepository organizationRepository, IUserRepository userRepository,
         ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, IDomainLoginProvider domainLoginProvider,
@@ -171,6 +172,9 @@ public class AuthController : ExceptionlessApiController
             return Task.FromResult<ActionResult<TokenResult>>(ValidationProblem(ModelState));
         }
 
+        var issuedAt = _timeProvider.GetUtcNow();
+        var expiresAt = issuedAt.Add(IntercomJwtLifetime);
+
         var signingCredentials = new SigningCredentials(
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_intercomOptions.IntercomSecret!)),
             SecurityAlgorithms.HmacSha256
@@ -180,8 +184,9 @@ public class AuthController : ExceptionlessApiController
             header: new JwtHeader(signingCredentials),
             payload: new JwtPayload
             {
+                [JwtRegisteredClaimNames.Exp] = expiresAt.ToUnixTimeSeconds(),
+                [JwtRegisteredClaimNames.Iat] = issuedAt.ToUnixTimeSeconds(),
                 ["user_id"] = CurrentUser.Id,
-                [JwtRegisteredClaimNames.Iat] = _timeProvider.GetUtcNow().ToUnixTimeSeconds()
             }
         );
 

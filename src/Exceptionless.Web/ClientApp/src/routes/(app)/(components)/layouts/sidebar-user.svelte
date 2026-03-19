@@ -14,6 +14,7 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import ImpersonateOrganizationDialog from '$features/organizations/components/dialogs/impersonate-organization-dialog.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import { apiReferenceHref, documentationHref, githubRepositoryHref, supportIssuesHref } from '$features/shared/help-links';
     import GlobalUser from '$features/users/components/global-user.svelte';
     import BadgeCheck from '@lucide/svelte/icons/badge-check';
     import Bell from '@lucide/svelte/icons/bell';
@@ -216,22 +217,22 @@
                             {/if}
                             <DropdownMenu.Item>
                                 <BookOpen />
-                                <A variant="ghost" href="https://exceptionless.com/docs/" target="_blank" class="w-full">Documentation</A>
+                                <A variant="ghost" href={documentationHref} target="_blank" class="w-full">Documentation</A>
                                 <DropdownMenu.Shortcut>⌘gw</DropdownMenu.Shortcut>
                             </DropdownMenu.Item>
                             <DropdownMenu.Item>
                                 <Help />
-                                <A variant="ghost" href="https://github.com/exceptionless/Exceptionless/issues" target="_blank" class="w-full">Support</A>
+                                <A variant="ghost" href={supportIssuesHref} target="_blank" class="w-full">Support</A>
                                 <DropdownMenu.Shortcut>⌘gs</DropdownMenu.Shortcut>
                             </DropdownMenu.Item>
                             <DropdownMenu.Item>
                                 <GitHub />
-                                <A variant="ghost" href="https://github.com/exceptionless/Exceptionless" target="_blank" class="w-full">GitHub</A>
+                                <A variant="ghost" href={githubRepositoryHref} target="_blank" class="w-full">GitHub</A>
                                 <DropdownMenu.Shortcut>⌘gg</DropdownMenu.Shortcut>
                             </DropdownMenu.Item>
                             <DropdownMenu.Item>
                                 <Braces />
-                                <A variant="ghost" href="/docs/index.html" target="_blank" class="w-full">API Reference</A>
+                                <A variant="ghost" href={apiReferenceHref} target="_blank" class="w-full">API Reference</A>
                             </DropdownMenu.Item>
                             <DropdownMenu.Item>
                                 <BookOpen />

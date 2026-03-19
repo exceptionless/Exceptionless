@@ -1036,6 +1036,9 @@ public class AuthControllerTests : IntegrationTestsBase
         const string email = "intercom-token@exceptionless.io";
         const string password = "Test password";
         const string salt = "1234567890123456";
+        var issuedAt = new DateTimeOffset(2026, 3, 19, 12, 0, 0, TimeSpan.Zero);
+
+        TimeProvider.SetUtcNow(issuedAt);
 
         var user = new User
         {
@@ -1072,7 +1075,8 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.NotNull(intercomToken);
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(intercomToken.Token);
         Assert.Equal(user.Id, jwt.Payload["user_id"]);
-        Assert.True(jwt.Payload.ContainsKey(JwtRegisteredClaimNames.Iat));
+        Assert.Equal(issuedAt.UtcDateTime, jwt.Payload.IssuedAt);
+        Assert.Equal(issuedAt.AddHours(1).ToUnixTimeSeconds(), jwt.Payload.Expiration);
     }
 
     [Fact]

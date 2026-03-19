@@ -38,7 +38,15 @@ export function buildIntercomBootOptions(user: undefined | ViewCurrentUser, orga
     };
 }
 
-function getUnixTimestampSeconds(dateTime?: string): undefined | string {
+/**
+ * Get the Intercom context from the nearest IntercomInitializer.
+ * Must be called inside a component wrapped by IntercomInitializer.
+ */
+export function getIntercom(): IntercomContext | undefined {
+    return getContext<IntercomContext>(INTERCOM_CONTEXT_KEY);
+}
+
+function getUnixTimestampSeconds(dateTime?: string): string | undefined {
     if (!dateTime) {
         return undefined;
     }
@@ -49,11 +57,4 @@ function getUnixTimestampSeconds(dateTime?: string): undefined | string {
     }
 
     return Math.floor(milliseconds / 1000).toString();
-}
-/**
- * Get the Intercom context from the nearest IntercomInitializer.
- * Must be called inside a component wrapped by IntercomInitializer.
- */
-export function getIntercom(): IntercomContext | undefined {
-    return getContext<IntercomContext>(INTERCOM_CONTEXT_KEY);
 }
