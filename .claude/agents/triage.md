@@ -160,9 +160,18 @@ For actionable issues, produce a plan an engineer can execute immediately:
 - [ ] Visual verification: [if UI, what to check in browser]
 ```
 
-## Step 7 — Deliver Results
+## Step 7 — Present Findings & Get Direction
 
-**If triaging a GitHub issue**, post findings directly:
+**Do not jump straight to action.** Present your findings first and ask the user what they'd like to do next. The goal is to make sure we do the right thing based on the user's judgment.
+
+**If triaging a GitHub issue:**
+
+1. Present your findings to the user (classification, severity, impact, root cause, implementation plan)
+2. Thank the reporter for filing the issue
+3. Ask the user to review your findings and choose next steps before posting anything to GitHub
+4. Only post the triage comment to GitHub after the user confirms the direction
+
+When posting (after user approval):
 
 ```bash
 gh issue comment <NUMBER> --body "$(cat <<'EOF'
@@ -181,6 +190,9 @@ gh issue comment <NUMBER> --body "$(cat <<'EOF'
 
 ### Related
 - [Links to related issues, similar patterns found elsewhere]
+
+---
+Thank you for reporting this issue! If you have any additional information, reproduction steps, or context that could help, please don't hesitate to share — it's always valuable.
 EOF
 )"
 
@@ -213,11 +225,16 @@ After posting the triage comment:
 
 # Final Ask (Required)
 
-Before ending triage, always call `vscode_askQuestions` (askuserquestion) and ask whether they want:
+Before ending triage, always call `vscode_askQuestions` (askuserquestion) with the following:
 
-- Deeper analysis on any specific area
-- To hand off to `@engineer` immediately
-- To adjust severity or priority
-- Any other follow-up
+1. **Thank the user** for reporting/raising the issue
+2. **Present your recommended next steps** as options and ask which direction to go:
+   - Deeper analysis on any specific area
+   - Hand off to `@engineer` to implement the proposed plan
+   - Adjust severity or priority
+   - Request more information from the reporter
+   - Any other follow-up
+3. **Ask if they have additional context** — "Do you have any additional information or context that might help with this issue?"
+4. **Ask what to triage next** — "Is there another issue you'd like me to triage?"
 
-Do not end with findings alone — confirm next action.
+Do not end with findings alone — always confirm next action and prompt for the next issue.
