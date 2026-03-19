@@ -14,6 +14,8 @@ public static class PersistentEventExtensions
         if (ev.Data is null)
             return;
 
+        ev.Idx ??= new DataDictionary();
+
         keysToCopy = keysToCopy?.Length > 0 ? keysToCopy : ev.Data.Keys.ToArray();
 
         foreach (string key in keysToCopy.Where(k => !String.IsNullOrEmpty(k) && ev.Data.ContainsKey(k)))
@@ -170,7 +172,7 @@ public static class PersistentEventExtensions
         else
         {
             ev.Data.Remove(Event.KnownDataKeys.SessionEnd);
-            ev.Idx.Remove(Event.KnownDataKeys.SessionEnd + "-d");
+            ev.Idx?.Remove(Event.KnownDataKeys.SessionEnd + "-d");
         }
 
         return true;

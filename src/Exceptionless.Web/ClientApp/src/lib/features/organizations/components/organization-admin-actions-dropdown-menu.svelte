@@ -4,6 +4,9 @@
 
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
+    import { runMaintenanceJobMutation } from '$features/admin/api.svelte';
+    import RunMaintenanceJobDialog from '$features/admin/components/dialogs/run-maintenance-job-dialog.svelte';
+    import { maintenanceActions } from '$features/admin/models';
     import { deleteSuspendOrganization, postSetBonusOrganization, postSuspendOrganization } from '$features/organizations/api.svelte';
     import SetEventBonusDialog from '$features/organizations/components/dialogs/set-event-bonus-dialog.svelte';
     import SuspendOrganizationDialog from '$features/organizations/components/dialogs/suspend-organization-dialog.svelte';
@@ -11,6 +14,7 @@
     import Award from '@lucide/svelte/icons/award';
     import Pause from '@lucide/svelte/icons/pause';
     import Play from '@lucide/svelte/icons/play';
+    import RefreshCw from '@lucide/svelte/icons/refresh-cw';
     import Shield from '@lucide/svelte/icons/shield';
     import { toast } from 'svelte-sonner';
 
@@ -23,6 +27,7 @@
     let toastId = $state<number | string>();
     let openSuspendOrganizationDialog = $state(false);
     let openSetEventBonusDialog = $state(false);
+    let openFixStackStatsDialog = $state(false);
 
     const markSuspended = postSuspendOrganization({
         route: {
@@ -41,6 +46,7 @@
     });
 
     const setOrganizationBonus = postSetBonusOrganization();
+    const runJob = runMaintenanceJobMutation();
 
     async function suspend(params: PostSuspendOrganizationParams) {
         toast.dismiss(toastId);
@@ -83,6 +89,19 @@
     function handleSetBonus() {
         openSetEventBonusDialog = true;
     }
+
+    async function handleFixStackStats(params: Parameters<typeof runJob.mutateAsync>[0]) {
+        toast.dismiss(toastId);
+
+        try {
+            await runJob.mutateAsync(params);
+            toastId = toast.success('Successfully enqueued the Fix Stack Stats job.');
+        } catch (error: unknown) {
+            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
+            toastId = toast.error(`An error occurred while starting the job: ${message}`);
+            throw error;
+        }
+    }
 </script>
 
 <DropdownMenu.Root>
@@ -113,6 +132,11 @@
                 <Award class="mr-2 size-4" />
                 <span>Set Bonus</span>
             </DropdownMenu.Item>
+            <DropdownMenu.Separator />
+            <DropdownMenu.Item onclick={() => (openFixStackStatsDialog = true)} disabled={runJob.isPending}>
+                <RefreshCw class="mr-2 size-4" />
+                <span>Fix Stack Stats</span>
+            </DropdownMenu.Item>
         </DropdownMenu.Group>
     </DropdownMenu.Content>
 </DropdownMenu.Root>
@@ -123,4 +147,13 @@
 
 {#if organization && openSetEventBonusDialog}
     <SetEventBonusDialog bind:open={openSetEventBonusDialog} {organization} {setBonus} />
+{/if}
+
+{#if organization && openFixStackStatsDialog}
+    <RunMaintenanceJobDialog
+        bind:open={openFixStackStatsDialog}
+        action={maintenanceActions.find((a) => a.name === 'fix-stack-stats')!}
+        organizationId={organization.id}
+        onConfirm={handleFixStackStats}
+    />
 {/if}

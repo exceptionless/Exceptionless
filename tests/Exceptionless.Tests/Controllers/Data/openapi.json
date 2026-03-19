@@ -5272,16 +5272,29 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NotificationSettings"
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NotificationSettings"
+                  }
+                ]
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/NotificationSettings"
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NotificationSettings"
+                  }
+                ]
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -5327,16 +5340,29 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NotificationSettings"
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NotificationSettings"
+                  }
+                ]
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/NotificationSettings"
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NotificationSettings"
+                  }
+                ]
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -5893,8 +5919,8 @@
           }
         ],
         "responses": {
-          "202": {
-            "description": "Accepted",
+          "200": {
+            "description": "The stacks were marked as fixed.",
             "content": {
               "application/json": { }
             }
@@ -5933,8 +5959,8 @@
           }
         ],
         "responses": {
-          "202": {
-            "description": "Accepted",
+          "200": {
+            "description": "The stacks were snoozed.",
             "content": {
               "application/json": { }
             }
@@ -7435,7 +7461,6 @@
           "stack_id",
           "is_first_occurrence",
           "created_utc",
-          "idx",
           "date"
         ],
         "type": "object",
@@ -7478,7 +7503,10 @@
             "format": "date-time"
           },
           "idx": {
-            "type": "object",
+            "type": [
+              "null",
+              "object"
+            ],
             "additionalProperties": { },
             "description": "Used to store primitive data type custom data values for searching the event."
           },

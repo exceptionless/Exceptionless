@@ -1,5 +1,4 @@
 using System.Text;
-using AutoMapper;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -16,6 +15,7 @@ using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
+using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.OpenApi;
@@ -60,7 +60,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         FormattingPluginManager formattingPluginManager,
         ICacheClient cacheClient,
         JsonSerializerSettings jsonSerializerSettings,
-        IMapper mapper,
+        ApiMapper mapper,
         PersistentEventQueryValidator validator,
         AppOptions appOptions,
         TimeProvider timeProvider,
@@ -81,6 +81,11 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         AllowedDateFields.Add(EventIndex.Alias.Date);
         DefaultDateField = EventIndex.Alias.Date;
     }
+
+    // Mapping implementations - PersistentEvent uses itself as view model (no mapping needed)
+    protected override PersistentEvent MapToModel(PersistentEvent newModel) => newModel;
+    protected override PersistentEvent MapToViewModel(PersistentEvent model) => model;
+    protected override List<PersistentEvent> MapToViewModels(IEnumerable<PersistentEvent> models) => models.ToList();
 
     /// <summary>
     /// Count
@@ -337,7 +342,8 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                         .SystemFilter(systemFilter)
                         .FilterExpression(filter)
                         .EnforceEventStackFilter()
-                        .AggregationsExpression($"terms:(stack_id~{GetSkip(resolvedPage + 1, limit) + 1} {stackAggregations})"));
+                        .AggregationsExpression($"terms:(stack_id~{GetSkip(resolvedPage + 1, limit) + 1} {stackAggregations})")
+                    );
 
                     var stackTerms = countResponse.Aggregations.Terms<string>("terms_stack_id");
                     if (stackTerms is null || stackTerms.Buckets.Count == 0)
@@ -410,7 +416,8 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 .FilterExpression(filter)
                 .EnforceEventStackFilter()
                 .SortExpression(sort)
-                .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field),
+                .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field)
+                .Index(ti.Range.UtcStart, ti.Range.UtcEnd),
             o => page.HasValue
                 ? o.PageNumber(page).PageLimit(limit)
                 : o.SearchBeforeToken(before).SearchAfterToken(after).PageLimit(limit));
@@ -811,9 +818,14 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         // Set the project for the configuration response filter.
         Request.SetProject(project);
 
-        var eventUserDescription = await MapAsync<EventUserDescription>(description);
-        eventUserDescription.ProjectId = project.Id;
-        eventUserDescription.ReferenceId = referenceId;
+        var eventUserDescription = new EventUserDescription
+        {
+            ProjectId = project.Id,
+            ReferenceId = referenceId,
+            EmailAddress = description.EmailAddress,
+            Description = description.Description,
+            Data = description.Data
+        };
 
         await _eventUserDescriptionQueue.EnqueueAsync(eventUserDescription);
         return StatusCode(StatusCodes.Status202Accepted);

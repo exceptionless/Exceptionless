@@ -22,6 +22,7 @@ export interface TableConfiguration<TData, TPaginationStrategy extends Paginatio
     columnPersistenceKey: string;
     columns: ColumnDef<TData>[];
     configureOptions?: (options: TableOptions<TData>) => TableOptions<TData>;
+    defaultColumnVisibility?: VisibilityState;
     paginationStrategy: TPaginationStrategy;
     queryData?: TData[];
     queryMeta?: QueryMeta;
@@ -66,7 +67,7 @@ export function getSharedTableOptions<TData, TPaginationStrategy extends Paginat
 
     // Use the persistKey if provided, otherwise default to events-column-visibility
     const visibilityKey = configuration.columnPersistenceKey ? `${configuration.columnPersistenceKey}-column-visibility` : 'events-column-visibility';
-    const [columnVisibility, setColumnVisibility] = createPersistedTableState(visibilityKey, <VisibilityState>{});
+    const [columnVisibility, setColumnVisibility] = createPersistedTableState(visibilityKey, configuration.defaultColumnVisibility ?? <VisibilityState>{});
 
     // Initialize pagination state from parameters
     const initialPageIndex = isOffsetPaging

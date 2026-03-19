@@ -9,11 +9,14 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Utility;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
+using Exceptionless.Web.Models.Admin;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Migrations;
 using Foundatio.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,43 +28,115 @@ namespace Exceptionless.Web.Controllers;
 [ApiExplorerSettings(IgnoreApi = true)]
 public class AdminController : ExceptionlessApiController
 {
+    private readonly ILogger _logger;
     private readonly ExceptionlessElasticConfiguration _configuration;
     private readonly IFileStorage _fileStorage;
     private readonly IMessagePublisher _messagePublisher;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly IProjectRepository _projectRepository;
+    private readonly IStackRepository _stackRepository;
+    private readonly IEventRepository _eventRepository;
+    private readonly IUserRepository _userRepository;
     private readonly IQueue<EventPost> _eventPostQueue;
     private readonly IQueue<WorkItemData> _workItemQueue;
     private readonly AppOptions _appOptions;
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
+    private readonly IMigrationStateRepository _migrationStateRepository;
 
     public AdminController(
         ExceptionlessElasticConfiguration configuration,
         IFileStorage fileStorage,
         IMessagePublisher messagePublisher,
         IOrganizationRepository organizationRepository,
+        IProjectRepository projectRepository,
+        IStackRepository stackRepository,
+        IEventRepository eventRepository,
+        IUserRepository userRepository,
         IQueue<EventPost> eventPostQueue,
         IQueue<WorkItemData> workItemQueue,
         AppOptions appOptions,
         BillingManager billingManager,
         BillingPlans plans,
-        TimeProvider timeProvider) : base(timeProvider)
+        IMigrationStateRepository migrationStateRepository,
+        TimeProvider timeProvider,
+        ILoggerFactory loggerFactory) : base(timeProvider)
     {
+        _logger = loggerFactory.CreateLogger<AdminController>();
         _configuration = configuration;
         _fileStorage = fileStorage;
         _messagePublisher = messagePublisher;
         _organizationRepository = organizationRepository;
+        _projectRepository = projectRepository;
+        _stackRepository = stackRepository;
+        _eventRepository = eventRepository;
+        _userRepository = userRepository;
         _eventPostQueue = eventPostQueue;
         _workItemQueue = workItemQueue;
         _appOptions = appOptions;
         _billingManager = billingManager;
         _plans = plans;
+        _migrationStateRepository = migrationStateRepository;
     }
 
     [HttpGet("settings")]
     public ActionResult SettingsRequest()
     {
         return Ok(_appOptions);
+    }
+
+    [HttpGet("stats")]
+    public async Task<ActionResult<AdminStatsResponse>> GetStatsAsync()
+    {
+        var organizationCountTask = _organizationRepository.CountAsync(q => q
+            .AggregationsExpression("terms:billing_status date:created_utc~1M"));
+
+        var userCountTask = _userRepository.CountAsync();
+        var projectCountTask = _projectRepository.CountAsync();
+
+        var stackCountTask = _stackRepository.CountAsync(q => q
+            .AggregationsExpression("terms:status terms:(type terms:status)"));
+
+        var eventCountTask = _eventRepository.CountAsync(q => q
+            .AggregationsExpression("date:date~1M"));
+
+        await Task.WhenAll(organizationCountTask, userCountTask, projectCountTask, stackCountTask, eventCountTask);
+
+        return Ok(new AdminStatsResponse(
+            Organizations: await organizationCountTask,
+            Users: await userCountTask,
+            Projects: await projectCountTask,
+            Stacks: await stackCountTask,
+            Events: await eventCountTask
+        ));
+    }
+
+    [HttpGet("migrations")]
+    public async Task<ActionResult<MigrationsResponse>> GetMigrationsAsync()
+    {
+        var result = await _migrationStateRepository.GetAllAsync(o => o.SearchAfterPaging().PageLimit(1000));
+        var migrationStates = new List<MigrationState>(result.Documents.Count);
+
+        while (result.Documents.Count > 0)
+        {
+            migrationStates.AddRange(result.Documents);
+
+            if (!await result.NextPageAsync())
+                break;
+        }
+
+        var states = migrationStates
+            .OrderByDescending(s => s.Version)
+            .ThenByDescending(s => s.StartedUtc)
+            .ToArray();
+
+        int currentVersion = states
+            .Where(s => s.MigrationType != MigrationType.Repeatable && s.CompletedUtc.HasValue)
+            .Select(s => s.Version)
+            .DefaultIfEmpty(-1)
+            .Max();
+
+        return Ok(new MigrationsResponse(currentVersion, states));
     }
 
     [HttpGet("echo")]
@@ -155,34 +230,59 @@ public class AdminController : ExceptionlessApiController
     }
 
     [HttpGet("maintenance/{name:minlength(1)}")]
-    public async Task<IActionResult> RunJobAsync(string name)
+    public async Task<IActionResult> RunJobAsync(string name, DateTime? utcStart = null, DateTime? utcEnd = null, string? organizationId = null)
     {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
         switch (name.ToLowerInvariant())
         {
-            case "indexes":
-                if (!_appOptions.ElasticsearchOptions.DisableIndexConfiguration)
-                    await _configuration.ConfigureIndexesAsync(beginReindexingOutdated: false);
-                break;
-            case "update-organization-plans":
-                await _workItemQueue.EnqueueAsync(new OrganizationMaintenanceWorkItem { UpgradePlans = true });
-                break;
-            case "remove-old-organization-usage":
-                await _workItemQueue.EnqueueAsync(new OrganizationMaintenanceWorkItem { RemoveOldUsageStats = true });
-                break;
-            case "update-project-default-bot-lists":
-                await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { UpdateDefaultBotList = true, IncrementConfigurationVersion = true });
+            case "fix-stack-stats":
+                var effectiveUtcStart = utcStart ?? _timeProvider.GetUtcNow().UtcDateTime.AddDays(-90);
+
+                if (utcEnd.HasValue && utcEnd.Value.IsBefore(effectiveUtcStart))
+                {
+                    ModelState.AddModelError(nameof(utcEnd), "utcEnd must be greater than or equal to utcStart.");
+                    return ValidationProblem(ModelState);
+                }
+
+                await _workItemQueue.EnqueueAsync(new FixStackStatsWorkItem
+                {
+                    UtcStart = effectiveUtcStart,
+                    UtcEnd = utcEnd,
+                    OrganizationId = organizationId
+                });
                 break;
             case "increment-project-configuration-version":
                 await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { IncrementConfigurationVersion = true });
                 break;
-            case "remove-old-project-usage":
-                await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { RemoveOldUsageStats = true });
+            case "indexes":
+                if (!_appOptions.ElasticsearchOptions.DisableIndexConfiguration)
+                    await _configuration.ConfigureIndexesAsync(beginReindexingOutdated: false);
                 break;
             case "normalize-user-email-address":
                 await _workItemQueue.EnqueueAsync(new UserMaintenanceWorkItem { Normalize = true });
                 break;
+            case "remove-old-organization-usage":
+                await _workItemQueue.EnqueueAsync(new OrganizationMaintenanceWorkItem { RemoveOldUsageStats = true });
+                break;
+            case "remove-old-project-usage":
+                await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { RemoveOldUsageStats = true });
+                break;
             case "reset-verify-email-address-token-and-expiration":
                 await _workItemQueue.EnqueueAsync(new UserMaintenanceWorkItem { ResetVerifyEmailAddressToken = true });
+                break;
+            case "update-organization-plans":
+                await _workItemQueue.EnqueueAsync(new OrganizationMaintenanceWorkItem { UpgradePlans = true });
+                break;
+            case "update-project-default-bot-lists":
+                await _workItemQueue.EnqueueAsync(new ProjectMaintenanceWorkItem { UpdateDefaultBotList = true, IncrementConfigurationVersion = true });
+                break;
+            case "update-project-notification-settings":
+                await _workItemQueue.EnqueueAsync(new UpdateProjectNotificationSettingsWorkItem
+                {
+                    OrganizationId = organizationId
+                });
                 break;
             default:
                 return NotFound();
@@ -190,4 +290,149 @@ public class AdminController : ExceptionlessApiController
 
         return Ok();
     }
+
+    [HttpGet("elasticsearch")]
+    public async Task<ActionResult<ElasticsearchInfoResponse>> GetElasticsearchInfoAsync()
+    {
+        var client = _configuration.Client;
+        var healthTask = client.Cluster.HealthAsync();
+        var statsTask = client.Cluster.StatsAsync();
+        var catIndicesTask = client.Cat.IndicesAsync(r => r.Bytes(Elasticsearch.Net.Bytes.B));
+        var catShardsTask = client.Cat.ShardsAsync();
+        await Task.WhenAll(healthTask, statsTask, catIndicesTask, catShardsTask);
+
+        var healthResponse = await healthTask;
+        var statsResponse = await statsTask;
+        var catIndicesResponse = await catIndicesTask;
+        var catShardsResponse = await catShardsTask;
+
+        if (!healthResponse.IsValid || !statsResponse.IsValid || !catIndicesResponse.IsValid || !catShardsResponse.IsValid)
+            return Problem(title: "Elasticsearch cluster information is unavailable.");
+
+        // Count unassigned shards per index
+        var unassignedByIndex = (catShardsResponse.Records ?? [])
+            .Where(s => string.Equals(s.State, "UNASSIGNED", StringComparison.OrdinalIgnoreCase))
+            .GroupBy(s => s.Index ?? String.Empty, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
+
+        var indexDetails = (catIndicesResponse.Records ?? [])
+            .OrderByDescending(i => long.TryParse(i.StoreSize, out var s) ? s : 0)
+            .Select(i => new ElasticsearchIndexDetailResponse(
+                Index: i.Index,
+                Health: i.Health,
+                Status: i.Status,
+                Primary: int.TryParse(i.Primary, out var p) ? p : 0,
+                Replica: int.TryParse(i.Replica, out var r) ? r : 0,
+                DocsCount: long.TryParse(i.DocsCount, out var dc) ? dc : 0,
+                StoreSizeInBytes: long.TryParse(i.StoreSize, out var ss) ? ss : 0,
+                UnassignedShards: unassignedByIndex.GetValueOrDefault(i.Index ?? String.Empty, 0)
+            ))
+            .ToArray();
+
+        return Ok(new ElasticsearchInfoResponse(
+            Health: new ElasticsearchHealthResponse(
+                Status: (int)healthResponse.Status,
+                ClusterName: healthResponse.ClusterName,
+                NumberOfNodes: healthResponse.NumberOfNodes,
+                NumberOfDataNodes: healthResponse.NumberOfDataNodes,
+                ActiveShards: healthResponse.ActiveShards,
+                RelocatingShards: healthResponse.RelocatingShards,
+                UnassignedShards: healthResponse.UnassignedShards,
+                ActivePrimaryShards: healthResponse.ActivePrimaryShards
+            ),
+            Indices: new ElasticsearchIndicesResponse(
+                Count: statsResponse.Indices.Count,
+                DocsCount: statsResponse.Indices.Documents.Count,
+                StoreSizeInBytes: statsResponse.Indices.Store.SizeInBytes
+            ),
+            IndexDetails: indexDetails
+        ));
+    }
+
+    [HttpGet("elasticsearch/snapshots")]
+    public async Task<ActionResult<ElasticsearchSnapshotsResponse>> GetElasticsearchSnapshotsAsync()
+    {
+        var client = _configuration.Client;
+        try
+        {
+            var repositoryResponse = await client.Cat.RepositoriesAsync();
+            if (!repositoryResponse.IsValid)
+                return Problem(title: "Snapshot repository information is unavailable.");
+
+            if (!(repositoryResponse.Records?.Any() ?? false))
+                return Ok(new ElasticsearchSnapshotsResponse([], []));
+
+            var repositoryNames = repositoryResponse.Records
+                .Where(r => !String.IsNullOrEmpty(r.Id))
+                .Select(r => r.Id!)
+                .ToArray();
+
+            var snapshotTasks = repositoryNames
+                .Select(async repositoryName =>
+                {
+                    var snapshotResponse = await client.Cat.SnapshotsAsync(r => r.RepositoryName(repositoryName));
+                    if (!snapshotResponse.IsValid)
+                        return (
+                            RepositoryName: repositoryName,
+                            Snapshots: Array.Empty<ElasticsearchSnapshotResponse>(),
+                            Error: $"Unable to retrieve snapshots for repository: {repositoryName}."
+                        );
+
+                    var snapshotRecords = snapshotResponse.Records?.ToArray() ?? [];
+                    return (
+                        RepositoryName: repositoryName,
+                        Snapshots: snapshotRecords.Select(s => new ElasticsearchSnapshotResponse(
+                            Repository: repositoryName,
+                            Name: s.Id ?? String.Empty,
+                            Status: s.Status ?? String.Empty,
+                            StartTime: s.StartEpoch > 0 ? DateTimeOffset.FromUnixTimeSeconds(s.StartEpoch).UtcDateTime : null,
+                            EndTime: s.EndEpoch > 0 ? DateTimeOffset.FromUnixTimeSeconds(s.EndEpoch).UtcDateTime : null,
+                            Duration: s.Duration?.ToString() ?? String.Empty,
+                            IndicesCount: s.Indices,
+                            SuccessfulShards: s.SuccessfulShards,
+                            FailedShards: s.FailedShards,
+                            TotalShards: s.TotalShards
+                        )).ToArray(),
+                        Error: (string?)null
+                    );
+                })
+                .ToArray();
+
+            var snapshotResults = await Task.WhenAll(snapshotTasks);
+
+            var failedSnapshotResults = snapshotResults
+                .Where(r => r.Error is not null)
+                .ToArray();
+
+            if (failedSnapshotResults.Length is > 0)
+            {
+                _logger.LogWarning("Unable to retrieve snapshots for one or more repositories: {Repositories}",
+                    String.Join(", ", failedSnapshotResults.Select(r => r.RepositoryName)));
+            }
+
+            var successfulSnapshotResults = snapshotResults
+                .Where(r => r.Error is null)
+                .ToArray();
+
+            if (successfulSnapshotResults.Length is 0)
+                return Problem(title: "Unable to retrieve snapshot information.");
+
+            var snapshots = successfulSnapshotResults
+                .SelectMany(r => r.Snapshots)
+                .OrderByDescending(s => s.StartTime)
+                .ToArray();
+
+            var successfulRepositoryNames = successfulSnapshotResults
+                .Select(r => r.RepositoryName)
+                .ToArray();
+
+            return Ok(new ElasticsearchSnapshotsResponse(successfulRepositoryNames, snapshots));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unable to retrieve snapshot information");
+            return Problem(title: "Unable to retrieve snapshot information.");
+        }
+    }
 }
+

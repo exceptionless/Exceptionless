@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-using AutoMapper;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
@@ -102,14 +101,16 @@ public class Bootstrapper
         services.AddSingleton<WorkItemHandlers>(s =>
         {
             var handlers = new WorkItemHandlers();
-            handlers.Register<ReindexWorkItem>(s.GetRequiredService<ReindexWorkItemHandler>);
-            handlers.Register<RemoveStacksWorkItem>(s.GetRequiredService<RemoveStacksWorkItemHandler>);
-            handlers.Register<RemoveBotEventsWorkItem>(s.GetRequiredService<RemoveBotEventsWorkItemHandler>);
-            handlers.Register<SetLocationFromGeoWorkItem>(s.GetRequiredService<SetLocationFromGeoWorkItemHandler>);
-            handlers.Register<SetProjectIsConfiguredWorkItem>(s.GetRequiredService<SetProjectIsConfiguredWorkItemHandler>);
+            handlers.Register<FixStackStatsWorkItem>(s.GetRequiredService<FixStackStatsWorkItemHandler>);
             handlers.Register<OrganizationMaintenanceWorkItem>(s.GetRequiredService<OrganizationMaintenanceWorkItemHandler>);
             handlers.Register<OrganizationNotificationWorkItem>(s.GetRequiredService<OrganizationNotificationWorkItemHandler>);
             handlers.Register<ProjectMaintenanceWorkItem>(s.GetRequiredService<ProjectMaintenanceWorkItemHandler>);
+            handlers.Register<ReindexWorkItem>(s.GetRequiredService<ReindexWorkItemHandler>);
+            handlers.Register<RemoveBotEventsWorkItem>(s.GetRequiredService<RemoveBotEventsWorkItemHandler>);
+            handlers.Register<RemoveStacksWorkItem>(s.GetRequiredService<RemoveStacksWorkItemHandler>);
+            handlers.Register<SetLocationFromGeoWorkItem>(s.GetRequiredService<SetLocationFromGeoWorkItemHandler>);
+            handlers.Register<SetProjectIsConfiguredWorkItem>(s.GetRequiredService<SetProjectIsConfiguredWorkItemHandler>);
+            handlers.Register<UpdateProjectNotificationSettingsWorkItem>(s.GetRequiredService<UpdateProjectNotificationSettingsWorkItemHandler>);
             handlers.Register<UserMaintenanceWorkItem>(s.GetRequiredService<UserMaintenanceWorkItemHandler>);
             return handlers;
         });
@@ -197,21 +198,6 @@ public class Bootstrapper
         services.AddSingleton<StackService>();
 
         services.AddTransient<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
-
-        services.AddTransient<Profile, CoreMappings>();
-        services.AddSingleton<IMapper>(s =>
-        {
-            var profiles = s.GetServices<Profile>();
-            var c = new MapperConfiguration(cfg =>
-            {
-                cfg.ConstructServicesUsing(s.GetRequiredService);
-
-                foreach (var profile in profiles)
-                    cfg.AddProfile(profile);
-            });
-
-            return c.CreateMapper();
-        });
     }
 
     public static void LogConfiguration(IServiceProvider serviceProvider, AppOptions appOptions, ILogger logger)

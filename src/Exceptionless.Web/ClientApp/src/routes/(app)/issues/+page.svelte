@@ -311,7 +311,7 @@
 
         <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} {rowClick} {rowHref} {table}>
             {#snippet footerChildren()}
-                <div class="h-9 min-w-[140px]">
+                <div class="h-9 min-w-35">
                     <TableStacksBulkActionsDropdownMenu {table} />
                 </div>
 

@@ -71,7 +71,7 @@ public class StackControllerTests : IntegrationTestsBase
         Assert.NotNull(stack);
         Assert.False(stack.IsFixed());
 
-        await SendRequestAsAsync<WorkInProgressResult>(r => r
+        await SendRequestAsync(r => r
             .Post()
             .AsGlobalAdminUser()
             .AppendPath($"stacks/{stack.Id}/mark-fixed")
@@ -167,5 +167,34 @@ public class StackControllerTests : IntegrationTestsBase
         Assert.NotNull(stack);
         Assert.Single(stack.References);
         Assert.Contains(testUrl, stack.References);
+    }
+
+    [Fact]
+    public async Task GetAll_WithDateRangeFilter_ReturnsOnlyMatchingStacks()
+    {
+        // Arrange
+        var now = TimeProvider.GetUtcNow();
+        var (stacks, _) = await CreateDataAsync(d =>
+        {
+            d.Event().TestProject().Date(now.AddDays(-1));
+            d.Event().TestProject().Date(now.AddDays(-3));
+        });
+
+        Assert.Equal(2, stacks.Count);
+        var recentStack = stacks.Single(s => s.LastOccurrence >= now.AddDays(-2).UtcDateTime);
+        var oldStack = stacks.Single(s => s.LastOccurrence < now.AddDays(-2).UtcDateTime);
+
+        // Act
+        var result = await SendRequestAsAsync<IReadOnlyCollection<Stack>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("stacks")
+            .QueryString("time", "[now-2d TO now]")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Contains(result, s => String.Equals(s.Id, recentStack.Id, StringComparison.Ordinal));
+        Assert.DoesNotContain(result, s => String.Equals(s.Id, oldStack.Id, StringComparison.Ordinal));
     }
 }

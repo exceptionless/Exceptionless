@@ -164,7 +164,7 @@ export interface OAuthAccount {
   provider: string;
   provider_user_id: string;
   username: string;
-  extra_data?: null | object;
+  extra_data: Record<string, string>;
 }
 
 export interface PersistentEvent {
@@ -223,7 +223,7 @@ export interface PersistentEvent {
    */
   count?: null | number;
   /** Optional data entries that contain additional information about this event. */
-  data?: null | object;
+  data?: null | Record<string, unknown>;
   /** An optional identifier to be used for referencing this event instance at a later time. */
   reference_id?: null | string;
 }
@@ -419,7 +419,7 @@ export interface UserDescription {
   email_address?: null | string;
   description?: null | string;
   /** Extended data entries for this user description. */
-  data?: null | object;
+  data?: null | Record<string, unknown>;
 }
 
 export interface ViewCurrentUser {
@@ -487,7 +487,7 @@ export interface ViewOrganization {
   invites: Invite[];
   usage_hours: UsageHourInfo[];
   usage: UsageInfo[];
-  data?: null | object;
+  data?: null | Record<string, unknown>;
   is_throttled: boolean;
   is_over_monthly_limit: boolean;
   is_over_request_limit: boolean;
@@ -503,7 +503,7 @@ export interface ViewProject {
   organization_name: string;
   name: string;
   delete_bot_data_enabled: boolean;
-  data?: null | object;
+  data?: null | Record<string, unknown>;
   promoted_tabs: string[];
   is_configured?: null | boolean;
   /** @format int64 */

@@ -169,6 +169,50 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SetEventCounterAsync_WhenIncomingValuesAreOlderOrLower_ShouldOnlyApplyMonotonicUpdates()
+    {
+        // Arrange
+        var originalFirst = new DateTime(2026, 2, 15, 0, 0, 0, DateTimeKind.Utc);
+        var originalLast = new DateTime(2026, 2, 16, 0, 0, 0, DateTimeKind.Utc);
+        var stack = await _repository.AddAsync(_stackData.GenerateStack(
+            generateId: true,
+            organizationId: TestConstants.OrganizationId,
+            projectId: TestConstants.ProjectId,
+            utcFirstOccurrence: originalFirst,
+            utcLastOccurrence: originalLast,
+            totalOccurrences: 10), o => o.ImmediateConsistency());
+        // Act
+        await _repository.SetEventCounterAsync(
+            stack.Id,
+            originalFirst.AddDays(1),
+            originalLast.AddDays(-1),
+            5,
+            sendNotifications: false);
+
+        var unchanged = await _repository.GetByIdAsync(stack.Id);
+
+        // Assert
+        Assert.Equal(10, unchanged.TotalOccurrences);
+        Assert.Equal(originalFirst, unchanged.FirstOccurrence);
+        Assert.Equal(originalLast, unchanged.LastOccurrence);
+
+        // Act
+        await _repository.SetEventCounterAsync(
+            stack.Id,
+            originalFirst.AddDays(-1),
+            originalLast.AddDays(1),
+            15,
+            sendNotifications: false);
+
+        var updated = await _repository.GetByIdAsync(stack.Id);
+
+        // Assert
+        Assert.Equal(15, updated.TotalOccurrences);
+        Assert.Equal(originalFirst.AddDays(-1), updated.FirstOccurrence);
+        Assert.Equal(originalLast.AddDays(1), updated.LastOccurrence);
+    }
+
+    [Fact]
     public async Task CanFindManyAsync()
     {
         await _repository.AddAsync(_stackData.GenerateSampleStacks(), o => o.ImmediateConsistency());
@@ -199,11 +243,16 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         var openStack10DaysOldWithReference = _stackData.GenerateStack(id: TestConstants.StackId3, utcLastOccurrence: utcNow.SubtractDays(10), status: StackStatus.Open);
         openStack10DaysOldWithReference.References.Add("test");
 
-        await _repository.AddAsync(new List<Stack> {
-                _stackData.GenerateStack(id: TestConstants.StackId, utcLastOccurrence: utcNow.SubtractDays(5), status: StackStatus.Open),
-                _stackData.GenerateStack(id: TestConstants.StackId2, utcLastOccurrence: utcNow.SubtractDays(10), status: StackStatus.Open),
+        await _repository.AddAsync(
+            new List<Stack>
+            {
+                _stackData.GenerateStack(id: TestConstants.StackId, utcLastOccurrence: utcNow.SubtractDays(5),
+                    status: StackStatus.Open),
+                _stackData.GenerateStack(id: TestConstants.StackId2, utcLastOccurrence: utcNow.SubtractDays(10),
+                    status: StackStatus.Open),
                 openStack10DaysOldWithReference,
-                _stackData.GenerateStack(id: TestConstants.StackId4, utcLastOccurrence: utcNow.SubtractDays(10), status: StackStatus.Fixed)
+                _stackData.GenerateStack(id: TestConstants.StackId4, utcLastOccurrence: utcNow.SubtractDays(10),
+                    status: StackStatus.Fixed)
             }, o => o.ImmediateConsistency());
 
         var stacks = await _repository.GetStacksForCleanupAsync(TestConstants.OrganizationId, utcNow.SubtractDays(8));
