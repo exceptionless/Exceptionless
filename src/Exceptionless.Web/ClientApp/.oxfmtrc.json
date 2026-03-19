@@ -3,6 +3,6 @@
     "printWidth": 160,
     "singleQuote": true,
     "trailingComma": "none",
-    "endOfLine": "crlf",
+    "endOfLine": "lf",
     "ignorePatterns": []
 }
