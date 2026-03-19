@@ -1,4 +1,3 @@
-﻿using AutoMapper;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -12,6 +11,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
 using Exceptionless.Web.Extensions;
+using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
@@ -55,7 +55,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         UsageService usageService,
         IMailer mailer,
         IMessagePublisher messagePublisher,
-        IMapper mapper,
+        ApiMapper mapper,
         IAppQueryValidator validator,
         AppOptions options,
         TimeProvider timeProvider,
@@ -74,6 +74,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         _options = options;
     }
 
+    // Mapping implementations
+    protected override Organization MapToModel(NewOrganization newModel) => _mapper.MapToOrganization(newModel);
+    protected override ViewOrganization MapToViewModel(Organization model) => _mapper.MapToViewOrganization(model);
+    protected override List<ViewOrganization> MapToViewModels(IEnumerable<Organization> models) => _mapper.MapToViewOrganizations(models);
+
     /// <summary>
     /// Get all
     /// </summary>
@@ -82,10 +87,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     public async Task<ActionResult<IReadOnlyCollection<ViewOrganization>>> GetAllAsync(string? mode = null)
     {
         var organizations = await GetModelsAsync(GetAssociatedOrganizationIds().ToArray());
-        var viewOrganizations = await MapCollectionAsync<ViewOrganization>(organizations, true);
+        var viewOrganizations = MapToViewModels(organizations);
+        await AfterResultMapAsync(viewOrganizations);
 
         if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
-            return Ok(await PopulateOrganizationStatsAsync(viewOrganizations.ToList()));
+            return Ok(await PopulateOrganizationStatsAsync(viewOrganizations));
 
         return Ok(viewOrganizations);
     }
@@ -98,7 +104,8 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         page = GetPage(page);
         limit = GetLimit(limit);
         var organizations = await _repository.GetByCriteriaAsync(criteria, o => o.PageNumber(page).PageLimit(limit), sort, paid, suspended);
-        var viewOrganizations = (await MapCollectionAsync<ViewOrganization>(organizations.Documents, true)).ToList();
+        var viewOrganizations = MapToViewModels(organizations.Documents);
+        await AfterResultMapAsync(viewOrganizations);
 
         if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
             return OkWithResourceLinks(await PopulateOrganizationStatsAsync(viewOrganizations), organizations.HasMore, page, organizations.Total);
@@ -127,7 +134,9 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (organization is null)
             return NotFound();
 
-        var viewOrganization = await MapAsync<ViewOrganization>(organization, true);
+        var viewOrganization = MapToViewModel(organization);
+        await AfterResultMapAsync<ViewOrganization>([viewOrganization]);
+
         if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase))
             return Ok(await PopulateOrganizationStatsAsync(viewOrganization));
 
@@ -306,7 +315,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         var client = new StripeClient(_options.StripeOptions.StripeApiKey);
         var invoiceService = new InvoiceService(client);
         var invoiceOptions = new InvoiceListOptions { Customer = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after };
-        var invoices = (await MapCollectionAsync<InvoiceGridModel>(await invoiceService.ListAsync(invoiceOptions), true)).ToList();
+        var invoices = _mapper.MapToInvoiceGridModels(await invoiceService.ListAsync(invoiceOptions));
         return OkWithResourceLinks(invoices.Take(limit).ToList(), invoices.Count > limit);
     }
 
@@ -581,17 +590,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             if (!user.OrganizationIds.Contains(organization.Id))
                 return BadRequest();
 
-            if ((await _userRepository.GetByOrganizationIdAsync(organization.Id)).Total == 1)
+            var organizationUsers = await _userRepository.GetByOrganizationIdAsync(organization.Id);
+            if (organizationUsers.Total is 1)
                 return BadRequest("An organization must contain at least one user.");
 
-            var projects = (await _projectRepository.GetByOrganizationIdAsync(organization.Id)).Documents.Where(p => p.NotificationSettings.ContainsKey(user.Id)).ToList();
-            if (projects.Count > 0)
-            {
-                foreach (var project in projects)
-                    project.NotificationSettings.Remove(user.Id);
-
-                await _projectRepository.SaveAsync(projects);
-            }
+            await _organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
 
             user.OrganizationIds.Remove(organization.Id);
             await _userRepository.SaveAsync(user, o => o.Cache());
@@ -766,7 +769,8 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (!String.IsNullOrEmpty(value.StripeCustomerId) && !User.IsInRole(AuthorizationRoles.GlobalAdmin))
             return PermissionResult.DenyWithMessage("An organization cannot be deleted if it has a subscription.", value.Id);
 
-        var projects = (await _projectRepository.GetByOrganizationIdAsync(value.Id)).Documents.ToList();
+        var organizationProjects = await _projectRepository.GetByOrganizationIdAsync(value.Id);
+        var projects = organizationProjects.Documents.ToList();
         if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Count > 0)
             return PermissionResult.DenyWithMessage("An organization cannot be deleted if it contains any projects.", value.Id);
 

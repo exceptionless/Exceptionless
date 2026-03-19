@@ -47,7 +47,7 @@
     let suspendedFilter = $state<boolean | undefined>(undefined);
     let selectedOrganization = $state<null | ViewOrganization>(null);
     let currentPage = $state(1);
-    const pageSize = 5;
+    const pageSize = 10;
 
     const searchResults = getAdminOrganizationsQuery({
         params: {
@@ -205,7 +205,7 @@
                         }
                     }}
                 >
-                    <Select.Trigger class="h-8 w-[120px]">
+                    <Select.Trigger class="h-8 w-30">
                         {#if paidFilter === undefined}
                             All Plans
                         {:else if paidFilter}
@@ -232,7 +232,7 @@
                         }
                     }}
                 >
-                    <Select.Trigger class="h-8 w-[120px]">
+                    <Select.Trigger class="h-8 w-30">
                         {#if suspendedFilter === undefined}
                             All Status
                         {:else if suspendedFilter}
@@ -253,7 +253,7 @@
                 {/if}
             </div>
 
-            <div class="h-[45vh] min-h-[250px] overflow-y-auto rounded-md border">
+            <div class="h-[45vh] min-h-62.5 overflow-y-auto rounded-md border">
                 <div class="p-1.5">
                     {#if searchResults.isFetching}
                         <div class="space-y-1">

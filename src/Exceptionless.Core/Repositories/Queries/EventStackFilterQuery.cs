@@ -195,6 +195,7 @@ namespace Exceptionless.Core.Repositories.Queries
                 foreach (var range in builderContext?.Source.GetDateRanges() ?? Enumerable.Empty<DateRange>())
                 {
                     systemFilterQuery.DateRange(range.StartDate, range.EndDate, range.Field, range.TimeZone);
+                    // NOTE: We do not currently specify date range indexes here..
                 }
             }
 

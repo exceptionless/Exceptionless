@@ -3,7 +3,6 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
-using Foundatio.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
 
@@ -28,7 +27,7 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PostAsync_NewWebHook_MapsAllPropertiesToWebHook()
     {
-        // Arrange - Test AutoMapper: NewWebHook -> WebHook
+        // Arrange - Test Mapperly: NewWebHook -> WebHook
         var newWebHook = new NewWebHook
         {
             EventTypes = [WebHook.KnownEventTypes.StackPromoted, WebHook.KnownEventTypes.NewError],

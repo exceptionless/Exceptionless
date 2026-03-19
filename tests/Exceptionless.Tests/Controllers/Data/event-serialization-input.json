@@ -22,7 +22,7 @@
     "http_method": "POST",
     "user_agent": "TestAgent/1.0",
     "is_secure": true,
-    "host": "test.example.com",
+    "host": "test.localhost",
     "path": "/api/test",
     "port": 443
   }

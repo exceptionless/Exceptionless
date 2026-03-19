@@ -3,8 +3,8 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
-using FluentRest;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Utility;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
@@ -16,10 +16,14 @@ namespace Exceptionless.Tests.Controllers;
 public sealed class OrganizationControllerTests : IntegrationTestsBase
 {
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly IProjectRepository _projectRepository;
+    private readonly IUserRepository _userRepository;
 
     public OrganizationControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _organizationRepository = GetService<IOrganizationRepository>();
+        _projectRepository = GetService<IProjectRepository>();
+        _userRepository = GetService<IUserRepository>();
     }
 
     protected override async Task ResetDataAsync()
@@ -150,7 +154,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
-        // Assert - IsOverMonthlyLimit is computed by AfterMap in AutoMapper
+        // Assert - IsOverMonthlyLimit is computed by OrganizationMapper
         Assert.NotNull(viewOrg);
         // The value can be true or false depending on usage, but the property should be set
         Assert.IsType<bool>(viewOrg.IsOverMonthlyLimit);
@@ -243,5 +247,121 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .AppendPaths("organizations", viewOrg.Id)
             .StatusCodeShouldBeNotFound()
         );
+    }
+
+    [Fact]
+    public async Task RemoveUserAsync_UserWithNotificationSettings_CleansUpNotificationSettings()
+    {
+        // Arrange
+        var organizationAdminUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(organizationAdminUser);
+        Assert.Contains(SampleDataService.TEST_ORG_ID, organizationAdminUser.OrganizationIds);
+
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        project.NotificationSettings[organizationAdminUser.Id] = new NotificationSettings
+        {
+            SendDailySummary = true,
+            ReportNewErrors = true,
+            ReportCriticalErrors = true
+        };
+        await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency());
+
+        project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        Assert.True(project.NotificationSettings.ContainsKey(organizationAdminUser.Id));
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Delete()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "users", SampleDataService.TEST_ORG_USER_EMAIL)
+            .StatusCodeShouldBeOk()
+        );
+
+        await RefreshDataAsync();
+
+        // Assert
+        project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        Assert.False(project.NotificationSettings.ContainsKey(organizationAdminUser.Id));
+
+        organizationAdminUser = await _userRepository.GetByIdAsync(organizationAdminUser.Id);
+        Assert.NotNull(organizationAdminUser);
+        Assert.DoesNotContain(SampleDataService.TEST_ORG_ID, organizationAdminUser.OrganizationIds);
+    }
+
+    [Fact]
+    public async Task RemoveUserAsync_WithExistingOrphanedNotificationSettings_CleansTargetAndHistoricalOrphans()
+    {
+        // Arrange
+        var organizationAdminUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(organizationAdminUser);
+
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        string orphanedUserId = ObjectId.GenerateNewId().ToString();
+        project.NotificationSettings[organizationAdminUser.Id] = new NotificationSettings
+        {
+            SendDailySummary = true,
+            ReportNewErrors = true,
+            ReportCriticalErrors = true
+        };
+        project.NotificationSettings[orphanedUserId] = new NotificationSettings { ReportNewErrors = true };
+        await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency());
+
+        Assert.Null(await _userRepository.GetByIdAsync(orphanedUserId));
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Delete()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "users", SampleDataService.TEST_ORG_USER_EMAIL)
+            .StatusCodeShouldBeOk()
+        );
+
+        await RefreshDataAsync();
+
+        project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+
+        // Assert
+        Assert.DoesNotContain(organizationAdminUser.Id, project.NotificationSettings.Keys);
+        Assert.DoesNotContain(orphanedUserId, project.NotificationSettings.Keys);
+    }
+
+    [Fact]
+    public async Task RemoveUserAsync_UserWithNotificationSettings_PreservesOtherUsersAndIntegrations()
+    {
+        // Arrange
+        var organizationAdminUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(organizationAdminUser);
+
+        var globalAdmin = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(globalAdmin);
+
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        project.NotificationSettings[organizationAdminUser.Id] = new NotificationSettings { ReportNewErrors = true };
+        project.NotificationSettings[globalAdmin.Id] = new NotificationSettings { ReportCriticalErrors = true };
+        project.NotificationSettings[Project.NotificationIntegrations.Slack] = new NotificationSettings { SendDailySummary = true };
+        await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency());
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Delete()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "users", SampleDataService.TEST_ORG_USER_EMAIL)
+            .StatusCodeShouldBeOk()
+        );
+
+        await RefreshDataAsync();
+
+        // Assert
+        project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        Assert.DoesNotContain(organizationAdminUser.Id, project.NotificationSettings.Keys);
+        Assert.Contains(globalAdmin.Id, project.NotificationSettings.Keys);
+        Assert.Contains(Project.NotificationIntegrations.Slack, project.NotificationSettings.Keys);
     }
 }

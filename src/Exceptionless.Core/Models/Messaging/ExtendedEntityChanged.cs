@@ -6,11 +6,9 @@ namespace Exceptionless.Core.Messaging.Models;
 [DebuggerDisplay("{Type} {ChangeType}: Id={Id}, OrganizationId={OrganizationId}, ProjectId={ProjectId}, StackId={StackId}")]
 public class ExtendedEntityChanged : EntityChanged
 {
-    private ExtendedEntityChanged() { } // Ensure create is used.
-
-    public string? OrganizationId { get; private set; }
-    public string? ProjectId { get; private set; }
-    public string? StackId { get; private set; }
+    public string? OrganizationId { get; set; }
+    public string? ProjectId { get; set; }
+    public string? StackId { get; set; }
 
     public static ExtendedEntityChanged Create(EntityChanged entityChanged, bool removeWhenSettingProperties = true)
     {

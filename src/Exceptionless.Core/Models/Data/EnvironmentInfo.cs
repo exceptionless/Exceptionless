@@ -96,7 +96,7 @@ public class EnvironmentInfo : IData
     /// <summary>
     /// Extended data entries for this machine environment.
     /// </summary>
-    public DataDictionary? Data { get; set; } = new();
+    public DataDictionary? Data { get; set; }
 
     protected bool Equals(EnvironmentInfo other)
     {

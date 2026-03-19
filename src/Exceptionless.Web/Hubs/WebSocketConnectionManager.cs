@@ -1,10 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
-using System.Text.Json;
 using Exceptionless.Core;
-using Exceptionless.Core.Serialization;
-using Exceptionless.Web.Utility;
 using Foundatio.Serializer;
 
 namespace Exceptionless.Web.Hubs;
