@@ -14,6 +14,7 @@ using FluentRest;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
 using Xunit;
 using User = Exceptionless.Core.Models.User;
 
@@ -22,6 +23,7 @@ namespace Exceptionless.Tests.Controllers;
 public class AuthControllerTests : IntegrationTestsBase
 {
     private readonly AuthOptions _authOptions;
+    private readonly IntercomOptions _intercomOptions;
     private readonly IUserRepository _userRepository;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ITokenRepository _tokenRepository;
@@ -31,6 +33,7 @@ public class AuthControllerTests : IntegrationTestsBase
         _authOptions = GetService<AuthOptions>();
         _authOptions.EnableAccountCreation = true;
         _authOptions.EnableActiveDirectoryAuth = false;
+        _intercomOptions = GetService<IntercomOptions>();
 
         _organizationRepository = GetService<IOrganizationRepository>();
         _userRepository = GetService<IUserRepository>();
@@ -1022,6 +1025,72 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.Equal(TokenType.Access, token.Type);
         Assert.False(token.IsDisabled);
         Assert.False(token.IsSuspended);
+    }
+
+
+    [Fact]
+    public async Task GetIntercomToken_WithValidAuthenticatedUser_ReturnsJwtAsync()
+    {
+        // Arrange
+        _intercomOptions.IntercomSecret = "test-intercom-secret-with-adequate-length-12345";
+        const string email = "intercom-token@exceptionless.io";
+        const string password = "Test password";
+        const string salt = "1234567890123456";
+
+        var user = new User
+        {
+            EmailAddress = email,
+            FullName = "Intercom User",
+            Password = password.ToSaltedHash(salt),
+            Roles = AuthorizationRoles.AllScopes,
+            Salt = salt
+        };
+
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
+
+        var authToken = await SendRequestAsAsync<TokenResult>(r => r
+            .Post()
+            .AppendPath("auth/login")
+            .Content(new Login
+            {
+                Email = email,
+                Password = password
+            })
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(authToken);
+
+        // Act
+        var intercomToken = await SendRequestAsAsync<TokenResult>(r => r
+            .BearerToken(authToken.Token)
+            .AppendPath("auth/intercom")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(intercomToken);
+        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(intercomToken.Token);
+        Assert.Equal(user.Id, jwt.Payload["user_id"]);
+        Assert.True(jwt.Payload.ContainsKey(JwtRegisteredClaimNames.Iat));
+    }
+
+    [Fact]
+    public async Task GetIntercomToken_WhenIntercomIsDisabled_ReturnsUnprocessableEntityAsync()
+    {
+        // Arrange
+        _intercomOptions.IntercomSecret = null;
+
+        // Act
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
+            .BearerToken(TestConstants.UserApiKey)
+            .AppendPath("auth/intercom")
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "intercom", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

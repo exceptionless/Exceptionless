@@ -8,21 +8,21 @@ import { INTERCOM_CONTEXT_KEY } from './keys';
 
 /**
  * Builds Intercom boot options from user and organization data.
- * Matches the data structure from the legacy Angular implementation.
+ * Uses the auth feature's current Intercom token for authentication.
+ * Uses the camelCase shape expected by the Svelte SDK, which converts keys to Intercom's payload format.
  */
-export function buildIntercomBootOptions(user: undefined | ViewCurrentUser, organization: undefined | ViewOrganization) {
-    if (!user || !user.hash) {
+export function buildIntercomBootOptions(user: undefined | ViewCurrentUser, organization: undefined | ViewOrganization, token?: string) {
+    if (!user || !token) {
         return undefined;
     }
 
-    // Extract timestamp from MongoDB ObjectId (first 8 hex chars = unix timestamp)
-    const userCreatedAt = user.id ? parseInt(user.id.substring(0, 8), 16) : undefined;
-    const orgCreatedAt = organization?.id ? parseInt(organization.id.substring(0, 8), 16) : undefined;
+    const userCreatedAt = user.id ? parseInt(user.id.substring(0, 8), 16).toString() : undefined;
+    const organizationCreatedAt = getUnixTimestampSeconds(organization?.created_utc);
 
     return {
         company: organization
             ? {
-                  createdAt: orgCreatedAt?.toString(),
+                  createdAt: organizationCreatedAt?.toString(),
                   id: organization.id,
                   monthlySpend: organization.billing_price,
                   name: organization.name,
@@ -32,12 +32,24 @@ export function buildIntercomBootOptions(user: undefined | ViewCurrentUser, orga
         createdAt: userCreatedAt?.toString(),
         email: user.email_address,
         hideDefaultLauncher: true,
+        intercomUserJwt: token,
         name: user.full_name,
-        userHash: user.hash,
         userId: user.id
     };
 }
 
+function getUnixTimestampSeconds(dateTime?: string): undefined | string {
+    if (!dateTime) {
+        return undefined;
+    }
+
+    const milliseconds = Date.parse(dateTime);
+    if (Number.isNaN(milliseconds)) {
+        return undefined;
+    }
+
+    return Math.floor(milliseconds / 1000).toString();
+}
 /**
  * Get the Intercom context from the nearest IntercomInitializer.
  * Must be called inside a component wrapped by IntercomInitializer.

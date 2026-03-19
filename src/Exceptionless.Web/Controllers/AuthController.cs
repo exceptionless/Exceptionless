@@ -1,4 +1,6 @@
 using System.Configuration;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
@@ -14,6 +16,7 @@ using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.IdentityModel.Tokens;
 using OAuth2.Client;
 using OAuth2.Client.Impl;
 using OAuth2.Configuration;
@@ -27,6 +30,7 @@ namespace Exceptionless.Web.Controllers;
 public class AuthController : ExceptionlessApiController
 {
     private readonly AuthOptions _authOptions;
+    private readonly IntercomOptions _intercomOptions;
     private readonly IDomainLoginProvider _domainLoginProvider;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IUserRepository _userRepository;
@@ -37,11 +41,12 @@ public class AuthController : ExceptionlessApiController
 
     private static bool _isFirstUserChecked;
 
-    public AuthController(AuthOptions authOptions, IOrganizationRepository organizationRepository, IUserRepository userRepository,
+    public AuthController(AuthOptions authOptions, IntercomOptions intercomOptions, IOrganizationRepository organizationRepository, IUserRepository userRepository,
         ITokenRepository tokenRepository, ICacheClient cacheClient, IMailer mailer, IDomainLoginProvider domainLoginProvider,
         TimeProvider timeProvider, ILogger<AuthController> logger) : base(timeProvider)
     {
         _authOptions = authOptions;
+        _intercomOptions = intercomOptions;
         _domainLoginProvider = domainLoginProvider;
         _organizationRepository = organizationRepository;
         _userRepository = userRepository;
@@ -150,6 +155,37 @@ public class AuthController : ExceptionlessApiController
 
         _logger.UserLoggedIn(user.EmailAddress);
         return Ok(new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) });
+    }
+
+    /// <summary>
+    /// Get the current user's Intercom messenger token.
+    /// </summary>
+    /// <response code="200">Intercom messenger token</response>
+    /// <response code="422">Intercom is not configured</response>
+    [HttpGet("intercom")]
+    public Task<ActionResult<TokenResult>> GetIntercomTokenAsync()
+    {
+        if (!_intercomOptions.EnableIntercom || String.IsNullOrWhiteSpace(_intercomOptions.IntercomSecret))
+        {
+            ModelState.AddModelError("intercom", "Intercom is not enabled.");
+            return Task.FromResult<ActionResult<TokenResult>>(ValidationProblem(ModelState));
+        }
+
+        var signingCredentials = new SigningCredentials(
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_intercomOptions.IntercomSecret!)),
+            SecurityAlgorithms.HmacSha256
+        );
+
+        var token = new JwtSecurityToken(
+            header: new JwtHeader(signingCredentials),
+            payload: new JwtPayload
+            {
+                ["user_id"] = CurrentUser.Id,
+                [JwtRegisteredClaimNames.Iat] = _timeProvider.GetUtcNow().ToUnixTimeSeconds()
+            }
+        );
+
+        return Task.FromResult<ActionResult<TokenResult>>(Ok(new TokenResult { Token = new JwtSecurityTokenHandler().WriteToken(token) }));
     }
 
     /// <summary>

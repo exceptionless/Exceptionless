@@ -7,6 +7,7 @@
     import { resolve } from '$app/paths';
     import { A } from '$comp/typography';
     import * as Avatar from '$comp/ui/avatar/index';
+    import { Badge } from '$comp/ui/badge';
     import * as DropdownMenu from '$comp/ui/dropdown-menu/index';
     import * as Sidebar from '$comp/ui/sidebar/index';
     import { useSidebar } from '$comp/ui/sidebar/index';
@@ -35,20 +36,32 @@
 
     interface Props {
         gravatar: Gravatar;
+        intercomUnreadCount: number;
+        isChatEnabled: boolean;
         isImpersonating?: boolean;
         isLoading: boolean;
+        openChat: () => void;
         organizations?: ViewOrganization[];
         user: undefined | ViewCurrentUser;
     }
 
-    let { gravatar, isImpersonating = false, isLoading, organizations = [], user }: Props = $props();
+    let { gravatar, intercomUnreadCount = 0, isChatEnabled, isImpersonating = false, isLoading, openChat, organizations = [], user }: Props = $props();
     const sidebar = useSidebar();
     let openImpersonateDialog = $state(false);
+
+    function getUnreadCountLabel(unreadCount: number): string {
+        return unreadCount > 99 ? '99+' : unreadCount.toString();
+    }
 
     function onMenuClick() {
         if (sidebar.isMobile) {
             sidebar.toggle();
         }
+    }
+
+    function onChatClick() {
+        onMenuClick();
+        openChat();
     }
 
     async function impersonateOrganization(vo: ViewOrganization): Promise<void> {
@@ -75,6 +88,25 @@
         </Sidebar.MenuItem>
     </Sidebar.Menu>
 {:else}
+    {#if isChatEnabled}
+        <Sidebar.Menu>
+            <Sidebar.MenuItem>
+                <Sidebar.MenuButton
+                    size="lg"
+                    class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                    onclick={onChatClick}
+                >
+                    <Help class="size-4" aria-hidden="true" />
+                    <div class="grid flex-1 gap-0.5 text-left">
+                        <span class="text-sm leading-none font-medium">Chat with support</span>
+                    </div>
+                    {#if intercomUnreadCount > 0}
+                        <Sidebar.MenuBadge>{getUnreadCountLabel(intercomUnreadCount)}</Sidebar.MenuBadge>
+                    {/if}
+                </Sidebar.MenuButton>
+            </Sidebar.MenuItem>
+        </Sidebar.Menu>
+    {/if}
     <Sidebar.Menu>
         <Sidebar.MenuItem>
             <DropdownMenu.Root>
@@ -173,6 +205,15 @@
                             Help
                         </DropdownMenu.SubTrigger>
                         <DropdownMenu.SubContent>
+                            {#if isChatEnabled}
+                                <DropdownMenu.Item class="gap-2 p-2" onSelect={onChatClick}>
+                                    <Help />
+                                    <span class="font-medium">Support</span>
+                                    {#if intercomUnreadCount > 0}
+                                        <Badge class="ml-auto shrink-0" variant="secondary">{getUnreadCountLabel(intercomUnreadCount)}</Badge>
+                                    {/if}
+                                </DropdownMenu.Item>
+                            {/if}
                             <DropdownMenu.Item>
                                 <BookOpen />
                                 <A variant="ghost" href="https://exceptionless.com/docs/" target="_blank" class="w-full">Documentation</A>

@@ -227,7 +227,7 @@ public partial class App : Application {
     const intercom = getIntercom();
 
     function openChat() {
-        intercom?.showNewMessage('');
+        intercom?.showMessages();
     }
 </script>
 

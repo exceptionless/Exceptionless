@@ -6,7 +6,7 @@
     import { page } from '$app/state';
     import { useSidebar } from '$comp/ui/sidebar';
     import { env } from '$env/dynamic/public';
-    import { accessToken, gotoLogin } from '$features/auth/index.svelte';
+    import { accessToken, getIntercomTokenQuery, gotoLogin } from '$features/auth/index.svelte';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
     import { buildIntercomBootOptions, getIntercom, IntercomInitializer } from '$features/intercom';
     import { getOrganizationQuery, getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
@@ -228,9 +228,16 @@
 
     // Intercom configuration
     const intercomAppId = $derived(env.PUBLIC_INTERCOM_APPID ?? '');
-    const intercomBootOptions = $derived(buildIntercomBootOptions(meQuery.data, currentOrganization));
+    const intercomTokenQuery = getIntercomTokenQuery();
+    const intercomToken = $derived(intercomAppId ? intercomTokenQuery.data?.token : undefined);
+    const intercomBootOptions = $derived(buildIntercomBootOptions(meQuery.data, currentOrganization, intercomToken));
+    let intercomUnreadCount = $state(0);
     const isChatEnabled = $derived(!!intercomAppId && !!intercomBootOptions);
     const shouldBootIntercom = $derived(!!intercomAppId && !!intercomBootOptions);
+
+    function onIntercomUnreadCountChange(unreadCount: number) {
+        intercomUnreadCount = Math.max(0, unreadCount);
+    }
 
     // Fallback openChat for when Intercom is not enabled
     function openChatFallback() {
@@ -252,7 +259,16 @@
         {/snippet}
 
         {#snippet footer()}
-            <SidebarUser isLoading={meQuery.isLoading} user={meQuery.data} {gravatar} isImpersonating={!!impersonatedOrganization} {organizations} />
+            <SidebarUser
+                {isChatEnabled}
+                isLoading={meQuery.isLoading}
+                user={meQuery.data}
+                {gravatar}
+                isImpersonating={!!impersonatedOrganization}
+                {organizations}
+                {openChat}
+                {intercomUnreadCount}
+            />
         {/snippet}
     </Sidebar>
     <div class="flex min-w-0 flex-1 pt-16">
@@ -276,7 +292,12 @@
 
 {#if isAuthenticated}
     {#if isChatEnabled}
-        <IntercomProvider appId={intercomAppId} autoboot={shouldBootIntercom} bootOptions={intercomBootOptions}>
+        <IntercomProvider
+            appId={intercomAppId}
+            autoboot={shouldBootIntercom}
+            bootOptions={intercomBootOptions}
+            onUnreadCountChange={onIntercomUnreadCountChange}
+        >
             {@render intercomShell()}
         </IntercomProvider>
     {:else}
@@ -287,7 +308,7 @@
 {#snippet intercomShell()}
     <IntercomInitializer bootOptions={intercomBootOptions} routeKey={page.url.pathname}>
         {@const intercom = getIntercom()}
-        {@const openChat = () => intercom?.showNewMessage('')}
+        {@const openChat = () => intercom?.showMessages()}
         {@render appShell(openChat)}
     </IntercomInitializer>
 {/snippet}
