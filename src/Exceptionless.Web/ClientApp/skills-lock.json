@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "skills": {
+    "dotnet-trace-collect": {
+      "source": "dotnet/skills",
+      "sourceType": "github",
+      "computedHash": "35a33f4ea359b333fab1059c936499c33617785e37fc434923fa4015d400bee6"
+    },
+    "dump-collect": {
+      "source": "dotnet/skills",
+      "sourceType": "github",
+      "computedHash": "2a5ad367a377fbd27deee3cedbb026c9ffc1df2ef50649dba497fdd029694445"
+    },
+    "emil-design-eng": {
+      "source": "emilkowalski/skill",
+      "sourceType": "github",
+      "computedHash": "32f63a1e56fc41f53497f7b19d6391b7c3e55bedd884c5a4d10bc4eacd2310e4"
+    },
+    "microbenchmarking": {
+      "source": "dotnet/skills",
+      "sourceType": "github",
+      "computedHash": "d2d56b115d8880db0e555b5f36a75b56e709cee82385efc91e31077c7eb3dc04"
+    },
+    "run-tests": {
+      "source": "dotnet/skills",
+      "sourceType": "github",
+      "computedHash": "b1ad04c9ac01ba6e22aa5dbb9f74d91517a3aaee0314d53047e790bb739dd601"
+    }
+  }
+}
