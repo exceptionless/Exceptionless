@@ -24,7 +24,6 @@
     import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
     import { useMiddleware } from '@exceptionless/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
-    import { IntercomProvider } from 'svelte-intercom';
     import { fade } from 'svelte/transition';
 
     import { type NavigationItemContext, routes } from '../routes.svelte';
@@ -237,7 +236,6 @@
     const intercomBootOptions = $derived(buildIntercomBootOptions(meQuery.data, currentOrganization, intercomToken));
     let intercomUnreadCount = $state(0);
     const isChatEnabled = $derived(!!intercomAppId && !!intercomBootOptions);
-    const shouldBootIntercom = $derived(!!intercomAppId && !!intercomBootOptions);
 
     function onIntercomUnreadCountChange(unreadCount: number) {
         intercomUnreadCount = Math.max(0, unreadCount);
