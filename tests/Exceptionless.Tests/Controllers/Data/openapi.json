@@ -766,8 +766,11 @@
               }
             }
           },
+          "401": {
+            "description": "User not logged in"
+          },
           "422": {
-            "description": "Intercom is not configured"
+            "description": "Intercom is not enabled."
           }
         }
       }

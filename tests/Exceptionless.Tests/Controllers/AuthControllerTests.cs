@@ -1080,6 +1080,19 @@ public class AuthControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public Task GetIntercomToken_WhenUnauthenticated_ReturnsUnauthorizedAsync()
+    {
+        // Arrange
+        _intercomOptions.IntercomSecret = "test-intercom-secret-with-adequate-length-12345";
+
+        // Act
+        return SendRequestAsync(r => r
+            .AppendPath("auth/intercom")
+            .StatusCodeShouldBeUnauthorized()
+        );
+    }
+
+    [Fact]
     public async Task GetIntercomToken_WhenIntercomIsDisabled_ReturnsUnprocessableEntityAsync()
     {
         // Arrange
@@ -1094,7 +1107,8 @@ public class AuthControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(problemDetails);
-        Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "intercom", StringComparison.OrdinalIgnoreCase));
+        Assert.True(problemDetails.Errors.TryGetValue("intercom", out var intercomErrors));
+        Assert.Contains("Intercom is not enabled.", intercomErrors);
     }
 
     [Fact]

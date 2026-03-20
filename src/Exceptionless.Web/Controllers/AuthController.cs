@@ -162,7 +162,8 @@ public class AuthController : ExceptionlessApiController
     /// Get the current user's Intercom messenger token.
     /// </summary>
     /// <response code="200">Intercom messenger token</response>
-    /// <response code="422">Intercom is not configured</response>
+    /// <response code="401">User not logged in</response>
+    /// <response code="422">Intercom is not enabled.</response>
     [HttpGet("intercom")]
     public Task<ActionResult<TokenResult>> GetIntercomTokenAsync()
     {

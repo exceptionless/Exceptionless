@@ -6,10 +6,10 @@
     import { page } from '$app/state';
     import { useSidebar } from '$comp/ui/sidebar';
     import { env } from '$env/dynamic/public';
-    import { accessToken, getIntercomTokenQuery, gotoLogin } from '$features/auth/index.svelte';
+    import { getIntercomTokenQuery } from '$features/auth/api.svelte';
+    import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
-    import { buildIntercomBootOptions, getIntercom, IntercomInitializer } from '$features/intercom';
-    import { openSupportChat } from '$features/intercom/chat';
+    import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
     import { shouldLoadIntercomOrganization } from '$features/intercom/config';
     import { getOrganizationQuery, getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
     import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
@@ -242,11 +242,6 @@
     function onIntercomUnreadCountChange(unreadCount: number) {
         intercomUnreadCount = Math.max(0, unreadCount);
     }
-
-    // Fallback openChat for when Intercom is not enabled
-    function openChatFallback() {
-        openSupportChat(undefined);
-    }
 </script>
 
 {#snippet appShell(openChat: () => void)}
@@ -295,24 +290,9 @@
 {/snippet}
 
 {#if isAuthenticated}
-    {#if isChatEnabled}
-        <IntercomProvider
-            appId={intercomAppId}
-            autoboot={shouldBootIntercom}
-            bootOptions={intercomBootOptions}
-            onUnreadCountChange={onIntercomUnreadCountChange}
-        >
-            {@render intercomShell()}
-        </IntercomProvider>
-    {:else}
-        {@render appShell(openChatFallback)}
-    {/if}
+    <IntercomShell appId={intercomAppId || undefined} bootOptions={intercomBootOptions} onUnreadCountChange={onIntercomUnreadCountChange} routeKey={page.url.pathname}>
+        {#snippet children(openChat)}
+            {@render appShell(openChat)}
+        {/snippet}
+    </IntercomShell>
 {/if}
-
-{#snippet intercomShell()}
-    <IntercomInitializer bootOptions={intercomBootOptions} routeKey={page.url.pathname}>
-        {@const intercom = getIntercom()}
-        {@const openChat = () => openSupportChat(intercom)}
-        {@render appShell(openChat)}
-    </IntercomInitializer>
-{/snippet}
