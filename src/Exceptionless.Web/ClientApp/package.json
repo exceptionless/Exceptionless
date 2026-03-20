@@ -88,6 +88,7 @@
         "pretty-ms": "^9.3.0",
         "runed": "^0.37.1",
         "shiki": "^4.0.2",
+        "svelte-intercom": "^0.0.35",
         "svelte-sonner": "^1.1.0",
         "svelte-time": "^2.1.0",
         "tailwind-merge": "^3.5.0",

@@ -6,8 +6,11 @@
     import { page } from '$app/state';
     import { useSidebar } from '$comp/ui/sidebar';
     import { env } from '$env/dynamic/public';
+    import { getIntercomTokenQuery } from '$features/auth/api.svelte';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
+    import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
+    import { shouldLoadIntercomOrganization } from '$features/intercom/config';
     import { getOrganizationQuery, getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
     import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
     import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
@@ -183,6 +186,20 @@
     });
     const impersonatedOrganization = $derived(impersonatingOrganizationId ? impersonatedOrganizationQuery.data : undefined);
 
+    const intercomAppId = $derived(env.PUBLIC_INTERCOM_APPID ?? '');
+    const intercomTokenQuery = getIntercomTokenQuery();
+    const shouldFetchIntercomOrganization = $derived(shouldLoadIntercomOrganization(intercomAppId, intercomTokenQuery.isSuccess));
+
+    // Query for current organization details (for Intercom company data)
+    const currentOrganizationQuery = getOrganizationQuery({
+        route: {
+            get id() {
+                return shouldFetchIntercomOrganization ? organization.current : undefined;
+            }
+        }
+    });
+    const currentOrganization = $derived(shouldFetchIntercomOrganization ? currentOrganizationQuery.data : undefined);
+
     // Simple organization selection - pick first available if none selected
     $effect(() => {
         if (!organizationsQuery.isSuccess) {
@@ -214,13 +231,18 @@
         return routes().filter((route) => (route.show ? route.show(context) : true));
     });
 
-    const isChatEnabled = $derived(!!env.PUBLIC_INTERCOM_APPID);
-    function openChat() {
-        // TODO: Implement chat opening logic
+    // Intercom configuration
+    const intercomToken = $derived(intercomAppId ? intercomTokenQuery.data?.token : undefined);
+    const intercomBootOptions = $derived(buildIntercomBootOptions(meQuery.data, currentOrganization, intercomToken));
+    let intercomUnreadCount = $state(0);
+    const isChatEnabled = $derived(!!intercomAppId && !!intercomBootOptions);
+
+    function onIntercomUnreadCountChange(unreadCount: number) {
+        intercomUnreadCount = Math.max(0, unreadCount);
     }
 </script>
 
-{#if isAuthenticated}
+{#snippet appShell(openChat: () => void)}
     <Navbar bind:isCommandOpen></Navbar>
     <Sidebar routes={filteredRoutes}>
         {#snippet header()}
@@ -234,7 +256,16 @@
         {/snippet}
 
         {#snippet footer()}
-            <SidebarUser isLoading={meQuery.isLoading} user={meQuery.data} {gravatar} isImpersonating={!!impersonatedOrganization} {organizations} />
+            <SidebarUser
+                {isChatEnabled}
+                isLoading={meQuery.isLoading}
+                user={meQuery.data}
+                {gravatar}
+                isImpersonating={!!impersonatedOrganization}
+                {organizations}
+                {openChat}
+                {intercomUnreadCount}
+            />
         {/snippet}
     </Sidebar>
     <div class="flex min-w-0 flex-1 pt-16">
@@ -254,4 +285,17 @@
             <Footer></Footer>
         </div>
     </div>
+{/snippet}
+
+{#if isAuthenticated}
+    <IntercomShell
+        appId={intercomAppId || undefined}
+        bootOptions={intercomBootOptions}
+        onUnreadCountChange={onIntercomUnreadCountChange}
+        routeKey={page.url.pathname}
+    >
+        {#snippet children(openChat)}
+            {@render appShell(openChat)}
+        {/snippet}
+    </IntercomShell>
 {/if}

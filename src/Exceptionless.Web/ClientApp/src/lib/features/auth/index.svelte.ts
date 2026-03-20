@@ -12,6 +12,7 @@ export {
     cancelResetPassword,
     changePassword,
     forgotPassword,
+    getIntercomTokenQuery,
     isEmailAddressTaken,
     login,
     logout,
