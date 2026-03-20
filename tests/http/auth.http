@@ -1,24 +1,29 @@
 @apiUrl = http://localhost:5200/api/v2
 @email = test@localhost
-@password = tes
+@password = tester
 
-### Login
+### login to test account
+# @name login
 POST {{apiUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "{{email}}",
-  "password": "{{password}}"
+    "email": "{{email}}",
+    "password": "{{password}}"
 }
+
+###
+
+@token = {{login.response.body.$.token}}
 
 ### Signup
 POST {{apiUrl}}/auth/signup
 Content-Type: application/json
 
 {
-  "email": "{{email}}",
-  "password": "{{password}}",
-  "name": "test"
+    "email": "{{email}}",
+    "password": "{{password}}",
+    "name": "test"
 }
 
 ### Signup with token
@@ -26,9 +31,9 @@ POST {{apiUrl}}/auth/signup
 Content-Type: application/json
 
 {
-  "email": "{{email}}",
-  "password": "{{password}}",
-  "name": "test"
+    "email": "{{email}}",
+    "password": "{{password}}",
+    "name": "test"
 }
 
 ### OAuth Login
@@ -40,3 +45,7 @@ Content-Type: application/json
     "clientId": "clientId",
     "redirectUri": "http://localhost"
 }
+
+### Intercom token
+GET {{apiUrl}}/auth/intercom
+Authorization: Bearer {{token}}

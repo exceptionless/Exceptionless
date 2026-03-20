@@ -1,4 +1,5 @@
 import { resolve } from '$app/paths';
+import { apiReferenceHref, documentationHref, githubRepositoryHref, supportIssuesHref } from '$features/shared/help-links';
 import Documentation from '@lucide/svelte/icons/book-open';
 import ApiDocumentations from '@lucide/svelte/icons/braces';
 import Issues from '@lucide/svelte/icons/bug';
@@ -37,28 +38,28 @@ export function routes(): NavigationItem[] {
         },
         {
             group: 'Help',
-            href: 'https://exceptionless.com/docs/',
+            href: documentationHref,
             icon: Documentation,
             openInNewTab: true,
             title: 'Documentation'
         },
         {
             group: 'Help',
-            href: 'https://github.com/exceptionless/Exceptionless/issues',
+            href: supportIssuesHref,
             icon: Support,
             openInNewTab: true,
             title: 'Support'
         },
         {
             group: 'Help',
-            href: 'https://github.com/exceptionless/Exceptionless',
+            href: githubRepositoryHref,
             icon: GitHub,
             openInNewTab: true,
             title: 'GitHub'
         },
         {
             group: 'Help',
-            href: '/docs/index.html',
+            href: apiReferenceHref,
             icon: ApiDocumentations,
             openInNewTab: true,
             title: 'API'
