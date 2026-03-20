@@ -290,7 +290,12 @@
 {/snippet}
 
 {#if isAuthenticated}
-    <IntercomShell appId={intercomAppId || undefined} bootOptions={intercomBootOptions} onUnreadCountChange={onIntercomUnreadCountChange} routeKey={page.url.pathname}>
+    <IntercomShell
+        appId={intercomAppId || undefined}
+        bootOptions={intercomBootOptions}
+        onUnreadCountChange={onIntercomUnreadCountChange}
+        routeKey={page.url.pathname}
+    >
         {#snippet children(openChat)}
             {@render appShell(openChat)}
         {/snippet}

@@ -1,7 +1,7 @@
+import type { BootOptions } from 'svelte-intercom';
+
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-import type { BootOptions } from 'svelte-intercom';
 
 import IntercomShellTestHarness from './intercom-shell.test-harness.svelte';
 
@@ -12,10 +12,10 @@ vi.mock('$features/auth/index.svelte', () => ({
 }));
 
 vi.mock('@intercom/messenger-js-sdk', () => ({
-    Intercom: vi.fn(),
     boot: vi.fn(),
     getVisitorId: vi.fn(),
     hide: vi.fn(),
+    Intercom: vi.fn(),
     onHide: vi.fn(),
     onShow: vi.fn(),
     onUnreadCountChange: vi.fn(),

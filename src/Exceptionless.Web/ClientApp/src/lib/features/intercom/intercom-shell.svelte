@@ -16,13 +16,7 @@
         routeKey?: string;
     }
 
-    let {
-        appId = undefined,
-        bootOptions = undefined,
-        children,
-        onUnreadCountChange = undefined,
-        routeKey = undefined
-    }: Props = $props();
+    let { appId = undefined, bootOptions = undefined, children, onUnreadCountChange = undefined, routeKey = undefined }: Props = $props();
 
     const shouldBootIntercom = $derived(!!appId && !!bootOptions);
 
