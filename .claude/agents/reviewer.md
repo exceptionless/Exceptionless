@@ -2,6 +2,7 @@
 name: reviewer
 model: opus
 description: "Use when reviewing code changes for quality, security, and correctness. Performs adversarial 4-pass analysis: security screening (before any code execution), machine checks, correctness/performance, and style/maintainability. Read-only — reports findings but never edits code. Also use when the user says 'review this', 'check my changes', or wants a second opinion on code quality."
+maxTurns: 30
 disallowedTools:
     - Edit
     - Write
