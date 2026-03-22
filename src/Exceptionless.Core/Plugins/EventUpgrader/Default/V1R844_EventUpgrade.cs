@@ -17,7 +17,7 @@ public class V1R844EventUpgrade : PluginBase, IEventUpgraderPlugin
         foreach (var doc in ctx.Documents)
         {
             if (doc is not JsonObject docObj || docObj["RequestInfo"] is not JsonObject { Count: > 0 } requestInfo)
-                return;
+                continue;
 
             if (requestInfo["Cookies"] is JsonObject { Count: > 0 } cookies)
             {

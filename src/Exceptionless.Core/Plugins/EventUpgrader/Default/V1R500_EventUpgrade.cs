@@ -20,7 +20,7 @@ public class V1R500EventUpgrade : PluginBase, IEventUpgraderPlugin
         foreach (var doc in ctx.Documents)
         {
             if (doc is not JsonObject docObj || docObj["ExceptionlessClientInfo"] is not JsonObject { Count: > 0 } clientInfo || clientInfo["InstallDate"] is null)
-                return;
+                continue;
 
             // This shouldn't hurt using DateTimeOffset to try and parse a date. It insures you won't lose any info.
             if (DateTimeOffset.TryParse(clientInfo["InstallDate"]?.ToString(), out var date))
