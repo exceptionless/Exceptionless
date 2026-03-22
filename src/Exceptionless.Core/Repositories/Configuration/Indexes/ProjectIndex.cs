@@ -1,7 +1,10 @@
-﻿using Exceptionless.Core.Models;
+﻿using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.IndexManagement;
+using Elastic.Clients.Elasticsearch.Mapping;
+using Exceptionless.Core.Models;
+using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
-using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration;
 
@@ -15,28 +18,28 @@ public sealed class ProjectIndex : VersionedIndex<Project>
         _configuration = configuration;
     }
 
-
-    public override TypeMappingDescriptor<Project> ConfigureIndexMapping(TypeMappingDescriptor<Project> map)
+    public override void ConfigureIndexMapping(TypeMappingDescriptor<Project> map)
     {
-        return map
-            .Dynamic(false)
+        map
+            .Dynamic(DynamicMapping.False)
             .Properties(p => p
                 .SetupDefaults()
-                .Keyword(f => f.Name(e => e.OrganizationId))
-                .Text(f => f.Name(e => e.Name).AddKeywordField())
-                .Scalar(f => f.NextSummaryEndOfDayTicks, f => f)
-                .Date(f => f.Name(s => s.LastEventDateUtc))
+                .Keyword(e => e.OrganizationId)
+                .Text(e => e.Name, t => t.AddKeywordField())
+                .LongNumber(e => e.NextSummaryEndOfDayTicks)
+                .Date(e => e.LastEventDateUtc)
                 .AddUsageMappings()
             );
     }
 
-    public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx)
+    public override void ConfigureIndex(CreateIndexRequestDescriptor idx)
     {
-        return base.ConfigureIndex(idx.Settings(s => s
-            .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))))
+        base.ConfigureIndex(idx);
+        idx.Settings(s => s
+            .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filter("lowercase").Tokenizer("keyword"))))
             .NumberOfShards(_configuration.Options.NumberOfShards)
             .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
-            .Priority(10)));
+            .Priority(10));
     }
 }
 
@@ -45,19 +48,18 @@ internal static class ProjectIndexExtensions
     public static PropertiesDescriptor<Project> AddUsageMappings(this PropertiesDescriptor<Project> descriptor)
     {
         return descriptor
-            .Object<UsageInfo>(ui => ui.Name(o => o.Usage.First()).Properties(p => p
-                .Date(fu => fu.Name(i => i.Date))
-                .Number(fu => fu.Name(i => i.Total))
-                .Number(fu => fu.Name(i => i.Blocked))
-                .Number(fu => fu.Name(i => i.Discarded))
-                .Number(fu => fu.Name(i => i.Limit))
-                .Number(fu => fu.Name(i => i.TooBig))))
-            .Object<UsageInfo>(ui => ui.Name(o => o.UsageHours.First()).Properties(p => p
-                .Date(fu => fu.Name(i => i.Date))
-                .Number(fu => fu.Name(i => i.Total))
-                .Number(fu => fu.Name(i => i.Blocked))
-                .Number(fu => fu.Name(i => i.Discarded))
-                .Number(fu => fu.Name(i => i.Limit))
-                .Number(fu => fu.Name(i => i.TooBig))));
+            .Object(o => o.Usage, ui => ui.Properties(p => p
+                .Date("date")
+                .IntegerNumber("total")
+                .IntegerNumber("blocked")
+                .IntegerNumber("discarded")
+                .IntegerNumber("limit")
+                .IntegerNumber("too_big")))
+            .Object(o => o.UsageHours, ui => ui.Properties(p => p
+                .Date("date")
+                .IntegerNumber("total")
+                .IntegerNumber("blocked")
+                .IntegerNumber("discarded")
+                .IntegerNumber("too_big")));
     }
 }

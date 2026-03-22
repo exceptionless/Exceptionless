@@ -1,6 +1,8 @@
-﻿using Foundatio.Repositories.Elasticsearch.Configuration;
+﻿using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.IndexManagement;
+using Elastic.Clients.Elasticsearch.Mapping;
+using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
-using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration;
 
@@ -14,31 +16,32 @@ public sealed class TokenIndex : VersionedIndex<Models.Token>
         _configuration = configuration;
     }
 
-    public override TypeMappingDescriptor<Models.Token> ConfigureIndexMapping(TypeMappingDescriptor<Models.Token> map)
+    public override void ConfigureIndexMapping(TypeMappingDescriptor<Models.Token> map)
     {
-        return map
-            .Dynamic(false)
+        map
+            .Dynamic(DynamicMapping.False)
             .Properties(p => p
                 .SetupDefaults()
-                .Date(f => f.Name(e => e.ExpiresUtc))
-                .Keyword(f => f.Name(e => e.OrganizationId))
-                .Keyword(f => f.Name(e => e.ProjectId))
-                .Keyword(f => f.Name(e => e.DefaultProjectId))
-                .Keyword(f => f.Name(e => e.UserId))
-                .Keyword(f => f.Name(u => u.CreatedBy))
-                .Keyword(f => f.Name(e => e.Refresh))
-                .Keyword(f => f.Name(e => e.Scopes))
-                .Boolean(f => f.Name(e => e.IsDisabled))
-                .Boolean(f => f.Name(e => e.IsSuspended))
-                .Number(f => f.Name(e => e.Type).Type(NumberType.Byte)));
+                .Date(e => e.ExpiresUtc)
+                .Keyword(e => e.OrganizationId)
+                .Keyword(e => e.ProjectId)
+                .Keyword(e => e.DefaultProjectId)
+                .Keyword(e => e.UserId)
+                .Keyword(e => e.CreatedBy)
+                .Keyword(e => e.Refresh)
+                .Keyword(e => e.Scopes)
+                .Boolean(e => e.IsDisabled)
+                .Boolean(e => e.IsSuspended)
+                .IntegerNumber(e => e.Type));
     }
 
-    public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx)
+    public override void ConfigureIndex(CreateIndexRequestDescriptor idx)
     {
-        return base.ConfigureIndex(idx.Settings(s => s
-            .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))))
+        base.ConfigureIndex(idx);
+        idx.Settings(s => s
+            .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filter("lowercase").Tokenizer("keyword"))))
             .NumberOfShards(_configuration.Options.NumberOfShards)
             .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
-            .Priority(10)));
+            .Priority(10));
     }
 }
