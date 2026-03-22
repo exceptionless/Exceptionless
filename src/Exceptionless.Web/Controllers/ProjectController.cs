@@ -50,6 +50,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         SlackService slackService,
         ApiMapper mapper,
         IAppQueryValidator validator,
+        ITextSerializer serializer,
         AppOptions options,
         UsageService usageService,
         TimeProvider timeProvider,

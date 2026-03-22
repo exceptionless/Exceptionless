@@ -6,7 +6,8 @@ using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Utility;
-using Nest;
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using Xunit;
 
 namespace Exceptionless.Tests.Migrations;
@@ -50,7 +51,7 @@ public class SetStackDuplicateSignatureMigrationTests : IntegrationTestsBase
         Assert.NotEmpty(actualStack.SignatureHash);
         Assert.Equal($"{actualStack.ProjectId}:{actualStack.SignatureHash}", actualStack.DuplicateSignature);
 
-        var results = await _repository.FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, expectedDuplicateSignature)));
+        var results = await _repository.FindAsync(q => q.ElasticFilter(new TermQuery { Field = Infer.Field<Stack>(s => s.DuplicateSignature), Value = expectedDuplicateSignature }));
         Assert.Single(results.Documents);
     }
 }

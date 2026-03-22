@@ -8,7 +8,8 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Utility;
 using Foundatio.Utility;
-using Nest;
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using Xunit;
 
 namespace Exceptionless.Tests.Migrations;
@@ -58,7 +59,7 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
         await _eventRepository.AddAsync(_eventData.GenerateEvents(count: 100, stackId: originalStack.Id), o => o.ImmediateConsistency());
         await _eventRepository.AddAsync(_eventData.GenerateEvents(count: 10, stackId: duplicateStack.Id), o => o.ImmediateConsistency());
 
-        var results = await _stackRepository.FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, originalStack.DuplicateSignature)));
+        var results = await _stackRepository.FindAsync(q => q.ElasticFilter(new TermQuery { Field = Infer.Field<Stack>(s => s.DuplicateSignature), Value = originalStack.DuplicateSignature }));
         Assert.Equal(2, results.Total);
 
         var migration = GetService<FixDuplicateStacks>();
@@ -67,7 +68,7 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
 
         await RefreshDataAsync();
 
-        results = await _stackRepository.FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, originalStack.DuplicateSignature)));
+        results = await _stackRepository.FindAsync(q => q.ElasticFilter(new TermQuery { Field = Infer.Field<Stack>(s => s.DuplicateSignature), Value = originalStack.DuplicateSignature }));
         Assert.Single(results.Documents);
 
         var updatedOriginalStack = await _stackRepository.GetByIdAsync(originalStack.Id, o => o.IncludeSoftDeletes());
@@ -111,7 +112,7 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
         await _eventRepository.AddAsync(_eventData.GenerateEvents(count: 10, stackId: originalStack.Id), o => o.ImmediateConsistency());
         await _eventRepository.AddAsync(_eventData.GenerateEvents(count: 100, stackId: biggerStack.Id), o => o.ImmediateConsistency());
 
-        var results = await _stackRepository.FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, originalStack.DuplicateSignature)));
+        var results = await _stackRepository.FindAsync(q => q.ElasticFilter(new TermQuery { Field = Infer.Field<Stack>(s => s.DuplicateSignature), Value = originalStack.DuplicateSignature }));
         Assert.Equal(2, results.Total);
 
         var migration = GetService<FixDuplicateStacks>();
@@ -120,7 +121,7 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
 
         await RefreshDataAsync();
 
-        results = await _stackRepository.FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, originalStack.DuplicateSignature)));
+        results = await _stackRepository.FindAsync(q => q.ElasticFilter(new TermQuery { Field = Infer.Field<Stack>(s => s.DuplicateSignature), Value = originalStack.DuplicateSignature }));
         Assert.Single(results.Documents);
 
         var updatedOriginalStack = await _stackRepository.GetByIdAsync(originalStack.Id, o => o.IncludeSoftDeletes());
@@ -160,7 +161,7 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
 
         await _stackRepository.AddAsync(new[] { originalStack, duplicateStack }, o => o.ImmediateConsistency());
 
-        var results = await _stackRepository.FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, originalStack.DuplicateSignature)));
+        var results = await _stackRepository.FindAsync(q => q.ElasticFilter(new TermQuery { Field = Infer.Field<Stack>(s => s.DuplicateSignature), Value = originalStack.DuplicateSignature }));
         Assert.Single(results.Documents);
 
         var migration = GetService<FixDuplicateStacks>();
@@ -169,7 +170,7 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
 
         await RefreshDataAsync();
 
-        results = await _stackRepository.FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, originalStack.DuplicateSignature)));
+        results = await _stackRepository.FindAsync(q => q.ElasticFilter(new TermQuery { Field = Infer.Field<Stack>(s => s.DuplicateSignature), Value = originalStack.DuplicateSignature }));
         Assert.Single(results.Documents);
 
         var updatedOriginalStack = await _stackRepository.GetByIdAsync(originalStack.Id, o => o.IncludeSoftDeletes());

@@ -295,37 +295,34 @@ public class AdminController : ExceptionlessApiController
     public async Task<ActionResult<ElasticsearchInfoResponse>> GetElasticsearchInfoAsync()
     {
         var client = _configuration.Client;
-        var healthTask = client.Cluster.HealthAsync();
+        var healthTask = client.Cluster.HealthAsync(r => r.Level(Elastic.Clients.Elasticsearch.Level.Indices));
         var statsTask = client.Cluster.StatsAsync();
-        var catIndicesTask = client.Cat.IndicesAsync(r => r.Bytes(Elasticsearch.Net.Bytes.B));
-        var catShardsTask = client.Cat.ShardsAsync();
-        await Task.WhenAll(healthTask, statsTask, catIndicesTask, catShardsTask);
+        var indicesStatsTask = client.Indices.StatsAsync();
+        await Task.WhenAll(healthTask, statsTask, indicesStatsTask);
 
         var healthResponse = await healthTask;
         var statsResponse = await statsTask;
-        var catIndicesResponse = await catIndicesTask;
-        var catShardsResponse = await catShardsTask;
+        var indicesStatsResponse = await indicesStatsTask;
 
-        if (!healthResponse.IsValid || !statsResponse.IsValid || !catIndicesResponse.IsValid || !catShardsResponse.IsValid)
+        if (!healthResponse.IsValidResponse || !statsResponse.IsValidResponse || !indicesStatsResponse.IsValidResponse)
             return Problem(title: "Elasticsearch cluster information is unavailable.");
 
-        // Count unassigned shards per index
-        var unassignedByIndex = (catShardsResponse.Records ?? [])
-            .Where(s => string.Equals(s.State, "UNASSIGNED", StringComparison.OrdinalIgnoreCase))
-            .GroupBy(s => s.Index ?? String.Empty, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
+        // Count unassigned shards per index from health response
+        var unassignedByIndex = (healthResponse.Indices ?? new Dictionary<string, Elastic.Clients.Elasticsearch.Cluster.IndexHealthStats>())
+            .Where(kvp => kvp.Value.UnassignedShards > 0)
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value.UnassignedShards, StringComparer.OrdinalIgnoreCase);
 
-        var indexDetails = (catIndicesResponse.Records ?? [])
-            .OrderByDescending(i => long.TryParse(i.StoreSize, out var s) ? s : 0)
-            .Select(i => new ElasticsearchIndexDetailResponse(
-                Index: i.Index,
-                Health: i.Health,
-                Status: i.Status,
-                Primary: int.TryParse(i.Primary, out var p) ? p : 0,
-                Replica: int.TryParse(i.Replica, out var r) ? r : 0,
-                DocsCount: long.TryParse(i.DocsCount, out var dc) ? dc : 0,
-                StoreSizeInBytes: long.TryParse(i.StoreSize, out var ss) ? ss : 0,
-                UnassignedShards: unassignedByIndex.GetValueOrDefault(i.Index ?? String.Empty, 0)
+        var indexDetails = (indicesStatsResponse.Indices ?? new Dictionary<string, Elastic.Clients.Elasticsearch.IndexManagement.IndicesStats>())
+            .OrderByDescending(kvp => kvp.Value.Total?.Store?.SizeInBytes ?? 0)
+            .Select(kvp => new ElasticsearchIndexDetailResponse(
+                Index: kvp.Key,
+                Health: kvp.Value.Health?.ToString().ToLowerInvariant(),
+                Status: kvp.Value.Status?.ToString().ToLowerInvariant(),
+                Primary: healthResponse.Indices?.GetValueOrDefault(kvp.Key)?.NumberOfShards ?? 0,
+                Replica: healthResponse.Indices?.GetValueOrDefault(kvp.Key)?.NumberOfReplicas ?? 0,
+                DocsCount: kvp.Value.Total?.Docs?.Count ?? 0,
+                StoreSizeInBytes: kvp.Value.Total?.Store?.SizeInBytes ?? 0,
+                UnassignedShards: unassignedByIndex.GetValueOrDefault(kvp.Key, 0)
             ))
             .ToArray();
 
@@ -342,7 +339,7 @@ public class AdminController : ExceptionlessApiController
             ),
             Indices: new ElasticsearchIndicesResponse(
                 Count: statsResponse.Indices.Count,
-                DocsCount: statsResponse.Indices.Documents.Count,
+                DocsCount: statsResponse.Indices.Docs.Count,
                 StoreSizeInBytes: statsResponse.Indices.Store.SizeInBytes
             ),
             IndexDetails: indexDetails
@@ -355,43 +352,40 @@ public class AdminController : ExceptionlessApiController
         var client = _configuration.Client;
         try
         {
-            var repositoryResponse = await client.Cat.RepositoriesAsync();
-            if (!repositoryResponse.IsValid)
+            var repositoryResponse = await client.Snapshot.GetRepositoryAsync();
+            if (!repositoryResponse.IsValidResponse)
                 return Problem(title: "Snapshot repository information is unavailable.");
 
-            if (!(repositoryResponse.Records?.Any() ?? false))
+            if (repositoryResponse.Repositories is null || !repositoryResponse.Repositories.Any())
                 return Ok(new ElasticsearchSnapshotsResponse([], []));
 
-            var repositoryNames = repositoryResponse.Records
-                .Where(r => !String.IsNullOrEmpty(r.Id))
-                .Select(r => r.Id!)
-                .ToArray();
+            var repositoryNames = repositoryResponse.Repositories.Select(r => r.Key).ToArray();
 
             var snapshotTasks = repositoryNames
                 .Select(async repositoryName =>
                 {
-                    var snapshotResponse = await client.Cat.SnapshotsAsync(r => r.RepositoryName(repositoryName));
-                    if (!snapshotResponse.IsValid)
+                    var snapshotResponse = await client.Snapshot.GetAsync(repositoryName, "*");
+                    if (!snapshotResponse.IsValidResponse)
                         return (
                             RepositoryName: repositoryName,
                             Snapshots: Array.Empty<ElasticsearchSnapshotResponse>(),
                             Error: $"Unable to retrieve snapshots for repository: {repositoryName}."
                         );
 
-                    var snapshotRecords = snapshotResponse.Records?.ToArray() ?? [];
+                    var snapshots = snapshotResponse.Snapshots?.ToArray() ?? [];
                     return (
                         RepositoryName: repositoryName,
-                        Snapshots: snapshotRecords.Select(s => new ElasticsearchSnapshotResponse(
+                        Snapshots: snapshots.Select(s => new ElasticsearchSnapshotResponse(
                             Repository: repositoryName,
-                            Name: s.Id ?? String.Empty,
-                            Status: s.Status ?? String.Empty,
-                            StartTime: s.StartEpoch > 0 ? DateTimeOffset.FromUnixTimeSeconds(s.StartEpoch).UtcDateTime : null,
-                            EndTime: s.EndEpoch > 0 ? DateTimeOffset.FromUnixTimeSeconds(s.EndEpoch).UtcDateTime : null,
+                            Name: s.Snapshot,
+                            Status: s.State ?? String.Empty,
+                            StartTime: s.StartTime?.UtcDateTime,
+                            EndTime: s.EndTime?.UtcDateTime,
                             Duration: s.Duration?.ToString() ?? String.Empty,
-                            IndicesCount: s.Indices,
-                            SuccessfulShards: s.SuccessfulShards,
-                            FailedShards: s.FailedShards,
-                            TotalShards: s.TotalShards
+                            IndicesCount: s.Indices?.Count ?? 0,
+                            SuccessfulShards: s.Shards?.Successful ?? 0,
+                            FailedShards: s.Shards?.Failed ?? 0,
+                            TotalShards: s.Shards?.Total ?? 0
                         )).ToArray(),
                         Error: (string?)null
                     );

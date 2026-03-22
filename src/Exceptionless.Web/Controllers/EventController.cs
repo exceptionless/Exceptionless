@@ -59,7 +59,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         IValidator<UserDescription> userDescriptionValidator,
         FormattingPluginManager formattingPluginManager,
         ICacheClient cacheClient,
-        JsonSerializerSettings jsonSerializerSettings,
+        ITextSerializer serializer,
         ApiMapper mapper,
         PersistentEventQueryValidator validator,
         AppOptions appOptions,
@@ -312,7 +312,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                             Date = e.Date,
                             Data = summaryData.Data
                         };
-                    }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(), events.Hits.LastOrDefault()?.GetSortToken());
+                    }).ToList(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(_serializer), events.Hits.LastOrDefault()?.GetSortToken(_serializer));
                 case "stack_recent":
                 case "stack_frequent":
                 case "stack_new":
@@ -358,7 +358,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                     return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit && !NextPageExceedsSkipLimit(resolvedPage, limit), resolvedPage, total);
                 default:
                     events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after);
-                    return OkWithResourceLinks(events.Documents.ToArray(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(), events.Hits.LastOrDefault()?.GetSortToken());
+                    return OkWithResourceLinks(events.Documents.ToArray(), events.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(_serializer), events.Hits.LastOrDefault()?.GetSortToken(_serializer));
             }
         }
         catch (ApplicationException ex)
@@ -420,7 +420,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 .Index(ti.Range.UtcStart, ti.Range.UtcEnd),
             o => page.HasValue
                 ? o.PageNumber(page).PageLimit(limit)
-                : o.SearchBeforeToken(before).SearchAfterToken(after).PageLimit(limit));
+                : o.SearchBeforeToken(before, _serializer).SearchAfterToken(after, _serializer).PageLimit(limit));
     }
 
     /// <summary>
