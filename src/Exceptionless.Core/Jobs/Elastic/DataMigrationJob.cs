@@ -1,4 +1,3 @@
-using Elasticsearch.Net;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
@@ -8,7 +7,11 @@ using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Resilience;
 using Microsoft.Extensions.Logging;
-using Nest;
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Core.Reindex;
+using Elastic.Clients.Elasticsearch.Core.ReindexRethrottle;
+using Elastic.Clients.Elasticsearch.QueryDsl;
+using Elastic.Clients.Elasticsearch.Tasks;
 
 namespace Exceptionless.Core.Jobs.Elastic;
 
@@ -98,29 +101,33 @@ public class DataMigrationJob : JobBase
                 else if (dequeuedWorkItem.Attempts >= 2)
                     batchSize = 250;
 
-                var response = await client.ReindexOnServerAsync(r => r
+                var response = await client.ReindexAsync(r => r
                     .Source(s => s
                         .Remote(ConfigureRemoteElasticSource)
-                        .Index(dequeuedWorkItem.SourceIndex)
+                        .Indices(dequeuedWorkItem.SourceIndex)
                         .Size(batchSize)
-                        .Query<object>(q =>
+                        .Query(q =>
                         {
-                            var container = q.Term("_type", dequeuedWorkItem.SourceIndexType);
                             if (!String.IsNullOrEmpty(dequeuedWorkItem.DateField))
-                                container &= q.DateRange(d => d.Field(dequeuedWorkItem.DateField).GreaterThanOrEquals(cutOffDate));
-
-                            return container;
+                            {
+                                q.Bool(b => b.Must(
+                                    m => m.Term(t => t.Field("_type").Value(dequeuedWorkItem.SourceIndexType)),
+                                    m => m.Range(r => r.Date(d => d.Field(dequeuedWorkItem.DateField!).Gte(cutOffDate)))
+                                ));
+                            }
+                            else
+                            {
+                                q.Term(t => t.Field("_type").Value(dequeuedWorkItem.SourceIndexType));
+                            }
                         }))
-                    .Destination(d => d
+                    .Dest(d => d
                         .Index(dequeuedWorkItem.TargetIndex))
                         .Conflicts(Conflicts.Proceed)
                         .WaitForCompletion(false)
                     .Script(s =>
                     {
                         if (!String.IsNullOrEmpty(dequeuedWorkItem.Script))
-                            return s.Source(dequeuedWorkItem.Script);
-
-                        return null;
+                            s.Source(dequeuedWorkItem.Script);
                     }));
 
                 dequeuedWorkItem.Attempts += 1;
@@ -135,26 +142,26 @@ public class DataMigrationJob : JobBase
             double highestProgress = 0;
             foreach (var workItem in workingTasks.ToArray())
             {
-                var taskStatus = await client.Tasks.GetTaskAsync(workItem.TaskId, t => t.WaitForCompletion(false));
+                var taskStatus = await client.Tasks.GetAsync(workItem.TaskId!.FullyQualifiedId, t => t.WaitForCompletion(false));
                 _logger.LogRequest(taskStatus);
 
-                var status = taskStatus?.Task?.Status;
+                var status = taskStatus.Task?.Status as ReindexStatus;
                 if (taskStatus?.Task is null || status is null)
                 {
-                    _logger.LogWarning(taskStatus?.OriginalException, "Error getting task status for {TargetIndex} {TaskId}: {Message}", workItem.TargetIndex, workItem.TaskId, taskStatus.GetErrorMessage());
-                    if (taskStatus?.ServerError?.Status == 429)
+                    _logger.LogWarning(taskStatus?.ApiCallDetails?.OriginalException, "Error getting task status for {TargetIndex} {TaskId}: {Message}", workItem.TargetIndex, workItem.TaskId, taskStatus.GetErrorMessage());
+                    if (taskStatus?.ElasticsearchServerError?.Status == 429)
                         await Task.Delay(TimeSpan.FromSeconds(1), _timeProvider);
 
                     continue;
                 }
 
-                var duration = TimeSpan.FromMilliseconds(taskStatus.Task.RunningTimeInNanoseconds * 0.000001);
+                var duration = taskStatus.Task.RunningTimeInNanos;
                 double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
                 highestProgress = Math.Max(highestProgress, progress);
 
-                if (!taskStatus.IsValid)
+                if (!taskStatus.IsValidResponse)
                 {
-                    _logger.LogWarning(taskStatus.OriginalException, "Error getting task status for {TargetIndex} ({TaskId}): {Message}", workItem.TargetIndex, workItem.TaskId, taskStatus.GetErrorMessage());
+                    _logger.LogWarning(taskStatus.ApiCallDetails?.OriginalException, "Error getting task status for {TargetIndex} ({TaskId}): {Message}", workItem.TargetIndex, workItem.TaskId, taskStatus.GetErrorMessage());
                     workItem.ConsecutiveStatusErrors++;
                     if (taskStatus.Completed || workItem.ConsecutiveStatusErrors > 5)
                     {
@@ -186,7 +193,7 @@ public class DataMigrationJob : JobBase
                 workingTasks.Remove(workItem);
                 workItem.LastTaskInfo = taskStatus.Task;
                 completedTasks.Add(workItem);
-                var targetCount = await client.CountAsync<object>(d => d.Index(workItem.TargetIndex));
+                var targetCount = await client.CountAsync<object>(d => d.Indices(workItem.TargetIndex));
 
                 _logger.LogInformation("COMPLETED - {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", workItem.TargetIndex, targetCount.Count, duration, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, workItem.Attempts, workItem.TaskId);
             }
@@ -201,21 +208,27 @@ public class DataMigrationJob : JobBase
         _logger.LogInformation("----- REINDEX COMPLETE - I:{Completed}/{Total} T:{Duration:d\\.hh\\:mm} F:{Failed} R:{Retries}", completedTasks.Count, totalTasks, _timeProvider.GetUtcNow().UtcDateTime.Subtract(started), failedTasks.Count, retriesCount);
         foreach (var task in completedTasks)
         {
-            var status = task.LastTaskInfo.Status;
-            var duration = TimeSpan.FromMilliseconds(task.LastTaskInfo.RunningTimeInNanoseconds * 0.000001);
+            var status = task.LastTaskInfo.Status as ReindexStatus;
+            if (status is null)
+                continue;
+
+            var duration = task.LastTaskInfo.RunningTimeInNanos;
             double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
 
-            var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex));
+            var targetCount = await client.CountAsync<object>(d => d.Indices(task.TargetIndex));
             _logger.LogInformation("SUCCESS - {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} P:{Progress:F0}% C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.TargetIndex, targetCount.Count, duration, progress, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
         }
 
         foreach (var task in failedTasks)
         {
-            var status = task.LastTaskInfo.Status;
-            var duration = TimeSpan.FromMilliseconds(task.LastTaskInfo.RunningTimeInNanoseconds * 0.000001);
+            var status = task.LastTaskInfo.Status as ReindexStatus;
+            if (status is null)
+                continue;
+
+            var duration = task.LastTaskInfo.RunningTimeInNanos;
             double progress = status.Total > 0 ? (status.Created + status.Updated + status.Deleted + status.VersionConflicts * 1.0) / status.Total : 0;
 
-            var targetCount = await client.CountAsync<object>(d => d.Index(task.TargetIndex));
+            var targetCount = await client.CountAsync<object>(d => d.Indices(task.TargetIndex));
             _logger.LogCritical("FAILED - {TargetIndex} ({TargetCount}) in {Duration:hh\\:mm} P:{Progress:F0}% C:{Created} U:{Updated} D:{Deleted} X:{Conflicts} T:{Total} A:{Attempts} ID:{TaskId}", task.TargetIndex, targetCount.Count, duration, progress, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total, task.Attempts, task.TaskId);
         }
 
@@ -227,7 +240,7 @@ public class DataMigrationJob : JobBase
         return JobResult.Success;
     }
 
-    private IRemoteSource ConfigureRemoteElasticSource(RemoteSourceDescriptor rsd)
+    private void ConfigureRemoteElasticSource(RemoteSourceDescriptor rsd)
     {
         var elasticOptions = _configuration.Options.ElasticsearchToMigrate;
         if (elasticOptions is null)
@@ -236,7 +249,7 @@ public class DataMigrationJob : JobBase
         if (!String.IsNullOrEmpty(elasticOptions.UserName) && !String.IsNullOrEmpty(elasticOptions.Password))
             rsd.Username(elasticOptions.UserName).Password(elasticOptions.Password);
 
-        return rsd.Host(new Uri(elasticOptions.ServerUrl));
+        rsd.Host(elasticOptions.ServerUrl);
     }
 }
 

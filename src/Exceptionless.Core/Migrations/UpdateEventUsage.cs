@@ -8,7 +8,7 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
-using Nest;
+using Elastic.Clients.Elasticsearch;
 
 namespace Exceptionless.Core.Migrations;
 

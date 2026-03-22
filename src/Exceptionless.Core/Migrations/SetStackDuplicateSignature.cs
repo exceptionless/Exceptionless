@@ -5,13 +5,14 @@ using Foundatio.Caching;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Migrations;
 using Microsoft.Extensions.Logging;
-using Nest;
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Core.ReindexRethrottle;
 
 namespace Exceptionless.Core.Migrations;
 
 public sealed class SetStackDuplicateSignature : MigrationBase
 {
-    private readonly IElasticClient _client;
+    private readonly ElasticsearchClient _client;
     private readonly ExceptionlessElasticConfiguration _config;
     private readonly ICacheClient _cache;
     private readonly TimeProvider _timeProvider;
@@ -33,12 +34,10 @@ public sealed class SetStackDuplicateSignature : MigrationBase
         _logger.LogInformation("Done refreshing all indices");
 
         _logger.LogInformation("Updating Stack mappings...");
-        var response = await _client.MapAsync<Stack>(d =>
+        var response = await _client.Indices.PutMappingAsync<Stack>(d =>
         {
-            d.Index(_config.Stacks.VersionedName);
-            d.Properties(p => p.Keyword(f => f.Name(s => s.DuplicateSignature)));
-
-            return d;
+            d.Indices(_config.Stacks.VersionedName);
+            d.Properties(p => p.Keyword(s => s.DuplicateSignature));
         });
         _logger.LogRequest(response);
 
@@ -46,9 +45,9 @@ public sealed class SetStackDuplicateSignature : MigrationBase
         var sw = Stopwatch.StartNew();
         const string script = "ctx._source.duplicate_signature = ctx._source.project_id + ':' + ctx._source.signature_hash;";
         var stackResponse = await _client.UpdateByQueryAsync<Stack>(x => x
-            .QueryOnQueryString("NOT _exists_:duplicate_signature")
-            .Script(s => s.Source(script).Lang(ScriptLang.Painless))
-            .Conflicts(Elasticsearch.Net.Conflicts.Proceed)
+            .Query(q => q.QueryString(qs => qs.Query("NOT _exists_:duplicate_signature")))
+            .Script(s => s.Source(script).Lang(ScriptLanguage.Painless))
+            .Conflicts(Conflicts.Proceed)
             .WaitForCompletion(false));
 
         _logger.LogRequest(stackResponse, Microsoft.Extensions.Logging.LogLevel.Information);
@@ -59,22 +58,22 @@ public sealed class SetStackDuplicateSignature : MigrationBase
         do
         {
             attempts++;
-            var taskStatus = await _client.Tasks.GetTaskAsync(taskId);
-            var status = taskStatus.Task.Status;
+            var taskStatus = await _client.Tasks.GetAsync(taskId!.FullyQualifiedId);
+            var status = taskStatus.Task.Status as ReindexStatus;
             if (taskStatus.Completed)
             {
                 // TODO: need to check to see if the task failed or completed successfully. Throw if it failed.
-                _logger.LogInformation("Script operation task ({TaskId}) completed: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
-                affectedRecords += status.Created + status.Updated + status.Deleted;
+                _logger.LogInformation("Script operation task ({TaskId}) completed: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status?.Created, status?.Updated, status?.Deleted, status?.VersionConflicts, status?.Total);
+                affectedRecords += (status?.Created ?? 0) + (status?.Updated ?? 0) + (status?.Deleted ?? 0);
                 break;
             }
 
-            _logger.LogInformation("Checking script operation task ({TaskId}) status: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
+            _logger.LogInformation("Checking script operation task ({TaskId}) status: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status?.Created, status?.Updated, status?.Deleted, status?.VersionConflicts, status?.Total);
             var delay = TimeSpan.FromSeconds(attempts <= 5 ? 1 : 5);
             await Task.Delay(delay, _timeProvider);
         } while (true);
 
-        _logger.LogInformation("Finished adding stack duplicate signature: Time={Duration:d\\.hh\\:mm} Completed={Completed:N0} Total={Total:N0} Errors={Errors:N0}", sw.Elapsed, affectedRecords, stackResponse.Total, stackResponse.Failures.Count);
+        _logger.LogInformation("Finished adding stack duplicate signature: Time={Duration:d\\.hh\\:mm} Completed={Completed:N0} Total={Total:N0} Errors={Errors:N0}", sw.Elapsed, affectedRecords, stackResponse.Total, stackResponse.Failures?.Count ?? 0);
 
         _logger.LogInformation("Invalidating Stack Cache");
         await _cache.RemoveByPrefixAsync(nameof(Stack));
