@@ -236,18 +236,9 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
     {
         var response = await SendRequestAsync(configure);
 
-        // Handle empty response bodies gracefully (e.g., Ok() with no content).
-        // STJ throws on empty input whereas Newtonsoft returned default(T).
-        // ReadAsStringAsync buffers internally, so subsequent reads still work.
-        var body = await response.Content.ReadAsStringAsync();
-        if (String.IsNullOrEmpty(body))
-            return default;
-
-        // Deserialize using the app's configured JsonSerializerOptions directly.
-        // FluentRest's DeserializeAsync may silently return null for record types
-        // when using custom naming policies (e.g., snake_case).
-        var settings = GetService<JsonSerializerOptions>();
-        return System.Text.Json.JsonSerializer.Deserialize<T>(body, settings);
+        // All errors are returned as problem details so if we are expecting Problem Details we shouldn't ensure success.
+        bool ensureSuccess = !typeof(Microsoft.AspNetCore.Mvc.ProblemDetails).IsAssignableFrom(typeof(T));
+        return await DeserializeResponseAsync<T>(response, ensureSuccess);
     }
 
     protected Task<HttpResponseMessage> SendGlobalAdminRequestAsync(Action<AppSendBuilder> configure)
@@ -262,12 +253,21 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
     protected async Task<T?> SendGlobalAdminRequestAsAsync<T>(Action<AppSendBuilder> configure)
     {
         var response = await SendGlobalAdminRequestAsync(configure);
-        return await response.DeserializeAsync<T>();
+        return await DeserializeResponseAsync<T>(response);
     }
 
-    protected Task<T?> DeserializeResponseAsync<T>(HttpResponseMessage response)
+    protected async Task<T?> DeserializeResponseAsync<T>(HttpResponseMessage response, bool ensureSuccess = true)
     {
-        return response.DeserializeAsync<T>();
+        if (ensureSuccess)
+            response.EnsureSuccessStatusCode();
+
+        // STJ throws on empty input whereas Newtonsoft returned default(T).
+        var body = await response.Content.ReadAsStringAsync();
+        if (String.IsNullOrEmpty(body))
+            return default;
+
+        var settings = GetService<JsonSerializerOptions>();
+        return JsonSerializer.Deserialize<T>(body, settings);
     }
 
     public virtual ValueTask DisposeAsync()
