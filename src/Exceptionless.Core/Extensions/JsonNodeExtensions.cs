@@ -87,12 +87,9 @@ public static class JsonNodeExtensions
 
         foreach (var descendant in target.DescendantsAndSelf().OfType<JsonObject>())
         {
-            foreach (var name in names)
+            foreach (var name in names.Where(n => descendant.IsPropertyNullOrEmpty(n) && descendant.ContainsKey(n)))
             {
-                if (descendant.TryGetPropertyValue(name, out var value) && value.IsNullOrEmpty())
-                {
-                    toRemove.Add((descendant, name));
-                }
+                toRemove.Add((descendant, name));
             }
         }
 
