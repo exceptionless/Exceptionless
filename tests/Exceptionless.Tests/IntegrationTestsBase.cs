@@ -238,7 +238,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
         // All errors are returned as problem details so if we are expecting Problem Details we shouldn't ensure success.
         bool ensureSuccess = !typeof(Microsoft.AspNetCore.Mvc.ProblemDetails).IsAssignableFrom(typeof(T));
-        return await DeserializeResponseAsync<T>(response, ensureSuccess);
+        return await response.DeserializeAsync<T>(ensureSuccess);
     }
 
     protected Task<HttpResponseMessage> SendGlobalAdminRequestAsync(Action<AppSendBuilder> configure)
@@ -253,21 +253,12 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
     protected async Task<T?> SendGlobalAdminRequestAsAsync<T>(Action<AppSendBuilder> configure)
     {
         var response = await SendGlobalAdminRequestAsync(configure);
-        return await DeserializeResponseAsync<T>(response);
+        return await response.DeserializeAsync<T>();
     }
 
-    protected async Task<T?> DeserializeResponseAsync<T>(HttpResponseMessage response, bool ensureSuccess = true)
+    protected Task<T?> DeserializeResponseAsync<T>(HttpResponseMessage response)
     {
-        if (ensureSuccess)
-            response.EnsureSuccessStatusCode();
-
-        // STJ throws on empty input whereas Newtonsoft returned default(T).
-        var body = await response.Content.ReadAsStringAsync();
-        if (String.IsNullOrWhiteSpace(body))
-            return default;
-
-        var settings = GetService<JsonSerializerOptions>();
-        return JsonSerializer.Deserialize<T>(body, settings);
+        return response.DeserializeAsync<T>();
     }
 
     public virtual ValueTask DisposeAsync()

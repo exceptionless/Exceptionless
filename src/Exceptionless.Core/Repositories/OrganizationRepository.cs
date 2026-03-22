@@ -1,4 +1,5 @@
 using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -7,6 +8,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using ElasticInfer = Elastic.Clients.Elasticsearch.Infer;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -33,7 +35,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
     {
         ArgumentException.ThrowIfNullOrEmpty(token);
 
-        var hit = await FindOneAsync(q => q.FilterExpression($"invites.token:{token}"));
+        var hit = await FindOneAsync(q => q.FieldEquals(o => o.Invites.First().Token, token));
         return hit?.Document;
     }
 
@@ -41,36 +43,67 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
     {
         ArgumentException.ThrowIfNullOrEmpty(customerId);
 
-        var hit = await FindOneAsync(q => q.FilterExpression($"stripe_customer_id:{customerId}"));
+        var hit = await FindOneAsync(q => q.FieldEquals(o => o.StripeCustomerId, customerId));
         return hit?.Document;
     }
 
     public Task<FindResults<Organization>> GetByCriteriaAsync(string? criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null)
     {
-        var filterParts = new List<string>();
+        var mustClauses = new List<Query>();
 
         if (!String.IsNullOrWhiteSpace(criteria))
-            filterParts.Add($"(id:{criteria} OR name:{criteria})");
+            mustClauses.Add(new BoolQuery
+            {
+                Should = [
+                    new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.Id), Value = criteria },
+                    new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.Name), Value = criteria }
+                ],
+                MinimumShouldMatch = 1
+            });
 
         if (paid.HasValue)
         {
             if (paid.Value)
-                filterParts.Add($"-plan_id:{_plans.FreePlan.Id}");
+                mustClauses.Add(new BoolQuery { MustNot = [new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.PlanId), Value = _plans.FreePlan.Id }] });
             else
-                filterParts.Add($"plan_id:{_plans.FreePlan.Id}");
+                mustClauses.Add(new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.PlanId), Value = _plans.FreePlan.Id });
         }
 
         if (suspended.HasValue)
         {
             if (suspended.Value)
-                filterParts.Add($"((-billing_status:{(int)BillingStatus.Active} AND -billing_status:{(int)BillingStatus.Trialing} AND -billing_status:{(int)BillingStatus.Canceled}) OR is_suspended:true)");
+                mustClauses.Add(new BoolQuery
+                {
+                    Should = [
+                        new BoolQuery { MustNot = [
+                            new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Active },
+                            new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Trialing },
+                            new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Canceled }
+                        ] },
+                        new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.IsSuspended), Value = true }
+                    ],
+                    MinimumShouldMatch = 1
+                });
             else
-                filterParts.Add($"((billing_status:{(int)BillingStatus.Active} AND billing_status:{(int)BillingStatus.Trialing} AND billing_status:{(int)BillingStatus.Canceled}) OR is_suspended:false)");
+                mustClauses.Add(new BoolQuery
+                {
+                    Should = [
+                        new BoolQuery { Must = [
+                            new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Active },
+                            new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Trialing },
+                            new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Canceled }
+                        ] },
+                        new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.IsSuspended), Value = false }
+                    ],
+                    MinimumShouldMatch = 1
+                });
         }
 
-        var query = new RepositoryQuery<Organization>();
-        if (filterParts.Count > 0)
-            query = query.FilterExpression(String.Join(" AND ", filterParts));
+        Query filter = mustClauses.Count > 0
+            ? new BoolQuery { Must = mustClauses }
+            : new MatchAllQuery();
+
+        var query = new RepositoryQuery<Organization>().ElasticFilter(filter);
 
         switch (sortBy)
         {

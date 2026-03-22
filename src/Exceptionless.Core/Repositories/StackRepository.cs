@@ -154,7 +154,7 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
     public async Task<Stack?> GetStackBySignatureHashAsync(string projectId, string signatureHash)
     {
         string key = GetStackSignatureCacheKey(projectId, signatureHash);
-        var hit = await FindOneAsync(q => q.Project(projectId).FilterExpression($"signature_hash:{signatureHash}"), o => o.Cache(key));
+        var hit = await FindOneAsync(q => q.Project(projectId).FieldEquals(s => s.SignatureHash, signatureHash), o => o.Cache(key));
         return hit?.Document;
     }
 

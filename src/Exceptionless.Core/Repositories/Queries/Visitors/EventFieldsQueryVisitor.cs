@@ -29,6 +29,18 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
         }
 
         node.Field = GetCustomFieldName(node.Field, childTerms.ToArray()) ?? node.Field;
+
+        // Propagate resolved field to child TermRangeNodes that lack a field name.
+        // Without this, Foundatio.Parsers' DefaultQueryNodeExtensions.GetDefaultQueryAsync
+        // throws when creating Field objects for grouped range queries like data.age:(>30 AND <=40).
+        if (!String.IsNullOrEmpty(node.Field))
+        {
+            if (node.Left is TermRangeNode { Field: null or "" } leftRange)
+                leftRange.Field = node.Field;
+            if (node.Right is TermRangeNode { Field: null or "" } rightRange)
+                rightRange.Field = node.Field;
+        }
+
         foreach (var child in node.Children)
             await child.AcceptAsync(this, context);
     }

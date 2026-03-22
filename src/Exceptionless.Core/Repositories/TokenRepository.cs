@@ -1,10 +1,14 @@
-﻿using Exceptionless.Core.Messaging.Models;
+﻿using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Models;
 using Token = Exceptionless.Core.Models.Token;
+using ElasticInfer = Elastic.Clients.Elasticsearch.Infer;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -18,30 +22,46 @@ public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, I
 
     public Task<FindResults<Token>> GetByTypeAndUserIdAsync(TokenType type, string userId, CommandOptionsDescriptor<Token>? options = null)
     {
-        return FindAsync(q => q.FilterExpression($"user_id:{userId} AND type:{(int)type}").Sort(f => f.CreatedUtc), options);
+        return FindAsync(q => q.FieldEquals(t => t.UserId, userId).FieldEquals(t => t.Type, type).Sort(f => f.CreatedUtc), options);
     }
 
     public Task<FindResults<Token>> GetByTypeAndOrganizationIdAsync(TokenType type, string organizationId, CommandOptionsDescriptor<Token>? options = null)
     {
         return FindAsync(q => q
             .Organization(organizationId)
-            .FilterExpression($"type:{(int)type}")
+            .FieldEquals(t => t.Type, type)
             .Sort(f => f.CreatedUtc), options);
     }
 
     public Task<FindResults<Token>> GetByTypeAndProjectIdAsync(TokenType type, string projectId, CommandOptionsDescriptor<Token>? options = null)
     {
-        return FindAsync(q => q.FilterExpression($"(project_id:{projectId} OR default_project_id:{projectId}) AND type:{(int)type}").Sort(f => f.CreatedUtc), options);
+        Query filter = new BoolQuery
+        {
+            Should = [
+                new TermQuery { Field = ElasticInfer.Field<Token>(t => t.ProjectId), Value = projectId },
+                new TermQuery { Field = ElasticInfer.Field<Token>(t => t.DefaultProjectId), Value = projectId }
+            ],
+            MinimumShouldMatch = 1
+        };
+        return FindAsync(q => q.ElasticFilter(filter).FieldEquals(t => t.Type, type).Sort(f => f.CreatedUtc), options);
     }
 
     public override Task<FindResults<Token>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<Token>? options = null)
     {
-        return FindAsync(q => q.FilterExpression($"project_id:{projectId} OR default_project_id:{projectId}").Sort(f => f.CreatedUtc), options);
+        Query filter = new BoolQuery
+        {
+            Should = [
+                new TermQuery { Field = ElasticInfer.Field<Token>(t => t.ProjectId), Value = projectId },
+                new TermQuery { Field = ElasticInfer.Field<Token>(t => t.DefaultProjectId), Value = projectId }
+            ],
+            MinimumShouldMatch = 1
+        };
+        return FindAsync(q => q.ElasticFilter(filter).Sort(f => f.CreatedUtc), options);
     }
 
     public Task<long> RemoveAllByUserIdAsync(string userId, CommandOptionsDescriptor<Token>? options = null)
     {
-        return RemoveAllAsync(q => q.FilterExpression($"user_id:{userId}"), options);
+        return RemoveAllAsync(q => q.FieldEquals(t => t.UserId, userId), options);
     }
 
     protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, Token? document, IDictionary<string, object>? data = null, TimeSpan? delay = null)

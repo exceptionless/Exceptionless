@@ -1,4 +1,5 @@
 ﻿using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
@@ -7,6 +8,7 @@ using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
+using ElasticInfer = Elastic.Clients.Elasticsearch.Infer;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -76,7 +78,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
     {
         long threshold = _timeProvider.GetUtcNow().UtcDateTime.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight);
         return FindAsync(q => q
-            .FilterExpression($"next_summary_end_of_day_ticks:<{threshold}")
+            .ElasticFilter(new NumberRangeQuery { Field = ElasticInfer.Field<Project>(p => p.NextSummaryEndOfDayTicks), Lt = threshold })
             .SortAscending(p => p.OrganizationId), o => o.SearchAfterPaging().PageLimit(limit));
     }
 
