@@ -1,4 +1,6 @@
 using System.Text.Json;
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
@@ -22,8 +24,6 @@ using Foundatio.Storage;
 using Foundatio.Utility;
 using Foundatio.Xunit;
 using Microsoft.AspNetCore.TestHost;
-using Elastic.Clients.Elasticsearch;
-using Elastic.Clients.Elasticsearch.QueryDsl;
 using Xunit;
 using HttpMethod = System.Net.Http.HttpMethod;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -243,9 +243,11 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         if (String.IsNullOrEmpty(body))
             return default;
 
-        // All errors are returned as problem details so if we are expecting Problem Details we shouldn't ensure success.
-        bool ensureSuccess = !typeof(Microsoft.AspNetCore.Mvc.ProblemDetails).IsAssignableFrom(typeof(T));
-        return await response.DeserializeAsync<T>(ensureSuccess);
+        // Deserialize using the app's configured JsonSerializerOptions directly.
+        // FluentRest's DeserializeAsync may silently return null for record types
+        // when using custom naming policies (e.g., snake_case).
+        var settings = GetService<JsonSerializerOptions>();
+        return System.Text.Json.JsonSerializer.Deserialize<T>(body, settings);
     }
 
     protected Task<HttpResponseMessage> SendGlobalAdminRequestAsync(Action<AppSendBuilder> configure)

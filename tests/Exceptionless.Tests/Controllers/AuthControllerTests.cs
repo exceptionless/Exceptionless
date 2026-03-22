@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
@@ -14,7 +15,6 @@ using FluentRest;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Mvc;
-using System.IdentityModel.Tokens.Jwt;
 using Xunit;
 using User = Exceptionless.Core.Models.User;
 

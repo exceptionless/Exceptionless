@@ -1,7 +1,7 @@
+using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
-using Elastic.Clients.Elasticsearch;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Exceptions;
@@ -32,7 +32,7 @@ public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, I
         return FindAsync(q => q
             .Organization(organizationId)
             .DateRange(null, cutoff, (Stack s) => s.LastOccurrence)
-            .FieldEquals(f => f.Status, StackStatus.Open)
+            .FieldEquals(f => f.Status, "open")
             .FieldEmpty(f => f.References)
             .Include(f => f.Id, f => f.OrganizationId, f => f.ProjectId, f => f.SignatureHash)
         , o => o.SearchAfterPaging().PageLimit(500));

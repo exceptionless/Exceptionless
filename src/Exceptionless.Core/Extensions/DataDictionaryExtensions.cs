@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Serialization;
 using Foundatio.Serializer;
 
 namespace Exceptionless.Core.Extensions;
@@ -8,8 +9,18 @@ namespace Exceptionless.Core.Extensions;
 public static class DataDictionaryExtensions
 {
     /// <summary>
-    /// Options for deserializing JsonElement values that may use PascalCase or snake_case
-    /// property names. Uses case-insensitive matching without a naming policy so both formats work.
+    /// Options for deserializing JsonElement values with snake_case property names (standard format).
+    /// Uses the naming policy to map C# PascalCase names to snake_case JSON names.
+    /// </summary>
+    private static readonly JsonSerializerOptions SnakeCaseOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = LowerCaseUnderscoreNamingPolicy.Instance
+    };
+
+    /// <summary>
+    /// Fallback options for deserializing JsonElement values with PascalCase property names.
+    /// Handles legacy or non-standard input where property names match C# names directly.
     /// </summary>
     private static readonly JsonSerializerOptions CaseInsensitiveOptions = new()
     {
@@ -71,10 +82,13 @@ public static class DataDictionaryExtensions
                     return (T?)s;
                 }
 
-                // Deserialize directly from JsonElement using case-insensitive matching.
-                // This handles both snake_case (from Elasticsearch) and PascalCase (from
-                // [JsonExtensionData] which preserves original property names).
-                var result = jsonElement.Deserialize<T>(CaseInsensitiveOptions);
+                // Deserialize from JsonElement, trying snake_case naming first (standard format)
+                // then falling back to PascalCase for legacy/non-standard input.
+                var result = jsonElement.Deserialize<T>(SnakeCaseOptions);
+                if (result is not null)
+                    return result;
+
+                result = jsonElement.Deserialize<T>(CaseInsensitiveOptions);
                 if (result is not null)
                     return result;
             }

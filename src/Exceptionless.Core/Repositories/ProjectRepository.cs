@@ -1,8 +1,8 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using Elastic.Clients.Elasticsearch;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
-using Elastic.Clients.Elasticsearch;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;

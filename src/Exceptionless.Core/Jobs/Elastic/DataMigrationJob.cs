@@ -1,3 +1,8 @@
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Core.Reindex;
+using Elastic.Clients.Elasticsearch.Core.ReindexRethrottle;
+using Elastic.Clients.Elasticsearch.QueryDsl;
+using Elastic.Clients.Elasticsearch.Tasks;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
@@ -7,11 +12,6 @@ using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Resilience;
 using Microsoft.Extensions.Logging;
-using Elastic.Clients.Elasticsearch;
-using Elastic.Clients.Elasticsearch.Core.Reindex;
-using Elastic.Clients.Elasticsearch.Core.ReindexRethrottle;
-using Elastic.Clients.Elasticsearch.QueryDsl;
-using Elastic.Clients.Elasticsearch.Tasks;
 
 namespace Exceptionless.Core.Jobs.Elastic;
 
