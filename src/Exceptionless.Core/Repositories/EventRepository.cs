@@ -78,7 +78,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 
     public Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId)
     {
-        return FindAsync(q => q.Project(projectId).FilterExpression($"reference_id:{referenceId}").SortDescending(e => e.Date), o => o.PageLimit(10));
+        return FindAsync(q => q.Project(projectId).FilterExpression($"reference_id:\"{referenceId}\"").SortDescending(e => e.Date), o => o.PageLimit(10));
     }
 
     public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter? systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)

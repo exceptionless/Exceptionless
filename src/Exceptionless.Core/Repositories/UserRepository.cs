@@ -42,7 +42,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         if (String.IsNullOrEmpty(token))
             return null;
 
-        var hit = await FindOneAsync(q => q.FilterExpression($"password_reset_token:{token}"));
+        var hit = await FindOneAsync(q => q.FilterExpression($"password_reset_token:\"{token}\""));
         return hit?.Document;
     }
 
@@ -52,7 +52,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
             return null;
 
         provider = provider.ToLowerInvariant();
-        var results = (await FindAsync(q => q.FilterExpression($"oauth_accounts.provider_user_id:{providerUserId}"))).Documents;
+        var results = (await FindAsync(q => q.FilterExpression($"oauth_accounts.provider_user_id:\"{providerUserId}\""))).Documents;
         return results.FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider));
     }
 
@@ -61,7 +61,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         if (String.IsNullOrEmpty(token))
             return null;
 
-        var hit = await FindOneAsync(q => q.FilterExpression($"verify_email_address_token:{token}"));
+        var hit = await FindOneAsync(q => q.FilterExpression($"verify_email_address_token:\"{token}\""));
         return hit?.Document;
     }
 
@@ -74,7 +74,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         if (commandOptions.ShouldUseCache())
             throw new Exception("Caching of paged queries is not allowed");
 
-        return FindAsync(q => q.FilterExpression($"organization_ids:{organizationId}").SortAscending((Field)"email_address.keyword"), o => commandOptions);
+        return FindAsync(q => q.FilterExpression($"organization_ids:\"{organizationId}\"").SortAscending((Field)"email_address.keyword"), o => commandOptions);
     }
 
     protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<User>> findHits, ICommandOptions options, bool isDirtyRead)
