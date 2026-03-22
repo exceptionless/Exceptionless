@@ -148,7 +148,7 @@ public class DataMigrationJob : JobBase
                 var status = taskStatus.Task?.Status as ReindexStatus;
                 if (taskStatus?.Task is null || status is null)
                 {
-                    _logger.LogWarning(taskStatus?.ApiCallDetails?.OriginalException, "Error getting task status for {TargetIndex} {TaskId}: {Message}", workItem.TargetIndex, workItem.TaskId, taskStatus.GetErrorMessage());
+                    _logger.LogWarning(taskStatus?.ApiCallDetails?.OriginalException, "Error getting task status for {TargetIndex} {TaskId}: {Message}", workItem.TargetIndex, workItem.TaskId, taskStatus?.GetErrorMessage());
                     if (taskStatus?.ElasticsearchServerError?.Status == 429)
                         await Task.Delay(TimeSpan.FromSeconds(1), _timeProvider);
 
