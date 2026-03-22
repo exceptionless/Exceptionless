@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
@@ -70,7 +71,7 @@ public class Bootstrapper
         }));
 
         services.AddSingleton<ExceptionlessElasticConfiguration>();
-        services.AddSingleton<Nest.IElasticClient>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Client);
+        services.AddSingleton<ElasticsearchClient>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Client);
         services.AddSingleton<IElasticConfiguration>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>());
         services.AddStartupAction<ExceptionlessElasticConfiguration>();
 

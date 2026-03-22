@@ -1,25 +1,18 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Elasticsearch.Net;
+using Elastic.Transport;
 
 namespace Exceptionless.Core.Serialization;
 
 /// <summary>
-/// System.Text.Json serializer for Elasticsearch NEST client.
+/// System.Text.Json serializer for the Elastic.Clients.Elasticsearch 8.x client.
 ///
-/// This serializer implements <see cref="IElasticsearchSerializer"/> to enable the NEST 7.x
-/// client to use System.Text.Json instead of Newtonsoft.Json for document serialization.
+/// This serializer extends <see cref="Serializer"/> to use System.Text.Json for document
+/// serialization instead of the built-in serializer.
 ///
 /// <para><strong>Why custom converters are needed:</strong></para>
 /// <list type="bullet">
-///   <item>
-///     <term>DynamicDictionary</term>
-///     <description>
-///       Elasticsearch returns dynamic responses as <see cref="DynamicDictionary"/> which STJ
-///       doesn't know how to serialize/deserialize. This converter handles the round-trip.
-///     </description>
-///   </item>
 ///   <item>
 ///     <term>DateTime/DateTimeOffset</term>
 ///     <description>
@@ -31,7 +24,7 @@ namespace Exceptionless.Core.Serialization;
 ///
 /// <para><strong>Thread Safety:</strong> This class is thread-safe. Options are lazily initialized once.</para>
 /// </summary>
-public sealed class ElasticSystemTextJsonSerializer : IElasticsearchSerializer
+public sealed class ElasticSystemTextJsonSerializer : Serializer
 {
     private readonly Lazy<JsonSerializerOptions> _optionsIndented;
     private readonly Lazy<JsonSerializerOptions> _optionsCompact;
@@ -69,9 +62,8 @@ public sealed class ElasticSystemTextJsonSerializer : IElasticsearchSerializer
 
         // Insert Elasticsearch converters for priority
         // Order matters: more specific converters should come first
-        options.Converters.Insert(1, new DynamicDictionaryConverter());
-        options.Converters.Insert(2, new Iso8601DateTimeOffsetConverter());
-        options.Converters.Insert(3, new Iso8601DateTimeConverter());
+        options.Converters.Insert(1, new Iso8601DateTimeOffsetConverter());
+        options.Converters.Insert(2, new Iso8601DateTimeConverter());
 
         return options;
     }
@@ -82,7 +74,7 @@ public sealed class ElasticSystemTextJsonSerializer : IElasticsearchSerializer
     #region Synchronous API
 
     /// <inheritdoc />
-    public object? Deserialize(Type type, Stream stream)
+    public override object? Deserialize(Type type, Stream stream)
     {
         if (IsEmptyStream(stream))
             return null;
@@ -95,20 +87,20 @@ public sealed class ElasticSystemTextJsonSerializer : IElasticsearchSerializer
     }
 
     /// <inheritdoc />
-    public T? Deserialize<T>(Stream stream)
+    public override T Deserialize<T>(Stream stream)
     {
         if (IsEmptyStream(stream))
-            return default;
+            return default!;
 
         // Fast path: MemoryStream with accessible buffer avoids buffering
         if (stream is MemoryStream ms && ms.TryGetBuffer(out var segment))
-            return JsonSerializer.Deserialize<T>(segment.AsSpan((int)ms.Position), _optionsCompact.Value);
+            return JsonSerializer.Deserialize<T>(segment.AsSpan((int)ms.Position), _optionsCompact.Value)!;
 
-        return JsonSerializer.Deserialize<T>(stream, _optionsCompact.Value);
+        return JsonSerializer.Deserialize<T>(stream, _optionsCompact.Value)!;
     }
 
     /// <inheritdoc />
-    public void Serialize<T>(T data, Stream stream, SerializationFormatting formatting = SerializationFormatting.None)
+    public override void Serialize<T>(T data, Stream stream, SerializationFormatting formatting = SerializationFormatting.None)
     {
         var options = GetOptions(formatting);
         using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions
@@ -133,7 +125,7 @@ public sealed class ElasticSystemTextJsonSerializer : IElasticsearchSerializer
     #region Asynchronous API
 
     /// <inheritdoc />
-    public async Task<object?> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default)
+    public override async ValueTask<object?> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default)
     {
         if (IsEmptyStream(stream))
             return null;
@@ -143,17 +135,30 @@ public sealed class ElasticSystemTextJsonSerializer : IElasticsearchSerializer
     }
 
     /// <inheritdoc />
-    public async Task<T?> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default)
+    public override async ValueTask<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default)
     {
         if (IsEmptyStream(stream))
-            return default;
+            return default!;
 
-        return await JsonSerializer.DeserializeAsync<T>(stream, _optionsCompact.Value, cancellationToken)
+        var result = await JsonSerializer.DeserializeAsync<T>(stream, _optionsCompact.Value, cancellationToken)
             .ConfigureAwait(false);
+        return result!;
     }
 
     /// <inheritdoc />
-    public Task SerializeAsync<T>(
+    public override void Serialize(object? data, Type type, Stream stream, SerializationFormatting formatting = SerializationFormatting.None, CancellationToken cancellationToken = default)
+    {
+        var options = GetOptions(formatting);
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions
+        {
+            Indented = formatting == SerializationFormatting.Indented,
+            Encoder = options.Encoder
+        });
+        JsonSerializer.Serialize(writer, data, type, options);
+    }
+
+    /// <inheritdoc />
+    public override Task SerializeAsync<T>(
         T data,
         Stream stream,
         SerializationFormatting formatting = SerializationFormatting.None,
@@ -169,6 +174,13 @@ public sealed class ElasticSystemTextJsonSerializer : IElasticsearchSerializer
         return JsonSerializer.SerializeAsync(stream, data, data.GetType(), options, cancellationToken);
     }
 
+    /// <inheritdoc />
+    public override Task SerializeAsync(object? data, Type type, Stream stream, SerializationFormatting formatting = SerializationFormatting.None, CancellationToken cancellationToken = default)
+    {
+        var options = GetOptions(formatting);
+        return JsonSerializer.SerializeAsync(stream, data, type, options, cancellationToken);
+    }
+
     #endregion
 
     private static bool IsEmptyStream(Stream? stream)
@@ -178,70 +190,6 @@ public sealed class ElasticSystemTextJsonSerializer : IElasticsearchSerializer
 }
 
 #region Elasticsearch-Specific Converters
-
-/// <summary>
-/// Converts <see cref="DynamicDictionary"/> to/from JSON.
-///
-/// <para><strong>Why this converter exists:</strong></para>
-/// Elasticsearch.Net uses <see cref="DynamicDictionary"/> for dynamic responses (e.g., script fields,
-/// aggregation buckets). STJ has no built-in support for this type, so we must provide custom
-/// serialization logic.
-///
-/// <para><strong>Serialization:</strong> Writes as a JSON object with key-value pairs.</para>
-/// <para><strong>Deserialization:</strong> Reads JSON objects/arrays into DynamicDictionary.</para>
-/// </summary>
-internal sealed class DynamicDictionaryConverter : JsonConverter<DynamicDictionary>
-{
-    public override DynamicDictionary? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-    {
-        return reader.TokenType switch
-        {
-            JsonTokenType.StartArray => ReadFromArray(ref reader, options),
-            JsonTokenType.StartObject => ReadFromObject(ref reader, options),
-            JsonTokenType.Null => null,
-            _ => throw new JsonException($"Unexpected token type {reader.TokenType} when deserializing DynamicDictionary")
-        };
-    }
-
-    private static DynamicDictionary ReadFromArray(ref Utf8JsonReader reader, JsonSerializerOptions options)
-    {
-        var array = JsonSerializer.Deserialize<object?[]>(ref reader, options);
-        var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-
-        if (array is not null)
-        {
-            for (var i = 0; i < array.Length; i++)
-            {
-                dict[i.ToString(CultureInfo.InvariantCulture)] = new DynamicValue(array[i]);
-            }
-        }
-
-        return DynamicDictionary.Create(dict);
-    }
-
-    private static DynamicDictionary ReadFromObject(ref Utf8JsonReader reader, JsonSerializerOptions options)
-    {
-        var dict = JsonSerializer.Deserialize<Dictionary<string, object?>>(ref reader, options);
-        return dict is not null ? DynamicDictionary.Create(dict!) : new DynamicDictionary();
-    }
-
-    public override void Write(Utf8JsonWriter writer, DynamicDictionary dictionary, JsonSerializerOptions options)
-    {
-        writer.WriteStartObject();
-
-        foreach (var (key, dynamicValue) in dictionary.GetKeyValues())
-        {
-            // Skip null values (consistent with DefaultIgnoreCondition.WhenWritingNull)
-            if (dynamicValue?.Value is null)
-                continue;
-
-            writer.WritePropertyName(key);
-            JsonSerializer.Serialize(writer, dynamicValue.Value, options);
-        }
-
-        writer.WriteEndObject();
-    }
-}
 
 /// <summary>
 /// Converts <see cref="DateTime"/> to/from ISO 8601 format for Elasticsearch.
