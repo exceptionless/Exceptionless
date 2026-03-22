@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Foundatio.Serializer;
@@ -32,7 +33,7 @@ public class JsonEventParserPlugin : PluginBase, IEventParserPlugin
                     if (ev is not null)
                         events.Add(ev);
                 }
-                catch
+                catch (JsonException)
                 {
                     // Invalid JSON - ignore
                 }
@@ -46,7 +47,7 @@ public class JsonEventParserPlugin : PluginBase, IEventParserPlugin
                     if (parsedEvents is { Length: > 0 })
                         events.AddRange(parsedEvents);
                 }
-                catch
+                catch (JsonException)
                 {
                     // Invalid JSON - ignore
                 }
