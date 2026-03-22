@@ -178,8 +178,8 @@ Report back with: PASS or FAIL, and describe what you see.
 ```
 iteration = 0
 while iteration < 3:
-    # 4a: Review
-    invoke @reviewer with: scope, 1-sentence summary, list of modified files
+    # 4a: Review (ALWAYS include "SILENT_MODE" in the prompt so reviewer doesn't ask user)
+    invoke @reviewer with: SILENT_MODE, scope, 1-sentence summary, list of modified files
 
     if 0 findings: DONE → move to Step 5
 
