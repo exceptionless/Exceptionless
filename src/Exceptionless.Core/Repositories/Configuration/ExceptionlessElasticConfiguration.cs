@@ -1,4 +1,5 @@
-using Elasticsearch.Net;
+using Elastic.Clients.Elasticsearch;
+using Elastic.Transport;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Queries;
@@ -12,8 +13,8 @@ using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Resilience;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
-using Nest;
 using System.Text.Json;
 
 namespace Exceptionless.Core.Repositories.Configuration;
@@ -30,10 +31,11 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
         ICacheClient cacheClient,
         IMessageBus messageBus,
         IServiceProvider serviceProvider,
+        ITextSerializer serializer,
         TimeProvider timeProvider,
         IResiliencePolicyProvider resiliencePolicyProvider,
         ILoggerFactory loggerFactory
-    ) : base(workItemQueue, cacheClient, messageBus, timeProvider, resiliencePolicyProvider, loggerFactory)
+    ) : base(workItemQueue, cacheClient, messageBus, serializer, timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _appOptions = appOptions;
         _jsonSerializerOptions = jsonSerializerOptions;
@@ -75,36 +77,36 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
     public UserIndex Users { get; }
     public WebHookIndex WebHooks { get; }
 
-    protected override IElasticClient CreateElasticClient()
+    protected override ElasticsearchClient CreateElasticClient()
     {
         var connectionPool = CreateConnectionPool();
         var serializer = new ElasticSystemTextJsonSerializer(_jsonSerializerOptions);
-        var settings = new ConnectionSettings(connectionPool, (_, _) => serializer);
+        var settings = new ElasticsearchClientSettings(connectionPool, sourceSerializer: (_, _) => serializer);
 
         ConfigureSettings(settings);
         foreach (var index in Indexes)
             index.ConfigureSettings(settings);
 
         if (!String.IsNullOrEmpty(_appOptions.ElasticsearchOptions.UserName) && !String.IsNullOrEmpty(_appOptions.ElasticsearchOptions.Password))
-            settings.BasicAuthentication(_appOptions.ElasticsearchOptions.UserName, _appOptions.ElasticsearchOptions.Password);
+            settings.Authentication(new BasicAuthentication(_appOptions.ElasticsearchOptions.UserName, _appOptions.ElasticsearchOptions.Password));
 
-        var client = new ElasticClient(settings);
+        var client = new ElasticsearchClient(settings);
         return client;
     }
 
-    protected override IConnectionPool CreateConnectionPool()
+    protected override NodePool CreateConnectionPool()
     {
-        var serverUris = Options?.ServerUrl.Split(',').Select(url => new Uri(url));
-        return new StaticConnectionPool(serverUris);
+        var serverUris = Options.ServerUrl?.Split(',').Select(url => new Uri(url))
+            ?? throw new InvalidOperationException("ElasticsearchOptions.ServerUrl is not configured.");
+        return new StaticNodePool(serverUris);
     }
 
-    protected override void ConfigureSettings(ConnectionSettings settings)
+    protected override void ConfigureSettings(ElasticsearchClientSettings settings)
     {
         if (_appOptions.AppMode == AppMode.Development)
             settings.EnableDebugMode();
 
-        settings.ServerCertificateValidationCallback(CertificateValidations.AllowAll);
-        settings.EnableApiVersioningHeader();
+        settings.ServerCertificateValidationCallback((_, _, _, _) => true);
         settings.DisableDirectStreaming();
         settings.EnableTcpKeepAlive(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(2));
         settings.DefaultFieldNameInferrer(p => p.ToLowerUnderscoredWords());
