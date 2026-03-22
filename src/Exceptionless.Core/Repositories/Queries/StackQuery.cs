@@ -4,7 +4,8 @@ using Exceptionless.Core.Repositories.Options;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Options;
-using Nest;
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 
 namespace Exceptionless.Core.Repositories
 {
@@ -63,14 +64,14 @@ namespace Exceptionless.Core.Repositories.Queries
             var excludedStackIds = ctx.Source.GetExcludedStacks();
 
             if (stackIds.Count == 1)
-                ctx.Filter &= Query<T>.Term(_stackIdFieldName, stackIds.Single());
+                ctx.Filter &= new TermQuery { Field = _stackIdFieldName, Value = stackIds.Single() };
             else if (stackIds.Count > 1)
-                ctx.Filter &= Query<T>.Terms(d => d.Field(_stackIdFieldName).Terms(stackIds));
+                ctx.Filter &= new TermsQuery { Field = _stackIdFieldName, Terms = new TermsQueryField(stackIds.Select(id => (FieldValue)id).ToList()) };
 
             if (excludedStackIds.Count == 1)
-                ctx.Filter &= Query<T>.Bool(b => b.MustNot(Query<T>.Term(_stackIdFieldName, excludedStackIds.Single())));
+                ctx.Filter &= new BoolQuery { MustNot = new Query[] { new TermQuery { Field = _stackIdFieldName, Value = excludedStackIds.Single() } } };
             else if (excludedStackIds.Count > 1)
-                ctx.Filter &= Query<T>.Bool(b => b.MustNot(Query<T>.Terms(d => d.Field(_stackIdFieldName).Terms(excludedStackIds))));
+                ctx.Filter &= new BoolQuery { MustNot = new Query[] { new TermsQuery { Field = _stackIdFieldName, Terms = new TermsQueryField(excludedStackIds.Select(id => (FieldValue)id).ToList()) } } };
 
             return Task.CompletedTask;
         }

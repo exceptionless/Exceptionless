@@ -1,11 +1,11 @@
 ﻿using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
+using Elastic.Clients.Elasticsearch;
 using Exceptionless.DateTimeExtensions;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Nest;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -33,11 +33,13 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 
     public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, CommandOptionsDescriptor<PersistentEvent>? options = null)
     {
-        var filter = Query<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.Session) && !Query<PersistentEvent>.Exists(f => f.Field(e => e.Idx![Event.KnownDataKeys.SessionEnd + "-d"]));
+        var query = new RepositoryQuery<PersistentEvent>()
+            .FilterExpression($"type:{Event.KnownTypes.Session} AND -_exists_:idx.{Event.KnownDataKeys.SessionEnd}-d");
+        
         if (createdBeforeUtc.Ticks > 0)
-            filter &= Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThanOrEquals(createdBeforeUtc));
+            query = query.DateRange(null, createdBeforeUtc, (PersistentEvent e) => e.Date);
 
-        return FindAsync(q => q.ElasticFilter(filter).SortDescending(e => e.Date), options);
+        return FindAsync(q => query.SortDescending(e => e.Date), options);
     }
 
     /// <summary>
@@ -64,9 +66,9 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         if (utcStart.HasValue && utcEnd.HasValue)
             query = query.DateRange(utcStart, utcEnd, InferField(e => e.Date)).Index(utcStart, utcEnd);
         else if (utcEnd.HasValue)
-            query = query.ElasticFilter(Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThan(utcEnd)));
+            query = query.FilterExpression($"date:<{utcEnd.Value:O}");
         else if (utcStart.HasValue)
-            query = query.ElasticFilter(Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).GreaterThan(utcStart)));
+            query = query.FilterExpression($"date:>{utcStart.Value:O}");
 
         if (!String.IsNullOrEmpty(clientIpAddress))
             query = query.FieldEquals(EventIndex.Alias.IpAddress, clientIpAddress);
@@ -76,8 +78,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 
     public Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId)
     {
-        var filter = Query<PersistentEvent>.Term(e => e.ReferenceId, referenceId);
-        return FindAsync(q => q.Project(projectId).ElasticFilter(filter).SortDescending(e => e.Date), o => o.PageLimit(10));
+        return FindAsync(q => q.Project(projectId).FilterExpression($"reference_id:{referenceId}").SortDescending(e => e.Date), o => o.PageLimit(10));
     }
 
     public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter? systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)
@@ -113,8 +114,8 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
             .SortDescending(e => e.Date)
             .Include(e => e.Id, e => e.Date)
             .AppFilter(systemFilter)
-            .ElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
             .FilterExpression(String.Concat(EventIndex.Alias.StackId, ":", ev.StackId))
+            .FilterExpression($"-_id:{ev.Id}")
             .EnforceEventStackFilter(false), o => o.PageLimit(10));
 
         if (results.Total == 0)
@@ -153,8 +154,8 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
             .SortAscending(e => e.Date)
             .Include(e => e.Id, e => e.Date)
             .AppFilter(systemFilter)
-            .ElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
             .FilterExpression(String.Concat(EventIndex.Alias.StackId, ":", ev.StackId))
+            .FilterExpression($"-_id:{ev.Id}")
             .EnforceEventStackFilter(false), o => o.PageLimit(10));
 
         if (results.Total == 0)

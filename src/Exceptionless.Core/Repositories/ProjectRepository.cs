@@ -2,11 +2,11 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
+using Elastic.Clients.Elasticsearch;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
-using Nest;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -59,7 +59,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
         if (organizationIds.Count == 0)
             return Task.FromResult(new FindResults<Project>());
 
-        return FindAsync(q => q.Organization(organizationIds).SortAscending(p => p.Name.Suffix("keyword")), options);
+        return FindAsync(q => q.Organization(organizationIds).SortAscending((Field)"name.keyword"), options);
     }
 
     public Task<FindResults<Project>> GetByFilterAsync(AppFilter systemFilter, string? userFilter, string? sort, CommandOptionsDescriptor<Project>? options = null)
@@ -68,14 +68,16 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
             .AppFilter(systemFilter)
             .FilterExpression(userFilter);
 
-        query = !String.IsNullOrEmpty(sort) ? query.SortExpression(sort) : query.SortAscending(p => p.Name.Suffix("keyword"));
+        query = !String.IsNullOrEmpty(sort) ? query.SortExpression(sort) : query.SortAscending((Field)"name.keyword");
         return FindAsync(q => query, options);
     }
 
     public Task<FindResults<Project>> GetByNextSummaryNotificationOffsetAsync(byte hourToSendNotificationsAfterUtcMidnight, int limit = 50)
     {
-        var filter = Query<Project>.Range(r => r.Field(o => o.NextSummaryEndOfDayTicks).LessThan(_timeProvider.GetUtcNow().UtcDateTime.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
-        return FindAsync(q => q.ElasticFilter(filter).SortAscending(p => p.OrganizationId), o => o.SearchAfterPaging().PageLimit(limit));
+        long threshold = _timeProvider.GetUtcNow().UtcDateTime.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight);
+        return FindAsync(q => q
+            .FilterExpression($"next_summary_end_of_day_ticks:<{threshold}")
+            .SortAscending(p => p.OrganizationId), o => o.SearchAfterPaging().PageLimit(limit));
     }
 
     public async Task IncrementNextSummaryEndOfDayTicksAsync(IReadOnlyCollection<Project> projects)

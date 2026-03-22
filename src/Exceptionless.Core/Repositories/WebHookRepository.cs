@@ -4,7 +4,6 @@ using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Nest;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -26,8 +25,7 @@ public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<
         ArgumentException.ThrowIfNullOrEmpty(organizationId);
         ArgumentException.ThrowIfNullOrEmpty(projectId);
 
-        var filter = (Query<WebHook>.Term(e => e.OrganizationId, organizationId) && !Query<WebHook>.Exists(e => e.Field(f => f.ProjectId))) || Query<WebHook>.Term(e => e.ProjectId, projectId);
-        return FindAsync(q => q.ElasticFilter(filter).Sort(f => f.CreatedUtc), o => o.Cache(PagedCacheKey(organizationId, projectId)));
+        return FindAsync(q => q.FilterExpression($"(organization_id:{organizationId} AND -_exists_:project_id) OR project_id:{projectId}").Sort(f => f.CreatedUtc), o => o.Cache(PagedCacheKey(organizationId, projectId)));
     }
 
     public override Task<FindResults<WebHook>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<WebHook>? options = null)

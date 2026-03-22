@@ -1,10 +1,10 @@
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
+using Elastic.Clients.Elasticsearch;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
-using Nest;
 using User = Exceptionless.Core.Models.User;
 
 namespace Exceptionless.Core.Repositories;
@@ -33,7 +33,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
             return null;
 
         emailAddress = emailAddress.Trim().ToLowerInvariant();
-        var hit = await FindOneAsync(q => q.ElasticFilter(Query<User>.Term(u => u.EmailAddress.Suffix("keyword"), emailAddress)), o => o.Cache(EmailCacheKey(emailAddress)));
+        var hit = await FindOneAsync(q => q.FilterExpression($"email_address.keyword:\"{emailAddress}\""), o => o.Cache(EmailCacheKey(emailAddress)));
         return hit?.Document;
     }
 
@@ -42,7 +42,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         if (String.IsNullOrEmpty(token))
             return null;
 
-        var hit = await FindOneAsync(q => q.ElasticFilter(Query<User>.Term(u => u.PasswordResetToken, token)));
+        var hit = await FindOneAsync(q => q.FilterExpression($"password_reset_token:{token}"));
         return hit?.Document;
     }
 
@@ -52,8 +52,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
             return null;
 
         provider = provider.ToLowerInvariant();
-        var filter = Query<User>.Term(u => u.OAuthAccounts.First().ProviderUserId, providerUserId);
-        var results = (await FindAsync(q => q.ElasticFilter(filter))).Documents;
+        var results = (await FindAsync(q => q.FilterExpression($"oauth_accounts.provider_user_id:{providerUserId}"))).Documents;
         return results.FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider));
     }
 
@@ -62,8 +61,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         if (String.IsNullOrEmpty(token))
             return null;
 
-        var filter = Query<User>.Term(u => u.VerifyEmailAddressToken, token);
-        var hit = await FindOneAsync(q => q.ElasticFilter(filter));
+        var hit = await FindOneAsync(q => q.FilterExpression($"verify_email_address_token:{token}"));
         return hit?.Document;
     }
 
@@ -76,8 +74,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         if (commandOptions.ShouldUseCache())
             throw new Exception("Caching of paged queries is not allowed");
 
-        var filter = Query<User>.Term(u => u.OrganizationIds, organizationId);
-        return FindAsync(q => q.ElasticFilter(filter).SortAscending(u => u.EmailAddress.Suffix("keyword")), o => commandOptions);
+        return FindAsync(q => q.FilterExpression($"organization_ids:{organizationId}").SortAscending((Field)"email_address.keyword"), o => commandOptions);
     }
 
     protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<User>> findHits, ICommandOptions options, bool isDirtyRead)
