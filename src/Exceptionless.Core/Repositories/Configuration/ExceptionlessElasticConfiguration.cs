@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Transport;
 using Exceptionless.Core.Configuration;
@@ -15,7 +16,6 @@ using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Resilience;
 using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
 
 namespace Exceptionless.Core.Repositories.Configuration;
 

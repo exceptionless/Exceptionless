@@ -1,3 +1,5 @@
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -8,8 +10,6 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Utility;
 using Foundatio.Utility;
-using Elastic.Clients.Elasticsearch;
-using Elastic.Clients.Elasticsearch.QueryDsl;
 using Xunit;
 
 namespace Exceptionless.Tests.Migrations;

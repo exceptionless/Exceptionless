@@ -1,7 +1,7 @@
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Parsers.LuceneQueries.Nodes;
 using Foundatio.Parsers.LuceneQueries.Visitors;
-using Elastic.Clients.Elasticsearch.QueryDsl;
 
 namespace Exceptionless.Core.Repositories.Queries;
 
@@ -35,7 +35,7 @@ public class StackDateFixedQueryVisitor : ChainableQueryVisitor
                 MustNot = new Query[] { new ExistsQuery { Field = _dateFixedFieldName } }
             };
         }
-        
+
         node.SetQuery(query);
 
         return Task.FromResult<IQueryNode>(node);

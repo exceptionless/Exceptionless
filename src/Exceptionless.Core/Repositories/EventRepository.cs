@@ -1,7 +1,7 @@
-﻿using Exceptionless.Core.Models;
+﻿using Elastic.Clients.Elasticsearch;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
-using Elastic.Clients.Elasticsearch;
 using Exceptionless.DateTimeExtensions;
 using FluentValidation;
 using Foundatio.Repositories;
@@ -35,7 +35,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
     {
         var query = new RepositoryQuery<PersistentEvent>()
             .FilterExpression($"type:{Event.KnownTypes.Session} AND -_exists_:idx.{Event.KnownDataKeys.SessionEnd}-d");
-        
+
         if (createdBeforeUtc.Ticks > 0)
             query = query.DateRange(null, createdBeforeUtc, (PersistentEvent e) => e.Date);
 
@@ -66,9 +66,9 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         if (utcStart.HasValue && utcEnd.HasValue)
             query = query.DateRange(utcStart, utcEnd, InferField(e => e.Date)).Index(utcStart, utcEnd);
         else if (utcEnd.HasValue)
-            query = query.FilterExpression($"date:<{utcEnd.Value:O}");
+            query = query.FilterExpression($"date:<\"{utcEnd.Value:O}\"");
         else if (utcStart.HasValue)
-            query = query.FilterExpression($"date:>{utcStart.Value:O}");
+            query = query.FilterExpression($"date:>\"{utcStart.Value:O}\"");
 
         if (!String.IsNullOrEmpty(clientIpAddress))
             query = query.FieldEquals(EventIndex.Alias.IpAddress, clientIpAddress);

@@ -3,6 +3,7 @@ using System.IO.Compression;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Web;
 using Exceptionless.Core.Billing;
@@ -1642,7 +1643,7 @@ public class EventControllerTests : IntegrationTestsBase
             .Replace("<EVENT_ID>", processedEvent.Id)
             .Replace("<STACK_ID>", processedEvent.StackId);
 
-        Assert.Equal(ToPrettyJson(expectedJson), ToPrettyJson(actualJson));
+        Assert.Equal(ToNormalizedJson(expectedJson), ToNormalizedJson(actualJson));
     }
 
     [Fact]
@@ -1838,9 +1839,44 @@ public class EventControllerTests : IntegrationTestsBase
     private string ToPrettyJson(string json)
     {
         using var document = JsonDocument.Parse(json);
-        var prettyJsonOptions = new JsonSerializerOptions(_jsonSerializerOptions) {
+        var prettyJsonOptions = new JsonSerializerOptions(_jsonSerializerOptions)
+        {
             WriteIndented = true
         };
         return JsonSerializer.Serialize(document.RootElement, prettyJsonOptions);
+    }
+
+    /// <summary>
+    /// Normalizes JSON for comparison by sorting object keys recursively.
+    /// This makes comparisons independent of property serialization order.
+    /// </summary>
+    private string ToNormalizedJson(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        var normalized = SortElement(document.RootElement);
+        var options = new JsonSerializerOptions(_jsonSerializerOptions)
+        {
+            WriteIndented = true
+        };
+        return JsonSerializer.Serialize(normalized, options);
+    }
+
+    private static JsonNode? SortElement(JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Object:
+                var obj = new JsonObject();
+                foreach (var prop in element.EnumerateObject().OrderBy(p => p.Name, StringComparer.Ordinal))
+                    obj[prop.Name] = SortElement(prop.Value);
+                return obj;
+            case JsonValueKind.Array:
+                var arr = new JsonArray();
+                foreach (var item in element.EnumerateArray())
+                    arr.Add(SortElement(item));
+                return arr;
+            default:
+                return JsonNode.Parse(element.GetRawText());
+        }
     }
 }

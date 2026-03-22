@@ -1,3 +1,4 @@
+using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Core.Repositories.Options;
@@ -11,7 +12,6 @@ using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
 using Microsoft.Extensions.Logging;
-using Elastic.Clients.Elasticsearch;
 using DateRange = Foundatio.Repositories.DateRange;
 
 namespace Exceptionless.Core.Repositories

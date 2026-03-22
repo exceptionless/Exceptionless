@@ -1,4 +1,8 @@
-﻿using Exceptionless.Core.Models;
+﻿using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Aggregations;
+using Elastic.Clients.Elasticsearch.Core.ReindexRethrottle;
+using Elastic.Clients.Elasticsearch.QueryDsl;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Caching;
@@ -11,10 +15,6 @@ using Foundatio.Repositories.Models;
 using Foundatio.Resilience;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
-using Elastic.Clients.Elasticsearch;
-using Elastic.Clients.Elasticsearch.Aggregations;
-using Elastic.Clients.Elasticsearch.Core.ReindexRethrottle;
-using Elastic.Clients.Elasticsearch.QueryDsl;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Core.Jobs;

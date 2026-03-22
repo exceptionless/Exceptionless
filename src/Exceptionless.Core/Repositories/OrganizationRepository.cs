@@ -1,9 +1,9 @@
+using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories.Configuration;
-using Elastic.Clients.Elasticsearch;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
@@ -48,7 +48,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
     public Task<FindResults<Organization>> GetByCriteriaAsync(string? criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null)
     {
         var filterParts = new List<string>();
-        
+
         if (!String.IsNullOrWhiteSpace(criteria))
             filterParts.Add($"(id:{criteria} OR name:{criteria})");
 

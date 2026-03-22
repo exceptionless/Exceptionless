@@ -1,9 +1,9 @@
 ﻿using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Foundatio.Repositories.Exceptions;
 using Foundatio.Jobs;
 using Foundatio.Queues;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Resilience;
 using Microsoft.Extensions.Logging;

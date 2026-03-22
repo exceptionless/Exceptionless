@@ -1,12 +1,12 @@
 using System.Diagnostics;
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Core.ReindexRethrottle;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Caching;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Migrations;
 using Microsoft.Extensions.Logging;
-using Elastic.Clients.Elasticsearch;
-using Elastic.Clients.Elasticsearch.Core.ReindexRethrottle;
 
 namespace Exceptionless.Core.Migrations;
 

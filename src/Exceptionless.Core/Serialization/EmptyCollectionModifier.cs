@@ -1,6 +1,4 @@
 using System.Collections;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
 namespace Exceptionless.Core.Serialization;
@@ -41,26 +39,9 @@ public static class EmptyCollectionModifier
 
     private static bool IsEmptyCollection(object? value)
     {
-        return value switch
-        {
-            null => true,
-            string => false, // strings are IEnumerable but should not be treated as collections
-            ICollection { Count: 0 } => true,
-            IEnumerable enumerable => !HasAnyElement(enumerable),
-            _ => false
-        };
-    }
-
-    private static bool HasAnyElement(IEnumerable enumerable)
-    {
-        var enumerator = enumerable.GetEnumerator();
-        try
-        {
-            return enumerator.MoveNext();
-        }
-        finally
-        {
-            (enumerator as IDisposable)?.Dispose();
-        }
+        // Only skip null values. Empty collections (Count: 0) are intentional
+        // and should be serialized — Newtonsoft's NullValueHandling.Ignore only
+        // skipped nulls, not empty collections.
+        return value is null;
     }
 }
