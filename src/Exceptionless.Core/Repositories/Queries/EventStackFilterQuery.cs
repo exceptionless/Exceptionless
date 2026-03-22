@@ -11,7 +11,7 @@ using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
 using Microsoft.Extensions.Logging;
-using Nest;
+using Elastic.Clients.Elasticsearch;
 using DateRange = Foundatio.Repositories.DateRange;
 
 namespace Exceptionless.Core.Repositories

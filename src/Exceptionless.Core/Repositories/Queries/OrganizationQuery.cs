@@ -4,7 +4,8 @@ using Exceptionless.Core.Repositories.Options;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Options;
-using Nest;
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 
 namespace Exceptionless.Core.Repositories
 {
@@ -54,9 +55,9 @@ namespace Exceptionless.Core.Repositories.Queries
                 return Task.CompletedTask;
 
             if (organizationIds.Count == 1)
-                ctx.Filter &= Query<T>.Term(_organizationIdFieldName, organizationIds.Single());
+                ctx.Filter &= new TermQuery { Field = _organizationIdFieldName, Value = organizationIds.Single() };
             else
-                ctx.Filter &= Query<T>.Terms(d => d.Field(_organizationIdFieldName).Terms(organizationIds));
+                ctx.Filter &= new TermsQuery { Field = _organizationIdFieldName, Terms = new TermsQueryField(organizationIds.Select(id => (FieldValue)id).ToList()) };
 
             return Task.CompletedTask;
         }

@@ -3,10 +3,10 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories.Configuration;
+using Elastic.Clients.Elasticsearch;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Nest;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -33,8 +33,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
     {
         ArgumentException.ThrowIfNullOrEmpty(token);
 
-        var filter = Query<Organization>.Term(f => f.Field(o => o.Invites.First().Token).Value(token));
-        var hit = await FindOneAsync(q => q.ElasticFilter(filter));
+        var hit = await FindOneAsync(q => q.FilterExpression($"invites.token:{token}"));
         return hit?.Document;
     }
 
@@ -42,41 +41,37 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
     {
         ArgumentException.ThrowIfNullOrEmpty(customerId);
 
-        var filter = Query<Organization>.Term(f => f.Field(o => o.StripeCustomerId).Value(customerId));
-        var hit = await FindOneAsync(q => q.ElasticFilter(filter));
+        var hit = await FindOneAsync(q => q.FilterExpression($"stripe_customer_id:{customerId}"));
         return hit?.Document;
     }
 
     public Task<FindResults<Organization>> GetByCriteriaAsync(string? criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null)
     {
-        var filter = Query<Organization>.MatchAll();
+        var filterParts = new List<string>();
+        
         if (!String.IsNullOrWhiteSpace(criteria))
-            filter &= (Query<Organization>.Term(o => o.Id, criteria) || Query<Organization>.Term(o => o.Name, criteria));
+            filterParts.Add($"(id:{criteria} OR name:{criteria})");
 
         if (paid.HasValue)
         {
             if (paid.Value)
-                filter &= !Query<Organization>.Term(o => o.PlanId, _plans.FreePlan.Id);
+                filterParts.Add($"-plan_id:{_plans.FreePlan.Id}");
             else
-                filter &= Query<Organization>.Term(o => o.PlanId, _plans.FreePlan.Id);
+                filterParts.Add($"plan_id:{_plans.FreePlan.Id}");
         }
 
         if (suspended.HasValue)
         {
             if (suspended.Value)
-                filter &= (!Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) &&
-                        !Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) &&
-                        !Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Canceled)
-                    ) || Query<Organization>.Term(o => o.IsSuspended, true);
+                filterParts.Add($"((-billing_status:{(int)BillingStatus.Active} AND -billing_status:{(int)BillingStatus.Trialing} AND -billing_status:{(int)BillingStatus.Canceled}) OR is_suspended:true)");
             else
-                filter &= (
-                        Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) &&
-                        Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) &&
-                        Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Canceled)
-                    ) || Query<Organization>.Term(o => o.IsSuspended, false);
+                filterParts.Add($"((billing_status:{(int)BillingStatus.Active} AND billing_status:{(int)BillingStatus.Trialing} AND billing_status:{(int)BillingStatus.Canceled}) OR is_suspended:false)");
         }
 
-        var query = new RepositoryQuery<Organization>().ElasticFilter(filter);
+        var query = new RepositoryQuery<Organization>();
+        if (filterParts.Count > 0)
+            query = query.FilterExpression(String.Join(" AND ", filterParts));
+
         switch (sortBy)
         {
             case OrganizationSortBy.Newest:
@@ -89,7 +84,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
             //    query.WithSortDescending((Organization o) => o.TotalEventCount);
             //    break;
             default:
-                query.SortAscending(o => o.Name.Suffix("keyword"));
+                query.SortAscending((Field)"name.keyword");
                 break;
         }
 
