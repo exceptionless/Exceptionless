@@ -263,7 +263,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
         // STJ throws on empty input whereas Newtonsoft returned default(T).
         var body = await response.Content.ReadAsStringAsync();
-        if (String.IsNullOrEmpty(body))
+        if (String.IsNullOrWhiteSpace(body))
             return default;
 
         var settings = GetService<JsonSerializerOptions>();
