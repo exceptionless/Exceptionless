@@ -74,7 +74,7 @@ public sealed class FixDuplicateStacks : MigrationBase
                     projectId = parts[0];
                     signature = parts[1];
 
-                    var stacks = await _stackRepository.FindAsync(q => q.Project(projectId).FilterExpression($"signature_hash:{signature}"));
+                    var stacks = await _stackRepository.FindAsync(q => q.Project(projectId).FieldEquals(s => s.SignatureHash, signature));
                     if (stacks.Documents.Count < 2)
                     {
                         _logger.LogError("Did not find multiple stacks with signature {SignatureHash} and project {ProjectId}", signature, projectId);

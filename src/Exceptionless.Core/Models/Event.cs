@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using Exceptionless.Core.Extensions;
 
@@ -64,7 +63,7 @@ public class Event : IData, IJsonOnDeserialized
     /// </summary>
     [JsonExtensionData]
     [JsonInclude]
-    internal Dictionary<string, JsonElement>? ExtensionData { get; set; }
+    internal Dictionary<string, object?>? ExtensionData { get; set; }
 
     /// <summary>
     /// An optional identifier to be used for referencing this event instance at a later time.
@@ -84,27 +83,9 @@ public class Event : IData, IJsonOnDeserialized
         Data ??= new DataDictionary();
         foreach (var kvp in ExtensionData)
         {
-            Data[kvp.Key] = ConvertJsonElement(kvp.Value);
+            Data[kvp.Key] = kvp.Value;
         }
         ExtensionData = null;
-    }
-
-    /// <summary>
-    /// Converts a <see cref="JsonElement"/> to a .NET type so downstream code
-    /// (e.g., <c>value as string</c>) works correctly.
-    /// </summary>
-    private static object? ConvertJsonElement(JsonElement element)
-    {
-        return element.ValueKind switch
-        {
-            JsonValueKind.String => element.GetString(),
-            JsonValueKind.Number => element.TryGetInt64(out long l) ? (object)l : element.GetDouble(),
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            JsonValueKind.Null or JsonValueKind.Undefined => null,
-            // For objects/arrays, keep as JsonElement — GetValue<T> handles these
-            _ => element
-        };
     }
 
     protected bool Equals(Event other)
