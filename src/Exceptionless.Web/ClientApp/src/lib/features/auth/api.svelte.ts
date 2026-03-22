@@ -1,7 +1,9 @@
 import { env } from '$env/dynamic/public';
 import { getIntercomTokenSessionKey, intercomTokenRefreshIntervalMs } from '$features/intercom/config';
+import { organization } from '$features/organizations/context.svelte';
 import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-import { createQuery } from '@tanstack/svelte-query';
+import { hide as hideIntercom, shutdown as shutdownIntercom } from '@intercom/messenger-js-sdk';
+import { createQuery, type QueryClient } from '@tanstack/svelte-query';
 
 import type { Login, TokenResult } from './models';
 
@@ -93,10 +95,23 @@ export async function login(email: string, password: string) {
     return response;
 }
 
-export async function logout() {
-    const client = useFetchClient();
-    await client.get('auth/logout', { expectedStatusCodes: [200, 401] });
-    accessToken.current = '';
+export async function logout(queryClient?: QueryClient, client = useFetchClient()) {
+    await client.get('auth/logout', { expectedStatusCodes: [200, 401, 403] });
+
+    await queryClient?.cancelQueries();
+    queryClient?.clear();
+
+    if (typeof window !== 'undefined' && 'Intercom' in window && typeof window.Intercom === 'function') {
+        hideIntercom();
+        shutdownIntercom();
+    }
+
+    organization.current = undefined;
+    if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('organization');
+    }
+
+    accessToken.current = null;
 }
 
 export async function resetPassword(passwordResetToken: string, password: string) {
