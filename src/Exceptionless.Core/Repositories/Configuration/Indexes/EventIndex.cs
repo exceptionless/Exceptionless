@@ -57,7 +57,6 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
                 .Add("idx_string", t => t.Match("*-s").Mapping(m => m.Keyword(s => s.IgnoreAbove(1024)))))
             .Properties(p => p
                 .SetupDefaults()
-                .Keyword(e => e.Id)
                 .Keyword(e => e.OrganizationId)
                     .FieldAlias(Alias.OrganizationId, a => a.Path(f => f.OrganizationId))
                 .Keyword(e => e.ProjectId)
