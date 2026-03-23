@@ -358,7 +358,7 @@ public class SerializerTests : TestWithServices
     }
 
     [Fact]
-    public void SerializeToString_EnumValues_RoundtripAsCamelCaseStrings()
+    public void SerializeToString_EnumValues_RoundtripAsIntegers()
     {
         // Arrange
         var token = new Token
@@ -376,17 +376,17 @@ public class SerializerTests : TestWithServices
         string json = _serializer.SerializeToString(token);
         var deserialized = _serializer.Deserialize<Token>(json);
 
-        // Assert — enum serializes as camelCase string, not integer
-        Assert.Contains("\"type\":\"access\"", json);
-        Assert.DoesNotContain("\"type\":1", json);
+        // Assert — enums serialize as integers to match ES index mappings
+        Assert.Contains("\"type\":1", json);
+        Assert.DoesNotContain("\"type\":\"access\"", json);
         Assert.NotNull(deserialized);
         Assert.Equal(TokenType.Access, deserialized.Type);
     }
 
     [Fact]
-    public void SerializeToString_BillingStatusEnum_RoundtripAsCamelCaseStrings()
+    public void SerializeToString_BillingStatusEnum_RoundtripAsInteger()
     {
-        // Arrange — BillingStatus.PastDue should serialize as "pastDue" (camelCase)
+        // Arrange — BillingStatus.PastDue serializes as integer 2 to match ES index mappings
         var org = new Organization
         {
             Id = "org1",
@@ -399,7 +399,7 @@ public class SerializerTests : TestWithServices
         var deserialized = _serializer.Deserialize<Organization>(json);
 
         // Assert
-        Assert.Contains("\"billing_status\":\"pastDue\"", json);
+        Assert.Contains("\"billing_status\":2", json);
         Assert.NotNull(deserialized);
         Assert.Equal(BillingStatus.PastDue, deserialized.BillingStatus);
     }
@@ -438,8 +438,8 @@ public class SerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized?.Data);
-        Assert.True(deserialized.Data.ContainsKey("mixed"));
-        var list = Assert.IsAssignableFrom<IEnumerable<object?>>(deserialized.Data["mixed"]);
+        Assert.True(deserialized!.Data!.TryGetValue("mixed", out var mixedValue));
+        var list = Assert.IsAssignableFrom<IEnumerable<object?>>(mixedValue);
         var items = list.ToList();
         Assert.Equal(5, items.Count);
     }
@@ -469,7 +469,8 @@ public class SerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(deserialized?.Data);
-        var outer = Assert.IsType<Dictionary<string, object?>>(deserialized.Data["outer"]);
+        Assert.True(deserialized!.Data!.TryGetValue("outer", out var outerValue));
+        var outer = Assert.IsType<Dictionary<string, object?>>(outerValue);
         var inner = Assert.IsType<Dictionary<string, object?>>(outer["inner"]);
         Assert.Equal(42, inner["deep"]);
     }
