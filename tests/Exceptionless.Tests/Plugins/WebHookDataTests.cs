@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
@@ -40,7 +39,7 @@ public sealed class WebHookDataTests : TestWithServices
         {
             string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"{version}.event.expected.json"));
             string expectedContent = await File.ReadAllTextAsync(filePath, TestCancellationToken);
-            AssertJsonEquivalent(expectedContent, JsonSerializer.Serialize(data, _jsonOptions));
+            JsonAssert.AssertJsonEquivalent(expectedContent, JsonSerializer.Serialize(data, _jsonOptions));
         }
         else
         {
@@ -57,7 +56,7 @@ public sealed class WebHookDataTests : TestWithServices
         {
             string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"{version}.stack.expected.json"));
             string expectedContent = await File.ReadAllTextAsync(filePath, TestCancellationToken);
-            AssertJsonEquivalent(expectedContent, JsonSerializer.Serialize(data, _jsonOptions));
+            JsonAssert.AssertJsonEquivalent(expectedContent, JsonSerializer.Serialize(data, _jsonOptions));
         }
         else
         {
@@ -106,49 +105,5 @@ public sealed class WebHookDataTests : TestWithServices
         stack.FirstOccurrence = stack.LastOccurrence = ev.Date.UtcDateTime;
 
         return new WebHookDataContext(hook, organization, project, stack, ev);
-    }
-
-    /// <summary>
-    /// Compares two JSON strings semantically, ignoring null properties that may be
-    /// present in expected but omitted by WhenWritingNull in actual.
-    /// </summary>
-    private static void AssertJsonEquivalent(string expectedJson, string actualJson)
-    {
-        var expected = JsonNode.Parse(expectedJson);
-        var actual = JsonNode.Parse(actualJson);
-        RemoveNullProperties(expected);
-        RemoveNullProperties(actual);
-        Assert.True(JsonNode.DeepEquals(expected, actual),
-            $"Expected:\n{expected?.ToJsonString(new JsonSerializerOptions { WriteIndented = true })}\n\nActual:\n{actual?.ToJsonString(new JsonSerializerOptions { WriteIndented = true })}");
-    }
-
-    private static void RemoveNullProperties(JsonNode? node)
-    {
-        if (node is not JsonObject obj)
-        {
-            return;
-        }
-
-        var keysToRemove = new List<string>();
-        foreach (var prop in obj)
-        {
-            if (prop.Value is null)
-            {
-                keysToRemove.Add(prop.Key);
-            }
-            else if (prop.Value is JsonArray arr && arr.Count == 0)
-            {
-                keysToRemove.Add(prop.Key);
-            }
-            else
-            {
-                RemoveNullProperties(prop.Value);
-            }
-        }
-
-        foreach (string key in keysToRemove)
-        {
-            obj.Remove(key);
-        }
     }
 }

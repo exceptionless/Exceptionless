@@ -356,4 +356,138 @@ public class SerializerTests : TestWithServices
         public string Name { get; set; } = "";
         public int Count { get; set; }
     }
+
+    [Fact]
+    public void SerializeToString_EnumValues_RoundtripAsCamelCaseStrings()
+    {
+        // Arrange
+        var token = new Token
+        {
+            Id = "test",
+            OrganizationId = "org1",
+            ProjectId = "proj1",
+            Type = TokenType.Access,
+            CreatedBy = "user1",
+            CreatedUtc = DateTime.UtcNow,
+            UpdatedUtc = DateTime.UtcNow
+        };
+
+        // Act
+        string json = _serializer.SerializeToString(token);
+        var deserialized = _serializer.Deserialize<Token>(json);
+
+        // Assert — enum serializes as camelCase string, not integer
+        Assert.Contains("\"type\":\"access\"", json);
+        Assert.DoesNotContain("\"type\":1", json);
+        Assert.NotNull(deserialized);
+        Assert.Equal(TokenType.Access, deserialized.Type);
+    }
+
+    [Fact]
+    public void SerializeToString_BillingStatusEnum_RoundtripAsCamelCaseStrings()
+    {
+        // Arrange — BillingStatus.PastDue should serialize as "pastDue" (camelCase)
+        var org = new Organization
+        {
+            Id = "org1",
+            Name = "Test",
+            BillingStatus = BillingStatus.PastDue
+        };
+
+        // Act
+        string json = _serializer.SerializeToString(org);
+        var deserialized = _serializer.Deserialize<Organization>(json);
+
+        // Assert
+        Assert.Contains("\"billing_status\":\"pastDue\"", json);
+        Assert.NotNull(deserialized);
+        Assert.Equal(BillingStatus.PastDue, deserialized.BillingStatus);
+    }
+
+    [Fact]
+    public void Deserialize_EnumFromIntegerValue_DeserializesCorrectly()
+    {
+        // Arrange — backward compatibility: integer enum values should still deserialize
+        /* language=json */
+        const string json = """{"id":"test","organization_id":"org1","project_id":"proj1","type":1,"created_by":"user1","created_utc":"2026-01-01T00:00:00","updated_utc":"2026-01-01T00:00:00"}""";
+
+        // Act
+        var token = _serializer.Deserialize<Token>(json);
+
+        // Assert
+        Assert.NotNull(token);
+        Assert.Equal(TokenType.Access, token.Type);
+    }
+
+    [Fact]
+    public void SerializeToString_MixedTypeArrayInDataDictionary_RoundtripsCorrectly()
+    {
+        // Arrange — DataDictionary with a mixed-type list
+        var ev = new Event
+        {
+            Message = "Test",
+            Data = new DataDictionary
+            {
+                ["mixed"] = new List<object?> { 1, "hello", true, null, 1.5 }
+            }
+        };
+
+        // Act
+        string json = _serializer.SerializeToString(ev);
+        var deserialized = _serializer.Deserialize<Event>(json);
+
+        // Assert
+        Assert.NotNull(deserialized?.Data);
+        Assert.True(deserialized.Data.ContainsKey("mixed"));
+        var list = Assert.IsAssignableFrom<IEnumerable<object?>>(deserialized.Data["mixed"]);
+        var items = list.ToList();
+        Assert.Equal(5, items.Count);
+    }
+
+    [Fact]
+    public void SerializeToString_NestedDictionaryInDataDictionary_RoundtripsCorrectly()
+    {
+        // Arrange — 3 levels deep nested dictionary
+        var ev = new Event
+        {
+            Message = "Test",
+            Data = new DataDictionary
+            {
+                ["outer"] = new Dictionary<string, object?>
+                {
+                    ["inner"] = new Dictionary<string, object?>
+                    {
+                        ["deep"] = 42
+                    }
+                }
+            }
+        };
+
+        // Act
+        string json = _serializer.SerializeToString(ev);
+        var deserialized = _serializer.Deserialize<Event>(json);
+
+        // Assert
+        Assert.NotNull(deserialized?.Data);
+        var outer = Assert.IsType<Dictionary<string, object?>>(deserialized.Data["outer"]);
+        var inner = Assert.IsType<Dictionary<string, object?>>(outer["inner"]);
+        Assert.Equal(42, inner["deep"]);
+    }
+
+    [Fact]
+    public void SerializeToString_EmptyTagsList_OmittedFromJson()
+    {
+        // Arrange — event with empty tags should not include "tags" in JSON
+        var ev = new Event
+        {
+            Message = "Test",
+            Tags = new TagSet()
+        };
+
+        // Act
+        string json = _serializer.SerializeToString(ev);
+
+        // Assert — empty collections are suppressed by EmptyCollectionModifier
+        Assert.DoesNotContain("\"tags\"", json);
+    }
 }
