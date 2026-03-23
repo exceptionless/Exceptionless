@@ -81,6 +81,10 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
     {
         var connectionPool = CreateConnectionPool();
         var serializer = new ElasticSystemTextJsonSerializer(_jsonSerializerOptions);
+
+        // Settings are intentionally not disposed: they're owned by the ElasticsearchClient for the
+        // app's lifetime. The configuration is registered as a singleton in DI, so both the settings
+        // and client live until process exit.
         var settings = new ElasticsearchClientSettings(connectionPool, sourceSerializer: (_, _) => serializer);
 
         ConfigureSettings(settings);

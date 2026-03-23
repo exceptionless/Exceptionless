@@ -40,7 +40,6 @@ public static class JsonSerializerOptionsExtensions
         // This protects against script injection when JSON is embedded in HTML/JavaScript
         options.Encoder = JavaScriptEncoder.Create(new TextEncoderSettings(UnicodeRanges.All));
 
-        options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: true));
         options.Converters.Add(new ObjectToInferredTypesConverter());
 
         // Ensures tuples and records are serialized with their field names instead of "Item1", "Item2", etc.

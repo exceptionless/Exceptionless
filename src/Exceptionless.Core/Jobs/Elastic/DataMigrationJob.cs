@@ -145,7 +145,7 @@ public class DataMigrationJob : JobBase
                 var taskStatus = await client.Tasks.GetAsync(workItem.TaskId!.FullyQualifiedId, t => t.WaitForCompletion(false));
                 _logger.LogRequest(taskStatus);
 
-                var status = taskStatus.Task?.Status as ReindexStatus;
+                var status = taskStatus?.Task?.Status as ReindexStatus;
                 if (taskStatus?.Task is null || status is null)
                 {
                     _logger.LogWarning(taskStatus?.ApiCallDetails?.OriginalException, "Error getting task status for {TargetIndex} {TaskId}: {Message}", workItem.TargetIndex, workItem.TaskId, taskStatus?.GetErrorMessage());
