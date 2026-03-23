@@ -18,7 +18,14 @@ public static class EmptyCollectionModifier
             // For properties typed as IEnumerable (but not string), check at compile time
             if (typeof(IEnumerable).IsAssignableFrom(property.PropertyType) && property.PropertyType != typeof(string))
             {
-                property.ShouldSerialize = (obj, value) => !IsEmptyCollection(value);
+                var originalShouldSerialize = property.ShouldSerialize;
+                property.ShouldSerialize = (obj, value) =>
+                {
+                    if (originalShouldSerialize is not null && !originalShouldSerialize(obj, value))
+                        return false;
+
+                    return !IsEmptyCollection(value);
+                };
             }
             // For object-typed properties, check the runtime value
             else if (property.PropertyType == typeof(object))
