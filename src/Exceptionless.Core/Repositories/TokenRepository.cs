@@ -22,14 +22,14 @@ public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, I
 
     public Task<FindResults<Token>> GetByTypeAndUserIdAsync(TokenType type, string userId, CommandOptionsDescriptor<Token>? options = null)
     {
-        return FindAsync(q => q.FieldEquals(t => t.UserId, userId).FieldEquals(t => t.Type, type).Sort(f => f.CreatedUtc), options);
+        return FindAsync(q => q.FieldEquals(t => t.UserId, userId).FieldEquals(t => t.Type, (int)type).Sort(f => f.CreatedUtc), options);
     }
 
     public Task<FindResults<Token>> GetByTypeAndOrganizationIdAsync(TokenType type, string organizationId, CommandOptionsDescriptor<Token>? options = null)
     {
         return FindAsync(q => q
             .Organization(organizationId)
-            .FieldEquals(t => t.Type, type)
+            .FieldEquals(t => t.Type, (int)type)
             .Sort(f => f.CreatedUtc), options);
     }
 
@@ -43,7 +43,7 @@ public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, I
             ],
             MinimumShouldMatch = 1
         };
-        return FindAsync(q => q.ElasticFilter(filter).FieldEquals(t => t.Type, type).Sort(f => f.CreatedUtc), options);
+        return FindAsync(q => q.ElasticFilter(filter).FieldEquals(t => t.Type, (int)type).Sort(f => f.CreatedUtc), options);
     }
 
     public override Task<FindResults<Token>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<Token>? options = null)

@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
@@ -38,9 +37,9 @@ public class SerializerTests : TestWithServices
     [Fact]
     public void CanDeserializeEventWithUnknownNamesAndProperties()
     {
-        // Arrange - unknown root properties go through [JsonExtensionData] → ConvertJsonElement.
-        // With STJ, unknown nested objects stay as JsonElement (GetValue<T> handles typed access).
-        // Primitives are converted: strings, bools, numbers. Objects/arrays stay as JsonElement.
+        // Arrange - unknown root properties go through [JsonExtensionData] → ObjectToInferredTypesConverter.
+        // The converter recursively converts all JSON values to native .NET types:
+        // strings, bools, int/long, nested objects → Dictionary<string, object?>, arrays → List<object?>.
         /* language=json */
         const string json = """{"tags":["One","Two"],"reference_id":"12","message":"Hello","SomeString":"Hi","SomeBool":false,"SomeNum":1,"UnknownProp":{"Blah":"SomeVal"},"UnknownSerializedProp":"{\"Blah\":\"SomeVal\"}"}""";
 
@@ -52,15 +51,15 @@ public class SerializerTests : TestWithServices
         Assert.NotNull(ev.Data);
         Assert.Equal(5, ev.Data.Count);
 
-        // Primitive types are converted by ConvertJsonElement
+        // Primitive types are converted by ObjectToInferredTypesConverter
         Assert.Equal("Hi", ev.Data["SomeString"]);
         Assert.Equal(false, ev.Data["SomeBool"]);
-        Assert.Equal(1L, ev.Data["SomeNum"]);
+        Assert.Equal(1, ev.Data["SomeNum"]);
 
-        // Unknown nested objects stay as JsonElement for deferred typed access
-        Assert.IsType<JsonElement>(ev.Data["UnknownProp"]);
-        var unknownProp = (JsonElement)ev.Data["UnknownProp"]!;
-        Assert.Equal("SomeVal", unknownProp.GetProperty("Blah").GetString());
+        // Unknown nested objects are recursively converted to Dictionary<string, object?>
+        Assert.IsType<Dictionary<string, object?>>(ev.Data["UnknownProp"]);
+        var unknownProp = (Dictionary<string, object?>)ev.Data["UnknownProp"]!;
+        Assert.Equal("SomeVal", unknownProp["Blah"]);
 
         // Serialized JSON strings stay as strings
         Assert.IsType<string>(ev.Data["UnknownSerializedProp"]);
