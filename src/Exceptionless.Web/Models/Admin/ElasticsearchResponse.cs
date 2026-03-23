@@ -31,7 +31,7 @@ public record ElasticsearchIndexDetailResponse(
 public record ElasticsearchInfoResponse(
     ElasticsearchHealthResponse Health,
     ElasticsearchIndicesResponse Indices,
-    ElasticsearchIndexDetailResponse[]? IndexDetails = null
+    ElasticsearchIndexDetailResponse[] IndexDetails
 );
 
 public record ElasticsearchSnapshotResponse(
@@ -48,6 +48,6 @@ public record ElasticsearchSnapshotResponse(
 );
 
 public record ElasticsearchSnapshotsResponse(
-    string[]? Repositories = null,
-    ElasticsearchSnapshotResponse[]? Snapshots = null
+    string[] Repositories,
+    ElasticsearchSnapshotResponse[] Snapshots
 );

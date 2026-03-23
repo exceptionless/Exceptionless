@@ -162,7 +162,10 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
                 }
             }
         }
-        catch (JsonException) { }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(ex, "Failed to parse __ExceptionInfo JSON for event {Id}", id);
+        }
 
         if (ext.IsNullOrEmpty())
             return;
