@@ -52,13 +52,7 @@ public static class EmptyCollectionModifier
     private static bool HasAnyElement(IEnumerable enumerable)
     {
         var enumerator = enumerable.GetEnumerator();
-        try
-        {
-            return enumerator.MoveNext();
-        }
-        finally
-        {
-            (enumerator as IDisposable)?.Dispose();
-        }
+        using var disposable = enumerator as IDisposable;
+        return enumerator.MoveNext();
     }
 }

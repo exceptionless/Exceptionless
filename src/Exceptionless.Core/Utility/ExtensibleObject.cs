@@ -49,7 +49,7 @@ public class ExtensibleObject : INotifyPropertyChanged, IExtensibleObject
             {
                 return jsonElement.Deserialize<T>();
             }
-            catch
+            catch (JsonException)
             {
                 // Fall through to ToType conversion
             }

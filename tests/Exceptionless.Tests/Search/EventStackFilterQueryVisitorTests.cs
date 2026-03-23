@@ -1,5 +1,5 @@
+using System.Text.Json;
 using Exceptionless.Core.Repositories.Queries;
-using Newtonsoft.Json;
 using Xunit;
 using Xunit.Sdk;
 
@@ -205,7 +205,7 @@ public class FilterScenario : IXunitSerializable
     public void Deserialize(IXunitSerializationInfo info)
     {
         string jsonValue = info.GetValue<string>("objValue") ?? throw new InvalidOperationException("Missing objValue");
-        var value = JsonConvert.DeserializeObject<FilterScenario>(jsonValue) ?? throw new InvalidOperationException("Failed to deserialize");
+        var value = JsonSerializer.Deserialize<FilterScenario>(jsonValue) ?? throw new InvalidOperationException("Failed to deserialize");
         Source = value.Source;
         Stack = value.Stack;
         InvertedStack = value.InvertedStack;
@@ -214,7 +214,7 @@ public class FilterScenario : IXunitSerializable
 
     public void Serialize(IXunitSerializationInfo info)
     {
-        string? json = JsonConvert.SerializeObject(this);
+        string json = JsonSerializer.Serialize(this);
         info.AddValue("objValue", json);
     }
 }

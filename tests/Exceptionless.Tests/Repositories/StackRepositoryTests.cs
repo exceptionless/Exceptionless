@@ -82,7 +82,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         Assert.Equal(misses, _cache.Misses);
 
         var result = await _repository.GetStackBySignatureHashAsync(stack.ProjectId, stack.SignatureHash);
-        Assert.Equal(_serializer.SerializeToString(stack), _serializer.SerializeToString(result));
+        JsonAssert.AssertJsonEquivalent(_serializer.SerializeToString(stack), _serializer.SerializeToString(result));
         Assert.Equal(count + 2, _cache.Count);
         Assert.Equal(hits + 1, _cache.Hits);
         Assert.Equal(misses, _cache.Misses);
