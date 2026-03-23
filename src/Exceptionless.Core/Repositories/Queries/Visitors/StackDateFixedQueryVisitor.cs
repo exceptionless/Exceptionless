@@ -23,18 +23,10 @@ public class StackDateFixedQueryVisitor : ChainableQueryVisitor
         if (!Boolean.TryParse(node.Term, out bool isFixed))
             return Task.FromResult<IQueryNode>(node);
 
-        Query query;
-        if (isFixed)
-        {
-            query = new ExistsQuery { Field = _dateFixedFieldName };
-        }
-        else
-        {
-            query = new BoolQuery
-            {
-                MustNot = new Query[] { new ExistsQuery { Field = _dateFixedFieldName } }
-            };
-        }
+        var existsQuery = new ExistsQuery { Field = _dateFixedFieldName };
+        Query query = isFixed
+            ? existsQuery
+            : new BoolQuery { MustNot = new Query[] { existsQuery } };
 
         node.SetQuery(query);
 
