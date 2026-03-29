@@ -339,6 +339,30 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public Task SetFeatureAsync_WhitespaceOnly_ReturnsBadRequest()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "features", "  ")
+            .StatusCodeShouldBeBadRequest()
+        );
+    }
+
+    [Fact]
+    public Task RemoveFeatureAsync_WhitespaceOnly_ReturnsBadRequest()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .Delete()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "features", "  ")
+            .StatusCodeShouldBeBadRequest()
+        );
+    }
+
+    [Fact]
     public async Task DeleteAsync_ExistingOrganization_RemovesOrganization()
     {
         // Arrange - Create an organization to delete

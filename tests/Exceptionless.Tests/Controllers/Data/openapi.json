@@ -8385,7 +8385,13 @@
             ]
           },
           "columns": {
-            "type": "array"
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "boolean"
+            }
           },
           "is_default": {
             "type": [

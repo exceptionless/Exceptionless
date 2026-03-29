@@ -714,7 +714,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (organization is null)
             return NotFound();
 
-        organization.Features.Add(feature.Trim().ToLowerInvariant());
+        var normalizedFeature = feature.Trim().ToLowerInvariant();
+        if (String.IsNullOrEmpty(normalizedFeature))
+            return BadRequest("Invalid feature flag.");
+
+        organization.Features.Add(normalizedFeature);
         await _repository.SaveAsync(organization, o => o.Cache());
 
         return Ok();
@@ -737,7 +741,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (organization is null)
             return NotFound();
 
-        if (organization.Features.Remove(feature.Trim().ToLowerInvariant()))
+        var normalizedFeature = feature.Trim().ToLowerInvariant();
+        if (String.IsNullOrEmpty(normalizedFeature))
+            return BadRequest("Invalid feature flag.");
+
+        if (organization.Features.Remove(normalizedFeature))
             await _repository.SaveAsync(organization, o => o.Cache());
 
         return Ok();

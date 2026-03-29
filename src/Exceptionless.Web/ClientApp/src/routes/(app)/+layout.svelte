@@ -204,7 +204,7 @@
             }
         }
     });
-    const currentOrganization = $derived(shouldFetchIntercomOrganization ? currentOrganizationQuery.data : undefined);
+    const intercomOrganization = $derived(shouldFetchIntercomOrganization ? currentOrganizationQuery.data : undefined);
 
     // Simple organization selection - pick first available if none selected
     $effect(() => {
@@ -323,7 +323,7 @@
 
     // Intercom configuration
     const intercomToken = $derived(intercomAppId ? intercomTokenQuery.data?.token : undefined);
-    const intercomBootOptions = $derived(buildIntercomBootOptions(meQuery.data, currentOrganization, intercomToken));
+    const intercomBootOptions = $derived(buildIntercomBootOptions(meQuery.data, intercomOrganization, intercomToken));
     let intercomUnreadCount = $state(0);
     const isChatEnabled = $derived(!!intercomAppId && !!intercomBootOptions);
 

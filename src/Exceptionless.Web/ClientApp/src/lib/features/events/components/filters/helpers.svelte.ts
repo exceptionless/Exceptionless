@@ -1,4 +1,7 @@
 import type { IFilter } from '$comp/faceted-filter';
+import type { PersistentEventKnownTypes } from '$features/events/models';
+import type { LogLevel } from '$features/events/models/event-data';
+import type { StackStatus } from '$features/stacks/models';
 
 import { organization } from '$features/organizations/context.svelte';
 import { SvelteMap } from 'svelte/reactivity';
@@ -257,7 +260,7 @@ function reconstructFilter(data: SerializedFilter): IFilter | null {
         case 'keyword':
             return new KeywordFilter(data.value as string | undefined);
         case 'level':
-            return new LevelFilter(data.value as [] | undefined);
+            return new LevelFilter(data.value as LogLevel[] | undefined);
         case 'number':
             return new NumberFilter(data.term, data.value as number | undefined);
         case 'project':
@@ -267,13 +270,13 @@ function reconstructFilter(data: SerializedFilter): IFilter | null {
         case 'session':
             return new SessionFilter(data.value as string | undefined);
         case 'status':
-            return new StatusFilter(data.value as [] | undefined);
+            return new StatusFilter(data.value as StackStatus[] | undefined);
         case 'string':
             return new StringFilter(data.term, data.value as string | undefined);
         case 'tag':
-            return new TagFilter(data.value as [] | undefined);
+            return new TagFilter(data.value as PersistentEventKnownTypes[] | undefined);
         case 'type':
-            return new TypeFilter(data.value as [] | undefined);
+            return new TypeFilter(data.value as PersistentEventKnownTypes[] | undefined);
         case 'version':
             return new VersionFilter(data.term, data.value as string | undefined);
         default:
