@@ -216,9 +216,9 @@
             const filterDefinitions = serializeFilters(filters);
             const body: UpdateSavedView = {
                 columns: columnVisibility,
-                filter: currentFilterString || undefined,
+                filter: currentFilterString || null,
                 filter_definitions: filterDefinitions,
-                time: time || undefined
+                time: time || null
             };
             const response = await client.patchJSON(`saved-views/${activeSavedView.id}`, body, { expectedStatusCodes: [422] });
             if (response.ok) {
@@ -233,9 +233,9 @@
                                 ? {
                                       ...v,
                                       columns: body.columns ?? v.columns,
-                                      filter: body.filter ?? v.filter,
-                                      filter_definitions: body.filter_definitions ?? v.filter_definitions,
-                                      time: body.time
+                                      filter: body.filter !== undefined ? body.filter : v.filter,
+                                      filter_definitions: body.filter_definitions !== undefined ? body.filter_definitions : v.filter_definitions,
+                                      time: body.time !== undefined ? body.time : v.time
                                   }
                                 : v
                         ) ?? []

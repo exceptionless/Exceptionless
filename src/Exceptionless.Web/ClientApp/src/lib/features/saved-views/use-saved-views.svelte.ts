@@ -177,7 +177,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         if ((options.queryParams.filter ?? null) !== (view.filter ?? null)) {
             return true;
         }
-        if (view.time && (options.queryParams.time ?? '') !== view.time) {
+        if ((options.queryParams.time ?? null) !== (view.time ?? null)) {
             return true;
         }
         if (options.getColumnVisibility && !columnsEqual(options.getColumnVisibility(), view.columns)) {
