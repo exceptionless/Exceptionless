@@ -52,6 +52,10 @@ public sealed class ElasticSystemTextJsonSerializer : Serializer
         options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
         options.WriteIndented = writeIndented;
 
+        // Disable RespectNullableAnnotations to prevent exceptions when deserializing legacy ES documents
+        // that may have null values for non-nullable properties (e.g., Stack.Title: string = null!)
+        options.RespectNullableAnnotations = false;
+
         // Replace the default ObjectToInferredTypesConverter with one that returns Int64
         // for all integers, matching JSON.NET DataObjectConverter behavior. This ensures
         // Event.Data values round-trip through Elasticsearch with consistent types.
@@ -213,11 +217,25 @@ internal sealed class Iso8601DateTimeConverter : JsonConverter<DateTime>
             return default;
 
         // Parse with DateTimeStyles to handle various ISO 8601 formats
-        return DateTime.Parse(dateString, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+        var dt = DateTime.Parse(dateString, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+        
+        // Preserve MinValue semantics: normalize back to default if ticks are 0
+        // This prevents Kind from changing during round-trip (Unspecified → UTC → Unspecified)
+        if (dt.Ticks == 0)
+            return default;
+        
+        return dt;
     }
 
     public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
     {
+        // Preserve MinValue semantics: write without UTC conversion to avoid timezone shifts
+        if (value.Ticks == 0)
+        {
+            writer.WriteStringValue(DateTime.MinValue.ToString("O", CultureInfo.InvariantCulture));
+            return;
+        }
+        
         // Always output in UTC with round-trip format for Elasticsearch compatibility
         var utcValue = value.Kind == DateTimeKind.Utc ? value : value.ToUniversalTime();
         writer.WriteStringValue(utcValue.ToString("O", CultureInfo.InvariantCulture));
