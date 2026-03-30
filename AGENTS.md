@@ -82,3 +82,7 @@ pr-reviewer → security pre-screen (before build!) → dependency audit
 - Never commit secrets — use environment variables
 - NuGet feeds are in `NuGet.Config` — don't add sources
 - Prefer additive documentation updates — don't replace strategic docs wholesale, extend them
+
+## Frontend Notes
+
+- Saved-view optimistic writes must update both `queryKeys.view(organizationId, view)` and `queryKeys.organization(organizationId)` caches immediately. `invalidateSavedViewQueries` delays `SavedViewChanged` `Added` and `Saved` WebSocket invalidations for Elasticsearch refresh safety, and the picker still uses local 1.5s invalidation timers for rename/default/delete flows.

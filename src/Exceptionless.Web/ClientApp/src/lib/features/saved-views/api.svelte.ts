@@ -5,13 +5,13 @@ import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanst
 
 import type { NewSavedView, SavedView, UpdateSavedView } from './models';
 
-// When a new saved view is added, Elasticsearch needs ~1s to index it.
-// Without a delay, the background refetch triggered by this invalidation returns
-// stale data that omits the new view, causing the URL param to be cleared.
+// Elasticsearch needs ~1s to reflect saved-view writes.
+// Delay Added and Saved invalidations so the background refetch does not
+// overwrite optimistic cache updates with stale data while indexing catches up.
 export async function invalidateSavedViewQueries(queryClient: QueryClient, message: WebSocketMessageValue<'SavedViewChanged'>) {
     const { change_type, organization_id } = message;
 
-    if (change_type === ChangeType.Added) {
+    if (change_type === ChangeType.Added || change_type === ChangeType.Saved) {
         await new Promise<void>((resolve) => setTimeout(resolve, 1500));
     }
 
@@ -88,8 +88,7 @@ export function patchSavedView(request: { route: { id: string | undefined } }) {
             return response.data!;
         },
         onSuccess: (savedView: SavedView) => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.organization(savedView.organization_id) });
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+            syncSavedViewCaches(queryClient, savedView);
         }
     }));
 }
@@ -109,12 +108,33 @@ export function postSavedView(request: { route: { organizationId: string | undef
             return response.data!;
         },
         onSuccess: (savedView: SavedView) => {
-            // Optimistically populate the per-view cache so the new view is immediately
-            // available when handleSelect fires, before the background invalidation completes.
-            queryClient.setQueryData(queryKeys.view(request.route.organizationId, savedView.view), (old: SavedView[] | undefined) =>
-                old ? [...old, savedView] : [savedView]
-            );
-            queryClient.invalidateQueries({ queryKey: queryKeys.organization(request.route.organizationId) });
+            syncSavedViewCaches(queryClient, savedView);
         }
     }));
+}
+
+export function syncSavedViewCaches(queryClient: QueryClient, savedView: SavedView, organizationId: string | undefined = savedView.organization_id) {
+    queryClient.setQueryData(queryKeys.view(organizationId, savedView.view), (cachedViews: SavedView[] | undefined) =>
+        upsertSavedViewCache(cachedViews, savedView)
+    );
+    queryClient.setQueryData(queryKeys.organization(organizationId), (cachedViews: SavedView[] | undefined) => upsertSavedViewCache(cachedViews, savedView));
+}
+
+export function upsertSavedViewCache(cachedViews: SavedView[] | undefined, savedView: SavedView): SavedView[] {
+    const views = savedView.is_default
+        ? (cachedViews ?? []).map((view) => {
+              if (view.id === savedView.id || view.view !== savedView.view || !view.is_default) {
+                  return view;
+              }
+
+              return { ...view, is_default: false };
+          })
+        : (cachedViews ?? []);
+    const savedViewIndex = views.findIndex((view) => view.id === savedView.id);
+
+    if (savedViewIndex === -1) {
+        return [...views, savedView];
+    }
+
+    return views.map((view) => (view.id === savedView.id ? savedView : view));
 }

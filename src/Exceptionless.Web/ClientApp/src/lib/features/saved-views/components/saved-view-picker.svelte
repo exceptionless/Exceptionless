@@ -30,7 +30,7 @@
 
     import type { NewSavedView, SavedView, UpdateSavedView } from '../models';
 
-    import { queryKeys } from '../api.svelte';
+    import { queryKeys, syncSavedViewCaches } from '../api.svelte';
 
     // Map date-math time values to friendly labels
     const timeLabels = new SvelteMap<string, string>();
@@ -184,14 +184,9 @@
             const response = await client.postJSON<SavedView>(url, body, { expectedStatusCodes: [422] });
             if (response.ok && response.data) {
                 const savedView = response.data;
-                // Optimistically add to per-view cache so activeSavedView resolves
-                // immediately when onLoadView fires, preventing matchingSavedView
-                // from incorrectly auto-matching an existing view with the same filter.
-                // We do NOT fire background invalidation here — the Elasticsearch index has
-                // a refresh delay (~1s), so a refetch would return stale data that omits the
-                // new view, which would trigger the "not found" effect and clear the URL param.
-                // The cache stays current via WebSocket events or the user's next navigation.
-                queryClient.setQueryData(queryKeys.view(organizationId, view), (old: SavedView[] | undefined) => (old ? [...old, savedView] : [savedView]));
+                // Keep both caches aligned immediately so the picker and sidebar stay in sync
+                // while the delayed WebSocket invalidation waits for Elasticsearch to refresh.
+                syncSavedViewCaches(queryClient, savedView, organizationId);
                 saveDialogOpen = false;
                 onLoadView(savedView.id);
                 toast.success(`Saved view "${savedView.name}" created.`);
@@ -220,26 +215,11 @@
                 filter_definitions: filterDefinitions,
                 time: time || null
             };
-            const response = await client.patchJSON(`saved-views/${activeSavedView.id}`, body, { expectedStatusCodes: [422] });
-            if (response.ok) {
-                // Optimistically update the cache with the new filter/time values so the
-                // hydration effect doesn't revert the user's changes when the background
-                // refetch returns stale Elasticsearch data.
-                queryClient.setQueryData(
-                    queryKeys.view(organizationId, view),
-                    (old: SavedView[] | undefined) =>
-                        old?.map((v) =>
-                            v.id === activeSavedView.id
-                                ? {
-                                      ...v,
-                                      columns: body.columns ?? v.columns,
-                                      filter: body.filter !== undefined ? body.filter : v.filter,
-                                      filter_definitions: body.filter_definitions !== undefined ? body.filter_definitions : v.filter_definitions,
-                                      time: body.time !== undefined ? body.time : v.time
-                                  }
-                                : v
-                        ) ?? []
-                );
+            const response = await client.patchJSON<SavedView>(`saved-views/${activeSavedView.id}`, body, { expectedStatusCodes: [422] });
+            if (response.ok && response.data) {
+                // Keep both caches aligned immediately so the picker and sidebar stay in sync
+                // while the delayed WebSocket invalidation waits for Elasticsearch to refresh.
+                syncSavedViewCaches(queryClient, response.data, organizationId);
                 toast.success(`View "${activeSavedView.name}" updated.`);
             } else {
                 const message = response.problem?.title ?? 'Failed to update view. Please try again.';
@@ -258,13 +238,31 @@
         }
 
         saving = true;
+        const viewId = effectiveView.id;
+        const viewName = effectiveView.view;
+        const newName = renameName.trim();
         try {
-            const body: UpdateSavedView = { name: renameName.trim() };
-            const response = await client.patchJSON(`saved-views/${effectiveView.id}`, body, { expectedStatusCodes: [422] });
+            const body: UpdateSavedView = { name: newName };
+            const response = await client.patchJSON(`saved-views/${viewId}`, body, { expectedStatusCodes: [422] });
             if (response.ok) {
                 renameDialogOpen = false;
-                void queryClient.invalidateQueries({ queryKey: queryKeys.type });
                 toast.success('View renamed.');
+
+                // Optimistically update the name in all caches immediately (ES has ~1s refresh delay)
+                const updateViews = (old: SavedView[] | undefined): SavedView[] | undefined => {
+                    if (!old) {
+                        return old;
+                    }
+                    return old.map((v) => (v.id === viewId ? { ...v, name: newName } : v));
+                };
+
+                queryClient.setQueryData(queryKeys.view(organizationId, viewName), updateViews);
+                queryClient.setQueryData(queryKeys.organization(organizationId), updateViews);
+                // Delay invalidation to allow Elasticsearch (~1s refresh) to index the rename
+                // so the background refetch doesn't overwrite the optimistic update
+                setTimeout(() => {
+                    void queryClient.invalidateQueries({ queryKey: queryKeys.type });
+                }, 1500);
             } else {
                 const message = response.problem?.title ?? 'Failed to rename view. Please try again.';
                 toast.error(message);
@@ -318,33 +316,13 @@
         }
 
         saving = true;
-        const viewId = effectiveView.id;
-        const viewName = effectiveView.view;
         try {
             const body: UpdateSavedView = { is_default: true };
-            const response = await client.patchJSON(`saved-views/${effectiveView.id}`, body, { expectedStatusCodes: [422] });
-            if (response.ok) {
+            const response = await client.patchJSON<SavedView>(`saved-views/${effectiveView.id}`, body, { expectedStatusCodes: [422] });
+            if (response.ok && response.data) {
                 toast.success('Set as default.');
 
-                // Optimistically update the is_default flag in all caches immediately
-                const updateViews = (old: SavedView[] | undefined): SavedView[] | undefined => {
-                    if (!old) {
-                        return old;
-                    }
-                    return old.map((v) => {
-                        // Clear the old org-wide default for this view
-                        if (v.id !== viewId && v.view === viewName && !v.user_id) {
-                            return { ...v, is_default: false };
-                        }
-                        if (v.id === viewId) {
-                            return { ...v, is_default: true };
-                        }
-                        return v;
-                    });
-                };
-
-                queryClient.setQueryData(queryKeys.view(organizationId, viewName), updateViews);
-                queryClient.setQueryData(queryKeys.organization(organizationId), updateViews);
+                syncSavedViewCaches(queryClient, response.data, organizationId);
                 // Delay invalidation to allow Elasticsearch (~1s refresh) to index the change
                 // so the background refetch doesn't overwrite the optimistic update
                 setTimeout(() => {
@@ -429,7 +407,7 @@
                                                 </span>
                                             {/snippet}
                                         </Tooltip.Trigger>
-                                        <Tooltip.Content class="max-w-xs">
+                                        <Tooltip.Content class="max-w-xs" side="right">
                                             {#if savedView.filter}
                                                 <p class="font-mono text-xs">{savedView.filter}</p>
                                             {/if}

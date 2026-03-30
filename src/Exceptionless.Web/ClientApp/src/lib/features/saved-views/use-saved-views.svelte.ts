@@ -37,6 +37,16 @@ export interface UseSavedViewsReturn {
     savedViews: SavedView[];
 }
 
+export function setTimeQueryParam(queryParams: SavedViewQueryParams, value: null | string): void {
+    if (supportsTimeQueryParam(queryParams)) {
+        queryParams.time = value;
+    }
+}
+
+export function supportsTimeQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { time: null | string | undefined } {
+    return Object.prototype.hasOwnProperty.call(queryParams, 'time');
+}
+
 export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsReturn {
     const organizationQuery = getOrganizationQuery({
         route: {
@@ -48,6 +58,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
     // Feature flag gate: only enable saved views if the organization has the feature
     const isEnabled = $derived(organizationQuery.data?.features?.includes(SAVED_VIEWS_FEATURE) ?? false);
+
+    // Some routes, such as stream, do not declare a time query parameter.
+    const supportsTime = supportsTimeQueryParam(options.queryParams);
 
     const savedViewsListQuery = getSavedViewsByViewQuery({
         route: {
@@ -108,7 +121,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
                 options.queryParams.saved = null;
             });
             options.queryParams.filter = null;
-            options.queryParams.time = null;
+            setTimeQueryParam(options.queryParams, null);
             hasAttemptedRestore = false;
             return;
         }
@@ -126,7 +139,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         options.queryParams.filter = view.filter ?? null;
-        options.queryParams.time = view.time ?? null;
+        setTimeQueryParam(options.queryParams, view.time ?? null);
 
         if (view.columns && options.setColumnVisibility) {
             options.setColumnVisibility(view.columns);
@@ -177,7 +190,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         if ((options.queryParams.filter ?? null) !== (view.filter ?? null)) {
             return true;
         }
-        if ((options.queryParams.time ?? null) !== (view.time ?? null)) {
+        if (supportsTime && (options.queryParams.time ?? null) !== (view.time ?? null)) {
             return true;
         }
         if (options.getColumnVisibility && !columnsEqual(options.getColumnVisibility(), view.columns)) {
@@ -201,7 +214,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             options.updateFilterCache(options.filterCacheKey(view.filter ?? null), hydrated);
         }
         options.queryParams.filter = view.filter ?? null;
-        options.queryParams.time = view.time ?? null;
+        setTimeQueryParam(options.queryParams, view.time ?? null);
         if (view.columns && options.setColumnVisibility) {
             options.setColumnVisibility(view.columns);
         }
@@ -210,7 +223,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     function handleClearSavedView() {
         options.queryParams.saved = null;
         options.queryParams.filter = null;
-        options.queryParams.time = null;
+        setTimeQueryParam(options.queryParams, null);
         if (options.setColumnVisibility) {
             options.setColumnVisibility({});
         }
