@@ -62,7 +62,7 @@
         "typescript": "^5.9.3",
         "typescript-eslint": "^8.57.2",
         "vite": "^7.3.1",
-        "vitest": "4.1.1",
+        "vitest": "4.1.2",
         "vitest-websocket-mock": "^0.5.0",
         "zod": "^4.3.6"
     },
