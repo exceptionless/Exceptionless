@@ -46,7 +46,7 @@ public static class ErrorExtensions
         // fallback to default
         var defaultError = error.GetInnermostError();
         var defaultMethod = defaultError.StackTrace?.FirstOrDefault();
-        if (defaultMethod is null && error.StackTrace is not null)
+        if (defaultMethod is null && error.StackTrace is { Count: > 0 })
         {
             defaultMethod = error.StackTrace?.FirstOrDefault();
             defaultError = error;
