@@ -491,4 +491,100 @@ public class SerializerTests : TestWithServices
         // Assert — empty collections are suppressed by EmptyCollectionModifier
         Assert.DoesNotContain("\"tags\"", json);
     }
+
+    [Fact]
+    public void GetValue_KnownDataKeysFromJsonExtensionData_DeserializesToTypedObjects()
+    {
+        // Arrange — @error and @request at root level go through [JsonExtensionData] → Data dictionary.
+        // ObjectToInferredTypesConverter converts nested objects to Dictionary<string, object?>.
+        // GetValue<T> must re-serialize and deserialize those dictionaries back to typed models.
+        /* language=json */
+        const string json = """{"message":"Test error","type":"error","@error":{"message":"Something went wrong","type":"System.Exception","data":{"SomeProp":"SomeVal"},"stack_trace":[]},"@request":{"http_method":"GET","path":"/api/test"}}""";
+
+        // Act
+        var ev = _serializer.Deserialize<Event>(json);
+
+        // Assert
+        Assert.NotNull(ev);
+        Assert.NotNull(ev.Data);
+        Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.Error));
+        Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.RequestInfo));
+
+        var error = ev.Data.GetValue<Error>(Event.KnownDataKeys.Error, _serializer);
+        Assert.NotNull(error);
+        Assert.Equal("Something went wrong", error.Message);
+        Assert.Equal("System.Exception", error.Type);
+        Assert.NotNull(error.Data);
+        Assert.Equal("SomeVal", error.Data["SomeProp"]);
+
+        var request = ev.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo, _serializer);
+        Assert.NotNull(request);
+        Assert.Equal("GET", request.HttpMethod);
+        Assert.Equal("/api/test", request.Path);
+    }
+
+    [Fact]
+    public void GetValue_PascalCaseDataKeys_DeserializesViaFallback()
+    {
+        // Arrange — legacy JSON uses PascalCase property names for known data types.
+        // The serializer uses snake_case naming policy, so multi-word properties (HttpMethod, StackTrace)
+        // don't match. The CaseInsensitiveOptions fallback in GetValue<T> handles this.
+        /* language=json */
+        const string json = """{"message":"Legacy error","type":"error","@error":{"Message":"Legacy fail","Type":"System.InvalidOperationException","Data":{"Key1":"Val1"},"StackTrace":[]},"@request":{"HttpMethod":"POST","Path":"/legacy/endpoint","Host":"example.com","Port":443}}""";
+
+        // Act
+        var ev = _serializer.Deserialize<Event>(json);
+
+        // Assert
+        Assert.NotNull(ev);
+        Assert.NotNull(ev.Data);
+
+        var error = ev.Data.GetValue<Error>(Event.KnownDataKeys.Error, _serializer);
+        Assert.NotNull(error);
+        Assert.Equal("Legacy fail", error.Message);
+        Assert.Equal("System.InvalidOperationException", error.Type);
+        Assert.NotNull(error.Data);
+        Assert.Equal("Val1", error.Data["Key1"]);
+
+        var request = ev.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo, _serializer);
+        Assert.NotNull(request);
+        Assert.Equal("POST", request.HttpMethod);
+        Assert.Equal("/legacy/endpoint", request.Path);
+        Assert.Equal("example.com", request.Host);
+        Assert.Equal(443, request.Port);
+    }
+
+    [Fact]
+    public void GetValue_ConflictingAtPrefixedDataKeys_PreservesAllKeys()
+    {
+        // Arrange — multiple @ prefixed keys at root level all land in Data via JsonExtensionData.
+        // Verify they coexist and can each be retrieved as the correct typed object.
+        /* language=json */
+        const string json = """{"message":"Multi-data","@error":{"message":"Err","type":"System.Exception","stack_trace":[]},"@request":{"http_method":"GET","path":"/"},"@user":{"identity":"user@test.com","name":"Test User"},"@environment":{"machine_name":"SERVER01","processor_count":4}}""";
+
+        // Act
+        var ev = _serializer.Deserialize<Event>(json);
+
+        // Assert
+        Assert.NotNull(ev?.Data);
+        Assert.Equal(4, ev.Data.Count);
+        Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.Error));
+        Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.RequestInfo));
+        Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.UserInfo));
+        Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.EnvironmentInfo));
+
+        var error = ev.Data.GetValue<Error>(Event.KnownDataKeys.Error, _serializer);
+        Assert.NotNull(error);
+        Assert.Equal("Err", error.Message);
+
+        var user = ev.Data.GetValue<UserInfo>(Event.KnownDataKeys.UserInfo, _serializer);
+        Assert.NotNull(user);
+        Assert.Equal("user@test.com", user.Identity);
+        Assert.Equal("Test User", user.Name);
+
+        var env = ev.Data.GetValue<EnvironmentInfo>(Event.KnownDataKeys.EnvironmentInfo, _serializer);
+        Assert.NotNull(env);
+        Assert.Equal("SERVER01", env.MachineName);
+        Assert.Equal(4, env.ProcessorCount);
+    }
 }
