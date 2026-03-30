@@ -99,22 +99,26 @@ public static class DataDictionaryExtensions
                     return (T?)s;
                 }
 
-                // Detect format from property names: underscores indicate snake_case,
-                // absence indicates PascalCase. Use the matching deserializer first to avoid
-                // partial matches (e.g. single-word PascalCase props matching snake_case).
-                var primaryOptions = LooksLikeSnakeCase(jsonElement) ? SnakeCaseOptions : CaseInsensitiveOptions;
-                var result = jsonElement.Deserialize<T>(primaryOptions);
-                if (CountPopulatedProperties(result) > 0)
-                    return result;
+                // Try both deserializers and pick the one that populates more fields.
+                // Top-level heuristics can't reliably distinguish structural snake_case
+                // (e.g. inner.stack_trace) from user-data underscores (e.g. QueryString keys),
+                // so we compare deep property counts to pick the correct format.
+                var snakeResult = jsonElement.Deserialize<T>(SnakeCaseOptions);
+                var caseResult = jsonElement.Deserialize<T>(CaseInsensitiveOptions);
 
-                // Fallback: try the other format if primary produced nothing
-                var fallbackOptions = primaryOptions == SnakeCaseOptions ? CaseInsensitiveOptions : SnakeCaseOptions;
-                var fallbackResult = jsonElement.Deserialize<T>(fallbackOptions);
-                if (CountPopulatedProperties(fallbackResult) > 0)
-                    return fallbackResult;
+                // Short-circuit: skip property counting when only one succeeded
+                if (snakeResult is null && caseResult is not null)
+                    return caseResult;
+                if (caseResult is null && snakeResult is not null)
+                    return snakeResult;
 
-                if (result is not null)
-                    return result;
+                int snakeCount = CountPopulatedProperties(snakeResult);
+                int caseCount = CountPopulatedProperties(caseResult);
+
+                if (snakeCount >= caseCount && snakeResult is not null)
+                    return snakeResult;
+                if (caseResult is not null)
+                    return caseResult;
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
             {
@@ -149,8 +153,7 @@ public static class DataDictionaryExtensions
                 string? dictJson = serializer.SerializeToString(dictionary);
                 if (dictJson is not null)
                 {
-                    bool isSnakeCase = dictionary.Keys.Any(k => k.Contains('_'));
-                    var result = TryDeserializeWithFallback<T>(dictJson, serializer, preferSnakeCase: isSnakeCase);
+                    var result = TryDeserializeWithFallback<T>(dictJson, serializer);
                     if (result is not null)
                         return result;
                 }
@@ -169,10 +172,7 @@ public static class DataDictionaryExtensions
                 string? listJson = serializer.SerializeToString(list);
                 if (listJson is not null)
                 {
-                    bool isSnakeCase = list.OfType<Dictionary<string, object?>>() 
-                        .SelectMany(d => d.Keys)
-                        .Any(k => k.Contains('_'));
-                    var result = TryDeserializeWithFallback<T>(listJson, serializer, preferSnakeCase: isSnakeCase);
+                    var result = TryDeserializeWithFallback<T>(listJson, serializer);
                     if (result is not null)
                         return result;
                 }
@@ -230,82 +230,95 @@ public static class DataDictionaryExtensions
     }
 
     /// <summary>
-    /// Deserializes JSON using the preferred format first, falling back to the other format
-    /// only if the primary produced zero populated properties. Avoids double-deserialization
-    /// overhead and partial-match issues with single-word PascalCase properties matching snake_case.
+    /// Deserializes JSON trying both snake_case and PascalCase formats, returning whichever
+    /// populates more properties. Deep property counting reliably picks the correct format
+    /// even when top-level heuristics are ambiguous.
     /// </summary>
-    private static T? TryDeserializeWithFallback<T>(string json, ITextSerializer serializer, bool preferSnakeCase = true)
+    private static T? TryDeserializeWithFallback<T>(string json, ITextSerializer serializer)
     {
-        T? result = default;
-        try
-        {
-            result = preferSnakeCase
-                ? serializer.Deserialize<T>(json)
-                : JsonSerializer.Deserialize<T>(json, CaseInsensitiveOptions);
-        }
+        T? snakeResult = default;
+        try { snakeResult = serializer.Deserialize<T>(json); }
         catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException) { }
 
-        if (CountPopulatedProperties(result) > 0)
-            return result;
-
-        // Fallback: try the other format
-        T? fallback = default;
-        try
-        {
-            fallback = preferSnakeCase
-                ? JsonSerializer.Deserialize<T>(json, CaseInsensitiveOptions)
-                : serializer.Deserialize<T>(json);
-        }
+        T? caseResult = default;
+        try { caseResult = JsonSerializer.Deserialize<T>(json, CaseInsensitiveOptions); }
         catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException) { }
 
-        return CountPopulatedProperties(fallback) > 0 ? fallback : result;
+        int snakeCount = CountPopulatedProperties(snakeResult);
+        int caseCount = CountPopulatedProperties(caseResult);
+
+        // Pick the format that captured more data; on tie prefer snake_case (standard format)
+        if (snakeCount >= caseCount)
+            return snakeResult ?? caseResult;
+
+        return caseResult ?? snakeResult;
     }
 
     /// <summary>
-    /// Detects whether a JsonElement's property names use snake_case naming.
-    /// Returns true if any top-level property name contains an underscore.
+    /// Maximum recursion depth for deep property counting. Keeps cost bounded
+    /// while still capturing enough nested structure to distinguish formats.
     /// </summary>
-    private static bool LooksLikeSnakeCase(JsonElement element)
-    {
-        if (element.ValueKind != JsonValueKind.Object)
-            return false;
-
-        foreach (var prop in element.EnumerateObject())
-        {
-            if (prop.Name.Contains('_'))
-                return true;
-        }
-
-        return false;
-    }
+    private const int MaxRecursionDepth = 3;
 
     private static readonly ConcurrentDictionary<Type, PropertyInfo[]> PropertyCache = new();
 
     /// <summary>
-    /// Counts the number of non-null, non-empty properties on an object.
-    /// Used to compare which deserialization strategy captured more data.
+    /// Counts populated properties on an object, recursing into complex sub-objects and
+    /// counting collection items. This deep count lets us reliably compare which deserialization
+    /// strategy captured more data (e.g. snake_case populates Inner.StackTrace while PascalCase
+    /// leaves it empty).
     /// </summary>
     private static int CountPopulatedProperties<T>(T? obj)
     {
         if (obj is null)
             return 0;
 
-        return PropertyCache.GetOrAdd(typeof(T), t => t.GetProperties())
-            .Count(p =>
-            {
-                if (!p.CanRead)
-                    return false;
+        return CountPropertiesDeep(obj, typeof(T), depth: 0);
+    }
 
-                try
+    private static int CountPropertiesDeep(object obj, Type type, int depth)
+    {
+        if (depth > MaxRecursionDepth)
+            return 0;
+
+        int count = 0;
+        foreach (var p in PropertyCache.GetOrAdd(type, t => t.GetProperties()))
+        {
+            if (!p.CanRead)
+                continue;
+
+            try
+            {
+                // Reflection-based GetValue is acceptable here; this runs on the read path
+                // for format detection, not in hot serialization loops.
+                object? val = p.GetValue(obj);
+                if (val is null or string { Length: 0 })
+                    continue;
+
+                count++;
+
+                // Count collection items to distinguish populated vs default-empty collections
+                if (val is System.Collections.ICollection collection)
                 {
-                    object? val = p.GetValue(obj);
-                    return val is not null and not (string { Length: 0 });
+                    count += collection.Count;
                 }
-                catch
+                // Recurse into model-type properties (not strings, primitives, or dictionaries)
+                else if (val is not string
+                         && !p.PropertyType.IsPrimitive
+                         && !p.PropertyType.IsEnum
+                         && !p.PropertyType.IsValueType
+                         && !typeof(System.Collections.IDictionary).IsAssignableFrom(p.PropertyType))
                 {
-                    return false;
+                    count += CountPropertiesDeep(val, p.PropertyType, depth + 1);
                 }
-            });
+            }
+            catch (Exception)
+            {
+                // Ignored
+            }
+        }
+
+        return count;
     }
 
     public static void RemoveSensitiveData(this DataDictionary extendedData)
