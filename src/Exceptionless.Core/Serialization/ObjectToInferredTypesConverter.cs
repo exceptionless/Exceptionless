@@ -243,4 +243,67 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
             _ => JsonDocument.ParseValue(ref reader).RootElement.Clone()
         };
     }
+
+    /// <summary>
+    /// Converts a <see cref="JsonElement"/> to its native .NET type equivalent.
+    /// Used by Event.OnDeserialized to avoid duplicating conversion logic.
+    /// </summary>
+    /// <remarks>
+    /// This method provides the same type inference behavior as the main converter:
+    /// objects → case-insensitive Dictionary, arrays → List, numbers → smallest fitting type, etc.
+    /// </remarks>
+    public static object? ConvertJsonElement(JsonElement element)
+    {
+        return element.ValueKind switch
+        {
+            JsonValueKind.String => ConvertJsonElementString(element),
+            JsonValueKind.Number => ConvertJsonElementNumber(element),
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Null => null,
+            JsonValueKind.Array => element.EnumerateArray()
+                .Select(ConvertJsonElement)
+                .ToList(),
+            JsonValueKind.Object => element.EnumerateObject()
+                .ToDictionary(p => p.Name, p => ConvertJsonElement(p.Value), StringComparer.OrdinalIgnoreCase),
+            _ => element.GetRawText()
+        };
+    }
+
+    /// <summary>
+    /// Converts a JsonElement number, preserving the original representation (integer vs floating-point).
+    /// </summary>
+    internal static object ConvertJsonElementNumber(JsonElement element)
+    {
+        // Check raw text for decimal point to preserve decimal vs integer representation
+        string rawText = element.GetRawText();
+        if (rawText.Contains('.') || rawText.Contains('e') || rawText.Contains('E'))
+        {
+            // Has decimal point or exponent - return decimal (default mode)
+            return element.GetDecimal();
+        }
+
+        // No decimal point - integer. Try Int32 first, then Int64, then Decimal
+        if (element.TryGetInt32(out int i))
+            return i;
+
+        if (element.TryGetInt64(out long l))
+            return l;
+
+        return element.GetDecimal();
+    }
+
+    /// <summary>
+    /// Converts a JsonElement string, attempting DateTimeOffset parsing for ISO 8601 dates.
+    /// </summary>
+    internal static object? ConvertJsonElementString(JsonElement element)
+    {
+        if (element.TryGetDateTimeOffset(out DateTimeOffset dateTimeOffset))
+            return dateTimeOffset;
+
+        if (element.TryGetDateTime(out DateTime dt))
+            return dt;
+
+        return element.GetString();
+    }
 }
