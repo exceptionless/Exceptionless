@@ -18,6 +18,29 @@ public static class DataDictionaryExtensions
     };
 
     /// <summary>
+    /// Attempts deserialization using the primary serializer (snake_case naming policy),
+    /// then falls back to a case-insensitive deserializer (for legacy PascalCase data).
+    /// Returns whichever result populated more properties (longer serialized output).
+    /// </summary>
+    private static T? TryDeserializeWithFallback<T>(string json, ITextSerializer serializer)
+    {
+        var primary = serializer.Deserialize<T>(json);
+
+        if (primary is null)
+            return JsonSerializer.Deserialize<T>(json, CaseInsensitiveFallbackOptions);
+
+        var fallback = JsonSerializer.Deserialize<T>(json, CaseInsensitiveFallbackOptions);
+        if (fallback is not null)
+        {
+            string primaryJson = serializer.SerializeToString(primary) ?? "";
+            string fallbackJson = serializer.SerializeToString(fallback) ?? "";
+            return fallbackJson.Length > primaryJson.Length ? fallback : primary;
+        }
+
+        return primary;
+    }
+
+    /// <summary>
     /// Retrieves a typed value from the <see cref="DataDictionary"/>, deserializing if necessary.
     /// </summary>
     /// <typeparam name="T">The target type to deserialize to.</typeparam>
@@ -74,20 +97,7 @@ public static class DataDictionaryExtensions
                 }
 
                 string elementJson = jsonElement.GetRawText();
-                var primary = serializer.Deserialize<T>(elementJson);
-
-                if (primary is null)
-                    return JsonSerializer.Deserialize<T>(elementJson, CaseInsensitiveFallbackOptions);
-
-                var fallback = JsonSerializer.Deserialize<T>(elementJson, CaseInsensitiveFallbackOptions);
-                if (fallback is not null)
-                {
-                    string primaryJson = serializer.SerializeToString(primary) ?? "";
-                    string fallbackJson = serializer.SerializeToString(fallback) ?? "";
-                    return fallbackJson.Length > primaryJson.Length ? fallback : primary;
-                }
-
-                return primary;
+                return TryDeserializeWithFallback<T>(elementJson, serializer);
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
             {
@@ -101,20 +111,7 @@ public static class DataDictionaryExtensions
             try
             {
                 string jsonString = jsonNode.ToJsonString();
-                var primary = serializer.Deserialize<T>(jsonString);
-
-                if (primary is null)
-                    return JsonSerializer.Deserialize<T>(jsonString, CaseInsensitiveFallbackOptions);
-
-                var fallback = JsonSerializer.Deserialize<T>(jsonString, CaseInsensitiveFallbackOptions);
-                if (fallback is not null)
-                {
-                    string primaryJson = serializer.SerializeToString(primary) ?? "";
-                    string fallbackJson = serializer.SerializeToString(fallback) ?? "";
-                    return fallbackJson.Length > primaryJson.Length ? fallback : primary;
-                }
-
-                return primary;
+                return TryDeserializeWithFallback<T>(jsonString, serializer);
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
             {
@@ -134,24 +131,7 @@ public static class DataDictionaryExtensions
                 string? dictJson = serializer.SerializeToString(dictionary);
                 if (dictJson is not null)
                 {
-                    // Try primary serializer (snake_case naming policy) first.
-                    var primary = serializer.Deserialize<T>(dictJson);
-
-                    // Fast-path: if primary is null, try fallback.
-                    if (primary is null)
-                        return JsonSerializer.Deserialize<T>(dictJson, CaseInsensitiveFallbackOptions);
-
-                    // Both might be non-null — check which one actually populated properties
-                    // by comparing serialized lengths (longer = more properties matched).
-                    var fallback = JsonSerializer.Deserialize<T>(dictJson, CaseInsensitiveFallbackOptions);
-                    if (fallback is not null)
-                    {
-                        string primaryJson = serializer.SerializeToString(primary) ?? "";
-                        string fallbackJson = serializer.SerializeToString(fallback) ?? "";
-                        return fallbackJson.Length > primaryJson.Length ? fallback : primary;
-                    }
-
-                    return primary;
+                    return TryDeserializeWithFallback<T>(dictJson, serializer);
                 }
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
@@ -168,20 +148,7 @@ public static class DataDictionaryExtensions
                 string? listJson = serializer.SerializeToString(list);
                 if (listJson is not null)
                 {
-                    var primary = serializer.Deserialize<T>(listJson);
-
-                    if (primary is null)
-                        return JsonSerializer.Deserialize<T>(listJson, CaseInsensitiveFallbackOptions);
-
-                    var fallback = JsonSerializer.Deserialize<T>(listJson, CaseInsensitiveFallbackOptions);
-                    if (fallback is not null)
-                    {
-                        string primaryJson = serializer.SerializeToString(primary) ?? "";
-                        string fallbackJson = serializer.SerializeToString(fallback) ?? "";
-                        return fallbackJson.Length > primaryJson.Length ? fallback : primary;
-                    }
-
-                    return primary;
+                    return TryDeserializeWithFallback<T>(listJson, serializer);
                 }
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
