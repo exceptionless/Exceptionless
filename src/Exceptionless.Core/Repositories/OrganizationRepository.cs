@@ -49,10 +49,10 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
 
     public Task<FindResults<Organization>> GetByCriteriaAsync(string? criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null)
     {
-        var mustClauses = new List<Query>();
+        var query = new RepositoryQuery<Organization>();
 
         if (!String.IsNullOrWhiteSpace(criteria))
-            mustClauses.Add(new BoolQuery
+            query.ElasticFilter(new BoolQuery
             {
                 Should = [
                     new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.Id), Value = criteria },
@@ -64,15 +64,15 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         if (paid.HasValue)
         {
             if (paid.Value)
-                mustClauses.Add(new BoolQuery { MustNot = [new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.PlanId), Value = _plans.FreePlan.Id }] });
+                query.ElasticFilter(new BoolQuery { MustNot = [new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.PlanId), Value = _plans.FreePlan.Id }] });
             else
-                mustClauses.Add(new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.PlanId), Value = _plans.FreePlan.Id });
+                query.FieldEquals(o => o.PlanId, _plans.FreePlan.Id);
         }
 
         if (suspended.HasValue)
         {
             if (suspended.Value)
-                mustClauses.Add(new BoolQuery
+                query.ElasticFilter(new BoolQuery
                 {
                     Should = [
                         new BoolQuery { MustNot = [
@@ -85,25 +85,19 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
                     MinimumShouldMatch = 1
                 });
             else
-                mustClauses.Add(new BoolQuery
+                query.ElasticFilter(new BoolQuery
                 {
                     Should = [
-                        new BoolQuery { Must = [
+                        new BoolQuery { Should = [
                             new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Active },
                             new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Trialing },
                             new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Canceled }
-                        ] },
+                        ], MinimumShouldMatch = 1 },
                         new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.IsSuspended), Value = false }
                     ],
                     MinimumShouldMatch = 1
                 });
         }
-
-        Query filter = mustClauses.Count > 0
-            ? new BoolQuery { Must = mustClauses }
-            : new MatchAllQuery();
-
-        var query = new RepositoryQuery<Organization>().ElasticFilter(filter);
 
         switch (sortBy)
         {
