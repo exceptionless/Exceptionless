@@ -1,12 +1,6 @@
-﻿using System.Collections.Concurrent;
-using System.Reflection;
-using System.Text.Encodings.Web;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.Json.Serialization.Metadata;
-using System.Text.Unicode;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Serialization;
 using Foundatio.Serializer;
 
 namespace Exceptionless.Core.Extensions;
@@ -14,33 +8,13 @@ namespace Exceptionless.Core.Extensions;
 public static class DataDictionaryExtensions
 {
     /// <summary>
-    /// Options for deserializing JsonElement values with snake_case property names (standard format).
-    /// Uses the naming policy to map C# PascalCase names to snake_case JSON names.
+    /// Fallback options for deserializing legacy PascalCase JSON without a naming policy.
+    /// Without a naming policy, C# property names match JSON keys directly (case-insensitively),
+    /// which handles PascalCase data that the snake_case primary serializer cannot match.
     /// </summary>
-    private static readonly JsonSerializerOptions SnakeCaseOptions = new()
+    private static readonly JsonSerializerOptions CaseInsensitiveFallbackOptions = new()
     {
-        PropertyNameCaseInsensitive = true,
-        PropertyNamingPolicy = LowerCaseUnderscoreNamingPolicy.Instance,
-        Converters = { new ObjectToInferredTypesConverter() }
-    };
-
-    /// <summary>
-    /// Fallback options for deserializing JsonElement values with PascalCase property names.
-    /// Handles legacy or non-standard input where property names match C# names directly.
-    /// Includes the same converters as the DI-registered options for consistent nested deserialization.
-    /// Note: Intentionally omits IncludeFields and RespectNullableAnnotations from the DI-registered
-    /// options because this is a fallback deserializer for data-dictionary values, not the primary
-    /// API serializer. Only the settings needed for correct property mapping are included.
-    /// </summary>
-    private static readonly JsonSerializerOptions CaseInsensitiveOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        Encoder = JavaScriptEncoder.Create(new TextEncoderSettings(UnicodeRanges.All)),
-        Converters = { new ObjectToInferredTypesConverter() },
-        TypeInfoResolver = new DefaultJsonTypeInfoResolver
-        {
-            Modifiers = { EmptyCollectionModifier.SkipEmptyCollections }
-        }
+        PropertyNameCaseInsensitive = true
     };
 
     /// <summary>
@@ -99,26 +73,21 @@ public static class DataDictionaryExtensions
                     return (T?)s;
                 }
 
-                // Try both deserializers and pick the one that populates more fields.
-                // Top-level heuristics can't reliably distinguish structural snake_case
-                // (e.g. inner.stack_trace) from user-data underscores (e.g. QueryString keys),
-                // so we compare deep property counts to pick the correct format.
-                var snakeResult = jsonElement.Deserialize<T>(SnakeCaseOptions);
-                var caseResult = jsonElement.Deserialize<T>(CaseInsensitiveOptions);
+                string elementJson = jsonElement.GetRawText();
+                var primary = serializer.Deserialize<T>(elementJson);
 
-                // Short-circuit: skip property counting when only one succeeded
-                if (snakeResult is null && caseResult is not null)
-                    return caseResult;
-                if (caseResult is null && snakeResult is not null)
-                    return snakeResult;
+                if (primary is null)
+                    return JsonSerializer.Deserialize<T>(elementJson, CaseInsensitiveFallbackOptions);
 
-                int snakeCount = CountPopulatedProperties(snakeResult);
-                int caseCount = CountPopulatedProperties(caseResult);
+                var fallback = JsonSerializer.Deserialize<T>(elementJson, CaseInsensitiveFallbackOptions);
+                if (fallback is not null)
+                {
+                    string primaryJson = serializer.SerializeToString(primary) ?? "";
+                    string fallbackJson = serializer.SerializeToString(fallback) ?? "";
+                    return fallbackJson.Length > primaryJson.Length ? fallback : primary;
+                }
 
-                if (snakeCount >= caseCount && snakeResult is not null)
-                    return snakeResult;
-                if (caseResult is not null)
-                    return caseResult;
+                return primary;
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
             {
@@ -132,9 +101,20 @@ public static class DataDictionaryExtensions
             try
             {
                 string jsonString = jsonNode.ToJsonString();
-                var result = serializer.Deserialize<T>(jsonString);
-                if (result is not null)
-                    return result;
+                var primary = serializer.Deserialize<T>(jsonString);
+
+                if (primary is null)
+                    return JsonSerializer.Deserialize<T>(jsonString, CaseInsensitiveFallbackOptions);
+
+                var fallback = JsonSerializer.Deserialize<T>(jsonString, CaseInsensitiveFallbackOptions);
+                if (fallback is not null)
+                {
+                    string primaryJson = serializer.SerializeToString(primary) ?? "";
+                    string fallbackJson = serializer.SerializeToString(fallback) ?? "";
+                    return fallbackJson.Length > primaryJson.Length ? fallback : primary;
+                }
+
+                return primary;
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
             {
@@ -142,10 +122,11 @@ public static class DataDictionaryExtensions
             }
         }
 
-        // Dictionary<string, object?> from ObjectToInferredTypesConverter
-        // Re-serialize to JSON then deserialize to target type.
-        // Dictionary keys are literal (not naming-policy-transformed), so they may be PascalCase
-        // (legacy) or snake_case (standard). Detect format from keys to avoid partial matches.
+        // Dictionary<string, object?> from ObjectToInferredTypesConverter.
+        // Dictionary keys preserve the original JSON casing, which may be snake_case (current format)
+        // or PascalCase (legacy data). The primary serializer (snake_case naming policy) handles
+        // snake_case keys; the fallback (no naming policy, case-insensitive) handles PascalCase.
+        // We try both and pick the one that populated more properties (longer serialized output).
         if (data is Dictionary<string, object?> dictionary)
         {
             try
@@ -153,9 +134,24 @@ public static class DataDictionaryExtensions
                 string? dictJson = serializer.SerializeToString(dictionary);
                 if (dictJson is not null)
                 {
-                    var result = TryDeserializeWithFallback<T>(dictJson, serializer);
-                    if (result is not null)
-                        return result;
+                    // Try primary serializer (snake_case naming policy) first.
+                    var primary = serializer.Deserialize<T>(dictJson);
+
+                    // Fast-path: if primary is null, try fallback.
+                    if (primary is null)
+                        return JsonSerializer.Deserialize<T>(dictJson, CaseInsensitiveFallbackOptions);
+
+                    // Both might be non-null — check which one actually populated properties
+                    // by comparing serialized lengths (longer = more properties matched).
+                    var fallback = JsonSerializer.Deserialize<T>(dictJson, CaseInsensitiveFallbackOptions);
+                    if (fallback is not null)
+                    {
+                        string primaryJson = serializer.SerializeToString(primary) ?? "";
+                        string fallbackJson = serializer.SerializeToString(fallback) ?? "";
+                        return fallbackJson.Length > primaryJson.Length ? fallback : primary;
+                    }
+
+                    return primary;
                 }
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
@@ -172,9 +168,20 @@ public static class DataDictionaryExtensions
                 string? listJson = serializer.SerializeToString(list);
                 if (listJson is not null)
                 {
-                    var result = TryDeserializeWithFallback<T>(listJson, serializer);
-                    if (result is not null)
-                        return result;
+                    var primary = serializer.Deserialize<T>(listJson);
+
+                    if (primary is null)
+                        return JsonSerializer.Deserialize<T>(listJson, CaseInsensitiveFallbackOptions);
+
+                    var fallback = JsonSerializer.Deserialize<T>(listJson, CaseInsensitiveFallbackOptions);
+                    if (fallback is not null)
+                    {
+                        string primaryJson = serializer.SerializeToString(primary) ?? "";
+                        string fallbackJson = serializer.SerializeToString(fallback) ?? "";
+                        return fallbackJson.Length > primaryJson.Length ? fallback : primary;
+                    }
+
+                    return primary;
                 }
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
@@ -229,102 +236,11 @@ public static class DataDictionaryExtensions
         return default;
     }
 
-    /// <summary>
-    /// Deserializes JSON trying both snake_case and PascalCase formats, returning whichever
-    /// populates more properties. Deep property counting reliably picks the correct format
-    /// even when top-level heuristics are ambiguous.
-    /// </summary>
-    private static T? TryDeserializeWithFallback<T>(string json, ITextSerializer serializer)
-    {
-        T? snakeResult = default;
-        try { snakeResult = serializer.Deserialize<T>(json); }
-        catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException) { }
-
-        T? caseResult = default;
-        try { caseResult = JsonSerializer.Deserialize<T>(json, CaseInsensitiveOptions); }
-        catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException) { }
-
-        int snakeCount = CountPopulatedProperties(snakeResult);
-        int caseCount = CountPopulatedProperties(caseResult);
-
-        // Pick the format that captured more data; on tie prefer snake_case (standard format)
-        if (snakeCount >= caseCount)
-            return snakeResult ?? caseResult;
-
-        return caseResult ?? snakeResult;
-    }
-
-    /// <summary>
-    /// Maximum recursion depth for deep property counting. Keeps cost bounded
-    /// while still capturing enough nested structure to distinguish formats.
-    /// </summary>
-    private const int MaxRecursionDepth = 3;
-
-    private static readonly ConcurrentDictionary<Type, PropertyInfo[]> PropertyCache = new();
-
-    /// <summary>
-    /// Counts populated properties on an object, recursing into complex sub-objects and
-    /// counting collection items. This deep count lets us reliably compare which deserialization
-    /// strategy captured more data (e.g. snake_case populates Inner.StackTrace while PascalCase
-    /// leaves it empty).
-    /// </summary>
-    private static int CountPopulatedProperties<T>(T? obj)
-    {
-        if (obj is null)
-            return 0;
-
-        return CountPropertiesDeep(obj, typeof(T), depth: 0);
-    }
-
-    private static int CountPropertiesDeep(object obj, Type type, int depth)
-    {
-        if (depth > MaxRecursionDepth)
-            return 0;
-
-        int count = 0;
-        foreach (var p in PropertyCache.GetOrAdd(type, t => t.GetProperties()))
-        {
-            if (!p.CanRead)
-                continue;
-
-            try
-            {
-                // Reflection-based GetValue is acceptable here; this runs on the read path
-                // for format detection, not in hot serialization loops.
-                object? val = p.GetValue(obj);
-                if (val is null or string { Length: 0 })
-                    continue;
-
-                count++;
-
-                // Count collection items to distinguish populated vs default-empty collections
-                if (val is System.Collections.ICollection collection)
-                {
-                    count += collection.Count;
-                }
-                // Recurse into model-type properties (not strings, primitives, or dictionaries)
-                else if (val is not string
-                         && !p.PropertyType.IsPrimitive
-                         && !p.PropertyType.IsEnum
-                         && !p.PropertyType.IsValueType
-                         && !typeof(System.Collections.IDictionary).IsAssignableFrom(p.PropertyType))
-                {
-                    count += CountPropertiesDeep(val, p.PropertyType, depth + 1);
-                }
-            }
-            catch (Exception)
-            {
-                // Ignored
-            }
-        }
-
-        return count;
-    }
-
     public static void RemoveSensitiveData(this DataDictionary extendedData)
     {
         string[] removeKeys = [.. extendedData.Keys.Where(k => k.StartsWith('-'))];
         foreach (string key in removeKeys)
             extendedData.Remove(key);
     }
+
 }
