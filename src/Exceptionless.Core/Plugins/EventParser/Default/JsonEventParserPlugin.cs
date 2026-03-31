@@ -2,7 +2,6 @@
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
-using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventParser;
@@ -10,11 +9,11 @@ namespace Exceptionless.Core.Plugins.EventParser;
 [Priority(0)]
 public class JsonEventParserPlugin : PluginBase, IEventParserPlugin
 {
-    private readonly ITextSerializer _serializer;
+    private readonly JsonSerializerOptions _jsonOptions;
 
-    public JsonEventParserPlugin(AppOptions options, ITextSerializer serializer, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    public JsonEventParserPlugin(AppOptions options, JsonSerializerOptions jsonOptions, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
-        _serializer = serializer;
+        _jsonOptions = jsonOptions;
     }
 
     public List<PersistentEvent>? ParseEvents(string input, int apiVersion, string? userAgent)
@@ -29,7 +28,7 @@ public class JsonEventParserPlugin : PluginBase, IEventParserPlugin
             {
                 try
                 {
-                    var ev = _serializer.Deserialize<PersistentEvent>(input);
+                    var ev = JsonSerializer.Deserialize<PersistentEvent>(input, _jsonOptions);
                     if (ev is not null)
                         events.Add(ev);
                 }
@@ -43,7 +42,7 @@ public class JsonEventParserPlugin : PluginBase, IEventParserPlugin
             {
                 try
                 {
-                    var parsedEvents = _serializer.Deserialize<PersistentEvent[]>(input);
+                    var parsedEvents = JsonSerializer.Deserialize<PersistentEvent[]>(input, _jsonOptions);
                     if (parsedEvents is { Length: > 0 })
                         events.AddRange(parsedEvents);
                 }
