@@ -32,7 +32,7 @@ public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, I
         return FindAsync(q => q
             .Organization(organizationId)
             .DateRange(null, cutoff, (Stack s) => s.LastOccurrence)
-            .FieldEquals(f => f.Status, "open")
+            .FieldEquals(f => f.Status, StackStatus.Open)
             .FieldEmpty(f => f.References)
             .Include(f => f.Id, f => f.OrganizationId, f => f.ProjectId, f => f.SignatureHash)
         , o => o.SearchAfterPaging().PageLimit(500));
