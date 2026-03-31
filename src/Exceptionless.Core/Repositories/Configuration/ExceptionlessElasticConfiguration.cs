@@ -99,7 +99,7 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
                     // and insert preferInt64: true version at position 0 so STJ picks it first.
                     for (int i = options.Converters.Count - 1; i >= 0; i--)
                     {
-                        if (options.Converters[i].GetType().Name == "ObjectToInferredTypesConverter")
+                        if (options.Converters[i] is Exceptionless.Core.Serialization.ObjectToInferredTypesConverter)
                             options.Converters.RemoveAt(i);
                     }
                     options.Converters.Insert(0, new Exceptionless.Core.Serialization.ObjectToInferredTypesConverter(preferInt64: true));
