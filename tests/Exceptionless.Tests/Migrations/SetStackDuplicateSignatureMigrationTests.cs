@@ -1,5 +1,3 @@
-using Elastic.Clients.Elasticsearch;
-using Elastic.Clients.Elasticsearch.QueryDsl;
 using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -51,7 +49,7 @@ public class SetStackDuplicateSignatureMigrationTests : IntegrationTestsBase
         Assert.NotEmpty(actualStack.SignatureHash);
         Assert.Equal($"{actualStack.ProjectId}:{actualStack.SignatureHash}", actualStack.DuplicateSignature);
 
-        var results = await _repository.FindAsync(q => q.ElasticFilter(new TermQuery { Field = Infer.Field<Stack>(s => s.DuplicateSignature), Value = expectedDuplicateSignature }));
+        var results = await _repository.FindAsync(q => q.FieldEquals(s => s.DuplicateSignature, expectedDuplicateSignature));
         Assert.Single(results.Documents);
     }
 }
