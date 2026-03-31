@@ -1,5 +1,5 @@
-using System.Text.Json;
 using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Serialization;
 using Elastic.Transport;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
@@ -13,6 +13,7 @@ using Foundatio.Queues;
 using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Repositories.Serialization;
 using Foundatio.Resilience;
 using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
@@ -22,12 +23,10 @@ namespace Exceptionless.Core.Repositories.Configuration;
 public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction
 {
     private readonly AppOptions _appOptions;
-    private readonly JsonSerializerOptions _jsonSerializerOptions;
 
     public ExceptionlessElasticConfiguration(
         AppOptions appOptions,
         IQueue<WorkItemData> workItemQueue,
-        JsonSerializerOptions jsonSerializerOptions,
         ICacheClient cacheClient,
         IMessageBus messageBus,
         IServiceProvider serviceProvider,
@@ -38,7 +37,6 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
     ) : base(workItemQueue, cacheClient, messageBus, serializer, timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _appOptions = appOptions;
-        _jsonSerializerOptions = jsonSerializerOptions;
 
         _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", _appOptions.ElasticsearchOptions.NumberOfShards, _appOptions.ElasticsearchOptions.NumberOfReplicas);
         AddIndex(Stacks = new StackIndex(this));
@@ -80,12 +78,36 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
     protected override ElasticsearchClient CreateElasticClient()
     {
         var connectionPool = CreateConnectionPool();
-        var serializer = new ElasticSystemTextJsonSerializer(_jsonSerializerOptions);
 
         // Settings are intentionally not disposed: they're owned by the ElasticsearchClient for the
         // app's lifetime. The configuration is registered as a singleton in DI, so both the settings
         // and client live until process exit.
-        var settings = new ElasticsearchClientSettings(connectionPool, sourceSerializer: (_, _) => serializer);
+        var settings = new ElasticsearchClientSettings(
+            connectionPool,
+            sourceSerializer: (_, clientSettings) =>
+                new DefaultSourceSerializer(clientSettings, options =>
+                {
+                    // Base defaults from DI + Foundatio
+                    options.ConfigureExceptionlessDefaults();
+                    options.ConfigureFoundatioRepositoryDefaults();
+
+                    // ES-specific overrides (legacy data compatibility)
+                    options.RespectNullableAnnotations = false;
+
+                    // ES needs all integers as long to match the old JSON.NET DataObjectConverter behavior.
+                    // Remove existing ObjectToInferredTypesConverter instances (from both Configure calls)
+                    // and insert preferInt64: true version at position 0 so STJ picks it first.
+                    for (int i = options.Converters.Count - 1; i >= 0; i--)
+                    {
+                        if (options.Converters[i].GetType().Name == "ObjectToInferredTypesConverter")
+                            options.Converters.RemoveAt(i);
+                    }
+                    options.Converters.Insert(0, new Exceptionless.Core.Serialization.ObjectToInferredTypesConverter(preferInt64: true));
+
+                    // DateTime converters for historical Z→+00:00 format compat
+                    options.Converters.Insert(1, new Iso8601DateTimeOffsetConverter());
+                    options.Converters.Insert(2, new Iso8601DateTimeConverter());
+                }));
 
         ConfigureSettings(settings);
         foreach (var index in Indexes)
