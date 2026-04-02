@@ -103,10 +103,6 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
                             options.Converters.RemoveAt(i);
                     }
                     options.Converters.Insert(0, new Exceptionless.Core.Serialization.ObjectToInferredTypesConverter(preferInt64: true));
-
-                    // DateTime converters for historical Z→+00:00 format compat
-                    options.Converters.Insert(1, new Iso8601DateTimeOffsetConverter());
-                    options.Converters.Insert(2, new Iso8601DateTimeConverter());
                 }));
 
         ConfigureSettings(settings);
