@@ -460,8 +460,9 @@ public class AdminControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(response);
+        Assert.NotNull(response.States);
 
-        foreach (var state in response.States ?? [])
+        foreach (var state in response.States)
         {
             Assert.NotNull(state.Id);
             Assert.True(Enum.IsDefined(state.MigrationType));
@@ -503,7 +504,7 @@ public class AdminControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(elasticsearch);
-        Assert.All(elasticsearch.IndexDetails ?? [], indexDetail =>
+        Assert.All(elasticsearch.IndexDetails, indexDetail =>
         {
             Assert.True(indexDetail.DocsCount >= 0);
             Assert.True(indexDetail.StoreSizeInBytes >= 0);
@@ -530,6 +531,8 @@ public class AdminControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(snapshots);
+        Assert.NotNull(snapshots.Repositories);
+        Assert.NotNull(snapshots.Snapshots);
     }
 
     [Fact]
