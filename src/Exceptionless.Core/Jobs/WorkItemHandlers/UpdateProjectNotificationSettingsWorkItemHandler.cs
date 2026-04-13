@@ -30,7 +30,7 @@ public class UpdateProjectNotificationSettingsWorkItemHandler : WorkItemHandlerB
         _timeProvider = timeProvider;
     }
 
-    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
+    public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
     {
         return _lockProvider.AcquireAsync(nameof(UpdateProjectNotificationSettingsWorkItemHandler), TimeSpan.FromMinutes(15), cancellationToken);
     }
@@ -38,6 +38,12 @@ public class UpdateProjectNotificationSettingsWorkItemHandler : WorkItemHandlerB
     public override async Task HandleItemAsync(WorkItemContext context)
     {
         var workItem = context.GetData<UpdateProjectNotificationSettingsWorkItem>();
+        if (workItem is null)
+        {
+            Log.LogWarning("Work item data of type {WorkItemType} is null", nameof(UpdateProjectNotificationSettingsWorkItem));
+            return;
+        }
+
         Log.LogInformation("Received update project notification settings work item. Organization={Organization}", workItem.OrganizationId);
 
         long totalNotificationSettingsRemoved = 0;

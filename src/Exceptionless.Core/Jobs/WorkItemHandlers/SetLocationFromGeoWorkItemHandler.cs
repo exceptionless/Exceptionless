@@ -24,7 +24,7 @@ public class SetLocationFromGeoWorkItemHandler : WorkItemHandlerBase
         _lockProvider = lockProvider;
     }
 
-    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
+    public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
     {
         string cacheKey = $"{nameof(SetLocationFromGeoWorkItemHandler)}:{((SetLocationFromGeoWorkItem)workItem).EventId}";
         return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
@@ -33,8 +33,13 @@ public class SetLocationFromGeoWorkItemHandler : WorkItemHandlerBase
     public override async Task HandleItemAsync(WorkItemContext context)
     {
         var workItem = context.GetData<SetLocationFromGeoWorkItem>();
+        if (workItem is null)
+        {
+            Log.LogWarning("Work item data of type {WorkItemType} is null", nameof(SetLocationFromGeoWorkItem));
+            return;
+        }
 
-        if (!GeoResult.TryParse(workItem.Geo, out var result) || result is null)
+        if (String.IsNullOrEmpty(workItem.Geo) || !GeoResult.TryParse(workItem.Geo, out var result) || result is null)
             return;
 
         var location = await _cache.GetAsync<Location?>(workItem.Geo, null);

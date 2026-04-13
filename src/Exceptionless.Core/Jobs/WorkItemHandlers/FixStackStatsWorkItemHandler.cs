@@ -26,7 +26,7 @@ public class FixStackStatsWorkItemHandler : WorkItemHandlerBase
         _timeProvider = timeProvider;
     }
 
-    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = default)
+    public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = default)
     {
         return _lockProvider.AcquireAsync(nameof(FixStackStatsWorkItemHandler), TimeSpan.FromHours(1), cancellationToken);
     }
@@ -34,6 +34,12 @@ public class FixStackStatsWorkItemHandler : WorkItemHandlerBase
     public override async Task HandleItemAsync(WorkItemContext context)
     {
         var wi = context.GetData<FixStackStatsWorkItem>();
+        if (wi is null)
+        {
+            Log.LogWarning("Work item data of type {WorkItemType} is null", nameof(FixStackStatsWorkItem));
+            return;
+        }
+
         var utcEnd = wi.UtcEnd ?? _timeProvider.GetUtcNow().UtcDateTime;
 
         Log.LogInformation("Starting stack stats repair for {UtcStart:O} to {UtcEnd:O}. OrganizationId={Organization}", wi.UtcStart, utcEnd, wi.OrganizationId);

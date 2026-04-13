@@ -22,7 +22,7 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
         _lockProvider = lockProvider;
     }
 
-    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
+    public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
     {
         return _lockProvider.AcquireAsync(nameof(UserMaintenanceWorkItemHandler), TimeSpan.FromMinutes(15), new CancellationToken(true));
     }
@@ -32,6 +32,12 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
         const int LIMIT = 100;
 
         var workItem = context.GetData<UserMaintenanceWorkItem>();
+        if (workItem is null)
+        {
+            Log.LogWarning("Work item data of type {WorkItemType} is null", nameof(UserMaintenanceWorkItem));
+            return;
+        }
+
         Log.LogInformation("Received user maintenance work item. Normalize={Normalize} ResetVerifyEmailAddressToken={ResendVerifyEmailAddressEmails}", workItem.Normalize, workItem.ResetVerifyEmailAddressToken);
 
         var results = await _userRepository.GetAllAsync(o => o.PageLimit(LIMIT));

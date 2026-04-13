@@ -55,9 +55,12 @@ public class EventPostsJob : QueueJobBase<EventPost>
     {
         var entry = context.QueueEntry;
         var ep = entry.Value;
+        if (ep is null)
+            return JobResult.FailedWithMessage("Queue entry value is null.");
+
         using var _ = _logger.BeginScope(new ExceptionlessState().Organization(ep.OrganizationId).Project(ep.ProjectId));
 
-        string payloadPath = Path.ChangeExtension(entry.Value.FilePath, ".payload");
+        string payloadPath = Path.ChangeExtension(ep.FilePath, ".payload");
         var payloadTask = AppDiagnostics.PostsMarkFileActiveTime.TimeAsync(() => _eventPostService.GetEventPostPayloadAsync(payloadPath));
         var projectTask = _projectRepository.GetByIdAsync(ep.ProjectId, o => o.Cache());
         var organizationTask = _organizationRepository.GetByIdAsync(ep.OrganizationId, o => o.Cache());
@@ -124,7 +127,10 @@ public class EventPostsJob : QueueJobBase<EventPost>
         if (uncompressedData.Length > maxEventPostSize)
         {
             var org = await organizationTask;
-            await _usageService.IncrementTooBigAsync(org.Id, project.Id);
+            if (org is not null)
+                await _usageService.IncrementTooBigAsync(org.Id, project.Id);
+            else
+                _logger.LogWarning("Organization {OrganizationId} not found, skipping too-big usage increment for event post {EventPostId}", ep.OrganizationId, entry.Id);
             await CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime);
             return JobResult.FailedWithMessage($"Unable to process decompressed EventPost data '{payloadPath}' ({payload.Length} bytes compressed, {uncompressedData.Length} bytes): Maximum uncompressed event post size limit ({maxEventPostSize} bytes) reached.");
         }
@@ -322,7 +328,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 if (!isInternalProject && _logger.IsEnabled(LogLevel.Critical))
                 {
                     using (_logger.BeginScope(new ExceptionlessState().Property("Event", new { ev.Date, ev.StackId, ev.Type, ev.Source, ev.Message, ev.Value, ev.Geo, ev.ReferenceId, ev.Tags })))
-                        _logger.LogCritical(ex, "Error while requeuing event post {FilePath}: {Message}", queueEntry.Value.FilePath, ex.Message);
+                        _logger.LogCritical(ex, "Error while requeuing event post {QueueEntryId} {FilePath}: {Message}", queueEntry.Id, queueEntry.Value?.FilePath ?? "(unknown)", ex.Message);
                 }
 
                 AppDiagnostics.EventsRetryErrors.Add(1);
@@ -335,12 +341,12 @@ public class EventPostsJob : QueueJobBase<EventPost>
         return AppDiagnostics.PostsAbandonTime.TimeAsync(queueEntry.AbandonAsync);
     }
 
-    private Task CompleteEntryAsync(IQueueEntry<EventPost> entry, EventPostInfo eventPostInfo, DateTime created)
+    private Task CompleteEntryAsync(IQueueEntry<EventPost> entry, EventPost eventPostInfo, DateTime created)
     {
         return AppDiagnostics.PostsCompleteTime.TimeAsync(async () =>
         {
             await entry.CompleteAsync();
-            await _eventPostService.CompleteEventPostAsync(entry.Value.FilePath, eventPostInfo.ProjectId, created, entry.Value.ShouldArchive);
+            await _eventPostService.CompleteEventPostAsync(eventPostInfo.FilePath, eventPostInfo.ProjectId, created, eventPostInfo.ShouldArchive);
         });
     }
 

@@ -17,7 +17,7 @@ public class RemoveBotEventsWorkItemHandler : WorkItemHandlerBase
         _lockProvider = lockProvider;
     }
 
-    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
+    public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
     {
         var wi = (RemoveBotEventsWorkItem)workItem;
         string cacheKey = $"{nameof(RemoveBotEventsWorkItem)}:{wi.OrganizationId}:{wi.ProjectId}";
@@ -27,6 +27,12 @@ public class RemoveBotEventsWorkItemHandler : WorkItemHandlerBase
     public override async Task HandleItemAsync(WorkItemContext context)
     {
         var wi = context.GetData<RemoveBotEventsWorkItem>();
+        if (wi is null)
+        {
+            Log.LogWarning("Work item data of type {WorkItemType} is null", nameof(RemoveBotEventsWorkItem));
+            return;
+        }
+
         using var _ = Log.BeginScope(new ExceptionlessState().Organization(wi.OrganizationId).Project(wi.ProjectId).Tag("Delete").Tag("Bot"));
         Log.LogInformation("Received remove bot events work item OrganizationId={OrganizationId} ProjectId={ProjectId}, ClientIpAddress={ClientIpAddress}, UtcStartDate={UtcStartDate}, UtcEndDate={UtcEndDate}", wi.OrganizationId, wi.ProjectId, wi.ClientIpAddress, wi.UtcStartDate, wi.UtcEndDate);
 

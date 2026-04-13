@@ -8,14 +8,14 @@ public class MetricOptions
 {
     public string? ConnectionString { get; internal set; }
     public string? Provider { get; internal set; }
-    public Dictionary<string, string> Data { get; internal set; } = null!;
+    public Dictionary<string, string?> Data { get; internal set; } = null!;
 
     public static MetricOptions ReadFromConfiguration(IConfiguration config)
     {
         var options = new MetricOptions();
 
         string? cs = config.GetConnectionString("Metrics");
-        options.Data = cs.ParseConnectionString();
+        options.Data = (cs ?? String.Empty).ParseConnectionString();
         options.Provider = options.Data.GetString(nameof(options.Provider));
 
         string? providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;

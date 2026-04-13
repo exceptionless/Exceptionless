@@ -24,7 +24,7 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase
         _lockProvider = lockProvider;
     }
 
-    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
+    public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
     {
         return _lockProvider.AcquireAsync(nameof(OrganizationMaintenanceWorkItemHandler), TimeSpan.FromMinutes(15), cancellationToken);
     }
@@ -33,6 +33,12 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase
     {
         const int LIMIT = 100;
         var wi = context.GetData<OrganizationMaintenanceWorkItem>();
+        if (wi is null)
+        {
+            Log.LogWarning("Work item data of type {WorkItemType} is null", nameof(OrganizationMaintenanceWorkItem));
+            return;
+        }
+
         Log.LogInformation("Received upgrade organizations work item. Upgrade Plans: {UpgradePlans}", wi.UpgradePlans);
 
         var results = await _organizationRepository.GetAllAsync(o => o.PageLimit(LIMIT));

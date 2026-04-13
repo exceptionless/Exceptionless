@@ -22,7 +22,7 @@ public class ProjectMaintenanceWorkItemHandler : WorkItemHandlerBase
         _lockProvider = lockProvider;
     }
 
-    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
+    public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
     {
         return _lockProvider.AcquireAsync(nameof(ProjectMaintenanceWorkItemHandler), TimeSpan.FromMinutes(15), new CancellationToken(true));
     }
@@ -32,6 +32,12 @@ public class ProjectMaintenanceWorkItemHandler : WorkItemHandlerBase
         const int LIMIT = 100;
 
         var workItem = context.GetData<ProjectMaintenanceWorkItem>();
+        if (workItem is null)
+        {
+            Log.LogWarning("Work item data of type {WorkItemType} is null", nameof(ProjectMaintenanceWorkItem));
+            return;
+        }
+
         Log.LogInformation("Received upgrade projects work item. Update Default Bot List: {UpdateDefaultBotList} IncrementConfigurationVersion: {IncrementConfigurationVersion}", workItem.UpdateDefaultBotList, workItem.IncrementConfigurationVersion);
 
         var results = await _projectRepository.GetAllAsync(o => o.PageLimit(LIMIT));

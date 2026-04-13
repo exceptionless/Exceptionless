@@ -61,7 +61,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         _cacheClient = cacheClient;
     }
 
-    protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)
+    protected override Task<ILock?> GetLockAsync(CancellationToken cancellationToken = default)
     {
         return _lockProvider.AcquireAsync(nameof(CleanupDataJob), TimeSpan.FromMinutes(15), new CancellationToken(true));
     }
@@ -91,7 +91,8 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
 
         do
         {
-            long updatedCount = await _tokenRepository.PatchAllAsync(q => q.Organization(suspendedOrganizations.Hits.Select(o => o.Id)).FieldEquals(t => t.IsSuspended, false), new PartialPatch(new { is_suspended = true }));
+            // Foundatio Hits can contain null elements, so filter them before accessing properties
+            long updatedCount = await _tokenRepository.PatchAllAsync(q => q.Organization(suspendedOrganizations.Hits.Where(o => o is not null && o.Id is not null).Select(o => o!.Id!)).FieldEquals(t => t.IsSuspended, false), new PartialPatch(new { is_suspended = true }));
             if (updatedCount > 0)
                 _logger.LogInformation("Marking {SuspendedTokenCount} tokens as suspended", updatedCount);
         } while (!context.CancellationToken.IsCancellationRequested && await suspendedOrganizations.NextPageAsync());

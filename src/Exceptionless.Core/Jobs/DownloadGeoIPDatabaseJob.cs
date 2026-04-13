@@ -30,7 +30,7 @@ public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck
         _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromDays(1), timeProvider, resiliencePolicyProvider, loggerFactory);
     }
 
-    protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)
+    protected override Task<ILock?> GetLockAsync(CancellationToken cancellationToken = default)
     {
         return _lockProvider.AcquireAsync(nameof(DownloadGeoIPDatabaseJob), TimeSpan.FromHours(2), new CancellationToken(true));
     }
