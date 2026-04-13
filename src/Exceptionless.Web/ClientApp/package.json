@@ -36,7 +36,7 @@
         "@storybook/sveltekit": "^10.3.5",
         "@sveltejs/adapter-static": "^3.0.10",
         "@sveltejs/kit": "^2.57.1",
-        "@sveltejs/vite-plugin-svelte": "^6.2.4",
+        "@sveltejs/vite-plugin-svelte": "^7.0.0",
         "@tailwindcss/vite": "^4.2.2",
         "@tanstack/eslint-plugin-query": "^5.99.0",
         "@testing-library/jest-dom": "^6.9.1",
