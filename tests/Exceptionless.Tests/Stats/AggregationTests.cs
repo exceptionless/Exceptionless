@@ -51,8 +51,8 @@ public sealed class AggregationTests : IntegrationTestsBase
 
         var result = await _eventRepository.CountAsync(q => q.FilterExpression($"project:{TestConstants.ProjectId}").AggregationsExpression("cardinality:stack_id cardinality:id"));
         Assert.Equal(eventCount, result.Total);
-        Assert.Equal(eventCount, result.Aggregations.Cardinality("cardinality_id").Value.GetValueOrDefault());
-        Assert.Equal(await _stackRepository.CountAsync(), result.Aggregations.Cardinality("cardinality_stack_id").Value.GetValueOrDefault());
+        Assert.Equal(eventCount, result.Aggregations.Cardinality("cardinality_id")?.Value.GetValueOrDefault() ?? 0);
+        Assert.Equal(await _stackRepository.CountAsync(), result.Aggregations.Cardinality("cardinality_stack_id")?.Value.GetValueOrDefault() ?? 0);
     }
 
     [Fact]
@@ -64,17 +64,17 @@ public sealed class AggregationTests : IntegrationTestsBase
 
         var result = await _eventRepository.CountAsync(q => q.FilterExpression($"project:{TestConstants.ProjectId}").AggregationsExpression("date:(date cardinality:id) cardinality:id"));
         Assert.Equal(eventCount, result.Total);
-        Assert.Equal(eventCount, result.Aggregations.DateHistogram("date_date").Buckets.Sum(t => t.Total));
-        Assert.Single(result.Aggregations.DateHistogram("date_date").Buckets.First().Aggregations);
-        Assert.Equal(eventCount, result.Aggregations.Cardinality("cardinality_id").Value.GetValueOrDefault());
-        Assert.Equal(eventCount, result.Aggregations.DateHistogram("date_date").Buckets.Sum(t => t.Aggregations.Cardinality("cardinality_id").Value.GetValueOrDefault()));
+        Assert.Equal(eventCount, (result.Aggregations.DateHistogram("date_date")?.Buckets ?? []).Sum(t => t.Total));
+        Assert.Single((result.Aggregations.DateHistogram("date_date")?.Buckets ?? []).First().Aggregations);
+        Assert.Equal(eventCount, result.Aggregations.Cardinality("cardinality_id")?.Value.GetValueOrDefault() ?? 0);
+        Assert.Equal(eventCount, (result.Aggregations.DateHistogram("date_date")?.Buckets ?? []).Sum(t => t.Aggregations.Cardinality("cardinality_id")?.Value.GetValueOrDefault() ?? 0));
 
         var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, o => o.PageLimit(100));
         foreach (var stack in stacks.Documents)
         {
             var stackResult = await _eventRepository.CountAsync(q => q.FilterExpression($"stack:{stack.Id}").AggregationsExpression("cardinality:id"));
             Assert.Equal(stack.TotalOccurrences, stackResult.Total);
-            Assert.Equal(stack.TotalOccurrences, stackResult.Aggregations.Cardinality("cardinality_id").Value.GetValueOrDefault());
+            Assert.Equal(stack.TotalOccurrences, stackResult.Aggregations.Cardinality("cardinality_id")?.Value.GetValueOrDefault() ?? 0);
         }
     }
 
@@ -87,7 +87,7 @@ public sealed class AggregationTests : IntegrationTestsBase
 
         var result = await _eventRepository.CountAsync(q => q.FilterExpression($"project:{TestConstants.ProjectId}").AggregationsExpression("terms:(is_first_occurrence @include:true)"));
         Assert.Equal(eventCount, result.Total);
-        Assert.Equal(await _stackRepository.CountAsync(), result.Aggregations.Terms<string>("terms_is_first_occurrence").Buckets.First(b => b.KeyAsString == Boolean.TrueString.ToLower()).Total.GetValueOrDefault());
+        Assert.Equal(await _stackRepository.CountAsync(), (result.Aggregations.Terms<string>("terms_is_first_occurrence")?.Buckets ?? []).First(b => b.KeyAsString == Boolean.TrueString.ToLower()).Total.GetValueOrDefault());
     }
 
     [Fact]
@@ -104,11 +104,11 @@ public sealed class AggregationTests : IntegrationTestsBase
 
         Assert.Equal(values.Length, result.Total);
         Assert.Equal(5, result.Aggregations.Count);
-        Assert.Equal(50, result.Aggregations.Average("avg_value").Value.GetValueOrDefault());
-        Assert.Equal(11, result.Aggregations.Cardinality("cardinality_value").Value.GetValueOrDefault());
-        Assert.Equal(550, result.Aggregations.Sum("sum_value").Value.GetValueOrDefault());
-        Assert.Equal(0, result.Aggregations.Min("min_value").Value.GetValueOrDefault());
-        Assert.Equal(100, result.Aggregations.Max("max_value").Value.GetValueOrDefault());
+        Assert.Equal(50, result.Aggregations.Average("avg_value")?.Value ?? 0);
+        Assert.Equal(11, result.Aggregations.Cardinality("cardinality_value")?.Value.GetValueOrDefault() ?? 0);
+        Assert.Equal(550, result.Aggregations.Sum("sum_value")?.Value ?? 0);
+        Assert.Equal(0, result.Aggregations.Min("min_value")?.Value ?? default);
+        Assert.Equal(100, result.Aggregations.Max("max_value")?.Value ?? default);
     }
 
     [Fact]
@@ -121,9 +121,9 @@ public sealed class AggregationTests : IntegrationTestsBase
         var result = await _eventRepository.CountAsync(q => q.AggregationsExpression("terms:tags"));
         Assert.Equal(eventCount, result.Total);
         // each event can be in multiple tag buckets since an event can have up to 3 sample tags
-        Assert.InRange(result.Aggregations.Terms<string>("terms_tags").Buckets.Sum(t => t.Total.GetValueOrDefault()), eventCount, eventCount * 3);
-        Assert.InRange(result.Aggregations.Terms<string>("terms_tags").Buckets.Count, 1, TestConstants.EventTags.Count);
-        foreach (var term in result.Aggregations.Terms<string>("terms_tags").Buckets)
+        Assert.InRange((result.Aggregations.Terms<string>("terms_tags")?.Buckets ?? []).Sum(t => t.Total.GetValueOrDefault()), eventCount, eventCount * 3);
+        Assert.InRange((result.Aggregations.Terms<string>("terms_tags")?.Buckets ?? []).Count, 1, TestConstants.EventTags.Count);
+        foreach (var term in result.Aggregations.Terms<string>("terms_tags")?.Buckets ?? [])
             Assert.InRange(term.Total.GetValueOrDefault(), 1, eventCount);
     }
 
@@ -137,7 +137,7 @@ public sealed class AggregationTests : IntegrationTestsBase
         var result = await _eventRepository.CountAsync(q => q.AggregationsExpression("terms:version"));
         Assert.Equal(eventCount, result.Total);
         // NOTE: The events are created without a version.
-        Assert.Empty(result.Aggregations.Terms<string>("terms_version").Buckets);
+        Assert.Empty(result.Aggregations.Terms<string>("terms_version")?.Buckets ?? []);
     }
 
     [Fact]
@@ -152,10 +152,10 @@ public sealed class AggregationTests : IntegrationTestsBase
         Assert.Equal(eventCount, result.Total);
 
         var termsAggregation = result.Aggregations.Terms<string>("terms_stack_id");
-        Assert.Equal(eventCount, termsAggregation.Buckets.Sum(b1 => b1.Total.GetValueOrDefault()) + (long)termsAggregation.Data["SumOtherDocCount"]);
-        foreach (var term in termsAggregation.Buckets)
+        Assert.Equal(eventCount, (termsAggregation?.Buckets ?? []).Sum(b1 => b1.Total.GetValueOrDefault()) + (long)(termsAggregation?.Data?["SumOtherDocCount"] ?? 0));
+        foreach (var term in termsAggregation?.Buckets ?? [])
         {
-            Assert.Equal(1, term.Aggregations.Terms<string>("terms_is_first_occurrence").Buckets.Sum(b => b.Total.GetValueOrDefault()));
+            Assert.Equal(1, (term.Aggregations.Terms<string>("terms_is_first_occurrence")?.Buckets ?? []).Sum(b => b.Total.GetValueOrDefault()));
         }
     }
 
@@ -172,16 +172,16 @@ public sealed class AggregationTests : IntegrationTestsBase
         Assert.Equal(eventCount, result.Total);
 
         var termsAggregation = result.Aggregations.Terms<string>("terms_stack_id");
-        var largestStackBucket = termsAggregation.Buckets.First();
+        var largestStackBucket = (termsAggregation?.Buckets ?? []).First();
 
         var events = await _eventRepository.FindAsync(q => q.FilterExpression($"stack:{largestStackBucket.Key}"), o => o.PageLimit(eventCount));
         Assert.Equal(largestStackBucket.Total.GetValueOrDefault(), events.Total);
 
         var oldestEvent = events.Documents.OrderBy(e => e.Date).First();
-        Assert.Equal(oldestEvent.Date.UtcDateTime.Floor(TimeSpan.FromMilliseconds(1)), largestStackBucket.Aggregations.Min<DateTime>("min_date").Value.Floor(TimeSpan.FromMilliseconds(1)));
+        Assert.Equal(oldestEvent.Date.UtcDateTime.Floor(TimeSpan.FromMilliseconds(1)), (largestStackBucket.Aggregations.Min<DateTime>("min_date")?.Value ?? default).Floor(TimeSpan.FromMilliseconds(1)));
 
         var newestEvent = events.Documents.OrderByDescending(e => e.Date).First();
-        Assert.Equal(newestEvent.Date.UtcDateTime.Floor(TimeSpan.FromMilliseconds(1)), largestStackBucket.Aggregations.Min<DateTime>("max_date").Value.Floor(TimeSpan.FromMilliseconds(1)));
+        Assert.Equal(newestEvent.Date.UtcDateTime.Floor(TimeSpan.FromMilliseconds(1)), (largestStackBucket.Aggregations.Min<DateTime>("max_date")?.Value ?? default).Floor(TimeSpan.FromMilliseconds(1)));
     }
 
     [Fact]
@@ -193,8 +193,8 @@ public sealed class AggregationTests : IntegrationTestsBase
 
         var result = await _eventRepository.CountAsync(q => q.AggregationsExpression("terms:project_id"));
         Assert.Equal(eventCount, result.Total);
-        Assert.InRange(result.Aggregations.Terms<string>("terms_project_id").Buckets.Count, 1, 3); // 3 sample projects
-        Assert.Equal(eventCount, result.Aggregations.Terms<string>("terms_project_id").Buckets.Sum(t => t.Total.GetValueOrDefault()));
+        Assert.InRange((result.Aggregations.Terms<string>("terms_project_id")?.Buckets ?? []).Count, 1, 3); // 3 sample projects
+        Assert.Equal(eventCount, (result.Aggregations.Terms<string>("terms_project_id")?.Buckets ?? []).Sum(t => t.Total.GetValueOrDefault()));
     }
 
     [Fact]
@@ -205,8 +205,8 @@ public sealed class AggregationTests : IntegrationTestsBase
 
         var result = await _eventRepository.CountAsync(q => q.FilterExpression("type:session").AggregationsExpression("avg:value cardinality:user"));
         Assert.Equal(3, result.Total);
-        Assert.Equal(3, result.Aggregations.Cardinality("cardinality_user").Value.GetValueOrDefault());
-        Assert.Equal(3600.0 / result.Total, result.Aggregations.Average("avg_value").Value.GetValueOrDefault());
+        Assert.Equal(3, result.Aggregations.Cardinality("cardinality_user")?.Value.GetValueOrDefault() ?? 0);
+        Assert.Equal(3600.0 / result.Total, result.Aggregations.Average("avg_value")?.Value ?? 0);
     }
 
     private async Task CreateDataAsync(int eventCount = 0, bool multipleProjects = true)

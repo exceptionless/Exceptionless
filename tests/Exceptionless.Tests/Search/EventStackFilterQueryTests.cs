@@ -78,8 +78,8 @@ public class EventStackFilterQueryTests : IntegrationTestsBase
         long expectedInvert = expectedInverted ?? totalStacks - expected;
         Assert.Equal(expectedInvert, invertedStacks.Total);
 
-        var stackIds = new HashSet<string>(stacks.Hits.Select(h => h.Id));
-        var invertedStackIds = new HashSet<string>(invertedStacks.Hits.Select(h => h.Id));
+        var stackIds = new HashSet<string>(stacks.Hits.Select(h => h.Id!));
+        var invertedStackIds = new HashSet<string>(invertedStacks.Hits.Select(h => h.Id!));
 
         Assert.Empty(stackIds.Intersect(invertedStackIds));
     }

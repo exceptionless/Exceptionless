@@ -600,7 +600,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
 
         var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(eventSystemFilter).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date).Index(ti.Range.UtcStart, ti.Range.UtcEnd);
         var stackTerms = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(String.Join(" OR ", stacks.Select(r => $"stack:{r.Id}"))).AggregationsExpression($"terms:(stack_id~{stacks.Count} cardinality:user sum:count~1 min:date max:date)"));
-        return await GetStackSummariesAsync(stacks, stackTerms.Aggregations.Terms<string>("terms_stack_id").Buckets, eventSystemFilter, ti);
+        var buckets = stackTerms.Aggregations.Terms<string>("terms_stack_id")?.Buckets ?? [];
+        return await GetStackSummariesAsync(stacks, buckets, eventSystemFilter, ti);
     }
 
     private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, IReadOnlyCollection<KeyedBucket<string>> stackTerms, AppFilter sf, TimeInfo ti)
@@ -619,11 +620,11 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
                 Data = data.Data,
                 Title = stack.Title,
                 Status = stack.Status,
-                FirstOccurrence = term.Aggregations.Min<DateTime>("min_date").Value,
-                LastOccurrence = term.Aggregations.Max<DateTime>("max_date").Value,
-                Total = (long)(term.Aggregations.Sum("sum_count").Value ?? term.Total.GetValueOrDefault()),
+                FirstOccurrence = term.Aggregations.Min<DateTime>("min_date")?.Value ?? DateTime.MinValue,
+                LastOccurrence = term.Aggregations.Max<DateTime>("max_date")?.Value ?? DateTime.MinValue,
+                Total = (long)(term.Aggregations.Sum("sum_count")?.Value ?? term.Total.GetValueOrDefault()),
 
-                Users = term.Aggregations.Cardinality("cardinality_user").Value.GetValueOrDefault(),
+                Users = term.Aggregations.Cardinality("cardinality_user")?.Value.GetValueOrDefault() ?? 0,
                 TotalUsers = totalUsers.GetOrDefault(stack.ProjectId)
             };
 
@@ -649,8 +650,8 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         var countResult = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(projects.BuildFilter()).AggregationsExpression("terms:(project_id cardinality:user)"));
 
         // Cache all projects that have more than 10 users for 5 minutes.
-        var projectTerms = countResult.Aggregations.Terms<string>("terms_project_id").Buckets;
-        var aggregations = projectTerms.ToDictionary(t => t.Key, t => t.Aggregations.Cardinality("cardinality_user").Value.GetValueOrDefault());
+        var projectTerms = countResult.Aggregations.Terms<string>("terms_project_id")?.Buckets ?? [];
+        var aggregations = projectTerms.ToDictionary(t => t.Key, t => t.Aggregations.Cardinality("cardinality_user")?.Value.GetValueOrDefault() ?? 0);
         await scopedCacheClient.SetAllAsync(aggregations.Where(t => t.Value >= 10).ToDictionary(k => k.Key, v => v.Value), TimeSpan.FromMinutes(5));
         totals.AddRange(aggregations);
 

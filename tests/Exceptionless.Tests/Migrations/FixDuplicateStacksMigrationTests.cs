@@ -70,9 +70,9 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
         results = await _stackRepository.FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, originalStack.DuplicateSignature)));
         Assert.Single(results.Documents);
 
-        var updatedOriginalStack = await _stackRepository.GetByIdAsync(originalStack.Id, o => o.IncludeSoftDeletes());
+        var updatedOriginalStack = (await _stackRepository.GetByIdAsync(originalStack.Id, o => o.IncludeSoftDeletes()))!;
         Assert.False(updatedOriginalStack.IsDeleted);
-        var updatedDuplicateStack = await _stackRepository.GetByIdAsync(duplicateStack.Id, o => o.IncludeSoftDeletes());
+        var updatedDuplicateStack = (await _stackRepository.GetByIdAsync(duplicateStack.Id, o => o.IncludeSoftDeletes()))!;
         Assert.True(updatedDuplicateStack.IsDeleted);
 
         Assert.Equal(originalStack.CreatedUtc, updatedOriginalStack.CreatedUtc);
@@ -123,9 +123,9 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
         results = await _stackRepository.FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, originalStack.DuplicateSignature)));
         Assert.Single(results.Documents);
 
-        var updatedOriginalStack = await _stackRepository.GetByIdAsync(originalStack.Id, o => o.IncludeSoftDeletes());
+        var updatedOriginalStack = (await _stackRepository.GetByIdAsync(originalStack.Id, o => o.IncludeSoftDeletes()))!;
         Assert.True(updatedOriginalStack.IsDeleted);
-        var updatedBiggerStack = await _stackRepository.GetByIdAsync(biggerStack.Id, o => o.IncludeSoftDeletes());
+        var updatedBiggerStack = (await _stackRepository.GetByIdAsync(biggerStack.Id, o => o.IncludeSoftDeletes()))!;
         Assert.False(updatedBiggerStack.IsDeleted);
 
         Assert.Equal(originalStack.CreatedUtc, updatedBiggerStack.CreatedUtc);
@@ -172,9 +172,9 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
         results = await _stackRepository.FindAsync(q => q.ElasticFilter(Query<Stack>.Term(s => s.DuplicateSignature, originalStack.DuplicateSignature)));
         Assert.Single(results.Documents);
 
-        var updatedOriginalStack = await _stackRepository.GetByIdAsync(originalStack.Id, o => o.IncludeSoftDeletes());
+        var updatedOriginalStack = (await _stackRepository.GetByIdAsync(originalStack.Id, o => o.IncludeSoftDeletes()))!;
         Assert.False(updatedOriginalStack.IsDeleted);
-        var updatedDuplicateStack = await _stackRepository.GetByIdAsync(duplicateStack.Id, o => o.IncludeSoftDeletes());
+        var updatedDuplicateStack = (await _stackRepository.GetByIdAsync(duplicateStack.Id, o => o.IncludeSoftDeletes()))!;
         Assert.True(updatedDuplicateStack.IsDeleted);
 
         Assert.Equal(originalStack.CreatedUtc, updatedOriginalStack.CreatedUtc);

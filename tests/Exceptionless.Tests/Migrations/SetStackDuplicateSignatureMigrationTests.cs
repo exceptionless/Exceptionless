@@ -45,7 +45,7 @@ public class SetStackDuplicateSignatureMigrationTests : IntegrationTestsBase
         await RefreshDataAsync();
 
         string expectedDuplicateSignature = $"{stack.ProjectId}:{stack.SignatureHash}";
-        var actualStack = await _repository.GetByIdAsync(stack.Id);
+        var actualStack = (await _repository.GetByIdAsync(stack.Id))!;
         Assert.NotEmpty(actualStack.ProjectId);
         Assert.NotEmpty(actualStack.SignatureHash);
         Assert.Equal($"{actualStack.ProjectId}:{actualStack.SignatureHash}", actualStack.DuplicateSignature);

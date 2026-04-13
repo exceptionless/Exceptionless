@@ -39,7 +39,7 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
         await _repository.IncrementNextSummaryEndOfDayTicksAsync(new[] { project });
         await RefreshDataAsync();
 
-        var updatedProject = await _repository.GetByIdAsync(project.Id);
+        var updatedProject = (await _repository.GetByIdAsync(project.Id))!;
         // TODO: Modified date isn't currently updated in the update scripts.
         //Assert.NotEqual(project.ModifiedUtc, updatedProject.ModifiedUtc);
         Assert.Equal(project.NextSummaryEndOfDayTicks + TimeSpan.TicksPerDay, updatedProject.NextSummaryEndOfDayTicks);
@@ -134,7 +134,7 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
         project.Data[Project.KnownDataKeys.SlackToken] = token;
 
         await _repository.AddAsync(project, o => o.ImmediateConsistency());
-        var actual = await _repository.GetByIdAsync(project.Id, o => o.Cache());
+        var actual = (await _repository.GetByIdAsync(project.Id, o => o.Cache()))!;
         Assert.NotNull(actual);
         Assert.Equal(project.Name, actual.Name);
         var actualToken = actual.GetSlackToken();
@@ -142,7 +142,8 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
 
         var actualCache = await _cache.GetAsync<ICollection<FindHit<Project>>>("Project:" + project.Id);
         Assert.True(actualCache.HasValue);
-        Assert.Equal(project.Name, actualCache.Value.Single().Document.Name);
+        var cachedDocs = actualCache.Value!;
+        Assert.Equal(project.Name, cachedDocs.Single().Document!.Name);
         var actualCacheToken = actual.GetSlackToken();
         Assert.Equal(token.AccessToken, actualCacheToken?.AccessToken);
     }

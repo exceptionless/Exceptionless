@@ -68,7 +68,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         TimeProvider.Advance(TimeSpan.FromMinutes(10));
 
         await _usageService.SavePendingUsageAsync();
-        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        organization = (await _organizationRepository.GetByIdAsync(organization.Id))!;
         Assert.Single(organization.UsageHours);
         var usage = organization.Usage.Single();
         Assert.Equal(organization.MaxEventsPerMonth, usage.Limit);
@@ -76,7 +76,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(0, usage.Blocked);
         Assert.Equal(0, usage.TooBig);
 
-        project = await _projectRepository.GetByIdAsync(project.Id);
+        project = (await _projectRepository.GetByIdAsync(project.Id))!;
         Assert.Single(project.UsageHours);
         usage = project.Usage.Single();
         Assert.Equal(eventsLeftInBucket, usage.Total);
@@ -138,7 +138,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         TimeProvider.Advance(TimeSpan.FromMinutes(10));
 
         await _usageService.SavePendingUsageAsync();
-        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        organization = (await _organizationRepository.GetByIdAsync(organization.Id))!;
         var overage = organization.UsageHours.Single();
         Assert.Equal(eventsLeftInBucket + 1, overage.Total);
         Assert.Equal(1, overage.Blocked);
@@ -150,7 +150,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(1, usage.Blocked);
         Assert.Equal(0, usage.TooBig);
 
-        project = await _projectRepository.GetByIdAsync(project.Id);
+        project = (await _projectRepository.GetByIdAsync(project.Id))!;
         overage = project.UsageHours.Single();
         Assert.Equal(eventsLeftInBucket + 1, overage.Total);
         Assert.Equal(1, overage.Blocked);
@@ -167,7 +167,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         TimeProvider.Advance(TimeSpan.FromMinutes(10));
 
         await _usageService.SavePendingUsageAsync();
-        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        organization = (await _organizationRepository.GetByIdAsync(organization.Id))!;
         overage = organization.UsageHours.Single();
         Assert.Equal(eventsLeftInBucket + 1, overage.Total);
         Assert.Equal(1001, overage.Blocked);
@@ -179,7 +179,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(1001, usage.Blocked);
         Assert.Equal(0, usage.TooBig);
 
-        project = await _projectRepository.GetByIdAsync(project.Id);
+        project = (await _projectRepository.GetByIdAsync(project.Id))!;
         overage = project.UsageHours.Single();
         Assert.Equal(eventsLeftInBucket + 1, overage.Total);
         Assert.Equal(1001, overage.Blocked);
@@ -203,7 +203,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         TimeProvider.Advance(TimeSpan.FromMinutes(10));
 
         await _usageService.SavePendingUsageAsync();
-        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        organization = (await _organizationRepository.GetByIdAsync(organization.Id))!;
         Assert.Single(organization.UsageHours);
         var usage = organization.Usage.Single();
         Assert.Equal(organization.MaxEventsPerMonth, usage.Limit);
@@ -215,7 +215,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(1, overage.Blocked);
         Assert.Equal(0, overage.TooBig);
 
-        project = await _projectRepository.GetByIdAsync(project.Id);
+        project = (await _projectRepository.GetByIdAsync(project.Id))!;
         Assert.Single(project.UsageHours);
 
         usage = project.Usage.Single();
@@ -241,7 +241,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         TimeProvider.Advance(TimeSpan.FromMinutes(10));
 
         await _usageService.SavePendingUsageAsync();
-        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        organization = (await _organizationRepository.GetByIdAsync(organization.Id))!;
         Assert.Single(organization.UsageHours);
         var usage = organization.Usage.Single();
         Assert.Equal(organization.MaxEventsPerMonth, usage.Limit);
@@ -253,7 +253,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(1, overage.Discarded);
         Assert.Equal(0, overage.TooBig);
 
-        project = await _projectRepository.GetByIdAsync(project.Id);
+        project = (await _projectRepository.GetByIdAsync(project.Id))!;
         Assert.Single(project.UsageHours);
 
         usage = project.Usage.Single();
@@ -279,7 +279,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         TimeProvider.Advance(TimeSpan.FromMinutes(10));
 
         await _usageService.SavePendingUsageAsync();
-        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        organization = (await _organizationRepository.GetByIdAsync(organization.Id))!;
         Assert.Single(organization.UsageHours);
         var usage = organization.Usage.Single();
         Assert.Equal(organization.MaxEventsPerMonth, usage.Limit);
@@ -287,7 +287,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(0, usage.Blocked);
         Assert.Equal(1, usage.TooBig);
 
-        project = await _projectRepository.GetByIdAsync(project.Id);
+        project = (await _projectRepository.GetByIdAsync(project.Id))!;
         Assert.Single(project.UsageHours);
         usage = project.Usage.Single();
         Assert.Equal(0, usage.Total);

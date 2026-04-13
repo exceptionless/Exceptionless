@@ -188,6 +188,7 @@ public class EventDataBuilder
 
     public EventDataBuilder Tag(params string[] tags)
     {
+        _event.Tags ??= [];
         _event.Tags.AddRange(tags);
         return this;
     }
@@ -218,13 +219,13 @@ public class EventDataBuilder
 
     public EventDataBuilder RequestInfo(string json)
     {
-        _event.AddRequestInfo(_serializer.Deserialize<RequestInfo>(json));
+        _event.AddRequestInfo(_serializer.Deserialize<RequestInfo>(json)!);
         return this;
     }
 
     public EventDataBuilder RequestInfoSample(Action<RequestInfo>? requestMutator = null)
     {
-        var requestInfo = _serializer.Deserialize<RequestInfo>(_sampleRequestInfo);
+        var requestInfo = _serializer.Deserialize<RequestInfo>(_sampleRequestInfo)!;
         requestMutator?.Invoke(requestInfo);
         _event.AddRequestInfo(requestInfo);
 

@@ -318,13 +318,13 @@ public class Bootstrapper
         return String.Concat(options.ScopePrefix, typeof(T).Name);
     }
 
-    private static RegionEndpoint GetAWSRegionEndpoint(IDictionary<string, string> data)
+    private static RegionEndpoint GetAWSRegionEndpoint(IDictionary<string, string?> data)
     {
         string region = data.GetString("region");
         return RegionEndpoint.GetBySystemName(String.IsNullOrEmpty(region) ? "us-east-1" : region);
     }
 
-    private static AWSCredentials GetAWSCredentials(IDictionary<string, string> data)
+    private static AWSCredentials GetAWSCredentials(IDictionary<string, string?> data)
     {
         string accessKey = data.GetString("accesskey");
         string secretKey = data.GetString("secretkey");

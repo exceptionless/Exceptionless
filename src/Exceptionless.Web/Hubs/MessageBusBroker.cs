@@ -73,6 +73,9 @@ public sealed class MessageBusBroker : IStartupAction
             return;
 
         var entityChanged = ExtendedEntityChanged.Create(ec);
+        if (entityChanged.Id is null)
+            return;
+
         if (UserTypeName == entityChanged.Type)
         {
             // It's pointless to send a user added message to the new user.
@@ -93,7 +96,7 @@ public sealed class MessageBusBroker : IStartupAction
         // Only allow specific token messages to be sent down to the client.
         if (TokenTypeName == entityChanged.Type)
         {
-            string userId = entityChanged.Data.GetValueOrDefault<string>(ExtendedEntityChanged.KnownKeys.UserId);
+            string? userId = entityChanged.Data.GetValueOrDefault<string>(ExtendedEntityChanged.KnownKeys.UserId);
             if (userId is not null)
             {
                 var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userId);

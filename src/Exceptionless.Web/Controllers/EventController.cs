@@ -250,7 +250,13 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         CountResult result;
         try
         {
-            result = await _repository.CountAsync(q => q.SystemFilter(query).FilterExpression(filter).EnforceEventStackFilter().AggregationsExpression(aggregations));
+            result = await _repository.CountAsync(q =>
+            {
+                q = q.SystemFilter(query).FilterExpression(filter).EnforceEventStackFilter();
+                if (!String.IsNullOrEmpty(aggregations))
+                    q = q.AggregationsExpression(aggregations);
+                return q;
+            });
         }
         catch (Exception ex)
         {
@@ -418,9 +424,16 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 .SortExpression(sort)
                 .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field)
                 .Index(ti.Range.UtcStart, ti.Range.UtcEnd),
-            o => page.HasValue
-                ? o.PageNumber(page).PageLimit(limit)
-                : o.SearchBeforeToken(before).SearchAfterToken(after).PageLimit(limit));
+            o =>
+            {
+                if (page.HasValue)
+                    return o.PageNumber(page).PageLimit(limit);
+                if (before is not null)
+                    o = o.SearchBeforeToken(before);
+                if (after is not null)
+                    o = o.SearchAfterToken(after);
+                return o.PageLimit(limit);
+            });
     }
 
     /// <summary>
@@ -1091,6 +1104,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                         ev.Geo = geo?.ToString();
                     break;
                 case "tags":
+                    ev.Tags ??= [];
                     ev.Tags.AddRange(kvp.Value.SelectMany(t => t?.Split([","], StringSplitOptions.RemoveEmptyEntries) ?? []).Distinct());
                     break;
                 case "identity":
@@ -1417,11 +1431,11 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 Data = data.Data,
                 Title = stack.Title,
                 Status = stack.Status,
-                FirstOccurrence = term.Aggregations.Min<DateTime>("min_date").Value,
-                LastOccurrence = term.Aggregations.Max<DateTime>("max_date").Value,
-                Total = (long)(term.Aggregations.Sum("sum_count").Value ?? term.Total.GetValueOrDefault()),
+                FirstOccurrence = term.Aggregations.Min<DateTime>("min_date")?.Value ?? DateTime.MinValue,
+                LastOccurrence = term.Aggregations.Max<DateTime>("max_date")?.Value ?? DateTime.MinValue,
+                Total = (long)(term.Aggregations.Sum("sum_count")?.Value ?? term.Total.GetValueOrDefault()),
 
-                Users = term.Aggregations.Cardinality("cardinality_user").Value.GetValueOrDefault(),
+                Users = term.Aggregations.Cardinality("cardinality_user")?.Value.GetValueOrDefault() ?? 0,
                 TotalUsers = totalUsers.GetOrDefault(stack.ProjectId)
             };
 
@@ -1447,8 +1461,8 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         var countResult = await _repository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(projects.BuildFilter()).EnforceEventStackFilter().AggregationsExpression("terms:(project_id cardinality:user)"));
 
         // Cache all projects that have more than 10 users for 5 minutes.
-        var projectTerms = countResult.Aggregations.Terms<string>("terms_project_id").Buckets;
-        var aggregations = projectTerms.ToDictionary(t => t.Key, t => t.Aggregations.Cardinality("cardinality_user").Value.GetValueOrDefault());
+        var projectTerms = countResult.Aggregations.Terms<string>("terms_project_id")?.Buckets ?? [];
+        var aggregations = projectTerms.ToDictionary(t => t.Key, t => t.Aggregations.Cardinality("cardinality_user")?.Value.GetValueOrDefault() ?? 0);
         await scopedCacheClient.SetAllAsync(aggregations.Where(t => t.Value >= 10).ToDictionary(k => k.Key, v => v.Value), TimeSpan.FromMinutes(5));
         totals.AddRange(aggregations);
 

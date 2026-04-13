@@ -96,7 +96,7 @@ public sealed class OverageMiddleware
         {
             AppDiagnostics.PostsBlocked.Add(1);
             var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
-            if (organization.IsSuspended)
+            if (organization is null or { IsSuspended: true })
             {
                 context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
                 return;
