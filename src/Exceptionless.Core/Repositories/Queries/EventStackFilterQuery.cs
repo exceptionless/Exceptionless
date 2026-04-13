@@ -160,7 +160,7 @@ namespace Exceptionless.Core.Repositories.Queries
             {
                 do
                 {
-                    stackIds.AddRange(results.Hits.Select(h => h.Id));
+                    stackIds.AddRange(results.Hits.Select(h => h.Id).OfType<string>());
                 } while (await results.NextPageAsync());
             }
 
@@ -202,15 +202,21 @@ namespace Exceptionless.Core.Repositories.Queries
             if (!systemFilterQuery.HasAppFilter())
                 systemFilterQuery.AppFilter(builderContext?.Source.GetAppFilter());
 
-            foreach (var range in systemFilterQuery.GetDateRanges())
+            var dateRanges = systemFilterQuery.GetDateRanges();
+            var rangesToReplace = dateRanges
+                .Where(range => range.Field == _inferredEventDateField || range.Field == "date")
+                .ToList();
+
+            // TODO: Verify remove+add ordering change is functionally equivalent via EventStackFilterQueryTests
+            // after Insulation blocker is resolved (was previously in-place mutation).
+            foreach (var range in rangesToReplace)
             {
-                if (range.Field == _inferredEventDateField || range.Field == "date")
-                {
-                    range.Field = _inferredStackLastOccurrenceField;
-                    if (isStackIdsNegated) // don't apply retention date filter on inverted stack queries
-                        range.StartDate = null;
-                    range.EndDate = null;
-                }
+                dateRanges.Remove(range);
+                systemFilterQuery.DateRange(
+                    isStackIdsNegated ? null : range.StartDate, // don't apply retention date filter on inverted stack queries
+                    null,
+                    _inferredStackLastOccurrenceField,
+                    range.TimeZone);
             }
 
             return systemFilterQuery;

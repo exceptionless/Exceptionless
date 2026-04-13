@@ -285,6 +285,9 @@ public class UsageService
         if (projectId is null)
         {
             var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
+            if (organization is null)
+                throw new InvalidOperationException($"Organization '{organizationId}' not found.");
+
             organization.TrimUsage(_timeProvider);
 
             usage = new UsageInfoResponse
@@ -297,6 +300,9 @@ public class UsageService
         else
         {
             var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache());
+            if (project is null)
+                throw new InvalidOperationException($"Project '{projectId}' not found.");
+
             project.TrimUsage(_timeProvider);
 
             usage = new UsageInfoResponse
@@ -353,6 +359,9 @@ public class UsageService
         {
             if (context.Organization is null)
                 context.Organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
+
+            if (context.Organization is null)
+                throw new InvalidOperationException($"Organization '{organizationId}' not found.");
 
             currentTotal = context.Organization.GetCurrentUsage(_timeProvider).Total;
             await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), currentTotal, TimeSpan.FromHours(8));
@@ -426,11 +435,14 @@ public class UsageService
         await _cache.IncrementAsync(GetBucketBlockedCacheKey(utcNow, organizationId, projectId), eventCount, TimeSpan.FromHours(8));
 
         await _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId, TimeSpan.FromHours(8));
-        await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8));
+        if (projectId is not null)
+            await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8));
 
         AppDiagnostics.EventsBlocked.Add(eventCount);
     }
 
+    // projectId is intentionally non-nullable: discarded events are only counted after project resolution
+    // (unlike Blocked/TooBig which can occur before a project is identified).
     public async Task IncrementDiscardedAsync(string organizationId, string projectId, int eventCount = 1)
     {
         if (eventCount <= 0)
@@ -455,7 +467,8 @@ public class UsageService
         await _cache.IncrementAsync(GetBucketTooBigCacheKey(utcNow, organizationId, projectId), 1, TimeSpan.FromHours(8));
 
         await _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId, TimeSpan.FromHours(8));
-        await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8));
+        if (projectId is not null)
+            await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8));
 
         AppDiagnostics.PostTooBig.Add(1);
     }

@@ -54,9 +54,11 @@ public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, I
     protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, Token? document, IDictionary<string, object>? data = null, TimeSpan? delay = null)
     {
         var items = new Foundatio.Utility.DataDictionary(data ?? new Dictionary<string, object>()) {
-                { ExtendedEntityChanged.KnownKeys.IsAuthenticationToken, TokenType.Authentication == document?.Type },
-                { ExtendedEntityChanged.KnownKeys.UserId, document?.UserId }
+                { ExtendedEntityChanged.KnownKeys.IsAuthenticationToken, TokenType.Authentication == document?.Type }
             };
+        if (document?.UserId is not null)
+            items[ExtendedEntityChanged.KnownKeys.UserId] = document.UserId;
+
         return PublishMessageAsync(CreateEntityChanged(changeType, document?.OrganizationId, document?.ProjectId ?? document?.DefaultProjectId, null, document?.Id, items), delay);
     }
 }
