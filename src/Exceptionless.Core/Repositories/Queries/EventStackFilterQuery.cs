@@ -207,8 +207,8 @@ namespace Exceptionless.Core.Repositories.Queries
                 .Where(range => range.Field == _inferredEventDateField || range.Field == "date")
                 .ToList();
 
-            // TODO: Verify remove+add ordering change is functionally equivalent via EventStackFilterQueryTests
-            // after Insulation blocker is resolved (was previously in-place mutation).
+            // Remove date ranges targeting the event date field and replace with
+            // stack last-occurrence ranges (was previously in-place mutation).
             foreach (var range in rangesToReplace)
             {
                 dateRanges.Remove(range);
