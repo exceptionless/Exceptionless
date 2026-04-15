@@ -66,7 +66,7 @@
                     function onFailure(response) {
                         if (response.status === 426) {
                             return billingService
-                                .confirmUpgradePlan(response.data.message)
+                                .confirmUpgradePlan(response.data && (response.data.message || response.data.title))
                                 .then(function () {
                                     return createOrganization(name);
                                 })
@@ -74,8 +74,12 @@
                         }
 
                         var message = translateService.T("An error occurred while creating the organization.");
-                        if (response.data && response.data.message) {
-                            message += " " + translateService.T("Message:") + " " + response.data.message;
+                        if (response.data && (response.data.message || response.data.title)) {
+                            message +=
+                                " " +
+                                translateService.T("Message:") +
+                                " " +
+                                (response.data.message || response.data.title);
                         }
 
                         notificationService.error(message);
@@ -97,7 +101,10 @@
                     function onFailure(response) {
                         if (response.status === 426) {
                             return billingService
-                                .confirmUpgradePlan(response.data.message, organization.id)
+                                .confirmUpgradePlan(
+                                    response.data && (response.data.message || response.data.title),
+                                    organization.id
+                                )
                                 .then(function () {
                                     return createProject(organization);
                                 })
@@ -105,8 +112,12 @@
                         }
 
                         var message = translateService.T("An error occurred while creating the project.");
-                        if (response.data && response.data.message) {
-                            message += " " + translateService.T("Message:") + " " + response.data.message;
+                        if (response.data && (response.data.message || response.data.title)) {
+                            message +=
+                                " " +
+                                translateService.T("Message:") +
+                                " " +
+                                (response.data.message || response.data.title);
                         }
 
                         notificationService.error(message);

@@ -18,7 +18,7 @@ var storageBlobs = storage.AddBlobs("StorageBlobs");
 var storageQueues = storage.AddQueues("StorageQueues");
 
 var cache = builder.AddRedis("Redis", port: 6379)
-    .WithImageTag("7.4")
+    .WithImageTag("8.6")
     .WithLifetime(ContainerLifetime.Persistent)
     .WithContainerName("Exceptionless-Redis")
     .WithClearCommand()

@@ -10,7 +10,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.api | default dict ).replicaCount) }}{{ .Values.api.replicaCount }}{{ else }}{{ 2 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.api | default dict ).replicaCount) }}
+  replicas: {{ .Values.api.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-api
@@ -26,6 +28,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-api
       containers:
         - name: {{ template "exceptionless.name" . }}-api
           image: "{{ .Values.api.image.repository }}:{{ .Values.version }}"

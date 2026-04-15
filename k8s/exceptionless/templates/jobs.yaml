@@ -10,7 +10,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.closeInactiveSessions | default dict ).replicaCount) }}{{ .Values.jobs.closeInactiveSessions.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.closeInactiveSessions | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.closeInactiveSessions.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-close-inactive-sessions
@@ -26,6 +28,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-close-inactive-sessions
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-close-inactive-sessions
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -87,7 +96,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.dailySummary | default dict ).replicaCount) }}{{ .Values.jobs.dailySummary.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.dailySummary | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.dailySummary.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-daily-summary
@@ -103,6 +114,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-daily-summary
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-daily-summary
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -232,7 +250,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventNotifications | default dict ).replicaCount) }}{{ .Values.jobs.eventNotifications.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.eventNotifications | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.eventNotifications.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-notifications
@@ -248,6 +268,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-event-notifications
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-event-notifications
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -309,7 +336,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventPosts | default dict ).replicaCount) }}{{ .Values.jobs.eventPosts.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.eventPosts | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.eventPosts.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-posts
@@ -325,6 +354,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-event-posts
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-event-posts
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -470,7 +506,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventUserDescriptions | default dict ).replicaCount) }}{{ .Values.jobs.eventUserDescriptions.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.eventUserDescriptions | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.eventUserDescriptions.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-user-descriptions
@@ -486,6 +524,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-event-user-descriptions
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-event-user-descriptions
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -546,7 +591,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.mailMessage | default dict ).replicaCount) }}{{ .Values.jobs.mailMessage.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.mailMessage | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.mailMessage.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-mail-message
@@ -562,6 +609,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-mail-message
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-mail-message
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -826,7 +880,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.stackEventCount | default dict ).replicaCount) }}{{ .Values.jobs.stackEventCount.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.stackEventCount | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.stackEventCount.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-stack-event-count
@@ -842,6 +898,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-stack-event-count
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-stack-event-count
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -902,7 +965,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.webhooks | default dict ).replicaCount) }}{{ .Values.jobs.webhooks.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.webhooks | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.webhooks.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-web-hooks
@@ -918,6 +983,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-web-hooks
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-web-hooks
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -978,7 +1050,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.workitem | default dict ).replicaCount) }}{{ .Values.jobs.workitem.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.workitem | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.workitem.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-work-item
@@ -994,6 +1068,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-work-item
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-work-item
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -1086,7 +1167,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventUsage | default dict ).replicaCount) }}{{ .Values.jobs.eventUsage.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.eventUsage | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.eventUsage.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-usage

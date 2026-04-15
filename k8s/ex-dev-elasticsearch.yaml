@@ -1,11 +1,21 @@
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: high-priority
+value: 100000
+preemptionPolicy: PreemptLowerPriority
+globalDefault: false
+description: "For critical workloads that may preempt normal pods."
+
+---
 apiVersion: elasticsearch.k8s.elastic.co/v1
 kind: Elasticsearch
 metadata:
   name: ex-dev
   namespace: ex-dev
 spec:
-  version: 8.19.6
-  image: exceptionless/elasticsearch:8.19.6 # https://github.com/exceptionless/Exceptionless/tree/main/build/docker/elasticsearch
+  version: 8.19.14
+  image: exceptionless/elasticsearch:8.19.14 # https://github.com/exceptionless/Exceptionless/tree/main/build/docker/elasticsearch
   secureSettings:
     - secretName: ex-dev-snapshots
   http:
@@ -20,6 +30,7 @@ spec:
         action.destructive_requires_name: false
       podTemplate:
         spec:
+          priorityClassName: high-priority
           containers:
             - name: elasticsearch
               env:
@@ -57,7 +68,7 @@ metadata:
   name: ex-dev
   namespace: ex-dev
 spec:
-  version: 8.19.6
+  version: 8.19.14
   count: 1
   elasticsearchRef:
     name: ex-dev
