@@ -83,7 +83,10 @@ public class EventStackFilter
     public async Task<string> GetEventFilterAsync(string query, IQueryVisitorContext? context = null)
     {
         context ??= new ElasticQueryVisitorContext();
-        var result = await _parser.ParseAsync(query, context) ?? new GroupNode();
+        var result = await _parser.ParseAsync(query, context);
+        if (result is null)
+            return String.Empty;
+
         await _eventQueryVisitor.AcceptAsync(result, context);
         return result.ToString();
     }
@@ -91,7 +94,17 @@ public class EventStackFilter
     public async Task<StackFilter> GetStackFilterAsync(string query, IQueryVisitorContext? context = null)
     {
         context ??= new ElasticQueryVisitorContext();
-        var result = await _parser.ParseAsync(query, context) ?? new GroupNode();
+        var result = await _parser.ParseAsync(query, context);
+        if (result is null)
+            return new StackFilter
+            {
+                Filter = String.Empty,
+                InvertedFilter = String.Empty,
+                HasStatus = false,
+                HasStackIds = false,
+                HasStatusOpen = false
+            };
+
         var invertedResult = result.Clone();
 
         result = await _stackQueryVisitor.AcceptAsync(result, context) ?? result;

@@ -49,9 +49,8 @@ public class AppQueryValidator : IAppQueryValidator
             return new QueryProcessResult { Message = ex.Message };
         }
 
-        // A null parse result means an empty/whitespace query, which is valid — no validation needed.
         if (parsedResult is null)
-            return new QueryProcessResult { IsValid = true };
+            return new QueryProcessResult { Message = "Failed to parse query." };
 
         return await ValidateQueryAsync(parsedResult);
     }
@@ -88,7 +87,7 @@ public class AppQueryValidator : IAppQueryValidator
         }
 
         if (parsedResult is null)
-            return new QueryProcessResult { IsValid = true };
+            return new QueryProcessResult { Message = "Failed to parse aggregation." };
 
         return await ValidateAggregationsAsync(parsedResult);
     }
