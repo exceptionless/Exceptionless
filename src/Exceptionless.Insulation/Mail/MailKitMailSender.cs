@@ -110,12 +110,15 @@ public class MailKitMailSender : IMailSender, IHealthCheck
 
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
-        if (_lastSuccessfulConnection.IsAfter(_timeProvider.GetUtcNow().UtcDateTime.Subtract(TimeSpan.FromMinutes(5))))
-            return HealthCheckResult.Healthy();
-
         string? host = _emailOptions.SmtpHost;
         if (String.IsNullOrEmpty(host))
-            return HealthCheckResult.Unhealthy("Email is not configured");
+        {
+            _logger.LogWarning("Email is not configured");
+            return HealthCheckResult.Healthy("Email is not configured");
+        }
+
+        if (_lastSuccessfulConnection.IsAfter(_timeProvider.GetUtcNow().UtcDateTime.Subtract(TimeSpan.FromMinutes(5))))
+            return HealthCheckResult.Healthy();
 
         var sw = Stopwatch.StartNew();
 
@@ -126,22 +129,13 @@ public class MailKitMailSender : IMailSender, IHealthCheck
             var encryption = GetSecureSocketOption(_emailOptions.SmtpEncryption);
 
             await client.ConnectAsync(host, port, encryption, cancellationToken);
-
-            // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
-            client.AuthenticationMechanisms.Remove("XOAUTH2");
-
-            string? user = _emailOptions.SmtpUser;
-            if (!String.IsNullOrEmpty(user))
-            {
-                await client.AuthenticateAsync(user, _emailOptions.SmtpPassword, cancellationToken);
-            }
-
             await client.DisconnectAsync(true, cancellationToken);
             _lastSuccessfulConnection = _timeProvider.GetUtcNow().UtcDateTime;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            return HealthCheckResult.Unhealthy("Email Not Working.", ex);
+            // Proactive check failure — report degraded so liveness probe (HTTP 200) still passes.
+            return HealthCheckResult.Degraded("SMTP connection check failed.", ex);
         }
         finally
         {
