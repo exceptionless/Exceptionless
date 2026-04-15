@@ -18,4 +18,5 @@ jobs:
 
 config:
   EX_EnableSnapshotJobs: "false"
+  EX_TestEmailAddress: "test@exceptionless.io"
   EX_Serilog__MinimumLevel__Default: "Information"
