@@ -26,6 +26,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-close-inactive-sessions
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-close-inactive-sessions
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -103,6 +110,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-daily-summary
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-daily-summary
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -248,6 +262,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-event-notifications
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-event-notifications
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -325,6 +346,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-event-posts
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-event-posts
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -486,6 +514,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-event-user-descriptions
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-event-user-descriptions
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -562,6 +597,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-mail-message
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-mail-message
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -842,6 +884,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-stack-event-count
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-stack-event-count
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -918,6 +967,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-web-hooks
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-web-hooks
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -994,6 +1050,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-work-item
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-work-item
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
