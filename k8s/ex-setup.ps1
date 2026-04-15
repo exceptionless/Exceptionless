@@ -141,14 +141,36 @@ kubectl describe certificate -n tls-secret
 # apply namespace default limits
 kubectl apply -f namespace-default-limits.yaml
 
-# install redis server
-# https://github.com/bitnami/charts/blob/main/bitnami/redis/README.md
-# redis sentinel connection string example: server=some-redis:26379\,password=mypass\,abortConnect=false\,serviceName=mySentinelService
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm install ex-$ENV-redis bitnami/redis --values ex-$ENV-redis-values.yaml --namespace ex-$ENV --dry-run
+# setup redis operator
+# https://github.com/OT-CONTAINER-KIT/redis-operator
+# https://redis-operator.opstree.dev/docs/installation/installation/
+helm repo add ot-helm https://ot-container-kit.github.io/helm-charts/
+helm install redis-operator ot-helm/redis-operator `
+    --namespace ot-operators --create-namespace `
+    --set featureGates.GenerateConfigInInitContainer=true
 
-# upgrade redis server
-helm upgrade ex-$ENV-redis bitnami/redis --reset-values --values ex-$ENV-redis-values.yaml --namespace ex-$ENV --set global.redis.password=$REDIS_PASSWORD --dry-run
+# verify operator is running
+kubectl get pods -n ot-operators
+
+# create redis auth secret (set $REDIS_PASSWORD first)
+kubectl create secret generic ex-$ENV-redis-secret `
+    --from-literal=password=$REDIS_PASSWORD -n ex-$ENV
+
+# create redis standalone instance
+kubectl apply -f ex-$ENV-redis.yaml -n ex-$ENV
+
+# verify redis is running
+kubectl get redis -n ex-$ENV
+
+# upgrade redis operator
+helm upgrade redis-operator ot-helm/redis-operator -n ot-operators
+
+# upgrade redis instance (edit the CRD manifest, then re-apply)
+kubectl apply -f ex-$ENV-redis.yaml -n ex-$ENV
+
+# for cluster-mode validation, use the cluster manifest instead:
+kubectl apply -f ex-$ENV-redis-cluster.yaml -n ex-$ENV
+kubectl get rediscluster -n ex-$ENV
 
 # install signoz otel collector
 helm repo add signoz https://charts.signoz.io
@@ -174,7 +196,9 @@ helm install ex-$ENV .\exceptionless --namespace ex-$ENV --values ex-$ENV-values
     --set "config.EX_StripeWebHookSigningSecret=$EX_StripeWebHookSigningSecret"
 
 $ENV = "dev"
-$REDIS_CONNECTIONSTRING = "server=ex-dev-redis\,password=veR9d6VB6Z\,abortConnect=false\,serviceName=exceptionless"
+$REDIS_PASSWORD = $(kubectl get secret --namespace ex-$ENV ex-$ENV-redis-secret -o go-template='{{index .data "password" | base64decode }}')
+$REDIS_CONNECTIONSTRING = "ex-$ENV-redis.ex-$ENV:6379\,password=$REDIS_PASSWORD\,abortConnect=false"
+# for cluster-mode: $REDIS_CONNECTIONSTRING = "ex-$ENV-redis-cluster-leader-headless.ex-$ENV:6379\,password=$REDIS_PASSWORD\,abortConnect=false"
 helm upgrade ex-$ENV .\exceptionless --namespace ex-$ENV --reuse-values --set "redis.connectionString=$REDIS_CONNECTIONSTRING"
 helm upgrade ex-$ENV .\exceptionless --namespace ex-$ENV --reuse-values --set "app.image.repository=exceptionless/ui-ci"
 

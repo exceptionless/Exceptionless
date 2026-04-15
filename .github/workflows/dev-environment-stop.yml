@@ -1,0 +1,129 @@
+name: Stop Dev Environment
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run every 2 hours — checks if auto-stop threshold has been exceeded
+    - cron: "0 */2 * * *"
+
+permissions:
+  contents: read
+
+env:
+  CLUSTER_NAME: ex-k8s-v6
+  RESOURCE_GROUP: exceptionless-v6
+  NAMESPACE: ex-dev
+  AUTO_STOP_HOURS: 8
+
+jobs:
+  stop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure Login
+        run: az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
+
+      - name: Get AKS Credentials
+        run: az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER_NAME --overwrite-existing
+
+      - name: Check if Environment is Running
+        id: check
+        run: |
+          REPLICAS=$(kubectl get deployment/ex-dev-app --namespace $NAMESPACE -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "0")
+          echo "app_replicas=$REPLICAS" >> $GITHUB_OUTPUT
+
+          if [ "$REPLICAS" = "0" ]; then
+            echo "Environment is already stopped."
+            echo "running=false" >> $GITHUB_OUTPUT
+          else
+            echo "Environment is running (app replicas: $REPLICAS)."
+            echo "running=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check Auto-Stop Threshold
+        id: auto_stop
+        if: ${{ github.event_name == 'schedule' && steps.check.outputs.running == 'true' }}
+        run: |
+          STARTED_AT=$(kubectl get namespace $NAMESPACE -o jsonpath='{.metadata.annotations.exceptionless\.io/dev-started-at}' 2>/dev/null || echo "")
+
+          if [ -z "$STARTED_AT" ]; then
+            echo "No start annotation found. Stopping as a safety measure."
+            echo "should_stop=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          STARTED_EPOCH=$(date -d "$STARTED_AT" +%s)
+          NOW_EPOCH=$(date +%s)
+          ELAPSED_HOURS=$(( (NOW_EPOCH - STARTED_EPOCH) / 3600 ))
+
+          echo "Started at: $STARTED_AT ($ELAPSED_HOURS hours ago)"
+
+          # Check the auto-stop hours from the start annotation, fall back to default
+          AUTO_HOURS=$(kubectl get namespace $NAMESPACE -o jsonpath='{.metadata.annotations.exceptionless\.io/dev-auto-stop-hours}' 2>/dev/null || echo "$AUTO_STOP_HOURS")
+          if [ -z "$AUTO_HOURS" ] || [ "$AUTO_HOURS" = "0" ]; then
+            echo "Auto-stop disabled for this session."
+            echo "should_stop=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          if [ "$ELAPSED_HOURS" -ge "$AUTO_HOURS" ]; then
+            echo "Auto-stop threshold exceeded ($ELAPSED_HOURS >= $AUTO_HOURS hours). Stopping."
+            echo "should_stop=true" >> $GITHUB_OUTPUT
+          else
+            echo "Within auto-stop window ($ELAPSED_HOURS < $AUTO_HOURS hours). Keeping alive."
+            echo "should_stop=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Skip (Not Time Yet)
+        if: ${{ github.event_name == 'schedule' && steps.auto_stop.outputs.should_stop != 'true' }}
+        run: echo "Skipping — environment not running or within auto-stop window."
+
+      - name: Stop Deployments
+        if: ${{ github.event_name == 'workflow_dispatch' || steps.auto_stop.outputs.should_stop == 'true' }}
+        run: |
+          kubectl scale deployment/ex-dev-app --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-api --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-close-inactive-sessions --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-daily-summary --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-notifications --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-usage --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-posts --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-user-descriptions --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-mail-message --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-stack-event-count --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-web-hooks --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-work-item --replicas=0 --namespace $NAMESPACE
+
+      - name: Suspend CronJobs
+        if: ${{ github.event_name == 'workflow_dispatch' || steps.auto_stop.outputs.should_stop == 'true' }}
+        run: |
+          kubectl patch cronjob/ex-dev-jobs-cleanup-data -p '{"spec":{"suspend": true}}' --namespace $NAMESPACE
+          kubectl patch cronjob/ex-dev-jobs-cleanup-orphaned-data -p '{"spec":{"suspend": true}}' --namespace $NAMESPACE
+          kubectl patch cronjob/ex-dev-jobs-download-geoip-database -p '{"spec":{"suspend": true}}' --namespace $NAMESPACE
+          kubectl patch cronjob/ex-dev-jobs-maintain-indexes -p '{"spec":{"suspend": true}}' --namespace $NAMESPACE
+          kubectl patch cronjob/ex-dev-jobs-migration -p '{"spec":{"suspend": true}}' --namespace $NAMESPACE
+
+      - name: Stop Infrastructure (Kibana, ES, Redis)
+        if: ${{ github.event_name == 'workflow_dispatch' || steps.auto_stop.outputs.should_stop == 'true' }}
+        run: |
+          kubectl scale deployment/ex-dev-kb --replicas=0 --namespace $NAMESPACE
+          kubectl scale statefulset/ex-dev-es-main --replicas=0 --namespace $NAMESPACE
+          kubectl scale statefulset/ex-dev-redis --replicas=0 --namespace $NAMESPACE
+
+      - name: Clear Start Annotation
+        if: ${{ github.event_name == 'workflow_dispatch' || steps.auto_stop.outputs.should_stop == 'true' }}
+        run: |
+          kubectl annotate namespace $NAMESPACE exceptionless.io/dev-started-at- --overwrite 2>/dev/null || true
+
+      - name: Summary
+        if: ${{ github.event_name == 'workflow_dispatch' || steps.auto_stop.outputs.should_stop == 'true' }}
+        run: |
+          TRIGGER="${{ github.event_name }}"
+          if [ "$TRIGGER" = "schedule" ]; then
+            REASON="auto-stop threshold exceeded"
+          else
+            REASON="manual stop"
+          fi
+          echo "### Dev Environment Stopped" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Reason**: $REASON" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY

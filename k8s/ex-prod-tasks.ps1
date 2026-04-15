@@ -28,8 +28,8 @@ curl -X PUT -H "Content-Type: application/json" -g -k -d '{ "index_patterns": ["
 curl -k -X DELETE "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/.ds-metrics-elastic_agent.filebeat_input-default-2024.12.03-000001"
 
 # connect to redis OR use k9s to shell into a redis pod
-$REDIS_PASSWORD = $(kubectl get secret --namespace ex-prod ex-prod-redis -o go-template='{{index .data "redis-password" | base64decode }}')
-kubectl exec --stdin --tty ex-prod-redis-node-0 -- /bin/bash -c "redis-cli -a $REDIS_PASSWORD"
+$REDIS_PASSWORD = $(kubectl get secret --namespace ex-prod ex-prod-redis-secret -o go-template='{{index .data "password" | base64decode }}')
+kubectl exec -it ex-prod-redis-cluster-leader-0 -n ex-prod -- redis-cli -a $REDIS_PASSWORD
 
 # open kubernetes dashboard
 $DASHBOARD_PASSWORD = $(kubectl get secret --namespace kubernetes-dashboard admin-user-token-w8jg7 -o go-template='{{.data.token | base64decode }}')
@@ -94,6 +94,14 @@ kubectl replace -f https://download.elastic.co/downloads/eck/3.3.2/crds.yaml
 kubectl create -f https://download.elastic.co/downloads/eck/3.3.2/crds.yaml
 kubectl apply -f https://download.elastic.co/downloads/eck/3.3.2/operator.yaml
 
+# upgrade redis operator
+# https://github.com/OT-CONTAINER-KIT/redis-operator/releases
+helm repo update
+helm upgrade redis-operator ot-helm/redis-operator -n ot-operators
+
+# upgrade redis instance (edit the CRD manifest, then re-apply)
+kubectl apply -f ex-prod-redis-cluster.yaml -n ex-prod
+
 # upgrade elasticsearch
 kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml
 
@@ -126,7 +134,7 @@ helm upgrade `
     --reuse-values ex-prod --namespace ex-prod .\exceptionless
 
 # NOTE any commas in helm values need to be escaped with a backslash ie server,password=pass need to be server\,password=pass
-# redis sentinel connection string example: server=some-redis:26379\,password=mypass\,abortConnect=false\,serviceName=mySentinelService
+# redis cluster connection string example: ex-prod-redis-cluster-leader-headless.ex-prod:6379\,password=mypass\,abortConnect=false
 helm upgrade --set "redis.connectionString=$REDIS_CONNECTIONSTRING" --reuse-values ex-prod --namespace ex-prod .\exceptionless
 
 # stop the entire app

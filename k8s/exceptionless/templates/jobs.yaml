@@ -10,7 +10,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.closeInactiveSessions | default dict ).replicaCount) }}{{ .Values.jobs.closeInactiveSessions.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.closeInactiveSessions | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.closeInactiveSessions.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-close-inactive-sessions
@@ -94,7 +96,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.dailySummary | default dict ).replicaCount) }}{{ .Values.jobs.dailySummary.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.dailySummary | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.dailySummary.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-daily-summary
@@ -246,7 +250,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventNotifications | default dict ).replicaCount) }}{{ .Values.jobs.eventNotifications.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.eventNotifications | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.eventNotifications.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-notifications
@@ -330,7 +336,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventPosts | default dict ).replicaCount) }}{{ .Values.jobs.eventPosts.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.eventPosts | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.eventPosts.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-posts
@@ -498,7 +506,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventUserDescriptions | default dict ).replicaCount) }}{{ .Values.jobs.eventUserDescriptions.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.eventUserDescriptions | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.eventUserDescriptions.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-user-descriptions
@@ -581,7 +591,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.mailMessage | default dict ).replicaCount) }}{{ .Values.jobs.mailMessage.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.mailMessage | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.mailMessage.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-mail-message
@@ -868,7 +880,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.stackEventCount | default dict ).replicaCount) }}{{ .Values.jobs.stackEventCount.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.stackEventCount | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.stackEventCount.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-stack-event-count
@@ -951,7 +965,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.webhooks | default dict ).replicaCount) }}{{ .Values.jobs.webhooks.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.webhooks | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.webhooks.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-web-hooks
@@ -1034,7 +1050,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.workitem | default dict ).replicaCount) }}{{ .Values.jobs.workitem.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.workitem | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.workitem.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-work-item
@@ -1149,7 +1167,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventUsage | default dict ).replicaCount) }}{{ .Values.jobs.eventUsage.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.eventUsage | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.eventUsage.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-usage
