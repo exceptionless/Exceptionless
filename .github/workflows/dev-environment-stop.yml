@@ -19,6 +19,9 @@ jobs:
   stop:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
       - name: Azure Login
         run: az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
 
@@ -107,7 +110,7 @@ jobs:
         run: |
           kubectl scale deployment/ex-dev-kb --replicas=0 --namespace $NAMESPACE
           kubectl scale statefulset/ex-dev-es-main --replicas=0 --namespace $NAMESPACE
-          kubectl scale statefulset/ex-dev-redis --replicas=0 --namespace $NAMESPACE
+          kubectl delete -f k8s/ex-dev-redis.yaml --ignore-not-found
 
       - name: Clear Start Annotation
         if: ${{ github.event_name == 'workflow_dispatch' || steps.auto_stop.outputs.should_stop == 'true' }}
