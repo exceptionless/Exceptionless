@@ -181,7 +181,7 @@ public sealed class AggregationTests : IntegrationTestsBase
         Assert.Equal(oldestEvent.Date.UtcDateTime.Floor(TimeSpan.FromMilliseconds(1)), (largestStackBucket.Aggregations.Min<DateTime>("min_date")?.Value ?? default).Floor(TimeSpan.FromMilliseconds(1)));
 
         var newestEvent = events.Documents.OrderByDescending(e => e.Date).First();
-        Assert.Equal(newestEvent.Date.UtcDateTime.Floor(TimeSpan.FromMilliseconds(1)), (largestStackBucket.Aggregations.Min<DateTime>("max_date")?.Value ?? default).Floor(TimeSpan.FromMilliseconds(1)));
+        Assert.Equal(newestEvent.Date.UtcDateTime.Floor(TimeSpan.FromMilliseconds(1)), (largestStackBucket.Aggregations.Max<DateTime>("max_date")?.Value ?? default).Floor(TimeSpan.FromMilliseconds(1)));
     }
 
     [Fact]

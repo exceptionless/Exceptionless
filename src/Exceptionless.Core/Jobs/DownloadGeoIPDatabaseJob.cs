@@ -32,7 +32,7 @@ public class DownloadGeoIPDatabaseJob : JobWithLockBase, IHealthCheck
 
     protected override Task<ILock?> GetLockAsync(CancellationToken cancellationToken = default)
     {
-        return _lockProvider.AcquireAsync(nameof(DownloadGeoIPDatabaseJob), TimeSpan.FromHours(2), new CancellationToken(true));
+        return _lockProvider.AcquireAsync(nameof(DownloadGeoIPDatabaseJob), TimeSpan.FromHours(2), cancellationToken);
     }
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)

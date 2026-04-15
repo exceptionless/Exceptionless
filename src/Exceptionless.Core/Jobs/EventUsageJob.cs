@@ -26,7 +26,7 @@ public class EventUsageJob : JobWithLockBase, IHealthCheck
 
     protected override Task<ILock?> GetLockAsync(CancellationToken cancellationToken = default)
     {
-        return _lockProvider.AcquireAsync(nameof(EventUsageJob), TimeSpan.FromMinutes(4), new CancellationToken(true));
+        return _lockProvider.AcquireAsync(nameof(EventUsageJob), TimeSpan.FromMinutes(4), cancellationToken);
     }
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)

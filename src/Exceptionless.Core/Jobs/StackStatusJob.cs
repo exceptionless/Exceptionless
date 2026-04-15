@@ -29,7 +29,7 @@ public class StackStatusJob : JobWithLockBase, IHealthCheck
 
     protected override Task<ILock?> GetLockAsync(CancellationToken cancellationToken = default)
     {
-        return _lockProvider.AcquireAsync(nameof(StackStatusJob), TimeSpan.FromSeconds(10), new CancellationToken(true));
+        return _lockProvider.AcquireAsync(nameof(StackStatusJob), TimeSpan.FromSeconds(10), cancellationToken);
     }
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)

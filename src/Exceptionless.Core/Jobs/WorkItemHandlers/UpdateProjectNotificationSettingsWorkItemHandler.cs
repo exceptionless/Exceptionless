@@ -30,9 +30,9 @@ public class UpdateProjectNotificationSettingsWorkItemHandler : WorkItemHandlerB
         _timeProvider = timeProvider;
     }
 
-    public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
+    public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = default)
     {
-        return _lockProvider.AcquireAsync(nameof(UpdateProjectNotificationSettingsWorkItemHandler), TimeSpan.FromMinutes(15), new CancellationToken(true));
+        return _lockProvider.AcquireAsync(nameof(UpdateProjectNotificationSettingsWorkItemHandler), TimeSpan.FromMinutes(15), cancellationToken);
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
