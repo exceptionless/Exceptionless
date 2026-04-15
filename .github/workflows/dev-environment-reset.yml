@@ -26,8 +26,6 @@ jobs:
   reset:
     runs-on: ubuntu-latest
     steps:
-      - name: Check Authorization
-        run: |
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -78,15 +76,22 @@ jobs:
         if: ${{ inputs.reset_redis }}
         run: |
           REDIS_PASSWORD=$(kubectl get secret --namespace $NAMESPACE ex-dev-redis-secret -o go-template='{{index .data "password" | base64decode }}')
-          # Find a running redis pod (standalone or cluster leader)
-          REDIS_POD=$(kubectl get pods -n $NAMESPACE -l app=ex-dev-redis -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || \
-                      kubectl get pods -n $NAMESPACE -l redis_setup_type=cluster,role=leader -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
-          if [ -z "$REDIS_POD" ]; then
-            echo "::error::No Redis pod found."
+          # Flush standalone Redis
+          STANDALONE_POD=$(kubectl get pods -n $NAMESPACE -l app=ex-dev-redis -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+          if [ -n "$STANDALONE_POD" ]; then
+            echo "Flushing standalone Redis ($STANDALONE_POD)..."
+            kubectl exec -n $NAMESPACE "$STANDALONE_POD" -- redis-cli -a "$REDIS_PASSWORD" FLUSHALL
+          fi
+          # Flush all Redis Cluster leader nodes
+          CLUSTER_LEADERS=$(kubectl get pods -n $NAMESPACE -l redis_setup_type=cluster,role=leader -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || echo "")
+          for POD in $CLUSTER_LEADERS; do
+            echo "Flushing cluster leader $POD..."
+            kubectl exec -n $NAMESPACE "$POD" -- redis-cli -a "$REDIS_PASSWORD" FLUSHALL
+          done
+          if [ -z "$STANDALONE_POD" ] && [ -z "$CLUSTER_LEADERS" ]; then
+            echo "::error::No Redis pods found."
             exit 1
           fi
-          echo "Flushing Redis on $REDIS_POD..."
-          kubectl exec -n $NAMESPACE "$REDIS_POD" -- redis-cli -a "$REDIS_PASSWORD" FLUSHALL
           echo "Redis data flushed."
 
       - name: Scale Up App Pods
