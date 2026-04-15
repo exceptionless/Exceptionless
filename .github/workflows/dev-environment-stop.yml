@@ -19,17 +19,6 @@ jobs:
   stop:
     runs-on: ubuntu-latest
     steps:
-      - name: Check Authorization
-        if: ${{ github.event_name == 'workflow_dispatch' }}
-        run: |
-          MEMBER=$(gh api "orgs/exceptionless/teams/core/members" --jq '.[].login' | grep -xi "${{ github.actor }}" || true)
-          if [[ -z "$MEMBER" ]]; then
-            echo "::error::Unauthorized. Only members of the @exceptionless/core team can run this workflow."
-            exit 1
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Checkout
         uses: actions/checkout@v6
 
