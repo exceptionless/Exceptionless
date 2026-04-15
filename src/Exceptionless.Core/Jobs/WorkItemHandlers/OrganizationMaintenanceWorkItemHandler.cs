@@ -26,18 +26,13 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase
 
     public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
     {
-        return _lockProvider.AcquireAsync(nameof(OrganizationMaintenanceWorkItemHandler), TimeSpan.FromMinutes(15), cancellationToken);
+        return _lockProvider.AcquireAsync(nameof(OrganizationMaintenanceWorkItemHandler), TimeSpan.FromMinutes(15), new CancellationToken(true));
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
     {
         const int LIMIT = 100;
-        var wi = context.GetData<OrganizationMaintenanceWorkItem>();
-        if (wi is null)
-        {
-            Log.LogWarning("Work item data of type {WorkItemType} is null", nameof(OrganizationMaintenanceWorkItem));
-            return;
-        }
+        var wi = context.GetData<OrganizationMaintenanceWorkItem>()!;
 
         Log.LogInformation("Received upgrade organizations work item. Upgrade Plans: {UpgradePlans}", wi.UpgradePlans);
 

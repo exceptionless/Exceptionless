@@ -28,17 +28,12 @@ public class FixStackStatsWorkItemHandler : WorkItemHandlerBase
 
     public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = default)
     {
-        return _lockProvider.AcquireAsync(nameof(FixStackStatsWorkItemHandler), TimeSpan.FromHours(1), cancellationToken);
+        return _lockProvider.AcquireAsync(nameof(FixStackStatsWorkItemHandler), TimeSpan.FromHours(1), new CancellationToken(true));
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
     {
-        var wi = context.GetData<FixStackStatsWorkItem>();
-        if (wi is null)
-        {
-            Log.LogWarning("Work item data of type {WorkItemType} is null", nameof(FixStackStatsWorkItem));
-            return;
-        }
+        var wi = context.GetData<FixStackStatsWorkItem>()!;
 
         var utcEnd = wi.UtcEnd ?? _timeProvider.GetUtcNow().UtcDateTime;
 

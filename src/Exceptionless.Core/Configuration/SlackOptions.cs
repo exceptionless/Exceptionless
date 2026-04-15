@@ -16,7 +16,7 @@ public class SlackOptions
     {
         var options = new SlackOptions();
 
-        var oAuth = (config.GetConnectionString("OAuth") ?? String.Empty).ParseConnectionString();
+        var oAuth = config.GetConnectionString("OAuth")?.ParseConnectionString() ?? [];
         options.SlackId = oAuth.GetString(nameof(options.SlackId));
         options.SlackSecret = oAuth.GetString(nameof(options.SlackSecret));
 

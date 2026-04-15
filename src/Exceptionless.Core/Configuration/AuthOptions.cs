@@ -36,7 +36,7 @@ public class AuthOptions
         options.LdapConnectionString = config.GetConnectionString("LDAP");
         options.EnableActiveDirectoryAuth = config.GetValue(nameof(options.EnableActiveDirectoryAuth), options.LdapConnectionString is not null);
 
-        var oAuth = (config.GetConnectionString("OAuth") ?? String.Empty).ParseConnectionString();
+        var oAuth = config.GetConnectionString("OAuth")?.ParseConnectionString() ?? [];
         options.GoogleId = oAuth.GetString(nameof(options.GoogleId));
         options.GoogleSecret = oAuth.GetString(nameof(options.GoogleSecret));
         options.MicrosoftId = oAuth.GetString(nameof(options.MicrosoftId));

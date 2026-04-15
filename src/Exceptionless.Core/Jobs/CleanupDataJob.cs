@@ -63,7 +63,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
 
     protected override Task<ILock?> GetLockAsync(CancellationToken cancellationToken = default)
     {
-        return _lockProvider.AcquireAsync(nameof(CleanupDataJob), TimeSpan.FromMinutes(15), cancellationToken);
+        return _lockProvider.AcquireAsync(nameof(CleanupDataJob), TimeSpan.FromMinutes(15), new CancellationToken(true));
     }
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)

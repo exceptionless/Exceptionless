@@ -15,7 +15,7 @@ public class MetricOptions
         var options = new MetricOptions();
 
         string? cs = config.GetConnectionString("Metrics");
-        options.Data = (cs ?? String.Empty).ParseConnectionString();
+        options.Data = cs?.ParseConnectionString() ?? [];
         options.Provider = options.Data.GetString(nameof(options.Provider));
 
         string? providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;

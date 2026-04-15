@@ -15,7 +15,7 @@ public class IntercomOptions
     {
         var options = new IntercomOptions();
 
-        var oAuth = (config.GetConnectionString("OAuth") ?? String.Empty).ParseConnectionString();
+        var oAuth = config.GetConnectionString("OAuth")?.ParseConnectionString() ?? [];
         options.IntercomId = oAuth.GetString(nameof(options.IntercomId));
         options.IntercomSecret = oAuth.GetString(nameof(options.IntercomSecret));
 

@@ -24,19 +24,14 @@ public class ProjectMaintenanceWorkItemHandler : WorkItemHandlerBase
 
     public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
     {
-        return _lockProvider.AcquireAsync(nameof(ProjectMaintenanceWorkItemHandler), TimeSpan.FromMinutes(15), cancellationToken);
+        return _lockProvider.AcquireAsync(nameof(ProjectMaintenanceWorkItemHandler), TimeSpan.FromMinutes(15), new CancellationToken(true));
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
     {
         const int LIMIT = 100;
 
-        var workItem = context.GetData<ProjectMaintenanceWorkItem>();
-        if (workItem is null)
-        {
-            Log.LogWarning("Work item data of type {WorkItemType} is null", nameof(ProjectMaintenanceWorkItem));
-            return;
-        }
+        var workItem = context.GetData<ProjectMaintenanceWorkItem>()!;
 
         Log.LogInformation("Received upgrade projects work item. Update Default Bot List: {UpdateDefaultBotList} IncrementConfigurationVersion: {IncrementConfigurationVersion}", workItem.UpdateDefaultBotList, workItem.IncrementConfigurationVersion);
 

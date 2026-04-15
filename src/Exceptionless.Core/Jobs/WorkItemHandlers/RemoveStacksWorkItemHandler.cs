@@ -23,17 +23,12 @@ public class RemoveStacksWorkItemHandler : WorkItemHandlerBase
     public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
     {
         string cacheKey = $"{nameof(RemoveStacksWorkItem)}:{((RemoveStacksWorkItem)workItem).ProjectId}";
-        return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), cancellationToken);
+        return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
     {
-        var wi = context.GetData<RemoveStacksWorkItem>();
-        if (wi is null)
-        {
-            Log.LogWarning("Work item data of type {WorkItemType} is null", nameof(RemoveStacksWorkItem));
-            return;
-        }
+        var wi = context.GetData<RemoveStacksWorkItem>()!;
 
         using (Log.BeginScope(new ExceptionlessState().Organization(wi.OrganizationId).Project(wi.ProjectId)))
         {

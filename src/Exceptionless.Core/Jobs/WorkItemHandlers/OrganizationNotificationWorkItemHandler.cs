@@ -61,12 +61,7 @@ public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
 
     public override Task HandleItemAsync(WorkItemContext context)
     {
-        var wi = context.GetData<OrganizationNotificationWorkItem>();
-        if (wi is null)
-        {
-            Log.LogWarning("Work item data of type {WorkItemType} is null", nameof(OrganizationNotificationWorkItem));
-            return Task.CompletedTask;
-        }
+        var wi = context.GetData<OrganizationNotificationWorkItem>()!;
 
         string cacheKey = $"{nameof(OrganizationNotificationWorkItemHandler)}:{wi.OrganizationId}";
 

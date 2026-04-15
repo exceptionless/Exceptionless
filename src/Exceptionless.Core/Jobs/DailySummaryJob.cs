@@ -53,7 +53,7 @@ public class DailySummaryJob : JobWithLockBase, IHealthCheck
 
     protected override Task<ILock?> GetLockAsync(CancellationToken cancellationToken = default)
     {
-        return _lockProvider.AcquireAsync(nameof(DailySummaryJob), TimeSpan.FromHours(1), cancellationToken);
+        return _lockProvider.AcquireAsync(nameof(DailySummaryJob), TimeSpan.FromHours(1), new CancellationToken(true));
     }
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)

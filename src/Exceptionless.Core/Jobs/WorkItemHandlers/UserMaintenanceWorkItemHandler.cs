@@ -24,19 +24,14 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
 
     public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
     {
-        return _lockProvider.AcquireAsync(nameof(UserMaintenanceWorkItemHandler), TimeSpan.FromMinutes(15), cancellationToken);
+        return _lockProvider.AcquireAsync(nameof(UserMaintenanceWorkItemHandler), TimeSpan.FromMinutes(15), new CancellationToken(true));
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
     {
         const int LIMIT = 100;
 
-        var workItem = context.GetData<UserMaintenanceWorkItem>();
-        if (workItem is null)
-        {
-            Log.LogWarning("Work item data of type {WorkItemType} is null", nameof(UserMaintenanceWorkItem));
-            return;
-        }
+        var workItem = context.GetData<UserMaintenanceWorkItem>()!;
 
         Log.LogInformation("Received user maintenance work item. Normalize={Normalize} ResetVerifyEmailAddressToken={ResendVerifyEmailAddressEmails}", workItem.Normalize, workItem.ResetVerifyEmailAddressToken);
 

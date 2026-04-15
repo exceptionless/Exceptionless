@@ -24,17 +24,12 @@ public class SetProjectIsConfiguredWorkItemHandler : WorkItemHandlerBase
     public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
     {
         string cacheKey = $"{nameof(SetProjectIsConfiguredWorkItemHandler)}:{((SetProjectIsConfiguredWorkItem)workItem).ProjectId}";
-        return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), cancellationToken);
+        return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
     {
-        var workItem = context.GetData<SetProjectIsConfiguredWorkItem>();
-        if (workItem is null)
-        {
-            Log.LogWarning("Work item data of type {WorkItemType} is null", nameof(SetProjectIsConfiguredWorkItem));
-            return;
-        }
+        var workItem = context.GetData<SetProjectIsConfiguredWorkItem>()!;
 
         Log.LogInformation("Setting Is Configured for project: {ProjectId}", workItem.ProjectId);
 
