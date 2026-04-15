@@ -65,7 +65,7 @@ helm upgrade --reset-values --namespace ingress-nginx -f nginx-values.yaml ingre
 # upgrade cert-manager
 # https://github.com/jetstack/cert-manager/releases
 helm repo update
-helm upgrade cert-manager jetstack/cert-manager --namespace cert-manager --reset-values --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer --set installCRDs=true --dry-run
+helm upgrade cert-manager jetstack/cert-manager --namespace cert-manager --reset-values --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer --set crds.enabled=true --dry-run
 
 # upgrade kube-state-metrics
 helm upgrade --namespace elastic-system kube-state-metrics prometheus-community/kube-state-metrics --reset-values
@@ -90,9 +90,9 @@ helm upgrade --reset-values signoz-collector signoz/k8s-infra -f signoz.yaml --s
 # upgrade elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl replace -f https://download.elastic.co/downloads/eck/3.1.0/crds.yaml
-kubectl create -f https://download.elastic.co/downloads/eck/3.1.0/crds.yaml
-kubectl apply -f https://download.elastic.co/downloads/eck/3.1.0/operator.yaml
+kubectl replace -f https://download.elastic.co/downloads/eck/3.3.2/crds.yaml
+kubectl create -f https://download.elastic.co/downloads/eck/3.3.2/crds.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/3.3.2/operator.yaml
 
 # upgrade elasticsearch
 kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml

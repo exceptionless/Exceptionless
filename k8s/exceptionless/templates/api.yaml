@@ -26,6 +26,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-api
       containers:
         - name: {{ template "exceptionless.name" . }}-api
           image: "{{ .Values.api.image.repository }}:{{ .Values.version }}"
