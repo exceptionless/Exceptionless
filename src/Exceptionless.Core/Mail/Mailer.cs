@@ -305,21 +305,30 @@ public class Mailer : IMailer
 
     private Task<string> QueueMessageAsync(MailMessage message, string metricsName)
     {
-        CleanAddresses(message);
+        if (!CleanAddresses(message))
+            return Task.FromResult(String.Empty);
+
         AppDiagnostics.Counter($"mailer.{metricsName}");
         return _queue.EnqueueAsync(message);
     }
 
-    private void CleanAddresses(MailMessage message)
+    private bool CleanAddresses(MailMessage message)
     {
         if (_appOptions.AppMode == AppMode.Production)
-            return;
+            return true;
 
         string address = message.To.ToLowerInvariant();
         if (_appOptions.EmailOptions.AllowedOutboundAddresses.Any(address.Contains))
-            return;
+            return true;
+
+        if (String.IsNullOrEmpty(_appOptions.EmailOptions.TestEmailAddress))
+        {
+            _logger.LogWarning("Mail to {EmailAddress} dropped: TestEmailAddress is not configured", message.To);
+            return false;
+        }
 
         message.Subject = $"[{message.To}] {message.Subject}".StripInvisible();
-        message.To = _appOptions.EmailOptions.TestEmailAddress ?? throw new ArgumentException("TestEmailAddress is not configured");
+        message.To = _appOptions.EmailOptions.TestEmailAddress;
+        return true;
     }
 }

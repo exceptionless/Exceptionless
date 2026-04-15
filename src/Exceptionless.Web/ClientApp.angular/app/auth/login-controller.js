@@ -24,6 +24,10 @@
                 var vm = this;
 
                 function getMessage(response) {
+                    if (response.status === 401) {
+                        return translateService.T("Login_Invalid_Credentials");
+                    }
+
                     var message = translateService.T("Loggin_Failed_Message");
                     if (response.data && response.data.message) {
                         message += " " + translateService.T("Message:") + " " + response.data.message;
