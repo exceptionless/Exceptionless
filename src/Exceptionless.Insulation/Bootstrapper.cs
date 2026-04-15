@@ -232,6 +232,9 @@ public class Bootstrapper
         }
         else if (String.Equals(options.Provider, "s3"))
         {
+            if (String.IsNullOrEmpty(options.ConnectionString))
+                throw new InvalidOperationException("S3 storage provider requires a non-null ConnectionString.");
+
             container.ReplaceSingleton<IFileStorage>(s => new S3FileStorage(o => o
                     .ConnectionString(options.ConnectionString)
                     .Credentials(GetAWSCredentials(options.Data))

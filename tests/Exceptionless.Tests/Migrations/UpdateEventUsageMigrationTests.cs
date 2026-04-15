@@ -38,7 +38,7 @@ public class UpdateEventUsageMigrationTests : IntegrationTestsBase
     protected override void RegisterServices(IServiceCollection services)
     {
         services.AddTransient<SetStackDuplicateSignature>();
-        services.AddSingleton<ILock>(new EmptyLock());
+        services.AddSingleton<ILock>(EmptyLock.Empty);
         base.RegisterServices(services);
     }
 

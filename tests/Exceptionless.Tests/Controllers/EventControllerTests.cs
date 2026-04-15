@@ -1837,7 +1837,8 @@ public class EventControllerTests : IntegrationTestsBase
     private string ToPrettyJson(string json)
     {
         using var document = JsonDocument.Parse(json);
-        var prettyJsonOptions = new JsonSerializerOptions(_jsonSerializerOptions) {
+        var prettyJsonOptions = new JsonSerializerOptions(_jsonSerializerOptions)
+        {
             WriteIndented = true
         };
         return JsonSerializer.Serialize(document.RootElement, prettyJsonOptions);

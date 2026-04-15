@@ -10,22 +10,26 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
     public override async Task VisitAsync(GroupNode node, IQueryVisitorContext context)
     {
         var childTerms = new List<string>();
-        if (node.Left is TermNode { Field: null } leftTermNode)
+        if (node.Left is TermNode { Field: null, Term: not null } leftTermNode)
             childTerms.Add(leftTermNode.Term);
 
         if (node.Left is TermRangeNode { Field: null } leftTermRangeNode)
         {
-            childTerms.Add(leftTermRangeNode.Min);
-            childTerms.Add(leftTermRangeNode.Max);
+            if (leftTermRangeNode.Min is not null)
+                childTerms.Add(leftTermRangeNode.Min);
+            if (leftTermRangeNode.Max is not null)
+                childTerms.Add(leftTermRangeNode.Max);
         }
 
-        if (node.Right is TermNode { Field: null } rightTermNode)
+        if (node.Right is TermNode { Field: null, Term: not null } rightTermNode)
             childTerms.Add(rightTermNode.Term);
 
         if (node.Right is TermRangeNode { Field: null } rightTermRangeNode)
         {
-            childTerms.Add(rightTermRangeNode.Min);
-            childTerms.Add(rightTermRangeNode.Max);
+            if (rightTermRangeNode.Min is not null)
+                childTerms.Add(rightTermRangeNode.Min);
+            if (rightTermRangeNode.Max is not null)
+                childTerms.Add(rightTermRangeNode.Max);
         }
 
         node.Field = GetCustomFieldName(node.Field, childTerms.ToArray()) ?? node.Field;
@@ -63,7 +67,7 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
         return Task.CompletedTask;
     }
 
-    private string? GetCustomFieldName(string field, string[] terms)
+    private string? GetCustomFieldName(string? field, string?[] terms)
     {
         if (String.IsNullOrEmpty(field))
             return null;
@@ -92,11 +96,11 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
         return field;
     }
 
-    private static string GetTermType(string[] terms)
+    private static string GetTermType(string?[] terms)
     {
         string termType = "s";
 
-        var trimmedTerms = terms.Where(t => t is not null).Distinct().ToList();
+        var trimmedTerms = terms.OfType<string>().Distinct().ToList();
         foreach (string term in trimmedTerms)
         {
             if (term.StartsWith("*"))
@@ -119,9 +123,9 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
         return termType;
     }
 
-    public static Task<IQueryNode> RunAsync(IQueryNode node, IQueryVisitorContext? context = null)
+    public static async Task<IQueryNode> RunAsync(IQueryNode node, IQueryVisitorContext? context = null)
     {
-        return new EventFieldsQueryVisitor().AcceptAsync(node, context);
+        return await new EventFieldsQueryVisitor().AcceptAsync(node, context ?? new QueryVisitorContext()) ?? node;
     }
 
     public static IQueryNode Run(IQueryNode node, IQueryVisitorContext? context = null)

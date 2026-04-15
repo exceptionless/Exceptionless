@@ -83,7 +83,7 @@ public class EventStackFilter
     public async Task<string> GetEventFilterAsync(string query, IQueryVisitorContext? context = null)
     {
         context ??= new ElasticQueryVisitorContext();
-        var result = await _parser.ParseAsync(query, context);
+        var result = await _parser.ParseAsync(query, context) ?? new GroupNode();
         await _eventQueryVisitor.AcceptAsync(result, context);
         return result.ToString();
     }
@@ -91,11 +91,11 @@ public class EventStackFilter
     public async Task<StackFilter> GetStackFilterAsync(string query, IQueryVisitorContext? context = null)
     {
         context ??= new ElasticQueryVisitorContext();
-        var result = await _parser.ParseAsync(query, context);
+        var result = await _parser.ParseAsync(query, context) ?? new GroupNode();
         var invertedResult = result.Clone();
 
-        result = await _stackQueryVisitor.AcceptAsync(result, context);
-        invertedResult = await _invertedStackQueryVisitor.AcceptAsync(invertedResult, context);
+        result = await _stackQueryVisitor.AcceptAsync(result, context) ?? result;
+        invertedResult = await _invertedStackQueryVisitor.AcceptAsync(invertedResult, context) ?? invertedResult;
 
         return new StackFilter
         {
@@ -197,7 +197,7 @@ public class StackFilterQueryVisitor : ChainableQueryVisitor
         return Task.FromResult<IQueryNode?>(result);
     }
 
-    public override Task<IQueryNode> AcceptAsync(IQueryNode node, IQueryVisitorContext context)
+    public override Task<IQueryNode?> AcceptAsync(IQueryNode node, IQueryVisitorContext context)
     {
         return node.AcceptAsync(this, context);
     }

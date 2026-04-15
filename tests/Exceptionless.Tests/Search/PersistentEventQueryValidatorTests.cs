@@ -54,7 +54,7 @@ public sealed class PersistentEventQueryValidatorTests : TestWithServices
     {
         var context = new ElasticQueryVisitorContext { QueryType = QueryTypes.Query };
 
-        IQueryNode result;
+        IQueryNode? result;
         try
         {
             result = await _parser.ParseAsync(query, context);
@@ -67,6 +67,9 @@ public sealed class PersistentEventQueryValidatorTests : TestWithServices
 
             return;
         }
+
+        if (result is null)
+            return;
 
         // NOTE: we have to do this because we don't have access to the right query parser instance.
         result = await EventFieldsQueryVisitor.RunAsync(result, context);
