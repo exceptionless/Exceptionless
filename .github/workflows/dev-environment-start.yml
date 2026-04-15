@@ -27,6 +27,9 @@ jobs:
   start:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
       - name: Azure Login
         run: az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
 
@@ -36,7 +39,7 @@ jobs:
       - name: Start Infrastructure (ES + Redis)
         run: |
           kubectl scale statefulset/ex-dev-es-main --replicas=1 --namespace $NAMESPACE
-          kubectl scale statefulset/ex-dev-redis --replicas=1 --namespace $NAMESPACE
+          kubectl apply -f k8s/ex-dev-redis.yaml
 
       - name: Wait for Elasticsearch
         run: kubectl wait --for=condition=ready --timeout=300s pod ex-dev-es-main-0 --namespace $NAMESPACE
@@ -84,4 +87,5 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **App**: https://dev-app.exceptionless.io" >> $GITHUB_STEP_SUMMARY
           echo "- **Collector**: https://dev-collector.exceptionless.io" >> $GITHUB_STEP_SUMMARY
+          echo "- **Kibana**: \`kubectl port-forward -n ex-dev svc/ex-dev-kb-http 5601\` → http://localhost:5601" >> $GITHUB_STEP_SUMMARY
           echo "- **Auto-stop**: ${{ inputs.auto_stop_hours }}h (0 = disabled)" >> $GITHUB_STEP_SUMMARY

@@ -1,7 +1,7 @@
 $ENV = "dev"
 
 kubectl scale statefulset/ex-$ENV-es-main --replicas=1 --namespace ex-$ENV
-kubectl scale statefulset/ex-$ENV-redis --replicas=1 --namespace ex-$ENV
+kubectl apply -f ex-$ENV-redis.yaml
 
 kubectl wait --for=condition=ready --timeout=300s pod ex-$ENV-es-main-0 --namespace ex-$ENV
 
