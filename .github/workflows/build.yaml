@@ -3,7 +3,7 @@ name: Build
 on:
   push:
     branches: [main]
-    tags: ['v*']
+    tags: ["v*"]
   pull_request:
 
 permissions:
@@ -71,10 +71,10 @@ jobs:
 
       - uses: actions/cache@v5
         with:
-            path: ~/.nuget/packages
-            key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
-            restore-keys: |
-                nuget-${{ runner.os }}-
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
 
       - name: Nuget Restore
         run: dotnet restore
@@ -92,17 +92,17 @@ jobs:
       - name: Code Coverage Summary Report
         uses: irongut/CodeCoverageSummary@v1.3.0
         with:
-            filename: coverage/coverage.cobertura.xml
-            badge: true
-            format: "markdown"
-            output: "both"
+          filename: coverage/coverage.cobertura.xml
+          badge: true
+          format: "markdown"
+          output: "both"
 
       - name: Add Coverage PR Comment
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         if: github.event_name == 'pull_request'
         with:
-            recreate: true
-            path: code-coverage-results.md
+          recreate: true
+          path: code-coverage-results.md
 
       - name: Write Coverage to Job Summary
         run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
@@ -162,11 +162,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-            fetch-depth: 0
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
         if: "${{ env.DOCKER_USERNAME != '' }}"
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
         with:
           platforms: linux/amd64
 
@@ -192,7 +192,7 @@ jobs:
 
       - name: Login to GitHub Container Registry
         if: "${{ env.DOCKER_USERNAME != '' }}"
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -200,7 +200,7 @@ jobs:
 
       - name: Login to DockerHub
         if: "${{ env.DOCKER_USERNAME != '' }}"
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ env.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -208,9 +208,9 @@ jobs:
       - name: Wait for test jobs # doing it this way so we don't have to copy artifacts between jobs
         uses: yogeshlonkar/wait-for-jobs@v0
         with:
-          jobs: 'test-api,test-client'
-          interval: '2500'
-          ttl: '10'
+          jobs: "test-api,test-client"
+          interval: "2500"
+          ttl: "10"
 
       - name: Publish CI Packages
         if: "${{ env.DOCKER_USERNAME != '' }}"
@@ -241,7 +241,7 @@ jobs:
 
   deploy:
     if: "${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name != 'pull_request' }}"
-    needs: [version,build-and-push-docker]
+    needs: [version, build-and-push-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -251,11 +251,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-            fetch-depth: 0
+          fetch-depth: 0
 
       - name: Install Helm
         if: "${{ env.DOCKER_USERNAME != '' && github.event_name != 'pull_request' }}"
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@v5
 
       - name: Deploy Changes to Development Environment
         if: "${{ env.DOCKER_USERNAME != '' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}"
