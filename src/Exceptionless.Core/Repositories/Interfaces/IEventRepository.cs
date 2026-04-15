@@ -17,11 +17,11 @@ public interface IEventRepository : IRepositoryOwnedByOrganizationAndProject<Per
 
 public static class EventRepositoryExtensions
 {
-    public static async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(this IEventRepository repository, string id, AppFilter? systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)
+    public static async Task<PreviousAndNextEventIdResult?> GetPreviousAndNextEventIdsAsync(this IEventRepository repository, string id, AppFilter? systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)
     {
         var ev = await repository.GetByIdAsync(id, o => o.Cache());
         if (ev is null)
-            return new PreviousAndNextEventIdResult();
+            return null;
 
         return await repository.GetPreviousAndNextEventIdsAsync(ev, systemFilter, utcStart, utcEnd);
     }

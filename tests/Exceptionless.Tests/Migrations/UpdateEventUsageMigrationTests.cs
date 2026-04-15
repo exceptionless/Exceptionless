@@ -65,7 +65,8 @@ public class UpdateEventUsageMigrationTests : IntegrationTestsBase
         await migration.RunAsync(context);
 
         int limit = organization.GetMaxEventsPerMonthWithBonus(TimeProvider);
-        organization = (await _organizationRepository.GetByIdAsync(organization.Id))!;
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.NotNull(organization);
         Assert.Equal(2, organization.Usage.Count);
         var previousMonthsUsage = organization.GetUsage(previousMonthUsageDate, TimeProvider);
         Assert.Equal(100, previousMonthsUsage.Total);
@@ -74,7 +75,8 @@ public class UpdateEventUsageMigrationTests : IntegrationTestsBase
         Assert.Equal(10, currentMonthsUsage.Total);
         Assert.Equal(limit, currentMonthsUsage.Limit);
 
-        project = (await _projectRepository.GetByIdAsync(project.Id))!;
+        project = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(project);
         Assert.Equal(2, project.Usage.Count);
         previousMonthsUsage = project.GetUsage(previousMonthUsageDate);
         Assert.Equal(100, previousMonthsUsage.Total);

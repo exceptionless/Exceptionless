@@ -64,10 +64,14 @@ public sealed class AggregationTests : IntegrationTestsBase
 
         var result = await _eventRepository.CountAsync(q => q.FilterExpression($"project:{TestConstants.ProjectId}").AggregationsExpression("date:(date cardinality:id) cardinality:id"));
         Assert.Equal(eventCount, result.Total);
-        Assert.Equal(eventCount, (result.Aggregations.DateHistogram("date_date")?.Buckets ?? []).Sum(t => t.Total));
-        Assert.Single((result.Aggregations.DateHistogram("date_date")?.Buckets ?? []).First().Aggregations);
+        var dateHistogram = result.Aggregations.DateHistogram("date_date");
+        Assert.NotNull(dateHistogram);
+        Assert.NotNull(dateHistogram.Buckets);
+        Assert.NotEmpty(dateHistogram.Buckets);
+        Assert.Equal(eventCount, dateHistogram.Buckets.Sum(t => t.Total));
+        Assert.Single(dateHistogram.Buckets.First().Aggregations);
         Assert.Equal(eventCount, result.Aggregations.Cardinality("cardinality_id")?.Value.GetValueOrDefault() ?? 0);
-        Assert.Equal(eventCount, (result.Aggregations.DateHistogram("date_date")?.Buckets ?? []).Sum(t => t.Aggregations.Cardinality("cardinality_id")?.Value.GetValueOrDefault() ?? 0));
+        Assert.Equal(eventCount, dateHistogram.Buckets.Sum(t => t.Aggregations.Cardinality("cardinality_id")?.Value.GetValueOrDefault() ?? 0));
 
         var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, o => o.PageLimit(100));
         foreach (var stack in stacks.Documents)
@@ -172,7 +176,10 @@ public sealed class AggregationTests : IntegrationTestsBase
         Assert.Equal(eventCount, result.Total);
 
         var termsAggregation = result.Aggregations.Terms<string>("terms_stack_id");
-        var largestStackBucket = (termsAggregation?.Buckets ?? []).First();
+        Assert.NotNull(termsAggregation);
+        Assert.NotNull(termsAggregation.Buckets);
+        Assert.NotEmpty(termsAggregation.Buckets);
+        var largestStackBucket = termsAggregation.Buckets.First();
 
         var events = await _eventRepository.FindAsync(q => q.FilterExpression($"stack:{largestStackBucket.Key}"), o => o.PageLimit(eventCount));
         Assert.Equal(largestStackBucket.Total.GetValueOrDefault(), events.Total);

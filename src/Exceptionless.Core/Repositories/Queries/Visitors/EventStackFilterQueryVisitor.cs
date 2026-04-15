@@ -80,12 +80,12 @@ public class EventStackFilter
         _invertedStackQueryVisitor.AddVisitor(new CleanupQueryVisitor());
     }
 
-    public async Task<string> GetEventFilterAsync(string query, IQueryVisitorContext? context = null)
+    public async Task<string?> GetEventFilterAsync(string query, IQueryVisitorContext? context = null)
     {
         context ??= new ElasticQueryVisitorContext();
         var result = await _parser.ParseAsync(query, context);
         if (result is null)
-            return String.Empty;
+            return null;
 
         await _eventQueryVisitor.AcceptAsync(result, context);
         return result.ToString();
@@ -98,8 +98,8 @@ public class EventStackFilter
         if (result is null)
             return new StackFilter
             {
-                Filter = String.Empty,
-                InvertedFilter = String.Empty,
+                Filter = null,
+                InvertedFilter = null,
                 HasStatus = false,
                 HasStackIds = false,
                 HasStatusOpen = false
@@ -218,8 +218,8 @@ public class StackFilterQueryVisitor : ChainableQueryVisitor
 
 public record StackFilter
 {
-    public required string Filter { get; set; }
-    public required string InvertedFilter { get; set; }
+    public required string? Filter { get; set; }
+    public required string? InvertedFilter { get; set; }
     public required bool HasStatus { get; set; }
     public required bool HasStatusOpen { get; set; }
     public required bool HasStackIds { get; set; }

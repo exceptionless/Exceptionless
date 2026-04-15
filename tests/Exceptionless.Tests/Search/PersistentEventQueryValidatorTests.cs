@@ -69,10 +69,14 @@ public sealed class PersistentEventQueryValidatorTests : TestWithServices
         }
 
         if (result is null)
+        {
+            Assert.False(isValid, $"Expected query '{query}' to parse successfully.");
             return;
+        }
 
         // NOTE: we have to do this because we don't have access to the right query parser instance.
         result = await EventFieldsQueryVisitor.RunAsync(result, context);
+        Assert.NotNull(result);
         Assert.Equal(expected, await GenerateQueryVisitor.RunAsync(result, context));
 
         var info = await _validator.ValidateQueryAsync(result);

@@ -123,12 +123,12 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
         return termType;
     }
 
-    public static async Task<IQueryNode> RunAsync(IQueryNode node, IQueryVisitorContext? context = null)
+    public static Task<IQueryNode?> RunAsync(IQueryNode node, IQueryVisitorContext? context = null)
     {
-        return await new EventFieldsQueryVisitor().AcceptAsync(node, context ?? new QueryVisitorContext()) ?? node;
+        return new EventFieldsQueryVisitor().AcceptAsync(node, context ?? new QueryVisitorContext());
     }
 
-    public static IQueryNode Run(IQueryNode node, IQueryVisitorContext? context = null)
+    public static IQueryNode? Run(IQueryNode node, IQueryVisitorContext? context = null)
     {
         return RunAsync(node, context).GetAwaiter().GetResult();
     }

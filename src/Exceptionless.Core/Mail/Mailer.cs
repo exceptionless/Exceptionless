@@ -303,13 +303,13 @@ public class Mailer : IMailer
         });
     }
 
-    private Task<string?> QueueMessageAsync(MailMessage message, string metricsName)
+    private async Task QueueMessageAsync(MailMessage message, string metricsName)
     {
         if (!CleanAddresses(message))
-            return Task.FromResult(String.Empty);
+            return;
 
         AppDiagnostics.Counter($"mailer.{metricsName}");
-        return _queue.EnqueueAsync(message);
+        await _queue.EnqueueAsync(message);
     }
 
     private bool CleanAddresses(MailMessage message)

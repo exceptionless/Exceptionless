@@ -219,13 +219,14 @@ public class EventDataBuilder
 
     public EventDataBuilder RequestInfo(string json)
     {
-        _event.AddRequestInfo(_serializer.Deserialize<RequestInfo>(json)!);
+        var requestInfo = _serializer.Deserialize<RequestInfo>(json) ?? throw new InvalidOperationException("Unable to deserialize request info.");
+        _event.AddRequestInfo(requestInfo);
         return this;
     }
 
     public EventDataBuilder RequestInfoSample(Action<RequestInfo>? requestMutator = null)
     {
-        var requestInfo = _serializer.Deserialize<RequestInfo>(_sampleRequestInfo)!;
+        var requestInfo = _serializer.Deserialize<RequestInfo>(_sampleRequestInfo) ?? throw new InvalidOperationException("Unable to deserialize sample request info.");
         requestMutator?.Invoke(requestInfo);
         _event.AddRequestInfo(requestInfo);
 
