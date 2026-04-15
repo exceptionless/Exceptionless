@@ -21,6 +21,10 @@
             }
 
             function confirmUpgradePlan(message, organizationId) {
+                if (!message) {
+                    message = "Please upgrade your plan to continue.";
+                }
+
                 function onSuccess() {
                     return changePlan(organizationId);
                 }

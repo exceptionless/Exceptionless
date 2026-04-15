@@ -41,8 +41,12 @@
                 function authenticate(provider) {
                     function onFailure(response) {
                         var message = translateService.T("An error occurred while adding external login.");
-                        if (response.data && response.data.message) {
-                            message += " " + translateService.T("Message:") + " " + response.data.message;
+                        if (response.data && (response.data.message || response.data.title)) {
+                            message +=
+                                " " +
+                                translateService.T("Message:") +
+                                " " +
+                                (response.data.message || response.data.title);
                         }
 
                         notificationService.error(message);
@@ -65,8 +69,12 @@
 
                     function onFailure(response) {
                         var message = translateService.T("An error occurred while trying to change your password.");
-                        if (response.data && response.data.message) {
-                            message += " " + translateService.T("Message:") + " " + response.data.message;
+                        if (response.data && (response.data.message || response.data.title)) {
+                            message +=
+                                " " +
+                                translateService.T("Message:") +
+                                " " +
+                                (response.data.message || response.data.title);
                         }
 
                         notificationService.error(message);
@@ -141,8 +149,12 @@
 
                     function onFailure(response) {
                         var message = translateService.T("An error occurred while loading your user profile.");
-                        if (response.data && response.data.message) {
-                            message += " " + translateService.T("Message:") + " " + response.data.message;
+                        if (response.data && (response.data.message || response.data.title)) {
+                            message +=
+                                " " +
+                                translateService.T("Message:") +
+                                " " +
+                                (response.data.message || response.data.title);
                         }
 
                         notificationService.error(message);
@@ -167,7 +179,7 @@
                                 notificationService.error(
                                     translateService.T("An error occurred while trying remove your user account.") +
                                         " " +
-                                        response.data.message
+                                        ((response.data && (response.data.message || response.data.title)) || "")
                                 );
                             }
 
@@ -202,8 +214,12 @@
                 function resendVerificationEmail() {
                     function onFailure(response) {
                         var message = translateService.T("An error occurred while sending your verification email.");
-                        if (response.data && response.data.message) {
-                            message += " " + translateService.T("Message:") + " " + response.data.message;
+                        if (response.data && (response.data.message || response.data.title)) {
+                            message +=
+                                " " +
+                                translateService.T("Message:") +
+                                " " +
+                                (response.data.message || response.data.title);
                         }
 
                         notificationService.error(message);
@@ -245,8 +261,12 @@
 
                     function onFailure(response) {
                         var message = translateService.T("An error occurred while saving your email address.");
-                        if (response.data && response.data.message) {
-                            message += " " + translateService.T("Message:") + " " + response.data.message;
+                        if (response.data && (response.data.message || response.data.title)) {
+                            message +=
+                                " " +
+                                translateService.T("Message:") +
+                                " " +
+                                (response.data.message || response.data.title);
                         }
 
                         notificationService.error(message);
@@ -261,8 +281,12 @@
                 function saveEmailNotificationSettings() {
                     function onFailure(response) {
                         var message = translateService.T("An error occurred while saving your notification settings.");
-                        if (response.data && response.data.message) {
-                            message += " " + translateService.T("Message:") + " " + response.data.message;
+                        if (response.data && (response.data.message || response.data.title)) {
+                            message +=
+                                " " +
+                                translateService.T("Message:") +
+                                " " +
+                                (response.data.message || response.data.title);
                         }
 
                         notificationService.error(message);
@@ -278,8 +302,12 @@
                         var message = translateService.T(
                             "An error occurred while saving your email notification preferences."
                         );
-                        if (response.data && response.data.message) {
-                            message += " " + translateService.T("Message:") + " " + response.data.message;
+                        if (response.data && (response.data.message || response.data.title)) {
+                            message +=
+                                " " +
+                                translateService.T("Message:") +
+                                " " +
+                                (response.data.message || response.data.title);
                         }
 
                         notificationService.error(message);
@@ -297,8 +325,12 @@
 
                     function onFailure(response) {
                         var message = translateService.T("An error occurred while saving your full name.");
-                        if (response.data && response.data.message) {
-                            message += " " + translateService.T("Message:") + " " + response.data.message;
+                        if (response.data && (response.data.message || response.data.title)) {
+                            message +=
+                                " " +
+                                translateService.T("Message:") +
+                                " " +
+                                (response.data.message || response.data.title);
                         }
 
                         notificationService.error(message);
@@ -320,8 +352,12 @@
 
                     function onFailure(response) {
                         var message = translateService.T("An error occurred while removing the external login.");
-                        if (response.data && response.data.message) {
-                            message += " " + translateService.T("Message:") + " " + response.data.message;
+                        if (response.data && (response.data.message || response.data.title)) {
+                            message +=
+                                " " +
+                                translateService.T("Message:") +
+                                " " +
+                                (response.data.message || response.data.title);
                         }
 
                         notificationService.error(message);

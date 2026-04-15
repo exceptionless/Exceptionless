@@ -28,8 +28,12 @@
                             .setProperty("response", response)
                             .submit();
                         var message = translateService.T("An error occurred while trying to change your password.");
-                        if (response.data && response.data.message) {
-                            message += " " + translateService.T("Message:") + " " + response.data.message;
+                        if (response.data && (response.data.message || response.data.title)) {
+                            message +=
+                                " " +
+                                translateService.T("Message:") +
+                                " " +
+                                (response.data.message || response.data.title);
                         }
 
                         notificationService.error(message);
