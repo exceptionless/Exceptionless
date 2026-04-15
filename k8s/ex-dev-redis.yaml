@@ -1,0 +1,34 @@
+---
+apiVersion: redis.redis.opstreelabs.in/v1beta2
+kind: Redis
+metadata:
+  name: ex-dev-redis
+  namespace: ex-dev
+spec:
+  podSecurityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  kubernetesConfig:
+    image: quay.io/opstree/redis:v8.6.2
+    imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+    redisSecret:
+      name: ex-dev-redis-secret
+      key: password
+  storage:
+    volumeClaimTemplate:
+      spec:
+        storageClassName: managed-csi-premium
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+  redisExporter:
+    enabled: false
+    image: quay.io/opstree/redis-exporter:latest

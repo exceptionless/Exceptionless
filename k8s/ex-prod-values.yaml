@@ -1,7 +1,6 @@
 appMode: Production
 appScope: prod
 app:
-  replicaCount: 3
   minReplicaCount: 2
   maxReplicaCount: 5
   defaultDomain: be.exceptionless.io
@@ -10,7 +9,6 @@ app:
     - app.exceptionless.io
     - app.exceptionless.com
 api:
-  replicaCount: 5
   minReplicaCount: 2
   maxReplicaCount: 5
   defaultDomain: collector.exceptionless.io
@@ -22,20 +20,10 @@ api:
     - config.exceptionless.io
     - heartbeat.exceptionless.io
 jobs:
-  eventNotifications:
-    replicaCount: 2
   eventPosts:
-    replicaCount: 2
     minReplicaCount: 2
     maxReplicaCount: 10
-  eventUserDescriptions:
-    replicaCount: 2
-  mailMessage:
-    replicaCount: 2
-  webhooks:
-    replicaCount: 2
   workitem:
-    replicaCount: 4
     minReplicaCount: 2
     maxReplicaCount: 5
 

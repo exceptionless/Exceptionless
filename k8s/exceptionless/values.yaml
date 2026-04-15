@@ -1,7 +1,6 @@
 version: latest
 
 app:
-  replicaCount: 1
   defaultDomain:
   domains: []
   image:
@@ -9,7 +8,6 @@ app:
     pullPolicy: IfNotPresent
 
 api:
-  replicaCount: 1
   defaultDomain:
   domains: []
   image:
@@ -20,26 +18,6 @@ jobs:
   image:
     repository: exceptionless/job
     pullPolicy: IfNotPresent
-  closeInactiveSessions:
-    replicaCount: 1
-  dailySummary:
-    replicaCount: 1
-  eventNotifications:
-    replicaCount: 1
-  eventPosts:
-    replicaCount: 1
-  eventUserDescriptions:
-    replicaCount: 1
-  mailMessage:
-    replicaCount: 1
-  stackEventCount:
-    replicaCount: 1
-  webhooks:
-    replicaCount: 1
-  workitem:
-    replicaCount: 1
-  eventUsage:
-    replicaCount: 1
 
 config: {}
 #  key: value
