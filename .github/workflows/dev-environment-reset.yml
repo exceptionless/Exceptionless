@@ -1,0 +1,124 @@
+name: Reset Dev Environment Data
+
+on:
+  workflow_dispatch:
+    inputs:
+      reset_elasticsearch:
+        description: "Delete all Elasticsearch indices"
+        required: true
+        default: true
+        type: boolean
+      reset_redis:
+        description: "Flush all Redis data"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+env:
+  CLUSTER_NAME: ex-k8s-v6
+  RESOURCE_GROUP: exceptionless-v6
+  NAMESPACE: ex-dev
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Authorization
+        run: |
+          MEMBER=$(gh api "orgs/exceptionless/teams/core/members" --jq '.[].login' | grep -xi "${{ github.actor }}" || true)
+          if [[ -z "$MEMBER" ]]; then
+            echo "::error::Unauthorized. Only members of the @exceptionless/core team can run this workflow."
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Azure Login
+        run: az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
+
+      - name: Get AKS Credentials
+        run: az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER_NAME --overwrite-existing
+
+      - name: Verify Environment is Running
+        run: |
+          ES_READY=$(kubectl get pod ex-dev-es-main-0 --namespace $NAMESPACE -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "False")
+          if [ "$ES_READY" != "True" ]; then
+            echo "::error::Elasticsearch is not running. Start the dev environment first."
+            exit 1
+          fi
+
+      - name: Scale Down App Pods
+        run: |
+          kubectl scale deployment/ex-dev-app --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-api --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-close-inactive-sessions --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-daily-summary --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-notifications --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-usage --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-posts --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-user-descriptions --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-mail-message --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-stack-event-count --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-web-hooks --replicas=0 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-work-item --replicas=0 --namespace $NAMESPACE
+
+      - name: Wait for App Pods to Terminate
+        run: |
+          kubectl wait --for=delete pod -l app=exceptionless,tier!=exceptionless-job --timeout=120s --namespace $NAMESPACE 2>/dev/null || true
+          sleep 5
+
+      - name: Reset Elasticsearch
+        if: ${{ inputs.reset_elasticsearch }}
+        run: |
+          ELASTIC_PASSWORD=$(kubectl get secret --namespace $NAMESPACE "ex-dev-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
+          echo "Deleting all indices..."
+          kubectl exec -n $NAMESPACE ex-dev-es-main-0 -- curl -s -u "elastic:${ELASTIC_PASSWORD}" -X DELETE "http://localhost:9200/*" | head -c 200
+          echo ""
+          echo "Elasticsearch indices deleted."
+
+      - name: Reset Redis
+        if: ${{ inputs.reset_redis }}
+        run: |
+          REDIS_PASSWORD=$(kubectl get secret --namespace $NAMESPACE ex-dev-redis-secret -o go-template='{{index .data "password" | base64decode }}')
+          # Find a running redis pod (standalone or cluster leader)
+          REDIS_POD=$(kubectl get pods -n $NAMESPACE -l app=ex-dev-redis -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || \
+                      kubectl get pods -n $NAMESPACE -l redis_setup_type=cluster,role=leader -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+          if [ -z "$REDIS_POD" ]; then
+            echo "::error::No Redis pod found."
+            exit 1
+          fi
+          echo "Flushing Redis on $REDIS_POD..."
+          kubectl exec -n $NAMESPACE "$REDIS_POD" -- redis-cli -a "$REDIS_PASSWORD" FLUSHALL
+          echo "Redis data flushed."
+
+      - name: Scale Up App Pods
+        run: |
+          kubectl scale deployment/ex-dev-app --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-api --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-close-inactive-sessions --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-daily-summary --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-notifications --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-usage --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-posts --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-user-descriptions --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-mail-message --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-stack-event-count --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-web-hooks --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-work-item --replicas=1 --namespace $NAMESPACE
+
+      - name: Wait for App Ready
+        run: kubectl wait --for=condition=available --timeout=300s deployment/ex-dev-app --namespace $NAMESPACE
+
+      - name: Summary
+        run: |
+          echo "### Dev Environment Data Reset" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Elasticsearch**: ${{ inputs.reset_elasticsearch && 'All indices deleted ✅' || 'Skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Redis**: ${{ inputs.reset_redis && 'All data flushed ✅' || 'Skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **App**: Restarted — will recreate indices automatically" >> $GITHUB_STEP_SUMMARY
