@@ -4,6 +4,8 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
+    import FacebookIcon from '$comp/icons/FacebookIcon.svelte';
+    import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
     import GoogleIcon from '$comp/icons/GoogleIcon.svelte';
     import MicrosoftIcon from '$comp/icons/MicrosoftIcon.svelte';
     import Logo from '$comp/logo.svelte';
@@ -29,8 +31,6 @@
     import { type LoginFormData, LoginSchema } from '$features/auth/schemas';
     import { getSafeRedirectUrl } from '$features/shared/url';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
-    import Facebook from '@lucide/svelte/icons/facebook';
-    import GitHub from '@lucide/svelte/icons/github';
     import { createForm } from '@tanstack/svelte-form';
 
     const defaultRedirect = resolve('/(app)');
@@ -153,12 +153,12 @@
                 {/if}
                 {#if facebookClientId}
                     <Button aria-label="Login with Facebook" tabindex={4} onclick={() => facebookLogin(redirectUrl)}>
-                        <Facebook class="size-4" /> Facebook
+                        <FacebookIcon class="size-4" /> Facebook
                     </Button>
                 {/if}
                 {#if gitHubClientId}
                     <Button aria-label="Login with GitHub" tabindex={4} onclick={() => githubLogin(redirectUrl)}>
-                        <GitHub class="size-4" /> GitHub
+                        <GitHubIcon class="size-4" /> GitHub
                     </Button>
                 {/if}
             </div>

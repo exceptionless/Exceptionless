@@ -194,7 +194,7 @@ export class WebSocketClient {
 
     public onOpen: (ev: Event, isReconnect: boolean) => void = () => {};
 
-    public send(data: ArrayBufferLike | ArrayBufferView | Blob | string) {
+    public send(data: Parameters<WebSocket['send']>[0]) {
         if (this.ws) {
             return this.ws.send(data);
         } else {
