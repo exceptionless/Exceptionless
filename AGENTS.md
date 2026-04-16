@@ -81,5 +81,4 @@ pr-reviewer → security pre-screen (before build!) → dependency audit
 - Use `npm ci` (not `npm install`)
 - Never commit secrets — use environment variables
 - NuGet feeds are in `NuGet.Config` — don't add sources
-- OpenTelemetry uses the OTLP exporter path when enabled; the Web and Job apps do not expose Prometheus scraping endpoints
 - Prefer additive documentation updates — don't replace strategic docs wholesale, extend them
