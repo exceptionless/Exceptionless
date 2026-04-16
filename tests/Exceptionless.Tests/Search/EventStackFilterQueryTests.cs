@@ -69,6 +69,7 @@ public class EventStackFilterQueryTests : IntegrationTestsBase
 
         var ctx = new ElasticQueryVisitorContext();
         var stackFilter = await new EventStackFilter().GetStackFilterAsync(filter, ctx);
+        Assert.NotNull(stackFilter);
         Assert.NotNull(stackFilter.Filter);
         Assert.NotNull(stackFilter.InvertedFilter);
 
