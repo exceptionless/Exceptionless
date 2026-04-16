@@ -1,9 +1,9 @@
 <script lang="ts">
+    import FacebookIcon from '$comp/icons/FacebookIcon.svelte';
+    import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
     import XIcon from '$comp/icons/XIcon.svelte';
     import { A } from '$comp/typography';
     import { getAboutQuery } from '$features/status/api.svelte';
-    import Facebook from '@lucide/svelte/icons/facebook';
-    import GitHub from '@lucide/svelte/icons/github';
     import Web from '@lucide/svelte/icons/globe';
 
     const currentYear = new Date().getFullYear();
@@ -42,13 +42,13 @@
     </ul>
     <div class="flex space-x-6 sm:justify-center">
         <A aria-label="Exceptionless Facebook Website" href="https://www.facebook.com/exceptionless/" target="_blank" variant="navigation">
-            <Facebook class="size-5" />
+            <FacebookIcon class="size-5" />
         </A>
         <A aria-label="Exceptionless X Website" href="https://x.com/Exceptionless" target="_blank" variant="navigation">
             <XIcon class="size-5" />
         </A>
         <A aria-label="Exceptionless GitHub Repository" href="https://github.com/exceptionless" target="_blank" variant="navigation">
-            <GitHub class="size-5" />
+            <GitHubIcon class="size-5" />
         </A>
         <A aria-label="Exceptionless Website" href="https://exceptionless.com/" target="_blank" variant="navigation">
             <Web class="size-5" />

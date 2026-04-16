@@ -5,6 +5,7 @@
 
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
+    import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
     import { A } from '$comp/typography';
     import * as Avatar from '$comp/ui/avatar/index';
     import { Badge } from '$comp/ui/badge';
@@ -27,7 +28,6 @@
     import DatabaseZap from '@lucide/svelte/icons/database-zap';
     import Eye from '@lucide/svelte/icons/eye';
     import EyeOff from '@lucide/svelte/icons/eye-off';
-    import GitHub from '@lucide/svelte/icons/github';
     import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
     import LogOut from '@lucide/svelte/icons/log-out';
     import Play from '@lucide/svelte/icons/play';
@@ -226,7 +226,7 @@
                                 <DropdownMenu.Shortcut>⌘gs</DropdownMenu.Shortcut>
                             </DropdownMenu.Item>
                             <DropdownMenu.Item>
-                                <GitHub />
+                                <GitHubIcon />
                                 <A variant="ghost" href={githubRepositoryHref} target="_blank" class="w-full">GitHub</A>
                                 <DropdownMenu.Shortcut>⌘gg</DropdownMenu.Shortcut>
                             </DropdownMenu.Item>
