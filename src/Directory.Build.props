@@ -18,14 +18,6 @@
     <ReferenceFoundatioRepositoriesSource>false</ReferenceFoundatioRepositoriesSource>
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-    <OpenTelemetryExporterVersion>1.15.2</OpenTelemetryExporterVersion>
-    <OpenTelemetryExtensionsHostingVersion>1.15.2</OpenTelemetryExtensionsHostingVersion>
-    <OpenTelemetryAspNetCoreVersion>1.15.1</OpenTelemetryAspNetCoreVersion>
-    <OpenTelemetryHttpVersion>1.15.0</OpenTelemetryHttpVersion>
-    <OpenTelemetryRuntimeVersion>1.15.0</OpenTelemetryRuntimeVersion>
-    <OpenTelemetryRedisVersion>1.15.0-beta.1</OpenTelemetryRedisVersion>
-    <OpenTelemetryElasticsearchVersion>1.15.0-beta.1</OpenTelemetryElasticsearchVersion>
-    <OpenTelemetryProcessVersion>1.15.0-beta.1</OpenTelemetryProcessVersion>
   </PropertyGroup>
 
   <ItemGroup>
