@@ -1,4 +1,5 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+ARG MinVerVersionOverride
 WORKDIR /app
 
 COPY ./*.slnx ./NuGet.Config ./
@@ -18,7 +19,7 @@ RUN dotnet restore
 
 # Copy everything else and build app
 COPY . .
-RUN dotnet build -c Release
+RUN dotnet build -c Release /p:MinVerVersionOverride=${MinVerVersionOverride}
 
 # testrunner
 
