@@ -102,7 +102,8 @@ public class Program
                         if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                             app.UseExceptionless(ExceptionlessClient.Default);
 
-                        app.UseOpenTelemetryPrometheusScrapingEndpoint();
+                        if (apmConfig.EnableExporter)
+                            app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
                         app.UseHealthChecks("/health", new HealthCheckOptions
                         {

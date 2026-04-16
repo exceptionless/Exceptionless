@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.Net.Http.Headers;
+using OpenTelemetry;
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
@@ -185,7 +186,9 @@ public class Startup
         });
         app.UseStatusCodePages();
 
-        app.UseOpenTelemetryPrometheusScrapingEndpoint();
+        var apmConfig = app.ApplicationServices.GetRequiredService<ApmConfig>();
+        if (apmConfig.EnableExporter)
+            app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
         app.UseHealthChecks("/health", new HealthCheckOptions
         {
