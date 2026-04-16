@@ -87,6 +87,12 @@ helm upgrade vpa fairwinds-stable/vpa --namespace vpa -f vpa-values.yaml --reset
 helm repo update
 helm upgrade --reset-values signoz-collector signoz/k8s-infra -f signoz.yaml --set "signozApiKey=$SIGNOZ_KEY" --dry-run
 
+# upgrade elasticsearch metrics exporter
+helm upgrade --reset-values es-exporter prometheus-community/prometheus-elasticsearch-exporter `
+  --namespace ex-prod `
+  --set "es.uri=http://elastic:$ELASTIC_PASSWORD@ex-prod-es-http:9200" `
+  --set serviceMonitor.enabled=false --dry-run
+
 # upgrade elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases

@@ -56,3 +56,6 @@ email:
 
 messagebus:
   connectionString:
+
+otel:
+  enabled: true
