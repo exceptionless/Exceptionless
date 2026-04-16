@@ -2,7 +2,8 @@
   <PropertyGroup>
     <SpaRoot>ClientApp\</SpaRoot>
     <AngularSpaRoot>ClientApp.angular\</AngularSpaRoot>
-    <DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**;$(AngularSpaRoot)node_modules\**;</DefaultItemExcludes>
+    <DefaultItemExcludes>
+      $(DefaultItemExcludes);$(SpaRoot)node_modules\**;$(AngularSpaRoot)node_modules\**;</DefaultItemExcludes>
     <SkipSpaPublish>false</SkipSpaPublish>
   </PropertyGroup>
   <ItemGroup>
@@ -27,12 +28,13 @@
 
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.2" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.15.2" />
-    <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.15.2-beta.1" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.2" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.StackExchangeRedis" Version="1.15.0-beta.1" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.ElasticsearchClient" Version="1.15.0-beta.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.StackExchangeRedis"
+      Version="1.15.0-beta.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.ElasticsearchClient"
+      Version="1.15.0-beta.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.15.0-beta.1" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.17.0" />
@@ -42,7 +44,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="appsettings.yml" CopyToOutputDirectory="Always" />
-    <Content Include="appsettings.*.yml" DependentUpon="appsettings.yml" CopyToOutputDirectory="Always" />
+    <Content Include="appsettings.*.yml" DependentUpon="appsettings.yml"
+      CopyToOutputDirectory="Always" />
   </ItemGroup>
 
   <ItemGroup>
@@ -55,7 +58,8 @@
     <None Include="$(AngularSpaRoot)**" Exclude="$(AngularSpaRoot)node_modules\**;" />
   </ItemGroup>
 
-  <Target Name="PublishRunWebBuild" AfterTargets="ComputeFilesToPublish" Condition="'$(SkipSpaPublish)' != 'true'">
+  <Target Name="PublishRunWebBuild" AfterTargets="ComputeFilesToPublish"
+    Condition="'$(SkipSpaPublish)' != 'true'">
     <!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci" />
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
@@ -64,7 +68,8 @@
     <!-- Include the newly-built files in the publish output -->
     <ItemGroup>
       <DistFiles Include="$(SpaRoot)build\**" />
-      <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
+      <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')"
+        Exclude="@(ResolvedFileToPublish)">
         <RelativePath>wwwroot\next\%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
         <CopyToPublishDirectory>Always</CopyToPublishDirectory>
         <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
@@ -72,7 +77,8 @@
     </ItemGroup>
     <ItemGroup>
       <DistFiles Include="$(AngularSpaRoot)dist\**" />
-      <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
+      <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')"
+        Exclude="@(ResolvedFileToPublish)">
         <RelativePath>wwwroot\%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
         <CopyToPublishDirectory>Always</CopyToPublishDirectory>
         <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
