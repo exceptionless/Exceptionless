@@ -137,8 +137,6 @@ public static partial class ApmExtensions
                         metricReaderOptions.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = 10000;
                     });
 
-                b.AddPrometheusExporter();
-
                 if (config.EnableExporter)
                     b.AddOtlpExporter();
             });

@@ -102,7 +102,7 @@
     "editor.codeActionsOnSave": {
         "source.fixAll": "explicit"
     },
-    "editor.formatOnSave": true,
+    "editor.formatOnSave": false,
     "eslint.validate": [
         "javascript",
         "svelte"
@@ -111,7 +111,7 @@
     "tailwindCSS.includeLanguages": {
         "svelte": "html"
     },
-    "typescript.tsdk": "\\src\\Exceptionless.Web\\ClientApp\\node_modules\\typescript\\lib",
+    "js/ts.tsdk.path": "src/Exceptionless.Web/ClientApp/node_modules/typescript/lib",
     "workbench.editor.customLabels.patterns": {
         "**/lib/**/*.ts": "${dirname}/${filename}.${extname}",
         "**/routes/**/+page.svelte": "${dirname(1)}/${dirname}",
