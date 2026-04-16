@@ -41,6 +41,9 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         await _repository.AddAsync(stack, o => o.ImmediateConsistency());
 
         var actual = await _repository.GetByIdAsync(stack.Id, o => o.Cache("test"));
+        Assert.Null(actual);
+
+        actual = await _repository.GetByIdAsync(stack.Id, o => o.Cache("test").IncludeSoftDeletes());
         Assert.NotNull(actual);
     }
 

@@ -79,12 +79,7 @@ namespace Exceptionless.Core.Repositories.Queries
                 return;
 
             // TODO: Handle search expressions as well
-            string? filter = ctx.Source.GetFilterExpression();
-            if (String.IsNullOrEmpty(filter))
-            {
-                _logger.LogDebug("Event filter is empty, skipping event stack filter query builder");
-                return;
-            }
+            string filter = ctx.Source.GetFilterExpression() ?? String.Empty;
 
             //bool altInvertRequested = false;
             if (filter.StartsWith("@!"))
