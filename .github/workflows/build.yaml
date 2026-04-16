@@ -29,6 +29,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Build Reason
         env:
@@ -189,22 +190,22 @@ jobs:
       - name: Build api docker image
         run: |
           echo "::remove-matcher owner=csc::"
-          docker buildx build . --target api --platform linux/amd64 --tag exceptionless/api-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+          docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target api --platform linux/amd64 --tag exceptionless/api-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
 
       - name: Build job docker image
         run: |
           echo "::remove-matcher owner=csc::"
-          docker buildx build . --target job --platform linux/amd64 --tag exceptionless/job-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+          docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target job --platform linux/amd64 --tag exceptionless/job-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
 
       - name: Build app docker image
         run: |
           echo "::remove-matcher owner=csc::"
-          docker buildx build . --target app --platform linux/amd64 --tag exceptionless/app-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+          docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target app --platform linux/amd64 --tag exceptionless/app-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
 
       - name: Build all-in-one docker image
         run: |
           echo "::remove-matcher owner=csc::"
-          docker buildx build . --target exceptionless --platform linux/amd64 --tag exceptionless/exceptionless-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+          docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target exceptionless --platform linux/amd64 --tag exceptionless/exceptionless-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
 
       - name: Login to GitHub Container Registry
         if: "${{ env.DOCKER_USERNAME != '' }}"
