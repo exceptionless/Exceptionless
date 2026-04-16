@@ -77,7 +77,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(0, usage.Blocked);
         Assert.Equal(0, usage.TooBig);
 
-        project = (await _projectRepository.GetByIdAsync(project.Id))!;
+        project = await _projectRepository.GetByIdAsync(project.Id);
         Assert.NotNull(project);
         Assert.Single(project.UsageHours);
         usage = project.Usage.Single();
@@ -153,7 +153,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(1, usage.Blocked);
         Assert.Equal(0, usage.TooBig);
 
-        project = (await _projectRepository.GetByIdAsync(project.Id))!;
+        project = await _projectRepository.GetByIdAsync(project.Id);
         Assert.NotNull(project);
         overage = project.UsageHours.Single();
         Assert.Equal(eventsLeftInBucket + 1, overage.Total);
@@ -184,7 +184,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(1001, usage.Blocked);
         Assert.Equal(0, usage.TooBig);
 
-        project = (await _projectRepository.GetByIdAsync(project.Id))!;
+        project = await _projectRepository.GetByIdAsync(project.Id);
         Assert.NotNull(project);
         overage = project.UsageHours.Single();
         Assert.Equal(eventsLeftInBucket + 1, overage.Total);
@@ -222,7 +222,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(1, overage.Blocked);
         Assert.Equal(0, overage.TooBig);
 
-        project = (await _projectRepository.GetByIdAsync(project.Id))!;
+        project = await _projectRepository.GetByIdAsync(project.Id);
         Assert.NotNull(project);
         Assert.Single(project.UsageHours);
 
@@ -262,7 +262,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(1, overage.Discarded);
         Assert.Equal(0, overage.TooBig);
 
-        project = (await _projectRepository.GetByIdAsync(project.Id))!;
+        project = await _projectRepository.GetByIdAsync(project.Id);
         Assert.NotNull(project);
         Assert.Single(project.UsageHours);
 
@@ -298,7 +298,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(0, usage.Blocked);
         Assert.Equal(1, usage.TooBig);
 
-        project = (await _projectRepository.GetByIdAsync(project.Id))!;
+        project = await _projectRepository.GetByIdAsync(project.Id);
         Assert.NotNull(project);
         Assert.Single(project.UsageHours);
         usage = project.Usage.Single();
