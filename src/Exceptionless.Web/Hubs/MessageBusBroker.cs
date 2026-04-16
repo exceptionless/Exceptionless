@@ -82,7 +82,6 @@ public sealed class MessageBusBroker : IStartupAction
                 return;
             }
 
-
             if (entityChanged.Id is null)
             {
                 _logger.LogTrace("Ignoring {UserTypeName} message: No user id", UserTypeName);
