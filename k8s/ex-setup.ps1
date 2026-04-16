@@ -176,6 +176,12 @@ kubectl get rediscluster -n ex-$ENV
 helm repo add signoz https://charts.signoz.io
 helm install signoz-collector signoz/k8s-infra -f signoz.yaml --set "signozApiKey=$SIGNOZ_KEY"
 
+# install elasticsearch metrics exporter for signoz (prod only)
+helm install es-exporter prometheus-community/prometheus-elasticsearch-exporter `
+    --namespace ex-prod `
+    --set "es.uri=http://elastic:$ELASTIC_PASSWORD@ex-prod-es-http:9200" `
+    --set serviceMonitor.enabled=false
+
 # install exceptionless app
 $VERSION = "8.0.0"
 helm install ex-$ENV .\exceptionless --namespace ex-$ENV --values ex-$ENV-values.yaml `

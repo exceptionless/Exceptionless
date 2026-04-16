@@ -33,7 +33,14 @@ jobs:
       - name: Build Reason
         env:
           GITHUB_EVENT: ${{ toJson(github) }}
-        run: "echo ref: ${{github.ref}} event: ${{github.event_name}}"
+        run: |
+          branch=${GITHUB_HEAD_REF:-${GITHUB_REF##*/}}
+          branch=${branch//\//.}.
+          if [[ "$branch" = "main." || "$branch" = "master." || "${GITHUB_REF}" = refs/tags* ]]; then
+            branch=""
+          fi
+          echo "GIT_BRANCH_SUFFIX=$branch" >> $GITHUB_ENV
+          echo "ref: $GITHUB_REF event: $GITHUB_EVENT_NAME branch_suffix: $branch"
 
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v5
@@ -45,7 +52,16 @@ jobs:
         id: version
         run: |
           dotnet tool install --global minver-cli --version 7.0.0
-          version=$(minver --tag-prefix v)
+          version=$(minver --tag-prefix v --default-pre-release-identifiers "preview.${GIT_BRANCH_SUFFIX}0")
+
+          # If on a non-main branch, insert branch name before the height (last numeric segment)
+          if [ -n "$GIT_BRANCH_SUFFIX" ]; then
+            branch_name="${GIT_BRANCH_SUFFIX%.}"
+            if [[ "$version" != *"$branch_name"* ]]; then
+              version=$(echo "$version" | sed -E "s/\.([0-9]+)$/.${GIT_BRANCH_SUFFIX}\1/")
+            fi
+          fi
+
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "### $version" >> $GITHUB_STEP_SUMMARY
 
@@ -254,11 +270,17 @@ jobs:
           fetch-depth: 0
 
       - name: Install Helm
-        if: "${{ env.DOCKER_USERNAME != '' && github.event_name != 'pull_request' }}"
+        if: "${{ env.DOCKER_USERNAME != '' }}"
         uses: azure/setup-helm@v5
 
       - name: Deploy Changes to Development Environment
-        if: "${{ env.DOCKER_USERNAME != '' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}"
+        if: >-
+          ${{
+            env.DOCKER_USERNAME != '' && (
+              (github.event_name == 'push' && github.ref == format('refs/heads/{0}', vars.DEV_DEPLOY_BRANCH || 'main'))
+              || (github.event_name == 'pull_request' && github.head_ref == vars.DEV_DEPLOY_BRANCH && vars.DEV_DEPLOY_BRANCH != 'main' && vars.DEV_DEPLOY_BRANCH != '')
+            )
+          }}
         run: |
           az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
           az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
