@@ -286,7 +286,7 @@ public class UsageService
         {
             var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
             if (organization is null)
-                throw new InvalidOperationException($"Organization '{organizationId}' not found.");
+                throw new UsageServiceException($"Organization '{organizationId}' not found.");
 
             organization.TrimUsage(_timeProvider);
 
@@ -301,7 +301,7 @@ public class UsageService
         {
             var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache());
             if (project is null)
-                throw new InvalidOperationException($"Project '{projectId}' not found.");
+                throw new UsageServiceException($"Project '{projectId}' not found.");
 
             project.TrimUsage(_timeProvider);
 
@@ -361,7 +361,7 @@ public class UsageService
                 context.Organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
 
             if (context.Organization is null)
-                throw new InvalidOperationException($"Organization '{organizationId}' not found.");
+                throw new UsageServiceException($"Organization '{organizationId}' not found.");
 
             currentTotal = context.Organization.GetCurrentUsage(_timeProvider).Total;
             await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), currentTotal, TimeSpan.FromHours(8));

@@ -208,6 +208,21 @@ namespace Exceptionless.Core.Repositories.Queries
             if (!systemFilterQuery.HasAppFilter())
                 systemFilterQuery.AppFilter(builderContext?.Source.GetAppFilter());
 
+            /*
+             *  NOTE: Cannot mutate init only field.
+             *  foreach (var range in systemFilterQuery.GetDateRanges())
+                          {
+                              if (range.Field == _inferredEventDateField || range.Field == "date")
+                              {
+                                  range.Field = _inferredStackLastOccurrenceField;
+                                  if (isStackIdsNegated) // don't apply retention date filter on inverted stack queries
+                                      range.StartDate = null;
+
+                                  range.EndDate = null;
+                              }
+                          }
+             */
+
             var dateRanges = systemFilterQuery.GetDateRanges();
             var rangesToReplace = dateRanges
                 .Where(range => range.Field == _inferredEventDateField || range.Field == "date")

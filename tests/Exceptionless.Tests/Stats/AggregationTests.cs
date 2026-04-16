@@ -91,7 +91,10 @@ public sealed class AggregationTests : IntegrationTestsBase
 
         var result = await _eventRepository.CountAsync(q => q.FilterExpression($"project:{TestConstants.ProjectId}").AggregationsExpression("terms:(is_first_occurrence @include:true)"));
         Assert.Equal(eventCount, result.Total);
-        Assert.Equal(await _stackRepository.CountAsync(), (result.Aggregations.Terms<string>("terms_is_first_occurrence")?.Buckets ?? []).First(b => b.KeyAsString == Boolean.TrueString.ToLower()).Total.GetValueOrDefault());
+
+        var termsAggregation = result.Aggregations.Terms<string>("terms_is_first_occurrence");
+        Assert.NotNull(termsAggregation?.Buckets);
+        Assert.Equal(await _stackRepository.CountAsync(), termsAggregation.Buckets.First(b => b.KeyAsString == Boolean.TrueString.ToLower()).Total.GetValueOrDefault());
     }
 
     [Fact]
@@ -124,10 +127,13 @@ public sealed class AggregationTests : IntegrationTestsBase
 
         var result = await _eventRepository.CountAsync(q => q.AggregationsExpression("terms:tags"));
         Assert.Equal(eventCount, result.Total);
+
+        var termsAggregation = result.Aggregations.Terms<string>("terms_tags");
+        Assert.NotNull(termsAggregation?.Buckets);
         // each event can be in multiple tag buckets since an event can have up to 3 sample tags
-        Assert.InRange((result.Aggregations.Terms<string>("terms_tags")?.Buckets ?? []).Sum(t => t.Total.GetValueOrDefault()), eventCount, eventCount * 3);
-        Assert.InRange((result.Aggregations.Terms<string>("terms_tags")?.Buckets ?? []).Count, 1, TestConstants.EventTags.Count);
-        foreach (var term in result.Aggregations.Terms<string>("terms_tags")?.Buckets ?? [])
+        Assert.InRange(termsAggregation.Buckets.Sum(t => t.Total.GetValueOrDefault()), eventCount, eventCount * 3);
+        Assert.InRange(termsAggregation.Buckets.Count, 1, TestConstants.EventTags.Count);
+        foreach (var term in termsAggregation.Buckets)
             Assert.InRange(term.Total.GetValueOrDefault(), 1, eventCount);
     }
 
@@ -156,10 +162,14 @@ public sealed class AggregationTests : IntegrationTestsBase
         Assert.Equal(eventCount, result.Total);
 
         var termsAggregation = result.Aggregations.Terms<string>("terms_stack_id");
-        Assert.Equal(eventCount, (termsAggregation?.Buckets ?? []).Sum(b1 => b1.Total.GetValueOrDefault()) + (long)(termsAggregation?.Data?["SumOtherDocCount"] ?? 0));
-        foreach (var term in termsAggregation?.Buckets ?? [])
+        Assert.NotNull(termsAggregation?.Buckets);
+        Assert.NotNull(termsAggregation.Data);
+        Assert.Equal(eventCount, termsAggregation.Buckets.Sum(b1 => b1.Total.GetValueOrDefault()) + (long)(termsAggregation.Data["SumOtherDocCount"] ?? 0));
+        foreach (var term in termsAggregation.Buckets)
         {
-            Assert.Equal(1, (term.Aggregations.Terms<string>("terms_is_first_occurrence")?.Buckets ?? []).Sum(b => b.Total.GetValueOrDefault()));
+            var firstOccurrenceBuckets = term.Aggregations.Terms<string>("terms_is_first_occurrence");
+            Assert.NotNull(firstOccurrenceBuckets?.Buckets);
+            Assert.Equal(1, firstOccurrenceBuckets.Buckets.Sum(b => b.Total.GetValueOrDefault()));
         }
     }
 
@@ -200,8 +210,11 @@ public sealed class AggregationTests : IntegrationTestsBase
 
         var result = await _eventRepository.CountAsync(q => q.AggregationsExpression("terms:project_id"));
         Assert.Equal(eventCount, result.Total);
-        Assert.InRange((result.Aggregations.Terms<string>("terms_project_id")?.Buckets ?? []).Count, 1, 3); // 3 sample projects
-        Assert.Equal(eventCount, (result.Aggregations.Terms<string>("terms_project_id")?.Buckets ?? []).Sum(t => t.Total.GetValueOrDefault()));
+
+        var termsAggregation = result.Aggregations.Terms<string>("terms_project_id");
+        Assert.NotNull(termsAggregation?.Buckets);
+        Assert.InRange(termsAggregation.Buckets.Count, 1, 3); // 3 sample projects
+        Assert.Equal(eventCount, termsAggregation.Buckets.Sum(t => t.Total.GetValueOrDefault()));
     }
 
     [Fact]
