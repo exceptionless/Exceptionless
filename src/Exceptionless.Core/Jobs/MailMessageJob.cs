@@ -20,9 +20,7 @@ public class MailMessageJob : QueueJobBase<MailMessage>
 
     protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<MailMessage> context)
     {
-        var message = context.QueueEntry.Value;
-        if (message is null)
-            return JobResult.FailedWithMessage("Queue entry value is null.");
+        var message = context.QueueEntry.Value!;
 
         _logger.LogTrace("Processing message {Id}", context.QueueEntry.Id);
 

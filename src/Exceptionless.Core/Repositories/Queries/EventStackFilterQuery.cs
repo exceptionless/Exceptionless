@@ -79,7 +79,7 @@ namespace Exceptionless.Core.Repositories.Queries
                 return;
 
             // TODO: Handle search expressions as well
-            string filter = ctx.Source.GetFilterExpression() ?? String.Empty;
+            string? filter = ctx.Source.GetFilterExpression();
             //bool altInvertRequested = false;
             if (filter.StartsWith("@!"))
             {
@@ -98,7 +98,7 @@ namespace Exceptionless.Core.Repositories.Queries
             var stackIds = new List<string>();
             long stackTotal = 0;
 
-            string stackFilterValue = stackFilter.Filter;
+            string? stackFilterValue = stackFilter.Filter;
             bool isStackIdsNegated = false; //= stackFilter.HasStatusOpen && !altInvertRequested;
             if (isStackIdsNegated)
                 stackFilterValue = stackFilter.InvertedFilter;
@@ -180,7 +180,7 @@ namespace Exceptionless.Core.Repositories.Queries
             }
 
             // Strips stack only fields and stack only special fields
-            string eventFilter = await _eventStackFilter.GetEventFilterAsync(filter, ctx);
+            string? eventFilter = await _eventStackFilter.GetEventFilterAsync(filter, ctx);
             ctx.Source.FilterExpression(eventFilter);
         }
 

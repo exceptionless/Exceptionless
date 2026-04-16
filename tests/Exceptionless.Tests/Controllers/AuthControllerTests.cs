@@ -748,7 +748,8 @@ public class AuthControllerTests : IntegrationTestsBase
         var token = await _tokenRepository.GetByIdAsync(result.Token);
         Assert.NotNull(token);
 
-        var actualUser = await _userRepository.GetByIdAsync(token.UserId!);
+        Assert.NotNull(token.UserId);
+        var actualUser = await _userRepository.GetByIdAsync(token.UserId);
         Assert.NotNull(actualUser);
         Assert.Equal(email, actualUser.EmailAddress);
 
@@ -809,7 +810,8 @@ public class AuthControllerTests : IntegrationTestsBase
         var token = await _tokenRepository.GetByIdAsync(result.Token);
         Assert.NotNull(token);
 
-        var actualUser = await _userRepository.GetByIdAsync(token.UserId!);
+        Assert.NotNull(token.UserId);
+        var actualUser = await _userRepository.GetByIdAsync(token.UserId);
         Assert.NotNull(actualUser);
         Assert.Equal(email, actualUser.EmailAddress);
 
@@ -873,7 +875,8 @@ public class AuthControllerTests : IntegrationTestsBase
         var token = await _tokenRepository.GetByIdAsync(result.Token);
         Assert.NotNull(token);
 
-        var actualUser = await _userRepository.GetByIdAsync(token.UserId!);
+        Assert.NotNull(token.UserId);
+        var actualUser = await _userRepository.GetByIdAsync(token.UserId);
         Assert.NotNull(actualUser);
         Assert.Equal(email, actualUser.EmailAddress);
 
@@ -934,7 +937,8 @@ public class AuthControllerTests : IntegrationTestsBase
         var token = await _tokenRepository.GetByIdAsync(result.Token);
         Assert.NotNull(token);
 
-        var actualUser = await _userRepository.GetByIdAsync(token.UserId!);
+        Assert.NotNull(token.UserId);
+        var actualUser = await _userRepository.GetByIdAsync(token.UserId);
         Assert.NotNull(actualUser);
         Assert.Equal(email, actualUser.EmailAddress);
 
@@ -991,7 +995,8 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.NotNull(result);
 
         // Verify that the token is valid
-        var token = (await _tokenRepository.GetByIdAsync(result.Token))!;
+        var token = await _tokenRepository.GetByIdAsync(result.Token);
+        Assert.NotNull(token);
         Assert.Equal(TokenType.Authentication, token.Type);
         Assert.False(token.IsDisabled);
         Assert.False(token.IsSuspended);
@@ -1009,7 +1014,7 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CanLogoutUserAccessTokenAsync()
     {
-        var token = (await _tokenRepository.GetByIdAsync(TestConstants.UserApiKey))!;
+        var token = await _tokenRepository.GetByIdAsync(TestConstants.UserApiKey);
         Assert.NotNull(token);
         Assert.Equal(TokenType.Access, token.Type);
         Assert.False(token.IsDisabled);
@@ -1114,7 +1119,7 @@ public class AuthControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CanLogoutClientAccessTokenAsync()
     {
-        var token = (await _tokenRepository.GetByIdAsync(TestConstants.ApiKey))!;
+        var token = await _tokenRepository.GetByIdAsync(TestConstants.ApiKey);
         Assert.NotNull(token);
         Assert.Equal(TokenType.Access, token.Type);
         Assert.False(token.IsDisabled);

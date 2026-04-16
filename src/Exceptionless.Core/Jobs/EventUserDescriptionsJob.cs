@@ -24,9 +24,7 @@ public class EventUserDescriptionsJob : QueueJobBase<EventUserDescription>
 
     protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventUserDescription> context)
     {
-        var description = context.QueueEntry.Value;
-        if (description is null)
-            return JobResult.FailedWithMessage("Queue entry value is null.");
+        var description = context.QueueEntry.Value!;
 
         _logger.LogTrace("Processing user description: id={0}", context.QueueEntry.Id);
 

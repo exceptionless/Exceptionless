@@ -93,7 +93,8 @@ public class EventPostJobTests : IntegrationTestsBase
     [Fact]
     public async Task CanRunJobWithDiscardedEventUsage()
     {
-        var organization = (await _organizationRepository.GetByIdAsync(TestConstants.OrganizationId))!;
+        var organization = await _organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
+        Assert.NotNull(organization);
         var usage = await _usageService.GetUsageAsync(organization.Id);
         Assert.Equal(0, usage.CurrentUsage.Total);
 
@@ -120,11 +121,13 @@ public class EventPostJobTests : IntegrationTestsBase
         Assert.Equal(0, usage.CurrentUsage.Blocked);
 
         // Mark the stack as discarded
-        var logStack = (await _stackRepository.GetByIdAsync(logEvent.StackId))!;
+        var logStack = await _stackRepository.GetByIdAsync(logEvent.StackId);
+        Assert.NotNull(logStack);
         logStack.Status = StackStatus.Discarded;
         await _stackRepository.SaveAsync(logStack, o => o.ImmediateConsistency());
 
-        var sessionStack = (await _stackRepository.GetByIdAsync(sessionEvent.StackId))!;
+        var sessionStack = await _stackRepository.GetByIdAsync(sessionEvent.StackId);
+        Assert.NotNull(sessionStack);
         sessionStack.Status = StackStatus.Discarded;
         await _stackRepository.SaveAsync(sessionStack, o => o.ImmediateConsistency());
 

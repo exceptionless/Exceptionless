@@ -60,7 +60,8 @@ public class CleanupDataJobTests : IntegrationTestsBase
 
         await _job.RunAsync(TestCancellationToken);
 
-        token = (await _tokenRepository.GetByIdAsync(token.Id))!;
+        token = await _tokenRepository.GetByIdAsync(token.Id);
+        Assert.NotNull(token);
         Assert.True(token.IsSuspended);
     }
 

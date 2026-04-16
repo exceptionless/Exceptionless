@@ -143,8 +143,11 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
 
         var actualCache = await _cache.GetAsync<ICollection<FindHit<Project>>>("Project:" + project.Id);
         Assert.True(actualCache.HasValue);
-        var cachedDocs = actualCache.Value!;
-        Assert.Equal(project.Name, cachedDocs.Single().Document!.Name);
+        Assert.NotNull(actualCache.Value);
+        var cachedDocs = actualCache.Value;
+        var cachedDoc = cachedDocs.Single();
+        Assert.NotNull(cachedDoc.Document);
+        Assert.Equal(project.Name, cachedDoc.Document.Name);
         var actualCacheToken = actual.GetSlackToken();
         Assert.Equal(token.AccessToken, actualCacheToken?.AccessToken);
     }

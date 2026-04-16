@@ -54,9 +54,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
     protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventPost> context)
     {
         var entry = context.QueueEntry;
-        var ep = entry.Value;
-        if (ep is null)
-            return JobResult.FailedWithMessage("Queue entry value is null.");
+        var ep = entry.Value!;
 
         using var _ = _logger.BeginScope(new ExceptionlessState().Organization(ep.OrganizationId).Project(ep.ProjectId));
 
@@ -327,8 +325,9 @@ public class EventPostsJob : QueueJobBase<EventPost>
             {
                 if (!isInternalProject && _logger.IsEnabled(LogLevel.Critical))
                 {
+                    var originalEventPost = queueEntry.Value!;
                     using (_logger.BeginScope(new ExceptionlessState().Property("Event", new { ev.Date, ev.StackId, ev.Type, ev.Source, ev.Message, ev.Value, ev.Geo, ev.ReferenceId, ev.Tags })))
-                        _logger.LogCritical(ex, "Error while requeuing event post {QueueEntryId} {FilePath}: {Message}", queueEntry.Id, queueEntry.Value?.FilePath ?? "(unknown)", ex.Message);
+                        _logger.LogCritical(ex, "Error while requeuing event post {QueueEntryId} {FilePath}: {Message}", queueEntry.Id, originalEventPost.FilePath, ex.Message);
                 }
 
                 AppDiagnostics.EventsRetryErrors.Add(1);
