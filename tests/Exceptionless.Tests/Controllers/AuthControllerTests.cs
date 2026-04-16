@@ -350,6 +350,7 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.Contains(organization.Id, user.OrganizationIds);
 
         organization = (await _organizationRepository.GetByIdAsync(organization.Id))!;
+        Assert.NotNull(organization);
         Assert.Empty(organization.Invites);
 
         var token = await _tokenRepository.GetByIdAsync(result.Token);
@@ -1027,6 +1028,7 @@ public class AuthControllerTests : IntegrationTestsBase
         );
 
         token = (await _tokenRepository.GetByIdAsync(token.Id))!;
+        Assert.NotNull(token);
         Assert.Equal(TokenType.Access, token.Type);
         Assert.False(token.IsDisabled);
         Assert.False(token.IsSuspended);
@@ -1132,6 +1134,7 @@ public class AuthControllerTests : IntegrationTestsBase
         );
 
         token = (await _tokenRepository.GetByIdAsync(token.Id))!;
+        Assert.NotNull(token);
         Assert.Equal(TokenType.Access, token.Type);
         Assert.False(token.IsDisabled);
         Assert.False(token.IsSuspended);
