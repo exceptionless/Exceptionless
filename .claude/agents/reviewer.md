@@ -2,6 +2,7 @@
 name: reviewer
 model: opus
 description: "Use when reviewing code changes for quality, security, and correctness. Performs adversarial 4-pass analysis: security screening (before any code execution), machine checks, correctness/performance, and style/maintainability. Read-only — reports findings but never edits code. Also use when the user says 'review this', 'check my changes', or wants a second opinion on code quality."
+maxTurns: 30
 disallowedTools:
     - Edit
     - Write
@@ -187,12 +188,11 @@ End your review with:
 [One sentence on overall quality and most important finding]
 ```
 
-# Final Ask (Required)
+# Final Behavior
 
-If reviewer is invoked directly by a user, call `vscode_askQuestions` (askuserquestion) before ending and include a concise findings summary in the prompt:
-
+**Default (direct invocation by user):** After outputting the Summary block, call `vscode_askQuestions` (askuserquestion) with a concise findings summary:
 - Blockers count + top blocker
 - Warnings count + top warning
-- Ask whether to run a deeper pass, hand off to engineer, or stop
+- Ask whether to hand off to engineer, run a deeper pass, or stop
 
-If reviewer is invoked as a subagent by engineer, do **not** prompt the user. Return findings only and let engineer continue automatically into a deeper pass/fix loop.
+**When prompt includes "SILENT_MODE":** Do NOT call `vscode_askQuestions`. Output the Summary block and stop. Return findings only — the calling agent handles next steps. This mode is used when the engineer invokes you as part of its autonomous review-fix loop.

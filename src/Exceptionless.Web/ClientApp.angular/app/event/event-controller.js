@@ -467,14 +467,16 @@
 
                     function onFailure(response) {
                         if (response && response.status === 426) {
-                            return billingService.confirmUpgradePlan(response.data.message).then(
-                                function () {
-                                    return getEvent();
-                                },
-                                function () {
-                                    $state.go("app.frequent");
-                                }
-                            );
+                            return billingService
+                                .confirmUpgradePlan(response.data && (response.data.message || response.data.title))
+                                .then(
+                                    function () {
+                                        return getEvent();
+                                    },
+                                    function () {
+                                        $state.go("app.frequent");
+                                    }
+                                );
                         }
 
                         $state.go("app.frequent");

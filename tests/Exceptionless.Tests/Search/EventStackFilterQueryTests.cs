@@ -69,6 +69,10 @@ public class EventStackFilterQueryTests : IntegrationTestsBase
 
         var ctx = new ElasticQueryVisitorContext();
         var stackFilter = await new EventStackFilter().GetStackFilterAsync(filter, ctx);
+        Assert.NotNull(stackFilter);
+        Assert.NotNull(stackFilter.Filter);
+        Assert.NotNull(stackFilter.InvertedFilter);
+
         _logger.LogInformation("Finding Filter: {Filter}", stackFilter.Filter);
         var stacks = await _stackRepository.FindAsync(q => q.FilterExpression(stackFilter.Filter), o => o.SoftDeleteMode(SoftDeleteQueryMode.All).PageLimit(1000));
         Assert.Equal(expected, stacks.Total);
@@ -78,8 +82,8 @@ public class EventStackFilterQueryTests : IntegrationTestsBase
         long expectedInvert = expectedInverted ?? totalStacks - expected;
         Assert.Equal(expectedInvert, invertedStacks.Total);
 
-        var stackIds = new HashSet<string>(stacks.Hits.Select(h => h.Id));
-        var invertedStackIds = new HashSet<string>(invertedStacks.Hits.Select(h => h.Id));
+        var stackIds = new HashSet<string>(stacks.Hits.Select(h => h.Id!));
+        var invertedStackIds = new HashSet<string>(invertedStacks.Hits.Select(h => h.Id!));
 
         Assert.Empty(stackIds.Intersect(invertedStackIds));
     }

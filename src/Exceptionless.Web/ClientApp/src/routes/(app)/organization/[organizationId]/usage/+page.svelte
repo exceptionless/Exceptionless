@@ -83,7 +83,7 @@
     {#if organizationQuery.isLoading}
         <div class="space-y-4">
             <Skeleton class="h-12 w-3/4" />
-            <Skeleton class="h-[200px] w-full" />
+            <Skeleton class="h-50 w-full" />
             <Skeleton class="h-6 w-1/3" />
         </div>
     {:else if organizationQuery.error}
@@ -116,7 +116,7 @@
                 </p>
             </div>
 
-            <Chart.Container config={chartConfig} class="aspect-auto h-[250px] w-full">
+            <Chart.Container config={chartConfig} class="aspect-auto h-62.5 w-full">
                 <AreaChart
                     legend
                     data={chartData}
@@ -132,7 +132,7 @@
                     }}
                 >
                     {#snippet tooltip()}
-                        <Chart.Tooltip class="min-w-[230px]" indicator="line" labelFormatter={(v) => formatDateLabel(v as Date)} />
+                        <Chart.Tooltip class="min-w-57.5" indicator="line" labelFormatter={(v) => formatDateLabel(v as Date)} />
                     {/snippet}
                 </AreaChart>
             </Chart.Container>

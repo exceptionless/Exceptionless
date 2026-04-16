@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
@@ -22,6 +23,7 @@ namespace Exceptionless.Tests.Controllers;
 public class AuthControllerTests : IntegrationTestsBase
 {
     private readonly AuthOptions _authOptions;
+    private readonly IntercomOptions _intercomOptions;
     private readonly IUserRepository _userRepository;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ITokenRepository _tokenRepository;
@@ -31,6 +33,7 @@ public class AuthControllerTests : IntegrationTestsBase
         _authOptions = GetService<AuthOptions>();
         _authOptions.EnableAccountCreation = true;
         _authOptions.EnableActiveDirectoryAuth = false;
+        _intercomOptions = GetService<IntercomOptions>();
 
         _organizationRepository = GetService<IOrganizationRepository>();
         _userRepository = GetService<IUserRepository>();
@@ -346,7 +349,8 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.Equal(password.ToSaltedHash(user.Salt), user.Password);
         Assert.Contains(organization.Id, user.OrganizationIds);
 
-        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        organization = (await _organizationRepository.GetByIdAsync(organization.Id))!;
+        Assert.NotNull(organization);
         Assert.Empty(organization.Invites);
 
         var token = await _tokenRepository.GetByIdAsync(result.Token);
@@ -745,6 +749,7 @@ public class AuthControllerTests : IntegrationTestsBase
         var token = await _tokenRepository.GetByIdAsync(result.Token);
         Assert.NotNull(token);
 
+        Assert.NotNull(token.UserId);
         var actualUser = await _userRepository.GetByIdAsync(token.UserId);
         Assert.NotNull(actualUser);
         Assert.Equal(email, actualUser.EmailAddress);
@@ -806,6 +811,7 @@ public class AuthControllerTests : IntegrationTestsBase
         var token = await _tokenRepository.GetByIdAsync(result.Token);
         Assert.NotNull(token);
 
+        Assert.NotNull(token.UserId);
         var actualUser = await _userRepository.GetByIdAsync(token.UserId);
         Assert.NotNull(actualUser);
         Assert.Equal(email, actualUser.EmailAddress);
@@ -870,6 +876,7 @@ public class AuthControllerTests : IntegrationTestsBase
         var token = await _tokenRepository.GetByIdAsync(result.Token);
         Assert.NotNull(token);
 
+        Assert.NotNull(token.UserId);
         var actualUser = await _userRepository.GetByIdAsync(token.UserId);
         Assert.NotNull(actualUser);
         Assert.Equal(email, actualUser.EmailAddress);
@@ -931,6 +938,7 @@ public class AuthControllerTests : IntegrationTestsBase
         var token = await _tokenRepository.GetByIdAsync(result.Token);
         Assert.NotNull(token);
 
+        Assert.NotNull(token.UserId);
         var actualUser = await _userRepository.GetByIdAsync(token.UserId);
         Assert.NotNull(actualUser);
         Assert.Equal(email, actualUser.EmailAddress);
@@ -989,6 +997,7 @@ public class AuthControllerTests : IntegrationTestsBase
 
         // Verify that the token is valid
         var token = await _tokenRepository.GetByIdAsync(result.Token);
+        Assert.NotNull(token);
         Assert.Equal(TokenType.Authentication, token.Type);
         Assert.False(token.IsDisabled);
         Assert.False(token.IsSuspended);
@@ -1018,10 +1027,95 @@ public class AuthControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeForbidden()
         );
 
-        token = await _tokenRepository.GetByIdAsync(token.Id);
+        token = (await _tokenRepository.GetByIdAsync(token.Id))!;
+        Assert.NotNull(token);
         Assert.Equal(TokenType.Access, token.Type);
         Assert.False(token.IsDisabled);
         Assert.False(token.IsSuspended);
+    }
+
+
+    [Fact]
+    public async Task GetIntercomToken_WithValidAuthenticatedUser_ReturnsJwtAsync()
+    {
+        // Arrange
+        _intercomOptions.IntercomSecret = "test-intercom-secret-with-adequate-length-12345";
+        const string email = "intercom-token@exceptionless.io";
+        const string password = "Test password";
+        const string salt = "1234567890123456";
+        var issuedAt = new DateTimeOffset(2026, 3, 19, 12, 0, 0, TimeSpan.Zero);
+
+        TimeProvider.SetUtcNow(issuedAt);
+
+        var user = new User
+        {
+            EmailAddress = email,
+            FullName = "Intercom User",
+            Password = password.ToSaltedHash(salt),
+            Roles = AuthorizationRoles.AllScopes,
+            Salt = salt
+        };
+
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
+
+        var authToken = await SendRequestAsAsync<TokenResult>(r => r
+            .Post()
+            .AppendPath("auth/login")
+            .Content(new Login
+            {
+                Email = email,
+                Password = password
+            })
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(authToken);
+
+        // Act
+        var intercomToken = await SendRequestAsAsync<TokenResult>(r => r
+            .BearerToken(authToken.Token)
+            .AppendPath("auth/intercom")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(intercomToken);
+        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(intercomToken.Token);
+        Assert.Equal(user.Id, jwt.Payload["user_id"]);
+        Assert.Equal(issuedAt.UtcDateTime, jwt.Payload.IssuedAt);
+        Assert.Equal(issuedAt.AddHours(1).ToUnixTimeSeconds(), jwt.Payload.Expiration);
+    }
+
+    [Fact]
+    public Task GetIntercomToken_WhenUnauthenticated_ReturnsUnauthorizedAsync()
+    {
+        // Arrange
+        _intercomOptions.IntercomSecret = "test-intercom-secret-with-adequate-length-12345";
+
+        // Act
+        return SendRequestAsync(r => r
+            .AppendPath("auth/intercom")
+            .StatusCodeShouldBeUnauthorized()
+        );
+    }
+
+    [Fact]
+    public async Task GetIntercomToken_WhenIntercomIsDisabled_ReturnsUnprocessableEntityAsync()
+    {
+        // Arrange
+        _intercomOptions.IntercomSecret = null;
+
+        // Act
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
+            .BearerToken(TestConstants.UserApiKey)
+            .AppendPath("auth/intercom")
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.True(problemDetails.Errors.TryGetValue("intercom", out var intercomErrors));
+        Assert.Contains("Intercom is not enabled.", intercomErrors);
     }
 
     [Fact]
@@ -1039,7 +1133,8 @@ public class AuthControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeForbidden()
         );
 
-        token = await _tokenRepository.GetByIdAsync(token.Id);
+        token = (await _tokenRepository.GetByIdAsync(token.Id))!;
+        Assert.NotNull(token);
         Assert.Equal(TokenType.Access, token.Type);
         Assert.False(token.IsDisabled);
         Assert.False(token.IsSuspended);

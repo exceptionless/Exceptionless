@@ -39,7 +39,7 @@ public class SerializerTests : TestWithServices
 
         Assert.Equal(8, ev.Data.Count);
         Assert.Equal("Hi", ev.Data.GetString("SomeString"));
-        Assert.False(ev.Data.GetBoolean("SomeBool"));
+        Assert.False(ev.Data!.GetBoolean("SomeBool"));
         Assert.Equal(1L, ev.Data["SomeNum"]);
         Assert.Equal(typeof(JObject), ev.Data["UnknownProp"]?.GetType());
         Assert.Equal(typeof(JObject), ev.Data["UnknownSerializedProp"]?.GetType());
@@ -123,6 +123,7 @@ public class SerializerTests : TestWithServices
         Assert.Equal("{\"id\":\"test\",\"event_types\":[\"NewError\"],\"is_enabled\":true,\"version\":\"v2\",\"created_utc\":\"0001-01-01T00:00:00\"}", json);
 
         var model = _serializer.Deserialize<WebHook>(json);
+        Assert.NotNull(model);
         Assert.Equal(hook.Id, model.Id);
         Assert.Equal(hook.EventTypes, model.EventTypes);
         Assert.Equal(hook.Version, model.Version);
@@ -301,7 +302,7 @@ public class SerializerTests : TestWithServices
         Assert.Equal("true", _serializer.SerializeToString(true));
         Assert.True(_serializer.Deserialize<bool>("true"));
 
-        string roundtripped = _serializer.Deserialize<string>(_serializer.SerializeToString("hello"));
+        string? roundtripped = _serializer.Deserialize<string>(_serializer.SerializeToString("hello"));
         Assert.Equal("hello", roundtripped);
     }
 
