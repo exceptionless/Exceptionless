@@ -40,6 +40,7 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
         await RefreshDataAsync();
 
         var updatedProject = await _repository.GetByIdAsync(project.Id);
+        Assert.NotNull(updatedProject);
         // TODO: Modified date isn't currently updated in the update scripts.
         //Assert.NotEqual(project.ModifiedUtc, updatedProject.ModifiedUtc);
         Assert.Equal(project.NextSummaryEndOfDayTicks + TimeSpan.TicksPerDay, updatedProject.NextSummaryEndOfDayTicks);
@@ -142,7 +143,11 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
 
         var actualCache = await _cache.GetAsync<ICollection<FindHit<Project>>>("Project:" + project.Id);
         Assert.True(actualCache.HasValue);
-        Assert.Equal(project.Name, actualCache.Value.Single().Document.Name);
+        Assert.NotNull(actualCache.Value);
+        var cachedDocs = actualCache.Value;
+        var cachedDoc = cachedDocs.Single();
+        Assert.NotNull(cachedDoc.Document);
+        Assert.Equal(project.Name, cachedDoc.Document.Name);
         var actualCacheToken = actual.GetSlackToken();
         Assert.Equal(token.AccessToken, actualCacheToken?.AccessToken);
     }

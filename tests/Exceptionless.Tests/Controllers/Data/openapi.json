@@ -7098,7 +7098,9 @@
       },
       "CountResult": {
         "required": [
-          "total"
+          "total",
+          "aggregations",
+          "data"
         ],
         "type": "object",
         "properties": {

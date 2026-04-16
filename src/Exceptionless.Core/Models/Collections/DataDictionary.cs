@@ -4,7 +4,9 @@ namespace Exceptionless.Core.Models;
 
 public class DataDictionary : Dictionary<string, object?>
 {
-    public DataDictionary() : base(StringComparer.OrdinalIgnoreCase) { }
+    public DataDictionary() : base(StringComparer.OrdinalIgnoreCase)
+    {
+    }
 
     public DataDictionary(IEnumerable<KeyValuePair<string, object?>> values) : base(StringComparer.OrdinalIgnoreCase)
     {
@@ -27,12 +29,12 @@ public class DataDictionary : Dictionary<string, object?>
         return TryGetValue(key, out object? value) ? value : defaultValueProvider();
     }
 
-    public string GetString(string name)
+    public string? GetString(string name)
     {
-        return GetString(name, String.Empty);
+        return GetString(name, null);
     }
 
-    public string GetString(string name, string @default)
+    public string? GetString(string name, string? @default)
     {
         if (!TryGetValue(name, out object? value))
             return @default;
@@ -46,9 +48,12 @@ public class DataDictionary : Dictionary<string, object?>
             {
                 return value.ToType<string>();
             }
-            catch { }
+            catch
+            {
+                // Ignored
+            }
         }
 
-        return String.Empty;
+        return null;
     }
 }

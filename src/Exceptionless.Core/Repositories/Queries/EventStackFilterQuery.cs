@@ -80,6 +80,7 @@ namespace Exceptionless.Core.Repositories.Queries
 
             // TODO: Handle search expressions as well
             string filter = ctx.Source.GetFilterExpression() ?? String.Empty;
+
             //bool altInvertRequested = false;
             if (filter.StartsWith("@!"))
             {
@@ -98,15 +99,15 @@ namespace Exceptionless.Core.Repositories.Queries
             var stackIds = new List<string>();
             long stackTotal = 0;
 
-            string stackFilterValue = stackFilter.Filter;
+            string? stackFilterValue = stackFilter?.Filter;
             bool isStackIdsNegated = false; //= stackFilter.HasStatusOpen && !altInvertRequested;
             if (isStackIdsNegated)
-                stackFilterValue = stackFilter.InvertedFilter;
+                stackFilterValue = stackFilter?.InvertedFilter;
 
             if (String.IsNullOrEmpty(stackFilterValue) && (!ctx.Source.ShouldEnforceEventStackFilter() || ctx.Options.GetSoftDeleteMode() != SoftDeleteQueryMode.ActiveOnly))
                 return;
 
-            _logger.LogTrace("Source: {Filter} Stack Filter: {StackFilter} Inverted Stack Filter: {InvertedStackFilter}", filter, stackFilter.Filter, stackFilter.InvertedFilter);
+            _logger.LogTrace("Source: {Filter} Stack Filter: {StackFilter} Inverted Stack Filter: {InvertedStackFilter}", filter, stackFilter?.Filter, stackFilter?.InvertedFilter);
 
             var systemFilterQuery = GetSystemFilterQuery(ctx, isStackIdsNegated);
             systemFilterQuery.FilterExpression(stackFilterValue);
@@ -132,7 +133,7 @@ namespace Exceptionless.Core.Repositories.Queries
 
                 _logger.LogTrace("Query: {Query} will be inverted due to id limit: {ResultCount}", stackFilterValue, stackTotal);
                 isStackIdsNegated = !isStackIdsNegated;
-                stackFilterValue = isStackIdsNegated ? stackFilter.InvertedFilter : stackFilter.Filter;
+                stackFilterValue = isStackIdsNegated ? stackFilter?.InvertedFilter : stackFilter?.Filter;
                 systemFilterQuery.FilterExpression(stackFilterValue);
                 softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
                 systemFilterQuery.EventStackFilterInverted(isStackIdsNegated);
@@ -160,7 +161,7 @@ namespace Exceptionless.Core.Repositories.Queries
             {
                 do
                 {
-                    stackIds.AddRange(results.Hits.Select(h => h.Id));
+                    stackIds.AddRange(results.Hits.Select(h => h.Id).OfType<string>());
                 } while (await results.NextPageAsync());
             }
 
@@ -180,7 +181,7 @@ namespace Exceptionless.Core.Repositories.Queries
             }
 
             // Strips stack only fields and stack only special fields
-            string eventFilter = await _eventStackFilter.GetEventFilterAsync(filter, ctx);
+            string? eventFilter = await _eventStackFilter.GetEventFilterAsync(filter, ctx);
             ctx.Source.FilterExpression(eventFilter);
         }
 
@@ -202,15 +203,36 @@ namespace Exceptionless.Core.Repositories.Queries
             if (!systemFilterQuery.HasAppFilter())
                 systemFilterQuery.AppFilter(builderContext?.Source.GetAppFilter());
 
-            foreach (var range in systemFilterQuery.GetDateRanges())
+            /*
+             *  NOTE: Cannot mutate init only field.
+             *  foreach (var range in systemFilterQuery.GetDateRanges())
+                          {
+                              if (range.Field == _inferredEventDateField || range.Field == "date")
+                              {
+                                  range.Field = _inferredStackLastOccurrenceField;
+                                  if (isStackIdsNegated) // don't apply retention date filter on inverted stack queries
+                                      range.StartDate = null;
+
+                                  range.EndDate = null;
+                              }
+                          }
+             */
+
+            var dateRanges = systemFilterQuery.GetDateRanges();
+            var rangesToReplace = dateRanges
+                .Where(range => range.Field == _inferredEventDateField || range.Field == "date")
+                .ToList();
+
+            // Remove date ranges targeting the event date field and replace with
+            // stack last-occurrence ranges (was previously in-place mutation).
+            foreach (var range in rangesToReplace)
             {
-                if (range.Field == _inferredEventDateField || range.Field == "date")
-                {
-                    range.Field = _inferredStackLastOccurrenceField;
-                    if (isStackIdsNegated) // don't apply retention date filter on inverted stack queries
-                        range.StartDate = null;
-                    range.EndDate = null;
-                }
+                dateRanges.Remove(range);
+                systemFilterQuery.DateRange(
+                    isStackIdsNegated ? null : range.StartDate, // don't apply retention date filter on inverted stack queries
+                    null,
+                    _inferredStackLastOccurrenceField,
+                    range.TimeZone);
             }
 
             return systemFilterQuery;

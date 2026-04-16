@@ -24,20 +24,21 @@ public class SetLocationFromGeoWorkItemHandler : WorkItemHandlerBase
         _lockProvider = lockProvider;
     }
 
-    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
+    public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = default)
     {
         string cacheKey = $"{nameof(SetLocationFromGeoWorkItemHandler)}:{((SetLocationFromGeoWorkItem)workItem).EventId}";
-        return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
+        return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), cancellationToken);
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
     {
-        var workItem = context.GetData<SetLocationFromGeoWorkItem>();
+        var workItem = context.GetData<SetLocationFromGeoWorkItem>()!;
+        var geo = workItem.Geo;
 
-        if (!GeoResult.TryParse(workItem.Geo, out var result) || result is null)
+        if (geo is null || !GeoResult.TryParse(geo, out var result) || result is null)
             return;
 
-        var location = await _cache.GetAsync<Location?>(workItem.Geo, null);
+        var location = await _cache.GetAsync<Location?>(geo, null);
         if (location is null)
         {
             try
@@ -48,14 +49,14 @@ public class SetLocationFromGeoWorkItemHandler : WorkItemHandlerBase
             }
             catch (Exception ex)
             {
-                Log.LogError(ex, "Error occurred looking up reverse geocode: {Geo}", workItem.Geo);
+                Log.LogError(ex, "Error occurred looking up reverse geocode: {Geo}", geo);
             }
         }
 
         if (location is null)
             return;
 
-        await _cache.SetAsync(workItem.Geo, location, TimeSpan.FromDays(3));
+        await _cache.SetAsync(geo, location, TimeSpan.FromDays(3));
 
         var ev = await _eventRepository.GetByIdAsync(workItem.EventId);
         if (ev is null)
