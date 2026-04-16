@@ -117,10 +117,12 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         for (int i = 0; i < sortedIds.Count; i++)
         {
             _logger.LogDebug("Current - {Id}: {Date}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
+            var adjacentEvents = await _repository.GetPreviousAndNextEventIdsAsync(sortedIds[i].Item1);
+            Assert.NotNull(adjacentEvents);
             if (i == 0)
-                Assert.Null((await _repository.GetPreviousAndNextEventIdsAsync(sortedIds[i].Item1)).Previous);
+                Assert.Null(adjacentEvents.Previous);
             else
-                Assert.Equal(sortedIds[i - 1].Item1, (await _repository.GetPreviousAndNextEventIdsAsync(sortedIds[i].Item1)).Previous);
+                Assert.Equal(sortedIds[i - 1].Item1, adjacentEvents.Previous);
         }
     }
 
@@ -145,7 +147,9 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         for (int i = 0; i < sortedIds.Count; i++)
         {
             _logger.LogDebug("Current - {Id}: {Date}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
-            string? nextId = (await _repository.GetPreviousAndNextEventIdsAsync(sortedIds[i].Item1)).Next;
+            var adjacentEvents = await _repository.GetPreviousAndNextEventIdsAsync(sortedIds[i].Item1);
+            Assert.NotNull(adjacentEvents);
+            string? nextId = adjacentEvents.Next;
             if (i == sortedIds.Count - 1)
                 Assert.Null(nextId);
             else
@@ -163,6 +167,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
         var sortedIds = _ids.OrderBy(t => t.Item2.Ticks).ThenBy(t => t.Item1).ToList();
         var result = await _repository.GetPreviousAndNextEventIdsAsync(sortedIds[1].Item1);
+        Assert.NotNull(result);
         Assert.Equal(sortedIds[0].Item1, result.Previous);
         Assert.Equal(sortedIds[2].Item1, result.Next);
     }

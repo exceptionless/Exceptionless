@@ -45,6 +45,9 @@ public sealed class LocationPlugin : EventProcessorPluginBase
 
     private async Task GetGeoLocationFromCacheAsync(IGrouping<string?, EventContext> geoGroup)
     {
+        if (geoGroup.Key is null)
+            return;
+
         var location = await _cacheClient.GetAsync<Location?>(geoGroup.Key, null);
         if (location is null)
             return;

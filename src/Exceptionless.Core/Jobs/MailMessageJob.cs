@@ -20,12 +20,14 @@ public class MailMessageJob : QueueJobBase<MailMessage>
 
     protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<MailMessage> context)
     {
+        var message = context.QueueEntry.Value!;
+
         _logger.LogTrace("Processing message {Id}", context.QueueEntry.Id);
 
         try
         {
-            await _mailSender.SendAsync(context.QueueEntry.Value);
-            _logger.LogInformation("Sent message: to={To} subject={Subject}", context.QueueEntry.Value.To, context.QueueEntry.Value.Subject);
+            await _mailSender.SendAsync(message);
+            _logger.LogInformation("Sent message: to={To} subject={Subject}", message.To, message.Subject);
         }
         catch (Exception ex)
         {

@@ -222,6 +222,6 @@ public class EventData
             await _eventRepository.AddAsync(events, o => o.ImmediateConsistency());
         }
 
-        _configuration.Events.QueryParser.Configuration.MappingResolver.RefreshMapping();
+        _configuration.Events.QueryParser.Configuration?.MappingResolver?.RefreshMapping();
     }
 }

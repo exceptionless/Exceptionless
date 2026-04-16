@@ -30,14 +30,15 @@ public class UpdateProjectNotificationSettingsWorkItemHandler : WorkItemHandlerB
         _timeProvider = timeProvider;
     }
 
-    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
+    public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = default)
     {
         return _lockProvider.AcquireAsync(nameof(UpdateProjectNotificationSettingsWorkItemHandler), TimeSpan.FromMinutes(15), cancellationToken);
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
     {
-        var workItem = context.GetData<UpdateProjectNotificationSettingsWorkItem>();
+        var workItem = context.GetData<UpdateProjectNotificationSettingsWorkItem>()!;
+
         Log.LogInformation("Received update project notification settings work item. Organization={Organization}", workItem.OrganizationId);
 
         long totalNotificationSettingsRemoved = 0;

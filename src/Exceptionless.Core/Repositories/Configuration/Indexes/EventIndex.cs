@@ -321,7 +321,7 @@ internal static class EventIndexExtensions
     public static PropertiesDescriptor<PersistentEvent> AddCopyToMappings(this PropertiesDescriptor<PersistentEvent> descriptor)
     {
         return descriptor
-            .Text(f => f.Name(EventIndex.Alias.IpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER))
+            .Text(f => f.Name(EventIndex.Alias.IpAddress).Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER).AddKeywordField())
             .Text(f => f.Name(EventIndex.Alias.OperatingSystem).Analyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).AddKeywordField())
             .Object<object>(f => f.Name(EventIndex.Alias.Error).Properties(p1 => p1
                 .Keyword(f3 => f3.Name("code").IgnoreAbove(1024))

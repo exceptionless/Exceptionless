@@ -63,7 +63,7 @@ public class EventPostService
         if (String.IsNullOrEmpty(path))
             return null;
 
-        byte[] data;
+        byte[]? data;
         try
         {
             data = await _storage.GetFileContentsRawAsync(path);

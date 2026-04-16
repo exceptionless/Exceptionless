@@ -217,7 +217,7 @@ public class UpdateProjectNotificationSettingsWorkItemHandlerTests : Integration
         await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
 
         // Assert
-        var refreshedProjects = await _projectRepository.GetByIdsAsync([firstProject.Id, ..additionalProjects.Select(project => project.Id)]);
+        var refreshedProjects = await _projectRepository.GetByIdsAsync([firstProject.Id, .. additionalProjects.Select(project => project.Id)]);
         Assert.Equal(56, refreshedProjects.Count);
         Assert.All(refreshedProjects, project => Assert.DoesNotContain(orphanedUserId, project.NotificationSettings.Keys));
     }

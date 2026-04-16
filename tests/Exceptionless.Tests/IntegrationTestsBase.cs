@@ -170,7 +170,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
             _logger.LogTrace("Configured Indexes");
 
             foreach (var index in _configuration.Indexes)
-                index.QueryParser.Configuration.MappingResolver.RefreshMapping();
+                index.QueryParser.Configuration?.MappingResolver?.RefreshMapping();
 
             var cacheClient = GetService<ICacheClient>();
             await cacheClient.RemoveAllAsync();

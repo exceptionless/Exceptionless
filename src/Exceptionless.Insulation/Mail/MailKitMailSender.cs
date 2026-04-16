@@ -52,7 +52,7 @@ public class MailKitMailSender : IMailSender, IHealthCheck
         client.AuthenticationMechanisms.Remove("XOAUTH2");
 
         string? user = _emailOptions.SmtpUser;
-        if (!String.IsNullOrEmpty(user))
+        if (!String.IsNullOrEmpty(user) && !String.IsNullOrEmpty(_emailOptions.SmtpPassword))
         {
             _logger.LogTrace("Authenticating {SmtpUser} to SMTP server", user);
             sw.Restart();
@@ -60,7 +60,7 @@ public class MailKitMailSender : IMailSender, IHealthCheck
             _logger.LogTrace("Authenticated to SMTP server took {Duration:g}", sw.Elapsed);
         }
 
-        _logger.LogTrace("Sending message: to={To} subject={Subject}", message.Subject, message.To);
+        _logger.LogTrace("Sending message: to={To} subject={Subject}", message.To, message.Subject);
         sw.Restart();
         await client.SendAsync(message);
         _logger.LogTrace("Sent Message took {Duration:g}", sw.Elapsed);

@@ -4,6 +4,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Microsoft.Extensions.Logging;
 using Nest;
 
 namespace Exceptionless.Core.Repositories;
@@ -40,6 +41,12 @@ public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<
     public async Task MarkDisabledAsync(string id)
     {
         var webHook = await GetByIdAsync(id);
+        if (webHook is null)
+        {
+            _logger.LogWarning("WebHook {WebHookId} not found when marking as disabled", id);
+            return;
+        }
+
         if (!webHook.IsEnabled)
             return;
 

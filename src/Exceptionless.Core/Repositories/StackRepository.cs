@@ -6,6 +6,7 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
+using Microsoft.Extensions.Logging;
 using Nest;
 
 namespace Exceptionless.Core.Repositories;
@@ -74,7 +75,7 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
 
 ctx._source.total_occurrences += params.count;";
 
-        var operation = new ScriptPatch(script.TrimScript())
+        var operation = new ScriptPatch(script.TrimScript()!)
         {
             Params = new Dictionary<string, object>(4)
             {
@@ -130,7 +131,7 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
     ctx._source.updated_utc = params.updatedUtc;
 }";
 
-        var operation = new ScriptPatch(script.TrimScript())
+        var operation = new ScriptPatch(script.TrimScript()!)
         {
             Params = new Dictionary<string, object>(4)
             {
@@ -166,6 +167,12 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
     public async Task MarkAsRegressedAsync(string stackId)
     {
         var stack = await GetByIdAsync(stackId);
+        if (stack is null)
+        {
+            _logger.LogWarning("Stack {StackId} not found when marking as regressed", stackId);
+            return;
+        }
+
         stack.Status = StackStatus.Regressed;
         await SaveAsync(stack, o => o.Cache());
     }
@@ -187,7 +194,7 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
 
         var cacheEntries = new Dictionary<string, FindHit<Stack>>();
         foreach (var hit in findHits.Where(d => !String.IsNullOrEmpty(d.Document?.SignatureHash)))
-            cacheEntries.Add(GetStackSignatureCacheKey(hit.Document), hit);
+            cacheEntries.Add(GetStackSignatureCacheKey(hit.Document!), hit);
 
         if (cacheEntries.Count > 0)
             await AddDocumentsToCacheWithKeyAsync(cacheEntries, options.GetExpiresIn());

@@ -46,6 +46,9 @@ public class SlackService
         byte[] body = await response.Content.ReadAsByteArrayAsync();
         var result = _serializer.Deserialize<OAuthAccessResponse>(body);
 
+        if (result is null)
+            throw new Exception("Failed to deserialize Slack OAuth response");
+
         if (!result.ok)
         {
             throw new Exception($"Error getting access token: {result.error ?? result.warning}, Response: {result}");
@@ -82,6 +85,9 @@ public class SlackService
         var response = await _client.PostAsync(url);
         byte[] body = await response.Content.ReadAsByteArrayAsync();
         var result = _serializer.Deserialize<AuthRevokeResponse>(body);
+
+        if (result is null)
+            return false;
 
         if (result.ok && result.revoked || String.Equals(result.error, "invalid_auth"))
             return true;

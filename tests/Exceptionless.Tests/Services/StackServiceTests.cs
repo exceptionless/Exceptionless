@@ -48,6 +48,7 @@ public class StackServiceTests : IntegrationTestsBase
 
         // Assert stack state has no change after increment usage
         stack = await _stackRepository.GetByIdAsync(TestConstants.StackId);
+        Assert.NotNull(stack);
         Assert.Equal(0, stack.TotalOccurrences);
         Assert.True(stack.FirstOccurrence <= DateTime.UtcNow);
         Assert.True(stack.LastOccurrence <= DateTime.UtcNow);
@@ -86,6 +87,7 @@ public class StackServiceTests : IntegrationTestsBase
 
         // Assert stack state has no change after increment usage
         stack = await _stackRepository.GetByIdAsync(TestConstants.StackId);
+        Assert.NotNull(stack);
         Assert.Equal(0, stack.TotalOccurrences);
         Assert.True(stack.FirstOccurrence <= DateTime.UtcNow);
         Assert.True(stack.LastOccurrence <= DateTime.UtcNow);
@@ -96,6 +98,7 @@ public class StackServiceTests : IntegrationTestsBase
         Assert.Equal(100, await _cache.GetAsync<long>(StackService.GetStackOccurrenceCountCacheKey(stack.Id), 0));
 
         stack2 = await _stackRepository.GetByIdAsync(TestConstants.StackId2);
+        Assert.NotNull(stack2);
         Assert.Equal(0, stack2.TotalOccurrences);
         Assert.True(stack2.FirstOccurrence <= DateTime.UtcNow);
         Assert.True(stack2.LastOccurrence <= DateTime.UtcNow);
@@ -138,6 +141,7 @@ public class StackServiceTests : IntegrationTestsBase
 
         // Assert stack state after save stack usage
         stack = await _stackRepository.GetByIdAsync(TestConstants.StackId);
+        Assert.NotNull(stack);
         Assert.Equal(10, stack.TotalOccurrences);
         Assert.Equal(minOccurrenceDate, stack.FirstOccurrence);
         Assert.Equal(maxOccurrenceDate, stack.LastOccurrence);

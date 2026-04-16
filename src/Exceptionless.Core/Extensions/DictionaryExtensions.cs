@@ -141,12 +141,12 @@ public static class DictionaryExtensions
         return hashCode;
     }
 
-    public static T? GetValueOrDefault<T>(this IDictionary<string, string> source, string key, T? defaultValue = default)
+    public static T? GetValueOrDefault<T>(this IDictionary<string, string?> source, string key, T? defaultValue = default)
     {
         if (!source.ContainsKey(key))
             return defaultValue;
 
-        object data = source[key];
+        object? data = source[key];
         if (data is T variable)
             return variable;
 
@@ -162,12 +162,12 @@ public static class DictionaryExtensions
         return defaultValue;
     }
 
-    public static string GetString(this IDictionary<string, string> source, string name)
+    public static string GetString(this IDictionary<string, string?> source, string name)
     {
         return source.GetString(name, String.Empty);
     }
 
-    public static string GetString(this IDictionary<string, string> source, string name, string @default)
+    public static string GetString(this IDictionary<string, string?> source, string name, string @default)
     {
         if (!source.TryGetValue(name, out string? value) || value is null)
             return @default;

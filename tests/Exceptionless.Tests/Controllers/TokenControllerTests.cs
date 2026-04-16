@@ -264,6 +264,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
 
         var repository = GetService<ITokenRepository>();
         var tokenRecord = await repository.GetByIdAsync(token.Id, o => o.Cache());
+        Assert.NotNull(tokenRecord);
 
         Assert.NotNull(tokenRecord.Id);
         Assert.False(tokenRecord.IsDisabled);

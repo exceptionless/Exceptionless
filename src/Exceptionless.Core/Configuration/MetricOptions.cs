@@ -8,7 +8,7 @@ public class MetricOptions
 {
     public string? ConnectionString { get; internal set; }
     public string? Provider { get; internal set; }
-    public Dictionary<string, string> Data { get; internal set; } = null!;
+    public Dictionary<string, string?> Data { get; internal set; } = null!;
 
     public static MetricOptions ReadFromConfiguration(IConfiguration config)
     {
