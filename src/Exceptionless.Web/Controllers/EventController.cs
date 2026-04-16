@@ -250,13 +250,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         CountResult result;
         try
         {
-            result = await _repository.CountAsync(q =>
-            {
-                q = q.SystemFilter(query).FilterExpression(filter).EnforceEventStackFilter();
-                if (!String.IsNullOrEmpty(aggregations))
-                    q = q.AggregationsExpression(aggregations);
-                return q;
-            });
+            result = await _repository.CountAsync(q => q.SystemFilter(query).FilterExpression(filter).EnforceEventStackFilter().AggregationsExpression(aggregations!));
         }
         catch (Exception ex)
         {
@@ -424,16 +418,9 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 .SortExpression(sort)
                 .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field)
                 .Index(ti.Range.UtcStart, ti.Range.UtcEnd),
-            o =>
-            {
-                if (page.HasValue)
-                    return o.PageNumber(page).PageLimit(limit);
-                if (before is not null)
-                    o = o.SearchBeforeToken(before);
-                if (after is not null)
-                    o = o.SearchAfterToken(after);
-                return o.PageLimit(limit);
-            });
+            o => page.HasValue
+                ? o.PageNumber(page).PageLimit(limit)
+                : o.SearchBeforeToken(before!).SearchAfterToken(after!).PageLimit(limit));
     }
 
     /// <summary>
