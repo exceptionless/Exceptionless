@@ -256,7 +256,12 @@ jobs:
           done
 
   deploy:
-    if: "${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name != 'pull_request' }}"
+    if: >-
+      ${{
+        (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+        && github.event_name != 'pull_request'
+        || (github.event_name == 'pull_request' && github.head_ref == vars.DEV_DEPLOY_BRANCH && vars.DEV_DEPLOY_BRANCH != 'main' && vars.DEV_DEPLOY_BRANCH != '')
+      }}
     needs: [version, build-and-push-docker]
     runs-on: ubuntu-latest
     timeout-minutes: 30
