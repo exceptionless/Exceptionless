@@ -73,15 +73,19 @@ public sealed class MessageBusBroker : IStartupAction
             return;
 
         var entityChanged = ExtendedEntityChanged.Create(ec);
-        if (entityChanged.Id is null)
-            return;
-
         if (UserTypeName == entityChanged.Type)
         {
             // It's pointless to send a user added message to the new user.
             if (entityChanged.ChangeType == ChangeType.Added)
             {
                 _logger.LogTrace("Ignoring {UserTypeName} message for added user: {UserId}", UserTypeName, entityChanged.Id);
+                return;
+            }
+
+
+            if (entityChanged.Id is null)
+            {
+                _logger.LogTrace("Ignoring {UserTypeName} message: No user id", UserTypeName);
                 return;
             }
 

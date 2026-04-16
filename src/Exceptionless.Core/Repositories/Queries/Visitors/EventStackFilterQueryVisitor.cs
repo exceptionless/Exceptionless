@@ -91,29 +91,22 @@ public class EventStackFilter
         return result.ToString();
     }
 
-    public async Task<StackFilter> GetStackFilterAsync(string query, IQueryVisitorContext? context = null)
+    public async Task<StackFilter?> GetStackFilterAsync(string query, IQueryVisitorContext? context = null)
     {
         context ??= new ElasticQueryVisitorContext();
         var result = await _parser.ParseAsync(query, context);
         if (result is null)
-            return new StackFilter
-            {
-                Filter = null,
-                InvertedFilter = null,
-                HasStatus = false,
-                HasStackIds = false,
-                HasStatusOpen = false
-            };
+            return null;
 
         var invertedResult = result.Clone();
 
-        result = await _stackQueryVisitor.AcceptAsync(result, context) ?? result;
-        invertedResult = await _invertedStackQueryVisitor.AcceptAsync(invertedResult, context) ?? invertedResult;
+        result = await _stackQueryVisitor.AcceptAsync(result, context);
+        invertedResult = await _invertedStackQueryVisitor.AcceptAsync(invertedResult, context);
 
         return new StackFilter
         {
-            Filter = result.ToString(),
-            InvertedFilter = invertedResult.ToString(),
+            Filter = result?.ToString(),
+            InvertedFilter = invertedResult?.ToString(),
             HasStatus = context.GetBoolean(nameof(StackFilter.HasStatus)),
             HasStackIds = context.GetBoolean(nameof(StackFilter.HasStackIds)),
             HasStatusOpen = context.GetBoolean(nameof(StackFilter.HasStatusOpen))

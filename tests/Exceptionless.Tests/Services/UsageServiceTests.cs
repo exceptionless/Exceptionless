@@ -68,7 +68,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         TimeProvider.Advance(TimeSpan.FromMinutes(10));
 
         await _usageService.SavePendingUsageAsync();
-        organization = (await _organizationRepository.GetByIdAsync(organization.Id))!;
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
         Assert.NotNull(organization);
         Assert.Single(organization.UsageHours);
         var usage = organization.Usage.Single();
@@ -140,7 +140,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         TimeProvider.Advance(TimeSpan.FromMinutes(10));
 
         await _usageService.SavePendingUsageAsync();
-        organization = (await _organizationRepository.GetByIdAsync(organization.Id))!;
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
         Assert.NotNull(organization);
         var overage = organization.UsageHours.Single();
         Assert.Equal(eventsLeftInBucket + 1, overage.Total);
@@ -171,7 +171,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         TimeProvider.Advance(TimeSpan.FromMinutes(10));
 
         await _usageService.SavePendingUsageAsync();
-        organization = (await _organizationRepository.GetByIdAsync(organization.Id))!;
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
         Assert.NotNull(organization);
         overage = organization.UsageHours.Single();
         Assert.Equal(eventsLeftInBucket + 1, overage.Total);
@@ -209,7 +209,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         TimeProvider.Advance(TimeSpan.FromMinutes(10));
 
         await _usageService.SavePendingUsageAsync();
-        organization = (await _organizationRepository.GetByIdAsync(organization.Id))!;
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
         Assert.NotNull(organization);
         Assert.Single(organization.UsageHours);
         var usage = organization.Usage.Single();
@@ -249,7 +249,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         TimeProvider.Advance(TimeSpan.FromMinutes(10));
 
         await _usageService.SavePendingUsageAsync();
-        organization = (await _organizationRepository.GetByIdAsync(organization.Id))!;
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
         Assert.NotNull(organization);
         Assert.Single(organization.UsageHours);
         var usage = organization.Usage.Single();
@@ -289,7 +289,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         TimeProvider.Advance(TimeSpan.FromMinutes(10));
 
         await _usageService.SavePendingUsageAsync();
-        organization = (await _organizationRepository.GetByIdAsync(organization.Id))!;
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
         Assert.NotNull(organization);
         Assert.Single(organization.UsageHours);
         var usage = organization.Usage.Single();

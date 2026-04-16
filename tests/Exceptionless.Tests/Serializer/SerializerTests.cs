@@ -39,7 +39,7 @@ public class SerializerTests : TestWithServices
 
         Assert.Equal(8, ev.Data.Count);
         Assert.Equal("Hi", ev.Data.GetString("SomeString"));
-        Assert.Equal(false, ev.Data["SomeBool"]);
+        Assert.False(ev.Data!.GetBoolean("SomeBool"));
         Assert.Equal(1L, ev.Data["SomeNum"]);
         Assert.Equal(typeof(JObject), ev.Data["UnknownProp"]?.GetType());
         Assert.Equal(typeof(JObject), ev.Data["UnknownSerializedProp"]?.GetType());

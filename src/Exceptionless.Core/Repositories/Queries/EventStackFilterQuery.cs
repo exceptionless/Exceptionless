@@ -80,6 +80,12 @@ namespace Exceptionless.Core.Repositories.Queries
 
             // TODO: Handle search expressions as well
             string? filter = ctx.Source.GetFilterExpression();
+            if (String.IsNullOrEmpty(filter))
+            {
+                _logger.LogDebug("Event filter is empty, skipping event stack filter query builder");
+                return;
+            }
+
             //bool altInvertRequested = false;
             if (filter.StartsWith("@!"))
             {
@@ -98,15 +104,15 @@ namespace Exceptionless.Core.Repositories.Queries
             var stackIds = new List<string>();
             long stackTotal = 0;
 
-            string? stackFilterValue = stackFilter.Filter;
+            string? stackFilterValue = stackFilter?.Filter;
             bool isStackIdsNegated = false; //= stackFilter.HasStatusOpen && !altInvertRequested;
             if (isStackIdsNegated)
-                stackFilterValue = stackFilter.InvertedFilter;
+                stackFilterValue = stackFilter?.InvertedFilter;
 
             if (String.IsNullOrEmpty(stackFilterValue) && (!ctx.Source.ShouldEnforceEventStackFilter() || ctx.Options.GetSoftDeleteMode() != SoftDeleteQueryMode.ActiveOnly))
                 return;
 
-            _logger.LogTrace("Source: {Filter} Stack Filter: {StackFilter} Inverted Stack Filter: {InvertedStackFilter}", filter, stackFilter.Filter, stackFilter.InvertedFilter);
+            _logger.LogTrace("Source: {Filter} Stack Filter: {StackFilter} Inverted Stack Filter: {InvertedStackFilter}", filter, stackFilter?.Filter, stackFilter?.InvertedFilter);
 
             var systemFilterQuery = GetSystemFilterQuery(ctx, isStackIdsNegated);
             systemFilterQuery.FilterExpression(stackFilterValue);
@@ -132,7 +138,7 @@ namespace Exceptionless.Core.Repositories.Queries
 
                 _logger.LogTrace("Query: {Query} will be inverted due to id limit: {ResultCount}", stackFilterValue, stackTotal);
                 isStackIdsNegated = !isStackIdsNegated;
-                stackFilterValue = isStackIdsNegated ? stackFilter.InvertedFilter : stackFilter.Filter;
+                stackFilterValue = isStackIdsNegated ? stackFilter?.InvertedFilter : stackFilter?.Filter;
                 systemFilterQuery.FilterExpression(stackFilterValue);
                 softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
                 systemFilterQuery.EventStackFilterInverted(isStackIdsNegated);

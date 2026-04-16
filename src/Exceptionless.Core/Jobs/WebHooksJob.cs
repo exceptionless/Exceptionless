@@ -163,7 +163,11 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
         {
             case WebHookType.General:
                 if (body.WebHookId is null)
+                {
+                    _logger.LogWarning("WebHook notification is missing the web hook id. Organization: {OrganizationId}, Project: {ProjectId}, Url: {Url}", body.OrganizationId, body.ProjectId, body.Url);
                     return false;
+                }
+
                 var webHook = await _webHookRepository.GetByIdAsync(body.WebHookId, o => o.Cache());
                 return webHook?.IsEnabled ?? false;
             case WebHookType.Slack:

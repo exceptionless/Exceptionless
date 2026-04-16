@@ -325,9 +325,8 @@ public class EventPostsJob : QueueJobBase<EventPost>
             {
                 if (!isInternalProject && _logger.IsEnabled(LogLevel.Critical))
                 {
-                    var originalEventPost = queueEntry.Value!;
                     using (_logger.BeginScope(new ExceptionlessState().Property("Event", new { ev.Date, ev.StackId, ev.Type, ev.Source, ev.Message, ev.Value, ev.Geo, ev.ReferenceId, ev.Tags })))
-                        _logger.LogCritical(ex, "Error while requeuing event post {QueueEntryId} {FilePath}: {Message}", queueEntry.Id, originalEventPost.FilePath, ex.Message);
+                        _logger.LogCritical(ex, "Error while requeuing event post {QueueEntryId} {FilePath}: {Message}", queueEntry.Id, queueEntry.Value!.FilePath, ex.Message);
                 }
 
                 AppDiagnostics.EventsRetryErrors.Add(1);
@@ -340,12 +339,12 @@ public class EventPostsJob : QueueJobBase<EventPost>
         return AppDiagnostics.PostsAbandonTime.TimeAsync(queueEntry.AbandonAsync);
     }
 
-    private Task CompleteEntryAsync(IQueueEntry<EventPost> entry, EventPost eventPostInfo, DateTime created)
+    private Task CompleteEntryAsync(IQueueEntry<EventPost> entry, EventPost eventPost, DateTime created)
     {
         return AppDiagnostics.PostsCompleteTime.TimeAsync(async () =>
         {
             await entry.CompleteAsync();
-            await _eventPostService.CompleteEventPostAsync(eventPostInfo.FilePath, eventPostInfo.ProjectId, created, eventPostInfo.ShouldArchive);
+            await _eventPostService.CompleteEventPostAsync(eventPost.FilePath, eventPost.ProjectId, created, eventPost.ShouldArchive);
         });
     }
 
