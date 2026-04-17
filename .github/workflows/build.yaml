@@ -7,6 +7,8 @@ on:
   pull_request:
 
 permissions:
+  contents: read
+  packages: write
   pull-requests: write
 
 env:
@@ -16,6 +18,7 @@ env:
   DOTNET_NOLOGO: true
   MSBUILDTERMINALLOGGER: auto
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  CAN_PUBLISH_IMAGES: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
 
 jobs:
   version:
@@ -174,6 +177,7 @@ jobs:
     timeout-minutes: 30
     env:
       VERSION: ${{needs.version.outputs.version}}
+      STAGING_TAG: build-${{ github.run_id }}-${{ github.run_attempt }}
 
     steps:
       - name: Checkout
@@ -186,41 +190,49 @@ jobs:
         with:
           platforms: linux/amd64
 
+      - name: Login to GitHub Container Registry
+        if: ${{ env.CAN_PUBLISH_IMAGES == 'true' }}
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build api docker image
         run: |
           echo "::remove-matcher owner=csc::"
-          docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target api --platform linux/amd64 --tag exceptionless/api-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+          if [ "$CAN_PUBLISH_IMAGES" = "true" ]; then
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target api --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/api-ci:$STAGING_TAG --cache-from type=gha --cache-to type=gha,mode=max --push
+          else
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target api --platform linux/amd64 --tag exceptionless/api-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+          fi
 
       - name: Build job docker image
         run: |
           echo "::remove-matcher owner=csc::"
-          docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target job --platform linux/amd64 --tag exceptionless/job-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+          if [ "$CAN_PUBLISH_IMAGES" = "true" ]; then
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target job --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/job-ci:$STAGING_TAG --cache-from type=gha --cache-to type=gha,mode=max --push
+          else
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target job --platform linux/amd64 --tag exceptionless/job-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+          fi
 
       - name: Build app docker image
         run: |
           echo "::remove-matcher owner=csc::"
-          docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target app --platform linux/amd64 --tag exceptionless/app-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+          if [ "$CAN_PUBLISH_IMAGES" = "true" ]; then
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target app --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/app-ci:$STAGING_TAG --cache-from type=gha --cache-to type=gha,mode=max --push
+          else
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target app --platform linux/amd64 --tag exceptionless/app-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+          fi
 
       - name: Build all-in-one docker image
         run: |
           echo "::remove-matcher owner=csc::"
-          docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target exceptionless --platform linux/amd64 --tag exceptionless/exceptionless-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
-
-      - name: Archive docker images
-        run: |
-          mkdir -p docker-images
-
-          for image in api job app exceptionless; do
-            docker image save exceptionless/$image-ci:latest | gzip > docker-images/$image-ci.tar.gz
-          done
-
-      - name: Upload docker images artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-images
-          path: docker-images/*.tar.gz
-          retention-days: 1
-          compression-level: 0
+          if [ "$CAN_PUBLISH_IMAGES" = "true" ]; then
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target exceptionless --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/exceptionless-ci:$STAGING_TAG --cache-from type=gha --cache-to type=gha,mode=max --push
+          else
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target exceptionless --platform linux/amd64 --tag exceptionless/exceptionless-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+          fi
 
   docker-publish:
     runs-on: ubuntu-latest
@@ -228,22 +240,11 @@ jobs:
     timeout-minutes: 30
     env:
       VERSION: ${{needs.version.outputs.version}}
+      STAGING_TAG: build-${{ github.run_id }}-${{ github.run_attempt }}
 
     steps:
-      - name: Download docker images artifact
-        uses: actions/download-artifact@v5
-        with:
-          name: docker-images
-          path: docker-images
-
-      - name: Load docker images
-        run: |
-          for archive in docker-images/*.tar.gz; do
-            gunzip -c "$archive" | docker load
-          done
-
       - name: Login to GitHub Container Registry
-        if: "${{ env.DOCKER_USERNAME != '' }}"
+        if: ${{ env.CAN_PUBLISH_IMAGES == 'true' }}
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
@@ -251,35 +252,44 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Login to DockerHub
-        if: "${{ env.DOCKER_USERNAME != '' }}"
+        if: ${{ env.CAN_PUBLISH_IMAGES == 'true' }}
         uses: docker/login-action@v4
         with:
           username: ${{ env.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Pull staged docker images
+        if: ${{ env.CAN_PUBLISH_IMAGES == 'true' }}
+        run: |
+          for image in api job app exceptionless; do
+            docker pull ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG
+          done
+
       - name: Publish CI Packages
-        if: "${{ env.DOCKER_USERNAME != '' }}"
+        if: ${{ env.CAN_PUBLISH_IMAGES == 'true' }}
         run: |
           echo "::remove-matcher owner=csc::"
           # tag and push docker images
 
           for image in {"api","job","app","exceptionless"}; do
-            docker image tag exceptionless/$image-ci:latest exceptionless/$image-ci:$VERSION
-            docker image tag exceptionless/$image-ci:latest ghcr.io/exceptionless/exceptionless/$image-ci:$VERSION
-            docker image tag exceptionless/$image-ci:latest ghcr.io/exceptionless/exceptionless/$image-ci:latest
+            docker image tag ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG exceptionless/$image-ci:$VERSION
+            docker image tag ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG exceptionless/$image-ci:latest
+            docker image tag ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG ghcr.io/exceptionless/exceptionless/$image-ci:$VERSION
+            docker image tag ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG ghcr.io/exceptionless/exceptionless/$image-ci:latest
 
             docker image push --all-tags exceptionless/$image-ci
+            docker image push --all-tags ghcr.io/exceptionless/exceptionless/$image-ci
           done
 
       - name: Publish Release Packages
-        if: "${{ env.DOCKER_USERNAME != '' && startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}"
+        if: ${{ env.CAN_PUBLISH_IMAGES == 'true' && startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}
         run: |
           echo "::remove-matcher owner=csc::"
           # tag and push docker images
 
           for image in {"api","job","app","exceptionless"}; do
-            docker image tag exceptionless/$image-ci:latest exceptionless/$image:$VERSION
-            docker image tag exceptionless/$image-ci:latest exceptionless/$image:latest
+            docker image tag ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG exceptionless/$image:$VERSION
+            docker image tag ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG exceptionless/$image:latest
 
             docker image push --all-tags exceptionless/$image
           done
@@ -304,13 +314,13 @@ jobs:
           fetch-depth: 0
 
       - name: Install Helm
-        if: "${{ env.DOCKER_USERNAME != '' }}"
+        if: ${{ env.CAN_PUBLISH_IMAGES == 'true' }}
         uses: azure/setup-helm@v5
 
       - name: Deploy Changes to Development Environment
         if: >-
           ${{
-            env.DOCKER_USERNAME != '' && (
+            env.CAN_PUBLISH_IMAGES == 'true' && (
               (github.event_name == 'push' && github.ref == format('refs/heads/{0}', vars.DEV_DEPLOY_BRANCH || 'main'))
               || (github.event_name == 'pull_request' && github.head_ref == vars.DEV_DEPLOY_BRANCH && vars.DEV_DEPLOY_BRANCH != 'main' && vars.DEV_DEPLOY_BRANCH != '')
             )
@@ -322,7 +332,7 @@ jobs:
           helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-dev-values.yaml ex-dev --namespace ex-dev ./k8s/exceptionless
 
       - name: Deploy Changes to Production Environment
-        if: "${{ env.DOCKER_USERNAME != '' && startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}"
+        if: ${{ env.CAN_PUBLISH_IMAGES == 'true' && startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}
         run: |
           az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
           az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
