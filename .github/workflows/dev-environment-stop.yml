@@ -111,7 +111,6 @@ jobs:
           kubectl scale deployment/ex-dev-kb --replicas=0 --namespace $NAMESPACE
           kubectl scale statefulset/ex-dev-es-main --replicas=0 --namespace $NAMESPACE
           kubectl delete -f k8s/ex-dev-redis.yaml --ignore-not-found
-          kubectl delete -f k8s/ex-dev-redis-cluster.yaml --ignore-not-found
 
       - name: Clear Start Annotation
         if: ${{ github.event_name == 'workflow_dispatch' || steps.auto_stop.outputs.should_stop == 'true' }}

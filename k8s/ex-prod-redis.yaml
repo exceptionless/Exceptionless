@@ -2,8 +2,8 @@
 apiVersion: redis.redis.opstreelabs.in/v1beta2
 kind: RedisReplication
 metadata:
-  name: ex-dev-redis
-  namespace: ex-dev
+  name: ex-prod-redis
+  namespace: ex-prod
 spec:
   clusterSize: 2
   podSecurityContext:
@@ -14,13 +14,13 @@ spec:
     imagePullPolicy: IfNotPresent
     resources:
       requests:
-        cpu: 100m
-        memory: 128Mi
+        cpu: 200m
+        memory: 256Mi
       limits:
-        cpu: 100m
-        memory: 128Mi
+        cpu: 200m
+        memory: 256Mi
     redisSecret:
-      name: ex-dev-redis-secret
+      name: ex-prod-redis-secret
       key: password
   storage:
     volumeClaimTemplate:
@@ -37,8 +37,8 @@ spec:
 apiVersion: redis.redis.opstreelabs.in/v1beta2
 kind: RedisSentinel
 metadata:
-  name: ex-dev-redis-sen
-  namespace: ex-dev
+  name: ex-prod-redis-sen
+  namespace: ex-prod
 spec:
   clusterSize: 3
   podSecurityContext:
@@ -48,33 +48,33 @@ spec:
     enabled: true
     minAvailable: 2
   redisSentinelConfig:
-    masterGroupName: ex-dev
-    redisReplicationName: ex-dev-redis
+    masterGroupName: ex-prod
+    redisReplicationName: ex-prod-redis
     redisReplicationPassword:
       secretKeyRef:
-        name: ex-dev-redis-secret
+        name: ex-prod-redis-secret
         key: password
   kubernetesConfig:
     image: quay.io/opstree/redis-sentinel:v8.6.2
     imagePullPolicy: IfNotPresent
     redisSecret:
-      name: ex-dev-redis-secret
+      name: ex-prod-redis-secret
       key: password
     resources:
       requests:
-        cpu: 50m
+        cpu: 100m
         memory: 64Mi
       limits:
-        cpu: 50m
+        cpu: 100m
         memory: 64Mi
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: ex-dev-redis-pdb
-  namespace: ex-dev
+  name: ex-prod-redis-pdb
+  namespace: ex-prod
 spec:
   maxUnavailable: 1
   selector:
     matchLabels:
-      app: ex-dev-redis
+      app: ex-prod-redis
