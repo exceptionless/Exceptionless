@@ -202,36 +202,36 @@ jobs:
         run: |
           echo "::remove-matcher owner=csc::"
           if [ "$CAN_PUBLISH_IMAGES" = "true" ]; then
-            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target api --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/api-ci:$STAGING_TAG --cache-from type=gha --cache-to type=gha,mode=max --push
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target api --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/api-ci:$STAGING_TAG --cache-from type=registry,ref=ghcr.io/exceptionless/exceptionless/api-ci:buildcache --cache-to type=registry,ref=ghcr.io/exceptionless/exceptionless/api-ci:buildcache,mode=max --push
           else
-            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target api --platform linux/amd64 --tag exceptionless/api-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target api --platform linux/amd64 --tag exceptionless/api-ci:latest --cache-from type=gha,scope=api-ci --cache-to type=gha,scope=api-ci,mode=max --load
           fi
 
       - name: Build job docker image
         run: |
           echo "::remove-matcher owner=csc::"
           if [ "$CAN_PUBLISH_IMAGES" = "true" ]; then
-            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target job --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/job-ci:$STAGING_TAG --cache-from type=gha --cache-to type=gha,mode=max --push
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target job --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/job-ci:$STAGING_TAG --cache-from type=registry,ref=ghcr.io/exceptionless/exceptionless/job-ci:buildcache --cache-to type=registry,ref=ghcr.io/exceptionless/exceptionless/job-ci:buildcache,mode=max --push
           else
-            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target job --platform linux/amd64 --tag exceptionless/job-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target job --platform linux/amd64 --tag exceptionless/job-ci:latest --cache-from type=gha,scope=job-ci --cache-to type=gha,scope=job-ci,mode=max --load
           fi
 
       - name: Build app docker image
         run: |
           echo "::remove-matcher owner=csc::"
           if [ "$CAN_PUBLISH_IMAGES" = "true" ]; then
-            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target app --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/app-ci:$STAGING_TAG --cache-from type=gha --cache-to type=gha,mode=max --push
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target app --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/app-ci:$STAGING_TAG --cache-from type=registry,ref=ghcr.io/exceptionless/exceptionless/app-ci:buildcache --cache-to type=registry,ref=ghcr.io/exceptionless/exceptionless/app-ci:buildcache,mode=max --push
           else
-            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target app --platform linux/amd64 --tag exceptionless/app-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target app --platform linux/amd64 --tag exceptionless/app-ci:latest --cache-from type=gha,scope=app-ci --cache-to type=gha,scope=app-ci,mode=max --load
           fi
 
       - name: Build all-in-one docker image
         run: |
           echo "::remove-matcher owner=csc::"
           if [ "$CAN_PUBLISH_IMAGES" = "true" ]; then
-            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target exceptionless --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/exceptionless-ci:$STAGING_TAG --cache-from type=gha --cache-to type=gha,mode=max --push
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target exceptionless --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/exceptionless-ci:$STAGING_TAG --cache-from type=registry,ref=ghcr.io/exceptionless/exceptionless/exceptionless-ci:buildcache --cache-to type=registry,ref=ghcr.io/exceptionless/exceptionless/exceptionless-ci:buildcache,mode=max --push
           else
-            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target exceptionless --platform linux/amd64 --tag exceptionless/exceptionless-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target exceptionless --platform linux/amd64 --tag exceptionless/exceptionless-ci:latest --cache-from type=gha,scope=exceptionless-ci --cache-to type=gha,scope=exceptionless-ci,mode=max --load
           fi
 
   docker-publish:
