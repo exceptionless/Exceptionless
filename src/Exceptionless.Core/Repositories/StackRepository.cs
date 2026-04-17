@@ -75,7 +75,7 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
 
 ctx._source.total_occurrences += params.count;";
 
-        var operation = new ScriptPatch(script.TrimScript()!)
+        var operation = new ScriptPatch(script.TrimScript())
         {
             Params = new Dictionary<string, object>(4)
             {
@@ -131,7 +131,7 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
     ctx._source.updated_utc = params.updatedUtc;
 }";
 
-        var operation = new ScriptPatch(script.TrimScript()!)
+        var operation = new ScriptPatch(script.TrimScript())
         {
             Params = new Dictionary<string, object>(4)
             {

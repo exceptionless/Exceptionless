@@ -91,11 +91,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
 
         do
         {
-            // Foundatio Hits can contain null elements, so filter them before accessing properties.
-            var suspendedOrganizationIds = suspendedOrganizations.Hits
-                .Where(o => o is not null && o.Id is not null)
-                .Select(o => o!.Id!)
-                .ToList();
+            var suspendedOrganizationIds = suspendedOrganizations.Hits.Where(o => o.Id is not null).Select(o => o.Id!).ToList();
             long updatedCount = await _tokenRepository.PatchAllAsync(q => q.Organization(suspendedOrganizationIds).FieldEquals(t => t.IsSuspended, false), new PartialPatch(new { is_suspended = true }));
             if (updatedCount > 0)
                 _logger.LogInformation("Marking {SuspendedTokenCount} tokens as suspended", updatedCount);

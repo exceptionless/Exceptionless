@@ -296,7 +296,7 @@ public class AuthController : ExceptionlessApiController
         if (!_authOptions.EnableActiveDirectoryAuth)
         {
             user.Salt = Core.Extensions.StringExtensions.GetRandomString(16);
-            user.Password = model.Password!.ToSaltedHash(user.Salt);
+            user.Password = model.Password.ToSaltedHash(user.Salt);
         }
 
         try

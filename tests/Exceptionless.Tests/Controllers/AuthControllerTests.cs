@@ -349,7 +349,7 @@ public class AuthControllerTests : IntegrationTestsBase
         Assert.Equal(password.ToSaltedHash(user.Salt), user.Password);
         Assert.Contains(organization.Id, user.OrganizationIds);
 
-        organization = (await _organizationRepository.GetByIdAsync(organization.Id))!;
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
         Assert.NotNull(organization);
         Assert.Empty(organization.Invites);
 

@@ -18,7 +18,7 @@ public class MessageBusOptions
     {
         var options = new MessageBusOptions { Scope = appOptions.AppScope };
         options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? $"{options.Scope}-" : String.Empty;
-        options.Topic = config.GetValue<string>(nameof(options.Topic), $"{options.ScopePrefix}messages")!;
+        options.Topic = config.GetValue<string>(nameof(options.Topic), $"{options.ScopePrefix}messages");
 
         string? cs = config.GetConnectionString("MessageBus");
 

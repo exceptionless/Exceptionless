@@ -103,14 +103,14 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
         var trimmedTerms = terms.OfType<string>().Distinct().ToList();
         foreach (string term in trimmedTerms)
         {
-            if (term.StartsWith("*"))
+            if (term.StartsWith('*'))
                 continue;
 
-            if (Boolean.TryParse(term, out bool boolResult))
+            if (Boolean.TryParse(term, out bool _))
                 termType = "b";
             else if (term.IsNumeric())
                 termType = "n";
-            else if (DateTime.TryParse(term, out var dateResult))
+            else if (DateTime.TryParse(term, out DateTime _))
                 termType = "d";
 
             break;

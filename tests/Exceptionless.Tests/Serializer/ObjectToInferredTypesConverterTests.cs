@@ -31,7 +31,7 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
         Assert.NotNull(result);
         Assert.True(result.TryGetValue("value", out var value));
         Assert.IsType<bool>(value);
-        Assert.True((bool)value!);
+        Assert.True((bool)value);
     }
 
     [Fact]

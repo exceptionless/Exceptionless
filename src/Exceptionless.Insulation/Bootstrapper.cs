@@ -233,7 +233,7 @@ public class Bootstrapper
         else if (String.Equals(options.Provider, "s3"))
         {
             container.ReplaceSingleton<IFileStorage>(s => new S3FileStorage(o => o
-                    .ConnectionString(options.ConnectionString!)
+                    .ConnectionString(options.ConnectionString)
                     .Credentials(GetAWSCredentials(options.Data))
                     .Region(GetAWSRegionEndpoint(options.Data))
                     .Bucket(options.Data.GetString("bucket", $"{options.ScopePrefix}ex-events"))

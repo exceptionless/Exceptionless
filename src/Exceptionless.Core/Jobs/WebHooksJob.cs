@@ -55,7 +55,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
 
     protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<WebHookNotification> context)
     {
-        var body = context.QueueEntry.Value!;
+        var body = context.QueueEntry.Value;
 
         bool shouldLog = body.ProjectId != _appOptions.InternalProjectId;
         using (_logger.BeginScope(new ExceptionlessState().Organization(body.OrganizationId).Project(body.ProjectId)))

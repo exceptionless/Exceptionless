@@ -32,7 +32,7 @@ public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : cla
         return _validator.ValidateAndThrowAsync(document);
     }
 
-    protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, T? document, IDictionary<string, object>? data = null, TimeSpan? delay = null)
+    protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, T? document, IDictionary<string, object?>? data = null, TimeSpan? delay = null)
     {
         if (!NotificationsEnabled)
             return Task.CompletedTask;
@@ -99,7 +99,7 @@ public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : cla
         }, delay);
     }
 
-    protected EntityChanged CreateEntityChanged(ChangeType changeType, string? organizationId = null, string? projectId = null, string? stackId = null, string? id = null, IDictionary<string, object>? data = null)
+    protected EntityChanged CreateEntityChanged(ChangeType changeType, string? organizationId = null, string? projectId = null, string? stackId = null, string? id = null, IDictionary<string, object?>? data = null)
     {
         var model = new EntityChanged
         {
