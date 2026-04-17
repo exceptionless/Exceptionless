@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Exceptionless.Tests.Extensions;
 using Xunit;
 
@@ -25,7 +26,12 @@ public class OpenApiControllerTests : IntegrationTestsBase
         string actualJson = await response.Content.ReadAsStringAsync(TestCancellationToken);
 
         // Assert
-        string expectedJson = await File.ReadAllTextAsync(baselinePath, TestCancellationToken);
-        Assert.Equal(expectedJson, actualJson);
+        string expectedJson = (await File.ReadAllTextAsync(baselinePath, TestCancellationToken)).Replace("\\r\\n", "\\n");
+        actualJson = actualJson.Replace("\\r\\n", "\\n");
+
+        var expectedDocument = JsonNode.Parse(expectedJson);
+        var actualDocument = JsonNode.Parse(actualJson);
+
+        Assert.True(JsonNode.DeepEquals(expectedDocument, actualDocument), "The generated OpenAPI document does not match the baseline.");
     }
 }

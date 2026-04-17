@@ -17,6 +17,7 @@ Run `Exceptionless.AppHost` from your IDE. Aspire starts all services (Elasticse
 | E2E test       | `npm run test:e2e`                                              |
 
 Test filtering note: the backend test project uses Microsoft Testing Platform, so targeted runs use test-app options after `--`, for example `dotnet test -- --filter-class Exceptionless.Tests.Controllers.EventControllerTests`.
+Integration test note: `tests/Exceptionless.Tests` now enables bounded xUnit class-level parallelism (`MaxParallelThreads = 6`). HTTP integration classes get one `AppWebHostFactory` slice per class with a unique `AppScope` like `test`, `test-1`, etc., while reusing a shared Aspire-backed Elasticsearch process for the whole test run.
 
 ## Project Structure
 
