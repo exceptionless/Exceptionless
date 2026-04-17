@@ -250,7 +250,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         CountResult result;
         try
         {
-            result = await _repository.CountAsync(q => q.SystemFilter(query).FilterExpression(filter).EnforceEventStackFilter().AggregationsExpression(aggregations!));
+            result = await _repository.CountAsync(q => q.SystemFilter(query).FilterExpression(filter).EnforceEventStackFilter().AggregationsExpression(aggregations));
         }
         catch (Exception ex)
         {
@@ -420,7 +420,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
                 .Index(ti.Range.UtcStart, ti.Range.UtcEnd),
             o => page.HasValue
                 ? o.PageNumber(page).PageLimit(limit)
-                : o.SearchBeforeToken(before!).SearchAfterToken(after!).PageLimit(limit));
+                : o.SearchBeforeToken(before).SearchAfterToken(after).PageLimit(limit));
     }
 
     /// <summary>
@@ -1375,7 +1375,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
             return Task.FromResult<Organization?>(null);
 
-        return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache))!;
+        return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache));
     }
 
     private async Task<Project?> GetProjectAsync(string projectId, bool useCache = true)

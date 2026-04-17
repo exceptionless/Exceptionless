@@ -56,11 +56,11 @@ public class SlackService
 
         var token = new SlackToken
         {
-            AccessToken = result.access_token!,
+            AccessToken = result.access_token,
             Scopes = result.scope?.Split([","], StringSplitOptions.RemoveEmptyEntries) ?? [],
-            UserId = result.user_id!,
-            TeamId = result.team_id!,
-            TeamName = result.team_name!
+            UserId = result.user_id,
+            TeamId = result.team_id,
+            TeamName = result.team_name
         };
 
         if (result.incoming_webhook is not null)

@@ -578,7 +578,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
         if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
             return Task.FromResult<Organization?>(null);
 
-        return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache))!;
+        return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache));
     }
 
     private async Task<Project?> GetProjectAsync(string? projectId, bool useCache = true)
