@@ -91,10 +91,10 @@ jobs:
             nuget-${{ runner.os }}-
 
       - name: Nuget Restore
-        run: dotnet restore
+        run: dotnet restore ./Exceptionless.slnx
 
       - name: Build
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build ./Exceptionless.slnx --no-restore --configuration Release
 
       - name: Start Elasticsearch
         working-directory: docker
