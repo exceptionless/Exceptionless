@@ -2,27 +2,26 @@
 
 Real-time error monitoring platform handling billions of requests (ASP.NET Core 10 + Svelte 5). Act as a distinguished engineer focusing on readability, performance while maintaining backwards compatibility.
 
-## Quick Start
+## Start Here
 
-Run `Exceptionless.AppHost` from your IDE. Aspire starts all services (Elasticsearch, Redis) automatically.
+- Run `Exceptionless.AppHost` from your IDE, or `dotnet run --project src/Exceptionless.AppHost` from the repo root.
+- Do not add a separate `aspire start -- --services-only` step for local runs or backend tests. The AppHost starts required services, and integration tests bootstrap their own infrastructure.
 
-## Build & Test
+## Common Commands
 
-| Task           | Command                                                         |
-| -------------- | --------------------------------------------------------------- |
-| Backend build  | `dotnet build`                                                  |
-| Backend test   | `dotnet test`                                                   |
+| Task | Command |
+| --- | --- |
+| Backend build | `dotnet build` |
+| Backend test | `dotnet test --project tests/Exceptionless.Tests/Exceptionless.Tests.csproj` |
 | Frontend build | `cd src/Exceptionless.Web/ClientApp && npm ci && npm run build` |
-| Frontend test  | `npm run test:unit`                                             |
-| E2E test       | `npm run test:e2e`                                              |
+| Frontend unit tests | `cd src/Exceptionless.Web/ClientApp && npm run test:unit` |
 
-Test filtering note: the backend test project uses Microsoft Testing Platform, so targeted runs use test-app options after `--`, for example `dotnet test -- --filter-class Exceptionless.Tests.Controllers.EventControllerTests`.
-Integration test note: `tests/Exceptionless.Tests` now enables bounded xUnit class-level parallelism (`MaxParallelThreads = 6`). HTTP integration classes get one `AppWebHostFactory` slice per class with a unique `AppScope` like `test`, `test-1`, etc., while reusing a shared Aspire-backed Elasticsearch process for the whole test run.
-Service test note: test classes that hit Elasticsearch-backed repositories or jobs should derive from `IntegrationTestsBase` instead of `TestWithServices`, so they run with configured indexes and the shared test infrastructure.
-CI note: standard pull requests build `api`, `job`, and `app` images; the all-in-one `exceptionless` image and `docker-publish` job are reserved for main, tags, and deploy-branch pull requests.
-Docker note: runtime image builds restore and build the `Exceptionless.Web` and `Exceptionless.Job` projects directly so test projects stay out of the container build graph, and publish stages reuse compiled outputs with `--no-build`. Any stage that runs `dotnet publish --no-build` must inherit or copy the build stage's NuGet package cache as well as `/app`, otherwise deps-file generation can fail on missing package assemblies.
-Compose note: any service started in CI with `docker compose up --wait` must define a real Docker `healthcheck`; otherwise Compose only waits for container startup, not application readiness.
-Aspire CLI note: from the repo root, Aspire commands can auto-discover `Exceptionless.AppHost`, so CI can start infra-only dependencies with `aspire start -- --services-only`, then gate on readiness with `aspire wait <resource>` and clean up with `aspire stop`.
+## Repo-Specific Notes
+
+- Backend test filtering uses Microsoft Testing Platform test-app options after `--`, for example `dotnet test --project tests/Exceptionless.Tests/Exceptionless.Tests.csproj -- --filter-class Exceptionless.Tests.Controllers.EventControllerTests`.
+- Elasticsearch-backed repository or job tests should derive from `IntegrationTestsBase`, not `TestWithServices`.
+- Standard pull requests build `api`, `job`, and `app` images. The all-in-one `exceptionless` image is only built for tags.
+- If you touch Docker publish stages that use `dotnet publish --no-build`, make sure the stage still has the build output and NuGet package cache available.
 
 ## Project Structure
 
@@ -34,43 +33,6 @@ src/
 ├── Exceptionless.Web          # API + Svelte SPA (ClientApp/)
 └── Exceptionless.Job          # Background workers
 tests/                         # C# tests + HTTP samples
-```
-
-## Skills
-
-Load from `.agents/skills/<name>/SKILL.md` when working in that domain:
-
-| Domain        | Skills                                                                                                                                                    |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Backend       | dotnet-conventions, backend-architecture, dotnet-cli, backend-testing, foundatio                                                                          |
-| Frontend      | svelte-components, tanstack-form, tanstack-query, shadcn-svelte, typescript-conventions, frontend-architecture, storybook, accessibility, frontend-design |
-| Testing       | frontend-testing, e2e-testing                                                                                                                             |
-| Cross-cutting | security-principles, releasenotes                                                                                                                         |
-| Billing       | stripe-best-practices, upgrade-stripe                                                                                                                     |
-| Agents        | agent-browser, dogfood                                                                                                                                    |
-| Meta          | skill-evolution                                                                                                                                           |
-
-## Agents
-
-Available in `.claude/agents/`. Use `@agent-name` to invoke:
-
-- `engineer`: Use for implementing features, fixing bugs, or making code changes — plans, TDD, implements, verify loop, ships end-to-end
-- `reviewer`: Use for reviewing code quality — adversarial 4-pass analysis (security → build → correctness → style). Read-only.
-- `triage`: Use for analyzing issues, investigating bugs, or answering codebase questions — impact assessment, RCA, reproduction, implementation plans
-- `pr-reviewer`: Use for end-to-end PR review — zero-trust security pre-screen, dependency audit, delegates to @reviewer, delivers verdict
-
-### Orchestration Flow
-
-```text
-engineer → TDD → implement → verify (loop until clean)
-         → @reviewer (loop until 0 blockers) → commit → push → PR
-         → @copilot review → CI checks → resolve feedback → merge
-
-triage → impact assessment → deep research → RCA → reproduce
-       → implementation plan → post to GitHub → @engineer
-
-pr-reviewer → security pre-screen (before build!) → dependency audit
-            → build → @reviewer (4-pass) → verdict
 ```
 
 ## Constraints

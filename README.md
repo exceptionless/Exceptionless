@@ -29,38 +29,34 @@ This will run a completely self-contained simple instance of Exceptionless. It i
 
 _In appreciation for anyone who submits a non-trivial pull request, we will give you a free [Exceptionless](https://exceptionless.com) paid plan for a year. After your pull request is accepted, simply send an email to <team@exceptionless.io> with the name of your organization and we will upgrade you to a paid plan._
 
-- Please read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/main/CONTRIBUTING.md)
-- Requirements
-  - [Docker](https://www.docker.com/get-docker)
-  - [.NET 10.0](https://dotnet.microsoft.com/)
-  - [Node 24+](https://nodejs.org/)
-- Visual Studio Code
-  - Open Visual Studio Code and then open the Exceptionless root folder
-  - Go to the `Debug` menu and select the `Aspire` launch configuration then click the `Start Debugging` button
-  - Aspire will start the app, dashboard, and required infrastructure. Open `https://localhost:5100/` if a browser doesn't open automatically
-  - When running locally in `Development` mode, a global administrator user `test@localhost` is automatically created with password `tester`. You can also click the `Signup` button to create a new account
-- Dev Containers
-  - Reopen the repo in the dev container
-  - The dev container uses the rolling devcontainer base image and the `.NET` `10.0` feature channel so it tracks the latest GA .NET 10 SDK
-  - The dev container installs the Aspire CLI during setup and exposes it on the shell `PATH`
-  - Run `dotnet run --project src/Exceptionless.AppHost` from a terminal inside the container
-  - Aspire will start the app, dashboard, and required infrastructure inside the dev container environment
-- Visual Studio
-  - Open Visual Studio and then open the `Exceptionless.slnx` solution in the root folder
-  - Start the required infrastructure by running `aspire start -- --services-only` from a terminal in the repo root
-  - Run the `Exceptionless.Web` project
-  - A browser window should be automatically opened to `https://localhost:5100/`
-  - When running locally in `Development` mode, a global administrator user `test@localhost` is automatically created with password `tester`. You can also click the `Signup` button to create a new account
+Start here:
+
+1. Read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/main/CONTRIBUTING.md).
+2. Install [Docker](https://www.docker.com/get-docker), [.NET 10.0](https://dotnet.microsoft.com/), and [Node 24+](https://nodejs.org/).
+3. Run the app with one of these entry points:
+   - Visual Studio Code: open the repo root and start the `Aspire` launch configuration.
+   - Visual Studio: open `Exceptionless.slnx`, set `Exceptionless.AppHost` as the startup project, and run it.
+   - Dev Container: reopen the repo in the container, then run `dotnet run --project src/Exceptionless.AppHost`.
+
+After startup:
+
+1. Open `https://localhost:5100/` if a browser does not open automatically.
+2. In `Development` mode, a global administrator user `test@localhost` with password `tester` is created automatically.
+
+Notes:
+
+1. Running `Exceptionless.AppHost` starts the app and required infrastructure together.
+2. Backend tests bootstrap required infrastructure automatically. Do not run `aspire start -- --services-only` before running the app or the tests.
 
 ![image](https://user-images.githubusercontent.com/282584/223168564-6518d509-d292-4078-a61f-ab493d2bb812.png)
 
 ## UI Only Development
 
-The UI is a SPA application that runs against the Exceptionless API. The source is located in the `src/Exceptionless.Web/ClientApp` folder. The UI will automatically be started when running the whole project, but if you want to work on just the UI, then open Visual Studio Code to the `src/Exceptionless.Web/ClientApp` folder and run the `npm run serve (use exceptionless api)` task to start the UI pointing at the official Exceptionless API. You will need to login to your actual Exceptionless account.
+The UI source is in `src/Exceptionless.Web/ClientApp`. If you only need the frontend, open that folder in Visual Studio Code and run the `npm run serve (use exceptionless api)` task. That task points at the hosted Exceptionless API, so you will need to sign in with a real Exceptionless account.
 
 ## API Only Development
 
-You can work on just the API without running the SPA UI by selecting the `Exceptionless API` launch configuration in Visual Studio. You can then run requests using the `exceptionless.http` file. Make sure that you have the [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension installed.
+If you only need the API, select the `Exceptionless API` launch configuration in Visual Studio and use `exceptionless.http` to run requests. If you use Visual Studio Code for that file, install the [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension.
 
 ## Thanks
 
