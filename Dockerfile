@@ -1,10 +1,3 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build-node
-RUN apt-get update -yq \
-    && apt-get install -yq curl ca-certificates \
-    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -yq nodejs \
-    && rm -rf /var/lib/apt/lists/*
-
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG MinVerVersionOverride
 WORKDIR /app
@@ -24,6 +17,13 @@ RUN dotnet restore ./src/Exceptionless.Web/Exceptionless.Web.csproj \
 COPY . .
 RUN dotnet build ./src/Exceptionless.Web/Exceptionless.Web.csproj -c Release --no-restore /p:MinVerVersionOverride=${MinVerVersionOverride} \
     && dotnet build ./src/Exceptionless.Job/Exceptionless.Job.csproj -c Release --no-restore /p:MinVerVersionOverride=${MinVerVersionOverride}
+
+FROM build AS build-node
+RUN apt-get update -yq \
+    && apt-get install -yq curl ca-certificates \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -yq nodejs \
+    && rm -rf /var/lib/apt/lists/*
 
 # testrunner
 
@@ -68,9 +68,6 @@ ENTRYPOINT [ "dotnet", "Exceptionless.Web.dll" ]
 # app-publish
 
 FROM build-node AS app-publish
-WORKDIR /app
-COPY --from=build /app ./
-
 WORKDIR /app/src/Exceptionless.Web
 RUN dotnet publish -c Release -o out --no-build
 

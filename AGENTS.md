@@ -20,7 +20,7 @@ Test filtering note: the backend test project uses Microsoft Testing Platform, s
 Integration test note: `tests/Exceptionless.Tests` now enables bounded xUnit class-level parallelism (`MaxParallelThreads = 6`). HTTP integration classes get one `AppWebHostFactory` slice per class with a unique `AppScope` like `test`, `test-1`, etc., while reusing a shared Aspire-backed Elasticsearch process for the whole test run.
 Service test note: test classes that hit Elasticsearch-backed repositories or jobs should derive from `IntegrationTestsBase` instead of `TestWithServices`, so they run with configured indexes and the shared test infrastructure.
 CI note: standard pull requests build `api`, `job`, and `app` images; the all-in-one `exceptionless` image and `docker-publish` job are reserved for main, tags, and deploy-branch pull requests.
-Docker note: runtime image builds restore and build the `Exceptionless.Web` and `Exceptionless.Job` projects directly so test projects stay out of the container build graph, and publish stages reuse compiled outputs with `--no-build`.
+Docker note: runtime image builds restore and build the `Exceptionless.Web` and `Exceptionless.Job` projects directly so test projects stay out of the container build graph, and publish stages reuse compiled outputs with `--no-build`. Any stage that runs `dotnet publish --no-build` must inherit or copy the build stage's NuGet package cache as well as `/app`, otherwise deps-file generation can fail on missing package assemblies.
 
 ## Project Structure
 
