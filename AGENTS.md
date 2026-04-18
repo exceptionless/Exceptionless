@@ -19,6 +19,8 @@ Run `Exceptionless.AppHost` from your IDE. Aspire starts all services (Elasticse
 Test filtering note: the backend test project uses Microsoft Testing Platform, so targeted runs use test-app options after `--`, for example `dotnet test -- --filter-class Exceptionless.Tests.Controllers.EventControllerTests`.
 Integration test note: `tests/Exceptionless.Tests` now enables bounded xUnit class-level parallelism (`MaxParallelThreads = 6`). HTTP integration classes get one `AppWebHostFactory` slice per class with a unique `AppScope` like `test`, `test-1`, etc., while reusing a shared Aspire-backed Elasticsearch process for the whole test run.
 Service test note: test classes that hit Elasticsearch-backed repositories or jobs should derive from `IntegrationTestsBase` instead of `TestWithServices`, so they run with configured indexes and the shared test infrastructure.
+CI note: standard pull requests build `api`, `job`, and `app` images; the all-in-one `exceptionless` image and `docker-publish` job are reserved for main, tags, and deploy-branch pull requests.
+Docker note: runtime image builds use `Exceptionless.Docker.slnx` so test projects are excluded from the container build graph, and publish stages reuse compiled outputs with `--no-build`.
 
 ## Project Structure
 

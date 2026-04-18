@@ -1,25 +1,27 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build-node
+RUN apt-get update -yq \
+    && apt-get install -yq curl ca-certificates \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -yq nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG MinVerVersionOverride
 WORKDIR /app
 
-COPY ./*.slnx ./NuGet.Config ./
+COPY ./Exceptionless.Docker.slnx ./NuGet.Config ./
 COPY ./src/*.props ./src/
-COPY ./tests/*.props ./tests/
 COPY ./build/packages/* ./build/packages/
 
-# Copy the main source project files
+# Copy the source project files needed for the runtime images.
 COPY src/*/*.csproj ./
 RUN for file in $(ls *.csproj); do mkdir -p src/${file%.*}/ && mv $file src/${file%.*}/; done
 
-# Copy the test project files
-COPY tests/*/*.csproj ./
-RUN for file in $(ls *.csproj); do mkdir -p tests/${file%.*}/ && mv $file tests/${file%.*}/; done
+RUN dotnet restore ./Exceptionless.Docker.slnx
 
-RUN dotnet restore
-
-# Copy everything else and build app
+# Copy everything else and build the source projects once.
 COPY . .
-RUN dotnet build -c Release /p:MinVerVersionOverride=${MinVerVersionOverride}
+RUN dotnet build ./Exceptionless.Docker.slnx -c Release --no-restore /p:MinVerVersionOverride=${MinVerVersionOverride}
 
 # testrunner
 
@@ -32,7 +34,7 @@ ENTRYPOINT ["dotnet", "test", "--results-directory", "/app/artifacts", "--logger
 FROM build AS job-publish
 WORKDIR /app/src/Exceptionless.Job
 
-RUN dotnet publish -c Release -o out
+RUN dotnet publish -c Release -o out --no-build
 
 # job
 
@@ -49,7 +51,7 @@ ENTRYPOINT [ "dotnet", "Exceptionless.Job.dll" ]
 FROM build AS api-publish
 WORKDIR /app/src/Exceptionless.Web
 
-RUN dotnet publish -c Release -o out /p:SkipSpaPublish=true
+RUN dotnet publish -c Release -o out --no-build /p:SkipSpaPublish=true
 
 # api
 
@@ -63,13 +65,12 @@ ENTRYPOINT [ "dotnet", "Exceptionless.Web.dll" ]
 
 # app-publish
 
-FROM build AS app-publish
+FROM build-node AS app-publish
+WORKDIR /app
+COPY --from=build /app ./
+
 WORKDIR /app/src/Exceptionless.Web
-
-RUN apt-get update -yq
-RUN curl -sL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -yq nodejs
-
-RUN dotnet publish -c Release -o out
+RUN dotnet publish -c Release -o out --no-build
 
 # app
 
