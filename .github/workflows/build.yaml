@@ -96,25 +96,8 @@ jobs:
       - name: Build
         run: dotnet build ./Exceptionless.slnx --no-restore --configuration Release
 
-      - name: Install Aspire CLI
-        run: |
-          curl -sSL https://aspire.dev/install.sh -o aspire-install.sh
-          bash aspire-install.sh
-          echo "$HOME/.aspire/bin" >> "$GITHUB_PATH"
-          "$HOME/.aspire/bin/aspire" --version
-
-      - name: Start Aspire services
-        run: aspire start --format Json --non-interactive --nologo -- --services-only
-
-      - name: Wait for Elasticsearch
-        run: aspire wait Elasticsearch --timeout 180 --non-interactive --nologo
-
       - name: Run .NET Tests with Coverage
         run: dotnet test --no-restore --no-build --configuration Release --results-directory coverage --max-parallel-test-modules 1 -- --report-github --report-xunit-trx --report-xunit-trx-filename test-results.trx --coverage --coverage-output coverage.cobertura.xml --coverage-output-format cobertura
-
-      - name: Stop Aspire services
-        if: always()
-        run: aspire stop --non-interactive --nologo
 
       - name: Code Coverage Summary Report
         uses: irongut/CodeCoverageSummary@v1.3.0
