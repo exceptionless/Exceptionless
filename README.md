@@ -54,9 +54,7 @@ Notes:
 
 The UI source is in `src/Exceptionless.Web/ClientApp`. If you only need the frontend, open that folder in Visual Studio Code and run the `npm run serve (use exceptionless api)` task. That task points at the hosted Exceptionless API, so you will need to sign in with a real Exceptionless account.
 
-## API Only Development
-
-If you only need the API, select the `Exceptionless API` launch configuration in Visual Studio and use `exceptionless.http` to run requests. If you use Visual Studio Code for that file, install the [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension.
+For examples of API requests, see `exceptionless.http`. If you use that file in Visual Studio Code, install the [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension.
 
 ## Thanks
 
