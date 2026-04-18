@@ -68,13 +68,10 @@ public class Bootstrapper
         RegisterQueue(services, appOptions.QueueOptions, runMaintenanceTasks);
         RegisterStorage(services, appOptions.StorageOptions);
 
-        var healthCheckBuilder = RegisterHealthChecks(services);
+        RegisterHealthChecks(services);
 
         if (!String.IsNullOrEmpty(appOptions.EmailOptions.SmtpHost))
-        {
             services.ReplaceSingleton<IMailSender, MailKitMailSender>();
-            healthCheckBuilder.Add(new HealthCheckRegistration("Mail", s => (MailKitMailSender)s.GetRequiredService<IMailSender>(), null, ["Mail", "MailMessage", "AllJobs"]));
-        }
     }
 
     private static IHealthChecksBuilder RegisterHealthChecks(IServiceCollection services)
@@ -233,7 +230,7 @@ public class Bootstrapper
         else if (String.Equals(options.Provider, "s3"))
         {
             container.ReplaceSingleton<IFileStorage>(s => new S3FileStorage(o => o
-                    .ConnectionString(options.ConnectionString!)
+                    .ConnectionString(options.ConnectionString)
                     .Credentials(GetAWSCredentials(options.Data))
                     .Region(GetAWSRegionEndpoint(options.Data))
                     .Bucket(options.Data.GetString("bucket", $"{options.ScopePrefix}ex-events"))

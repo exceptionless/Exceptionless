@@ -203,36 +203,16 @@ namespace Exceptionless.Core.Repositories.Queries
             if (!systemFilterQuery.HasAppFilter())
                 systemFilterQuery.AppFilter(builderContext?.Source.GetAppFilter());
 
-            /*
-             *  NOTE: Cannot mutate init only field.
-             *  foreach (var range in systemFilterQuery.GetDateRanges())
-                          {
-                              if (range.Field == _inferredEventDateField || range.Field == "date")
-                              {
-                                  range.Field = _inferredStackLastOccurrenceField;
-                                  if (isStackIdsNegated) // don't apply retention date filter on inverted stack queries
-                                      range.StartDate = null;
-
-                                  range.EndDate = null;
-                              }
-                          }
-             */
-
-            var dateRanges = systemFilterQuery.GetDateRanges();
-            var rangesToReplace = dateRanges
-                .Where(range => range.Field == _inferredEventDateField || range.Field == "date")
-                .ToList();
-
-            // Remove date ranges targeting the event date field and replace with
-            // stack last-occurrence ranges (was previously in-place mutation).
-            foreach (var range in rangesToReplace)
+            foreach (var range in systemFilterQuery.GetDateRanges())
             {
-                dateRanges.Remove(range);
-                systemFilterQuery.DateRange(
-                    isStackIdsNegated ? null : range.StartDate, // don't apply retention date filter on inverted stack queries
-                    null,
-                    _inferredStackLastOccurrenceField,
-                    range.TimeZone);
+                if (range.Field == _inferredEventDateField || range.Field == "date")
+                {
+                    range.Field = _inferredStackLastOccurrenceField;
+                    if (isStackIdsNegated) // don't apply retention date filter on inverted stack queries
+                        range.StartDate = null;
+
+                    range.EndDate = null;
+                }
             }
 
             return systemFilterQuery;

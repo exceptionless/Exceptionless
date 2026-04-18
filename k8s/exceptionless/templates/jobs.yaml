@@ -45,6 +45,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 100Mi
@@ -120,6 +127,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 250Mi
@@ -252,6 +266,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 100Mi
@@ -327,6 +348,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 250Mi
@@ -475,6 +503,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 50Mi
@@ -549,6 +584,14 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 175Mi
@@ -794,6 +837,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 75Mi
@@ -868,6 +918,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 175Mi
@@ -942,6 +999,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 650Mi
@@ -1041,6 +1105,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 175Mi

@@ -104,7 +104,7 @@ public class Program
 
                         app.UseHealthChecks("/health", new HealthCheckOptions
                         {
-                            Predicate = hcr => !String.IsNullOrEmpty(jobOptions.JobName) ? hcr.Tags.Contains(jobOptions.JobName) : hcr.Tags.Contains("AllJobs")
+                            Predicate = _ => false
                         });
 
                         app.UseHealthChecks("/ready", new HealthCheckOptions

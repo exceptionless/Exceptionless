@@ -10,14 +10,10 @@
     import { MediaQuery } from 'svelte/reactivity';
 
     interface Props {
-        isCommandOpen: boolean;
+        openCommand: () => void;
     }
 
-    let { isCommandOpen = $bindable() }: Props = $props();
-
-    function onSearchClick(): void {
-        isCommandOpen = true;
-    }
+    let { openCommand }: Props = $props();
 
     const isMediumScreenQuery = new MediaQuery('(min-width: 768px)');
 </script>
@@ -37,7 +33,7 @@
                 </a>
             </div>
             <div class="flex items-center gap-x-2 lg:gap-x-3">
-                <Button onclick={onSearchClick} size="default" variant="outline">
+                <Button onclick={openCommand} size="default" variant="outline">
                     <Search />
                     Search
                     <Kbd.Root class="ml-12">⌘K</Kbd.Root>
