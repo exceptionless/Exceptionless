@@ -3,8 +3,8 @@ name: Stop Dev Environment
 on:
   workflow_dispatch:
   schedule:
-    # Run every 2 hours — checks if auto-stop threshold has been exceeded
-    - cron: "0 */2 * * *"
+    # Run once per day — checks if the configured retention window has been exceeded
+    - cron: "0 9 * * *"
 
 permissions:
   contents: read
@@ -13,7 +13,7 @@ env:
   CLUSTER_NAME: ex-k8s-v6
   RESOURCE_GROUP: exceptionless-v6
   NAMESPACE: ex-dev
-  AUTO_STOP_HOURS: 8
+  AUTO_STOP_DAYS: 1
 
 jobs:
   stop:
@@ -56,23 +56,36 @@ jobs:
 
           STARTED_EPOCH=$(date -d "$STARTED_AT" +%s)
           NOW_EPOCH=$(date +%s)
-          ELAPSED_HOURS=$(( (NOW_EPOCH - STARTED_EPOCH) / 3600 ))
+          ELAPSED_DAYS=$(( (NOW_EPOCH - STARTED_EPOCH) / 86400 ))
 
-          echo "Started at: $STARTED_AT ($ELAPSED_HOURS hours ago)"
+          echo "Started at: $STARTED_AT ($ELAPSED_DAYS days ago)"
 
-          # Check the auto-stop hours from the start annotation, fall back to default
-          AUTO_HOURS=$(kubectl get namespace $NAMESPACE -o jsonpath='{.metadata.annotations.exceptionless\.io/dev-auto-stop-hours}' 2>/dev/null || echo "$AUTO_STOP_HOURS")
-          if [ -z "$AUTO_HOURS" ] || [ "$AUTO_HOURS" = "0" ]; then
+          # Check the retention days from the start annotation, fall back to default.
+          AUTO_DAYS=$(kubectl get namespace $NAMESPACE -o jsonpath='{.metadata.annotations.exceptionless\.io/dev-auto-stop-days}' 2>/dev/null || echo "")
+          if [ -z "$AUTO_DAYS" ]; then
+            LEGACY_AUTO_HOURS=$(kubectl get namespace $NAMESPACE -o jsonpath='{.metadata.annotations.exceptionless\.io/dev-auto-stop-hours}' 2>/dev/null || echo "")
+            if [ -n "$LEGACY_AUTO_HOURS" ]; then
+              if [ "$LEGACY_AUTO_HOURS" = "0" ]; then
+                AUTO_DAYS="0"
+              else
+                AUTO_DAYS=$(( (LEGACY_AUTO_HOURS + 23) / 24 ))
+              fi
+            else
+              AUTO_DAYS="$AUTO_STOP_DAYS"
+            fi
+          fi
+
+          if [ -z "$AUTO_DAYS" ] || [ "$AUTO_DAYS" = "0" ]; then
             echo "Auto-stop disabled for this session."
             echo "should_stop=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
-          if [ "$ELAPSED_HOURS" -ge "$AUTO_HOURS" ]; then
-            echo "Auto-stop threshold exceeded ($ELAPSED_HOURS >= $AUTO_HOURS hours). Stopping."
+          if [ "$ELAPSED_DAYS" -ge "$AUTO_DAYS" ]; then
+            echo "Auto-stop threshold exceeded ($ELAPSED_DAYS >= $AUTO_DAYS days). Stopping."
             echo "should_stop=true" >> $GITHUB_OUTPUT
           else
-            echo "Within auto-stop window ($ELAPSED_HOURS < $AUTO_HOURS hours). Keeping alive."
+            echo "Within auto-stop window ($ELAPSED_DAYS < $AUTO_DAYS days). Keeping alive."
             echo "should_stop=false" >> $GITHUB_OUTPUT
           fi
 
@@ -116,6 +129,8 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' || steps.auto_stop.outputs.should_stop == 'true' }}
         run: |
           kubectl annotate namespace $NAMESPACE exceptionless.io/dev-started-at- --overwrite 2>/dev/null || true
+          kubectl annotate namespace $NAMESPACE exceptionless.io/dev-auto-stop-days- --overwrite 2>/dev/null || true
+          kubectl annotate namespace $NAMESPACE exceptionless.io/dev-auto-stop-hours- --overwrite 2>/dev/null || true
 
       - name: Summary
         if: ${{ github.event_name == 'workflow_dispatch' || steps.auto_stop.outputs.should_stop == 'true' }}
