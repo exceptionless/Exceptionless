@@ -14,7 +14,7 @@ description: >
 Run `Exceptionless.AppHost` from your IDE. Aspire automatically starts all services (Elasticsearch, Redis) with proper ordering. The dashboard opens at the assigned localhost port.
 
 ```bash
-dotnet run --project src/Exceptionless.AppHost
+aspire run
 ```
 
 Use the Aspire MCP for listing resources, viewing logs, and executing commands.

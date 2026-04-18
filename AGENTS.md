@@ -4,7 +4,7 @@ Real-time error monitoring platform handling billions of requests (ASP.NET Core 
 
 ## Start Here
 
-- Run `Exceptionless.AppHost` from your IDE, or `dotnet run --project src/Exceptionless.AppHost` from the repo root.
+- Run `Exceptionless.AppHost` from your IDE, or `aspire run` from the repo root.
 - Do not add a separate `aspire start -- --services-only` step for local runs or backend tests. The AppHost starts required services, and integration tests bootstrap their own infrastructure.
 
 ## Common Commands

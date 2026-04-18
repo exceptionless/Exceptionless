@@ -36,7 +36,7 @@ Start here:
 3. Run the app with one of these entry points:
    - Visual Studio Code: open the repo root and start the `Aspire` launch configuration.
    - Visual Studio: open `Exceptionless.slnx`, set `Exceptionless.AppHost` as the startup project, and run it.
-   - Dev Container: reopen the repo in the container, then run `dotnet run --project src/Exceptionless.AppHost`.
+   - CLI or Dev Container: run `aspire run` from the repo root.
 
 After startup:
 

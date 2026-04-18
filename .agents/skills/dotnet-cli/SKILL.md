@@ -48,7 +48,7 @@ dotnet test --filter "Category=Integration"
 
 ```bash
 # Run the AppHost (recommended for full stack)
-dotnet run --project src/Exceptionless.AppHost
+aspire run
 
 # Run specific project
 dotnet run --project src/Exceptionless.Web
