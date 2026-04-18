@@ -34,9 +34,9 @@ Start here:
 1. Read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/main/CONTRIBUTING.md).
 2. Install [Docker](https://www.docker.com/get-docker), [.NET 10.0](https://dotnet.microsoft.com/), and [Node 24+](https://nodejs.org/).
 3. Run the app with one of these entry points:
-   - Visual Studio Code: open the repo root and start the `Aspire` launch configuration.
-   - Visual Studio: open `Exceptionless.slnx`, set `Exceptionless.AppHost` as the startup project, and run it.
-   - CLI or Dev Container: run `aspire run` from the repo root.
+    - Visual Studio Code: open the repo root and start the `Aspire` launch configuration.
+    - Visual Studio: open `Exceptionless.slnx`, set `Exceptionless.AppHost` as the startup project, and run it.
+    - CLI or Dev Container: run `aspire run` from the repo root.
 
 After startup:
 
@@ -46,7 +46,7 @@ After startup:
 Notes:
 
 1. Running `Exceptionless.AppHost` starts the app and required infrastructure together.
-2. Backend tests bootstrap required infrastructure automatically. Do not run `aspire start -- --services-only` before running the app or the tests.
+2. Backend tests bootstrap required infrastructure automatically.
 
 ![image](https://user-images.githubusercontent.com/282584/223168564-6518d509-d292-4078-a61f-ab493d2bb812.png)
 
