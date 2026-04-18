@@ -20,6 +20,8 @@ Real-time error monitoring platform handling billions of requests (ASP.NET Core 
 
 - Backend test filtering uses Microsoft Testing Platform test-app options after `--`, for example `dotnet test --project tests/Exceptionless.Tests/Exceptionless.Tests.csproj -- --filter-class Exceptionless.Tests.Controllers.EventControllerTests`.
 - Elasticsearch-backed repository or job tests should derive from `IntegrationTestsBase`, not `TestWithServices`.
+- The current main site UI is the legacy Angular app in `src/Exceptionless.Web/ClientApp.angular`; the folders you will usually touch there are `app/`, `components/`, `less/`, `img/`, `lang/`, and `grunt/`.
+- The Svelte 5 UI in `src/Exceptionless.Web/ClientApp` is still under development.
 - Standard pull requests build `api`, `job`, and `app` images. The all-in-one `exceptionless` image is only built for tags.
 - If you touch Docker publish stages that use `dotnet publish --no-build`, make sure the stage still has the build output and NuGet package cache available.
 
@@ -30,7 +32,9 @@ src/
 ├── Exceptionless.AppHost      # Aspire orchestrator (start here)
 ├── Exceptionless.Core         # Domain logic
 ├── Exceptionless.Insulation   # Infrastructure (Elasticsearch, Redis, Azure)
-├── Exceptionless.Web          # API + Svelte SPA (ClientApp/)
+├── Exceptionless.Web          # API host
+│   ├── ClientApp.angular/     # Legacy Angular UI that still powers the main site
+│   └── ClientApp/             # Svelte 5 UI that is still under development
 └── Exceptionless.Job          # Background workers
 tests/                         # C# tests + HTTP samples
 ```

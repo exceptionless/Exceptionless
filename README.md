@@ -50,9 +50,12 @@ Notes:
 
 ![image](https://user-images.githubusercontent.com/282584/223168564-6518d509-d292-4078-a61f-ab493d2bb812.png)
 
-## UI Only Development
+## UI Development
 
-The UI source is in `src/Exceptionless.Web/ClientApp`. If you only need the frontend, open that folder in Visual Studio Code and run the `npm run serve (use exceptionless api)` task. That task points at the hosted Exceptionless API, so you will need to sign in with a real Exceptionless account.
+Frontend work currently spans two apps:
+
+1. The legacy Angular UI in `src/Exceptionless.Web/ClientApp.angular` is still the main site UI. Most of that app lives in `app/`, `components/`, `less/`, `img/`, `lang/`, and `grunt/`.
+2. The Svelte 5 UI in `src/Exceptionless.Web/ClientApp` is still under development.
 
 For examples of API requests, see `exceptionless.http`. If you use that file in Visual Studio Code, install the [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension.
 
