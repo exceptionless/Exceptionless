@@ -12,6 +12,7 @@
     "customizations": {
         "vscode": {
             "extensions": [
+                "microsoft-aspire.aspire-vscode",
                 "ms-dotnettools.csharp",
                 "ms-dotnettools.csdevkit",
                 "ms-azuretools.vscode-docker",
