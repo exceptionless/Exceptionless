@@ -60,6 +60,16 @@ services:
       - 9300:9300
     volumes:
       - esdata7:/usr/share/elasticsearch/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'curl -fsS "http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s" > /dev/null',
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 20s
 
   kibana:
     depends_on:
