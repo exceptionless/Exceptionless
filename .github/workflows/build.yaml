@@ -188,7 +188,7 @@ jobs:
       - name: Build api docker image
         run: |
           echo "::remove-matcher owner=csc::"
-          if [ "$CAN_PUBLISH_IMAGES" = "true" ] && [ "$SHOULD_BUILD_EXCEPTIONLESS" = "true" ]; then
+          if [ "$CAN_PUBLISH_IMAGES" = "true" ]; then
             docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target api --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/api-ci:$STAGING_TAG --cache-from type=registry,ref=ghcr.io/exceptionless/exceptionless/api-ci:buildcache --cache-to type=registry,ref=ghcr.io/exceptionless/exceptionless/api-ci:buildcache,mode=max --push
           else
             docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target api --platform linux/amd64 --tag exceptionless/api-ci:latest --cache-from type=gha,scope=api-ci --cache-to type=gha,scope=api-ci,mode=max --load
@@ -197,7 +197,7 @@ jobs:
       - name: Build job docker image
         run: |
           echo "::remove-matcher owner=csc::"
-          if [ "$CAN_PUBLISH_IMAGES" = "true" ] && [ "$SHOULD_BUILD_EXCEPTIONLESS" = "true" ]; then
+          if [ "$CAN_PUBLISH_IMAGES" = "true" ]; then
             docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target job --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/job-ci:$STAGING_TAG --cache-from type=registry,ref=ghcr.io/exceptionless/exceptionless/job-ci:buildcache --cache-to type=registry,ref=ghcr.io/exceptionless/exceptionless/job-ci:buildcache,mode=max --push
           else
             docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target job --platform linux/amd64 --tag exceptionless/job-ci:latest --cache-from type=gha,scope=job-ci --cache-to type=gha,scope=job-ci,mode=max --load
@@ -206,7 +206,7 @@ jobs:
       - name: Build app docker image
         run: |
           echo "::remove-matcher owner=csc::"
-          if [ "$CAN_PUBLISH_IMAGES" = "true" ] && [ "$SHOULD_BUILD_EXCEPTIONLESS" = "true" ]; then
+          if [ "$CAN_PUBLISH_IMAGES" = "true" ]; then
             docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target app --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/app-ci:$STAGING_TAG --cache-from type=registry,ref=ghcr.io/exceptionless/exceptionless/app-ci:buildcache --cache-to type=registry,ref=ghcr.io/exceptionless/exceptionless/app-ci:buildcache,mode=max --push
           else
             docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target app --platform linux/amd64 --tag exceptionless/app-ci:latest --cache-from type=gha,scope=app-ci --cache-to type=gha,scope=app-ci,mode=max --load
@@ -229,6 +229,7 @@ jobs:
     env:
       VERSION: ${{needs.version.outputs.version}}
       STAGING_TAG: build-${{ github.run_id }}-${{ github.run_attempt }}
+      SHOULD_BUILD_EXCEPTIONLESS: ${{ github.event_name != 'pull_request' || (github.event_name == 'pull_request' && github.head_ref == vars.DEV_DEPLOY_BRANCH && vars.DEV_DEPLOY_BRANCH != 'main' && vars.DEV_DEPLOY_BRANCH != '') }}
 
     steps:
       - name: Login to GitHub Container Registry
@@ -249,7 +250,12 @@ jobs:
       - name: Pull staged docker images
         if: ${{ env.CAN_PUBLISH_IMAGES == 'true' }}
         run: |
-          for image in api job app exceptionless; do
+          images=(api job app)
+          if [ "$SHOULD_BUILD_EXCEPTIONLESS" = "true" ]; then
+            images+=(exceptionless)
+          fi
+
+          for image in "${images[@]}"; do
             docker pull ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG
           done
 
@@ -259,7 +265,12 @@ jobs:
           echo "::remove-matcher owner=csc::"
           # tag and push docker images
 
-          for image in {"api","job","app","exceptionless"}; do
+          images=(api job app)
+          if [ "$SHOULD_BUILD_EXCEPTIONLESS" = "true" ]; then
+            images+=(exceptionless)
+          fi
+
+          for image in "${images[@]}"; do
             docker image tag ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG exceptionless/$image-ci:$VERSION
             docker image tag ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG exceptionless/$image-ci:latest
             docker image tag ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG ghcr.io/exceptionless/exceptionless/$image-ci:$VERSION
@@ -275,7 +286,12 @@ jobs:
           echo "::remove-matcher owner=csc::"
           # tag and push docker images
 
-          for image in {"api","job","app","exceptionless"}; do
+          images=(api job app)
+          if [ "$SHOULD_BUILD_EXCEPTIONLESS" = "true" ]; then
+            images+=(exceptionless)
+          fi
+
+          for image in "${images[@]}"; do
             docker image tag ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG exceptionless/$image:$VERSION
             docker image tag ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG exceptionless/$image:latest
 
