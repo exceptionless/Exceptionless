@@ -3,8 +3,11 @@ name: Stop Dev Environment
 on:
   workflow_dispatch:
   schedule:
-    # Run once per day — checks if the configured retention window has been exceeded
-    - cron: "0 9 * * *"
+    # GitHub Actions schedules are UTC-only. These entries keep the workflow aligned
+    # with 5am America/Chicago while limiting duplicate runs to DST transition months.
+    - cron: "0 10 * 4-10 *"
+    - cron: "0 11 * 12,1,2 *"
+    - cron: "0 10,11 * 3,11 *"
 
 permissions:
   contents: read
@@ -22,14 +25,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Check Schedule Window
+        id: schedule_window
+        if: ${{ github.event_name == 'schedule' }}
+        run: |
+          CURRENT_HOUR=$(TZ=America/Chicago date +%H)
+          if [ "$CURRENT_HOUR" = "05" ]; then
+            echo "Running scheduled stop during the 5am America/Chicago window."
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "Skipping scheduled stop outside the 5am America/Chicago window."
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Azure Login
+        if: ${{ github.event_name == 'workflow_dispatch' || steps.schedule_window.outputs.should_run == 'true' }}
         run: az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
 
       - name: Get AKS Credentials
+        if: ${{ github.event_name == 'workflow_dispatch' || steps.schedule_window.outputs.should_run == 'true' }}
         run: az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER_NAME --overwrite-existing
 
       - name: Check if Environment is Running
         id: check
+        if: ${{ github.event_name == 'workflow_dispatch' || steps.schedule_window.outputs.should_run == 'true' }}
         run: |
           REPLICAS=$(kubectl get deployment/ex-dev-app --namespace $NAMESPACE -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "0")
           echo "app_replicas=$REPLICAS" >> $GITHUB_OUTPUT
@@ -44,7 +63,7 @@ jobs:
 
       - name: Check Auto-Stop Threshold
         id: auto_stop
-        if: ${{ github.event_name == 'schedule' && steps.check.outputs.running == 'true' }}
+        if: ${{ github.event_name == 'schedule' && steps.schedule_window.outputs.should_run == 'true' && steps.check.outputs.running == 'true' }}
         run: |
           STARTED_AT=$(kubectl get namespace $NAMESPACE -o jsonpath='{.metadata.annotations.exceptionless\.io/dev-started-at}' 2>/dev/null || echo "")
 
@@ -66,7 +85,7 @@ jobs:
             LEGACY_AUTO_HOURS=$(kubectl get namespace $NAMESPACE -o jsonpath='{.metadata.annotations.exceptionless\.io/dev-auto-stop-hours}' 2>/dev/null || echo "")
             if [ -n "$LEGACY_AUTO_HOURS" ]; then
               if [ "$LEGACY_AUTO_HOURS" = "0" ]; then
-                AUTO_DAYS="0"
+                AUTO_DAYS="$AUTO_STOP_DAYS"
               else
                 AUTO_DAYS=$(( (LEGACY_AUTO_HOURS + 23) / 24 ))
               fi
@@ -75,10 +94,9 @@ jobs:
             fi
           fi
 
-          if [ -z "$AUTO_DAYS" ] || [ "$AUTO_DAYS" = "0" ]; then
-            echo "Auto-stop disabled for this session."
-            echo "should_stop=false" >> $GITHUB_OUTPUT
-            exit 0
+          if ! [[ "$AUTO_DAYS" =~ ^[0-9]+$ ]] || [ "$AUTO_DAYS" -lt 1 ]; then
+            echo "Invalid auto-stop retention '$AUTO_DAYS'. Falling back to default of $AUTO_STOP_DAYS day(s)."
+            AUTO_DAYS="$AUTO_STOP_DAYS"
           fi
 
           if [ "$ELAPSED_DAYS" -ge "$AUTO_DAYS" ]; then
@@ -90,8 +108,13 @@ jobs:
           fi
 
       - name: Skip (Not Time Yet)
-        if: ${{ github.event_name == 'schedule' && steps.auto_stop.outputs.should_stop != 'true' }}
-        run: echo "Skipping — environment not running or within auto-stop window."
+        if: ${{ github.event_name == 'schedule' && (steps.schedule_window.outputs.should_run != 'true' || steps.auto_stop.outputs.should_stop != 'true') }}
+        run: |
+          if [ "${{ steps.schedule_window.outputs.should_run }}" != "true" ]; then
+            echo "Skipping — outside the 5am America/Chicago window."
+          else
+            echo "Skipping — environment not running or within auto-stop window."
+          fi
 
       - name: Stop Deployments
         if: ${{ github.event_name == 'workflow_dispatch' || steps.auto_stop.outputs.should_stop == 'true' }}

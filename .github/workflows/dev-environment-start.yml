@@ -4,12 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       auto_stop_days:
-        description: "Automatically stop after N days (0 to disable)"
+        description: "Automatically stop after N days"
         required: false
         default: "1"
         type: choice
         options:
-          - "0"
           - "1"
           - "2"
           - "3"
@@ -90,4 +89,4 @@ jobs:
           echo "- **App**: https://dev-app.exceptionless.io" >> $GITHUB_STEP_SUMMARY
           echo "- **Collector**: https://dev-collector.exceptionless.io" >> $GITHUB_STEP_SUMMARY
           echo "- **Kibana**: \`kubectl port-forward -n ex-dev svc/ex-dev-kb-http 5601\` → http://localhost:5601" >> $GITHUB_STEP_SUMMARY
-          echo "- **Auto-stop**: ${{ inputs.auto_stop_days }} day(s) (0 = disabled)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Auto-stop**: ${{ inputs.auto_stop_days }} day(s)" >> $GITHUB_STEP_SUMMARY
