@@ -22,6 +22,7 @@ Service test note: test classes that hit Elasticsearch-backed repositories or jo
 CI note: standard pull requests build `api`, `job`, and `app` images; the all-in-one `exceptionless` image and `docker-publish` job are reserved for main, tags, and deploy-branch pull requests.
 Docker note: runtime image builds restore and build the `Exceptionless.Web` and `Exceptionless.Job` projects directly so test projects stay out of the container build graph, and publish stages reuse compiled outputs with `--no-build`. Any stage that runs `dotnet publish --no-build` must inherit or copy the build stage's NuGet package cache as well as `/app`, otherwise deps-file generation can fail on missing package assemblies.
 Compose note: any service started in CI with `docker compose up --wait` must define a real Docker `healthcheck`; otherwise Compose only waits for container startup, not application readiness.
+Aspire CLI note: CI can start infra-only dependencies from `Exceptionless.AppHost` with `aspire start --apphost src/Exceptionless.AppHost/Exceptionless.AppHost.csproj -- --services-only`, then gate on readiness with `aspire wait <resource>` and clean up with `aspire stop`.
 
 ## Project Structure
 
