@@ -36,13 +36,18 @@ _In appreciation for anyone who submits a non-trivial pull request, we will give
   - [Node 24+](https://nodejs.org/)
 - Visual Studio Code
   - Open Visual Studio Code and then open the Exceptionless root folder
-  - Go to the `Terminal` menu and select `Run Task...` and then select `Start Elasticsearch` (you can stop the service when you are done using the `Stop Elasticsearch` task)
-  - Go to the `Debug` menu and select the `Web` launch configuration then click the `Start Debugging` button
-  - A browser window should be automatically opened to `https://localhost:5100/`
+  - Go to the `Debug` menu and select the `Aspire` launch configuration then click the `Start Debugging` button
+  - Aspire will start the app, dashboard, and required infrastructure. Open `https://localhost:5100/` if a browser doesn't open automatically
   - When running locally in `Development` mode, a global administrator user `test@localhost` is automatically created with password `tester`. You can also click the `Signup` button to create a new account
+- Dev Containers
+  - Reopen the repo in the dev container
+  - The dev container uses the rolling devcontainer base image and the `.NET` `10.0` feature channel so it tracks the latest GA .NET 10 SDK
+  - The dev container installs the Aspire CLI during setup and exposes it on the shell `PATH`
+  - Run `dotnet run --project src/Exceptionless.AppHost` from a terminal inside the container
+  - Aspire will start the app, dashboard, and required infrastructure inside the dev container environment
 - Visual Studio
   - Open Visual Studio and then open the `Exceptionless.slnx` solution in the root folder
-  - Start Elasticsearch by either configuring multiple startup projects for the `docker-compose` and `Exceptionless.Web` projects or by running the `start-services.ps1` script in the root folder
+  - Start the required infrastructure by running `aspire start -- --services-only` from a terminal in the repo root
   - Run the `Exceptionless.Web` project
   - A browser window should be automatically opened to `https://localhost:5100/`
   - When running locally in `Development` mode, a global administrator user `test@localhost` is automatically created with password `tester`. You can also click the `Signup` button to create a new account

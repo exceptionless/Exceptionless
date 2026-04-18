@@ -28,16 +28,19 @@ jobs:
           dotnet-version: 10.0.*
           dotnet-quality: ga
 
-      - name: Start Services
-        working-directory: docker
-        run: docker compose up -d elasticsearch &
+      - name: Install Aspire CLI
+        run: |
+          curl -sSL https://aspire.dev/install.sh -o aspire-install.sh
+          bash aspire-install.sh
+          echo "$HOME/.aspire/bin" >> "$GITHUB_PATH"
+          "$HOME/.aspire/bin/aspire" --version
 
       - uses: actions/cache@v5
         with:
-            path: ~/.nuget/packages
-            key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
-            restore-keys: |
-                nuget-${{ runner.os }}-
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
 
       - name: Nuget Restore
         run: dotnet restore

@@ -1,19 +1,27 @@
 {
-    "name": "C#, Elasticsearch, Kibana, Redis",
-    "dockerComposeFile": "docker-compose.yml",
-    "service": "app",
+    "name": "Exceptionless Aspire Dev Container",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
+    },
     "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+    "remoteEnv": {
+        "PATH": "${containerEnv:PATH}:/home/vscode/.aspire/bin",
+        "SSL_CERT_DIR": "/home/vscode/.aspnet/dev-certs/trust:/etc/ssl/certs"
+    },
     "customizations": {
         "vscode": {
             "extensions": [
                 "ms-dotnettools.csharp",
+                "ms-dotnettools.csdevkit",
+                "ms-azuretools.vscode-docker",
                 "tintoy.msbuild-project-tools",
                 "streetsidesoftware.code-spell-checker",
                 "humao.rest-client"
             ]
         }
     },
-    "forwardPorts": [5003, 5100, 5200, 5201, 9200, 5601],
+    "forwardPorts": [5003, 5100, 5173, 5200, 5201, 5601, 6379, 8025, 9200],
     "portsAttributes": {
         "7049": {
             "protocol": "https"
@@ -22,13 +30,27 @@
             "protocol": "https"
         }
     },
+    "hostRequirements": {
+        "cpus": 4,
+        "memory": "16gb",
+        "storage": "32gb"
+    },
     "postCreateCommand": "bash .devcontainer/postCreateCommand.sh",
     "features": {
-        "ghcr.io/devcontainers/features/powershell:1": {},
-        "ghcr.io/devcontainers/features/dotnet:1": {},
+        "ghcr.io/devcontainers/features/powershell:1": {
+            "version": "latest"
+        },
+        "ghcr.io/devcontainers/features/dotnet:2": {
+            "version": "10.0"
+        },
         "ghcr.io/devcontainers/features/node:1": {
             "nodeGypDependencies": true,
             "version": "lts"
+        },
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {
+            "version": "latest",
+            "enableNonRootDocker": true,
+            "moby": true
         }
     }
 }

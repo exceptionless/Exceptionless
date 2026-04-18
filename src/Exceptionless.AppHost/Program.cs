@@ -42,6 +42,7 @@ var mail = builder.AddContainer("Mail", "axllent/mailpit")
     .WithImageTag("v1.27.10")
     .WithHttpEndpoint(8025, 8025, "http")
     .WithUrlForEndpoint("http", u => u.DisplayText = "Mail")
+    .WithHttpHealthCheck("/readyz")
     .WithEndpoint(1025, 1025);
 
 if (!servicesOnly)
