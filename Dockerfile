@@ -9,7 +9,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG MinVerVersionOverride
 WORKDIR /app
 
-COPY ./Exceptionless.Docker.slnx ./NuGet.Config ./
+COPY ./NuGet.Config ./
 COPY ./src/*.props ./src/
 COPY ./build/packages/* ./build/packages/
 
@@ -17,11 +17,13 @@ COPY ./build/packages/* ./build/packages/
 COPY src/*/*.csproj ./
 RUN for file in $(ls *.csproj); do mkdir -p src/${file%.*}/ && mv $file src/${file%.*}/; done
 
-RUN dotnet restore ./Exceptionless.Docker.slnx
+RUN dotnet restore ./src/Exceptionless.Web/Exceptionless.Web.csproj \
+    && dotnet restore ./src/Exceptionless.Job/Exceptionless.Job.csproj
 
 # Copy everything else and build the source projects once.
 COPY . .
-RUN dotnet build ./Exceptionless.Docker.slnx -c Release --no-restore /p:MinVerVersionOverride=${MinVerVersionOverride}
+RUN dotnet build ./src/Exceptionless.Web/Exceptionless.Web.csproj -c Release --no-restore /p:MinVerVersionOverride=${MinVerVersionOverride} \
+    && dotnet build ./src/Exceptionless.Job/Exceptionless.Job.csproj -c Release --no-restore /p:MinVerVersionOverride=${MinVerVersionOverride}
 
 # testrunner
 
