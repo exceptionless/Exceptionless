@@ -17,15 +17,8 @@ Centralize API calls in `api.svelte.ts` per feature using TanStack Query with `@
 
 ```typescript
 // src/lib/features/organizations/api.svelte.ts
-import {
-    createQuery,
-    createMutation,
-    useQueryClient,
-} from "@tanstack/svelte-query";
-import {
-    useFetchClient,
-    type ProblemDetails,
-} from "@exceptionless/fetchclient";
+import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
+import { useFetchClient, type ProblemDetails } from "@exceptionless/fetchclient";
 
 export function getOrganizationsQuery() {
     const client = useFetchClient();
@@ -33,11 +26,8 @@ export function getOrganizationsQuery() {
     return createQuery(() => ({
         queryKey: ["organizations"],
         queryFn: async () => {
-            const response =
-                await client.getJSON<Organization[]>("/organizations");
-            if (!response.ok) {
-                throw response.problem;
-            }
+            const response = await client.getJSON<Organization[]>("/organizations");
+            if (!response.ok) throw response.problem;
             return response.data!;
         },
     }));
@@ -46,266 +36,74 @@ export function getOrganizationsQuery() {
 
 ## Query Keys Convention
 
-Use a queryKeys factory per feature for type safety and consistency:
+Use a `queryKeys` factory per feature for type safety and consistency:
 
 ```typescript
-// From src/lib/features/webhooks/api.svelte.ts
 export const queryKeys = {
     type: ["Webhook"] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
-    ids: (ids: string[] | undefined) =>
-        [...queryKeys.type, ...(ids ?? [])] as const,
-    project: (id: string | undefined) =>
-        [...queryKeys.type, "project", id] as const,
-    deleteWebhook: (ids: string[] | undefined) =>
-        [...queryKeys.ids(ids), "delete"] as const,
+    ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
+    project: (id: string | undefined) => [...queryKeys.type, "project", id] as const,
+    deleteWebhook: (ids: string[] | undefined) => [...queryKeys.ids(ids), "delete"] as const,
     postWebhook: () => [...queryKeys.type, "post"] as const,
 };
 ```
 
-Common patterns:
-
-```typescript
-// Resource list
-["organizations"]["projects"][
-    // Single resource
-    ("organizations", organizationId)
-][("projects", projectId)][
-    // Nested resources
-    ("organizations", organizationId, "projects")
-][("projects", projectId, "events")][
-    // Filtered queries
-    ("events", { projectId, status: "open" })
-];
-```
-
-## Using Queries in Components
-
-```svelte
-<script lang="ts">
-    import { getOrganizationsQuery } from '$features/organizations/api.svelte';
-
-    const organizationsQuery = getOrganizationsQuery();
-</script>
-
-{#if organizationsQuery.isPending}
-    <LoadingSpinner />
-{:else if organizationsQuery.isError}
-    <ErrorMessage error={organizationsQuery.error} />
-{:else}
-    {#each organizationsQuery.data as org}
-        <OrganizationCard {org} />
-    {/each}
-{/if}
-```
+Common key patterns: `["organizations"]`, `["organizations", id]`, `["projects", projectId, "events"]`, `["events", { projectId, status: "open" }]`.
 
 ## Mutations
 
 ```typescript
-export function createOrganizationMutation() {
+export function postOrganizationMutation() {
     const client = useFetchClient();
     const queryClient = useQueryClient();
 
     return createMutation(() => ({
         mutationFn: async (data: CreateOrganizationRequest) => {
-            const response = await client.postJSON<Organization>(
-                "/organizations",
-                data,
-            );
-            if (!response.ok) {
-                throw response.problem;
-            }
+            const response = await client.postJSON<Organization>("/organizations", data);
+            if (!response.ok) throw response.problem;
             return response.data!;
         },
         onSuccess: () => {
-            // Invalidate and refetch organizations list
             queryClient.invalidateQueries({ queryKey: ["organizations"] });
         },
     }));
 }
 ```
 
-## Using Mutations
-
-```svelte
-<script lang="ts">
-    import { createOrganizationMutation } from '$features/organizations/api.svelte';
-
-    const createMutation = createOrganizationMutation();
-
-    async function handleCreate(data: CreateOrganizationRequest) {
-        try {
-            const org = await createMutation.mutateAsync(data);
-            goto(`/organizations/${org.id}`);
-        } catch (error) {
-            // Error handled by form or toast
-        }
-    }
-</script>
-
-<Button
-    onclick={() => handleCreate(formData)}
-    disabled={createMutation.isPending}
->
-    {createMutation.isPending ? 'Creating...' : 'Create'}
-</Button>
-```
-
 ## Naming Conventions
 
-Functions follow HTTP verb prefixes:
-
-```typescript
-// Queries (GET)
-export function getOrganizationsQuery() { ... }
-export function getOrganizationQuery(id: string) { ... }
-export function getProjectEventsQuery(projectId: string) { ... }
-
-// Mutations
-export function postOrganizationMutation() { ... }  // CREATE
-export function patchOrganizationMutation() { ... } // UPDATE
-export function deleteOrganizationMutation() { ... } // DELETE
-```
+| Pattern | Naming | Example |
+|---------|--------|---------|
+| Query (GET) | `get{Resource}Query` | `getOrganizationsQuery()` |
+| Create (POST) | `post{Resource}Mutation` | `postOrganizationMutation()` |
+| Update (PATCH) | `patch{Resource}Mutation` | `patchOrganizationMutation()` |
+| Delete (DELETE) | `delete{Resource}Mutation` | `deleteOrganizationMutation()` |
 
 ## Dependent Queries
 
-```typescript
-export function getProjectQuery(projectId: string) {
-    const client = useFetchClient();
-
-    return createQuery(() => ({
-        queryKey: ["projects", projectId],
-        queryFn: async () => {
-            const response = await client.getJSON<Project>(
-                `/projects/${projectId}`,
-            );
-            if (!response.ok) throw response.problem;
-            return response.data!;
-        },
-        enabled: !!projectId, // Only run when projectId is truthy
-    }));
-}
-```
+Use `enabled` to conditionally run queries: `enabled: !!projectId`.
 
 ## Optimistic Updates
 
-```typescript
-export function updateOrganizationMutation() {
-    const client = useFetchClient();
-    const queryClient = useQueryClient();
-
-    return createMutation(() => ({
-        mutationFn: async ({
-            id,
-            data,
-        }: {
-            id: string;
-            data: UpdateOrganizationRequest;
-        }) => {
-            const response = await client.patchJSON<Organization>(
-                `/organizations/${id}`,
-                data,
-            );
-            if (!response.ok) throw response.problem;
-            return response.data!;
-        },
-        onMutate: async ({ id, data }) => {
-            // Cancel in-flight queries
-            await queryClient.cancelQueries({
-                queryKey: ["organizations", id],
-            });
-
-            // Snapshot previous value
-            const previous = queryClient.getQueryData<Organization>([
-                "organizations",
-                id,
-            ]);
-
-            // Optimistically update
-            queryClient.setQueryData(
-                ["organizations", id],
-                (old: Organization) => ({
-                    ...old,
-                    ...data,
-                }),
-            );
-
-            return { previous };
-        },
-        onError: (err, variables, context) => {
-            // Rollback on error
-            if (context?.previous) {
-                queryClient.setQueryData(
-                    ["organizations", variables.id],
-                    context.previous,
-                );
-            }
-        },
-        onSettled: (data, error, { id }) => {
-            // Always refetch after mutation
-            queryClient.invalidateQueries({ queryKey: ["organizations", id] });
-        },
-    }));
-}
-```
-
-## Prefetching
-
-```typescript
-export function prefetchOrganization(id: string) {
-    const client = useFetchClient();
-    const queryClient = useQueryClient();
-
-    return queryClient.prefetchQuery({
-        queryKey: ["organizations", id],
-        queryFn: async () => {
-            const response = await client.getJSON<Organization>(
-                `/organizations/${id}`,
-            );
-            if (!response.ok) throw response.problem;
-            return response.data!;
-        },
-    });
-}
-```
+For mutations that update cached data optimistically: use `onMutate` to cancel in-flight queries, snapshot previous value via `getQueryData`, and apply optimistic update via `setQueryData`. Use `onError` to rollback from snapshot, and `onSettled` to always `invalidateQueries` for the final refetch.
 
 ## WebSocket-Driven Invalidation
 
 Invalidate queries when WebSocket messages arrive:
 
 ```typescript
-// From src/lib/features/webhooks/api.svelte.ts
-import type { WebSocketMessageValue } from "$features/websockets/models";
-import { QueryClient } from "@tanstack/svelte-query";
-
 export async function invalidateWebhookQueries(
     queryClient: QueryClient,
     message: WebSocketMessageValue<"WebhookChanged">,
 ) {
     const { id, organization_id, project_id } = message;
 
-    if (id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
-    }
-
-    if (project_id) {
-        await queryClient.invalidateQueries({
-            queryKey: queryKeys.project(project_id),
-        });
-    }
-
-    // Fallback: invalidate all if no specific keys
-    if (!id && !organization_id && !project_id) {
+    if (id) await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
+    if (project_id) await queryClient.invalidateQueries({ queryKey: queryKeys.project(project_id) });
+    if (!id && !organization_id && !project_id)
         await queryClient.invalidateQueries({ queryKey: queryKeys.type });
-    }
 }
 ```
 
-Wire up in WebSocket handler:
-
-```typescript
-// In WebSocket message handler
-onMessage("WebhookChanged", (message) => {
-    invalidateWebhookQueries(queryClient, message);
-});
-```
+Wire up: `onMessage("WebhookChanged", (msg) => invalidateWebhookQueries(queryClient, msg));`

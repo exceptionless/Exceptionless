@@ -25,75 +25,29 @@ Use shadcn-svelte components (bits-ui) for UI. Import with namespace pattern.
 </script>
 ```
 
-## Trigger Components - Child Snippet Pattern
+## Trigger Components — Child Snippet Pattern
 
 When using trigger components with custom elements like Button, **always use the `child` snippet pattern**:
 
 ```svelte
-<!-- ✅ Correct: Single tab stop, proper accessibility -->
-<Tooltip.Root>
-    <Tooltip.Trigger>
-        {#snippet child({ props })}
-            <Button {...props} variant="ghost" size="icon">
-                <Icon />
-            </Button>
-        {/snippet}
-    </Tooltip.Trigger>
-    <Tooltip.Content>Tooltip text</Tooltip.Content>
-</Tooltip.Root>
+<!-- ✅ Correct: Single tab stop, proper ARIA delegation -->
+<Tooltip.Trigger>
+    {#snippet child({ props })}
+        <Button {...props} variant="ghost" size="icon">
+            <Icon />
+        </Button>
+    {/snippet}
+</Tooltip.Trigger>
 ```
-
-### Why This Pattern?
-
-- **Single Tab Stop**: Creates only one focusable element
-- **Proper Props Delegation**: ARIA attributes pass through correctly
-- **Accessibility**: Maintains keyboard navigation
-- **Official Pattern**: Documented shadcn-svelte/bits-ui pattern
-
-### Wrong Patterns
 
 ```svelte
 <!-- ❌ Wrong: Creates two focusable elements (double-tab issue) -->
 <Tooltip.Trigger>
     <Button>Content</Button>
 </Tooltip.Trigger>
-
-<!-- ❌ Wrong: Manual styling replicates button styles -->
-<Tooltip.Trigger class="hover:bg-accent inline-flex...">
-    <Icon />
-</Tooltip.Trigger>
 ```
 
-### Apply to All Triggers
-
-```svelte
-<!-- DropdownMenu -->
-<DropdownMenu.Trigger>
-    {#snippet child({ props })}
-        <Button {...props} variant="outline">
-            Open Menu
-            <ChevronDown />
-        </Button>
-    {/snippet}
-</DropdownMenu.Trigger>
-
-<!-- Popover -->
-<Popover.Trigger>
-    {#snippet child({ props })}
-        <Button {...props} variant="outline" class="w-70">
-            Select Date
-            <CalendarIcon />
-        </Button>
-    {/snippet}
-</Popover.Trigger>
-
-<!-- Dialog -->
-<Dialog.Trigger>
-    {#snippet child({ props })}
-        <Button {...props}>Open Dialog</Button>
-    {/snippet}
-</Dialog.Trigger>
-```
+Apply this pattern to **all** triggers: `DropdownMenu.Trigger`, `Popover.Trigger`, `Dialog.Trigger`, `Tooltip.Trigger`.
 
 ## Dialog Pattern
 
@@ -101,7 +55,6 @@ When using trigger components with custom elements like Button, **always use the
 <script lang="ts">
     import * as Dialog from '$comp/ui/dialog';
     import { Button } from '$comp/ui/button';
-
     let openCreateDialog = $state(false);
 </script>
 
@@ -112,17 +65,11 @@ When using trigger components with custom elements like Button, **always use the
         <Dialog.Content>
             <Dialog.Header>
                 <Dialog.Title>Create Organization</Dialog.Title>
-                <Dialog.Description>
-                    Add a new organization to your account.
-                </Dialog.Description>
+                <Dialog.Description>Add a new organization to your account.</Dialog.Description>
             </Dialog.Header>
-
             <!-- Form content -->
-
             <Dialog.Footer>
-                <Button variant="outline" onclick={() => (openCreateDialog = false)}>
-                    Cancel
-                </Button>
+                <Button variant="outline" onclick={() => (openCreateDialog = false)}>Cancel</Button>
                 <Button type="submit">Create</Button>
             </Dialog.Footer>
         </Dialog.Content>
@@ -130,33 +77,15 @@ When using trigger components with custom elements like Button, **always use the
 {/if}
 ```
 
-## Dialog Naming Convention
+**Naming**: Use `open[ComponentName]Dialog` (e.g. `openSuspendOrganizationDialog`). Avoid generic `showDialog` or `isOpen`.
 
-- Use `open[ComponentName]Dialog` pattern
-- Avoid generic names like `showDialog` or `isOpen`
-
-```svelte
-<script lang="ts">
-    let openSuspendOrganizationDialog = $state(false);
-    let openMarkStackDiscardedDialog = $state(false);
-    let openInviteUserDialog = $state(false);
-</script>
-```
-
-## DropdownMenu with Options
+## DropdownMenu
 
 ```svelte
-<script lang="ts">
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { statusOptions } from './options';
-</script>
-
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
         {#snippet child({ props })}
-            <Button {...props} variant="outline">
-                Select Status
-            </Button>
+            <Button {...props} variant="outline">Select Status</Button>
         {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content>
@@ -169,74 +98,14 @@ When using trigger components with custom elements like Button, **always use the
 </DropdownMenu.Root>
 ```
 
-## Options File Pattern
-
-```typescript
-// options.ts
-import type { DropdownItem } from "$shared/types";
-
-export enum Status {
-    Active = "active",
-    Inactive = "inactive",
-    Pending = "pending",
-}
-
-export const statusOptions: DropdownItem<Status>[] = [
-    { value: Status.Active, label: "Active" },
-    { value: Status.Inactive, label: "Inactive" },
-    { value: Status.Pending, label: "Pending" },
-];
-```
-
-## Sheet (Slide-out Panel)
-
-```svelte
-<Sheet.Root bind:open={openFiltersSheet}>
-    <Sheet.Content side="right">
-        <Sheet.Header>
-            <Sheet.Title>Filters</Sheet.Title>
-        </Sheet.Header>
-
-        <!-- Filter controls -->
-
-        <Sheet.Footer>
-            <Button onclick={applyFilters}>Apply</Button>
-        </Sheet.Footer>
-    </Sheet.Content>
-</Sheet.Root>
-```
-
 ## Class Merging with Array Syntax
 
-Use Svelte array syntax for conditional classes (NOT cn utility):
+Use Svelte array syntax for conditional classes (NOT `cn` utility):
 
 ```svelte
 <!-- ✅ Preferred: Array syntax -->
-<Button class={['w-full', isActive && 'bg-primary']}>
-    Click me
-</Button>
-
-<div class={['flex items-center', expanded && 'bg-muted', className]}>
-    Content
-</div>
+<Button class={['w-full', isActive && 'bg-primary']}>Click me</Button>
 
 <!-- ❌ Avoid: cn utility (older pattern) -->
 <Button class={cn('w-full', isActive && 'bg-primary')}>
-```
-
-## Navigation Preference
-
-Prefer `href` navigation over `onclick`/`goto`:
-
-```svelte
-<!-- ✅ Preferred: Native navigation -->
-<Button href="/organizations/new">Create</Button>
-
-<!-- Use onclick only when navigation logic required -->
-<Button onclick={async () => {
-    await saveData();
-    goto('/success');
-}}>
-    Save and Continue
-</Button>
 ```
