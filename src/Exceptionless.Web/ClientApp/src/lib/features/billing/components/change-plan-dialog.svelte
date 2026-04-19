@@ -20,7 +20,6 @@
     import CreditCard from '@lucide/svelte/icons/credit-card';
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
-    import { PaymentElement } from 'svelte-stripe';
 
     interface Props {
         open: boolean;
@@ -157,7 +156,7 @@
 </script>
 
 <Dialog.Root bind:open>
-    <Dialog.Content class="max-w-2xl">
+    <Dialog.Content class="max-h-[90vh] max-w-2xl overflow-y-auto">
         <Dialog.Header>
             <Dialog.Title class="flex items-center gap-2">
                 <CreditCard class="size-5" />
@@ -244,6 +243,7 @@
                         <div class="space-y-4">
                             <H4>Payment Method</H4>
 
+
                             <!-- Card mode selection (if has existing card) -->
                             {#if hasExistingCard}
                                 <form.Field name="cardMode">
@@ -268,24 +268,22 @@
 
                             <!-- Stripe PaymentElement for new card -->
                             {#if needsPayment}
-                                <StripeProvider
-                                    appearance={{
-                                        theme: 'stripe',
-                                        variables: {
-                                            borderRadius: '6px'
-                                        }
-                                    }}
-                                    onElementsChange={(elements) => {
-                                        stripeElements = elements;
-                                    }}
-                                    onload={(loadedStripe) => {
-                                        stripe = loadedStripe;
-                                    }}
-                                >
-                                    <div class="rounded-lg border p-4">
-                                        <PaymentElement />
-                                    </div>
-                                </StripeProvider>
+                                <div class="rounded-lg border p-4">
+                                    <StripeProvider
+                                        appearance={{
+                                            theme: 'stripe',
+                                            variables: {
+                                                borderRadius: '6px'
+                                            }
+                                        }}
+                                        onElementsChange={(elements) => {
+                                            stripeElements = elements;
+                                        }}
+                                        onload={(loadedStripe) => {
+                                            stripe = loadedStripe;
+                                        }}
+                                    />
+                                </div>
                             {/if}
 
                             <!-- Coupon input (only for new customers or card changes) -->

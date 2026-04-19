@@ -1,104 +1,98 @@
 <script lang="ts">
-    import type { Stripe, StripeElements, StripeElementsOptions } from '@stripe/stripe-js';
-    import type { Snippet } from 'svelte';
+    import type { Stripe, StripeElements, StripeElementsOptions, StripePaymentElement } from '@stripe/stripe-js';
 
     import ErrorMessage from '$comp/error-message.svelte';
-    import { Skeleton } from '$comp/ui/skeleton';
     import { loadStripeOnce, setStripeContext } from '$features/billing/stripe.svelte';
-    import { onMount } from 'svelte';
-    import { Elements } from 'svelte-stripe';
+    import { onMount, setContext } from 'svelte';
 
-    /**
-     * Props use a discriminated union to enforce that `clientSecret` and `mode`
-     * are mutually exclusive at compile time (Stripe Elements requires one or the other).
-     */
     type Props = (
-        | {
-              /** Client secret for PaymentIntent/SetupIntent mode */
-              clientSecret: string;
-              mode?: never;
-          }
-        | {
-              clientSecret?: never;
-              /**
-               * Elements mode — mutually exclusive with clientSecret in Stripe v9+.
-               * Only 'setup' is supported without additional required fields (amount/currency).
-               * To add 'payment' or 'subscription' mode, also add amount and currency props.
-               */
-              mode?: 'setup';
-          }
+        | { clientSecret: string; mode?: never }
+        | { clientSecret?: never; mode?: 'setup' }
     ) & {
-        /** Optional appearance theme for Stripe Elements */
         appearance?: StripeElementsOptions['appearance'];
-        /** Content to render inside Elements */
-        children: Snippet;
-        /** Callback when Stripe Elements state changes */
+        currency?: string;
         onElementsChange?: (elements: StripeElements | undefined) => void;
-        /** Callback when Stripe finishes loading */
         onload?: (stripe: Stripe) => void;
     };
 
-    let { appearance, children, clientSecret, mode = 'setup', onElementsChange, onload }: Props = $props();
+    let { appearance, clientSecret, currency = 'usd', mode = 'setup', onElementsChange, onload }: Props = $props();
 
-    let stripe = $state<null | Stripe>(null);
-    let elements = $state<StripeElements | undefined>(undefined);
-    let isLoading = $state(true);
-    let error = $state<null | string>(null);
+    /**
+     * Fully imperative approach: bypasses both svelte-stripe's <Elements> and
+     * <PaymentElement> components, and avoids Svelte 5 reactive template
+     * guards entirely.
+     *
+     * Why: Svelte 5 has a reactivity issue where $state/$derived/stores set
+     * from async callbacks (onMount, .then) don't reliably trigger template
+     * {#if} re-renders. We sidestep this by using direct DOM manipulation
+     * for show/hide and mounting the Stripe PaymentElement imperatively.
+     */
 
-    // Set up context for child components using useStripe()
-    setStripeContext({
-        get elements() {
-            return elements ?? null;
-        },
-        get error() {
-            return error;
-        },
-        get isLoading() {
-            return isLoading;
-        },
-        get stripe() {
-            return stripe;
-        }
-    });
+    let stripeInstance: Stripe | null = null;
+    let elementsInstance: StripeElements | null = null;
+    let paymentElement: StripePaymentElement | null = null;
+    let errorMessage: string | null = null;
 
-    onMount(async () => {
-        try {
-            stripe = await loadStripeOnce();
-            if (!stripe) {
-                error = 'Stripe is not configured. Please contact support.';
-            } else {
+    let skeletonDiv: HTMLDivElement;
+    let paymentDiv: HTMLDivElement;
+    let errorDiv: HTMLDivElement;
+
+    onMount(() => {
+        loadStripeOnce()
+            .then((stripe) => {
+                if (!stripe) {
+                    showError('Stripe is not configured. Please contact support.');
+                    return;
+                }
+
+                stripeInstance = stripe;
+                elementsInstance = clientSecret
+                    ? stripe.elements({ clientSecret, appearance })
+                    : stripe.elements({ mode: mode ?? 'setup', currency: currency ?? 'usd', appearance });
+
+                paymentElement = elementsInstance.create('payment');
+                paymentElement.mount(paymentDiv);
+
+                // Swap skeleton for payment element
+                skeletonDiv.style.display = 'none';
+                paymentDiv.style.display = 'block';
+
                 onload?.(stripe);
-            }
-        } catch (ex) {
-            error = ex instanceof Error ? ex.message : 'Failed to load payment system';
-        } finally {
-            isLoading = false;
-        }
+                onElementsChange?.(elementsInstance);
+            })
+            .catch((ex) => {
+                showError(ex instanceof Error ? ex.message : 'Failed to load payment system');
+            });
+
+        return () => {
+            paymentElement?.destroy();
+        };
     });
 
-    $effect(() => {
-        onElementsChange?.(elements);
+    function showError(msg: string) {
+        errorMessage = msg;
+        skeletonDiv.style.display = 'none';
+        paymentDiv.style.display = 'none';
+        errorDiv.style.display = 'block';
+    }
+
+    // Provide context for svelte-stripe's PaymentElement (in case it's used)
+    // and for useStripe() in form submission handlers.
+    setContext('stripe', {
+        get stripe() { return stripeInstance; },
+        get elements() { return elementsInstance; }
+    });
+
+    setStripeContext({
+        get elements() { return elementsInstance; },
+        get error() { return errorMessage; },
+        get isLoading() { return !elementsInstance && !errorMessage; },
+        get stripe() { return stripeInstance; }
     });
 </script>
 
-{#if isLoading}
-    <Skeleton class="h-32 w-full" />
-{:else if error}
-    <ErrorMessage message={error} />
-{:else if stripe}
-    <!--
-        Two branches are intentional: Stripe Elements requires either clientSecret OR mode,
-        never both. Spreading a computed object would lose compile-time type checking against
-        the Elements component's props. The duplication is minimal (3 lines each) and the
-        intent is immediately clear.
-    -->
-    {#if clientSecret}
-        <Elements {stripe} {clientSecret} {appearance} bind:elements>
-            {@render children()}
-        </Elements>
-    {:else}
-        <Elements {stripe} {mode} {appearance} bind:elements>
-            {@render children()}
-        </Elements>
-    {/if}
-{/if}
+<div bind:this={skeletonDiv} class="h-32 w-full animate-pulse rounded-md bg-accent"></div>
+<div bind:this={paymentDiv} class="min-h-[200px]" style="display:none;"></div>
+<div bind:this={errorDiv} style="display:none;">
+    <ErrorMessage message={errorMessage ?? 'An error occurred'} />
+</div>
