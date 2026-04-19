@@ -4,12 +4,13 @@ Real-time error monitoring platform handling billions of requests (ASP.NET Core 
 
 ## Quick Start
 
-Run `Exceptionless.AppHost` from your IDE. Aspire starts all services (Elasticsearch, Redis) automatically.
+Start everything with the Aspire CLI: `aspire run --project src/Exceptionless.AppHost`. This launches all services (Elasticsearch, Redis, API, Job worker) and opens the Aspire dashboard. Alternatively, run `Exceptionless.AppHost` directly from your IDE.
 
 ## Build & Test
 
 | Task           | Command                                                         |
 | -------------- | --------------------------------------------------------------- |
+| Run (Aspire)   | `aspire run --project src/Exceptionless.AppHost`                |
 | Backend build  | `dotnet build`                                                  |
 | Backend test   | `dotnet test`                                                   |
 | Frontend build | `cd src/Exceptionless.Web/ClientApp && npm ci && npm run build` |
@@ -30,55 +31,21 @@ src/
 tests/                         # C# tests + HTTP samples
 ```
 
-## Continuous Improvement
-
-Each time you complete a task or learn important information about the project, you must update the `AGENTS.md`, `README.md`, or relevant skill files. **Only update skills if they are owned by us** (verify via `skills-lock.json` which lists third-party skills). You are **forbidden** from updating skills, configurations, or instructions maintained by third parties/external libraries.
-
-If you encounter recurring questions or patterns during planning, document them:
-
-- Project-specific knowledge → `AGENTS.md` or relevant skill file
-- Reusable domain patterns → Create/update appropriate skill in `.agents/skills/`
-
-## Skills
-
-Load from `.agents/skills/<name>/SKILL.md` when working in that domain:
-
-| Domain        | Skills                                                                                                                                                    |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Backend       | dotnet-conventions, backend-architecture, dotnet-cli, backend-testing, foundatio                                                                          |
-| Frontend      | svelte-components, tanstack-form, tanstack-query, shadcn-svelte, typescript-conventions, frontend-architecture, storybook, accessibility, frontend-design |
-| Testing       | frontend-testing, e2e-testing                                                                                                                             |
-| Cross-cutting | security-principles, releasenotes                                                                                                                         |
-| Billing       | stripe-best-practices, upgrade-stripe                                                                                                                     |
-| Agents        | agent-browser, dogfood                                                                                                                                    |
-| Meta          | skill-evolution                                                                                                                                           |
-
 ## Agents
 
 Available in `.claude/agents/`. Use `@agent-name` to invoke:
 
-- `engineer`: Use for implementing features, fixing bugs, or making code changes — plans, TDD, implements, verify loop, ships end-to-end
-- `reviewer`: Use for reviewing code quality — adversarial 4-pass analysis (security → build → correctness → style). Read-only.
-- `triage`: Use for analyzing issues, investigating bugs, or answering codebase questions — impact assessment, RCA, reproduction, implementation plans
-- `pr-reviewer`: Use for end-to-end PR review — zero-trust security pre-screen, dependency audit, delegates to @reviewer, delivers verdict
-
-### Orchestration Flow
-
-```text
-engineer → TDD → implement → verify (loop until clean)
-         → @reviewer (loop until 0 blockers) → commit → push → PR
-         → @copilot review → CI checks → resolve feedback → merge
-
-triage → impact assessment → deep research → RCA → reproduce
-       → implementation plan → post to GitHub → @engineer
-
-pr-reviewer → security pre-screen (before build!) → dependency audit
-            → build → @reviewer (4-pass) → verdict
-```
+- `engineer`: Plans, implements, verifies, reviews, QA tests, commits. Risk-based: micro (typo/config) → standard (bugs/features) → high-risk (auth/billing/data). Delegates to @reviewer and @qa.
+- `reviewer`: Adversarial 4-pass analysis (security → machine → correctness → style). Read-only. Supports SILENT_MODE for engineer loops.
+- `qa`: QA engineer — dogfood via agent-browser, E2E, API smoke tests. Read-only. Tiered by scope: backend=API smoke, frontend=browser dogfood, fullstack=both.
+- `triage`: Issue analyst — 5 Whys for bugs, architecture deep-dives for features/questions, community responses with warmth and depth.
+- `pr-reviewer`: PR gate — security pre-screen, dependency audit, delegates to @reviewer, inline GitHub comments, resolves stale comments, verdict. Drafts first, posts after approval.
 
 ## Constraints
 
 - Use `npm ci` (not `npm install`)
 - Never commit secrets — use environment variables
 - NuGet feeds are in `NuGet.Config` — don't add sources
-- Prefer additive documentation updates — don't replace strategic docs wholesale, extend them
+- **Backwards compatibility:** Never break existing public APIs, WebSocket message formats, config keys, or exported library interfaces without explicit user approval. Call out any breaking change as a BLOCKER in reviews.
+- **API test files:** Update `tests/http/*.http` files whenever endpoints change (new, modified, or removed).
+- **App URL for QA:** `http://localhost:5200` — probe `/api/v2/about` for health check.
