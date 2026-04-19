@@ -4,7 +4,7 @@
     import type { Stripe, StripeElements } from '@stripe/stripe-js';
 
     import ErrorMessage from '$comp/error-message.svelte';
-    import { H4, P } from '$comp/typography';
+    import { P } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Dialog from '$comp/ui/dialog';
     import * as Field from '$comp/ui/field';
@@ -18,8 +18,10 @@
     import { changePlanMutation, getPlansQuery } from '$features/organizations/api.svelte';
     import { getFormErrorMessages, mapFieldErrors } from '$features/shared/validation';
     import CreditCard from '@lucide/svelte/icons/credit-card';
+    import ExternalLink from '@lucide/svelte/icons/external-link';
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
+    import { untrack } from 'svelte';
 
     interface Props {
         open: boolean;
@@ -28,7 +30,6 @@
 
     let { open = $bindable(), organization }: Props = $props();
 
-    // Queries and mutations
     const plansQuery = getPlansQuery({
         route: {
             get organizationId() {
@@ -61,11 +62,11 @@
                 try {
                     let stripeToken: string | undefined;
                     let last4: string | undefined;
-                    const selectedPlan = plansQuery.data?.find((p: BillingPlan) => p.id === value.selectedPlanId) ?? null;
-                    const isPaidPlan = !!selectedPlan && selectedPlan.price > 0;
-                    const needsPayment = isPaidPlan && value.cardMode === 'new';
+                    const plan = plansQuery.data?.find((p: BillingPlan) => p.id === value.selectedPlanId) ?? null;
+                    const isPaid = !!plan && plan.price > 0;
+                    const needsCard = isPaid && value.cardMode === 'new';
 
-                    if (needsPayment) {
+                    if (needsCard) {
                         if (!stripe || !stripeElements) {
                             return { form: 'Payment system not loaded. Please try again.' };
                         }
@@ -108,63 +109,60 @@
         }
     }));
 
-    // Derived: Default plan is next tier (upsell) or current if at top tier
+    // Default to the next tier up (upsell) or current plan if at top
     const defaultPlanId = $derived.by(() => {
-        if (!plansQuery.data) {
-            return undefined;
-        }
-        const currentPlanIndex = plansQuery.data.findIndex((p: BillingPlan) => p.id === organization.plan_id);
-        const nextPlan = plansQuery.data[currentPlanIndex + 1] ?? plansQuery.data[currentPlanIndex];
-        return nextPlan?.id;
+        if (!plansQuery.data) return undefined;
+        const idx = plansQuery.data.findIndex((p: BillingPlan) => p.id === organization.plan_id);
+        return (plansQuery.data[idx + 1] ?? plansQuery.data[idx])?.id;
     });
 
-    // Derived state
-    const selectedPlanId = $derived(form.state.values.selectedPlanId || defaultPlanId);
-    const cardMode = $derived(form.state.values.cardMode);
+    let selectedPlanId = $state('');
     const selectedPlan = $derived(plansQuery.data?.find((p: BillingPlan) => p.id === selectedPlanId) ?? null);
     const isPaidPlan = $derived(selectedPlan && selectedPlan.price > 0);
     const isDowngradeToFree = $derived(selectedPlanId === FREE_PLAN_ID && organization.plan_id !== FREE_PLAN_ID);
+    const cardMode = $derived(form.state.values.cardMode);
     const needsPayment = $derived(isPaidPlan && cardMode === 'new');
     const isCurrentPlan = $derived(selectedPlanId === organization.plan_id);
 
+    // Reset form when dialog opens — untrack form mutations to prevent reactive cycles
     $effect(() => {
-        if (open) {
-            form.reset();
-            form.setFieldValue('cardMode', hasExistingCard ? 'existing' : 'new');
-            form.setFieldValue('couponId', '');
-            form.setFieldValue('selectedPlanId', defaultPlanId ?? '');
+        if (open && defaultPlanId) {
+            untrack(() => {
+                form.reset();
+                form.setFieldValue('cardMode', hasExistingCard ? 'existing' : 'new');
+                form.setFieldValue('couponId', '');
+                form.setFieldValue('selectedPlanId', defaultPlanId);
+            });
+            selectedPlanId = defaultPlanId;
         }
     });
+
+    function handlePlanChange(e: Event & { currentTarget: HTMLSelectElement }) {
+        const value = e.currentTarget.value;
+        selectedPlanId = value;
+        untrack(() => form.setFieldValue('selectedPlanId', value));
+    }
 
     function handleCancel() {
         open = false;
     }
 
-    function formatPrice(price: number): string {
-        return price === 0 ? 'Free' : `$${price}/month`;
+    function formatPlanLabel(plan: BillingPlan): string {
+        return plan.price === 0 ? `${plan.name} (Free)` : `${plan.name} ($${plan.price}/month)`;
     }
 
-    function formatEvents(events: number): string {
-        if (events >= 1000000) {
-            return `${(events / 1000000).toFixed(0)}M`;
-        }
-        if (events >= 1000) {
-            return `${(events / 1000).toFixed(0)}K`;
-        }
-        return events.toString();
+    function formatPrice(price: number): string {
+        return price === 0 ? 'Free' : `$${price}/month`;
     }
 </script>
 
 <Dialog.Root bind:open>
-    <Dialog.Content class="max-h-[90vh] max-w-2xl overflow-y-auto">
+    <Dialog.Content class="max-w-md">
         <Dialog.Header>
             <Dialog.Title class="flex items-center gap-2">
                 <CreditCard class="size-5" />
                 Change Plan
             </Dialog.Title>
-            <Dialog.Description>
-                You are currently on the <strong>{organization.plan_name}</strong> plan.
-            </Dialog.Description>
         </Dialog.Header>
 
         {#if !isStripeEnabled()}
@@ -172,10 +170,9 @@
                 <ErrorMessage message="Billing is currently disabled." />
             </div>
         {:else if plansQuery.isLoading}
-            <div class="space-y-4 py-4">
-                <Skeleton class="h-20 w-full" />
-                <Skeleton class="h-20 w-full" />
-                <Skeleton class="h-20 w-full" />
+            <div class="space-y-3 py-4">
+                <Skeleton class="h-5 w-3/4" />
+                <Skeleton class="h-10 w-full" />
             </div>
         {:else if plansQuery.error}
             <div class="py-4">
@@ -194,79 +191,81 @@
                     {/snippet}
                 </form.Subscribe>
 
-                <div class="space-y-6 py-4">
-                    <!-- Plan Selection -->
+                <div class="space-y-4 py-2">
+                    <!-- Current plan context -->
+                    <P>
+                        <strong>{organization.name}</strong> is currently on the <strong>{organization.plan_name}</strong> plan.
+                    </P>
+
+                    <!-- Plan dropdown -->
                     <form.Field name="selectedPlanId">
                         {#snippet children(field)}
                             <Field.Field>
-                                <Field.Label for={field.name}>Select a Plan</Field.Label>
-                                <RadioGroup.Root
-                                    value={field.state.value || defaultPlanId || ''}
-                                    onValueChange={(value) => field.handleChange(value)}
-                                    class="grid gap-3"
+                                <Field.Label for={field.name}>Select new plan</Field.Label>
+                                <p class="text-muted-foreground text-xs">
+                                    <a href="https://exceptionless.com/pricing" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline inline-flex items-center gap-0.5">
+                                        View plan details<ExternalLink class="inline size-3" />
+                                    </a>
+                                    &middot; All plan changes are prorated.
+                                </p>
+                                <select
+                                    id={field.name}
+                                    class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-2 text-sm shadow-xs focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                                    value={selectedPlanId}
+                                    onchange={handlePlanChange}
+                                    onblur={field.handleBlur}
                                 >
                                     {#each plansQuery.data as plan (plan.id)}
-                                        <div
-                                            class="border-border hover:border-primary has-data-[state=checked]:border-primary flex items-center gap-4 rounded-lg border p-4 transition-colors"
-                                        >
-                                            <RadioGroup.Item value={plan.id} id="plan-{plan.id}" />
-                                            <Field.Label for="plan-{plan.id}" class="flex flex-1 cursor-pointer items-center justify-between">
-                                                <div>
-                                                    <div class="font-semibold">
-                                                        {plan.name}
-                                                        {#if plan.id === organization.plan_id}
-                                                            <span class="text-muted-foreground ml-2 text-sm font-normal">(Current)</span>
-                                                        {/if}
-                                                    </div>
-                                                    <div class="text-muted-foreground text-sm">{plan.description}</div>
-                                                    <div class="text-muted-foreground mt-1 text-xs">
-                                                        {formatEvents(plan.max_events_per_month)} events/mo • {plan.retention_days} days retention • {plan.max_projects}
-                                                        projects • {plan.max_users} users
-                                                    </div>
-                                                </div>
-                                                <div class="text-right">
-                                                    <div class="text-lg font-bold">{formatPrice(plan.price)}</div>
-                                                </div>
-                                            </Field.Label>
-                                        </div>
+                                        <option value={plan.id}>
+                                            {formatPlanLabel(plan)}
+                                        </option>
                                     {/each}
-                                </RadioGroup.Root>
+                                </select>
                                 <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
                             </Field.Field>
                         {/snippet}
                     </form.Field>
+
+                    <!-- Plan comparison hint -->
+                    {#if selectedPlan && !isCurrentPlan}
+                        <div class="bg-muted/50 text-muted-foreground rounded-md px-3 py-2 text-sm">
+                            {#if selectedPlan.price > 0}
+                                Changing to <strong>{selectedPlan.name}</strong> at <strong>{formatPrice(selectedPlan.price)}</strong>
+                            {:else}
+                                Downgrading to the <strong>Free</strong> plan
+                            {/if}
+                        </div>
+                    {/if}
 
                     <!-- Payment Section (only for paid plans) -->
                     {#if isPaidPlan}
                         <Separator />
 
                         <div class="space-y-4">
-                            <H4>Payment Method</H4>
-
-
-                            <!-- Card mode selection (if has existing card) -->
                             {#if hasExistingCard}
                                 <form.Field name="cardMode">
                                     {#snippet children(field)}
-                                        <RadioGroup.Root
-                                            value={field.state.value}
-                                            onValueChange={(value) => field.handleChange(value as 'existing' | 'new')}
-                                            class="flex gap-6"
-                                        >
-                                            <div class="flex items-center gap-2">
-                                                <RadioGroup.Item value="existing" id="card-existing" />
-                                                <Field.Label for="card-existing">Card ending in {organization.card_last4}</Field.Label>
-                                            </div>
-                                            <div class="flex items-center gap-2">
-                                                <RadioGroup.Item value="new" id="card-new" />
-                                                <Field.Label for="card-new">Use a new card</Field.Label>
-                                            </div>
-                                        </RadioGroup.Root>
+                                        <Field.Field>
+                                            <Field.Label>Payment Method</Field.Label>
+                                            <RadioGroup.Root
+                                                value={field.state.value}
+                                                onValueChange={(value) => field.handleChange(value as 'existing' | 'new')}
+                                                class="flex gap-6"
+                                            >
+                                                <div class="flex items-center gap-2">
+                                                    <RadioGroup.Item value="existing" id="card-existing" />
+                                                    <Field.Label for="card-existing">Card ending in {organization.card_last4}</Field.Label>
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    <RadioGroup.Item value="new" id="card-new" />
+                                                    <Field.Label for="card-new">Use a new card</Field.Label>
+                                                </div>
+                                            </RadioGroup.Root>
+                                        </Field.Field>
                                     {/snippet}
                                 </form.Field>
                             {/if}
 
-                            <!-- Stripe PaymentElement for new card -->
                             {#if needsPayment}
                                 <div class="rounded-lg border p-4">
                                     <StripeProvider
@@ -285,29 +284,27 @@
                                     />
                                 </div>
                             {/if}
-
-                            <!-- Coupon input (only for new customers or card changes) -->
-                            {#if !hasExistingCard || cardMode === 'new'}
-                                <form.Field name="couponId">
-                                    {#snippet children(field)}
-                                        <Field.Field>
-                                            <Field.Label for={field.name}>Coupon Code (optional)</Field.Label>
-                                            <Input
-                                                id={field.name}
-                                                name={field.name}
-                                                type="text"
-                                                placeholder="Enter coupon code"
-                                                value={field.state.value}
-                                                onblur={field.handleBlur}
-                                                oninput={(e) => field.handleChange(e.currentTarget.value)}
-                                            />
-                                            <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
-                                        </Field.Field>
-                                    {/snippet}
-                                </form.Field>
-                            {/if}
                         </div>
                     {/if}
+
+                    <!-- Coupon code -->
+                    <form.Field name="couponId">
+                        {#snippet children(field)}
+                            <Field.Field>
+                                <Field.Label for={field.name}>Coupon code</Field.Label>
+                                <Input
+                                    id={field.name}
+                                    name={field.name}
+                                    type="text"
+                                    placeholder="Coupon code"
+                                    value={field.state.value}
+                                    onblur={field.handleBlur}
+                                    oninput={(e) => field.handleChange(e.currentTarget.value)}
+                                />
+                                <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                            </Field.Field>
+                        {/snippet}
+                    </form.Field>
 
                     <!-- Downgrade message -->
                     {#if isDowngradeToFree}
