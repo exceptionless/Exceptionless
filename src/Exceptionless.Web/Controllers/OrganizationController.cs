@@ -256,9 +256,9 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         {
             var item = new InvoiceLineItem { Amount = line.Amount / 100.0m, Description = line.Description };
 
-            // In Stripe.net 50.x, Plan was removed from InvoiceLineItem
-            // Fetch full Price object from Stripe to get nickname, interval, and amount
-            var priceId = line.Pricing?.PriceDetails?.Price;
+            // In Stripe.net 51.x, PriceDetails.Price changed from string to ExpandableField<Price>;
+            // use .PriceId for the string ID. Fetch full Price object from Stripe to get nickname, interval, and amount.
+            var priceId = line.Pricing?.PriceDetails?.PriceId;
             if (!String.IsNullOrEmpty(priceId))
             {
                 try

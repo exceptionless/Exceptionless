@@ -31,7 +31,7 @@
     let stripeInstance: Stripe | null = null;
     let elementsInstance: StripeElements | null = null;
     let paymentElement: StripePaymentElement | null = null;
-    let errorMessage: string | null = null;
+    let errorMessage: string | null = $state(null);
 
     let skeletonDiv: HTMLDivElement;
     let paymentDiv: HTMLDivElement;
