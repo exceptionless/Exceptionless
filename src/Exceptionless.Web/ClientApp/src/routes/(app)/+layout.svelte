@@ -8,6 +8,7 @@
     import { env } from '$env/dynamic/public';
     import { getIntercomTokenQuery } from '$features/auth/api.svelte';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
+    import { UpgradeRequiredDialog } from '$features/billing';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
     import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
     import { shouldLoadIntercomOrganization } from '$features/intercom/config';
@@ -302,4 +303,6 @@
             {@render appShell(openChat)}
         {/snippet}
     </IntercomShell>
+
+    <UpgradeRequiredDialog />
 {/if}

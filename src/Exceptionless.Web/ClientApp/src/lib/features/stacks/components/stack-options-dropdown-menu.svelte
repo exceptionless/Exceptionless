@@ -3,6 +3,7 @@
     import { resolve } from '$app/paths';
     import Button from '$comp/ui/button/button.svelte';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
+    import { handleUpgradeRequired } from '$features/billing';
     import Reference from '@lucide/svelte/icons/link-2';
     import Settings from '@lucide/svelte/icons/settings';
     import Delete from '@lucide/svelte/icons/trash';
@@ -73,11 +74,10 @@
         }
 
         if (response.status === 426) {
-            toast.error(
-                'Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.'
+            handleUpgradeRequired(
+                { status: 426, title: 'Promote to External is a premium feature. Please upgrade your plan to enable this feature.' } as never,
+                stack.organization_id
             );
-            //await confirmUpgradePlan(message, tack.organization_id);
-            //await promoteToExternal();
             return;
         }
 

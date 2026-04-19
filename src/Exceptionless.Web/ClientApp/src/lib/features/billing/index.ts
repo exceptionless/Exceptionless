@@ -14,3 +14,7 @@ export { FREE_PLAN_ID } from './constants';
 export type { BillingPlan, CardMode, ChangePlanFormState, ChangePlanParams, ChangePlanResult } from './models';
 // Context and hooks
 export { getStripePublishableKey, isStripeEnabled, loadStripeOnce, setStripeContext, type StripeContext, tryUseStripe, useStripe } from './stripe.svelte';
+
+// Upgrade required handling
+export { default as UpgradeRequiredDialog } from './components/upgrade-required-dialog.svelte';
+export { handleUpgradeRequired, isUpgradeRequired } from './upgrade-required.svelte';
