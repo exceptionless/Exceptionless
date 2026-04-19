@@ -132,3 +132,5 @@ src/Exceptionless\.Web/ClientApp.angular/dist/
 coverage/
 nul
 tmpclaude*
+
+src/Exceptionless.Web/appsettings.Local.yml
