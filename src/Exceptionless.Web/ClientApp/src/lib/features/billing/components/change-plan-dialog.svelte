@@ -5,6 +5,7 @@
 
     import ErrorMessage from '$comp/error-message.svelte';
     import { Muted } from '$comp/typography';
+    import * as Alert from '$comp/ui/alert';
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
     import * as Dialog from '$comp/ui/dialog';
@@ -26,11 +27,14 @@
     import { SvelteMap } from 'svelte/reactivity';
 
     interface Props {
+        initialCouponCode?: string;
+        initialCouponOpen?: boolean;
+        initialFormError?: string;
         open: boolean;
         organization: ViewOrganization;
     }
 
-    let { open = $bindable(), organization }: Props = $props();
+    let { initialCouponCode, initialCouponOpen, initialFormError, open = $bindable(), organization }: Props = $props();
 
     const plansQuery = getPlansQuery({
         route: {
@@ -276,10 +280,14 @@
                 }
                 interval = currentInterval;
                 paymentExpanded = false;
-                couponOpen = false;
-                couponApplied = null;
+                couponOpen = initialCouponOpen ?? false;
+                couponApplied = initialCouponCode ?? null;
                 couponInput = '';
                 form.reset();
+
+                if (initialFormError) {
+                    form.setErrorMap({ onSubmit: { form: initialFormError } });
+                }
             });
         }
     });
@@ -501,7 +509,7 @@
                     {/snippet}
                 </form.Subscribe>
 
-                <div class="max-h-[70vh] space-y-6 overflow-y-auto py-1 pr-0.5">
+                <div class="max-h-[70vh] space-y-6 overflow-y-auto px-1 py-1">
                     <section class="space-y-2.5">
                         <div class="flex items-center justify-between px-0.5">
                             <div class="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">Plan</div>
@@ -673,15 +681,17 @@
                             </div>
 
                             {#if couponApplied}
-                                <div class="border-primary/30 bg-primary/5 flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm">
-                                    <Check class="text-primary size-4 shrink-0" />
-                                    <span class="text-primary font-mono text-xs font-semibold">{couponApplied}</span>
-                                    <span class="text-muted-foreground truncate">— applied at checkout</span>
-                                    <span class="flex-1"></span>
-                                    <Button type="button" variant="link" class="text-muted-foreground h-auto p-0 text-xs" onclick={onCouponRemove}>
-                                        Remove
-                                    </Button>
-                                </div>
+                                <Alert.Root variant="success" class="flex items-center gap-2.5 py-2.5">
+                                    <Check class="size-4" />
+                                    <Alert.Description class="flex flex-1 items-center gap-2">
+                                        <span class="font-mono text-xs font-semibold">{couponApplied}</span>
+                                        <span class="text-muted-foreground truncate">— applied at checkout</span>
+                                        <span class="flex-1"></span>
+                                        <Button type="button" variant="link" class="text-muted-foreground h-auto p-0 text-xs" onclick={onCouponRemove}>
+                                            Remove
+                                        </Button>
+                                    </Alert.Description>
+                                </Alert.Root>
                             {:else if couponOpen}
                                 <div class="flex items-center gap-2">
                                     <Input

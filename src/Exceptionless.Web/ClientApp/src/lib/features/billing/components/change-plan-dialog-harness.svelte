@@ -11,11 +11,14 @@
     import ChangePlanDialog from './change-plan-dialog.svelte';
 
     interface Props {
+        initialCouponCode?: string;
+        initialCouponOpen?: boolean;
+        initialFormError?: string;
         organization: ViewOrganization;
         plans: BillingPlan[];
     }
 
-    let { organization, plans }: Props = $props();
+    let { initialCouponCode, initialCouponOpen, initialFormError, organization, plans }: Props = $props();
 
     accessToken.current = 'storybook-mock-token';
 
@@ -45,5 +48,5 @@
 <QueryClientProvider client={queryClient}>
     <Button variant="outline" onclick={() => (open = true)}>Open dialog</Button>
 
-    <ChangePlanDialog bind:open {organization} />
+    <ChangePlanDialog bind:open {organization} {initialCouponCode} {initialCouponOpen} {initialFormError} />
 </QueryClientProvider>

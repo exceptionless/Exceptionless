@@ -343,3 +343,103 @@ export const DowngradeToFree: Story = {
     },
     name: 'Downgrade to Free'
 };
+
+/** Coupon input expanded — user clicked "Have a coupon code?". */
+export const CouponInputOpen: Story = {
+    args: {
+        initialCouponOpen: true,
+        organization: makeOrg({
+            billing_price: 49,
+            card_last4: '4242',
+            has_premium_features: true,
+            max_events_per_month: 75000,
+            max_projects: 15,
+            max_users: 25,
+            plan_id: 'EX_MEDIUM',
+            plan_name: 'Medium',
+            retention_days: 90,
+            subscribe_date: '2024-03-01T00:00:00Z'
+        }),
+        plans: MOCK_PLANS
+    },
+    name: 'Coupon input open'
+};
+
+/** Coupon code applied — shows success alert with code and "Remove" action. */
+export const CouponApplied: Story = {
+    args: {
+        initialCouponCode: 'SAVE20',
+        organization: makeOrg({
+            billing_price: 49,
+            card_last4: '4242',
+            has_premium_features: true,
+            max_events_per_month: 75000,
+            max_projects: 15,
+            max_users: 25,
+            plan_id: 'EX_MEDIUM',
+            plan_name: 'Medium',
+            retention_days: 90,
+            subscribe_date: '2024-03-01T00:00:00Z'
+        }),
+        plans: MOCK_PLANS
+    },
+    name: 'Coupon applied'
+};
+
+/** Invalid coupon — backend returned an error for the submitted coupon code. */
+export const ErrorInvalidCoupon: Story = {
+    args: {
+        initialCouponCode: 'EXPIRED99',
+        initialFormError: "No such coupon: 'EXPIRED99'. Please check the code and try again.",
+        organization: makeOrg({
+            billing_price: 15,
+            card_last4: '4242',
+            has_premium_features: true,
+            max_events_per_month: 15000,
+            max_projects: 5,
+            max_users: 10,
+            plan_id: 'EX_SMALL',
+            plan_name: 'Small',
+            retention_days: 30,
+            subscribe_date: '2024-06-01T00:00:00Z'
+        }),
+        plans: MOCK_PLANS
+    },
+    name: 'Error: invalid coupon'
+};
+
+/** Payment failed — Stripe rejected the card during plan change. */
+export const ErrorPaymentFailed: Story = {
+    args: {
+        initialFormError: 'Your card was declined. Please try a different payment method.',
+        organization: makeOrg({
+            billing_price: 0,
+            card_last4: null,
+            plan_id: 'EX_FREE',
+            plan_name: 'Free'
+        }),
+        plans: MOCK_PLANS
+    },
+    name: 'Error: payment failed'
+};
+
+/** Downgrade blocked — too many users or projects for the target plan. */
+export const ErrorDowngradeBlocked: Story = {
+    args: {
+        initialFormError: 'Please remove 3 users and try again.',
+        organization: makeOrg({
+            billing_price: 199,
+            card_last4: '4242',
+            has_premium_features: true,
+            max_events_per_month: 1000000,
+            max_projects: -1,
+            max_users: -1,
+            plan_id: 'EX_XL',
+            plan_name: 'Extra Large',
+            retention_days: 180,
+            subscribe_date: '2023-11-01T00:00:00Z'
+        }),
+        plans: MOCK_PLANS
+    },
+    name: 'Error: downgrade blocked'
+};
