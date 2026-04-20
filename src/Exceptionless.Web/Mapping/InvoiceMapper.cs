@@ -13,7 +13,7 @@ public class InvoiceMapper
         {
             Id = source.Id[3..], // Strip "in_" prefix
             Date = source.Created,
-            Paid = String.Equals(source.Status, "paid", StringComparison.Ordinal)
+            Paid = String.Equals(source.Status, "paid", StringComparison.OrdinalIgnoreCase)
         };
 
     public List<InvoiceGridModel> MapToInvoiceGridModels(IEnumerable<Stripe.Invoice> source)

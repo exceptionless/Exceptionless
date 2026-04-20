@@ -224,10 +224,10 @@
                     }
 
                     const result = await changePlan.mutateAsync({
-                        couponId: value.couponId || undefined,
+                        coupon_id: value.couponId || undefined,
                         last4,
-                        planId: value.selectedPlanId,
-                        stripeToken
+                        plan_id: value.selectedPlanId,
+                        stripe_token: stripeToken
                     });
 
                     if (!result.success) {

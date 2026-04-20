@@ -40,6 +40,7 @@ let _stripeInstance: null | Stripe = null;
 
 /**
  * Load Stripe instance lazily. Returns cached instance if already loaded.
+ * Resets on failure so subsequent calls can retry (e.g. after a transient network error).
  */
 export async function loadStripeOnce(): Promise<null | Stripe> {
     if (_stripeInstance) {
@@ -54,8 +55,15 @@ export async function loadStripeOnce(): Promise<null | Stripe> {
         _stripePromise = loadStripe(env.PUBLIC_STRIPE_PUBLISHABLE_KEY!);
     }
 
-    _stripeInstance = await _stripePromise;
-    return _stripeInstance;
+    try {
+        _stripeInstance = await _stripePromise;
+        return _stripeInstance;
+    } catch (err) {
+        // Reset so the next call can retry instead of re-awaiting the rejected promise
+        _stripePromise = null;
+        _stripeInstance = null;
+        throw err;
+    }
 }
 
 /**

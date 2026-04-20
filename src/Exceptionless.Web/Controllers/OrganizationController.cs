@@ -246,7 +246,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             OrganizationId = organization.Id,
             OrganizationName = organization.Name,
             Date = stripeInvoice.Created,
-            Paid = String.Equals(stripeInvoice.Status, "paid", StringComparison.Ordinal),
+            Paid = String.Equals(stripeInvoice.Status, "paid", StringComparison.OrdinalIgnoreCase),
             Total = stripeInvoice.Total / 100.0m
         };
 
@@ -405,11 +405,21 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// <param name="stripeToken">The token returned from the stripe service.</param>
     /// <param name="last4">The last four numbers of the card.</param>
     /// <param name="couponId">The coupon id.</param>
+    /// <param name="body">Optional JSON body (Svelte client); query params take precedence when body is null.</param>
     /// <response code="404">The organization was not found.</response>
     [HttpPost]
     [Route("{id:objectid}/change-plan")]
-    public async Task<ActionResult<ChangePlanResult>> ChangePlanAsync(string id, string planId, string? stripeToken = null, string? last4 = null, string? couponId = null)
+    public async Task<ActionResult<ChangePlanResult>> ChangePlanAsync(string id, [FromQuery] string? planId = null, [FromQuery] string? stripeToken = null, [FromQuery] string? last4 = null, [FromQuery] string? couponId = null, [FromBody] ChangePlanRequest? body = null)
     {
+        // Accept params from either JSON body (new Svelte client) or query string (legacy Angular)
+        planId = body?.PlanId ?? planId;
+        stripeToken = body?.StripeToken ?? stripeToken;
+        last4 = body?.Last4 ?? last4;
+        couponId = body?.CouponId ?? couponId;
+
+        if (String.IsNullOrEmpty(planId))
+            return Ok(ChangePlanResult.FailWithMessage("Invalid PlanId."));  // required but nullable for binding
+
         if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
             return NotFound();
 
@@ -554,11 +564,15 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 if (subscription is not null)
                 {
                     update.Items.Add(new SubscriptionItemOptions { Id = subscription.Items.Data[0].Id, Price = planId });
+                    if (!String.IsNullOrWhiteSpace(couponId))
+                        update.Discounts = [new SubscriptionDiscountOptions { Coupon = couponId }];
                     await subscriptionService.UpdateAsync(subscription.Id, update);
                 }
                 else
                 {
                     create.Items.Add(new SubscriptionItemOptions { Price = planId });
+                    if (!String.IsNullOrWhiteSpace(couponId))
+                        create.Discounts = [new SubscriptionDiscountOptions { Coupon = couponId }];
                     await subscriptionService.CreateAsync(create);
                 }
 
@@ -573,9 +587,9 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             await _repository.SaveAsync(organization, o => o.Cache().Originals());
             await _messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
         }
-        catch (Exception ex)
+        catch (StripeException ex)
         {
-            _logger.LogCritical(ex, "An error occurred while trying to update your billing plan: {Message}", ex.Message);
+            _logger.LogCritical(ex, "An error occurred while trying to update your billing plan: {ErrorMessage}", ex.Message);
             return Ok(ChangePlanResult.FailWithMessage(ex.Message));
         }
 

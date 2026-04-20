@@ -20,14 +20,15 @@ export interface ChangePlanFormState {
 
 /**
  * Parameters for the change-plan API call.
+ * Keys match the snake_case convention of the Exceptionless API.
  */
 export interface ChangePlanParams {
     /** Optional coupon code to apply */
-    couponId?: string;
+    coupon_id?: string;
     /** Last 4 digits of the card (for display purposes) */
     last4?: string;
     /** The plan ID to change to */
-    planId: string;
+    plan_id: string;
     /** Stripe PaymentMethod ID or legacy token */
-    stripeToken?: string;
+    stripe_token?: string;
 }
