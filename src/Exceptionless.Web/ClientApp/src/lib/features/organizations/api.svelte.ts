@@ -1,9 +1,8 @@
 import type { WebSocketMessageValue } from '$features/websockets/models';
-import type { BillingPlan, ChangePlanResult } from '$lib/generated/api';
+import type { BillingPlan, ChangePlanRequest, ChangePlanResult } from '$lib/generated/api';
 import type { QueryClient } from '@tanstack/svelte-query';
 
 import { accessToken } from '$features/auth/index.svelte';
-import { type ChangePlanParams } from '$features/billing/models';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
@@ -45,7 +44,7 @@ export interface AddOrganizationUserRequest {
     };
 }
 
-export interface ChangePlanRequest {
+export interface ChangePlanMutationRequest {
     route: {
         organizationId: string;
     };
@@ -170,12 +169,12 @@ export function addOrganizationUser(request: AddOrganizationUserRequest) {
 /**
  * Mutation to change an organization's billing plan.
  */
-export function changePlanMutation(request: ChangePlanRequest) {
+export function changePlanMutation(request: ChangePlanMutationRequest) {
     const queryClient = useQueryClient();
 
-    return createMutation<ChangePlanResult, ProblemDetails, ChangePlanParams>(() => ({
+    return createMutation<ChangePlanResult, ProblemDetails, ChangePlanRequest>(() => ({
         enabled: () => !!accessToken.current && !!request.route.organizationId,
-        mutationFn: async (params: ChangePlanParams) => {
+        mutationFn: async (params: ChangePlanRequest) => {
             const client = useFetchClient();
             const response = await client.postJSON<ChangePlanResult>(`organizations/${request.route.organizationId}/change-plan`, params);
 

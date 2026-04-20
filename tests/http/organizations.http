@@ -45,9 +45,11 @@ Content-Type: application/json
 @organizationId = {{newOrganization.response.body.$.id}}
 
 ### Change Plan
-POST {{apiUrl}}/organizations/{{organizationId}}/change-plan?planId=EX_FREE
+POST {{apiUrl}}/organizations/{{organizationId}}/change-plan
 Authorization: Bearer {{token}}
 Content-Type: application/json
+
+{ "plan_id": "EX_FREE" }
 
 ### Add User
 POST {{apiUrl}}/organizations/{{organizationId}}/users/test2@localhost

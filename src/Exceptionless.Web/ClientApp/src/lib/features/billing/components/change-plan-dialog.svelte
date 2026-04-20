@@ -16,7 +16,7 @@
     import { FREE_PLAN_ID, isStripeEnabled, StripeProvider } from '$features/billing';
     import { type ChangePlanFormData, ChangePlanSchema } from '$features/billing/schemas';
     import { changePlanMutation, getPlansQuery } from '$features/organizations/api.svelte';
-    import { getFormErrorMessages } from '$features/shared/validation';
+    import { getFormErrorMessages, isProblemDetails, problemDetailsToFormErrors } from '$features/shared/validation';
     import { Exceptionless } from '@exceptionless/browser';
     import Check from '@lucide/svelte/icons/check';
     import CreditCard from '@lucide/svelte/icons/credit-card';
@@ -239,6 +239,10 @@
 
                     return null;
                 } catch (error: unknown) {
+                    if (isProblemDetails(error)) {
+                        return problemDetailsToFormErrors(error);
+                    }
+
                     await Exceptionless.createException(error instanceof Error ? error : new Error(String(error)))
                         .setProperty('organizationId', organization.id)
                         .setProperty('selectedPlanId', value.selectedPlanId)

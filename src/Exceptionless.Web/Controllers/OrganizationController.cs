@@ -401,25 +401,12 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// Upgrades or downgrades the organizations plan.
     /// </remarks>
     /// <param name="id">The identifier of the organization.</param>
-    /// <param name="planId">The identifier of the plan.</param>
-    /// <param name="stripeToken">The token returned from the stripe service.</param>
-    /// <param name="last4">The last four numbers of the card.</param>
-    /// <param name="couponId">The coupon id.</param>
-    /// <param name="body">Optional JSON body (Svelte client); query params take precedence when body is null.</param>
+    /// <param name="body">The plan change request.</param>
     /// <response code="404">The organization was not found.</response>
     [HttpPost]
     [Route("{id:objectid}/change-plan")]
-    public async Task<ActionResult<ChangePlanResult>> ChangePlanAsync(string id, [FromQuery] string? planId = null, [FromQuery] string? stripeToken = null, [FromQuery] string? last4 = null, [FromQuery] string? couponId = null, [FromBody] ChangePlanRequest? body = null)
+    public async Task<ActionResult<ChangePlanResult>> ChangePlanAsync(string id, ChangePlanRequest body)
     {
-        // Accept params from either JSON body (new Svelte client) or query string (legacy Angular)
-        planId = body?.PlanId ?? planId;
-        stripeToken = body?.StripeToken ?? stripeToken;
-        last4 = body?.Last4 ?? last4;
-        couponId = body?.CouponId ?? couponId;
-
-        if (String.IsNullOrEmpty(planId))
-            return Ok(ChangePlanResult.FailWithMessage("Invalid PlanId."));  // required but nullable for binding
-
         if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
             return NotFound();
 
@@ -433,7 +420,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (organization is null)
             return Ok(ChangePlanResult.FailWithMessage("Invalid OrganizationId."));
 
-        var plan = _billingManager.GetBillingPlan(planId);
+        var plan = _billingManager.GetBillingPlan(body.PlanId);
         if (plan is null)
             return Ok(ChangePlanResult.FailWithMessage("Invalid PlanId."));
 
@@ -454,8 +441,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         var paymentMethodService = new PaymentMethodService(client);
 
         // Detect if stripeToken is a legacy token (tok_) or modern PaymentMethod (pm_)
-        // This maintains backwards compatibility with the legacy Angular UI
-        bool isPaymentMethod = stripeToken?.StartsWith("pm_", StringComparison.Ordinal) == true;
+        bool isPaymentMethod = body.StripeToken?.StartsWith("pm_", StringComparison.Ordinal) == true;
 
         try
         {
@@ -474,7 +460,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             }
             else if (String.IsNullOrEmpty(organization.StripeCustomerId))
             {
-                if (String.IsNullOrEmpty(stripeToken))
+                if (String.IsNullOrEmpty(body.StripeToken))
                     return Ok(ChangePlanResult.FailWithMessage("Billing information was not set."));
 
                 organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
@@ -485,20 +471,17 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                     Email = CurrentUser.EmailAddress
                 };
 
-                // Handle both legacy tokens and modern PaymentMethod IDs for backwards compatibility
                 if (isPaymentMethod)
                 {
-                    // Modern Svelte UI: Uses PaymentMethod from createPaymentMethod()
-                    createCustomer.PaymentMethod = stripeToken;
+                    createCustomer.PaymentMethod = body.StripeToken;
                     createCustomer.InvoiceSettings = new CustomerInvoiceSettingsOptions
                     {
-                        DefaultPaymentMethod = stripeToken
+                        DefaultPaymentMethod = body.StripeToken
                     };
                 }
                 else
                 {
-                    // Legacy Angular UI: Uses token from createToken()
-                    createCustomer.Source = stripeToken;
+                    createCustomer.Source = body.StripeToken;
                 }
 
                 var customer = await customerService.CreateAsync(createCustomer);
@@ -507,23 +490,21 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 var subscriptionOptions = new SubscriptionCreateOptions
                 {
                     Customer = customer.Id,
-                    Items = [new SubscriptionItemOptions { Price = planId }]
+                    Items = [new SubscriptionItemOptions { Price = body.PlanId }]
                 };
 
                 if (isPaymentMethod)
-                    subscriptionOptions.DefaultPaymentMethod = stripeToken;
+                    subscriptionOptions.DefaultPaymentMethod = body.StripeToken;
 
-                // In Stripe.net 50.x, Coupon was removed from SubscriptionCreateOptions
-                // Use Discounts collection with SubscriptionDiscountOptions instead
-                if (!String.IsNullOrWhiteSpace(couponId))
-                    subscriptionOptions.Discounts = [new SubscriptionDiscountOptions { Coupon = couponId }];
+                if (!String.IsNullOrWhiteSpace(body.CouponId))
+                    subscriptionOptions.Discounts = [new SubscriptionDiscountOptions { Coupon = body.CouponId }];
 
                 await subscriptionService.CreateAsync(subscriptionOptions);
 
                 organization.BillingStatus = BillingStatus.Active;
                 organization.RemoveSuspension();
                 organization.StripeCustomerId = customer.Id;
-                organization.CardLast4 = last4;
+                organization.CardLast4 = body.Last4;
             }
             else
             {
@@ -535,24 +516,22 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 if (!Request.IsGlobalAdmin())
                     customerUpdateOptions.Email = CurrentUser.EmailAddress;
 
-                if (!String.IsNullOrEmpty(stripeToken))
+                if (!String.IsNullOrEmpty(body.StripeToken))
                 {
                     if (isPaymentMethod)
                     {
-                        // Modern Svelte UI: Attach PaymentMethod and set as default
-                        await paymentMethodService.AttachAsync(stripeToken, new PaymentMethodAttachOptions
+                        await paymentMethodService.AttachAsync(body.StripeToken, new PaymentMethodAttachOptions
                         {
                             Customer = organization.StripeCustomerId
                         });
                         customerUpdateOptions.InvoiceSettings = new CustomerInvoiceSettingsOptions
                         {
-                            DefaultPaymentMethod = stripeToken
+                            DefaultPaymentMethod = body.StripeToken
                         };
                     }
                     else
                     {
-                        // Legacy Angular UI: Use Source for token
-                        customerUpdateOptions.Source = stripeToken;
+                        customerUpdateOptions.Source = body.StripeToken;
                     }
                     cardUpdated = true;
                 }
@@ -563,21 +542,21 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 var subscription = subscriptionList.FirstOrDefault(s => !s.CanceledAt.HasValue);
                 if (subscription is not null)
                 {
-                    update.Items.Add(new SubscriptionItemOptions { Id = subscription.Items.Data[0].Id, Price = planId });
-                    if (!String.IsNullOrWhiteSpace(couponId))
-                        update.Discounts = [new SubscriptionDiscountOptions { Coupon = couponId }];
+                    update.Items.Add(new SubscriptionItemOptions { Id = subscription.Items.Data[0].Id, Price = body.PlanId });
+                    if (!String.IsNullOrWhiteSpace(body.CouponId))
+                        update.Discounts = [new SubscriptionDiscountOptions { Coupon = body.CouponId }];
                     await subscriptionService.UpdateAsync(subscription.Id, update);
                 }
                 else
                 {
-                    create.Items.Add(new SubscriptionItemOptions { Price = planId });
-                    if (!String.IsNullOrWhiteSpace(couponId))
-                        create.Discounts = [new SubscriptionDiscountOptions { Coupon = couponId }];
+                    create.Items.Add(new SubscriptionItemOptions { Price = body.PlanId });
+                    if (!String.IsNullOrWhiteSpace(body.CouponId))
+                        create.Discounts = [new SubscriptionDiscountOptions { Coupon = body.CouponId }];
                     await subscriptionService.CreateAsync(create);
                 }
 
                 if (cardUpdated)
-                    organization.CardLast4 = last4;
+                    organization.CardLast4 = body.Last4;
 
                 organization.BillingStatus = BillingStatus.Active;
                 organization.RemoveSuspension();
@@ -589,7 +568,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         }
         catch (StripeException ex)
         {
-            _logger.LogCritical(ex, "An error occurred while trying to update your billing plan: {ErrorMessage}", ex.Message);
+            _logger.LogCritical(ex, "An error occurred while trying to update your billing plan: {Message}", ex.Message);
             return Ok(ChangePlanResult.FailWithMessage(ex.Message));
         }
 

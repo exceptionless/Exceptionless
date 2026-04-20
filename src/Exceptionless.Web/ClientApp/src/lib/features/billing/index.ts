@@ -13,7 +13,7 @@ export { default as UpgradeRequiredDialog } from './components/upgrade-required-
 // Constants
 export { FREE_PLAN_ID } from './constants';
 // Models
-export type { BillingPlan, CardMode, ChangePlanFormState, ChangePlanParams, ChangePlanResult } from './models';
+export type { BillingPlan, CardMode, ChangePlanFormState, ChangePlanRequest, ChangePlanResult } from './models';
 
 // Context and hooks
 export { getStripePublishableKey, isStripeEnabled, loadStripeOnce, setStripeContext, type StripeContext, tryUseStripe, useStripe } from './stripe.svelte';
