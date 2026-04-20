@@ -367,9 +367,9 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (organization is null)
             return NotFound();
 
-        var plans = _plans.Plans;
-        if (!Request.IsGlobalAdmin())
-            plans = plans.Where(p => !p.IsHidden || p.Id == organization.PlanId).ToList();
+        var plans = Request.IsGlobalAdmin()
+            ? _plans.Plans.ToList()
+            : _plans.Plans.Where(p => !p.IsHidden || p.Id == organization.PlanId).ToList();
 
         var currentPlan = new BillingPlan
         {
@@ -385,10 +385,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             HasPremiumFeatures = organization.HasPremiumFeatures
         };
 
-        if (plans.All(p => p.Id != organization.PlanId))
-            plans.Add(currentPlan);
+        int idx = plans.FindIndex(p => p.Id == organization.PlanId);
+        if (idx >= 0)
+            plans[idx] = currentPlan;
         else
-            plans[plans.FindIndex(p => p.Id == organization.PlanId)] = currentPlan;
+            plans.Add(currentPlan);
 
         return Ok(plans);
     }
@@ -406,7 +407,6 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// <param name="couponId">The coupon id.</param>
     /// <response code="404">The organization was not found.</response>
     [HttpPost]
-    [Consumes("application/json")]
     [Route("{id:objectid}/change-plan")]
     public async Task<ActionResult<ChangePlanResult>> ChangePlanAsync(string id, string planId, string? stripeToken = null, string? last4 = null, string? couponId = null)
     {
