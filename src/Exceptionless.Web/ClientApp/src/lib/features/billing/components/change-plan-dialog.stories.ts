@@ -4,8 +4,6 @@ import type { Meta, StoryObj } from '@storybook/sveltekit';
 
 import Harness from './change-plan-dialog-harness.svelte';
 
-// ─── Mock data ──────────────────────────────────────────────────────────────
-
 const MOCK_PLANS: BillingPlan[] = [
     {
         description: 'Free',
@@ -182,8 +180,6 @@ function makeOrg(overrides: Partial<ViewOrganization> = {}): ViewOrganization {
     };
 }
 
-// ─── Storybook meta ─────────────────────────────────────────────────────────
-
 const meta = {
     component: Harness,
     parameters: {
@@ -196,8 +192,6 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
-
-// ─── Stories ────────────────────────────────────────────────────────────────
 
 /** Plans failed to load — shows error message. */
 export const ErrorLoadingPlans: Story = {

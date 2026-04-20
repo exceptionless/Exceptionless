@@ -5,11 +5,13 @@
 
     import ErrorMessage from '$comp/error-message.svelte';
     import { Muted } from '$comp/typography';
+    import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
     import * as Dialog from '$comp/ui/dialog';
     import { Input } from '$comp/ui/input';
     import { Skeleton } from '$comp/ui/skeleton';
     import { Spinner } from '$comp/ui/spinner';
+    import * as Tabs from '$comp/ui/tabs';
     import { FREE_PLAN_ID, isStripeEnabled, StripeProvider } from '$features/billing';
     import { type ChangePlanFormData, ChangePlanSchema } from '$features/billing/schemas';
     import { changePlanMutation, getPlansQuery } from '$features/organizations/api.svelte';
@@ -506,34 +508,17 @@
                             <Muted class="text-xs font-normal normal-case">All changes prorated</Muted>
                         </div>
 
-                        <div class="bg-muted grid grid-cols-2 gap-0.5 rounded-lg p-0.5">
-                            <button
-                                type="button"
-                                class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors {interval ===
-                                'month'
-                                    ? 'bg-background text-foreground shadow-sm'
-                                    : 'text-muted-foreground hover:text-foreground'}"
-                                onclick={() => setInterval('month')}
-                            >
-                                Monthly
-                            </button>
-                            <button
-                                type="button"
-                                class="inline-flex items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors {interval ===
-                                'year'
-                                    ? 'bg-background text-foreground shadow-sm'
-                                    : 'text-muted-foreground hover:text-foreground'}"
-                                onclick={() => setInterval('year')}
-                            >
-                                Yearly
-                                {#if yearlySavingsLabel}
-                                    <span
-                                        class="bg-primary/20 text-primary ring-primary/40 rounded-full px-1.5 py-0 text-[10px] font-semibold tracking-wide ring-1 ring-inset"
-                                        >{yearlySavingsLabel}</span
-                                    >
-                                {/if}
-                            </button>
-                        </div>
+                        <Tabs.Root value={interval} onValueChange={(value) => setInterval(value as 'month' | 'year')} class="w-full">
+                            <Tabs.List class="grid w-full grid-cols-2">
+                                <Tabs.Trigger value="month">Monthly</Tabs.Trigger>
+                                <Tabs.Trigger value="year" class="gap-2">
+                                    Yearly
+                                    {#if yearlySavingsLabel}
+                                        <Badge variant="default" class="px-1.5 py-0 text-[10px]">{yearlySavingsLabel}</Badge>
+                                    {/if}
+                                </Tabs.Trigger>
+                            </Tabs.List>
+                        </Tabs.Root>
 
                         <div class="divide-border bg-card divide-y overflow-hidden rounded-lg border">
                             {#each tiers as tier (tier.id)}
@@ -541,11 +526,12 @@
                                 {@const price = tierPrice(tier, interval)}
                                 {@const isCurrent = tier.id === currentTierId && (interval === currentInterval || !tier.yearly)}
                                 {@const isSelected = tier.id === selectedTierId}
-                                <button
+                                <Button
                                     type="button"
+                                    variant="ghost"
                                     onclick={() => selectTier(tier.id)}
-                                    class="group relative flex w-full items-center gap-3 px-4 py-3 text-left transition-colors {isSelected
-                                        ? 'bg-primary/5'
+                                    class="group relative flex h-auto w-full items-center gap-3 rounded-none px-4 py-3 text-left {isSelected
+                                        ? 'bg-primary/5 hover:bg-primary/5'
                                         : 'hover:bg-muted/50'}"
                                 >
                                     {#if isSelected}
@@ -555,15 +541,9 @@
                                         <div class="flex items-center gap-2">
                                             <span class="text-sm font-semibold tracking-tight">{tier.name}</span>
                                             {#if isCurrent}
-                                                <span
-                                                    class="text-muted-foreground border-border bg-muted/60 rounded-full border px-1.5 py-0 text-[10px] font-semibold tracking-wide uppercase"
-                                                    >Current</span
-                                                >
+                                                <Badge variant="secondary" class="px-1.5 py-0 text-[10px] uppercase">Current</Badge>
                                             {:else if tier.popular}
-                                                <span
-                                                    class="text-primary border-primary/30 bg-primary/10 rounded-full border px-1.5 py-0 text-[10px] font-semibold tracking-wide uppercase"
-                                                    >Most popular</span
-                                                >
+                                                <Badge variant="default" class="px-1.5 py-0 text-[10px] uppercase">Most popular</Badge>
                                             {/if}
                                         </div>
                                         {#if planForInterval}
@@ -586,14 +566,15 @@
                                             <Muted class="text-[11px]">{price.sub}</Muted>
                                         {/if}
                                     </div>
-                                </button>
+                                </Button>
                             {/each}
 
-                            <button
+                            <Button
                                 type="button"
+                                variant="ghost"
                                 onclick={() => selectTier('')}
-                                class="group relative flex w-full items-center gap-3 px-4 py-3 text-left transition-colors {isFreeSelected
-                                    ? 'bg-primary/5'
+                                class="group relative flex h-auto w-full items-center gap-3 rounded-none px-4 py-3 text-left {isFreeSelected
+                                    ? 'bg-primary/5 hover:bg-primary/5'
                                     : 'hover:bg-muted/50'}"
                             >
                                 {#if isFreeSelected}
@@ -603,10 +584,7 @@
                                     <div class="flex items-center gap-2">
                                         <span class="text-muted-foreground text-sm font-medium">Free</span>
                                         {#if isFreeCurrent}
-                                            <span
-                                                class="text-muted-foreground border-border bg-muted/60 rounded-full border px-1.5 py-0 text-[10px] font-semibold tracking-wide uppercase"
-                                                >Current</span
-                                            >
+                                            <Badge variant="secondary" class="px-1.5 py-0 text-[10px] uppercase">Current</Badge>
                                         {:else}
                                             <Muted class="text-xs">— cancel paid plan</Muted>
                                         {/if}
@@ -624,7 +602,7 @@
                                 <div class="text-right whitespace-nowrap">
                                     <Muted class="text-sm font-medium">Free</Muted>
                                 </div>
-                            </button>
+                            </Button>
                         </div>
                     </section>
 
