@@ -284,10 +284,6 @@
                 couponApplied = initialCouponCode ?? null;
                 couponInput = '';
                 form.reset();
-
-                if (initialFormError) {
-                    form.setErrorMap({ onSubmit: { form: initialFormError } });
-                }
             });
         }
     });
@@ -357,11 +353,15 @@
             return 'Unlimited users';
         }
 
-        return `${n} users`;
+        return `${n} user${n === 1 ? '' : 's'}`;
     }
 
     function formatRetention(days: number): string {
         return `${days} day${days === 1 ? '' : 's'}`;
+    }
+
+    function formatPrice(n: number): string {
+        return n.toLocaleString('en-US');
     }
 
     function tierPrice(tier: PlanTier, billingInterval: 'month' | 'year') {
@@ -369,7 +369,7 @@
             const perMonth = tier.yearly.price / 12;
 
             return {
-                amount: `$${tier.yearly.price}`,
+                amount: `$${formatPrice(tier.yearly.price)}`,
                 period: '/yr',
                 sub: `~$${perMonth.toFixed(0)}/mo`
             };
@@ -380,7 +380,7 @@
             return { amount: '—', period: '', sub: '' };
         }
 
-        return { amount: `$${plan.price}`, period: '/mo', sub: '' };
+        return { amount: `$${formatPrice(plan.price)}`, period: '/mo', sub: '' };
     }
 
     const yearlySavingsLabel = $derived.by(() => {
@@ -433,7 +433,7 @@
         const price = organization.billing_price > 0 ? organization.billing_price : (plan?.price ?? 0);
         const name = tiers.find((t) => t.id === currentTierId)?.name ?? organization.plan_name;
         const period = currentInterval === 'year' ? '/yr' : '/mo';
-        return `${name} · $${price}${period}, billed ${intervalWord(currentInterval)}`;
+        return `${name} · $${formatPrice(price)}${period}, billed ${intervalWord(currentInterval)}`;
     });
 
     const ctaLabel = $derived.by(() => {
@@ -509,6 +509,10 @@
                     {/snippet}
                 </form.Subscribe>
 
+                {#if initialFormError}
+                    <ErrorMessage message={initialFormError}></ErrorMessage>
+                {/if}
+
                 <div class="max-h-[70vh] space-y-6 overflow-y-auto px-1 py-1">
                     <section class="space-y-2.5">
                         <div class="flex items-center justify-between px-0.5">
@@ -529,7 +533,7 @@
                         </Tabs.Root>
 
                         <div class="divide-border bg-card divide-y overflow-hidden rounded-lg border">
-                            {#each tiers as tier (tier.id)}
+                            {#each tiers as tier, tierIdx (tier.id)}
                                 {@const planForInterval = interval === 'year' && tier.yearly ? tier.yearly : tier.monthly}
                                 {@const price = tierPrice(tier, interval)}
                                 {@const isCurrent = tier.id === currentTierId && (interval === currentInterval || !tier.yearly)}
@@ -550,7 +554,7 @@
                                             <span class="text-sm font-semibold tracking-tight">{tier.name}</span>
                                             {#if isCurrent}
                                                 <Badge variant="secondary" class="px-1.5 py-0 text-[10px] uppercase">Current</Badge>
-                                            {:else if tier.popular}
+                                            {:else if tier.popular && tierIdx > currentTierIndex}
                                                 <Badge variant="default" class="px-1.5 py-0 text-[10px] uppercase">Most popular</Badge>
                                             {/if}
                                         </div>
@@ -741,12 +745,12 @@
                                         · immediate, prorated credit
                                     {:else if organization.plan_id === FREE_PLAN_ID}
                                         Start <strong class="text-foreground font-medium">{planLabel(selectedPlanId, { includeInterval: true })}</strong>
-                                        {#if selectedPlan}· ${selectedPlan.price}{interval === 'year' ? '/yr' : '/mo'}{/if}
+                                        {#if selectedPlan}· ${formatPrice(selectedPlan.price)}{interval === 'year' ? '/yr' : '/mo'}{/if}
                                     {:else}
                                         <strong class="text-foreground font-medium">{planLabel(organization.plan_id, { includeInterval: includeInt })}</strong>
                                         <span class="text-muted-foreground/60 mx-1">→</span>
                                         <strong class="text-foreground font-medium">{planLabel(selectedPlanId, { includeInterval: includeInt })}</strong>
-                                        {#if selectedPlan}· ${selectedPlan.price}{interval === 'year' ? '/yr' : '/mo'} · prorated today{/if}
+                                        {#if selectedPlan}· ${formatPrice(selectedPlan.price)}{interval === 'year' ? '/yr' : '/mo'} · prorated today{/if}
                                     {/if}
                                 </Muted>
                             </div>
