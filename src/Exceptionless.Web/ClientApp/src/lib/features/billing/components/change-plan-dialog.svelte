@@ -78,9 +78,6 @@
         if (plan.id === FREE_PLAN_ID) {
             return false;
         }
-        if (plan.price === 0) {
-            return false;
-        }
 
         return true;
     }
@@ -385,7 +382,7 @@
 
     const yearlySavingsLabel = $derived.by(() => {
         const percentages = tiers
-            .filter((t) => t.monthly && t.yearly)
+            .filter((t) => t.monthly && t.yearly && t.monthly.price > 0)
             .map((t) => {
                 const fullYear = t.monthly!.price * 12;
                 const saved = fullYear - t.yearly!.price;

@@ -443,3 +443,24 @@ export const ErrorDowngradeBlocked: Story = {
     },
     name: 'Error: downgrade blocked'
 };
+
+/** Generic plan change failure — API returned a non-success result (network error, server error, etc.). */
+export const ErrorPlanChangeFailed: Story = {
+    args: {
+        initialFormError: 'An unexpected error occurred while changing your plan. Please try again or contact support.',
+        organization: makeOrg({
+            billing_price: 15,
+            card_last4: '4242',
+            has_premium_features: true,
+            max_events_per_month: 15000,
+            max_projects: 5,
+            max_users: 10,
+            plan_id: 'EX_SMALL',
+            plan_name: 'Small',
+            retention_days: 30,
+            subscribe_date: '2024-06-01T00:00:00Z'
+        }),
+        plans: MOCK_PLANS
+    },
+    name: 'Error: plan change failed'
+};
