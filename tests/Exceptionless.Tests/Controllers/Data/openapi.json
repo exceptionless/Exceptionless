@@ -16,7 +16,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost/"
+      "url": "http://localhost:5200/"
     }
   ],
   "paths": {
@@ -4317,7 +4317,7 @@
           "Organization"
         ],
         "summary": "Change plan",
-        "description": "Upgrades or downgrades the organizations plan.",
+        "description": "Upgrades or downgrades the organizations plan.\nAccepts parameters via JSON body (preferred) or query string (legacy).",
         "parameters": [
           {
             "name": "id",
@@ -4332,7 +4332,7 @@
           {
             "name": "planId",
             "in": "query",
-            "description": "The identifier of the plan.",
+            "description": "Legacy query parameter: the plan identifier.",
             "schema": {
               "type": "string"
             }
@@ -4340,7 +4340,7 @@
           {
             "name": "stripeToken",
             "in": "query",
-            "description": "The token returned from the stripe service.",
+            "description": "Legacy query parameter: the Stripe token.",
             "schema": {
               "type": "string"
             }
@@ -4348,7 +4348,7 @@
           {
             "name": "last4",
             "in": "query",
-            "description": "The last four numbers of the card.",
+            "description": "Legacy query parameter: last four digits of the card.",
             "schema": {
               "type": "string"
             }
@@ -4356,12 +4356,77 @@
           {
             "name": "couponId",
             "in": "query",
-            "description": "The coupon id.",
+            "description": "Legacy query parameter: the coupon identifier.",
             "schema": {
               "type": "string"
             }
           }
         ],
+        "requestBody": {
+          "description": "The plan change request (JSON body).",
+          "content": {
+            "text/plain": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangePlanRequest"
+                  }
+                ]
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangePlanRequest"
+                  }
+                ]
+              }
+            },
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangePlanRequest"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangePlanRequest"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangePlanRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -7057,6 +7122,35 @@
             "maxLength": 100,
             "minLength": 6,
             "type": "string"
+          }
+        }
+      },
+      "ChangePlanRequest": {
+        "required": [
+          "plan_id"
+        ],
+        "type": "object",
+        "properties": {
+          "plan_id": {
+            "type": "string"
+          },
+          "stripe_token": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "last4": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "coupon_id": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
