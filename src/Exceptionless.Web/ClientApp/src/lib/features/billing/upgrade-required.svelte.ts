@@ -1,38 +1,31 @@
 import { ProblemDetails } from '@exceptionless/fetchclient';
 
 interface UpgradeRequiredState {
-    open: boolean;
     message: string;
+    open: boolean;
     organizationId: string | undefined;
 }
 
 const state: UpgradeRequiredState = $state({
-    open: false,
     message: '',
+    open: false,
     organizationId: undefined
 });
 
 export const upgradeRequiredDialog = {
+    get message() {
+        return state.message;
+    },
     get open() {
         return state.open;
     },
     set open(value: boolean) {
         state.open = value;
     },
-    get message() {
-        return state.message;
-    },
     get organizationId() {
         return state.organizationId;
     }
 };
-
-/**
- * Checks if a ProblemDetails error represents a 426 Upgrade Required response.
- */
-export function isUpgradeRequired(error: unknown): error is ProblemDetails {
-    return error instanceof ProblemDetails && error.status === 426;
-}
 
 /**
  * Handles a 426 Upgrade Required response by opening a confirmation dialog
@@ -51,4 +44,11 @@ export function handleUpgradeRequired(error: unknown, organizationId: string | u
     state.open = true;
 
     return true;
+}
+
+/**
+ * Checks if a ProblemDetails error represents a 426 Upgrade Required response.
+ */
+export function isUpgradeRequired(error: unknown): error is ProblemDetails {
+    return error instanceof ProblemDetails && error.status === 426;
 }

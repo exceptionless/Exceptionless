@@ -5,15 +5,12 @@
     import { loadStripeOnce, setStripeContext } from '$features/billing/stripe.svelte';
     import { onMount, setContext } from 'svelte';
 
-    type Props = (
-        | { clientSecret: string; mode?: never }
-        | { clientSecret?: never; mode?: 'setup' }
-    ) & {
+    type Props = {
         appearance?: StripeElementsOptions['appearance'];
         currency?: string;
         onElementsChange?: (elements: StripeElements | undefined) => void;
         onload?: (stripe: Stripe) => void;
-    };
+    } & ({ clientSecret: string; mode?: never } | { clientSecret?: never; mode?: 'setup' });
 
     let { appearance, clientSecret, currency = 'usd', mode = 'setup', onElementsChange, onload }: Props = $props();
 
@@ -28,10 +25,10 @@
      * for show/hide and mounting the Stripe PaymentElement imperatively.
      */
 
-    let stripeInstance: Stripe | null = null;
-    let elementsInstance: StripeElements | null = null;
-    let paymentElement: StripePaymentElement | null = null;
-    let errorMessage: string | null = $state(null);
+    let stripeInstance: null | Stripe = null;
+    let elementsInstance: null | StripeElements = null;
+    let paymentElement: null | StripePaymentElement = null;
+    let errorMessage: null | string = $state(null);
 
     let skeletonDiv: HTMLDivElement;
     let paymentDiv: HTMLDivElement;
@@ -47,8 +44,18 @@
 
                 stripeInstance = stripe;
                 elementsInstance = clientSecret
-                    ? stripe.elements({ clientSecret, appearance })
-                    : stripe.elements({ mode: mode ?? 'setup', currency: currency ?? 'usd', appearance });
+                    ? stripe.elements({ appearance, clientSecret })
+                    : stripe.elements({
+                          // `paymentMethodCreation: 'manual'` is required when we plan
+                          // to call `stripe.createPaymentMethod({ elements })` later
+                          // (deferred-intent flow). Without it Stripe throws
+                          // "your elements instance must be created with
+                          // paymentMethodCreation: 'manual'".
+                          appearance,
+                          currency: currency ?? 'usd',
+                          mode: mode ?? 'setup',
+                          paymentMethodCreation: 'manual'
+                      });
 
                 paymentElement = elementsInstance.create('payment');
                 paymentElement.mount(paymentDiv);
@@ -79,19 +86,31 @@
     // Provide context for svelte-stripe's PaymentElement (in case it's used)
     // and for useStripe() in form submission handlers.
     setContext('stripe', {
-        get stripe() { return stripeInstance; },
-        get elements() { return elementsInstance; }
+        get elements() {
+            return elementsInstance;
+        },
+        get stripe() {
+            return stripeInstance;
+        }
     });
 
     setStripeContext({
-        get elements() { return elementsInstance; },
-        get error() { return errorMessage; },
-        get isLoading() { return !elementsInstance && !errorMessage; },
-        get stripe() { return stripeInstance; }
+        get elements() {
+            return elementsInstance;
+        },
+        get error() {
+            return errorMessage;
+        },
+        get isLoading() {
+            return !elementsInstance && !errorMessage;
+        },
+        get stripe() {
+            return stripeInstance;
+        }
     });
 </script>
 
-<div bind:this={skeletonDiv} class="h-32 w-full animate-pulse rounded-md bg-accent"></div>
+<div bind:this={skeletonDiv} class="bg-accent h-32 w-full animate-pulse rounded-md"></div>
 <div bind:this={paymentDiv} class="min-h-[200px]" style="display:none;"></div>
 <div bind:this={errorDiv} style="display:none;">
     <ErrorMessage message={errorMessage ?? 'An error occurred'} />

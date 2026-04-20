@@ -5,7 +5,7 @@
             "type": "aspire",
             "request": "launch",
             "name": "Aspire",
-            "program": "${workspaceFolder}/src/Exceptionless.AppHost/Exceptionless.AppHost.csproj"
+            "program": ""
         },
         {
             "name": "Web",
