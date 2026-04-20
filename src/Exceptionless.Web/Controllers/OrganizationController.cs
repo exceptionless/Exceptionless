@@ -230,7 +230,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while getting the invoice: {InvoiceId}. Exception: {Message}", id, ex.Message);
+            _logger.LogError(ex, "An error occurred while getting the invoice: {InvoiceId}", id);
         }
 
         if (String.IsNullOrEmpty(stripeInvoice?.CustomerId))
@@ -282,9 +282,9 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                     decimal unitAmountCents = line.Pricing?.UnitAmountDecimal ?? price.UnitAmount ?? 0;
                     item.Description = $"Exceptionless - {planName} Plan ({unitAmountCents / 100.0m:c}/{interval})";
                 }
-                catch (Exception ex)
+                catch (StripeException ex)
                 {
-                    _logger.LogWarning(ex, "Failed to fetch price details for price ID: {PriceId}. Exception: {Message}", priceId, ex.Message);
+                    _logger.LogWarning(ex, "Failed to fetch price details for price: {PriceId}. Error: {ErrorMessage}", priceId, ex.Message);
                 }
             }
 
