@@ -523,7 +523,7 @@
                                 <Tabs.Trigger value="year" class="gap-2">
                                     Yearly
                                     {#if yearlySavingsLabel}
-                                        <Badge variant="default" class="px-1.5 py-0 text-[10px]">{yearlySavingsLabel}</Badge>
+                                        <Badge variant="default" class="px-1.5 py-0 text-[10px] text-foreground">{yearlySavingsLabel}</Badge>
                                     {/if}
                                 </Tabs.Trigger>
                             </Tabs.List>
@@ -552,7 +552,7 @@
                                             {#if isCurrent}
                                                 <Badge variant="secondary" class="px-1.5 py-0 text-[10px] uppercase">Current</Badge>
                                             {:else if tier.popular && tierIdx > currentTierIndex}
-                                                <Badge variant="default" class="px-1.5 py-0 text-[10px] uppercase">Most popular</Badge>
+                                                <Badge variant="default" class="px-1.5 py-0 text-[10px] uppercase text-foreground">Most popular</Badge>
                                             {/if}
                                         </div>
                                         {#if planForInterval}
