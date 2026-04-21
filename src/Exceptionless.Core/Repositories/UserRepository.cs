@@ -3,7 +3,6 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
-using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
 using User = Exceptionless.Core.Models.User;

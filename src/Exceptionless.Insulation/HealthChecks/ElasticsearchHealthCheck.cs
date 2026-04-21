@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Repositories.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;

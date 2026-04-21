@@ -1,7 +1,5 @@
 using Exceptionless.Core;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
-using Exceptionless.Core.Queues.Models;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Mapping;
 using Foundatio.Extensions.Hosting.Startup;

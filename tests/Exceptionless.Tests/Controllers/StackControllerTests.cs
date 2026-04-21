@@ -6,7 +6,6 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models.Data;
 using Exceptionless.Tests.Extensions;
-using Exceptionless.Web.Controllers;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Xunit;

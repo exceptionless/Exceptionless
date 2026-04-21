@@ -7,7 +7,6 @@ using Exceptionless.Web.Models.Admin;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
-using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
 using Xunit;

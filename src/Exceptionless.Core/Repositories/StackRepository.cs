@@ -1,4 +1,3 @@
-using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
@@ -7,6 +6,7 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Repositories;
 

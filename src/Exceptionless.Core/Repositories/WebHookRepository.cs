@@ -1,12 +1,11 @@
-﻿using Elastic.Clients.Elasticsearch;
-using Elastic.Clients.Elasticsearch.QueryDsl;
+﻿using Elastic.Clients.Elasticsearch.QueryDsl;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Repositories;
-using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Models;
+using Microsoft.Extensions.Logging;
 using ElasticInfer = Elastic.Clients.Elasticsearch.Infer;
 
 namespace Exceptionless.Core.Repositories;

@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-
-namespace Exceptionless.Core.Extensions;
+﻿namespace Exceptionless.Core.Extensions;
 
 /// <summary>
 /// Extension methods for JSON operations using System.Text.Json.

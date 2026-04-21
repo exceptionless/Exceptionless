@@ -1,5 +1,4 @@
 using Elastic.Clients.Elasticsearch;
-using Elastic.Clients.Elasticsearch.Aggregations;
 using Elastic.Clients.Elasticsearch.Core.ReindexRethrottle;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 using Exceptionless.Core.Models;
