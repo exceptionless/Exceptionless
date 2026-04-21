@@ -97,6 +97,7 @@ Bisectable commits: infrastructure → models → controllers → UI. Each must 
 **ask_user:** "Changes verified. [summary, review results, QA results]. Ready to push? Anything to adjust?"
 
 - **Push approved:** `git push -u origin <branch>` → `gh pr create`
+  - **PR description:** Fill out any existing PR template. Provide concise context: what changed, why, new APIs/features/behaviors, and any breaking changes. No essays — just enough for reviewers to understand the value and impact.
 - **More work:** Back to Step 1
 - **No push:** Done
 
