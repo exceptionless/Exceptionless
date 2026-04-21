@@ -22,16 +22,17 @@ public class UserMaintenanceWorkItemHandler : WorkItemHandlerBase
         _lockProvider = lockProvider;
     }
 
-    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
+    public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = default)
     {
-        return _lockProvider.AcquireAsync(nameof(UserMaintenanceWorkItemHandler), TimeSpan.FromMinutes(15), new CancellationToken(true));
+        return _lockProvider.AcquireAsync(nameof(UserMaintenanceWorkItemHandler), TimeSpan.FromMinutes(15), cancellationToken);
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
     {
         const int LIMIT = 100;
 
-        var workItem = context.GetData<UserMaintenanceWorkItem>();
+        var workItem = context.GetData<UserMaintenanceWorkItem>()!;
+
         Log.LogInformation("Received user maintenance work item. Normalize={Normalize} ResetVerifyEmailAddressToken={ResendVerifyEmailAddressEmails}", workItem.Normalize, workItem.ResetVerifyEmailAddressToken);
 
         var results = await _userRepository.GetAllAsync(o => o.PageLimit(LIMIT));

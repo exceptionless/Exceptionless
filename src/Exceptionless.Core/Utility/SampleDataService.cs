@@ -237,6 +237,12 @@ public class SampleDataService
             return;
 
         var user = await _userRepository.GetByIdAsync(userId, o => o.Cache());
+        if (user is null)
+        {
+            _logger.LogDebug("User {UserId} not found when creating sample data", userId);
+            return;
+        }
+
         var organization = new Organization { Name = "Exceptionless" };
         _billingManager.ApplyBillingPlan(organization, _billingPlans.UnlimitedPlan, user);
         organization = await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency().Cache());

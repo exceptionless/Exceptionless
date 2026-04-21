@@ -420,7 +420,10 @@
                             .submit();
                         if (response.status === 426) {
                             return billingService
-                                .confirmUpgradePlan(response.data.message, vm.stack.organization_id)
+                                .confirmUpgradePlan(
+                                    response.data && (response.data.message || response.data.title),
+                                    vm.stack.organization_id
+                                )
                                 .then(function () {
                                     return promoteToExternal();
                                 })
@@ -429,7 +432,10 @@
 
                         if (response.status === 501) {
                             return dialogService
-                                .confirm(response.data.message, translateService.T("Manage Integrations"))
+                                .confirm(
+                                    response.data && (response.data.message || response.data.title),
+                                    translateService.T("Manage Integrations")
+                                )
                                 .then(function () {
                                     $state.go("app.project.manage", { id: vm.stack.project_id });
                                 })

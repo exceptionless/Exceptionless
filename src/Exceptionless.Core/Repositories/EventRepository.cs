@@ -25,7 +25,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         BatchNotifications = true;
         DefaultPipeline = "events-pipeline";
 
-        AddDefaultExclude(e => e.Idx);
+        AddDefaultExclude(e => e.Idx!);
         // copy to fields
         AddDefaultExclude(EventIndex.Alias.IpAddress);
         AddDefaultExclude(EventIndex.Alias.OperatingSystem);

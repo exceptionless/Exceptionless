@@ -1,5 +1,5 @@
 # get elasticsearch password
-$ELASTIC_PASSWORD=$(kubectl get secret --namespace ex-dev "ex-dev-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
+$ELASTIC_PASSWORD = $(kubectl get secret --namespace ex-dev "ex-dev-es-elastic-user" -o go-template='{{.data.elastic | base64decode }}')
 
 # connect to kibana
 kubectl port-forward --namespace ex-dev service/ex-dev-kb-http 5601
@@ -10,11 +10,11 @@ $ELASTIC_JOB = kubectl port-forward --namespace ex-dev service/ex-dev-es-http 92
 Remove-Job $ELASTIC_JOB
 
 # connect to redis OR use k9s to shell into a redis pod
-$REDIS_PASSWORD=$(kubectl get secret --namespace ex-dev ex-dev-redis -o go-template='{{index .data "redis-password" | base64decode }}')
-kubectl exec --stdin --tty ex-dev-redis-node-0 -- /bin/bash -c "redis-cli -a $REDIS_PASSWORD"
+$REDIS_PASSWORD = $(kubectl get secret --namespace ex-dev ex-dev-redis-secret -o go-template='{{index .data "password" | base64decode }}')
+kubectl exec -it ex-dev-redis-0 -n ex-dev -- redis-cli -a $REDIS_PASSWORD
 
 # open kubernetes dashboard
-$DASHBOARD_PASSWORD=$(kubectl get secret --namespace kubernetes-dashboard admin-user-token-w8jg7 -o go-template='{{.data.token | base64decode }}')
+$DASHBOARD_PASSWORD = $(kubectl get secret --namespace kubernetes-dashboard admin-user-token-w8jg7 -o go-template='{{.data.token | base64decode }}')
 kubectl proxy
 open "http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/"
 
@@ -42,12 +42,15 @@ kubectl run --namespace ex-dev ex-dev-client --rm --tty -i --restart='Never' `
 # upgrade elasticsearch
 kubectl apply -f ex-dev-elasticsearch.yaml
 
-# upgrade redis
+# upgrade redis operator
 helm repo update
-helm upgrade ex-dev-redis bitnami/redis --values ex-dev-redis-values.yaml --namespace ex-dev
+helm upgrade redis-operator ot-helm/redis-operator -n ot-operators
+
+# upgrade redis instance (edit the CRD manifest, then re-apply)
+kubectl apply -f ex-dev-redis.yaml -n ex-dev
 
 # upgrade exceptionless app to a new docker image tag
-$VERSION="8.0.0"
+$VERSION = "8.0.0"
 helm upgrade --set "version=$VERSION" --reuse-values ex-dev .\exceptionless
 
 # upgrade exceptionless app to set a new env variable

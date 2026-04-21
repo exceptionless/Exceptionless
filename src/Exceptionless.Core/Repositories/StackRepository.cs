@@ -166,6 +166,12 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
     public async Task MarkAsRegressedAsync(string stackId)
     {
         var stack = await GetByIdAsync(stackId);
+        if (stack is null)
+        {
+            _logger.LogWarning("Stack {StackId} not found when marking as regressed", stackId);
+            return;
+        }
+
         stack.Status = StackStatus.Regressed;
         await SaveAsync(stack, o => o.Cache());
     }
@@ -187,7 +193,7 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
 
         var cacheEntries = new Dictionary<string, FindHit<Stack>>();
         foreach (var hit in findHits.Where(d => !String.IsNullOrEmpty(d.Document?.SignatureHash)))
-            cacheEntries.Add(GetStackSignatureCacheKey(hit.Document), hit);
+            cacheEntries.Add(GetStackSignatureCacheKey(hit.Document!), hit);
 
         if (cacheEntries.Count > 0)
             await AddDocumentsToCacheWithKeyAsync(cacheEntries, options.GetExpiresIn());

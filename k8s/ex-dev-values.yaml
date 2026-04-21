@@ -1,14 +1,12 @@
 appMode: Staging
 appScope: dev
 app:
-  replicaCount: 0
   image:
     repository: exceptionless/app-ci
   defaultDomain: dev-app.exceptionless.io
   domains:
     - dev-app.exceptionless.io
 api:
-  replicaCount: 0
   image:
     repository: exceptionless/api-ci
   defaultDomain: dev-collector.exceptionless.io
@@ -17,27 +15,11 @@ api:
 jobs:
   image:
     repository: exceptionless/job-ci
-  closeInactiveSessions:
-    replicaCount: 0
-  dailySummary:
-    replicaCount: 0
-  eventNotifications:
-    replicaCount: 0
-  eventPosts:
-    replicaCount: 0
-  eventUserDescriptions:
-    replicaCount: 0
-  mailMessage:
-    replicaCount: 0
-  stackEventCount:
-    replicaCount: 0
-  webhooks:
-    replicaCount: 0
-  workitem:
-    replicaCount: 0
-  eventUsage:
-    replicaCount: 0
 
 config:
   EX_EnableSnapshotJobs: "false"
+  EX_TestEmailAddress: "test@exceptionless.io"
   EX_Serilog__MinimumLevel__Default: "Information"
+
+otel:
+  enabled: false

@@ -100,7 +100,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
 
         var cacheEntries = new Dictionary<string, Project>();
         foreach (var project in findHits.Select(hit => hit.Document).Where(d => !String.IsNullOrEmpty(d?.Id)))
-            cacheEntries.Add(ConfigCacheKey(project.Id), ToCachedProjectConfig(project));
+            cacheEntries.Add(ConfigCacheKey(project!.Id), ToCachedProjectConfig(project));
 
         // NOTE: We call SetAllAsync instead of AddDocumentsToCacheWithKeyAsync due to our repo method gets the value directly from cache.
         if (cacheEntries.Count > 0)

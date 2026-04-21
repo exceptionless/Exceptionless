@@ -62,7 +62,7 @@ public static class StringExtensions
         return ip.StartsWith("192.168.");
     }
 
-    public static string? TrimScript(this string? script)
+    public static string TrimScript(this string script)
     {
         if (String.IsNullOrEmpty(script))
             return script;

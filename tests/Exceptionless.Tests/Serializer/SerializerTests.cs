@@ -64,6 +64,7 @@ public class SerializerTests : TestWithServices
         // Serialized JSON strings stay as strings
         Assert.IsType<string>(ev.Data["UnknownSerializedProp"]);
 
+
         Assert.Equal("Hello", ev.Message);
         Assert.NotNull(ev.Tags);
         Assert.Equal(2, ev.Tags.Count);
@@ -146,6 +147,7 @@ public class SerializerTests : TestWithServices
         Assert.Equal("{\"id\":\"test\",\"event_types\":[\"NewError\"],\"is_enabled\":true,\"version\":\"v2\",\"created_utc\":\"0001-01-01T00:00:00\"}", json);
 
         var model = _serializer.Deserialize<WebHook>(json);
+        Assert.NotNull(model);
         Assert.Equal(hook.Id, model.Id);
         Assert.Equal(hook.EventTypes, model.EventTypes);
         Assert.Equal(hook.Version, model.Version);
@@ -325,7 +327,7 @@ public class SerializerTests : TestWithServices
         Assert.Equal("true", _serializer.SerializeToString(true));
         Assert.True(_serializer.Deserialize<bool>("true"));
 
-        string roundtripped = _serializer.Deserialize<string>(_serializer.SerializeToString("hello"));
+        string? roundtripped = _serializer.Deserialize<string>(_serializer.SerializeToString("hello"));
         Assert.Equal("hello", roundtripped);
     }
 

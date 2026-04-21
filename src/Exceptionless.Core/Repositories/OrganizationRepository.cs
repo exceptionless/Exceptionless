@@ -105,7 +105,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
                 query.SortDescending((Organization o) => o.Id);
                 break;
             case OrganizationSortBy.Subscribed:
-                query.SortDescending((Organization o) => o.SubscribeDate);
+                query.SortDescending((Organization o) => o.SubscribeDate!);
                 break;
             // case OrganizationSortBy.MostActive:
             //    query.WithSortDescending((Organization o) => o.TotalEventCount);

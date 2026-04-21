@@ -153,6 +153,12 @@ public class StripeEventHandler
             return;
         }
 
+        if (String.IsNullOrEmpty(org.BillingChangedByUserId))
+        {
+            _logger.LogError("No billing user set for organization: {OrganizationId}", org.Id);
+            return;
+        }
+
         var user = await _userRepository.GetByIdAsync(org.BillingChangedByUserId);
         if (user is null)
         {
@@ -169,6 +175,12 @@ public class StripeEventHandler
         if (org is null)
         {
             _logger.LogError("Unknown customer id in payment failed notification: {CustomerId}", invoice.CustomerId);
+            return;
+        }
+
+        if (String.IsNullOrEmpty(org.BillingChangedByUserId))
+        {
+            _logger.LogError("No billing user set for organization: {OrganizationId}", org.Id);
             return;
         }
 

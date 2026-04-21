@@ -61,9 +61,9 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         _cacheClient = cacheClient;
     }
 
-    protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)
+    protected override Task<ILock?> GetLockAsync(CancellationToken cancellationToken = default)
     {
-        return _lockProvider.AcquireAsync(nameof(CleanupDataJob), TimeSpan.FromMinutes(15), new CancellationToken(true));
+        return _lockProvider.AcquireAsync(nameof(CleanupDataJob), TimeSpan.FromMinutes(15), cancellationToken);
     }
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
@@ -91,7 +91,8 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
 
         do
         {
-            long updatedCount = await _tokenRepository.PatchAllAsync(q => q.Organization(suspendedOrganizations.Hits.Select(o => o.Id)).FieldEquals(t => t.IsSuspended, false), new PartialPatch(new { is_suspended = true }));
+            var suspendedOrganizationIds = suspendedOrganizations.Hits.Where(o => o.Id is not null).Select(o => o.Id!).ToList();
+            long updatedCount = await _tokenRepository.PatchAllAsync(q => q.Organization(suspendedOrganizationIds).FieldEquals(t => t.IsSuspended, false), new PartialPatch(new { is_suspended = true }));
             if (updatedCount > 0)
                 _logger.LogInformation("Marking {SuspendedTokenCount} tokens as suspended", updatedCount);
         } while (!context.CancellationToken.IsCancellationRequested && await suspendedOrganizations.NextPageAsync());

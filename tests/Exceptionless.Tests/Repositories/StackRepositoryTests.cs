@@ -43,7 +43,10 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
 
         await _repository.AddAsync(stack, o => o.ImmediateConsistency());
 
-        var actual = _repository.GetByIdAsync(stack.Id, o => o.Cache("test"));
+        var actual = await _repository.GetByIdAsync(stack.Id, o => o.Cache("test"));
+        Assert.Null(actual);
+
+        actual = await _repository.GetByIdAsync(stack.Id, o => o.Cache("test").IncludeSoftDeletes());
         Assert.NotNull(actual);
     }
 
@@ -150,6 +153,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow, utcNow, 1);
 
         stack = await _repository.GetByIdAsync(stack.Id);
+        Assert.NotNull(stack);
         Assert.Equal(1, stack.TotalOccurrences);
         Assert.Equal(utcNow, stack.FirstOccurrence);
         Assert.Equal(utcNow, stack.LastOccurrence);
@@ -159,6 +163,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow.SubtractDays(1), utcNow.SubtractDays(1), 1);
 
         stack = await _repository.GetByIdAsync(stack.Id);
+        Assert.NotNull(stack);
         Assert.Equal(2, stack.TotalOccurrences);
         Assert.Equal(utcNow.SubtractDays(1), stack.FirstOccurrence);
         Assert.Equal(utcNow, stack.LastOccurrence);
@@ -166,6 +171,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         await _repository.IncrementEventCounterAsync(TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id, utcNow.AddDays(1), utcNow.AddDays(1), 1);
 
         stack = await _repository.GetByIdAsync(stack.Id);
+        Assert.NotNull(stack);
         Assert.Equal(3, stack.TotalOccurrences);
         Assert.Equal(utcNow.SubtractDays(1), stack.FirstOccurrence);
         Assert.Equal(utcNow.AddDays(1), stack.LastOccurrence);
@@ -193,6 +199,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
             sendNotifications: false);
 
         var unchanged = await _repository.GetByIdAsync(stack.Id);
+        Assert.NotNull(unchanged);
 
         // Assert
         Assert.Equal(10, unchanged.TotalOccurrences);
@@ -208,6 +215,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
             sendNotifications: false);
 
         var updated = await _repository.GetByIdAsync(stack.Id);
+        Assert.NotNull(updated);
 
         // Assert
         Assert.Equal(15, updated.TotalOccurrences);

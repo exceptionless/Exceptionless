@@ -7,7 +7,7 @@ public static class EnumerableExtensions
 {
     public static IReadOnlyCollection<T> UnionOriginalAndModified<T>(this IReadOnlyCollection<ModifiedDocument<T>> documents) where T : class, new()
     {
-        return documents.Select(d => d.Value).Union(documents.Select(d => d.Original).Where(d => d is not null)).ToList();
+        return documents.Select(d => d.Value).Union(documents.Select(d => d.Original).OfType<T>()).ToList();
     }
 
     public static bool Contains<T>(this IEnumerable<T> enumerable, Func<T, bool> function)

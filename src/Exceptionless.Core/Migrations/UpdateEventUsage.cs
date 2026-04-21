@@ -72,6 +72,9 @@ public sealed class UpdateEventUsage : MigrationBase
                 {
                     var result = await _eventRepository.CountAsync(q => q.Organization(organization.Id).AggregationsExpression("date:date~1M"));
                     var dateAggs = result.Aggregations.DateHistogram("date_date");
+                    if (dateAggs?.Buckets is null)
+                        continue;
+
                     foreach (var dateHistogramBucket in dateAggs.Buckets)
                     {
                         var usage = organization.GetUsage(dateHistogramBucket.Date, _timeProvider);
@@ -123,6 +126,9 @@ public sealed class UpdateEventUsage : MigrationBase
                 {
                     var result = await _eventRepository.CountAsync(q => q.Organization(organization.Id).Project(project.Id).AggregationsExpression("date:date~1M"));
                     var dateAggs = result.Aggregations.DateHistogram("date_date");
+                    if (dateAggs?.Buckets is null)
+                        continue;
+
                     foreach (var dateHistogramBucket in dateAggs.Buckets)
                     {
                         var usage = project.GetUsage(dateHistogramBucket.Date);

@@ -56,6 +56,12 @@ public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<
     public async Task MarkDisabledAsync(string id)
     {
         var webHook = await GetByIdAsync(id);
+        if (webHook is null)
+        {
+            _logger.LogWarning("WebHook {WebHookId} not found when marking as disabled", id);
+            return;
+        }
+
         if (!webHook.IsEnabled)
             return;
 

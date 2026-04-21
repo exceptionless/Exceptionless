@@ -129,6 +129,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal(1, stats.Completed);
 
         ev = await _eventRepository.GetByIdAsync(ev.Id);
+        Assert.NotNull(ev);
         identity = ev.GetUserIdentity(serializer);
         Assert.NotNull(identity);
         Assert.Equal("Test user", identity.Identity);
@@ -785,8 +786,10 @@ public class EventControllerTests : IntegrationTestsBase
 
         Assert.NotNull(countResult);
         var dateAgg = countResult.Aggregations.DateHistogram("date_date");
-        double dateAggStackCount = dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("cardinality_stack").Value.GetValueOrDefault());
-        double dateAggEventCount = dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("sum_count").Value.GetValueOrDefault());
+        Assert.NotNull(dateAgg);
+        Assert.NotNull(dateAgg.Buckets);
+        double dateAggStackCount = dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("cardinality_stack")?.Value.GetValueOrDefault() ?? 0);
+        double dateAggEventCount = dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("sum_count")?.Value.GetValueOrDefault() ?? 0);
         Assert.Equal(1, dateAggStackCount);
         Assert.Equal(1, dateAggEventCount);
 
@@ -892,8 +895,10 @@ public class EventControllerTests : IntegrationTestsBase
 
         Assert.NotNull(countResult);
         var dateAgg = countResult.Aggregations.DateHistogram("date_date");
-        double dateAggStackCount = dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("cardinality_stack").Value.GetValueOrDefault());
-        double dateAggEventCount = dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("sum_count").Value.GetValueOrDefault());
+        Assert.NotNull(dateAgg);
+        Assert.NotNull(dateAgg.Buckets);
+        double dateAggStackCount = dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("cardinality_stack")?.Value.GetValueOrDefault() ?? 0);
+        double dateAggEventCount = dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("sum_count")?.Value.GetValueOrDefault() ?? 0);
         Assert.Equal(2, dateAggStackCount);
         Assert.Equal(2, dateAggEventCount);
 
@@ -917,6 +922,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         string organizationId = TestConstants.OrganizationId;
         var organization = await _organizationRepository.GetByIdAsync(organizationId);
+        Assert.NotNull(organization);
         billingManager.ApplyBillingPlan(organization, plans.SmallPlan, _userData.GenerateSampleUser());
         if (organization.BillingPrice > 0)
         {
@@ -1063,6 +1069,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal(JobResult.Success, await processUsageJob.RunAsync(TestCancellationToken));
 
         organization = await _organizationRepository.GetByIdAsync(organizationId);
+        Assert.NotNull(organization);
 
         organizationUsage = organization.Usage.Single();
         Assert.Equal(total, organizationUsage.Total);
@@ -1081,6 +1088,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         string organizationId = TestConstants.OrganizationId;
         var organization = await _organizationRepository.GetByIdAsync(organizationId);
+        Assert.NotNull(organization);
         billingManager.ApplyBillingPlan(organization, plans.SmallPlan, _userData.GenerateSampleUser());
         if (organization.BillingPrice > 0)
         {
@@ -1166,6 +1174,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         string organizationId = TestConstants.OrganizationId;
         var organization = await _organizationRepository.GetByIdAsync(organizationId);
+        Assert.NotNull(organization);
         billingManager.ApplyBillingPlan(organization, plans.SmallPlan, _userData.GenerateSampleUser());
         if (organization.BillingPrice > 0)
         {
@@ -1231,6 +1240,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         // Upgrade Plan
         organization = await _organizationRepository.GetByIdAsync(organizationId);
+        Assert.NotNull(organization);
         billingManager.ApplyBillingPlan(organization, plans.MediumPlan, _userData.GenerateSampleUser());
         if (organization.BillingPrice > 0)
         {
@@ -1286,6 +1296,7 @@ public class EventControllerTests : IntegrationTestsBase
 
         // Downgrade Plan and verify throttled
         organization = await _organizationRepository.GetByIdAsync(organizationId);
+        Assert.NotNull(organization);
         billingManager.ApplyBillingPlan(organization, plans.SmallPlan, _userData.GenerateSampleUser());
         if (organization.BillingPrice > 0)
         {
@@ -1319,6 +1330,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal(JobResult.Success, await processUsageJob.RunAsync(TestCancellationToken));
 
         organization = await _organizationRepository.GetByIdAsync(organizationId);
+        Assert.NotNull(organization);
 
         organizationUsage = organization.Usage.Single();
         Assert.Equal(total, organizationUsage.Total);
