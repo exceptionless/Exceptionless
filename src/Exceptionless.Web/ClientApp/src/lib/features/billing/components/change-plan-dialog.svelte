@@ -508,7 +508,12 @@
     });
 </script>
 
-<Dialog.Root open={true} onOpenChange={(v) => { if (!v) onclose(); }}>
+<Dialog.Root
+    open={true}
+    onOpenChange={(v) => {
+        if (!v) onclose();
+    }}
+>
     <Dialog.Content class="max-w-xl sm:max-w-xl">
         <Dialog.Header class="space-y-1">
             <Dialog.Title class="flex items-center gap-2 text-base">
@@ -555,7 +560,7 @@
                                 <Tabs.Trigger value="year" class="gap-2">
                                     Yearly
                                     {#if yearlySavingsLabel}
-                                        <Badge variant="default" class="px-1.5 py-0 text-[10px] text-foreground">{yearlySavingsLabel}</Badge>
+                                        <Badge variant="default" class="text-foreground px-1.5 py-0 text-[10px]">{yearlySavingsLabel}</Badge>
                                     {/if}
                                 </Tabs.Trigger>
                             </Tabs.List>
@@ -584,7 +589,7 @@
                                             {#if isCurrent}
                                                 <Badge variant="secondary" class="px-1.5 py-0 text-[10px] uppercase">Current</Badge>
                                             {:else if tier.popular && tierIdx > currentTierIndex}
-                                                <Badge variant="default" class="px-1.5 py-0 text-[10px] uppercase text-foreground">Most popular</Badge>
+                                                <Badge variant="default" class="text-foreground px-1.5 py-0 text-[10px] uppercase">Most popular</Badge>
                                             {/if}
                                         </div>
                                         {#if planForInterval}
@@ -734,7 +739,9 @@
                                         bind:value={couponInput}
                                         bind:ref={couponInputEl}
                                         class={couponError ? 'border-destructive' : ''}
-                                        oninput={() => { couponError = null; }}
+                                        oninput={() => {
+                                            couponError = null;
+                                        }}
                                         onkeydown={(e) => {
                                             if (e.key === 'Enter') {
                                                 e.preventDefault();
