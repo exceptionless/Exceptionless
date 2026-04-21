@@ -1,4 +1,4 @@
-$ENV="dev"
+$ENV = "dev"
 
 kubectl scale deployment/ex-$ENV-app --replicas=0 --namespace ex-$ENV
 kubectl scale deployment/ex-$ENV-api --replicas=0 --namespace ex-$ENV
@@ -21,4 +21,4 @@ kubectl patch cronjob/ex-$ENV-jobs-migration -p '{"spec":{"suspend": true}}' --n
 
 kubectl scale deployment/ex-$ENV-kb --replicas=0 --namespace ex-$ENV
 kubectl scale statefulset/ex-$ENV-es-main --replicas=0 --namespace ex-$ENV
-kubectl scale statefulset/ex-$ENV-redis-node --replicas=0 --namespace ex-$ENV
+kubectl delete -f ex-$ENV-redis.yaml --ignore-not-found

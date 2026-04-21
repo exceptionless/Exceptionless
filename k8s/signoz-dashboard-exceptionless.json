@@ -1,0 +1,1232 @@
+{
+    "title": "Exceptionless",
+    "description": "Exceptionless application metrics",
+    "tags": ["exceptionless", "application"],
+    "variables": {},
+    "layout": [
+        { "i": "max_time", "x": 0, "y": 0, "w": 2, "h": 2 },
+        { "i": "p95_time", "x": 2, "y": 0, "w": 2, "h": 2 },
+        { "i": "submitted", "x": 4, "y": 0, "w": 2, "h": 2 },
+        { "i": "processed", "x": 6, "y": 0, "w": 2, "h": 2 },
+        { "i": "blocked", "x": 8, "y": 0, "w": 2, "h": 2 },
+        { "i": "discarded", "x": 10, "y": 0, "w": 2, "h": 2 },
+
+        { "i": "cancelled", "x": 0, "y": 2, "w": 4, "h": 2 },
+        { "i": "posts_toobig", "x": 4, "y": 2, "w": 4, "h": 2 },
+        { "i": "posts_parsed", "x": 8, "y": 2, "w": 4, "h": 2 },
+
+        { "i": "events_graph", "x": 0, "y": 4, "w": 12, "h": 5 },
+        { "i": "queue_counts", "x": 0, "y": 9, "w": 12, "h": 5 },
+
+        { "i": "processing_time", "x": 0, "y": 14, "w": 6, "h": 5 },
+        { "i": "post_parsing_time", "x": 6, "y": 14, "w": 6, "h": 5 },
+
+        { "i": "error_rates", "x": 0, "y": 19, "w": 6, "h": 5 },
+        { "i": "post_size", "x": 6, "y": 19, "w": 6, "h": 5 },
+
+        { "i": "events_per_post", "x": 0, "y": 24, "w": 6, "h": 5 },
+        { "i": "mailer_throughput", "x": 6, "y": 24, "w": 6, "h": 5 },
+
+        { "i": "pipeline_breakdown", "x": 0, "y": 29, "w": 12, "h": 6 }
+    ],
+    "widgets": [
+        {
+            "id": "max_time",
+            "title": "Max Queue Time",
+            "panelTypes": "value",
+            "query": {
+                "queryType": "builder",
+                "builder": {
+                    "queryData": [
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "foundatio.eventpost.queuetime.max",
+                                    "reduceTo": "max",
+                                    "spaceAggregation": "avg",
+                                    "temporality": null,
+                                    "timeAggregation": "max"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "A",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "A",
+                            "stepInterval": 0
+                        }
+                    ],
+                    "queryFormulas": []
+                }
+            },
+            "yAxisUnit": "ms"
+        },
+        {
+            "id": "p95_time",
+            "title": "P95 Queue Time",
+            "panelTypes": "value",
+            "query": {
+                "queryType": "builder",
+                "builder": {
+                    "queryData": [
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "foundatio.eventpost.queuetime.bucket",
+                                    "reduceTo": "max",
+                                    "spaceAggregation": "p95",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "A",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "A",
+                            "stepInterval": 0
+                        }
+                    ],
+                    "queryFormulas": []
+                }
+            },
+            "yAxisUnit": "ms"
+        },
+        {
+            "id": "submitted",
+            "title": "Submitted",
+            "panelTypes": "value",
+            "query": {
+                "queryType": "builder",
+                "builder": {
+                    "queryData": [
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.events.submitted",
+                                    "reduceTo": "sum",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "A",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "A",
+                            "stepInterval": 0
+                        }
+                    ],
+                    "queryFormulas": []
+                }
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "processed",
+            "title": "Processed",
+            "panelTypes": "value",
+            "query": {
+                "queryType": "builder",
+                "builder": {
+                    "queryData": [
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "foundatio.eventpost.completed",
+                                    "reduceTo": "sum",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "A",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "A",
+                            "stepInterval": 0
+                        }
+                    ],
+                    "queryFormulas": []
+                }
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "blocked",
+            "title": "Blocked",
+            "panelTypes": "value",
+            "query": {
+                "queryType": "builder",
+                "builder": {
+                    "queryData": [
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.events.blocked",
+                                    "reduceTo": "sum",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "A",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "A",
+                            "stepInterval": 0
+                        }
+                    ],
+                    "queryFormulas": []
+                }
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "discarded",
+            "title": "Discarded",
+            "panelTypes": "value",
+            "query": {
+                "queryType": "builder",
+                "builder": {
+                    "queryData": [
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.events.discarded",
+                                    "reduceTo": "sum",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "A",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "A",
+                            "stepInterval": 0
+                        }
+                    ],
+                    "queryFormulas": []
+                }
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "cancelled",
+            "title": "Cancelled",
+            "panelTypes": "value",
+            "query": {
+                "queryType": "builder",
+                "builder": {
+                    "queryData": [
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.events.processing.cancelled",
+                                    "reduceTo": "sum",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "A",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "A",
+                            "stepInterval": 0
+                        }
+                    ],
+                    "queryFormulas": []
+                }
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "posts_toobig",
+            "title": "Posts Too Big",
+            "panelTypes": "value",
+            "query": {
+                "queryType": "builder",
+                "builder": {
+                    "queryData": [
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.posts.toobig",
+                                    "reduceTo": "sum",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "A",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "A",
+                            "stepInterval": 0
+                        }
+                    ],
+                    "queryFormulas": []
+                }
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "posts_parsed",
+            "title": "Posts Parsed",
+            "panelTypes": "value",
+            "query": {
+                "queryType": "builder",
+                "builder": {
+                    "queryData": [
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.posts.parsed",
+                                    "reduceTo": "sum",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "A",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "A",
+                            "stepInterval": 0
+                        }
+                    ],
+                    "queryFormulas": []
+                }
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "events_graph",
+            "title": "Events",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "builder",
+                "builder": {
+                    "queryData": [
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.events.submitted",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "A",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Submitted",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "A",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.events.all.processed",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "B",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Processed",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "B",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.events.blocked",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "C",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Blocked",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "C",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.events.discarded",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "D",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Discarded",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "D",
+                            "stepInterval": 0
+                        }
+                    ],
+                    "queryFormulas": []
+                }
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "queue_counts",
+            "title": "Queue Counts",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "builder",
+                "builder": {
+                    "queryData": [
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "foundatio.eventpost.count",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "max",
+                                    "temporality": null,
+                                    "timeAggregation": "max"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "A",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Events",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "A",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "foundatio.eventnotification.count",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "max",
+                                    "temporality": null,
+                                    "timeAggregation": "max"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "B",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Notifications",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "B",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "foundatio.mailmessage.count",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "max",
+                                    "temporality": null,
+                                    "timeAggregation": "max"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "C",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Mail",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "C",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "foundatio.workitemdata.count",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "max",
+                                    "temporality": null,
+                                    "timeAggregation": "max"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "D",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Work Items",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "D",
+                            "stepInterval": 0
+                        }
+                    ],
+                    "queryFormulas": []
+                }
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "processing_time",
+            "title": "Event Processing Time",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "builder",
+                "builder": {
+                    "queryData": [
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.events.processingtime.bucket",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "avg",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "A",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Avg",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "A",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.events.processingtime.bucket",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "p95",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "B",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "P95",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "B",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.events.processingtime.bucket",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "p99",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "C",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "P99",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "C",
+                            "stepInterval": 0
+                        }
+                    ],
+                    "queryFormulas": []
+                }
+            },
+            "yAxisUnit": "ms"
+        },
+        {
+            "id": "post_parsing_time",
+            "title": "Post Parsing Time",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "builder",
+                "builder": {
+                    "queryData": [
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.posts.parsingtime.bucket",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "avg",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "A",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Avg",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "A",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.posts.parsingtime.bucket",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "p95",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "B",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "P95",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "B",
+                            "stepInterval": 0
+                        }
+                    ],
+                    "queryFormulas": []
+                }
+            },
+            "yAxisUnit": "ms"
+        },
+        {
+            "id": "error_rates",
+            "title": "Cancellations & Blocks",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "builder",
+                "builder": {
+                    "queryData": [
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.events.processing.cancelled",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "A",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Cancelled",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "A",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.events.blocked",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "B",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Blocked",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "B",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.events.discarded",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "C",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Discarded",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "C",
+                            "stepInterval": 0
+                        }
+                    ],
+                    "queryFormulas": []
+                }
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "post_size",
+            "title": "Post Size",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "builder",
+                "builder": {
+                    "queryData": [
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.posts.uncompressed.size.bucket",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "avg",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "A",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Uncompressed Avg",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "A",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.posts.compressed.size.bucket",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "avg",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "B",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Compressed Avg",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "B",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.posts.uncompressed.size.bucket",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "p95",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "C",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Uncompressed P95",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "C",
+                            "stepInterval": 0
+                        }
+                    ],
+                    "queryFormulas": []
+                }
+            },
+            "yAxisUnit": "bytes"
+        },
+        {
+            "id": "events_per_post",
+            "title": "Events Per Post",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "builder",
+                "builder": {
+                    "queryData": [
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.posts.eventcount.bucket",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "avg",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "A",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Avg",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "A",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.posts.eventcount.bucket",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "p95",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "B",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "P95",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "B",
+                            "stepInterval": 0
+                        }
+                    ],
+                    "queryFormulas": []
+                }
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "mailer_throughput",
+            "title": "Mailer Throughput",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "builder",
+                "builder": {
+                    "queryData": [
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.mailer.event-notice",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "A",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Event Notice",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "A",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.mailer.project-daily-summary",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "B",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Daily Summary",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "B",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.mailer.organization-notice",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "C",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Org Notice",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "C",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.mailer.organization-payment-failed",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "D",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Payment Failed",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "D",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.mailer.organization-invited",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "sum",
+                                    "temporality": null,
+                                    "timeAggregation": "increase"
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "E",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "Invited",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "E",
+                            "stepInterval": 0
+                        }
+                    ],
+                    "queryFormulas": []
+                }
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "pipeline_breakdown",
+            "title": "Pipeline Action Times (P95)",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "builder",
+                "builder": {
+                    "queryData": [
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.eventpipeline.assigntostackaction.bucket",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "p95",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "A",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "AssignToStack",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "A",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.eventpipeline.saveeventaction.bucket",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "p95",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "B",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "SaveEvent",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "B",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.eventpipeline.runeventprocessingpluginsaction.bucket",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "p95",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "C",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "RunPlugins",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "C",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.eventpipeline.updatestatsaction.bucket",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "p95",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "D",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "UpdateStats",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "D",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.eventpipeline.checkforregressionaction.bucket",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "p95",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "E",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "CheckRegression",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "E",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.eventpipeline.queuenotificationaction.bucket",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "p95",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "F",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "QueueNotification",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "F",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.eventpipeline.copysimpledatatoidxaction.bucket",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "p95",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "G",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "CopyToIdx",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "G",
+                            "stepInterval": 0
+                        },
+                        {
+                            "aggregations": [
+                                {
+                                    "metricName": "ex.eventpipeline.incrementcountersaction.bucket",
+                                    "reduceTo": "avg",
+                                    "spaceAggregation": "p95",
+                                    "temporality": null,
+                                    "timeAggregation": ""
+                                }
+                            ],
+                            "dataSource": "metrics",
+                            "disabled": false,
+                            "expression": "H",
+                            "functions": [],
+                            "groupBy": [],
+                            "having": { "expression": "" },
+                            "legend": "IncrementCounters",
+                            "limit": null,
+                            "orderBy": [],
+                            "queryName": "H",
+                            "stepInterval": 0
+                        }
+                    ],
+                    "queryFormulas": []
+                }
+            },
+            "yAxisUnit": "ms"
+        }
+    ]
+}

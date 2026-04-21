@@ -80,18 +80,24 @@ public class EventStackFilter
         _invertedStackQueryVisitor.AddVisitor(new CleanupQueryVisitor());
     }
 
-    public async Task<string> GetEventFilterAsync(string query, IQueryVisitorContext? context = null)
+    public async Task<string?> GetEventFilterAsync(string query, IQueryVisitorContext? context = null)
     {
         context ??= new ElasticQueryVisitorContext();
         var result = await _parser.ParseAsync(query, context);
+        if (result is null)
+            return null;
+
         await _eventQueryVisitor.AcceptAsync(result, context);
         return result.ToString();
     }
 
-    public async Task<StackFilter> GetStackFilterAsync(string query, IQueryVisitorContext? context = null)
+    public async Task<StackFilter?> GetStackFilterAsync(string query, IQueryVisitorContext? context = null)
     {
         context ??= new ElasticQueryVisitorContext();
         var result = await _parser.ParseAsync(query, context);
+        if (result is null)
+            return null;
+
         var invertedResult = result.Clone();
 
         result = await _stackQueryVisitor.AcceptAsync(result, context);
@@ -99,8 +105,8 @@ public class EventStackFilter
 
         return new StackFilter
         {
-            Filter = result.ToString(),
-            InvertedFilter = invertedResult.ToString(),
+            Filter = result?.ToString(),
+            InvertedFilter = invertedResult?.ToString(),
             HasStatus = context.GetBoolean(nameof(StackFilter.HasStatus)),
             HasStackIds = context.GetBoolean(nameof(StackFilter.HasStackIds)),
             HasStatusOpen = context.GetBoolean(nameof(StackFilter.HasStatusOpen))
@@ -197,7 +203,7 @@ public class StackFilterQueryVisitor : ChainableQueryVisitor
         return Task.FromResult<IQueryNode?>(result);
     }
 
-    public override Task<IQueryNode> AcceptAsync(IQueryNode node, IQueryVisitorContext context)
+    public override Task<IQueryNode?> AcceptAsync(IQueryNode node, IQueryVisitorContext context)
     {
         return node.AcceptAsync(this, context);
     }
@@ -205,8 +211,8 @@ public class StackFilterQueryVisitor : ChainableQueryVisitor
 
 public record StackFilter
 {
-    public required string Filter { get; set; }
-    public required string InvertedFilter { get; set; }
+    public required string? Filter { get; set; }
+    public required string? InvertedFilter { get; set; }
     public required bool HasStatus { get; set; }
     public required bool HasStatusOpen { get; set; }
     public required bool HasStackIds { get; set; }

@@ -739,7 +739,10 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     protected override async Task<Organization> AddModelAsync(Organization value)
     {
         var user = CurrentUser;
-        _billingManager.ApplyBillingPlan(value, _options.StripeOptions.EnableBilling ? _plans.FreePlan : _plans.UnlimitedPlan, user);
+        var plan = !_options.StripeOptions.EnableBilling || user.Roles.Contains(AuthorizationRoles.GlobalAdmin)
+            ? _plans.UnlimitedPlan
+            : _plans.FreePlan;
+        _billingManager.ApplyBillingPlan(value, plan, user);
 
         var organization = await base.AddModelAsync(value);
 

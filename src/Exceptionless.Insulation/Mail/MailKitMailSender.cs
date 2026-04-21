@@ -1,22 +1,19 @@
 ﻿using System.Diagnostics;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Mail;
-using Exceptionless.DateTimeExtensions;
 using MailKit.Net.Smtp;
 using MailKit.Security;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using MimeKit;
 using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 
 namespace Exceptionless.Insulation.Mail;
 
-public class MailKitMailSender : IMailSender, IHealthCheck
+public class MailKitMailSender : IMailSender
 {
     private readonly EmailOptions _emailOptions;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
-    private DateTime _lastSuccessfulConnection = DateTime.MinValue;
 
     public MailKitMailSender(EmailOptions emailOptions, TimeProvider timeProvider, ILoggerFactory loggerFactory)
     {
@@ -52,7 +49,7 @@ public class MailKitMailSender : IMailSender, IHealthCheck
         client.AuthenticationMechanisms.Remove("XOAUTH2");
 
         string? user = _emailOptions.SmtpUser;
-        if (!String.IsNullOrEmpty(user))
+        if (!String.IsNullOrEmpty(user) && !String.IsNullOrEmpty(_emailOptions.SmtpPassword))
         {
             _logger.LogTrace("Authenticating {SmtpUser} to SMTP server", user);
             sw.Restart();
@@ -60,7 +57,7 @@ public class MailKitMailSender : IMailSender, IHealthCheck
             _logger.LogTrace("Authenticated to SMTP server took {Duration:g}", sw.Elapsed);
         }
 
-        _logger.LogTrace("Sending message: to={To} subject={Subject}", message.Subject, message.To);
+        _logger.LogTrace("Sending message: to={To} subject={Subject}", message.To, message.Subject);
         sw.Restart();
         await client.SendAsync(message);
         _logger.LogTrace("Sent Message took {Duration:g}", sw.Elapsed);
@@ -69,8 +66,6 @@ public class MailKitMailSender : IMailSender, IHealthCheck
         await client.DisconnectAsync(true);
         _logger.LogTrace("Disconnected from SMTP server took {Duration:g}", sw.Elapsed);
         sw.Stop();
-
-        _lastSuccessfulConnection = _timeProvider.GetUtcNow().UtcDateTime;
     }
 
     private SecureSocketOptions GetSecureSocketOption(SmtpEncryption encryption)
@@ -106,49 +101,5 @@ public class MailKitMailSender : IMailSender, IHealthCheck
 
         message.Body = builder.ToMessageBody();
         return message;
-    }
-
-    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
-    {
-        if (_lastSuccessfulConnection.IsAfter(_timeProvider.GetUtcNow().UtcDateTime.Subtract(TimeSpan.FromMinutes(5))))
-            return HealthCheckResult.Healthy();
-
-        string? host = _emailOptions.SmtpHost;
-        if (String.IsNullOrEmpty(host))
-            return HealthCheckResult.Unhealthy("Email is not configured");
-
-        var sw = Stopwatch.StartNew();
-
-        try
-        {
-            using var client = new SmtpClient(new ExtensionsProtocolLogger(_logger));
-            int port = _emailOptions.SmtpPort;
-            var encryption = GetSecureSocketOption(_emailOptions.SmtpEncryption);
-
-            await client.ConnectAsync(host, port, encryption, cancellationToken);
-
-            // Note: since we don't have an OAuth2 token, disable the XOAUTH2 authentication mechanism.
-            client.AuthenticationMechanisms.Remove("XOAUTH2");
-
-            string? user = _emailOptions.SmtpUser;
-            if (!String.IsNullOrEmpty(user))
-            {
-                await client.AuthenticateAsync(user, _emailOptions.SmtpPassword, cancellationToken);
-            }
-
-            await client.DisconnectAsync(true, cancellationToken);
-            _lastSuccessfulConnection = _timeProvider.GetUtcNow().UtcDateTime;
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            return HealthCheckResult.Unhealthy("Email Not Working.", ex);
-        }
-        finally
-        {
-            sw.Stop();
-            _logger.LogTrace("Checking email took {Duration:g}", sw.Elapsed);
-        }
-
-        return HealthCheckResult.Healthy();
     }
 }

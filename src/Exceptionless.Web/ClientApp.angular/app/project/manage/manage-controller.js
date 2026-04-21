@@ -104,7 +104,10 @@
                     function onFailure(response) {
                         if (response.status === 426) {
                             return billingService
-                                .confirmUpgradePlan(response.data.message, vm.project.organization_id)
+                                .confirmUpgradePlan(
+                                    response.data && (response.data.message || response.data.title),
+                                    vm.project.organization_id
+                                )
                                 .then(function () {
                                     return createWebHook(data);
                                 })
@@ -704,7 +707,10 @@
                     function onFailure(response) {
                         if (response.status === 426) {
                             return billingService
-                                .confirmUpgradePlan(response.data.message, vm.project.organization_id)
+                                .confirmUpgradePlan(
+                                    response.data && (response.data.message || response.data.title),
+                                    vm.project.organization_id
+                                )
                                 .then(function () {
                                     return saveSlackNotificationSettings();
                                 })

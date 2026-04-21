@@ -185,8 +185,6 @@ public class Startup
         });
         app.UseStatusCodePages();
 
-        app.UseOpenTelemetryPrometheusScrapingEndpoint();
-
         app.UseHealthChecks("/health", new HealthCheckOptions
         {
             Predicate = hcr => hcr.Tags.Contains("Critical") || (options.RunJobsInProcess && hcr.Tags.Contains("AllJobs"))

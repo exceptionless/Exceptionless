@@ -574,6 +574,7 @@
     "Forgot Password": "忘记密码",
     "NOTICE_SIGNINGUP": "阅读并接受<a href=\"https://exceptionless.com/privacy\" target=\"_blank\">隐私保护声明</a> 及 <a href=\"https://exceptionless.com/terms\" target=\"_blank\">服务条款</a>。",
     "Loggin_Failed_Message": "登录过程中出现错误。如需了解更多信息，请联系客户服务人员。",
+    "Login_Invalid_Credentials": "电子邮件或密码无效。",
     "Unable_to_connect_to": "无法连接",
     "ResetPassword_Failed_Message": "重置密码的过程中出现错误。",
     "ResetPassword_Success_Message": "包含修改密码说明的邮件已经发送到您的邮箱。",

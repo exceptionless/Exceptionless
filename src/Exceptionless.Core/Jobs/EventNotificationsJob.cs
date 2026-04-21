@@ -61,6 +61,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
     protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventNotification> context)
     {
         var wi = context.QueueEntry.Value;
+
         var ev = await _eventRepository.GetByIdAsync(wi.EventId);
         if (ev is null)
             return JobResult.SuccessWithMessage($"Could not load event: {wi.EventId}");

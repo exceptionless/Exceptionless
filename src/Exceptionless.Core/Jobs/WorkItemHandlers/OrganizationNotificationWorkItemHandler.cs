@@ -61,7 +61,8 @@ public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
 
     public override Task HandleItemAsync(WorkItemContext context)
     {
-        var wi = context.GetData<OrganizationNotificationWorkItem>();
+        var wi = context.GetData<OrganizationNotificationWorkItem>()!;
+
         string cacheKey = $"{nameof(OrganizationNotificationWorkItemHandler)}:{wi.OrganizationId}";
 
         return _lockProvider.TryUsingAsync(cacheKey, async () =>
@@ -73,7 +74,7 @@ public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
 
             if (wi.IsOverMonthlyLimit)
                 await SendOverageNotificationsAsync(organization, wi.IsOverHourlyLimit, wi.IsOverMonthlyLimit);
-        }, TimeSpan.FromMinutes(15), new CancellationToken(true));
+        }, TimeSpan.FromMinutes(15), context.CancellationToken);
     }
 
     private async Task SendOverageNotificationsAsync(Organization organization, bool isOverHourlyLimit, bool isOverMonthlyLimit)

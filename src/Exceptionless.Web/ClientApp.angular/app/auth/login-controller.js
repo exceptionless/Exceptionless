@@ -24,9 +24,14 @@
                 var vm = this;
 
                 function getMessage(response) {
+                    if (response.status === 401) {
+                        return translateService.T("Login_Invalid_Credentials");
+                    }
+
                     var message = translateService.T("Loggin_Failed_Message");
-                    if (response.data && response.data.message) {
-                        message += " " + translateService.T("Message:") + " " + response.data.message;
+                    if (response.data && (response.data.message || response.data.title)) {
+                        message +=
+                            " " + translateService.T("Message:") + " " + (response.data.message || response.data.title);
                     } else if (response.status < 0) {
                         return translateService.T("Unable_to_connect_to") + " " + BASE_URL + ".";
                     }

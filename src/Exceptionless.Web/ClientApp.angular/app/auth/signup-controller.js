@@ -29,8 +29,9 @@
                     var message = translateService.T(
                         "An error occurred while signing up.  Please contact support for more information."
                     );
-                    if (response.data && response.data.message) {
-                        message += " " + translateService.T("Message:") + " " + response.data.message;
+                    if (response.data && (response.data.message || response.data.title)) {
+                        message +=
+                            " " + translateService.T("Message:") + " " + (response.data.message || response.data.title);
                     } else if (response.status < 0) {
                         return translateService.T("Unable_to_connect_to") + " " + BASE_URL + ".";
                     }

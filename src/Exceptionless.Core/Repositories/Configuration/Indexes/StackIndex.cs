@@ -73,7 +73,7 @@ public sealed class StackIndex : VersionedIndex<Stack>
 
     protected override void ConfigureQueryParser(ElasticQueryParserConfiguration config)
     {
-        string dateFixedFieldName = InferPropertyName(f => f.DateFixed);
+        string dateFixedFieldName = InferPropertyName(f => f.DateFixed!);
         config
             .SetDefaultFields(["id", Alias.Title, Alias.Description, Alias.Tags, Alias.References])
             .AddVisitor(new StackDateFixedQueryVisitor(dateFixedFieldName))

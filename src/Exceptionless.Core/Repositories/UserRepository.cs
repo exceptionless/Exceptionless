@@ -84,7 +84,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
 
         var cacheEntries = new Dictionary<string, FindHit<User>>();
         foreach (var hit in findHits.Where(d => !String.IsNullOrEmpty(d.Document?.EmailAddress)))
-            cacheEntries.Add(EmailCacheKey(hit.Document.EmailAddress), hit);
+            cacheEntries.Add(EmailCacheKey(hit.Document!.EmailAddress), hit);
 
         if (cacheEntries.Count > 0)
             await AddDocumentsToCacheWithKeyAsync(cacheEntries, options.GetExpiresIn());

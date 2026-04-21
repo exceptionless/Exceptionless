@@ -80,6 +80,7 @@ namespace Exceptionless.Core.Repositories.Queries
 
             // TODO: Handle search expressions as well
             string filter = ctx.Source.GetFilterExpression() ?? String.Empty;
+
             //bool altInvertRequested = false;
             if (filter.StartsWith("@!"))
             {
@@ -98,15 +99,15 @@ namespace Exceptionless.Core.Repositories.Queries
             var stackIds = new List<string>();
             long stackTotal = 0;
 
-            string stackFilterValue = stackFilter.Filter;
+            string? stackFilterValue = stackFilter?.Filter;
             bool isStackIdsNegated = false; //= stackFilter.HasStatusOpen && !altInvertRequested;
             if (isStackIdsNegated)
-                stackFilterValue = stackFilter.InvertedFilter;
+                stackFilterValue = stackFilter?.InvertedFilter;
 
             if (String.IsNullOrEmpty(stackFilterValue) && (!ctx.Source.ShouldEnforceEventStackFilter() || ctx.Options.GetSoftDeleteMode() != SoftDeleteQueryMode.ActiveOnly))
                 return;
 
-            _logger.LogTrace("Source: {Filter} Stack Filter: {StackFilter} Inverted Stack Filter: {InvertedStackFilter}", filter, stackFilter.Filter, stackFilter.InvertedFilter);
+            _logger.LogTrace("Source: {Filter} Stack Filter: {StackFilter} Inverted Stack Filter: {InvertedStackFilter}", filter, stackFilter?.Filter, stackFilter?.InvertedFilter);
 
             var systemFilterQuery = GetSystemFilterQuery(ctx, isStackIdsNegated);
             systemFilterQuery.FilterExpression(stackFilterValue);
@@ -132,7 +133,7 @@ namespace Exceptionless.Core.Repositories.Queries
 
                 _logger.LogTrace("Query: {Query} will be inverted due to id limit: {ResultCount}", stackFilterValue, stackTotal);
                 isStackIdsNegated = !isStackIdsNegated;
-                stackFilterValue = isStackIdsNegated ? stackFilter.InvertedFilter : stackFilter.Filter;
+                stackFilterValue = isStackIdsNegated ? stackFilter?.InvertedFilter : stackFilter?.Filter;
                 systemFilterQuery.FilterExpression(stackFilterValue);
                 softDeleteMode = isStackIdsNegated ? SoftDeleteQueryMode.All : SoftDeleteQueryMode.ActiveOnly;
                 systemFilterQuery.EventStackFilterInverted(isStackIdsNegated);
@@ -160,7 +161,7 @@ namespace Exceptionless.Core.Repositories.Queries
             {
                 do
                 {
-                    stackIds.AddRange(results.Hits.Select(h => h.Id));
+                    stackIds.AddRange(results.Hits.Select(h => h.Id).OfType<string>());
                 } while (await results.NextPageAsync());
             }
 
@@ -180,7 +181,7 @@ namespace Exceptionless.Core.Repositories.Queries
             }
 
             // Strips stack only fields and stack only special fields
-            string eventFilter = await _eventStackFilter.GetEventFilterAsync(filter, ctx);
+            string? eventFilter = await _eventStackFilter.GetEventFilterAsync(filter, ctx);
             ctx.Source.FilterExpression(eventFilter);
         }
 
@@ -209,6 +210,7 @@ namespace Exceptionless.Core.Repositories.Queries
                     range.Field = _inferredStackLastOccurrenceField;
                     if (isStackIdsNegated) // don't apply retention date filter on inverted stack queries
                         range.StartDate = null;
+
                     range.EndDate = null;
                 }
             }

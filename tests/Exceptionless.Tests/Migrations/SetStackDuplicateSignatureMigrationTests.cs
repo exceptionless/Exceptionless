@@ -24,7 +24,7 @@ public class SetStackDuplicateSignatureMigrationTests : IntegrationTestsBase
     protected override void RegisterServices(IServiceCollection services)
     {
         services.AddTransient<SetStackDuplicateSignature>();
-        services.AddSingleton<ILock>(new EmptyLock());
+        services.AddSingleton<ILock>(EmptyLock.Empty);
         base.RegisterServices(services);
     }
 
@@ -45,6 +45,7 @@ public class SetStackDuplicateSignatureMigrationTests : IntegrationTestsBase
 
         string expectedDuplicateSignature = $"{stack.ProjectId}:{stack.SignatureHash}";
         var actualStack = await _repository.GetByIdAsync(stack.Id);
+        Assert.NotNull(actualStack);
         Assert.NotEmpty(actualStack.ProjectId);
         Assert.NotEmpty(actualStack.SignatureHash);
         Assert.Equal($"{actualStack.ProjectId}:{actualStack.SignatureHash}", actualStack.DuplicateSignature);

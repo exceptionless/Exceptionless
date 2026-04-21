@@ -104,8 +104,14 @@ public class MaxMindGeoIpService : IGeoIpService, IDisposable
         _logger.LogInformation("Loading GeoIP database");
         try
         {
-            using (var stream = await _storage.GetFileStreamAsync(DownloadGeoIPDatabaseJob.GEO_IP_DATABASE_PATH, StreamMode.Read, cancellationToken))
-                _database = new DatabaseReader(stream);
+            using var stream = await _storage.GetFileStreamAsync(DownloadGeoIPDatabaseJob.GEO_IP_DATABASE_PATH, StreamMode.Read, cancellationToken);
+            if (stream is null)
+            {
+                _logger.LogWarning("GeoIP database stream was null");
+                return null;
+            }
+
+            _database = new DatabaseReader(stream);
         }
         catch (Exception ex)
         {

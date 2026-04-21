@@ -84,12 +84,12 @@ public class AppOptions
     {
         var options = new AppOptions();
         options.BaseURL = config.GetValue<string>(nameof(options.BaseURL))?.TrimEnd('/') ?? throw new ApplicationException("BaseURL is a required configuration setting");
-        options.InternalProjectId = config.GetValue(nameof(options.InternalProjectId), "54b56e480ef9605a88a13153")!;
+        options.InternalProjectId = config.GetValue(nameof(options.InternalProjectId), "54b56e480ef9605a88a13153");
         options.ExceptionlessApiKey = config.GetValue<string>(nameof(options.ExceptionlessApiKey));
         options.ExceptionlessServerUrl = config.GetValue<string>(nameof(options.ExceptionlessServerUrl));
 
         options.AppMode = config.GetValue(nameof(options.AppMode), AppMode.Production);
-        options.AppScope = config.GetValue(nameof(options.AppScope), options.AppMode.ToScope())!;
+        options.AppScope = config.GetValue(nameof(options.AppScope), options.AppMode.ToScope());
         options.RunJobsInProcess = config.GetValue(nameof(options.RunJobsInProcess), options.AppMode == AppMode.Development);
         options.JobsIterationLimit = config.GetValue(nameof(options.JobsIterationLimit), -1);
         options.BotThrottleLimit = config.GetValue(nameof(options.BotThrottleLimit), 25).NormalizeValue();

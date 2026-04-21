@@ -8,7 +8,7 @@ public class MessageBusOptions
 {
     public string? ConnectionString { get; internal set; }
     public string? Provider { get; internal set; }
-    public Dictionary<string, string> Data { get; internal set; } = null!;
+    public Dictionary<string, string?> Data { get; internal set; } = null!;
 
     public string Scope { get; internal set; } = null!;
     public string ScopePrefix { get; internal set; } = null!;
@@ -18,7 +18,7 @@ public class MessageBusOptions
     {
         var options = new MessageBusOptions { Scope = appOptions.AppScope };
         options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? $"{options.Scope}-" : String.Empty;
-        options.Topic = config.GetValue<string>(nameof(options.Topic), $"{options.ScopePrefix}messages")!;
+        options.Topic = config.GetValue<string>(nameof(options.Topic), $"{options.ScopePrefix}messages");
 
         string? cs = config.GetConnectionString("MessageBus");
 
@@ -29,7 +29,7 @@ public class MessageBusOptions
             string? providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
 
             var providerOptions = providerConnectionString.ParseConnectionString(defaultKey: "server");
-            options.Data ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            options.Data ??= new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
             options.Data.AddRange(providerOptions);
 
             options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });

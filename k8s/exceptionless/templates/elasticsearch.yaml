@@ -1,4 +1,14 @@
 {{- if (empty .Values.elasticsearch.connectionString) -}}
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: high-priority
+value: 100000
+preemptionPolicy: PreemptLowerPriority
+globalDefault: false
+description: "For critical workloads that may preempt normal pods."
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -25,6 +35,7 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      priorityClassName: high-priority
       initContainers:
         - name: sysctl
           securityContext:

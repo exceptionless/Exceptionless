@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Models.Data;
+﻿using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Jobs;
@@ -23,11 +24,13 @@ public class EventUserDescriptionsJob : QueueJobBase<EventUserDescription>
 
     protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<EventUserDescription> context)
     {
+        var description = context.QueueEntry.Value;
+
         _logger.LogTrace("Processing user description: id={0}", context.QueueEntry.Id);
 
         try
         {
-            await ProcessUserDescriptionAsync(context.QueueEntry.Value);
+            await ProcessUserDescriptionAsync(description);
             _logger.LogInformation("Processed user description: id={Id}", context.QueueEntry.Id);
         }
         catch (DocumentNotFoundException ex)
@@ -57,7 +60,10 @@ public class EventUserDescriptionsJob : QueueJobBase<EventUserDescription>
         };
 
         if (description.Data is not null && description.Data.Count > 0)
+        {
+            ev.Data ??= new DataDictionary();
             ev.Data.AddRange(description.Data);
+        }
 
         ev.SetUserDescription(ud);
 

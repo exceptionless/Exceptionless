@@ -1,4 +1,5 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+ARG MinVerVersionOverride
 WORKDIR /app
 
 COPY ./*.slnx ./NuGet.Config ./
@@ -18,7 +19,7 @@ RUN dotnet restore
 
 # Copy everything else and build app
 COPY . .
-RUN dotnet build -c Release
+RUN dotnet build -c Release /p:MinVerVersionOverride=${MinVerVersionOverride}
 
 # testrunner
 
@@ -95,7 +96,7 @@ ENTRYPOINT ["/app/app-docker-entrypoint.sh"]
 
 # completely self-contained
 
-FROM exceptionless/elasticsearch:8.19.6 AS exceptionless
+FROM exceptionless/elasticsearch:8.19.14 AS exceptionless
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./

@@ -1,4 +1,6 @@
 <script lang="ts">
+    import FacebookIcon from '$comp/icons/FacebookIcon.svelte';
+    import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
     import GoogleIcon from '$comp/icons/GoogleIcon.svelte';
     import MicrosoftIcon from '$comp/icons/MicrosoftIcon.svelte';
     import { H3, H4, Muted, P } from '$comp/typography';
@@ -18,8 +20,6 @@
         unlinkOAuthAccount
     } from '$features/auth/index.svelte';
     import { getMeQuery } from '$features/users/api.svelte';
-    import Facebook from '@lucide/svelte/icons/facebook';
-    import GitHub from '@lucide/svelte/icons/github';
     import X from '@lucide/svelte/icons/x';
     import { toast } from 'svelte-sonner';
 
@@ -69,12 +69,12 @@
                 {/if}
                 {#if facebookClientId}
                     <Button aria-label="Link Facebook account" onclick={() => facebookLogin()} variant="outline">
-                        <Facebook class="size-4" /> Facebook
+                        <FacebookIcon class="size-4" /> Facebook
                     </Button>
                 {/if}
                 {#if gitHubClientId}
                     <Button aria-label="Link GitHub account" onclick={() => githubLogin()} variant="outline">
-                        <GitHub class="size-4" /> GitHub
+                        <GitHubIcon class="size-4" /> GitHub
                     </Button>
                 {/if}
             </div>

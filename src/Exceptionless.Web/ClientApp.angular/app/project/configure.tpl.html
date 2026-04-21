@@ -37,14 +37,25 @@
                         </li>
                         <li ng-if="vm.isCommandLine()" style="margin-top: 15px">
                             <p>{{::'Execute the following in your shell:' | translate}}</p>
-                            <pre ng-if="vm.isBashShell()">
+                            <div class="clearfix hidden-print">
+                                <button
+                                    type="button"
+                                    class="btn btn-default btn-xs pull-right m-b-xs"
+                                    title="{{::'Copy to Clipboard' | translate}}"
+                                    ng-click="vm.copyCommandLineCode()"
+                                    ng-show="vm.clipboardSupported"
+                                >
+                                    <i class="fa fa-copy"></i>
+                                </button>
+                            </div>
+                            <pre class="command-line-code" ng-if="vm.isBashShell()">
 curl "{{::vm.serverUrl}}/api/v2/events" \
     --request POST \
     --header "Authorization: Bearer {{::vm.apiKey}}" \
     --header "Content-Type: application/json" \
     --data-binary "[{'type':'log','message':'Hello World!'}]"</pre
                             >
-                            <pre ng-if="!vm.isBashShell()">
+                            <pre class="command-line-code" ng-if="!vm.isBashShell()">
 $body = @{
  "type"="log"
  "message"="Hello World!"

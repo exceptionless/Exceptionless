@@ -64,12 +64,14 @@ public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, I
         return RemoveAllAsync(q => q.FieldEquals(t => t.UserId, userId), options);
     }
 
-    protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, Token? document, IDictionary<string, object>? data = null, TimeSpan? delay = null)
+    protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, Token? document, IDictionary<string, object?>? data = null, TimeSpan? delay = null)
     {
-        var items = new Foundatio.Utility.DataDictionary(data ?? new Dictionary<string, object>()) {
-                { ExtendedEntityChanged.KnownKeys.IsAuthenticationToken, TokenType.Authentication == document?.Type },
-                { ExtendedEntityChanged.KnownKeys.UserId, document?.UserId }
-            };
+        var items = new Foundatio.Utility.DataDictionary(data ?? new Dictionary<string, object?>())
+        {
+            { ExtendedEntityChanged.KnownKeys.IsAuthenticationToken, TokenType.Authentication == document?.Type },
+            { ExtendedEntityChanged.KnownKeys.UserId, document?.UserId },
+        };
+
         return PublishMessageAsync(CreateEntityChanged(changeType, document?.OrganizationId, document?.ProjectId ?? document?.DefaultProjectId, null, document?.Id, items), delay);
     }
 }

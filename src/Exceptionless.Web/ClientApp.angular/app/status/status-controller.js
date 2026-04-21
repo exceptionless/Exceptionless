@@ -44,8 +44,8 @@
 
                 function updateStatus() {
                     function updateMessage(response) {
-                        if (response && response.data && response.data.message) {
-                            vm._message = response.data.message;
+                        if (response && response.data && (response.data.message || response.data.title)) {
+                            vm._message = response.data.message || response.data.title;
                             if (response.status !== 200) {
                                 vm._message += " " + contactSupport;
                             }

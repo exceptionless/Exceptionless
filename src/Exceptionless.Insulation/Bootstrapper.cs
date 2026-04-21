@@ -68,13 +68,10 @@ public class Bootstrapper
         RegisterQueue(services, appOptions.QueueOptions, runMaintenanceTasks);
         RegisterStorage(services, appOptions.StorageOptions);
 
-        var healthCheckBuilder = RegisterHealthChecks(services);
+        RegisterHealthChecks(services);
 
         if (!String.IsNullOrEmpty(appOptions.EmailOptions.SmtpHost))
-        {
             services.ReplaceSingleton<IMailSender, MailKitMailSender>();
-            healthCheckBuilder.Add(new HealthCheckRegistration("Mail", s => (MailKitMailSender)s.GetRequiredService<IMailSender>(), null, ["Mail", "MailMessage", "AllJobs"]));
-        }
     }
 
     private static IHealthChecksBuilder RegisterHealthChecks(IServiceCollection services)
@@ -318,13 +315,13 @@ public class Bootstrapper
         return String.Concat(options.ScopePrefix, typeof(T).Name);
     }
 
-    private static RegionEndpoint GetAWSRegionEndpoint(IDictionary<string, string> data)
+    private static RegionEndpoint GetAWSRegionEndpoint(IDictionary<string, string?> data)
     {
         string region = data.GetString("region");
         return RegionEndpoint.GetBySystemName(String.IsNullOrEmpty(region) ? "us-east-1" : region);
     }
 
-    private static AWSCredentials GetAWSCredentials(IDictionary<string, string> data)
+    private static AWSCredentials GetAWSCredentials(IDictionary<string, string?> data)
     {
         string accessKey = data.GetString("accesskey");
         string secretKey = data.GetString("secretkey");
