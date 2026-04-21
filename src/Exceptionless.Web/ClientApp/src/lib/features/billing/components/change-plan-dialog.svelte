@@ -31,11 +31,11 @@
         initialCouponCode?: string;
         initialCouponOpen?: boolean;
         initialFormError?: string;
-        open: boolean;
+        onclose: () => void;
         organization: ViewOrganization;
     }
 
-    let { initialCouponCode, initialCouponOpen, initialFormError, open = $bindable(), organization }: Props = $props();
+    let { initialCouponCode, initialCouponOpen, initialFormError, onclose, organization }: Props = $props();
 
     const plansQuery = getPlansQuery({
         route: {
@@ -141,6 +141,8 @@
     let couponOpen = $state(false);
     let couponApplied = $state<null | string>(null);
     let couponInput = $state('');
+    let couponError = $state<null | string>(null);
+    let couponInputEl = $state<HTMLInputElement | null>(null);
 
     const hasExistingCard = $derived(!!organization.card_last4);
 
@@ -232,16 +234,33 @@
                     });
 
                     if (!result.success) {
-                        return { form: result.message ?? 'Failed to change plan' };
+                        const message = result.message ?? 'Failed to change plan';
+                        const isCouponError = /coupon/i.test(message);
+
+                        if (isCouponError && value.couponId) {
+                            // Clear applied coupon, reopen input with the bad code, focus it
+                            couponApplied = null;
+                            couponInput = value.couponId;
+                            couponOpen = true;
+                            couponError = message;
+                            // Focus the input after DOM updates
+                            requestAnimationFrame(() => couponInputEl?.focus());
+                        }
+
+                        toast.error(message);
+                        return { form: message };
                     }
 
                     toast.success(result.message ?? 'Your billing plan has been successfully changed.');
-                    open = false;
+                    onclose();
 
                     return null;
                 } catch (error: unknown) {
                     if (error instanceof ProblemDetails) {
-                        return problemDetailsToFormErrors(error);
+                        const formErrors = problemDetailsToFormErrors(error);
+                        const errorMessage = formErrors?.form ?? error.title ?? 'An unexpected error occurred';
+                        toast.error(errorMessage);
+                        return formErrors;
                     }
 
                     await Exceptionless.createException(error instanceof Error ? error : new Error(String(error)))
@@ -250,7 +269,9 @@
                         .addTags('billing', 'change-plan')
                         .submit();
 
-                    return { form: error instanceof Error ? error.message : 'An unexpected error occurred' };
+                    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+                    toast.error(errorMessage);
+                    return { form: errorMessage };
                 }
             }
         }
@@ -268,7 +289,7 @@
     });
 
     $effect(() => {
-        if (open && plansQuery.data) {
+        if (plansQuery.data) {
             untrack(() => {
                 const nextTierIndex = currentTierIndex + 1;
                 const upsellTier = nextTierIndex < tiers.length ? tiers[nextTierIndex] : null;
@@ -280,11 +301,13 @@
                 } else {
                     selectedTierId = currentTierId === FREE_PLAN_ID ? '' : currentTierId;
                 }
-                interval = currentInterval;
+                // Always default to yearly to promote savings (especially for free→paid upgrades)
+                interval = isFreeCurrent ? 'year' : currentInterval;
                 paymentExpanded = false;
                 couponOpen = initialCouponOpen ?? false;
                 couponApplied = initialCouponCode ?? null;
                 couponInput = '';
+                couponError = null;
                 form.reset();
             });
         }
@@ -308,11 +331,13 @@
 
     function onCouponOpen() {
         couponOpen = true;
+        couponError = null;
     }
 
     function onCouponCancel() {
         couponOpen = false;
         couponInput = '';
+        couponError = null;
     }
 
     function onCouponApply() {
@@ -324,14 +349,16 @@
         couponApplied = code.toUpperCase();
         couponOpen = false;
         couponInput = '';
+        couponError = null;
     }
 
     function onCouponRemove() {
         couponApplied = null;
+        couponError = null;
     }
 
     function handleCancel() {
-        open = false;
+        onclose();
     }
 
     function formatEvents(n: number): string {
@@ -471,7 +498,7 @@
     });
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root open={true} onOpenChange={(v) => { if (!v) onclose(); }}>
     <Dialog.Content class="max-w-xl sm:max-w-xl">
         <Dialog.Header class="space-y-1">
             <Dialog.Title class="flex items-center gap-2 text-base">
@@ -505,16 +532,6 @@
                     form.handleSubmit();
                 }}
             >
-                <form.Subscribe selector={(state) => state.errors}>
-                    {#snippet children(errors)}
-                        <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
-                    {/snippet}
-                </form.Subscribe>
-
-                {#if initialFormError}
-                    <ErrorMessage message={initialFormError}></ErrorMessage>
-                {/if}
-
                 <div class="max-h-[70vh] space-y-6 overflow-y-auto px-1 py-1">
                     <section class="space-y-2.5">
                         <div class="flex items-center justify-between px-0.5">
@@ -691,7 +708,7 @@
                                     <Check class="size-4" />
                                     <Alert.Description class="flex flex-1 items-center gap-2">
                                         <span class="font-mono text-xs font-semibold">{couponApplied}</span>
-                                        <span class="text-muted-foreground truncate">— applied at checkout</span>
+                                        <span class="text-muted-foreground truncate">— will be applied</span>
                                         <span class="flex-1"></span>
                                         <Button type="button" variant="link" class="text-muted-foreground h-auto p-0 text-xs" onclick={onCouponRemove}>
                                             Remove
@@ -705,6 +722,9 @@
                                         placeholder="Enter code"
                                         autocomplete="off"
                                         bind:value={couponInput}
+                                        bind:ref={couponInputEl}
+                                        class={couponError ? 'border-destructive' : ''}
+                                        oninput={() => { couponError = null; }}
                                         onkeydown={(e) => {
                                             if (e.key === 'Enter') {
                                                 e.preventDefault();
@@ -714,6 +734,9 @@
                                     />
                                     <Button type="button" variant="outline" onclick={onCouponApply} disabled={!couponInput.trim()}>Apply</Button>
                                 </div>
+                                {#if couponError}
+                                    <ErrorMessage message={couponError} />
+                                {/if}
                             {:else}
                                 <Button
                                     type="button"
@@ -730,6 +753,16 @@
                 </div>
 
                 <Dialog.Footer class="border-border mt-4 flex-col items-stretch gap-3 border-t pt-4 sm:flex-col sm:items-stretch sm:space-x-0">
+                    <form.Subscribe selector={(state) => state.errors}>
+                        {#snippet children(errors)}
+                            <ErrorMessage message={getFormErrorMessages(errors)} />
+                        {/snippet}
+                    </form.Subscribe>
+
+                    {#if initialFormError}
+                        <ErrorMessage message={initialFormError} />
+                    {/if}
+
                     <div class="min-h-4.5 space-y-1">
                         {#if !anyDirty}
                             <Muted class="text-xs italic">No changes yet</Muted>

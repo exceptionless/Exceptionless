@@ -542,10 +542,14 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 if (!Request.IsGlobalAdmin())
                     customerUpdateOptions.Email = CurrentUser.EmailAddress;
 
+                // Start subscription list fetch immediately — it's independent of customer/payment ops
+                var listSubscriptionsTask = subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
+
                 if (!String.IsNullOrEmpty(model.StripeToken))
                 {
                     if (isPaymentMethod)
                     {
+                        // Attach runs in parallel with listSubscriptionsTask
                         await paymentMethodService.AttachAsync(model.StripeToken, new PaymentMethodAttachOptions
                         {
                             Customer = organization.StripeCustomerId
@@ -562,9 +566,13 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                     cardUpdated = true;
                 }
 
-                await customerService.UpdateAsync(organization.StripeCustomerId, customerUpdateOptions);
+                // Customer update and subscription list are independent — run in parallel
+                await Task.WhenAll(
+                    customerService.UpdateAsync(organization.StripeCustomerId, customerUpdateOptions),
+                    listSubscriptionsTask
+                );
 
-                var subscriptionList = await subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
+                var subscriptionList = await listSubscriptionsTask;
                 var subscription = subscriptionList.FirstOrDefault(s => !s.CanceledAt.HasValue);
                 if (subscription is not null && subscription.Items.Data.Count > 0)
                 {

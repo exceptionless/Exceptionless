@@ -183,11 +183,10 @@ export function changePlanMutation(request: ChangePlanMutationRequest) {
         mutationKey: queryKeys.changePlan(request.route.organizationId),
         onSuccess: () => {
             // Invalidate organization data to reflect new plan
+            // WebSocket OrganizationChanged also fires, but we invalidate here for immediate feedback
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, undefined) });
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, 'stats') });
             queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
-            // Also invalidate plans as the current plan indicator may change
-            queryClient.invalidateQueries({ queryKey: queryKeys.plans(request.route.organizationId) });
         }
     }));
 }

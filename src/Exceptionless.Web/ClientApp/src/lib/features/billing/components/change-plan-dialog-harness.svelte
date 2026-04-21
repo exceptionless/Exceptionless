@@ -43,10 +43,16 @@
     });
 
     let open = $state(true);
+
+    function handleClose() {
+        open = false;
+    }
 </script>
 
 <QueryClientProvider client={queryClient}>
     <Button variant="outline" onclick={() => (open = true)}>Open dialog</Button>
 
-    <ChangePlanDialog bind:open {organization} {initialCouponCode} {initialCouponOpen} {initialFormError} />
+    {#if open}
+        <ChangePlanDialog onclose={handleClose} {organization} {initialCouponCode} {initialCouponOpen} {initialFormError} />
+    {/if}
 </QueryClientProvider>

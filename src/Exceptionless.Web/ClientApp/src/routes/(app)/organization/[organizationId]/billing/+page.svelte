@@ -42,8 +42,16 @@
         schema: { changePlan: 'boolean' }
     });
 
+    let changePlanDialogOpen = $state(!!params.changePlan);
+
     function handleChangePlan() {
+        changePlanDialogOpen = true;
         params.changePlan = true;
+    }
+
+    function handleChangePlanClose() {
+        changePlanDialogOpen = false;
+        params.changePlan = false;
     }
 
     function handleOpenInvoice(invoiceId: string) {
@@ -157,6 +165,6 @@
     {/if}
 </div>
 
-{#if params.changePlan && organizationQuery.data}
-    <ChangePlanDialog bind:open={params.changePlan} organization={organizationQuery.data} />
+{#if changePlanDialogOpen && organizationQuery.data}
+    <ChangePlanDialog onclose={handleChangePlanClose} organization={organizationQuery.data} />
 {/if}
