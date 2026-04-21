@@ -42,6 +42,7 @@ Then assess PR-level concerns:
 - **Commits:** Add-then-remove = uncertainty. Multiple "fix" = incomplete testing. Scope creep = BLOCKER.
 - **Breaking changes:** API signatures, HTTP methods, public models, config keys. Breaking change = BLOCKER.
 - **Documentation:** API changes → test/sample files updated?
+- **PR description quality:** Does the PR description explain what changed, why, new APIs/features/behaviors, and any breaking changes? Filled out PR template if one exists? Flag if missing or too vague.
 - **Data/infra:** Schema changes need migration plan. New env vars documented?
 - **Test coverage:** New code has tests? Bug fix has regression test?
 
