@@ -1,5 +1,4 @@
 using Exceptionless.Core.Migrations;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using Foundatio.Lock;
