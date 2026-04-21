@@ -143,6 +143,8 @@
     let couponInput = $state('');
     let couponError = $state<null | string>(null);
     let couponInputEl = $state<HTMLInputElement | null>(null);
+    let couponSectionEl = $state<HTMLElement | null>(null);
+    let paymentSectionEl = $state<HTMLElement | null>(null);
 
     const hasExistingCard = $derived(!!organization.card_last4);
 
@@ -243,8 +245,11 @@
                             couponInput = value.couponId;
                             couponOpen = true;
                             couponError = message;
-                            // Focus the input after DOM updates
-                            requestAnimationFrame(() => couponInputEl?.focus());
+                            // Scroll coupon into view and focus the input after DOM updates
+                            requestAnimationFrame(() => {
+                                couponSectionEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                couponInputEl?.focus();
+                            });
                         }
 
                         toast.error(message);
@@ -323,6 +328,7 @@
 
     function onUseDifferentCard() {
         paymentExpanded = true;
+        requestAnimationFrame(() => paymentSectionEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
     }
 
     function onKeepCurrentCard() {
@@ -332,6 +338,10 @@
     function onCouponOpen() {
         couponOpen = true;
         couponError = null;
+        requestAnimationFrame(() => {
+            couponSectionEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            couponInputEl?.focus();
+        });
     }
 
     function onCouponCancel() {
@@ -638,7 +648,7 @@
                     </section>
 
                     {#if isPaidPlan}
-                        <section class="space-y-2.5">
+                        <section class="space-y-2.5" bind:this={paymentSectionEl}>
                             <div class="flex items-center justify-between px-0.5">
                                 <div class="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">Payment method</div>
                                 {#if hasExistingCard && paymentExpanded}
@@ -688,7 +698,7 @@
                     {/if}
 
                     {#if !isFreeSelected}
-                        <section class="space-y-2.5">
+                        <section class="space-y-2.5" bind:this={couponSectionEl}>
                             <div class="flex items-center justify-between px-0.5">
                                 <div class="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">Coupon</div>
                                 {#if couponOpen && !couponApplied}
