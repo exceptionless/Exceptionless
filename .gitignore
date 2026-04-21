@@ -59,6 +59,8 @@ App_Data
 src/Exceptionless.Web/storage/
 src/Exceptionless.Web/ClientApp/build/
 src/Exceptionless.Web/appsettings.Local.yml
+src/Exceptionless.Web/ClientApp.angular/dist/
+src/Exceptionless.Web/wwwroot/
 node_modules
 
 # Redis
@@ -77,3 +79,4 @@ k8s/ex-*-snapshots.yaml
 tmpclaude*
 dogfood-output/
 debug-storybook.log
+

@@ -113,6 +113,18 @@ Return helpers from `ExceptionlessApiController`: `Ok()`, `Created()`, `NoConten
 
 Exceptions auto-convert via `ExceptionToProblemDetailsHandler`: `MiniValidatorException`/`ValidationException` → 422, others → 500.
 
+## OpenAPI Baseline
+
+After any API change (new endpoint, changed status codes, modified request/response models), **always regenerate the OpenAPI baseline**:
+
+```bash
+# Requires the API to be running (aspire run --project src/Exceptionless.AppHost)
+Invoke-WebRequest -Uri "http://localhost:5200/docs/v2/openapi.json" \
+  -OutFile "tests/Exceptionless.Tests/Controllers/Data/openapi.json"
+```
+
+Then include the updated `openapi.json` in the same commit as the API change (or amend). The `OpenApiControllerTests.GetOpenApiJson_Default_ReturnsExpectedBaseline` test will fail if the baseline is stale.
+
 ## WebSocket Hubs (NOT SignalR)
 
 Custom WebSocket implementation using Foundatio `IMessageBus`. `MessageBusBroker` subscribes to `EntityChanged`, `PlanChanged`, `UserMembershipChanged` and broadcasts to connected WebSocket clients via `WebSocketConnectionManager`.
