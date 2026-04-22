@@ -10,6 +10,7 @@
                 $state,
                 $stateParams,
                 BASE_URL,
+                clipboard,
                 EXCEPTIONLESS_SERVER_URL,
                 notificationService,
                 projectService,
@@ -23,6 +24,21 @@
 
                 function copied() {
                     notificationService.success(translateService.T("Copied!"));
+                }
+
+                function copyCommandLineCode() {
+                    var codeBlock = $(".command-line-code:visible").first();
+                    if (!codeBlock.length) {
+                        notificationService.error(translateService.T("Unable to copy the command line example."));
+                        return;
+                    }
+
+                    try {
+                        clipboard.copyText(codeBlock.text());
+                        copied();
+                    } catch (err) {
+                        notificationService.error(translateService.T("Unable to copy the command line example."));
+                    }
                 }
 
                 function onCopyError() {
@@ -157,6 +173,8 @@
                     vm._canRedirect = $stateParams.redirect === "true";
                     vm.apiKey = null;
                     vm.canRedirect = canRedirect;
+                    vm.clipboardSupported = clipboard.supported;
+                    vm.copyCommandLineCode = copyCommandLineCode;
                     vm.copied = copied;
                     vm.currentProjectType = {};
                     vm.isBashShell = isBashShell;

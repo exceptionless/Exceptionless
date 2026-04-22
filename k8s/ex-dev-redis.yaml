@@ -1,0 +1,80 @@
+---
+apiVersion: redis.redis.opstreelabs.in/v1beta2
+kind: RedisReplication
+metadata:
+  name: ex-dev-redis
+  namespace: ex-dev
+spec:
+  clusterSize: 2
+  podSecurityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  kubernetesConfig:
+    image: quay.io/opstree/redis:v8.6.2
+    imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+    redisSecret:
+      name: ex-dev-redis-secret
+      key: password
+  storage:
+    volumeClaimTemplate:
+      spec:
+        storageClassName: managed-csi-premium
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+  redisExporter:
+    enabled: false
+    image: quay.io/opstree/redis-exporter:latest
+---
+apiVersion: redis.redis.opstreelabs.in/v1beta2
+kind: RedisSentinel
+metadata:
+  name: ex-dev-redis-sen
+  namespace: ex-dev
+spec:
+  clusterSize: 3
+  podSecurityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  pdb:
+    enabled: true
+    minAvailable: 2
+  redisSentinelConfig:
+    masterGroupName: ex-dev
+    redisReplicationName: ex-dev-redis
+    redisReplicationPassword:
+      secretKeyRef:
+        name: ex-dev-redis-secret
+        key: password
+  kubernetesConfig:
+    image: quay.io/opstree/redis-sentinel:v8.6.2
+    imagePullPolicy: IfNotPresent
+    redisSecret:
+      name: ex-dev-redis-secret
+      key: password
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 50m
+        memory: 64Mi
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ex-dev-redis-pdb
+  namespace: ex-dev
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: ex-dev-redis

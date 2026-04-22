@@ -117,7 +117,7 @@
                 </p>
             </div>
 
-            <Chart.Container config={chartConfig} class="aspect-auto h-[250px] w-full">
+            <Chart.Container config={chartConfig} class="aspect-auto h-62.5 w-full">
                 <AreaChart
                     legend
                     data={chartData}
@@ -133,7 +133,7 @@
                     }}
                 >
                     {#snippet tooltip()}
-                        <Chart.Tooltip class="min-w-[230px]" indicator="line" labelFormatter={(v) => formatDateLabel(v as Date)} />
+                        <Chart.Tooltip class="min-w-57.5" indicator="line" labelFormatter={(v) => formatDateLabel(v as Date)} />
                     {/snippet}
                 </AreaChart>
             </Chart.Container>

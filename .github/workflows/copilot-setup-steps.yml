@@ -32,7 +32,7 @@ jobs:
         working-directory: docker
         run: docker compose up -d elasticsearch &
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
             path: ~/.nuget/packages
             key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
@@ -45,10 +45,10 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Cache node_modules
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: cache-node-modules
         with:
           path: src/Exceptionless.Web/ClientApp/node_modules

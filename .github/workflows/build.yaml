@@ -3,10 +3,12 @@ name: Build
 on:
   push:
     branches: [main]
-    tags: ['v*']
+    tags: ["v*"]
   pull_request:
 
 permissions:
+  contents: read
+  packages: write
   pull-requests: write
 
 env:
@@ -16,6 +18,7 @@ env:
   DOTNET_NOLOGO: true
   MSBUILDTERMINALLOGGER: auto
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  CAN_PUBLISH_IMAGES: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
 
 jobs:
   version:
@@ -29,11 +32,19 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Build Reason
         env:
           GITHUB_EVENT: ${{ toJson(github) }}
-        run: "echo ref: ${{github.ref}} event: ${{github.event_name}}"
+        run: |
+          branch=${GITHUB_HEAD_REF:-${GITHUB_REF##*/}}
+          branch=${branch//\//.}.
+          if [[ "$branch" = "main." || "$branch" = "master." || "${GITHUB_REF}" = refs/tags* ]]; then
+            branch=""
+          fi
+          echo "GIT_BRANCH_SUFFIX=$branch" >> $GITHUB_ENV
+          echo "ref: $GITHUB_REF event: $GITHUB_EVENT_NAME branch_suffix: $branch"
 
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v5
@@ -45,7 +56,16 @@ jobs:
         id: version
         run: |
           dotnet tool install --global minver-cli --version 7.0.0
-          version=$(minver --tag-prefix v)
+          version=$(minver --tag-prefix v --default-pre-release-identifiers "preview.${GIT_BRANCH_SUFFIX}0")
+
+          # If on a non-main branch, insert branch name before the height (last numeric segment)
+          if [ -n "$GIT_BRANCH_SUFFIX" ]; then
+            branch_name="${GIT_BRANCH_SUFFIX%.}"
+            if [[ "$version" != *"$branch_name"* ]]; then
+              version=$(echo "$version" | sed -E "s/\.([0-9]+)$/.${GIT_BRANCH_SUFFIX}\1/")
+            fi
+          fi
+
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "### $version" >> $GITHUB_STEP_SUMMARY
 
@@ -69,12 +89,12 @@ jobs:
         working-directory: docker
         run: docker compose up -d elasticsearch &
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
-            path: ~/.nuget/packages
-            key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
-            restore-keys: |
-                nuget-${{ runner.os }}-
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
 
       - name: Nuget Restore
         run: dotnet restore
@@ -92,17 +112,17 @@ jobs:
       - name: Code Coverage Summary Report
         uses: irongut/CodeCoverageSummary@v1.3.0
         with:
-            filename: coverage/coverage.cobertura.xml
-            badge: true
-            format: "markdown"
-            output: "both"
+          filename: coverage/coverage.cobertura.xml
+          badge: true
+          format: "markdown"
+          output: "both"
 
       - name: Add Coverage PR Comment
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         if: github.event_name == 'pull_request'
         with:
-            recreate: true
-            path: code-coverage-results.md
+          recreate: true
+          path: code-coverage-results.md
 
       - name: Write Coverage to Job Summary
         run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
@@ -126,7 +146,7 @@ jobs:
           node-version: 24
 
       - name: Cache node_modules
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: cache-node-modules
         with:
           path: src/Exceptionless.Web/ClientApp/node_modules
@@ -151,97 +171,137 @@ jobs:
       - name: Run Integration Tests
         run: echo "npm run test:integration"
 
-  build-and-push-docker:
+  docker-build:
     runs-on: ubuntu-latest
     needs: [version]
     timeout-minutes: 30
     env:
       VERSION: ${{needs.version.outputs.version}}
+      STAGING_TAG: build-${{ github.run_id }}-${{ github.run_attempt }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-            fetch-depth: 0
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
-        if: "${{ env.DOCKER_USERNAME != '' }}"
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
         with:
           platforms: linux/amd64
+
+      - name: Login to GitHub Container Registry
+        if: ${{ env.CAN_PUBLISH_IMAGES == 'true' }}
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build api docker image
         run: |
           echo "::remove-matcher owner=csc::"
-          docker buildx build . --target api --platform linux/amd64 --tag exceptionless/api-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+          if [ "$CAN_PUBLISH_IMAGES" = "true" ]; then
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target api --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/api-ci:$STAGING_TAG --cache-from type=registry,ref=ghcr.io/exceptionless/exceptionless/api-ci:buildcache --cache-to type=registry,ref=ghcr.io/exceptionless/exceptionless/api-ci:buildcache,mode=max --push
+          else
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target api --platform linux/amd64 --tag exceptionless/api-ci:latest --cache-from type=gha,scope=api-ci --cache-to type=gha,scope=api-ci,mode=max --load
+          fi
 
       - name: Build job docker image
         run: |
           echo "::remove-matcher owner=csc::"
-          docker buildx build . --target job --platform linux/amd64 --tag exceptionless/job-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+          if [ "$CAN_PUBLISH_IMAGES" = "true" ]; then
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target job --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/job-ci:$STAGING_TAG --cache-from type=registry,ref=ghcr.io/exceptionless/exceptionless/job-ci:buildcache --cache-to type=registry,ref=ghcr.io/exceptionless/exceptionless/job-ci:buildcache,mode=max --push
+          else
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target job --platform linux/amd64 --tag exceptionless/job-ci:latest --cache-from type=gha,scope=job-ci --cache-to type=gha,scope=job-ci,mode=max --load
+          fi
 
       - name: Build app docker image
         run: |
           echo "::remove-matcher owner=csc::"
-          docker buildx build . --target app --platform linux/amd64 --tag exceptionless/app-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+          if [ "$CAN_PUBLISH_IMAGES" = "true" ]; then
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target app --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/app-ci:$STAGING_TAG --cache-from type=registry,ref=ghcr.io/exceptionless/exceptionless/app-ci:buildcache --cache-to type=registry,ref=ghcr.io/exceptionless/exceptionless/app-ci:buildcache,mode=max --push
+          else
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target app --platform linux/amd64 --tag exceptionless/app-ci:latest --cache-from type=gha,scope=app-ci --cache-to type=gha,scope=app-ci,mode=max --load
+          fi
 
       - name: Build all-in-one docker image
         run: |
           echo "::remove-matcher owner=csc::"
-          docker buildx build . --target exceptionless --platform linux/amd64 --tag exceptionless/exceptionless-ci:latest --cache-from type=gha --cache-to type=gha,mode=max --load
+          if [ "$CAN_PUBLISH_IMAGES" = "true" ]; then
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target exceptionless --platform linux/amd64 --tag ghcr.io/exceptionless/exceptionless/exceptionless-ci:$STAGING_TAG --cache-from type=registry,ref=ghcr.io/exceptionless/exceptionless/exceptionless-ci:buildcache --cache-to type=registry,ref=ghcr.io/exceptionless/exceptionless/exceptionless-ci:buildcache,mode=max --push
+          else
+            docker buildx build . --build-arg MinVerVersionOverride=$VERSION --target exceptionless --platform linux/amd64 --tag exceptionless/exceptionless-ci:latest --cache-from type=gha,scope=exceptionless-ci --cache-to type=gha,scope=exceptionless-ci,mode=max --load
+          fi
 
+  docker-publish:
+    runs-on: ubuntu-latest
+    needs: [version, docker-build, test-api, test-client]
+    timeout-minutes: 30
+    env:
+      VERSION: ${{needs.version.outputs.version}}
+      STAGING_TAG: build-${{ github.run_id }}-${{ github.run_attempt }}
+
+    steps:
       - name: Login to GitHub Container Registry
-        if: "${{ env.DOCKER_USERNAME != '' }}"
-        uses: docker/login-action@v3
+        if: ${{ env.CAN_PUBLISH_IMAGES == 'true' }}
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Login to DockerHub
-        if: "${{ env.DOCKER_USERNAME != '' }}"
-        uses: docker/login-action@v3
+        if: ${{ env.CAN_PUBLISH_IMAGES == 'true' }}
+        uses: docker/login-action@v4
         with:
           username: ${{ env.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Wait for test jobs # doing it this way so we don't have to copy artifacts between jobs
-        uses: yogeshlonkar/wait-for-jobs@v0
-        with:
-          jobs: 'test-api,test-client'
-          interval: '2500'
-          ttl: '10'
+      - name: Pull staged docker images
+        if: ${{ env.CAN_PUBLISH_IMAGES == 'true' }}
+        run: |
+          for image in api job app exceptionless; do
+            docker pull ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG
+          done
 
       - name: Publish CI Packages
-        if: "${{ env.DOCKER_USERNAME != '' }}"
+        if: ${{ env.CAN_PUBLISH_IMAGES == 'true' }}
         run: |
           echo "::remove-matcher owner=csc::"
           # tag and push docker images
 
           for image in {"api","job","app","exceptionless"}; do
-            docker image tag exceptionless/$image-ci:latest exceptionless/$image-ci:$VERSION
-            docker image tag exceptionless/$image-ci:latest ghcr.io/exceptionless/exceptionless/$image-ci:$VERSION
-            docker image tag exceptionless/$image-ci:latest ghcr.io/exceptionless/exceptionless/$image-ci:latest
+            docker image tag ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG exceptionless/$image-ci:$VERSION
+            docker image tag ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG exceptionless/$image-ci:latest
+            docker image tag ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG ghcr.io/exceptionless/exceptionless/$image-ci:$VERSION
+            docker image tag ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG ghcr.io/exceptionless/exceptionless/$image-ci:latest
 
             docker image push --all-tags exceptionless/$image-ci
+            docker image push --all-tags ghcr.io/exceptionless/exceptionless/$image-ci
           done
 
       - name: Publish Release Packages
-        if: "${{ env.DOCKER_USERNAME != '' && startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}"
+        if: ${{ env.CAN_PUBLISH_IMAGES == 'true' && startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}
         run: |
           echo "::remove-matcher owner=csc::"
           # tag and push docker images
 
           for image in {"api","job","app","exceptionless"}; do
-            docker image tag exceptionless/$image-ci:latest exceptionless/$image:$VERSION
-            docker image tag exceptionless/$image-ci:latest exceptionless/$image:latest
+            docker image tag ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG exceptionless/$image:$VERSION
+            docker image tag ghcr.io/exceptionless/exceptionless/$image-ci:$STAGING_TAG exceptionless/$image:latest
 
             docker image push --all-tags exceptionless/$image
           done
 
   deploy:
-    if: "${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name != 'pull_request' }}"
-    needs: [version,build-and-push-docker]
+    if: >-
+      ${{
+        (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+        && github.event_name != 'pull_request'
+        || (github.event_name == 'pull_request' && github.head_ref == vars.DEV_DEPLOY_BRANCH && vars.DEV_DEPLOY_BRANCH != 'main' && vars.DEV_DEPLOY_BRANCH != '')
+      }}
+    needs: [version, docker-publish]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -251,14 +311,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-            fetch-depth: 0
+          fetch-depth: 0
 
       - name: Install Helm
-        if: "${{ env.DOCKER_USERNAME != '' && github.event_name != 'pull_request' }}"
-        uses: azure/setup-helm@v4
+        if: ${{ env.CAN_PUBLISH_IMAGES == 'true' }}
+        uses: azure/setup-helm@v5
 
       - name: Deploy Changes to Development Environment
-        if: "${{ env.DOCKER_USERNAME != '' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}"
+        if: >-
+          ${{
+            env.CAN_PUBLISH_IMAGES == 'true' && (
+              (github.event_name == 'push' && github.ref == format('refs/heads/{0}', vars.DEV_DEPLOY_BRANCH || 'main'))
+              || (github.event_name == 'pull_request' && github.head_ref == vars.DEV_DEPLOY_BRANCH && vars.DEV_DEPLOY_BRANCH != 'main' && vars.DEV_DEPLOY_BRANCH != '')
+            )
+          }}
         run: |
           az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
           az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6
@@ -266,7 +332,7 @@ jobs:
           helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-dev-values.yaml ex-dev --namespace ex-dev ./k8s/exceptionless
 
       - name: Deploy Changes to Production Environment
-        if: "${{ env.DOCKER_USERNAME != '' && startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}"
+        if: ${{ env.CAN_PUBLISH_IMAGES == 'true' && startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}
         run: |
           az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
           az aks get-credentials --resource-group exceptionless-v6 --name ex-k8s-v6

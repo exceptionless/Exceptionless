@@ -7,16 +7,16 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Exceptionless.RandomData" Version="2.0.1" />
-    <PackageReference Include="Foundatio.Xunit.v3" Version="13.0.0-beta3.19" />
+    <PackageReference Include="Foundatio.Xunit.v3" Version="13.0.0-beta6.2" />
 
     <PackageReference Include="FluentRest" Version="11.0.0" />
 
-    <PackageReference Include="Aspire.Hosting.Testing" Version="13.1.2" />
-    <PackageReference Include="GitHubActionsTestLogger" Version="3.0.1" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.4.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
-    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.5.2" />
+    <PackageReference Include="Aspire.Hosting.Testing" Version="13.2.2" />
+    <PackageReference Include="GitHubActionsTestLogger" Version="3.0.3" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.6" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.5.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.6.2" />
     <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" PrivateAssets="All" />
   </ItemGroup>

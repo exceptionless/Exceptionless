@@ -9,8 +9,9 @@
     import { accessToken, logout } from '$features/auth/index.svelte';
     import { useFetchClientStatus } from '$shared/api/api.svelte';
     import { useFetchClient } from '@exceptionless/fetchclient';
+    import { useQueryClient } from '@tanstack/svelte-query';
 
-    let isAuthenticated = $derived(accessToken.current !== null);
+    let isAuthenticated = $derived(!!accessToken.current);
 
     $effect(() => {
         if (!isAuthenticated) {
@@ -20,25 +21,23 @@
 
     const client = useFetchClient();
     const clientStatus = useFetchClientStatus(client);
+    const queryClient = useQueryClient();
 
     let message = $state<string>();
-    async function onLogout() {
+    async function onLogout(event: SubmitEvent) {
+        event.preventDefault();
+
         if (client.isLoading) {
             return;
         }
 
-        const response = await client.get('auth/logout');
-        if (response.ok) {
-            await logout();
-            await goto(resolve('/(auth)/login'));
-        } else {
-            message = 'An error occurred while logging out, please try again.';
-        }
+        await logout(queryClient, client);
+        await goto(resolve('/(auth)/login'));
     }
 </script>
 
 <Card.Root class="mx-auto w-sm">
-    <Card.Header class="min-w-[382px]">
+    <Card.Header class="min-w-95.5">
         <Logo />
     </Card.Header>
     <Card.Content>

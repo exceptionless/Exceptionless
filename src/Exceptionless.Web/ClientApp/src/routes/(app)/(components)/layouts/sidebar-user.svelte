@@ -5,14 +5,17 @@
 
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
+    import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
     import { A } from '$comp/typography';
     import * as Avatar from '$comp/ui/avatar/index';
+    import { Badge } from '$comp/ui/badge';
     import * as DropdownMenu from '$comp/ui/dropdown-menu/index';
     import * as Sidebar from '$comp/ui/sidebar/index';
     import { useSidebar } from '$comp/ui/sidebar/index';
     import { Skeleton } from '$comp/ui/skeleton';
     import ImpersonateOrganizationDialog from '$features/organizations/components/dialogs/impersonate-organization-dialog.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import { apiReferenceHref, documentationHref, githubRepositoryHref, supportIssuesHref } from '$features/shared/help-links';
     import GlobalUser from '$features/users/components/global-user.svelte';
     import BadgeCheck from '@lucide/svelte/icons/badge-check';
     import Bell from '@lucide/svelte/icons/bell';
@@ -25,7 +28,6 @@
     import DatabaseZap from '@lucide/svelte/icons/database-zap';
     import Eye from '@lucide/svelte/icons/eye';
     import EyeOff from '@lucide/svelte/icons/eye-off';
-    import GitHub from '@lucide/svelte/icons/github';
     import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
     import LogOut from '@lucide/svelte/icons/log-out';
     import Play from '@lucide/svelte/icons/play';
@@ -35,20 +37,32 @@
 
     interface Props {
         gravatar: Gravatar;
+        intercomUnreadCount: number;
+        isChatEnabled: boolean;
         isImpersonating?: boolean;
         isLoading: boolean;
+        openChat: () => void;
         organizations?: ViewOrganization[];
         user: undefined | ViewCurrentUser;
     }
 
-    let { gravatar, isImpersonating = false, isLoading, organizations = [], user }: Props = $props();
+    let { gravatar, intercomUnreadCount = 0, isChatEnabled, isImpersonating = false, isLoading, openChat, organizations = [], user }: Props = $props();
     const sidebar = useSidebar();
     let openImpersonateDialog = $state(false);
+
+    function getUnreadCountLabel(unreadCount: number): string {
+        return unreadCount > 99 ? '99+' : unreadCount.toString();
+    }
 
     function onMenuClick() {
         if (sidebar.isMobile) {
             sidebar.toggle();
         }
+    }
+
+    function onChatClick() {
+        onMenuClick();
+        openChat();
     }
 
     async function impersonateOrganization(vo: ViewOrganization): Promise<void> {
@@ -75,6 +89,25 @@
         </Sidebar.MenuItem>
     </Sidebar.Menu>
 {:else}
+    {#if isChatEnabled}
+        <Sidebar.Menu>
+            <Sidebar.MenuItem>
+                <Sidebar.MenuButton
+                    size="lg"
+                    class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                    onclick={onChatClick}
+                >
+                    <Help class="size-4" aria-hidden="true" />
+                    <div class="grid flex-1 gap-0.5 text-left">
+                        <span class="text-sm leading-none font-medium">Chat with support</span>
+                    </div>
+                    {#if intercomUnreadCount > 0}
+                        <Sidebar.MenuBadge>{getUnreadCountLabel(intercomUnreadCount)}</Sidebar.MenuBadge>
+                    {/if}
+                </Sidebar.MenuButton>
+            </Sidebar.MenuItem>
+        </Sidebar.Menu>
+    {/if}
     <Sidebar.Menu>
         <Sidebar.MenuItem>
             <DropdownMenu.Root>
@@ -173,24 +206,33 @@
                             Help
                         </DropdownMenu.SubTrigger>
                         <DropdownMenu.SubContent>
+                            {#if isChatEnabled}
+                                <DropdownMenu.Item class="gap-2 p-2" onSelect={onChatClick}>
+                                    <Help />
+                                    <span class="font-medium">Support</span>
+                                    {#if intercomUnreadCount > 0}
+                                        <Badge class="ml-auto shrink-0" variant="secondary">{getUnreadCountLabel(intercomUnreadCount)}</Badge>
+                                    {/if}
+                                </DropdownMenu.Item>
+                            {/if}
                             <DropdownMenu.Item>
                                 <BookOpen />
-                                <A variant="ghost" href="https://exceptionless.com/docs/" target="_blank" class="w-full">Documentation</A>
+                                <A variant="ghost" href={documentationHref} target="_blank" class="w-full">Documentation</A>
                                 <DropdownMenu.Shortcut>⌘gw</DropdownMenu.Shortcut>
                             </DropdownMenu.Item>
                             <DropdownMenu.Item>
                                 <Help />
-                                <A variant="ghost" href="https://github.com/exceptionless/Exceptionless/issues" target="_blank" class="w-full">Support</A>
+                                <A variant="ghost" href={supportIssuesHref} target="_blank" class="w-full">Support</A>
                                 <DropdownMenu.Shortcut>⌘gs</DropdownMenu.Shortcut>
                             </DropdownMenu.Item>
                             <DropdownMenu.Item>
-                                <GitHub />
-                                <A variant="ghost" href="https://github.com/exceptionless/Exceptionless" target="_blank" class="w-full">GitHub</A>
+                                <GitHubIcon />
+                                <A variant="ghost" href={githubRepositoryHref} target="_blank" class="w-full">GitHub</A>
                                 <DropdownMenu.Shortcut>⌘gg</DropdownMenu.Shortcut>
                             </DropdownMenu.Item>
                             <DropdownMenu.Item>
                                 <Braces />
-                                <A variant="ghost" href="/docs/index.html" target="_blank" class="w-full">API Reference</A>
+                                <A variant="ghost" href={apiReferenceHref} target="_blank" class="w-full">API Reference</A>
                             </DropdownMenu.Item>
                             <DropdownMenu.Item>
                                 <BookOpen />

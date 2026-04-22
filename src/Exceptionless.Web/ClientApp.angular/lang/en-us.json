@@ -574,6 +574,7 @@
     "Forgot Password": "Forgot Password",
     "NOTICE_SIGNINGUP": "By signing up, you agree to our <a href=\"https://exceptionless.com/privacy\" target=\"_blank\">Privacy Policy</a> and <a href=\"https://exceptionless.com/terms\" target=\"_blank\">Terms of Service</a>.",
     "Loggin_Failed_Message": "An error occurred while logging in. Please contact support for more information.",
+    "Login_Invalid_Credentials": "Invalid email or password.",
     "Unable_to_connect_to": "Unable to connect to",
     "ResetPassword_Failed_Message": "An error occurred while trying to reset your password.",
     "ResetPassword_Success_Message": "An email was sent that contains instructions to change your password.",

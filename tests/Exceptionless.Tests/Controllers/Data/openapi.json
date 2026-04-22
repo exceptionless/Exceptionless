@@ -749,6 +749,32 @@
         }
       }
     },
+    "/api/v2/auth/intercom": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Get the current user's Intercom messenger token.",
+        "responses": {
+          "200": {
+            "description": "Intercom messenger token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User not logged in"
+          },
+          "422": {
+            "description": "Intercom is not enabled."
+          }
+        }
+      }
+    },
     "/api/v2/auth/logout": {
       "get": {
         "tags": [
@@ -7072,7 +7098,9 @@
       },
       "CountResult": {
         "required": [
-          "total"
+          "total",
+          "aggregations",
+          "data"
         ],
         "type": "object",
         "properties": {

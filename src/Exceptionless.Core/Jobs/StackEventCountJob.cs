@@ -25,9 +25,9 @@ public class StackEventCountJob : JobWithLockBase, IHealthCheck
         _lockProvider = new ThrottlingLockProvider(cacheClient, 1, TimeSpan.FromSeconds(5), timeProvider, resiliencePolicyProvider, loggerFactory);
     }
 
-    protected override Task<ILock> GetLockAsync(CancellationToken cancellationToken = default)
+    protected override Task<ILock?> GetLockAsync(CancellationToken cancellationToken = default)
     {
-        return _lockProvider.AcquireAsync(nameof(StackEventCountJob), TimeSpan.FromSeconds(5), new CancellationToken(true));
+        return _lockProvider.AcquireAsync(nameof(StackEventCountJob), TimeSpan.FromSeconds(5), cancellationToken);
     }
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)

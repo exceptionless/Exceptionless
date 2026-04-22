@@ -20,15 +20,16 @@ public class RemoveStacksWorkItemHandler : WorkItemHandlerBase
         _lockProvider = lockProvider;
     }
 
-    public override Task<ILock> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = new())
+    public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = default)
     {
         string cacheKey = $"{nameof(RemoveStacksWorkItem)}:{((RemoveStacksWorkItem)workItem).ProjectId}";
-        return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), new CancellationToken(true));
+        return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), cancellationToken);
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
     {
-        var wi = context.GetData<RemoveStacksWorkItem>();
+        var wi = context.GetData<RemoveStacksWorkItem>()!;
+
         using (Log.BeginScope(new ExceptionlessState().Organization(wi.OrganizationId).Project(wi.ProjectId)))
         {
             Log.LogInformation("Received remove stacks work item for project: {ProjectId}", wi.ProjectId);

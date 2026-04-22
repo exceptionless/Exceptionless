@@ -38,7 +38,7 @@ public class UpdateEventUsageMigrationTests : IntegrationTestsBase
     protected override void RegisterServices(IServiceCollection services)
     {
         services.AddTransient<SetStackDuplicateSignature>();
-        services.AddSingleton<ILock>(new EmptyLock());
+        services.AddSingleton<ILock>(EmptyLock.Empty);
         base.RegisterServices(services);
     }
 
@@ -66,6 +66,7 @@ public class UpdateEventUsageMigrationTests : IntegrationTestsBase
 
         int limit = organization.GetMaxEventsPerMonthWithBonus(TimeProvider);
         organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.NotNull(organization);
         Assert.Equal(2, organization.Usage.Count);
         var previousMonthsUsage = organization.GetUsage(previousMonthUsageDate, TimeProvider);
         Assert.Equal(100, previousMonthsUsage.Total);
@@ -75,6 +76,7 @@ public class UpdateEventUsageMigrationTests : IntegrationTestsBase
         Assert.Equal(limit, currentMonthsUsage.Limit);
 
         project = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(project);
         Assert.Equal(2, project.Usage.Count);
         previousMonthsUsage = project.GetUsage(previousMonthUsageDate);
         Assert.Equal(100, previousMonthsUsage.Total);

@@ -1,11 +1,12 @@
 import { resolve } from '$app/paths';
+import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
+import { apiReferenceHref, documentationHref, githubRepositoryHref, supportIssuesHref } from '$features/shared/help-links';
 import Documentation from '@lucide/svelte/icons/book-open';
 import ApiDocumentations from '@lucide/svelte/icons/braces';
 import Issues from '@lucide/svelte/icons/bug';
 import EventStream from '@lucide/svelte/icons/calendar-arrow-down';
 import Events from '@lucide/svelte/icons/calendar-days';
 import Support from '@lucide/svelte/icons/circle-help';
-import GitHub from '@lucide/svelte/icons/github';
 import Sessions from '@lucide/svelte/icons/timer';
 
 import type { NavigationItem } from '../routes.svelte';
@@ -44,28 +45,28 @@ export function routes(): NavigationItem[] {
         },
         {
             group: 'Help',
-            href: 'https://exceptionless.com/docs/',
+            href: documentationHref,
             icon: Documentation,
             openInNewTab: true,
             title: 'Documentation'
         },
         {
             group: 'Help',
-            href: 'https://github.com/exceptionless/Exceptionless/issues',
+            href: supportIssuesHref,
             icon: Support,
             openInNewTab: true,
             title: 'Support'
         },
         {
             group: 'Help',
-            href: 'https://github.com/exceptionless/Exceptionless',
-            icon: GitHub,
+            href: githubRepositoryHref,
+            icon: GitHubIcon,
             openInNewTab: true,
             title: 'GitHub'
         },
         {
             group: 'Help',
-            href: '/docs/index.html',
+            href: apiReferenceHref,
             icon: ApiDocumentations,
             openInNewTab: true,
             title: 'API'

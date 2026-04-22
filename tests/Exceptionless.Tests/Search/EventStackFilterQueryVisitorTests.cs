@@ -17,7 +17,7 @@ public class EventStackFilterQueryVisitorTests : TestWithServices
 
         var eventStackFilter = new EventStackFilter();
         var stackFilter = await eventStackFilter.GetStackFilterAsync(scenario.Source);
-        Assert.Equal(scenario.Stack, stackFilter.Filter.Trim());
+        Assert.Equal(scenario.Stack, stackFilter?.Filter?.Trim());
     }
 
     [Theory]
@@ -28,7 +28,7 @@ public class EventStackFilterQueryVisitorTests : TestWithServices
 
         var eventStackFilter = new EventStackFilter();
         var stackFilter = await eventStackFilter.GetStackFilterAsync(scenario.Source);
-        Assert.Equal(scenario.InvertedStack, stackFilter.InvertedFilter.Trim());
+        Assert.Equal(scenario.InvertedStack, stackFilter?.InvertedFilter?.Trim());
     }
 
     [Theory]
@@ -39,7 +39,7 @@ public class EventStackFilterQueryVisitorTests : TestWithServices
 
         var eventStackFilter = new EventStackFilter();
         string? stackFilter = await eventStackFilter.GetEventFilterAsync(scenario.Source);
-        Assert.Equal(scenario.Event, stackFilter.Trim());
+        Assert.Equal(scenario.Event, stackFilter?.Trim());
     }
 }
 
