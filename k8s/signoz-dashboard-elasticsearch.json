@@ -1,0 +1,435 @@
+{
+    "title": "Elasticsearch",
+    "description": "Elasticsearch cluster metrics",
+    "tags": ["elasticsearch", "infrastructure"],
+    "variables": {},
+    "layout": [
+        { "i": "cluster_status", "x": 0, "y": 0, "w": 3, "h": 2 },
+        { "i": "node_count", "x": 3, "y": 0, "w": 3, "h": 2 },
+        { "i": "active_shards", "x": 6, "y": 0, "w": 3, "h": 2 },
+        { "i": "unassigned_shards", "x": 9, "y": 0, "w": 3, "h": 2 },
+        { "i": "total_docs", "x": 0, "y": 2, "w": 4, "h": 2 },
+        { "i": "store_size", "x": 4, "y": 2, "w": 4, "h": 2 },
+        { "i": "pending_tasks", "x": 8, "y": 2, "w": 4, "h": 2 },
+        { "i": "indexing_rate", "x": 0, "y": 4, "w": 6, "h": 5 },
+        { "i": "search_rate", "x": 6, "y": 4, "w": 6, "h": 5 },
+        { "i": "search_latency", "x": 0, "y": 9, "w": 6, "h": 5 },
+        { "i": "indexing_latency", "x": 6, "y": 9, "w": 6, "h": 5 },
+        { "i": "jvm_heap_used", "x": 0, "y": 14, "w": 6, "h": 5 },
+        { "i": "jvm_heap_percent", "x": 6, "y": 14, "w": 6, "h": 5 },
+        { "i": "gc_old_rate", "x": 0, "y": 19, "w": 6, "h": 5 },
+        { "i": "gc_young_rate", "x": 6, "y": 19, "w": 6, "h": 5 },
+        { "i": "cpu_percent", "x": 0, "y": 24, "w": 6, "h": 5 },
+        { "i": "disk_usage", "x": 6, "y": 24, "w": 6, "h": 5 },
+        { "i": "thread_pool_active", "x": 0, "y": 29, "w": 4, "h": 5 },
+        { "i": "thread_pool_queue", "x": 4, "y": 29, "w": 4, "h": 5 },
+        { "i": "thread_pool_rejected", "x": 8, "y": 29, "w": 4, "h": 5 },
+        { "i": "breaker_estimated", "x": 0, "y": 34, "w": 6, "h": 5 },
+        { "i": "segment_count", "x": 6, "y": 34, "w": 6, "h": 5 }
+    ],
+    "widgets": [
+        {
+            "id": "cluster_status",
+            "title": "Cluster Status",
+            "description": "1=Green  2=Yellow  3=Red",
+            "panelTypes": "value",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "(elasticsearch_cluster_health_status{color=\"green\"} == 1) * 1 or (elasticsearch_cluster_health_status{color=\"yellow\"} == 1) * 2 or (elasticsearch_cluster_health_status{color=\"red\"} == 1) * 3",
+                        "legend": "{{color}}",
+                        "disabled": false
+                    }
+                ]
+            },
+            "thresholds": [
+                {
+                    "index": 0,
+                    "isDefault": true,
+                    "op": "1",
+                    "value": 0,
+                    "color": { "hex": "#e74c3c" }
+                },
+                {
+                    "index": 1,
+                    "isDefault": false,
+                    "op": "5",
+                    "value": 1,
+                    "color": { "hex": "#2ecc71" }
+                },
+                {
+                    "index": 2,
+                    "isDefault": false,
+                    "op": "5",
+                    "value": 2,
+                    "color": { "hex": "#f1c40f" }
+                },
+                {
+                    "index": 3,
+                    "isDefault": false,
+                    "op": "5",
+                    "value": 3,
+                    "color": { "hex": "#e74c3c" }
+                }
+            ]
+        },
+        {
+            "id": "node_count",
+            "title": "Nodes",
+            "panelTypes": "value",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "elasticsearch_cluster_health_number_of_nodes",
+                        "legend": "",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "active_shards",
+            "title": "Active Shards",
+            "panelTypes": "value",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "elasticsearch_cluster_health_active_shards",
+                        "legend": "",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "unassigned_shards",
+            "title": "Unassigned Shards",
+            "panelTypes": "value",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "elasticsearch_cluster_health_unassigned_shards",
+                        "legend": "",
+                        "disabled": false
+                    }
+                ]
+            },
+            "thresholds": [
+                {
+                    "index": 0,
+                    "isDefault": true,
+                    "op": "1",
+                    "value": 0,
+                    "color": { "hex": "#2ecc71" }
+                },
+                {
+                    "index": 1,
+                    "isDefault": false,
+                    "op": "3",
+                    "value": 0,
+                    "color": { "hex": "#e74c3c" }
+                }
+            ],
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "total_docs",
+            "title": "Total Documents",
+            "panelTypes": "value",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "sum(elasticsearch_indices_docs)",
+                        "legend": "",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "store_size",
+            "title": "Store Size",
+            "panelTypes": "value",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "sum(elasticsearch_indices_store_size_bytes)",
+                        "legend": "",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "bytes"
+        },
+        {
+            "id": "pending_tasks",
+            "title": "Pending Tasks",
+            "panelTypes": "value",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "elasticsearch_cluster_health_number_of_pending_tasks",
+                        "legend": "",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "indexing_rate",
+            "title": "Indexing Rate (ops/s)",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "rate(elasticsearch_indices_indexing_index_total[5m])",
+                        "legend": "{{name}}",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "search_rate",
+            "title": "Search Rate (queries/s)",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "rate(elasticsearch_indices_search_query_total[5m])",
+                        "legend": "{{name}}",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "search_latency",
+            "title": "Search Latency (ms/query)",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "increase(elasticsearch_indices_search_query_time_seconds[5m]) / on(name) increase(elasticsearch_indices_search_query_total[5m]) * 1000",
+                        "legend": "{{name}}",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "ms"
+        },
+        {
+            "id": "indexing_latency",
+            "title": "Indexing Latency (ms/op)",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "increase(elasticsearch_indices_indexing_index_time_seconds_total[5m]) / on(name) increase(elasticsearch_indices_indexing_index_total[5m]) * 1000",
+                        "legend": "{{name}}",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "ms"
+        },
+        {
+            "id": "jvm_heap_used",
+            "title": "JVM Heap Used",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "elasticsearch_jvm_memory_used_bytes{area=\"heap\"}",
+                        "legend": "{{name}}",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "bytes"
+        },
+        {
+            "id": "jvm_heap_percent",
+            "title": "JVM Heap Used %",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "elasticsearch_jvm_memory_used_bytes{area=\"heap\"} / on(name) elasticsearch_jvm_memory_max_bytes{area=\"heap\"} * 100",
+                        "legend": "{{name}}",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "percent"
+        },
+        {
+            "id": "gc_old_rate",
+            "title": "GC Old Gen Rate (collections/s)",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "rate(elasticsearch_jvm_gc_collection_seconds_count{gc=\"old\"}[5m])",
+                        "legend": "{{name}}",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "gc_young_rate",
+            "title": "GC Young Gen Rate (collections/s)",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "rate(elasticsearch_jvm_gc_collection_seconds_count{gc=\"young\"}[5m])",
+                        "legend": "{{name}}",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "cpu_percent",
+            "title": "Process CPU %",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "elasticsearch_process_cpu_percent",
+                        "legend": "{{name}}",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "percent"
+        },
+        {
+            "id": "disk_usage",
+            "title": "Disk Usage",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "elasticsearch_filesystem_data_size_bytes - elasticsearch_filesystem_data_free_bytes",
+                        "legend": "used {{name}}",
+                        "disabled": false
+                    },
+                    {
+                        "query": "elasticsearch_filesystem_data_size_bytes",
+                        "legend": "total {{name}}",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "bytes"
+        },
+        {
+            "id": "thread_pool_active",
+            "title": "Thread Pool Active",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "elasticsearch_thread_pool_active_count",
+                        "legend": "{{name}} {{type}}",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "thread_pool_queue",
+            "title": "Thread Pool Queue",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "elasticsearch_thread_pool_queue_count",
+                        "legend": "{{name}} {{type}}",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "thread_pool_rejected",
+            "title": "Thread Pool Rejected",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "rate(elasticsearch_thread_pool_rejected_count[5m])",
+                        "legend": "{{name}} {{type}}",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "locale"
+        },
+        {
+            "id": "breaker_estimated",
+            "title": "Circuit Breaker Estimated Size",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "elasticsearch_breakers_estimated_size_bytes",
+                        "legend": "{{name}} {{breaker}}",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "bytes"
+        },
+        {
+            "id": "segment_count",
+            "title": "Segment Count",
+            "panelTypes": "graph",
+            "query": {
+                "queryType": "promql",
+                "promql": [
+                    {
+                        "query": "elasticsearch_indices_segments_count",
+                        "legend": "{{name}}",
+                        "disabled": false
+                    }
+                ]
+            },
+            "yAxisUnit": "locale"
+        }
+    ]
+}

@@ -56,6 +56,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
     protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<WebHookNotification> context)
     {
         var body = context.QueueEntry.Value;
+
         bool shouldLog = body.ProjectId != _appOptions.InternalProjectId;
         using (_logger.BeginScope(new ExceptionlessState().Organization(body.OrganizationId).Project(body.ProjectId)))
         {
@@ -161,6 +162,12 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
         switch (body.Type)
         {
             case WebHookType.General:
+                if (body.WebHookId is null)
+                {
+                    _logger.LogWarning("WebHook notification is missing the web hook id. Organization: {OrganizationId}, Project: {ProjectId}, Url: {Url}", body.OrganizationId, body.ProjectId, body.Url);
+                    return false;
+                }
+
                 var webHook = await _webHookRepository.GetByIdAsync(body.WebHookId, o => o.Cache());
                 return webHook?.IsEnabled ?? false;
             case WebHookType.Slack:

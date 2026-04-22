@@ -779,7 +779,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
             return Task.FromResult<Organization?>(null);
 
-        return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache))!;
+        return _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(useCache));
     }
 
     private async Task<ViewProject> PopulateProjectStatsAsync(ViewProject project)

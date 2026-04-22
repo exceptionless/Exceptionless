@@ -1,0 +1,91 @@
+name: Start Dev Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      auto_stop_hours:
+        description: "Automatically stop after N hours (0 to disable)"
+        required: false
+        default: "8"
+        type: choice
+        options:
+          - "0"
+          - "4"
+          - "8"
+          - "24"
+          - "48"
+
+permissions:
+  contents: read
+
+env:
+  CLUSTER_NAME: ex-k8s-v6
+  RESOURCE_GROUP: exceptionless-v6
+  NAMESPACE: ex-dev
+
+jobs:
+  start:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Azure Login
+        run: az login --service-principal --username ${{ secrets.AZ_USERNAME }} --password ${{ secrets.AZ_PASSWORD }} --tenant ${{ secrets.AZ_TENANT }} --output none
+
+      - name: Get AKS Credentials
+        run: az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER_NAME --overwrite-existing
+
+      - name: Start Infrastructure (ES + Redis)
+        run: |
+          kubectl scale statefulset/ex-dev-es-main --replicas=1 --namespace $NAMESPACE
+          kubectl apply -f k8s/ex-dev-redis.yaml
+
+      - name: Wait for Elasticsearch
+        run: kubectl wait --for=condition=ready --timeout=300s pod ex-dev-es-main-0 --namespace $NAMESPACE
+
+      - name: Start Kibana
+        run: kubectl scale deployment/ex-dev-kb --replicas=1 --namespace $NAMESPACE
+
+      - name: Start App + API
+        run: |
+          kubectl scale deployment/ex-dev-app --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-api --replicas=1 --namespace $NAMESPACE
+
+      - name: Start Jobs
+        run: |
+          kubectl scale deployment/ex-dev-jobs-close-inactive-sessions --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-daily-summary --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-notifications --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-usage --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-posts --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-event-user-descriptions --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-mail-message --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-stack-event-count --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-web-hooks --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-work-item --replicas=1 --namespace $NAMESPACE
+
+      - name: Resume CronJobs
+        run: |
+          kubectl patch cronjob/ex-dev-jobs-cleanup-data -p '{"spec":{"suspend": false}}' --namespace $NAMESPACE
+          kubectl patch cronjob/ex-dev-jobs-cleanup-orphaned-data -p '{"spec":{"suspend": false}}' --namespace $NAMESPACE
+          kubectl patch cronjob/ex-dev-jobs-download-geoip-database -p '{"spec":{"suspend": false}}' --namespace $NAMESPACE
+          kubectl patch cronjob/ex-dev-jobs-maintain-indexes -p '{"spec":{"suspend": false}}' --namespace $NAMESPACE
+          kubectl patch cronjob/ex-dev-jobs-migration -p '{"spec":{"suspend": false}}' --namespace $NAMESPACE
+
+      - name: Wait for App Ready
+        run: kubectl wait --for=condition=available --timeout=300s deployment/ex-dev-app --namespace $NAMESPACE
+
+      - name: Record Start Time
+        run: |
+          kubectl annotate namespace $NAMESPACE exceptionless.io/dev-started-at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --overwrite
+          kubectl annotate namespace $NAMESPACE exceptionless.io/dev-auto-stop-hours="${{ inputs.auto_stop_hours }}" --overwrite
+
+      - name: Summary
+        run: |
+          echo "### Dev Environment Started" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **App**: https://dev-app.exceptionless.io" >> $GITHUB_STEP_SUMMARY
+          echo "- **Collector**: https://dev-collector.exceptionless.io" >> $GITHUB_STEP_SUMMARY
+          echo "- **Kibana**: \`kubectl port-forward -n ex-dev svc/ex-dev-kb-http 5601\` → http://localhost:5601" >> $GITHUB_STEP_SUMMARY
+          echo "- **Auto-stop**: ${{ inputs.auto_stop_hours }}h (0 = disabled)" >> $GITHUB_STEP_SUMMARY

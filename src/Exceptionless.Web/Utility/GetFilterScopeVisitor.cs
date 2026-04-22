@@ -37,10 +37,10 @@ public class GetFilterScopeVisitor : QueryNodeVisitorWithResultBase<FilterScope>
         }
     }
 
-    public override Task<FilterScope> AcceptAsync(IQueryNode node, IQueryVisitorContext? context)
+    public override async Task<FilterScope> AcceptAsync(IQueryNode node, IQueryVisitorContext? context)
     {
-        node.AcceptAsync(this, context);
-        return Task.FromResult(_scope);
+        await node.AcceptAsync(this, context ?? new QueryVisitorContext());
+        return _scope;
     }
 
     public static FilterScope Run(string filter)

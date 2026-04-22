@@ -10,7 +10,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.closeInactiveSessions | default dict ).replicaCount) }}{{ .Values.jobs.closeInactiveSessions.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.closeInactiveSessions | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.closeInactiveSessions.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-close-inactive-sessions
@@ -26,6 +28,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-close-inactive-sessions
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-close-inactive-sessions
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -36,6 +45,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 100Mi
@@ -61,18 +77,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-            - name: EX_OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: EX_OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
-            - name: OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+{{- include "exceptionless.otel-env" . | indent 12 }}
 
 ---
 apiVersion: apps/v1
@@ -87,7 +92,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.dailySummary | default dict ).replicaCount) }}{{ .Values.jobs.dailySummary.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.dailySummary | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.dailySummary.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-daily-summary
@@ -103,6 +110,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-daily-summary
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-daily-summary
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -113,6 +127,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 250Mi
@@ -138,18 +159,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-            - name: EX_OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: EX_OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
-            - name: OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+{{- include "exceptionless.otel-env" . | indent 12 }}
 
 ---
 apiVersion: batch/v1
@@ -205,18 +215,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.uid
-                - name: EX_OTEL_EXPORTER_OTLP_INSECURE
-                  value: "true"
-                - name: OTEL_EXPORTER_OTLP_INSECURE
-                  value: "true"
-                - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
-                  value: http://$(HOST_IP):4317
-                - name: OTEL_EXPORTER_OTLP_ENDPOINT
-                  value: http://$(HOST_IP):4317
-                - name: EX_OTEL_RESOURCE_ATTRIBUTES
-                  value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
-                - name: OTEL_RESOURCE_ATTRIBUTES
-                  value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+{{- include "exceptionless.otel-env" . | indent 16 }}
           restartPolicy: OnFailure
 
 ---
@@ -232,7 +231,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventNotifications | default dict ).replicaCount) }}{{ .Values.jobs.eventNotifications.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.eventNotifications | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.eventNotifications.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-notifications
@@ -248,6 +249,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-event-notifications
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-event-notifications
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -258,6 +266,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 100Mi
@@ -283,18 +298,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-            - name: EX_OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: EX_OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
-            - name: OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+{{- include "exceptionless.otel-env" . | indent 12 }}
 
 ---
 apiVersion: apps/v1
@@ -309,7 +313,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventPosts | default dict ).replicaCount) }}{{ .Values.jobs.eventPosts.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.eventPosts | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.eventPosts.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-posts
@@ -325,6 +331,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-event-posts
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-event-posts
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -335,6 +348,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 250Mi
@@ -360,18 +380,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-            - name: EX_OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: EX_OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
-            - name: OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+{{- include "exceptionless.otel-env" . | indent 12 }}
 
 {{- if not (kindIs "invalid" ( .Values.jobs.eventPosts | default dict ).maxReplicaCount) }}
 ---
@@ -443,18 +452,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.uid
-                - name: EX_OTEL_EXPORTER_OTLP_INSECURE
-                  value: "true"
-                - name: OTEL_EXPORTER_OTLP_INSECURE
-                  value: "true"
-                - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
-                  value: http://$(HOST_IP):4317
-                - name: OTEL_EXPORTER_OTLP_ENDPOINT
-                  value: http://$(HOST_IP):4317
-                - name: EX_OTEL_RESOURCE_ATTRIBUTES
-                  value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
-                - name: OTEL_RESOURCE_ATTRIBUTES
-                  value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+{{- include "exceptionless.otel-env" . | indent 16 }}
           restartPolicy: OnFailure
 
 ---
@@ -470,7 +468,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventUserDescriptions | default dict ).replicaCount) }}{{ .Values.jobs.eventUserDescriptions.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.eventUserDescriptions | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.eventUserDescriptions.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-user-descriptions
@@ -486,6 +486,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-event-user-descriptions
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-event-user-descriptions
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -496,6 +503,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 50Mi
@@ -521,18 +535,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-            - name: EX_OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: EX_OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
-            - name: OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+{{- include "exceptionless.otel-env" . | indent 12 }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -546,7 +549,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.mailMessage | default dict ).replicaCount) }}{{ .Values.jobs.mailMessage.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.mailMessage | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.mailMessage.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-mail-message
@@ -562,6 +567,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-mail-message
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-mail-message
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -572,6 +584,14 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 175Mi
@@ -597,18 +617,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-            - name: EX_OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: EX_OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
-            - name: OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+{{- include "exceptionless.otel-env" . | indent 12 }}
 ---
 apiVersion: batch/v1
 kind: CronJob
@@ -663,18 +672,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.uid
-                - name: EX_OTEL_EXPORTER_OTLP_INSECURE
-                  value: "true"
-                - name: OTEL_EXPORTER_OTLP_INSECURE
-                  value: "true"
-                - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
-                  value: http://$(HOST_IP):4317
-                - name: OTEL_EXPORTER_OTLP_ENDPOINT
-                  value: http://$(HOST_IP):4317
-                - name: EX_OTEL_RESOURCE_ATTRIBUTES
-                  value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
-                - name: OTEL_RESOURCE_ATTRIBUTES
-                  value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+{{- include "exceptionless.otel-env" . | indent 16 }}
           restartPolicy: OnFailure
 
 ---
@@ -731,18 +729,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.uid
-                - name: EX_OTEL_EXPORTER_OTLP_INSECURE
-                  value: "true"
-                - name: OTEL_EXPORTER_OTLP_INSECURE
-                  value: "true"
-                - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
-                  value: http://$(HOST_IP):4317
-                - name: OTEL_EXPORTER_OTLP_ENDPOINT
-                  value: http://$(HOST_IP):4317
-                - name: EX_OTEL_RESOURCE_ATTRIBUTES
-                  value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
-                - name: OTEL_RESOURCE_ATTRIBUTES
-                  value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+{{- include "exceptionless.otel-env" . | indent 16 }}
           restartPolicy: OnFailure
 
 ---
@@ -799,18 +786,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.uid
-                - name: EX_OTEL_EXPORTER_OTLP_INSECURE
-                  value: "true"
-                - name: OTEL_EXPORTER_OTLP_INSECURE
-                  value: "true"
-                - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
-                  value: http://$(HOST_IP):4317
-                - name: OTEL_EXPORTER_OTLP_ENDPOINT
-                  value: http://$(HOST_IP):4317
-                - name: EX_OTEL_RESOURCE_ATTRIBUTES
-                  value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
-                - name: OTEL_RESOURCE_ATTRIBUTES
-                  value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+{{- include "exceptionless.otel-env" . | indent 16 }}
           restartPolicy: OnFailure
 
 ---
@@ -826,7 +802,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.stackEventCount | default dict ).replicaCount) }}{{ .Values.jobs.stackEventCount.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.stackEventCount | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.stackEventCount.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-stack-event-count
@@ -842,6 +820,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-stack-event-count
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-stack-event-count
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -852,6 +837,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 75Mi
@@ -877,18 +869,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-            - name: EX_OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: EX_OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
-            - name: OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+{{- include "exceptionless.otel-env" . | indent 12 }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -902,7 +883,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.webhooks | default dict ).replicaCount) }}{{ .Values.jobs.webhooks.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.webhooks | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.webhooks.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-web-hooks
@@ -918,6 +901,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-web-hooks
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-web-hooks
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -928,6 +918,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 175Mi
@@ -953,18 +950,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-            - name: EX_OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: EX_OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
-            - name: OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+{{- include "exceptionless.otel-env" . | indent 12 }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -978,7 +964,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.workitem | default dict ).replicaCount) }}{{ .Values.jobs.workitem.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.workitem | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.workitem.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-work-item
@@ -994,6 +982,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              component: {{ template "exceptionless.fullname" . }}-jobs-work-item
       containers:
         - name: {{ template "exceptionless.name" . }}-jobs-work-item
           image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
@@ -1004,6 +999,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 650Mi
@@ -1029,18 +1031,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-            - name: EX_OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: EX_OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
-            - name: OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+{{- include "exceptionless.otel-env" . | indent 12 }}
 {{- if (empty .Values.storage.connectionString) }}
           volumeMounts:
             - mountPath: "/app/storage"
@@ -1086,7 +1077,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ if not (kindIs "invalid" ( .Values.jobs.eventUsage | default dict ).replicaCount) }}{{ .Values.jobs.eventUsage.replicaCount }}{{ else }}{{ 1 }}{{ end }}
+  {{- if not (kindIs "invalid" ( .Values.jobs.eventUsage | default dict ).replicaCount) }}
+  replicas: {{ .Values.jobs.eventUsage.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       component: {{ template "exceptionless.fullname" . }}-jobs-event-usage
@@ -1112,6 +1105,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 175Mi
@@ -1137,15 +1137,4 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-            - name: EX_OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: OTEL_EXPORTER_OTLP_INSECURE
-              value: "true"
-            - name: EX_OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(HOST_IP):4317
-            - name: EX_OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
-            - name: OTEL_RESOURCE_ATTRIBUTES
-              value: k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)
+{{- include "exceptionless.otel-env" . | indent 12 }}

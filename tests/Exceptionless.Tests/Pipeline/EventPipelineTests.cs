@@ -599,6 +599,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.NotNull(ev.StackId);
 
         var stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
+        Assert.NotNull(stack);
         Assert.Equal(new[] { Tag1 }, stack.Tags.ToArray());
 
         ev = _eventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: DateTime.UtcNow);
@@ -609,6 +610,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         context = await _pipeline.RunAsync(ev, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
         Assert.False(context.HasError, context.ErrorMessage);
         stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
+        Assert.NotNull(stack);
         Assert.Equal(new[] { Tag1, Tag2 }, stack.Tags.ToArray());
 
         ev = _eventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: DateTime.UtcNow);
@@ -619,6 +621,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         context = await _pipeline.RunAsync(ev, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
         Assert.False(context.HasError, context.ErrorMessage);
         stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
+        Assert.NotNull(stack);
         Assert.Equal(new[] { Tag1, Tag2 }, stack.Tags.ToArray());
     }
 
@@ -641,9 +644,11 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Empty(ev.Tags);
 
         var stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
+        Assert.NotNull(stack);
         Assert.Empty(stack.Tags);
 
         ev = _eventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: DateTime.UtcNow);
+        ev.Tags ??= [];
         ev.Tags.AddRange(Enumerable.Range(0, 100).Select(i => i.ToString()));
 
         await RefreshDataAsync();
@@ -657,6 +662,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(50, ev.Tags.Count);
 
         stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
+        Assert.NotNull(stack);
         Assert.Equal(50, stack.Tags.Count);
 
         ev = _eventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: DateTime.UtcNow);
@@ -678,6 +684,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Contains(Event.KnownTags.Critical, ev.Tags);
 
         stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
+        Assert.NotNull(stack);
         Assert.Equal(50, stack.Tags.Count);
         Assert.DoesNotContain(new string('x', 150), stack.Tags);
         Assert.Contains(Event.KnownTags.Critical, stack.Tags);
@@ -746,6 +753,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.NotNull(ev);
 
         var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
         stack.MarkFixed(null, TimeProvider);
         await _stackRepository.SaveAsync(stack, o => o.Cache());
 
@@ -819,6 +827,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.NotNull(ev);
 
         var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
         stack.MarkFixed(new SemanticVersion(1, 0, 1, ["rc2"]), TimeProvider);
         await _stackRepository.SaveAsync(stack, o => o.Cache());
 
@@ -982,7 +991,9 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     public async Task CanDiscardStackEventsBasedOnEventVersion(StackStatus expectedStatus, bool expectedDiscard, string? stackFixedInVersion, string? eventSemanticVersion)
     {
         var organization = await _organizationRepository.GetByIdAsync(TestConstants.OrganizationId, o => o.Cache());
+        Assert.NotNull(organization);
         var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId, o => o.Cache());
+        Assert.NotNull(project);
 
         var ev = _eventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: DateTimeOffset.Now);
         var context = await _pipeline.RunAsync(ev, organization, project);
@@ -1018,6 +1029,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     public async Task WillNotDiscardStackEventsBasedOnEventVersionWithFreePlan(string stackFixedInVersion, string? eventSemanticVersion)
     {
         var organization = await _organizationRepository.GetByIdAsync(TestConstants.OrganizationId3, o => o.Cache());
+        Assert.NotNull(organization);
 
         var plans = GetService<BillingPlans>();
         Assert.Equal(plans.FreePlan.Id, organization.PlanId);
@@ -1136,7 +1148,8 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         foreach (var file in await storage.GetFileListAsync(Path.Combine("Exceptionless.Web", "storage", "q", "*"), cancellationToken: TestCancellationToken))
         {
-            byte[] data = await storage.GetFileContentsRawAsync(Path.ChangeExtension(file.Path, ".payload"));
+            byte[]? data = await storage.GetFileContentsRawAsync(Path.ChangeExtension(file.Path, ".payload"));
+            Assert.NotNull(data);
             var eventPostInfo = await storage.GetObjectAsync<EventPostInfo>(file.Path, TestCancellationToken);
             if (!String.IsNullOrEmpty(eventPostInfo.ContentEncoding))
                 data = data.Decompress(eventPostInfo.ContentEncoding);

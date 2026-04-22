@@ -15,3 +15,14 @@ presets:
     detectors:
       - azure
       - system
+  prometheus:
+    enabled: true
+    scrapeInterval: 30s
+    namespaceScoped: false
+    namespaces:
+      - ex-prod
+    scrapeConfigs:
+      - job_name: elasticsearch
+        static_configs:
+          - targets:
+              - es-exporter-prometheus-elasticsearch-exporter.ex-prod:9108

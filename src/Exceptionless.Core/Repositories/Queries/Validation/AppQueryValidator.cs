@@ -34,7 +34,7 @@ public class AppQueryValidator : IAppQueryValidator
         if (String.IsNullOrWhiteSpace(query))
             return new QueryProcessResult { IsValid = true };
 
-        IQueryNode parsedResult;
+        IQueryNode? parsedResult;
         try
         {
             var context = new ElasticQueryVisitorContext { QueryType = QueryTypes.Query };
@@ -48,6 +48,9 @@ public class AppQueryValidator : IAppQueryValidator
             _logger.LogTrace(ex, "Error parsing query: {Query}", query);
             return new QueryProcessResult { Message = ex.Message };
         }
+
+        if (parsedResult is null)
+            return new QueryProcessResult { Message = "Failed to parse query." };
 
         return await ValidateQueryAsync(parsedResult);
     }
@@ -68,7 +71,7 @@ public class AppQueryValidator : IAppQueryValidator
         if (String.IsNullOrWhiteSpace(aggs))
             return new QueryProcessResult { IsValid = true };
 
-        IQueryNode parsedResult;
+        IQueryNode? parsedResult;
         try
         {
             var context = new ElasticQueryVisitorContext { QueryType = QueryTypes.Aggregation };
@@ -82,6 +85,9 @@ public class AppQueryValidator : IAppQueryValidator
             _logger.LogError(ex, "Error parsing aggregation: {Aggregation}", aggs);
             return new QueryProcessResult { Message = ex.Message };
         }
+
+        if (parsedResult is null)
+            return new QueryProcessResult { Message = "Failed to parse aggregation." };
 
         return await ValidateAggregationsAsync(parsedResult);
     }

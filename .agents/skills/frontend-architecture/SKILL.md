@@ -39,21 +39,11 @@ src/
 
 ## Route Groups
 
-Organize routes by authentication/layout requirements:
-
 ```text
 routes/
-├── (app)/                  # Requires authentication
-│   ├── +layout.svelte      # App layout with nav
-│   ├── organizations/
-│   └── projects/
-├── (auth)/                 # Login/signup flows
-│   ├── +layout.svelte      # Minimal auth layout
-│   ├── login/
-│   └── signup/
-└── (public)/               # Public pages
-    ├── +layout.svelte      # Marketing layout
-    └── pricing/
+├── (app)/                  # Requires authentication (app layout with nav)
+├── (auth)/                 # Login/signup flows (minimal auth layout)
+└── (public)/               # Public pages (marketing layout)
 ```
 
 ## Feature Slices
@@ -62,9 +52,9 @@ Organize by feature, aligned with API controllers:
 
 ```text
 features/organizations/
-├── api.svelte.ts           # TanStack Query hooks
+├── api.svelte.ts           # TanStack Query hooks (see tanstack-query skill)
 ├── models/
-│   └── index.ts            # Re-exports from generated
+│   └── index.ts            # Re-exports from $lib/generated
 ├── schemas.ts              # Zod validation schemas
 ├── options.ts              # Dropdown options, enums
 └── components/
@@ -74,105 +64,9 @@ features/organizations/
         └── create-organization-dialog.svelte
 ```
 
-## API Client Pattern
+## Formatter Components (MUST use)
 
-Centralize API calls per feature:
-
-```typescript
-// features/organizations/api.svelte.ts
-import {
-    createQuery,
-    createMutation,
-    useQueryClient,
-} from "@tanstack/svelte-query";
-import { useFetchClient } from "@exceptionless/fetchclient";
-import type { Organization, CreateOrganizationRequest } from "./models";
-
-export function getOrganizationsQuery() {
-    const client = useFetchClient();
-
-    return createQuery(() => ({
-        queryKey: ["organizations"],
-        queryFn: async () => {
-            const response =
-                await client.getJSON<Organization[]>("/organizations");
-            if (!response.ok) throw response.problem;
-            return response.data!;
-        },
-    }));
-}
-
-export function postOrganizationMutation() {
-    const client = useFetchClient();
-    const queryClient = useQueryClient();
-
-    return createMutation(() => ({
-        mutationFn: async (data: CreateOrganizationRequest) => {
-            const response = await client.postJSON<Organization>(
-                "/organizations",
-                data,
-            );
-            if (!response.ok) throw response.problem;
-            return response.data!;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["organizations"] });
-        },
-    }));
-}
-```
-
-## Model Re-exports
-
-Re-export generated models through feature model folders:
-
-```typescript
-// features/organizations/models/index.ts
-export type {
-    Organization,
-    CreateOrganizationRequest,
-    UpdateOrganizationRequest,
-} from "$lib/generated";
-
-// Add feature-specific types
-export interface OrganizationWithStats extends Organization {
-    eventCount: number;
-    projectCount: number;
-}
-```
-
-## Barrel Exports
-
-Use `index.ts` for clean imports:
-
-```typescript
-// features/organizations/index.ts
-export { getOrganizationsQuery, postOrganizationMutation } from "./api.svelte";
-export type { Organization, CreateOrganizationRequest } from "./models";
-export { organizationSchema } from "./schemas";
-```
-
-## Shared Components
-
-Place truly shared components in appropriate locations:
-
-```text
-lib/
-├── features/shared/        # Shared between features
-│   ├── components/
-│   │   ├── formatters/     # Boolean, date, number, bytes, duration, currency, percentage, time-ago formatters
-│   │   ├── loading/
-│   │   └── error/
-│   └── utils/
-└── components/             # App-wide components
-    ├── ui/                 # shadcn-svelte
-    ├── layout/
-    └── dialogs/            # Global dialogs
-```
-
-### Formatter Components (MUST use — never write custom formatting functions)
-
-The `formatters/` directory contains Svelte components for displaying formatted values. **Always use these instead of writing custom formatting functions like `formatDateTime()` or `formatBytes()`.**
+**Always use formatter components instead of custom formatting functions.** Creating a custom formatting function when a component exists is a code review **BLOCKER**.
 
 | Component | Use For |
 |-----------|---------|
@@ -187,9 +81,8 @@ The `formatters/` directory contains Svelte components for displaying formatted 
 | `<DateMath>` | Elasticsearch date math expressions |
 
 ```svelte
-<!-- CORRECT: use the formatter component -->
+<!-- CORRECT -->
 <DateTime value={event.date} />
-<TimeAgo value={event.date} />
 <Bytes value={event.size} />
 
 <!-- WRONG: never do this -->
@@ -197,24 +90,11 @@ The `formatters/` directory contains Svelte components for displaying formatted 
 {new Date(event.date).toLocaleString()}
 ```
 
-**Consistency rule**: If a formatter component exists for a data type, you MUST use it. Creating a custom formatting function when a component already exists is a code review BLOCKER.
-
-## Generated Types
-
-When API contracts change:
-
-```bash
-npm run generate-models
-```
-
-Prefer regeneration over hand-writing DTOs. Generated types live in `$lib/generated`.
-
 ## Import Aliases
 
 ```typescript
-// Configured in svelte.config.js
-import { Button } from "$comp/ui/button"; // $lib/components
-import { User } from "$features/users/models"; // $lib/features
+import { Button } from "$comp/ui/button";       // $lib/components
+import { User } from "$features/users/models";  // $lib/features
 import { formatDate } from "$shared/formatters"; // $lib/features/shared
 ```
 
@@ -235,10 +115,10 @@ import { formatDate } from "$shared/formatters"; // $lib/features/shared
 
 Pattern divergence is a code review **BLOCKER**, not a nit.
 
+## Navigation Preference
+
+Prefer `href` navigation over `onclick`/`goto`. Use `onclick` only when async logic (e.g. save-then-navigate) is required.
+
 ## Composite Component Pattern
 
-Study existing components before creating new ones:
-
-- **Dialogs**: See `/components/dialogs/`
-- **Dropdowns**: Use `options.ts` with `DropdownItem<EnumType>[]`
-- **Forms**: Follow TanStack Form patterns in `svelte-forms` skill
+Study existing components before creating new ones — dialogs in `/components/dialogs/`, dropdowns via `options.ts` with `DropdownItem<EnumType>[]`, forms via TanStack Form patterns.

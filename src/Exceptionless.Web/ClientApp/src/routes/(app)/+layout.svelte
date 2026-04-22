@@ -46,6 +46,10 @@
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
 
+    function openCommandPalette(): void {
+        isCommandOpen = true;
+    }
+
     useMiddleware(async (ctx, next) => {
         await next();
 
@@ -333,7 +337,7 @@
 </script>
 
 {#snippet appShell(openChat: () => void)}
-    <Navbar bind:isCommandOpen></Navbar>
+    <Navbar openCommand={openCommandPalette}></Navbar>
     <Sidebar routes={filteredRoutes}>
         {#snippet header()}
             <SidebarOrganizationSwitcher

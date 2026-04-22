@@ -82,6 +82,12 @@ public sealed class MessageBusBroker : IStartupAction
                 return;
             }
 
+            if (entityChanged.Id is null)
+            {
+                _logger.LogTrace("Ignoring {UserTypeName} message: No user id", UserTypeName);
+                return;
+            }
+
             var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(entityChanged.Id);
             _logger.LogTrace("Sending {UserTypeName} message to user: {UserId} (to {UserConnectionCount} connections)", UserTypeName, entityChanged.Id, userConnectionIds.Count);
             foreach (string connectionId in userConnectionIds)
@@ -93,7 +99,7 @@ public sealed class MessageBusBroker : IStartupAction
         // Only allow specific token messages to be sent down to the client.
         if (TokenTypeName == entityChanged.Type)
         {
-            string userId = entityChanged.Data.GetValueOrDefault<string>(ExtendedEntityChanged.KnownKeys.UserId);
+            string? userId = entityChanged.Data.GetValueOrDefault<string>(ExtendedEntityChanged.KnownKeys.UserId);
             if (userId is not null)
             {
                 var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userId);
