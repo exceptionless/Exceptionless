@@ -52,14 +52,16 @@ Returns available billing plans for the organization. The current org's plan ent
 Changes the organization's billing plan.
 
 **Auth**: `UserPolicy` + `CanAccessOrganization(id)`  
-**Parameters** (query string):
+**Body** (JSON, preferred):
 
-| Param | Type | Description |
+| Field | Type | Description |
 | --- | --- | --- |
 | `planId` | string | Target plan ID (e.g., `EX_MEDIUM`, `EX_LARGE_YEARLY`) |
 | `stripeToken` | string? | `pm_` PaymentMethod ID (Svelte) or `tok_` token (Angular) |
 | `last4` | string? | Last 4 digits of card (display only) |
 | `couponId` | string? | Stripe coupon code |
+
+Legacy Angular clients may pass these as query string parameters instead.
 
 **Response**: `ChangePlanResult { success, message }`
 
@@ -107,8 +109,8 @@ Main billing dialog at `src/lib/features/billing/components/change-plan-dialog.s
 
 **Props**:
 
-- `open: boolean` — bindable dialog visibility
 - `organization: ViewOrganization` — current org data
+- `onclose: () => void` — callback when dialog closes
 - `initialCouponCode?: string` — pre-fill coupon
 - `initialCouponOpen?: boolean` — open coupon input on mount
 - `initialFormError?: string` — show error message on mount
@@ -163,7 +165,7 @@ bool isPaymentMethod = stripeToken?.StartsWith("pm_", StringComparison.Ordinal) 
 
 ## Known Limitations
 
-1. **Coupon not applied for existing customers changing plans** — Pre-existing limitation (not a regression). The coupon is only applied when creating a new Stripe customer.
+1. ~~**Coupon not applied for existing customers changing plans**~~ — Fixed. Coupons are now applied in all paths: new customer, existing customer updating subscription, and existing customer creating a new subscription.
 2. **Potential orphaned Stripe customers** — If subscription creation fails after customer creation, a retry would create a duplicate Stripe customer. Mitigated by the low likelihood of this failure path.
 3. **N+1 price fetches in invoice view** — Each unique price ID in an invoice makes a separate Stripe API call. Mitigated by a per-request cache (`priceCache`). Most invoices have 1-3 distinct prices.
 4. **svelte-stripe package unused** — Listed in `package.json` but bypassed due to Svelte 5 incompatibility. Only `@stripe/stripe-js` is used directly.

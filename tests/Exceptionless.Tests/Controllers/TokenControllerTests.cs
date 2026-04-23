@@ -57,7 +57,6 @@ public sealed class TokenControllerTests : IntegrationTestsBase
         Assert.Equal("Mapped test token", viewToken.Notes);
         Assert.True(viewToken.CreatedUtc > DateTime.MinValue);
 
-        // Verify persisted
         var token = await _tokenRepository.GetByIdAsync(viewToken.Id);
         Assert.NotNull(token);
         Assert.Equal("Mapped test token", token.Notes);
@@ -131,6 +130,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PreventAccessTokenForTokenActions()
     {
+        // Arrange
         var token = await SendRequestAsAsync<ViewToken>(r => r
             .Post()
             .AsGlobalAdminUser()
@@ -149,6 +149,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
         Assert.False(token.IsDisabled);
         Assert.Equal(2, token.Scopes.Count);
 
+        // Act & Assert
         await SendRequestAsync(r => r
             .Post()
             .BearerToken(token.Id)
@@ -186,6 +187,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CanDisableApiKey()
     {
+        // Arrange
         var token = await SendRequestAsAsync<ViewToken>(r => r
            .Post()
            .AsGlobalAdminUser()
@@ -203,13 +205,13 @@ public sealed class TokenControllerTests : IntegrationTestsBase
         Assert.Null(token.UserId);
         Assert.False(token.IsDisabled);
         Assert.Equal(2, token.Scopes.Count);
-
         var updateToken = new UpdateToken
         {
             IsDisabled = true,
             Notes = "Disabling until next release"
         };
 
+        // Act
         var updatedToken = await SendRequestAsAsync<ViewToken>(r => r
            .Patch()
            .AsTestOrganizationUser()
@@ -218,6 +220,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
            .StatusCodeShouldBeOk()
         );
 
+        // Assert
         Assert.NotNull(updatedToken);
         Assert.True(updatedToken.IsDisabled);
         Assert.Equal(updateToken.Notes, updatedToken.Notes);
@@ -244,6 +247,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
     [Fact]
     public async Task SuspendingOrganizationWillDisableApiKey()
     {
+        // Arrange
         var token = await SendRequestAsAsync<ViewToken>(r => r
            .Post()
            .AsGlobalAdminUser()
@@ -271,6 +275,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
         Assert.False(tokenRecord.IsSuspended);
         Assert.Single(tokenRecord.Scopes);
 
+        // Act
         await SendRequestAsync(r => r
            .Post()
            .AsGlobalAdminUser()
@@ -279,6 +284,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
            .StatusCodeShouldBeOk()
         );
 
+        // Assert
         var actualToken = await repository.GetByIdAsync(token.Id, o => o.Cache());
         Assert.NotNull(actualToken);
         Assert.True(actualToken.IsSuspended);
@@ -298,6 +304,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
     [Fact]
     public async Task ShouldPreventAddingUserScopeToTokenWithoutElevatedRole()
     {
+        // Act
         var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
            .Post()
            .AsFreeOrganizationUser()
@@ -311,6 +318,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
            .StatusCodeShouldBeUnprocessableEntity()
         );
 
+        // Assert
         Assert.NotNull(problemDetails);
         Assert.Single(problemDetails.Errors);
         Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "scopes"));

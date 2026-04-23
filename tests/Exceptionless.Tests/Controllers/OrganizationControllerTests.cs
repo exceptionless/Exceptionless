@@ -1,4 +1,6 @@
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
@@ -9,21 +11,21 @@ using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
 
-/// <summary>
-/// Tests for OrganizationController including mapping coverage.
-/// Validates NewOrganization -> Organization and Organization -> ViewOrganization mappings.
-/// </summary>
 public sealed class OrganizationControllerTests : IntegrationTestsBase
 {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IUserRepository _userRepository;
+    private readonly BillingManager _billingManager;
+    private readonly BillingPlans _plans;
 
     public OrganizationControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectRepository = GetService<IProjectRepository>();
         _userRepository = GetService<IUserRepository>();
+        _billingManager = GetService<BillingManager>();
+        _plans = GetService<BillingPlans>();
     }
 
     protected override async Task ResetDataAsync()
@@ -51,13 +53,12 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeCreated()
         );
 
-        // Assert - Verify Organization mapping -> Organization correctly
+        // Assert
         Assert.NotNull(viewOrg);
         Assert.NotNull(viewOrg.Id);
         Assert.Equal("Test Organization", viewOrg.Name);
         Assert.True(viewOrg.CreatedUtc > DateTime.MinValue);
 
-        // Verify persisted entity
         var organization = await _organizationRepository.GetByIdAsync(viewOrg.Id);
         Assert.NotNull(organization);
         Assert.Equal("Test Organization", organization.Name);
@@ -73,7 +74,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
-        // Assert - Verify mapped Organization -> ViewOrganization correctly
+        // Assert
         Assert.NotNull(viewOrg);
         Assert.Equal(SampleDataService.TEST_ORG_ID, viewOrg.Id);
         Assert.False(String.IsNullOrEmpty(viewOrg.Name));
@@ -92,7 +93,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
-        // Assert - ViewOrganization should include computed properties
+        // Assert
         Assert.NotNull(viewOrg);
         Assert.Equal(SampleDataService.TEST_ORG_ID, viewOrg.Id);
         Assert.NotNull(viewOrg.Usage);
@@ -109,7 +110,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
-        // Assert - All organizations should be mapped to ViewOrganization
+        // Assert
         Assert.NotNull(viewOrgs);
         Assert.True(viewOrgs.Count > 0);
         Assert.All(viewOrgs, vo =>
@@ -138,7 +139,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeCreated()
         );
 
-        // Assert - Newly created org should have a default plan
+        // Assert
         Assert.NotNull(viewOrg);
         Assert.NotNull(viewOrg.PlanId);
         Assert.NotNull(viewOrg.PlanName);
@@ -154,9 +155,8 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
-        // Assert - IsOverMonthlyLimit is computed by OrganizationMapper
+        // Assert
         Assert.NotNull(viewOrg);
-        // The value can be true or false depending on usage, but the property should be set
         Assert.IsType<bool>(viewOrg.IsOverMonthlyLimit);
     }
 
@@ -217,7 +217,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     [Fact]
     public async Task DeleteAsync_ExistingOrganization_RemovesOrganization()
     {
-        // Arrange - Create an organization to delete
+        // Arrange
         var newOrg = new NewOrganization
         {
             Name = "Organization To Delete"
@@ -363,5 +363,157 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         Assert.DoesNotContain(organizationAdminUser.Id, project.NotificationSettings.Keys);
         Assert.Contains(globalAdmin.Id, project.NotificationSettings.Keys);
         Assert.Contains(Project.NotificationIntegrations.Slack, project.NotificationSettings.Keys);
+    }
+
+    [Fact]
+    public async Task GetPlansAsync_UnlimitedPlanOrg_ReturnsPlansWithCurrentPlanOverlay()
+    {
+        // Act
+        var plans = await SendRequestAsAsync<List<BillingPlan>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "plans")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(plans);
+        Assert.True(plans.Count > 0);
+        var unlimitedPlan = plans.FirstOrDefault(p => p.Id == _plans.UnlimitedPlan.Id);
+        Assert.NotNull(unlimitedPlan);
+        Assert.False(unlimitedPlan.IsHidden);
+    }
+
+    [Fact]
+    public async Task GetPlansAsync_FreePlanOrg_ExcludesHiddenPlans()
+    {
+        // Act
+        var plans = await SendRequestAsAsync<List<BillingPlan>>(r => r
+            .AsFreeOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "plans")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(plans);
+        Assert.True(plans.Count > 0);
+
+        Assert.DoesNotContain(plans, p => p.IsHidden);
+        var freePlan = plans.FirstOrDefault(p => p.Id == _plans.FreePlan.Id);
+        Assert.NotNull(freePlan);
+        Assert.Equal(_plans.FreePlan.Name, freePlan.Name);
+    }
+
+    [Fact]
+    public async Task GetPlansAsync_AdminUser_ReturnsAllPlansIncludingHidden()
+    {
+        // Act
+        var plans = await SendRequestAsAsync<List<BillingPlan>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "plans")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(plans);
+        Assert.Equal(_plans.Plans.Count, plans.Count);
+    }
+
+    [Fact]
+    public async Task GetPlansAsync_CurrentPlanOverlay_ReflectsOrgValues()
+    {
+        // Arrange
+        var org = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(org);
+
+        // Act
+        var plans = await SendRequestAsAsync<List<BillingPlan>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "plans")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(plans);
+        var currentPlan = plans.FirstOrDefault(p => p.Id == org.PlanId);
+        Assert.NotNull(currentPlan);
+        Assert.Equal(org.PlanName, currentPlan.Name);
+        Assert.Equal(org.BillingPrice, currentPlan.Price);
+        Assert.Equal(org.MaxProjects, currentPlan.MaxProjects);
+        Assert.Equal(org.MaxUsers, currentPlan.MaxUsers);
+        Assert.Equal(org.RetentionDays, currentPlan.RetentionDays);
+        Assert.Equal(org.MaxEventsPerMonth, currentPlan.MaxEventsPerMonth);
+        Assert.Equal(org.HasPremiumFeatures, currentPlan.HasPremiumFeatures);
+    }
+
+    [Fact]
+    public Task GetPlansAsync_NonExistentOrg_ReturnsNotFound()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", "000000000000000000000000", "plans")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public Task ChangePlanAsync_BillingDisabled_ReturnsNotFound()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "change-plan")
+            .Content(new ChangePlanRequest { PlanId = _plans.FreePlan.Id })
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public Task ChangePlanAsync_LegacyQueryParams_BillingDisabled_ReturnsNotFound()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "change-plan")
+            .QueryString("planId", _plans.FreePlan.Id)
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public Task ChangePlanAsync_NonExistentOrg_ReturnsNotFound()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", "000000000000000000000000", "change-plan")
+            .Content(new ChangePlanRequest { PlanId = _plans.FreePlan.Id })
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public Task GetInvoiceAsync_BillingDisabled_ReturnsNotFound()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", "invoice", "in_test_invoice_id")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public Task GetInvoicesAsync_BillingDisabled_ReturnsNotFound()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "invoices")
+            .StatusCodeShouldBeNotFound()
+        );
     }
 }

@@ -74,10 +74,7 @@
         }
 
         if (response.status === 426) {
-            handleUpgradeRequired(
-                { status: 426, title: 'Promote to External is a premium feature. Please upgrade your plan to enable this feature.' } as never,
-                stack.organization_id
-            );
+            handleUpgradeRequired(response.problem, stack.organization_id);
             return;
         }
 
