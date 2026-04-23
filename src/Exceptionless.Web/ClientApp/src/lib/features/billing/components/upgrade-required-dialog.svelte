@@ -44,10 +44,7 @@
     }
 </script>
 
-<AlertDialog.Root
-    open={upgradeRequiredDialog.open}
-    onOpenChange={handleOpenChange}
->
+<AlertDialog.Root open={upgradeRequiredDialog.open} onOpenChange={handleOpenChange}>
     <AlertDialog.Content>
         <AlertDialog.Header>
             <AlertDialog.Title>Upgrade Plan</AlertDialog.Title>
