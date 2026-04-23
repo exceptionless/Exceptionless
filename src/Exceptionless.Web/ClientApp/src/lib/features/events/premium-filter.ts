@@ -5,17 +5,30 @@
  */
 const FREE_QUERY_FIELDS = new Set([
     'date',
-    'type',
-    'reference',
-    'reference_id',
     'organization',
     'organization_id',
     'project',
     'project_id',
+    'reference',
+    'reference_id',
     'stack',
     'stack_id',
-    'status'
+    'status',
+    'type'
 ]);
+
+/**
+ * Returns true if the filter string references fields that require a premium plan.
+ * Uses client-side field detection to avoid an extra API call.
+ */
+export function filterUsesPremiumFeatures(filter: null | string | undefined): boolean {
+    if (!filter) {
+        return false;
+    }
+
+    const fields = extractFilterFields(filter);
+    return fields.some((field) => !FREE_QUERY_FIELDS.has(field.toLowerCase()));
+}
 
 /**
  * Extracts field names from a Lucene-style filter string.
@@ -31,17 +44,4 @@ function extractFilterFields(filter: string): string[] {
     }
 
     return fields;
-}
-
-/**
- * Returns true if the filter string references fields that require a premium plan.
- * Uses client-side field detection to avoid an extra API call.
- */
-export function filterUsesPremiumFeatures(filter: null | string | undefined): boolean {
-    if (!filter) {
-        return false;
-    }
-
-    const fields = extractFilterFields(filter);
-    return fields.some((field) => !FREE_QUERY_FIELDS.has(field.toLowerCase()));
 }

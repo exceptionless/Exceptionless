@@ -115,6 +115,8 @@
                     function onFailure(response) {
                         if (response.error && response.error.message) {
                             vm.paymentMessage = response.error.message;
+                        } else if (response.data && (response.data.title || response.data.message)) {
+                            vm.paymentMessage = response.data.title || response.data.message;
                         } else {
                             vm.paymentMessage = translateService.T("An error occurred while changing plans.");
                         }

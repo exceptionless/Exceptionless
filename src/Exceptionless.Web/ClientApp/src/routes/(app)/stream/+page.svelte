@@ -13,6 +13,7 @@
     import { H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
+    import { handleUpgradeRequired } from '$features/billing/upgrade-required.svelte';
     import EventsOverview from '$features/events/components/events-overview.svelte';
     import { ProjectFilter, StatusFilter } from '$features/events/components/filters';
     import {
@@ -31,7 +32,6 @@
     import { getSharedTableOptions, isTableEmpty, removeTableData } from '$features/shared/table.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { handleUpgradeRequired } from '$features/billing/upgrade-required.svelte';
     import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
     import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
     import ExternalLink from '@lucide/svelte/icons/external-link';

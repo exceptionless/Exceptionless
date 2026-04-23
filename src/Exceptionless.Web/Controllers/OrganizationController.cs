@@ -229,7 +229,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             var invoiceService = new InvoiceService(client);
             stripeInvoice = await invoiceService.GetAsync(id);
         }
-        catch (Exception ex)
+        catch (StripeException ex)
         {
             _logger.LogError(ex, "An error occurred while getting the invoice: {InvoiceId}", id);
         }
@@ -285,7 +285,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 }
                 catch (StripeException ex)
                 {
-                    _logger.LogWarning(ex, "Failed to fetch price details for price: {PriceId}. Error: {ErrorMessage}", priceId, ex.Message);
+                    _logger.LogWarning(ex, "Failed to fetch price details for price: {PriceId}", priceId);
                 }
             }
 
@@ -606,12 +606,12 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         }
         catch (StripeException ex)
         {
-            _logger.LogCritical(ex, "An error occurred while trying to update your billing plan: {Message}", ex.Message);
+            _logger.LogCritical(ex, "An error occurred while trying to update your billing plan");
             return Ok(ChangePlanResult.FailWithMessage(ex.Message));
         }
         catch (Exception ex)
         {
-            _logger.LogCritical(ex, "An unexpected error occurred while trying to update your billing plan: {Message}", ex.Message);
+            _logger.LogCritical(ex, "An unexpected error occurred while trying to update your billing plan");
             return Ok(ChangePlanResult.FailWithMessage("An error occurred while changing plans. Please try again."));
         }
 
