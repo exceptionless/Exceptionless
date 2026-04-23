@@ -583,7 +583,13 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 }
                 else if (subscription is not null)
                 {
-                    _logger.LogWarning("Subscription {SubscriptionId} has no items for organization {OrganizationId}", subscription.Id, id);
+                    _logger.LogWarning("Subscription {SubscriptionId} has no items for organization {OrganizationId}, canceling and recreating", subscription.Id, id);
+                    await subscriptionService.CancelAsync(subscription.Id);
+
+                    create.Items.Add(new SubscriptionItemOptions { Price = model.PlanId });
+                    if (!String.IsNullOrWhiteSpace(model.CouponId))
+                        create.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
+                    await subscriptionService.CreateAsync(create);
                 }
                 else
                 {
@@ -607,7 +613,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         catch (StripeException ex)
         {
             _logger.LogCritical(ex, "An error occurred while trying to update your billing plan");
-            return Ok(ChangePlanResult.FailWithMessage(ex.Message));
+            return Ok(ChangePlanResult.FailWithMessage("An error occurred while changing plans. Please try again or contact support."));
         }
         catch (Exception ex)
         {
