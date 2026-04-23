@@ -74,7 +74,7 @@
         }
 
         if (response.status === 426) {
-            handleUpgradeRequired(response.problem, stack.organization_id);
+            handleUpgradeRequired(response.problem, stack.organization_id, () => promoteToExternal());
             return;
         }
 
