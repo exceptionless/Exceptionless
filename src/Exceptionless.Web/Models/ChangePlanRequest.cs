@@ -5,7 +5,7 @@ namespace Exceptionless.Web.Models;
 public class ChangePlanRequest
 {
     [Required]
-    public string PlanId { get; set; } = String.Empty;
+    public string PlanId { get; set; } = null!;
 
     public string? StripeToken { get; set; }
 
