@@ -496,6 +496,122 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public Task ChangePlanAsync_UnauthorizedOrg_ReturnsNotFound()
+    {
+        // Free user should not be able to change plan for the test org they don't belong to
+        return SendRequestAsync(r => r
+            .AsFreeOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "change-plan")
+            .Content(new ChangePlanRequest { PlanId = _plans.FreePlan.Id })
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public Task ChangePlanAsync_EmptyBody_BillingDisabled_ReturnsNotFound()
+    {
+        // Empty body should be accepted (falls back to query params) but billing disabled returns 404
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "change-plan")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public async Task CanDownGradeAsync_TooManyUsers_ReturnsFailure()
+    {
+        // Arrange — test org has 2 users (global admin + org user); free plan allows max 1
+        var org = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(org);
+
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+
+        // Act
+        var result = await _billingManager.CanDownGradeAsync(org, _plans.FreePlan, user);
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.Contains("remove", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("user", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task CanDownGradeAsync_TooManyProjects_ReturnsFailure()
+    {
+        // Arrange — free org has 1 user and 1 project; add a second project so project check fails
+        var org = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(org);
+
+        var extraProject = new Project
+        {
+            Name = "Extra Project",
+            OrganizationId = org.Id,
+            NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks
+        };
+        await _projectRepository.AddAsync(extraProject, o => o.ImmediateConsistency());
+
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.FREE_USER_EMAIL);
+        Assert.NotNull(user);
+
+        // Act
+        var result = await _billingManager.CanDownGradeAsync(org, _plans.FreePlan, user);
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.Contains("remove", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("project", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task CanDownGradeAsync_AlreadyHasFreePlan_ReturnsFailure()
+    {
+        // Arrange — create a second org for the free user, so they already have 1 free org
+        var freeUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.FREE_USER_EMAIL);
+        Assert.NotNull(freeUser);
+
+        var secondOrg = new Organization { Name = "Second Org" };
+        _billingManager.ApplyBillingPlan(secondOrg, _plans.Plans.First(p => p.Id == "EX_SMALL"), freeUser);
+        secondOrg.StripeCustomerId = "cus_test";
+        secondOrg.CardLast4 = "4242";
+        secondOrg.SubscribeDate = DateTime.UtcNow;
+        secondOrg = await _organizationRepository.AddAsync(secondOrg, o => o.ImmediateConsistency());
+
+        freeUser.OrganizationIds.Add(secondOrg.Id);
+        await _userRepository.SaveAsync(freeUser, o => o.ImmediateConsistency());
+
+        // Act — try to downgrade second org to free plan (user already has FREE_ORG on free plan)
+        var result = await _billingManager.CanDownGradeAsync(secondOrg, _plans.FreePlan, freeUser);
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.Contains("free account", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task CanDownGradeAsync_ValidDowngrade_ReturnsSuccess()
+    {
+        // Arrange — the free org (1 user, 1 project) should be able to "downgrade" to small plan
+        var org = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(org);
+
+        var smallPlan = _plans.Plans.FirstOrDefault(p => p.Id == "EX_SMALL");
+        Assert.NotNull(smallPlan);
+
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.FREE_USER_EMAIL);
+        Assert.NotNull(user);
+
+        // Act — "upgrading" from free to small, downgrade check should succeed
+        var result = await _billingManager.CanDownGradeAsync(org, smallPlan, user);
+
+        // Assert
+        Assert.True(result.Success);
+    }
+
+    [Fact]
     public Task GetInvoiceAsync_BillingDisabled_ReturnsNotFound()
     {
         // Act & Assert
