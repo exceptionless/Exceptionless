@@ -59,7 +59,7 @@
     }
 
     function handleViewStripeInvoice(invoiceId: string) {
-        window.open(`https://manage.stripe.com/invoices/in_${invoiceId}`, '_blank');
+        window.open(`https://manage.stripe.com/invoices/in_${encodeURIComponent(invoiceId)}`, '_blank');
     }
 </script>
 

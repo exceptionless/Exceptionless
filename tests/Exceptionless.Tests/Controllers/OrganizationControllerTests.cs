@@ -498,7 +498,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     [Fact]
     public Task ChangePlanAsync_UnauthorizedOrg_ReturnsNotFound()
     {
-        // Free user should not be able to change plan for the test org they don't belong to
+        // Act & Assert — free user should not be able to change plan for the test org they don't belong to
         return SendRequestAsync(r => r
             .AsFreeOrganizationUser()
             .Post()
@@ -511,7 +511,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     [Fact]
     public Task ChangePlanAsync_EmptyBody_BillingDisabled_ReturnsNotFound()
     {
-        // Empty body should be accepted (falls back to query params) but billing disabled returns 404
+        // Act & Assert — empty body falls back to query params; billing disabled returns 404
         return SendRequestAsync(r => r
             .AsTestOrganizationUser()
             .Post()
