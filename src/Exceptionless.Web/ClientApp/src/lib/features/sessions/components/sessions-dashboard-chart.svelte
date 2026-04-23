@@ -26,11 +26,11 @@
 
     const chartConfig = {
         sessions: {
-            color: 'hsl(95, 59%, 48%)',
+            color: 'var(--chart-1)',
             label: 'Sessions'
         },
         users: {
-            color: 'hsl(95, 59%, 23%)',
+            color: 'var(--chart-2)',
             label: 'Users'
         }
     } satisfies Chart.ChartConfig;
@@ -58,7 +58,7 @@
                 {data}
                 x="date"
                 xScale={scaleUtc()}
-                yDomain={[0, Math.max(1, Math.max(...data.map((d) => d.sessions)))]}
+                yDomain={[0, Math.max(1, Math.max(...data.map((d) => Math.max(d.sessions, d.users))))]}
                 {series}
                 axis={false}
                 grid={false}

@@ -11,6 +11,7 @@
     import { getEventQuery } from '$features/events/api.svelte';
     import * as EventsFacetedFilter from '$features/events/components/filters';
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
+    import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { getProjectQuery } from '$features/projects/api.svelte';
     import StackCard from '$features/stacks/components/stack-card.svelte';
 
@@ -98,6 +99,16 @@
         }
     });
 
+    const organizationQuery = getOrganizationQuery({
+        route: {
+            get id() {
+                return eventQuery.data?.organization_id;
+            }
+        }
+    });
+
+    const hasPremiumFeatures = $derived(!!organizationQuery.data?.has_premium_features);
+
     type TabType = 'Environment' | 'Exception' | 'Extended Data' | 'Overview' | 'Request' | 'Trace Log' | string;
 
     let activeTab = $state<TabType>('Overview');
@@ -175,7 +186,7 @@
                 {:else if tab === 'Trace Log'}
                     <TraceLog logs={eventQuery.data.data?.['@trace']}></TraceLog>
                 {:else if tab === 'Session Events'}
-                    <SessionEvents event={eventQuery.data}></SessionEvents>
+                    <SessionEvents event={eventQuery.data} {hasPremiumFeatures}></SessionEvents>
                 {:else if tab === 'Extended Data'}
                     <ExtendedData event={eventQuery.data} project={projectQuery.data} promoted={onPromoted}></ExtendedData>
                 {:else}

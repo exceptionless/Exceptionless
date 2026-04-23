@@ -28,11 +28,11 @@
     } from '$features/events/components/filters/helpers.svelte';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
-    import { getColumns } from '$features/events/components/table/options.svelte';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { getOrganizationSessionsCountQuery } from '$features/sessions/api.svelte';
     import SessionsDashboardChart from '$features/sessions/components/sessions-dashboard-chart.svelte';
+    import { getSessionColumns } from '$features/sessions/components/session-table-columns';
     import SessionsStatsDashboard from '$features/sessions/components/sessions-stats-dashboard.svelte';
     import * as agg from '$features/shared/api/aggregations';
     import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
@@ -174,7 +174,7 @@
         getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
             columnPersistenceKey: 'sessions-column-visibility',
             get columns() {
-                return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode);
+                return getSessionColumns();
             },
             paginationStrategy: 'cursor',
             get queryData() {
@@ -248,7 +248,11 @@
                 return eventsQueryParameters.time;
             }
         },
-        route: { organizationId: organization.current }
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
+        }
     });
 
     // Compute stats from aggregations

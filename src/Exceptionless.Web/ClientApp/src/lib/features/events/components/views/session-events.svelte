@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { PersistentEvent } from '$features/events/models';
+    import type { SummaryTemplateKeys } from '$features/events/components/summary/index';
 
     import { resolve } from '$app/paths';
     import Duration from '$comp/formatters/duration.svelte';
@@ -9,9 +10,9 @@
     import * as Alert from '$comp/ui/alert';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
+    import Summary from '$features/events/components/summary/summary.svelte';
     import { getSessionStartDuration } from '$features/events/utils';
     import { getSessionId } from '$features/events/utils/index';
-    import { usePremiumFeature } from '$features/organizations/hooks/use-premium-feature.svelte';
     import { getSessionEventsQuery } from '$features/sessions/api.svelte';
     import InfoIcon from '@lucide/svelte/icons/info';
 
@@ -30,21 +31,21 @@
     const userIdentity = $derived(userInfo?.identity);
     const userName = $derived(userInfo?.name);
 
-    const sessionEventsQuery = $derived(() =>
-        getSessionEventsQuery({
-            params: {
-                filter: '-type:heartbeat',
-                limit: 10,
-                ...(time ? { time } : {})
-            },
-            route: {
-                sessionId: hasPremiumFeatures ? sessionId : undefined
-            }
-        })
-    );
+    const queryParams = $derived({
+        filter: '-type:heartbeat' as const,
+        limit: 10 as const,
+        ...(time ? { time } : {})
+    });
 
-    $effect(() => {
-        if (!hasPremiumFeatures) usePremiumFeature('Sessions');
+    const sessionEventsQuery = getSessionEventsQuery({
+        get params() {
+            return queryParams;
+        },
+        route: {
+            get sessionId() {
+                return hasPremiumFeatures ? sessionId : undefined;
+            }
+        }
     });
 </script>
 
@@ -64,11 +65,6 @@
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">Duration</Table.Head>
                     <Table.Cell class="w-4 pr-0"></Table.Cell>
                     <Table.Cell>
-                        <Live live={!event.data?.sessionend} liveTitle="Online" notLiveTitle="Ended" />
-                        <Duration value={getSessionStartDuration(event)} />
-                        {#if event.data?.sessionend}
-                            (ended <TimeAgo value={event.data.sessionend} />)
-                        {/if}
                         <Live live={!event.data?.sessionend} liveTitle="Online" notLiveTitle="Ended" />
                         <Duration value={getSessionStartDuration(event)} />
                         {#if event.data?.sessionend}
@@ -96,18 +92,18 @@
 
     <h3 class="mb-2 text-lg font-semibold">Session Events</h3>
 
-    {#if sessionEventsQuery().isPending}
+    {#if sessionEventsQuery.isPending}
         <div class="space-y-2">
             {#each Array.from({ length: 5 }, (_, i) => i) as i (i)}
                 <Skeleton class="h-10 w-full" />
             {/each}
         </div>
-    {:else if sessionEventsQuery().isError}
+    {:else if sessionEventsQuery.isError}
         <Alert.Root variant="destructive">
             <Alert.Title>Error loading session events</Alert.Title>
-            <Alert.Description>{sessionEventsQuery().error?.message ?? 'Unknown error'}</Alert.Description>
+            <Alert.Description>{sessionEventsQuery.error?.message ?? 'Unknown error'}</Alert.Description>
         </Alert.Root>
-    {:else if (sessionEventsQuery().data ?? []).length > 0}
+    {:else if (sessionEventsQuery.data ?? []).length > 0}
         <Table.Root>
             <Table.Header>
                 <Table.Row>
@@ -116,12 +112,10 @@
                 </Table.Row>
             </Table.Header>
             <Table.Body>
-                {#each sessionEventsQuery().data ?? [] as sessionEvent (sessionEvent.id)}
+                {#each sessionEventsQuery.data ?? [] as sessionEvent (sessionEvent.id)}
                     <Table.Row class="hover:bg-muted/50 cursor-pointer">
                         <Table.Cell>
-                            <A href={resolve('/(app)/event/[eventId]', { eventId: sessionEvent.id })}>
-                                {sessionEvent.id}
-                            </A>
+                            <Summary summary={sessionEvent} showType={true} showStatus={false} />
                         </Table.Cell>
                         <Table.Cell>
                             <TimeAgo value={sessionEvent.date} />

@@ -46,7 +46,7 @@
                 <Skeleton class="h-8 w-24" />
             {:else}
                 <div class="text-2xl font-bold">
-                    {avgPerHour?.toFixed(1) ?? '0'}
+                    <Number value={avgPerHour} formatOptions={{ maximumFractionDigits: 1 }} />
                 </div>
             {/if}
         </Card.Content>
