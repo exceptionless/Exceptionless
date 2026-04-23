@@ -37,8 +37,9 @@
     import { parseDateMathRange } from '$features/shared/utils/datemath.js';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+    import { handleUpgradeRequired } from '$features/billing/upgrade-required.svelte';
     import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
+    import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
@@ -46,6 +47,12 @@
     import { throttle } from 'throttle-debounce';
 
     let selectedEventId: null | string = $state(null);
+
+    function handleEventError(problem: ProblemDetails) {
+        handleUpgradeRequired(problem, organization.current);
+        selectedEventId = null;
+    }
+
     function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
         selectedEventId = row.id;
     }
@@ -189,6 +196,10 @@
         clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
             params: eventsQueryParameters as Record<string, unknown>
         });
+
+        if (clientResponse.problem) {
+            handleUpgradeRequired(clientResponse.problem, organization.current, () => loadData());
+        }
     }
 
     const throttledLoadData = throttle(10000, loadData);
@@ -312,7 +323,7 @@
             >
         </Sheet.Header>
         <div class="px-4">
-            <EventsOverview filterChanged={onFilterChanged} id={selectedEventId || ''} handleError={() => (selectedEventId = null)} />
+            <EventsOverview filterChanged={onFilterChanged} id={selectedEventId || ''} handleError={handleEventError} />
         </div>
     </Sheet.Content>
 </Sheet.Root>

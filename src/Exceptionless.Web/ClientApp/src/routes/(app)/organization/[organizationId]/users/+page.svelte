@@ -80,7 +80,7 @@
             await addUserMutation.mutateAsync(email);
             toastId = toast.success('User invited successfully');
         } catch (error: unknown) {
-            if (handleUpgradeRequired(error, organizationId)) {
+            if (handleUpgradeRequired(error, organizationId, () => inviteUser(email))) {
                 return;
             }
 

@@ -37,7 +37,7 @@
                     await goto(resolve('/(app)/project/[projectId]/configure', { projectId: id }) + '?redirect=true');
                     return null;
                 } catch (error: unknown) {
-                    if (handleUpgradeRequired(error, organization.current)) {
+                    if (handleUpgradeRequired(error, organization.current, () => form.handleSubmit())) {
                         return null;
                     }
 

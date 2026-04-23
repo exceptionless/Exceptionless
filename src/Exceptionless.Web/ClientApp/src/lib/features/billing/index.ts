@@ -17,4 +17,4 @@ export type { BillingPlan, CardMode, ChangePlanFormState, ChangePlanRequest, Cha
 
 // Context and hooks
 export { getStripePublishableKey, isStripeEnabled, loadStripeOnce, setStripeContext, type StripeContext, tryUseStripe, useStripe } from './stripe.svelte';
-export { handleUpgradeRequired, isUpgradeRequired } from './upgrade-required.svelte';
+export { handleUpgradeRequired, isUpgradeRequired, showUpgradeDialog } from './upgrade-required.svelte';

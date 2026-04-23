@@ -38,7 +38,7 @@
                     await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: id }));
                     return null;
                 } catch (error: unknown) {
-                    if (handleUpgradeRequired(error, organization.current)) {
+                    if (handleUpgradeRequired(error, organization.current, () => form.handleSubmit())) {
                         return null;
                     }
 

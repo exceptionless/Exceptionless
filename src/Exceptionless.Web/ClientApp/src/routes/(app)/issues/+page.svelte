@@ -35,8 +35,9 @@
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+    import { handleUpgradeRequired } from '$features/billing/upgrade-required.svelte';
     import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
+    import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
@@ -47,6 +48,12 @@
 
     // TODO: Update this page to use StackSummaryModel instead of EventSummaryModel.
     let selectedStackId = $state<string>();
+
+    function handleStackError(problem: ProblemDetails) {
+        handleUpgradeRequired(problem, organization.current);
+        selectedStackId = undefined;
+    }
+
     function rowClick(row: EventSummaryModel<SummaryTemplateKeys>) {
         selectedStackId = row.id;
     }
@@ -215,6 +222,10 @@
         clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
             params: eventsQueryParameters as Record<string, unknown>
         });
+
+        if (clientResponse.problem) {
+            handleUpgradeRequired(clientResponse.problem, organization.current, () => loadData());
+        }
     }
 
     const throttledLoadData = throttle(5000, loadData);
@@ -339,7 +350,7 @@
             >
         </Sheet.Header>
         <div class="px-4">
-            <EventsOverview filterChanged={onFilterChanged} id={eventId || ''} handleError={() => (selectedStackId = undefined)} />
+            <EventsOverview filterChanged={onFilterChanged} id={eventId || ''} handleError={handleStackError} />
         </div>
     </Sheet.Content>
 </Sheet.Root>
