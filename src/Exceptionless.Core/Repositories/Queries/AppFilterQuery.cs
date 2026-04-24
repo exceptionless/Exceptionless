@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Options;
@@ -182,7 +182,7 @@ namespace Exceptionless.Core.Repositories.Queries
             return Query<T>.DateRange(r => r.Field(field).GreaterThanOrEquals($"now/d-{(int)retentionDays}d").LessThanOrEquals("now/d+1d"));
         }
 
-        private static bool ShouldApplyRetentionFilter<T>(IIndex index, QueryBuilderContext<T> ctx) where T : class, new()
+        private static bool ShouldApplyRetentionFilter<T>(IIndex? index, QueryBuilderContext<T> ctx) where T : class, new()
         {
             ArgumentNullException.ThrowIfNull(index);
 
@@ -196,7 +196,7 @@ namespace Exceptionless.Core.Repositories.Queries
             return false;
         }
 
-        private string? GetDateField(IIndex index)
+        private string? GetDateField(IIndex? index)
         {
             ArgumentNullException.ThrowIfNull(index);
 
