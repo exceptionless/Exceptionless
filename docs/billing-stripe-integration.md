@@ -145,15 +145,15 @@ Utility used across 6 route pages to intercept `ProblemDetails` with `status: 42
 
 ## Stripe SDK Migration Notes (v47 → v51)
 
-### Breaking Changes Handled
+### Stripe API Changes Handled
 
 1. **`Invoice.Paid` removed** → Use `String.Equals(invoice.Status, "paid", StringComparison.Ordinal)`
 2. **`Invoice.Discount` removed** → Use `Invoice.Discounts?.FirstOrDefault(d => d.Deleted is not true)?.Source?.Coupon`
-3. **`line.Plan` removed** → Use `line.Pricing?.PriceDetails?.PriceId` + `PriceService.GetAsync()`
-4. **`CustomerCreateOptions.Plan` deprecated** → Create subscription separately
+3. **`line.Plan` removed** → Use local `_billingManager.GetBillingPlan()` lookup
+4. **`CustomerCreateOptions.Plan` removed** → Create subscription separately
 5. **`CustomerCreateOptions.Coupon` removed** → Use `SubscriptionDiscountOptions`
 6. **`SubscriptionItemOptions.Plan` removed** → Use `SubscriptionItemOptions.Price`
-7. **`CustomerCreateOptions.Source` deprecated for pm_ tokens** → Use `CustomerCreateOptions.PaymentMethod`
+7. **`CustomerCreateOptions.Source`** → Use `CustomerCreateOptions.PaymentMethod` for `pm_` tokens
 
 ### Backwards Compatibility
 

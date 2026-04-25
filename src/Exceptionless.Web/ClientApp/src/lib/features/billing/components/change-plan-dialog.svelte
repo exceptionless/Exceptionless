@@ -409,21 +409,20 @@
 
     function tierPrice(tier: PlanTier, billingInterval: 'month' | 'year') {
         if (billingInterval === 'year' && tier.yearly) {
-            const perMonth = tier.yearly.price / 12;
-
             return {
-                amount: `${formatCurrency(tier.yearly.price)}`,
+                amount: tier.yearly.price,
                 period: '/yr',
-                sub: `~${formatCurrency(perMonth)}/mo`
+                subAmount: tier.yearly.price / 12,
+                subPeriod: '/mo'
             };
         }
 
         const plan = tier.monthly ?? tier.yearly;
         if (!plan) {
-            return { amount: '—', period: '', sub: '' };
+            return { amount: 0, period: '', subAmount: null, subPeriod: '' };
         }
 
-        return { amount: `${formatCurrency(plan.price)}`, period: '/mo', sub: '' };
+        return { amount: plan.price, period: '/mo', subAmount: null, subPeriod: '' };
     }
 
     const yearlySavingsLabel = $derived.by(() => {
@@ -608,12 +607,12 @@
                                     </div>
                                     <div class="text-right whitespace-nowrap">
                                         <div>
-                                            <span class="text-sm font-semibold">{price.amount}</span><Muted class="inline text-xs font-medium"
+                                            <span class="text-sm font-semibold"><Currency value={price.amount} /></span><Muted class="inline text-xs font-medium"
                                                 >{price.period}</Muted
                                             >
                                         </div>
-                                        {#if price.sub}
-                                            <Muted class="text-[11px]">{price.sub}</Muted>
+                                        {#if price.subAmount !== null}
+                                            <Muted class="text-[11px]">~<Currency value={price.subAmount} />{price.subPeriod}</Muted>
                                         {/if}
                                     </div>
                                 </Button>

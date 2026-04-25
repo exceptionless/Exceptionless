@@ -161,6 +161,7 @@ export function addOrganizationUser(request: AddOrganizationUserRequest) {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, undefined) });
+            // Also invalidate the user list for this org (different query namespace from Organization)
             queryClient.invalidateQueries({ queryKey: ['User', 'organization', request.route.organizationId] });
         }
     }));
@@ -214,6 +215,7 @@ export function deleteOrganizationUser(request: DeleteOrganizationUserRequest) {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, undefined) });
+            // Also invalidate the user list for this org (different query namespace from Organization)
             queryClient.invalidateQueries({ queryKey: ['User', 'organization', request.route.organizationId] });
         }
     }));
