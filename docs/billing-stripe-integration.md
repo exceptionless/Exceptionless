@@ -56,10 +56,10 @@ Changes the organization's billing plan.
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `planId` | string | Target plan ID (e.g., `EX_MEDIUM`, `EX_LARGE_YEARLY`) |
-| `stripeToken` | string? | `pm_` PaymentMethod ID (Svelte) or `tok_` token (Angular) |
+| `plan_id` | string | Target plan ID (e.g., `EX_MEDIUM`, `EX_LARGE_YEARLY`) |
+| `stripe_token` | string? | `pm_` PaymentMethod ID (Svelte) or `tok_` token (Angular) |
 | `last4` | string? | Last 4 digits of card (display only) |
-| `couponId` | string? | Stripe coupon code |
+| `coupon_id` | string? | Stripe coupon code |
 
 Legacy Angular clients may pass these as query string parameters instead.
 
@@ -110,7 +110,7 @@ Main billing dialog at `src/lib/features/billing/components/change-plan-dialog.s
 **Props**:
 
 - `organization: ViewOrganization` — current org data
-- `onclose: () => void` — callback when dialog closes
+- `onclose: (success: boolean) => void` — callback when dialog closes
 - `initialCouponCode?: string` — pre-fill coupon
 - `initialCouponOpen?: boolean` — open coupon input on mount
 - `initialFormError?: string` — show error message on mount
@@ -139,9 +139,9 @@ Uses direct DOM manipulation instead of svelte-stripe's `<Elements>` / `<Payment
 
 Handles 426 responses with "Upgrade Plan" / "Cancel" buttons. Mounted in the app layout.
 
-### `handleUpgradeRequired(error, organizationId)`
+### `showUpgradeDialogIfNeeded(error, organizationId, retryCallback?)`
 
-Utility used across 6 route pages to intercept `ProblemDetails` with `status: 426` and open the upgrade dialog.
+Utility used across 6 route pages to intercept `ProblemDetails` with `status: 426` and open the upgrade dialog. No-ops when the error is not a 426.
 
 ## Stripe SDK Migration Notes (v47 → v51)
 
@@ -160,7 +160,7 @@ Utility used across 6 route pages to intercept `ProblemDetails` with `status: 42
 The `tok_` token path (Angular legacy UI) is preserved. The controller detects `pm_` vs `tok_` prefix and routes to the appropriate Stripe API:
 
 ```csharp
-bool isPaymentMethod = stripeToken?.StartsWith("pm_", StringComparison.Ordinal) == true;
+bool isPaymentMethod = stripeToken?.StartsWith("pm_", StringComparison.Ordinal) is true;
 ```
 
 ## Known Limitations

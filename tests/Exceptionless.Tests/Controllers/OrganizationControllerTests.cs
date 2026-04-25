@@ -378,7 +378,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(plans);
         Assert.True(plans.Count > 0);
-        var unlimitedPlan = plans.FirstOrDefault(p => p.Id == _plans.UnlimitedPlan.Id);
+        var unlimitedPlan = plans.SingleOrDefault(p => String.Equals(p.Id, _plans.UnlimitedPlan.Id, StringComparison.Ordinal));
         Assert.NotNull(unlimitedPlan);
         Assert.False(unlimitedPlan.IsHidden);
     }
@@ -398,7 +398,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         Assert.True(plans.Count > 0);
 
         Assert.DoesNotContain(plans, p => p.IsHidden);
-        var freePlan = plans.FirstOrDefault(p => p.Id == _plans.FreePlan.Id);
+        var freePlan = plans.SingleOrDefault(p => String.Equals(p.Id, _plans.FreePlan.Id, StringComparison.Ordinal));
         Assert.NotNull(freePlan);
         Assert.Equal(_plans.FreePlan.Name, freePlan.Name);
     }
@@ -434,7 +434,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(plans);
-        var currentPlan = plans.FirstOrDefault(p => p.Id == org.PlanId);
+        var currentPlan = plans.SingleOrDefault(p => String.Equals(p.Id, org.PlanId, StringComparison.Ordinal));
         Assert.NotNull(currentPlan);
         Assert.Equal(org.PlanName, currentPlan.Name);
         Assert.Equal(org.BillingPrice, currentPlan.Price);

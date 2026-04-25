@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Exceptionless.Web.Models;
 
-public class ChangePlanRequest
+public record ChangePlanRequest
 {
     [Required]
     public string PlanId { get; set; } = null!;

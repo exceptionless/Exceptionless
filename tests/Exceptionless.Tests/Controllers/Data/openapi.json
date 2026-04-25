@@ -4317,7 +4317,7 @@
           "Organization"
         ],
         "summary": "Change plan",
-        "description": "Upgrades or downgrades the organizations plan.\nAccepts parameters via JSON body (preferred) or query string (legacy).",
+        "description": "Upgrades or downgrades the organization's plan.\nAccepts parameters via JSON body (preferred) or query string (legacy).",
         "parameters": [
           {
             "name": "id",
