@@ -3,8 +3,9 @@
     import type { BillingPlan } from '$lib/generated/api';
     import type { Stripe, StripeElements } from '@stripe/stripe-js';
 
+    import Currency from '$comp/formatters/currency.svelte';
     import ErrorMessage from '$comp/error-message.svelte';
-    import { Muted } from '$comp/typography';
+    import { Muted, Small } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
@@ -16,6 +17,7 @@
     import { FREE_PLAN_ID, isStripeEnabled, StripeProvider } from '$features/billing';
     import { type ChangePlanFormData, ChangePlanSchema } from '$features/billing/schemas';
     import { changePlanMutation, getPlansQuery } from '$features/organizations/api.svelte';
+    import { formatCurrency } from '$features/shared/utils/formatters';
     import { getFormErrorMessages, problemDetailsToFormErrors } from '$features/shared/validation';
     import { Exceptionless } from '@exceptionless/browser';
     import { ProblemDetails } from '@exceptionless/fetchclient';
@@ -31,7 +33,7 @@
         initialCouponCode?: string;
         initialCouponOpen?: boolean;
         initialFormError?: string;
-        onclose: () => void;
+        onclose: (success: boolean) => void;
         organization: ViewOrganization;
     }
 
@@ -257,9 +259,11 @@
                     }
 
                     toast.success(result.message ?? 'Your billing plan has been successfully changed.');
-                    onclose();
+                    onclose(true);
 
                     return null;
+                // TODO: Extract a shared error handler utility (toast + Exceptionless reporting)
+                //       to reduce boilerplate across mutation catch blocks.
                 } catch (error: unknown) {
                     if (error instanceof ProblemDetails) {
                         const formErrors = problemDetailsToFormErrors(error);
@@ -282,6 +286,8 @@
         }
     }));
 
+    // Sync reactive UI state into TanStack Form's imperative API.
+    // untrack() prevents re-triggering the effect when setFieldValue updates form internals.
     $effect(() => {
         const planId = selectedPlanId;
         const mode = needsPayment ? 'new' : 'existing';
@@ -293,6 +299,8 @@
         });
     });
 
+    // Initialize tier selection once plans load from the query.
+    // untrack() prevents re-triggering when assignment to selectedTierId/interval creates a dependency cycle.
     $effect(() => {
         if (plansQuery.data) {
             untrack(() => {
@@ -368,7 +376,7 @@
     }
 
     function handleCancel() {
-        onclose();
+        onclose(false);
     }
 
     function formatEvents(n: number): string {
@@ -399,18 +407,14 @@
         return `${days} day${days === 1 ? '' : 's'}`;
     }
 
-    function formatPrice(n: number): string {
-        return n.toLocaleString('en-US');
-    }
-
     function tierPrice(tier: PlanTier, billingInterval: 'month' | 'year') {
         if (billingInterval === 'year' && tier.yearly) {
             const perMonth = tier.yearly.price / 12;
 
             return {
-                amount: `$${formatPrice(tier.yearly.price)}`,
+                amount: `${formatCurrency(tier.yearly.price)}`,
                 period: '/yr',
-                sub: `~$${perMonth.toFixed(0)}/mo`
+                sub: `~${formatCurrency(perMonth)}/mo`
             };
         }
 
@@ -419,7 +423,7 @@
             return { amount: '—', period: '', sub: '' };
         }
 
-        return { amount: `$${formatPrice(plan.price)}`, period: '/mo', sub: '' };
+        return { amount: `${formatCurrency(plan.price)}`, period: '/mo', sub: '' };
     }
 
     const yearlySavingsLabel = $derived.by(() => {
@@ -472,7 +476,7 @@
         const price = organization.billing_price > 0 ? organization.billing_price : (plan?.price ?? 0);
         const name = tiers.find((t) => t.id === currentTierId)?.name ?? organization.plan_name;
         const period = currentInterval === 'year' ? '/yr' : '/mo';
-        return `${name} · $${formatPrice(price)}${period}, billed ${intervalWord(currentInterval)}`;
+        return `${name} · ${formatCurrency(price)}${period}, billed ${intervalWord(currentInterval)}`;
     });
 
     const ctaLabel = $derived.by(() => {
@@ -511,7 +515,7 @@
 <Dialog.Root
     open={true}
     onOpenChange={(v) => {
-        if (!v) onclose();
+        if (!v) onclose(false);
     }}
 >
     <Dialog.Content class="max-w-xl sm:max-w-xl">
@@ -521,7 +525,7 @@
                 Manage subscription
             </Dialog.Title>
             <Muted class="text-xs">
-                <strong class="text-foreground font-medium">{organization.name}</strong>
+                <Small class="text-foreground text-xs">{organization.name}</Small>
                 <span> · </span>
                 {currentSubtitle}
             </Muted>
@@ -791,18 +795,18 @@
                                 <Muted class="min-w-16 text-[10px] font-semibold tracking-wider uppercase">Plan</Muted>
                                 <Muted class="text-xs">
                                     {#if isFreeSelected}
-                                        <strong class="text-foreground font-medium">{planLabel(organization.plan_id, { includeInterval: true })}</strong>
+                                        <Small class="text-foreground text-xs">{planLabel(organization.plan_id, { includeInterval: true })}</Small>
                                         <span class="text-muted-foreground/60 mx-1">→</span>
-                                        <strong class="text-foreground font-medium">Free</strong>
+                                        <Small class="text-foreground text-xs">Free</Small>
                                         · immediate, prorated credit
                                     {:else if organization.plan_id === FREE_PLAN_ID}
-                                        Start <strong class="text-foreground font-medium">{planLabel(selectedPlanId, { includeInterval: true })}</strong>
-                                        {#if selectedPlan}· ${formatPrice(selectedPlan.price)}{interval === 'year' ? '/yr' : '/mo'}{/if}
+                                        Start <Small class="text-foreground text-xs">{planLabel(selectedPlanId, { includeInterval: true })}</Small>
+                                        {#if selectedPlan}· <Currency value={selectedPlan.price} />{interval === 'year' ? '/yr' : '/mo'}{/if}
                                     {:else}
-                                        <strong class="text-foreground font-medium">{planLabel(organization.plan_id, { includeInterval: includeInt })}</strong>
+                                        <Small class="text-foreground text-xs">{planLabel(organization.plan_id, { includeInterval: includeInt })}</Small>
                                         <span class="text-muted-foreground/60 mx-1">→</span>
-                                        <strong class="text-foreground font-medium">{planLabel(selectedPlanId, { includeInterval: includeInt })}</strong>
-                                        {#if selectedPlan}· ${formatPrice(selectedPlan.price)}{interval === 'year' ? '/yr' : '/mo'} · prorated today{/if}
+                                        <Small class="text-foreground text-xs">{planLabel(selectedPlanId, { includeInterval: includeInt })}</Small>
+                                        {#if selectedPlan}· <Currency value={selectedPlan.price} />{interval === 'year' ? '/yr' : '/mo'} · prorated today{/if}
                                     {/if}
                                 </Muted>
                             </div>
@@ -813,7 +817,7 @@
                                 <Muted class="text-xs">
                                     ···· {organization.card_last4}
                                     <span class="text-muted-foreground/60 mx-1">→</span>
-                                    <strong class="text-foreground font-medium">new payment method</strong>
+                                    <Small class="text-foreground text-xs">new payment method</Small>
                                 </Muted>
                             </div>
                         {/if}
@@ -821,7 +825,7 @@
                             <div class="flex items-baseline gap-2 text-xs leading-snug">
                                 <Muted class="min-w-16 text-[10px] font-semibold tracking-wider uppercase">Coupon</Muted>
                                 <Muted class="text-xs">
-                                    <strong class="text-foreground font-mono font-medium">{couponApplied}</strong> applied
+                                    <Small class="text-foreground font-mono text-xs">{couponApplied}</Small> applied
                                 </Muted>
                             </div>
                         {/if}
