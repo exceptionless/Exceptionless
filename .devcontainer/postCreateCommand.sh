@@ -4,9 +4,9 @@ set -euo pipefail
 export PATH="$HOME/.dotnet/tools:$PATH"
 
 if dotnet tool list --global | grep -Eiq '^aspire\.cli[[:space:]]'; then
-	dotnet tool update --global Aspire.Cli --version 13.2.3
+	dotnet tool update --global Aspire.Cli --version 13.2.4
 else
-	dotnet tool install --global Aspire.Cli --version 13.2.3
+	dotnet tool install --global Aspire.Cli --version 13.2.4
 fi
 
 export SSL_CERT_DIR="$HOME/.aspnet/dev-certs/trust:/etc/ssl/certs${SSL_CERT_DIR:+:$SSL_CERT_DIR}"

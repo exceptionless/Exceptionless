@@ -110,7 +110,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         services.AddTransient<EventDataBuilder>();
         services.AddSingleton<OrganizationData>();
         services.AddSingleton<ProjectData>();
-        services.AddSingleton<RandomEventGenerator>();
+        services.AddSingleton<Exceptionless.Helpers.RandomEventGenerator>();
         services.AddSingleton<StackData>();
         services.AddSingleton<TokenData>();
         services.AddSingleton<UserData>();
