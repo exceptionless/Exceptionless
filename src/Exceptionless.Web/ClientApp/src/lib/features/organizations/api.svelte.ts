@@ -170,24 +170,19 @@ export function addOrganizationUser(request: AddOrganizationUserRequest) {
  * Mutation to change an organization's billing plan.
  */
 export function changePlanMutation(request: ChangePlanMutationRequest) {
-    const queryClient = useQueryClient();
-
     return createMutation<ChangePlanResult, ProblemDetails, ChangePlanRequest>(() => ({
         enabled: () => !!accessToken.current && !!request.route.organizationId,
         mutationFn: async (params: ChangePlanRequest) => {
             const client = useFetchClient();
             const response = await client.postJSON<ChangePlanResult>(`organizations/${request.route.organizationId}/change-plan`, params);
 
+            if (!response.ok) {
+                throw response.problem;
+            }
+
             return response.data!;
         },
-        mutationKey: queryKeys.changePlan(request.route.organizationId),
-        onSuccess: () => {
-            // Invalidate organization data to reflect new plan
-            // WebSocket OrganizationChanged also fires, but we invalidate here for immediate feedback
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, undefined) });
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, 'stats') });
-            queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
-        }
+        mutationKey: queryKeys.changePlan(request.route.organizationId)
     }));
 }
 

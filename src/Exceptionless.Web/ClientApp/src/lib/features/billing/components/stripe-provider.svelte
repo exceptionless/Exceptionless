@@ -29,6 +29,7 @@
     let elementsInstance: null | StripeElements = null;
     let paymentElement: null | StripePaymentElement = null;
     let errorMessage: null | string = $state(null);
+    let disposed = false;
 
     let skeletonDiv: HTMLDivElement;
     let paymentDiv: HTMLDivElement;
@@ -37,6 +38,10 @@
     onMount(() => {
         loadStripeOnce()
             .then((stripe) => {
+                if (disposed) {
+                    return;
+                }
+
                 if (!stripe) {
                     showError('Stripe is not configured. Please contact support.');
                     return;
@@ -46,11 +51,6 @@
                 elementsInstance = clientSecret
                     ? stripe.elements({ appearance, clientSecret })
                     : stripe.elements({
-                          // `paymentMethodCreation: 'manual'` is required when we plan
-                          // to call `stripe.createPaymentMethod({ elements })` later
-                          // (deferred-intent flow). Without it Stripe throws
-                          // "your elements instance must be created with
-                          // paymentMethodCreation: 'manual'".
                           appearance,
                           currency: currency ?? 'usd',
                           mode: mode ?? 'setup',
@@ -60,7 +60,6 @@
                 paymentElement = elementsInstance.create('payment');
                 paymentElement.mount(paymentDiv);
 
-                // Swap skeleton for payment element
                 skeletonDiv.style.display = 'none';
                 paymentDiv.style.display = 'block';
 
@@ -68,10 +67,14 @@
                 onElementsChange?.(elementsInstance);
             })
             .catch((ex) => {
+                if (disposed) {
+                    return;
+                }
                 showError(ex instanceof Error ? ex.message : 'Failed to load payment system');
             });
 
         return () => {
+            disposed = true;
             paymentElement?.destroy();
         };
     });

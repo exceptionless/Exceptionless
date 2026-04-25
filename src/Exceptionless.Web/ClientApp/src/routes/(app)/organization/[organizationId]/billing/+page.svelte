@@ -49,7 +49,7 @@
         params.changePlan = true;
     }
 
-    function handleChangePlanClose() {
+    function handleChangePlanClose(success: boolean) {
         changePlanDialogOpen = false;
         params.changePlan = false;
     }
