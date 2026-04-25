@@ -95,5 +95,6 @@ export function useStripe(): StripeContext {
     if (!ctx) {
         throw new Error('useStripe() must be called within a StripeProvider component');
     }
+
     return ctx;
 }

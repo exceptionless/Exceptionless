@@ -423,6 +423,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         var plan = _billingManager.GetBillingPlan(model.PlanId);
         if (plan is null)
         {
+            _logger.LogWarning("Plan {PlanId} not found for organization {OrganizationId}", model.PlanId, id);
             ModelState.AddModelError("general", "Invalid plan. Please select a valid plan.");
             return ValidationProblem(ModelState);
         }
@@ -460,6 +461,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 organization.BillingStatus = BillingStatus.Trialing;
                 organization.RemoveSuspension();
             }
+            // New customer: create a Stripe customer and subscription from the provided payment token.
             else if (String.IsNullOrEmpty(organization.StripeCustomerId))
             {
                 if (String.IsNullOrEmpty(model.StripeToken))
@@ -507,6 +509,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 organization.StripeCustomerId = customer.Id;
                 organization.CardLast4 = model.Last4;
             }
+            // Existing customer: update (or create) their Stripe subscription and optionally swap payment method.
             else
             {
                 var update = new SubscriptionUpdateOptions { Items = [] };

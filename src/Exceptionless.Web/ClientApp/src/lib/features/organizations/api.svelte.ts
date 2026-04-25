@@ -175,11 +175,6 @@ export function changePlanMutation(request: ChangePlanMutationRequest) {
         mutationFn: async (params: ChangePlanRequest) => {
             const client = useFetchClient();
             const response = await client.postJSON<ChangePlanResult>(`organizations/${request.route.organizationId}/change-plan`, params);
-
-            if (!response.ok) {
-                throw response.problem;
-            }
-
             return response.data!;
         },
         mutationKey: queryKeys.changePlan(request.route.organizationId)
