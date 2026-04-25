@@ -9,7 +9,7 @@
     import { Separator } from '$comp/ui/separator';
     import { env } from '$env/dynamic/public';
     import { slackOAuthLogin } from '$features/auth/index.svelte';
-    import { handleUpgradeRequired } from '$features/billing';
+    import { showUpgradeDialogIfNeeded } from '$features/billing';
     import { organization } from '$features/organizations/context.svelte';
     import {
         deleteSlack,
@@ -89,7 +89,7 @@
             await newWebhook.mutateAsync(webhook);
             toastId = toast.success('Webhook added successfully');
         } catch (error) {
-            if (handleUpgradeRequired(error, organization.current, () => addWebhook(webhook))) {
+            if (showUpgradeDialogIfNeeded(error, organization.current, () => addWebhook(webhook))) {
                 return;
             }
 
@@ -106,7 +106,7 @@
             await addSlackMutation.mutateAsync(code);
             toastId = toast.success('Successfully connected Slack integration.');
         } catch (error) {
-            if (handleUpgradeRequired(error, organization.current, () => addSlack())) {
+            if (showUpgradeDialogIfNeeded(error, organization.current, () => addSlack())) {
                 return;
             }
 

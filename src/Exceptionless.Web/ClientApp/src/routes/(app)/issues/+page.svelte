@@ -10,7 +10,7 @@
     import { H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
-    import { handleUpgradeRequired } from '$features/billing/upgrade-required.svelte';
+    import { showUpgradeDialogIfNeeded } from '$features/billing/upgrade-required.svelte';
     import { type GetEventsParams, getOrganizationCountQuery, getStackEventsQuery } from '$features/events/api.svelte';
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
     import EventsOverview from '$features/events/components/events-overview.svelte';
@@ -50,7 +50,7 @@
     let selectedStackId = $state<string>();
 
     function handleStackError(problem: ProblemDetails) {
-        handleUpgradeRequired(problem, organization.current);
+        showUpgradeDialogIfNeeded(problem, organization.current);
         selectedStackId = undefined;
     }
 
@@ -224,7 +224,7 @@
         });
 
         if (clientResponse.problem) {
-            handleUpgradeRequired(clientResponse.problem, organization.current, () => loadData());
+            showUpgradeDialogIfNeeded(clientResponse.problem, organization.current, () => loadData());
         }
     }
 

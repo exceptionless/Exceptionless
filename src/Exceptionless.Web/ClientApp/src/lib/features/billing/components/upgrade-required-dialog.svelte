@@ -23,8 +23,8 @@
         }
     }
 
-    async function onChangePlanClose() {
-        const retry = upgradeRequiredDialog.retryCallback;
+    async function onChangePlanClose(success: boolean) {
+        const retry = success ? upgradeRequiredDialog.retryCallback : undefined;
         showChangePlan = false;
 
         if (retry) {

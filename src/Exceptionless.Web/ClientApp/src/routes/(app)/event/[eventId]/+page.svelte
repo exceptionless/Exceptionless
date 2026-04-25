@@ -6,7 +6,7 @@
     import { page } from '$app/state';
     import * as FacetedFilter from '$comp/faceted-filter';
     import { H3 } from '$comp/typography';
-    import { handleUpgradeRequired } from '$features/billing';
+    import { showUpgradeDialogIfNeeded } from '$features/billing';
     import EventsOverview from '$features/events/components/events-overview.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { watch } from 'runed';
@@ -28,8 +28,7 @@
     }
 
     async function handleError(problem: ProblemDetails) {
-        if (handleUpgradeRequired(problem, organization.current)) {
-            await goto(resolve('/(app)'));
+        if (showUpgradeDialogIfNeeded(problem, organization.current)) {
             return;
         }
 

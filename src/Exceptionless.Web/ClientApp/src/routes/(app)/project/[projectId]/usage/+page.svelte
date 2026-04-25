@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { goto } from '$app/navigation';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import Number from '$comp/formatters/number.svelte';
@@ -9,6 +8,7 @@
     import { Separator } from '$comp/ui/separator';
     import { Skeleton } from '$comp/ui/skeleton';
     import { env } from '$env/dynamic/public';
+    import { ChangePlanDialog } from '$features/billing';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { getNextBillingDateUtc, getRemainingEventLimit } from '$features/organizations/utils';
@@ -42,11 +42,7 @@
         }
     });
 
-    async function handleChangePlan() {
-        if (organization.current) {
-            await goto(`/next/organization/${organization.current}/billing?changePlan=true`);
-        }
-    }
+    let changePlanDialogOpen = $state(false);
 
     const chartConfig = {
         blocked: { color: 'var(--chart-2)', label: 'Blocked' },
@@ -126,7 +122,7 @@
                 <p>
                     You are currently on the
                     {#if canChangePlan}
-                        <A onclick={handleChangePlan}>
+                        <A class="cursor-pointer" role="button" tabindex={0} onclick={() => (changePlanDialogOpen = true)}>
                             <span class="font-bold">{organizationQuery.data?.plan_name}</span> plan
                         </A>
                     {:else}
@@ -141,7 +137,7 @@
                     (<TimeAgo value={nextBillingDate} />).
 
                     {#if canChangePlan}
-                        <A onclick={handleChangePlan}>Click here to change your plan or billing information.</A>
+                        <A class="cursor-pointer" role="button" tabindex={0} onclick={() => (changePlanDialogOpen = true)}>Click here to change your plan or billing information.</A>
                     {/if}
                 </p>
             </div>
@@ -170,3 +166,7 @@
         </div>
     {/if}
 </div>
+
+{#if changePlanDialogOpen && organizationQuery.data}
+    <ChangePlanDialog organization={organizationQuery.data} onclose={() => (changePlanDialogOpen = false)} />
+{/if}

@@ -9,7 +9,7 @@
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import { Spinner } from '$comp/ui/spinner';
-    import { handleUpgradeRequired } from '$features/billing';
+    import { showUpgradeDialogIfNeeded } from '$features/billing';
     import { organization } from '$features/organizations/context.svelte';
     import { postProject } from '$features/projects/api.svelte';
     import { type NewProjectFormData, NewProjectSchema } from '$features/projects/schemas';
@@ -37,7 +37,7 @@
                     await goto(resolve('/(app)/project/[projectId]/configure', { projectId: id }) + '?redirect=true');
                     return null;
                 } catch (error: unknown) {
-                    if (handleUpgradeRequired(error, organization.current, () => form.handleSubmit())) {
+                    if (showUpgradeDialogIfNeeded(error, organization.current, () => form.handleSubmit())) {
                         return null;
                     }
 

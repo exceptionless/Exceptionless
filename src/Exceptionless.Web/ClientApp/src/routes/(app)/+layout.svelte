@@ -9,10 +9,9 @@
     import { getIntercomTokenQuery } from '$features/auth/api.svelte';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { UpgradeRequiredDialog } from '$features/billing';
+    import { upgradeRequiredDialog } from '$features/billing/upgrade-required.svelte';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
     import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
-
-    const requiresPremium = $derived(filterUsesPremiumFeatures(page.url.searchParams.get('filter')));
     import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
     import { shouldLoadIntercomOrganization } from '$features/intercom/config';
     import { getOrganizationQuery, getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
@@ -44,6 +43,7 @@
 
     let { children }: Props = $props();
     let isAuthenticated = $derived(!!accessToken.current);
+    let requiresPremium = $derived(filterUsesPremiumFeatures(page.url.searchParams.get('filter')));
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
 
@@ -307,5 +307,7 @@
         {/snippet}
     </IntercomShell>
 
-    <UpgradeRequiredDialog />
+    {#if upgradeRequiredDialog.open}
+        <UpgradeRequiredDialog />
+    {/if}
 {/if}

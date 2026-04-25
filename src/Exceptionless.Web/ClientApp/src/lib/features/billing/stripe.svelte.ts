@@ -57,6 +57,11 @@ export async function loadStripeOnce(): Promise<null | Stripe> {
 
     try {
         _stripeInstance = await _stripePromise;
+
+        if (!_stripeInstance) {
+            _stripePromise = null;
+        }
+
         return _stripeInstance;
     } catch (error: unknown) {
         // Reset so the next call can retry instead of re-awaiting the rejected promise

@@ -4,7 +4,7 @@
     import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';
-    import { handleUpgradeRequired } from '$features/billing';
+    import { showUpgradeDialogIfNeeded } from '$features/billing';
     import { addOrganizationUser } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
@@ -80,7 +80,7 @@
             await addUserMutation.mutateAsync(email);
             toastId = toast.success('User invited successfully');
         } catch (error: unknown) {
-            if (handleUpgradeRequired(error, organizationId, () => inviteUser(email))) {
+            if (showUpgradeDialogIfNeeded(error, organizationId, () => inviteUser(email))) {
                 return;
             }
 

@@ -3,7 +3,7 @@
     import { resolve } from '$app/paths';
     import Button from '$comp/ui/button/button.svelte';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { handleUpgradeRequired } from '$features/billing';
+    import { showUpgradeDialogIfNeeded } from '$features/billing';
     import Reference from '@lucide/svelte/icons/link-2';
     import Settings from '@lucide/svelte/icons/settings';
     import Delete from '@lucide/svelte/icons/trash';
@@ -74,7 +74,7 @@
         }
 
         if (response.status === 426) {
-            handleUpgradeRequired(response.problem, stack.organization_id, () => promoteToExternal());
+            showUpgradeDialogIfNeeded(response.problem, stack.organization_id, () => promoteToExternal());
             return;
         }
 

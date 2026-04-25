@@ -43,7 +43,7 @@ export const upgradeRequiredDialog = {
  * @param retryCallback - Optional callback invoked after a successful upgrade to retry the failed operation.
  * Returns true if the error was a 426 and was handled, false otherwise.
  */
-export function handleUpgradeRequired(error: unknown, organizationId: string | undefined, retryCallback?: () => Promise<void> | void): boolean {
+export function showUpgradeDialogIfNeeded(error: unknown, organizationId: string | undefined, retryCallback?: () => Promise<void> | void): boolean {
     if (!isUpgradeRequired(error)) {
         return false;
     }
