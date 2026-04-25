@@ -74,8 +74,10 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         _disposables.Add(new DisposableAction(() => _timeProvider.Restore()));
     }
 
-    public virtual async ValueTask InitializeAsync()
+    public override async ValueTask InitializeAsync()
     {
+        await base.InitializeAsync();
+
         Log.SetLogLevel("Microsoft.AspNetCore.Hosting.Internal.WebHost", LogLevel.Warning);
         Log.SetLogLevel("Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService", LogLevel.None);
         await _server.WaitForReadyAsync();
@@ -263,7 +265,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         return response.DeserializeAsync<T>();
     }
 
-    public virtual ValueTask DisposeAsync()
+    public override ValueTask DisposeAsync()
     {
         foreach (var disposable in _disposables)
         {
@@ -276,6 +278,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
                 _logger?.LogError(ex, "Error disposing resource");
             }
         }
-        return ValueTask.CompletedTask;
+
+        return base.DisposeAsync();
     }
 }

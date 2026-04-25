@@ -4,17 +4,19 @@ Real-time error monitoring platform handling billions of requests (ASP.NET Core 
 
 ## Start Here
 
-- Run `Exceptionless.AppHost` from your IDE, or `aspire run` from the repo root.
-- The AppHost starts required services, and integration tests bootstrap their own infrastructure.
+- Start everything with the Aspire CLI: `aspire run --project src/Exceptionless.AppHost`, or run `Exceptionless.AppHost` directly from your IDE.
+- The AppHost launches required services (Elasticsearch, Redis, API, Job worker) and opens the Aspire dashboard. Integration tests bootstrap their own infrastructure.
 
 ## Common Commands
 
 | Task                | Command                                                                      |
 | ------------------- | ---------------------------------------------------------------------------- |
+| Run (Aspire)        | `aspire run --project src/Exceptionless.AppHost`                             |
 | Backend build       | `dotnet build`                                                               |
 | Backend test        | `dotnet test --project tests/Exceptionless.Tests/Exceptionless.Tests.csproj` |
 | Frontend build      | `cd src/Exceptionless.Web/ClientApp && npm ci && npm run build`              |
 | Frontend unit tests | `cd src/Exceptionless.Web/ClientApp && npm run test:unit`                    |
+| Frontend E2E tests  | `cd src/Exceptionless.Web/ClientApp && npm run test:e2e`                     |
 
 ## Repo-Specific Notes
 
@@ -39,9 +41,22 @@ src/
 tests/                         # C# tests + HTTP samples
 ```
 
+## Agents
+
+Available in `.claude/agents/`. Use `@agent-name` to invoke:
+
+- `engineer`: Plans, implements, verifies, reviews, QA tests, commits. Risk-based: micro (typo/config) → standard (bugs/features) → high-risk (auth/billing/data). Delegates to @reviewer and @qa.
+- `reviewer`: Adversarial 4-pass analysis (security → machine → correctness → style). Read-only. Supports SILENT_MODE for engineer loops.
+- `qa`: QA engineer — dogfood via agent-browser, E2E, API smoke tests. Read-only. Tiered by scope: backend=API smoke, frontend=browser dogfood, fullstack=both.
+- `triage`: Issue analyst — 5 Whys for bugs, architecture deep-dives for features/questions, community responses with warmth and depth.
+- `pr-reviewer`: PR gate — security pre-screen, dependency audit, delegates to @reviewer, inline GitHub comments, resolves stale comments, verdict. Drafts first, posts after approval.
+
 ## Constraints
 
 - Use `npm ci` (not `npm install`)
 - Never commit secrets — use environment variables
 - NuGet feeds are in `NuGet.Config` — don't add sources
-- Prefer additive documentation updates — don't replace strategic docs wholesale, extend them
+- **Backwards compatibility:** Never break existing public APIs, WebSocket message formats, config keys, or exported library interfaces without explicit user approval. Call out any breaking change as a BLOCKER in reviews.
+- **API test files:** Update `tests/http/*.http` files whenever endpoints change (new, modified, or removed).
+- **PR descriptions:** When creating a PR, fill out any existing PR template. Provide concise context: what changed, why, new APIs/features/behaviors, and any breaking changes. No essays — just enough for reviewers to understand the value and impact.
+- **App URL for QA:** `http://localhost:5200` — probe `/api/v2/about` for health check.
