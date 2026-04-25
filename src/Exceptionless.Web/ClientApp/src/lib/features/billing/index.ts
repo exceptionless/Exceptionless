@@ -4,4 +4,4 @@ export { default as UpgradeRequiredDialog } from './components/upgrade-required-
 export { FREE_PLAN_ID } from './constants';
 export type { BillingPlan, CardMode, ChangePlanFormState, ChangePlanRequest, ChangePlanResult } from './models';
 export { getStripePublishableKey, isStripeEnabled, loadStripeOnce, setStripeContext, type StripeContext, tryUseStripe, useStripe } from './stripe.svelte';
-export { isUpgradeRequired, showUpgradeDialog, showUpgradeDialogIfNeeded } from './upgrade-required.svelte';
+export { isUpgradeRequired, showBillingDialogOnUpgradeProblem, showUpgradeDialog } from './upgrade-required.svelte';

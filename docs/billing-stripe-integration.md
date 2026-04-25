@@ -139,7 +139,7 @@ Uses direct DOM manipulation instead of svelte-stripe's `<Elements>` / `<Payment
 
 Handles 426 responses with "Upgrade Plan" / "Cancel" buttons. Mounted in the app layout.
 
-### `showUpgradeDialogIfNeeded(error, organizationId, retryCallback?)`
+### `showBillingDialogOnUpgradeProblem(error, organizationId, retryCallback?)`
 
 Utility used across 6 route pages to intercept `ProblemDetails` with `status: 426` and open the upgrade dialog. No-ops when the error is not a 426.
 

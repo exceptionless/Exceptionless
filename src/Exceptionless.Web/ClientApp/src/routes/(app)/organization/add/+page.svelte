@@ -7,7 +7,7 @@
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import { Spinner } from '$comp/ui/spinner';
-    import { showUpgradeDialogIfNeeded } from '$features/billing';
+    import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import { postOrganization } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
@@ -39,7 +39,7 @@
                     await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: id }));
                     return null;
                 } catch (error: unknown) {
-                    if (showUpgradeDialogIfNeeded(error, organization.current, () => form.handleSubmit())) {
+                    if (showBillingDialogOnUpgradeProblem(error, organization.current, () => form.handleSubmit())) {
                         return null;
                     }
 

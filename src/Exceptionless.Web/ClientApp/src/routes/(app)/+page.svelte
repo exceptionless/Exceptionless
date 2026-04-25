@@ -11,7 +11,7 @@
     import { H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
-    import { showUpgradeDialogIfNeeded } from '$features/billing/upgrade-required.svelte';
+    import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
     import { getOrganizationCountQuery } from '$features/events/api.svelte';
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
     import EventsOverview from '$features/events/components/events-overview.svelte';
@@ -49,7 +49,7 @@
     let selectedEventId: null | string = $state(null);
 
     function handleEventError(problem: ProblemDetails) {
-        showUpgradeDialogIfNeeded(problem, organization.current);
+        showBillingDialogOnUpgradeProblem(problem, organization.current);
         selectedEventId = null;
     }
 
@@ -198,7 +198,7 @@
         });
 
         if (clientResponse.problem) {
-            showUpgradeDialogIfNeeded(clientResponse.problem, organization.current, () => loadData());
+            showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData());
         }
     }
 

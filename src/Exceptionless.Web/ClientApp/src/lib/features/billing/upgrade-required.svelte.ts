@@ -36,14 +36,12 @@ export const upgradeRequiredDialog = {
 };
 
 /**
- * Handles a 426 Upgrade Required response by opening a confirmation dialog
- * matching the legacy UI behavior: shows the backend message with
- * "Upgrade Plan" and "Cancel" buttons.
+ * If the error is a 426 Upgrade Required ProblemDetails, opens the billing
+ * dialog and optionally wires a retry callback. No-ops for any other error.
  *
- * @param retryCallback - Optional callback invoked after a successful upgrade to retry the failed operation.
- * Returns true if the error was a 426 and was handled, false otherwise.
+ * Returns true if the dialog was opened, false otherwise.
  */
-export function showUpgradeDialogIfNeeded(error: unknown, organizationId: string | undefined, retryCallback?: () => Promise<void> | void): boolean {
+export function showBillingDialogOnUpgradeProblem(error: unknown, organizationId: string | undefined, retryCallback?: () => Promise<void> | void): boolean {
     if (!isUpgradeRequired(error)) {
         return false;
     }
