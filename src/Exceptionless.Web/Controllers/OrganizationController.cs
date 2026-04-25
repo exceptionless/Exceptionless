@@ -231,7 +231,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         }
         catch (StripeException ex)
         {
-            _logger.LogError(ex, "An error occurred while getting the invoice: {InvoiceId}", id);
+            _logger.LogCritical(ex, "Error getting invoice ({InvoiceId}): {Message}", id, ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical(ex, "Unexpected error getting invoice ({InvoiceId}): {Message}", id, ex.Message);
         }
 
         if (String.IsNullOrEmpty(stripeInvoice?.CustomerId))
@@ -251,42 +255,17 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             Total = stripeInvoice.Total / 100.0m
         };
 
-        var priceService = new PriceService(client);
-        var priceCache = new Dictionary<string, Stripe.Price>(StringComparer.Ordinal);
         foreach (var line in stripeInvoice.Lines.Data)
         {
             var item = new InvoiceLineItem { Amount = line.Amount / 100.0m, Description = line.Description };
 
-            // In Stripe.net 51.x, PriceDetails.Price changed from string to ExpandableField<Price>;
-            // use .PriceId for the string ID. Fetch full Price object from Stripe to get nickname, interval, and amount.
             var priceId = line.Pricing?.PriceDetails?.PriceId;
             if (!String.IsNullOrEmpty(priceId))
             {
-                try
-                {
-                    if (!priceCache.TryGetValue(priceId, out var price))
-                    {
-                        price = await priceService.GetAsync(priceId);
-                        priceCache[priceId] = price;
-                    }
-
-                    var billingPlan = _billingManager.GetBillingPlan(price.Id);
-                    if (billingPlan is null && !String.IsNullOrEmpty(price.LookupKey))
-                        billingPlan = _billingManager.GetBillingPlan(price.LookupKey);
-
-                    // Find the matching billing plan by checking multiple identifiers:
-                    // 1. Price ID (e.g., "EX_SMALL" if using custom IDs)
-                    // 2. Lookup key (alternative identifier set in Stripe)
-                    // 3. Nickname for display fallback
-                    string planName = billingPlan?.Name ?? price.Nickname ?? price.Id;
-                    string interval = price.Recurring?.Interval ?? "one-time";
-                    decimal unitAmountCents = line.Pricing?.UnitAmountDecimal ?? price.UnitAmount ?? 0;
-                    item.Description = $"Exceptionless - {planName} Plan ({unitAmountCents / 100.0m:c}/{interval})";
-                }
-                catch (StripeException ex)
-                {
-                    _logger.LogWarning(ex, "Failed to fetch price details for price: {PriceId}", priceId);
-                }
+                var billingPlan = _billingManager.GetBillingPlan(priceId);
+                string planName = billingPlan?.Name ?? priceId;
+                string interval = priceId.EndsWith("_YEARLY", StringComparison.OrdinalIgnoreCase) ? "year" : "month";
+                item.Description = $"Exceptionless - {planName} Plan ({line.Amount / 100.0m:c}/{interval})";
             }
 
             var periodStart = line.Period.Start >= DateTime.MinValue ? line.Period.Start : stripeInvoice.PeriodStart;
@@ -295,8 +274,6 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             invoice.Items.Add(item);
         }
 
-        // In Stripe.net 50.x, Discount was replaced with Discounts collection
-        // and Discount.Coupon was replaced with Discount.Source.Coupon
         var coupon = stripeInvoice.Discounts?.FirstOrDefault(d => d.Deleted is not true)?.Source?.Coupon;
         if (coupon is not null)
         {
@@ -370,7 +347,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
         var plans = Request.IsGlobalAdmin()
             ? _plans.Plans.ToList()
-            : _plans.Plans.Where(p => !p.IsHidden || p.Id == organization.PlanId).ToList();
+            : _plans.Plans.Where(p => !p.IsHidden || String.Equals(p.Id, organization.PlanId, StringComparison.OrdinalIgnoreCase)).ToList();
 
         var currentPlan = new BillingPlan
         {
@@ -386,7 +363,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             HasPremiumFeatures = organization.HasPremiumFeatures
         };
 
-        int idx = plans.FindIndex(p => p.Id == organization.PlanId);
+        int idx = plans.FindIndex(p => String.Equals(p.Id, organization.PlanId, StringComparison.OrdinalIgnoreCase));
         if (idx >= 0)
             plans[idx] = currentPlan;
         else
@@ -399,7 +376,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// Change plan
     /// </summary>
     /// <remarks>
-    /// Upgrades or downgrades the organizations plan.
+    /// Upgrades or downgrades the organization's plan.
     /// Accepts parameters via JSON body (preferred) or query string (legacy).
     /// </remarks>
     /// <param name="id">The identifier of the organization.</param>
@@ -446,7 +423,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         var plan = _billingManager.GetBillingPlan(model.PlanId);
         if (plan is null)
         {
-            ModelState.AddModelError(nameof(model.PlanId), "Invalid PlanId.");
+            ModelState.AddModelError("general", "Invalid plan. Please select a valid plan.");
             return ValidationProblem(ModelState);
         }
 
@@ -466,8 +443,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         var subscriptionService = new SubscriptionService(client);
         var paymentMethodService = new PaymentMethodService(client);
 
-        // Detect if stripeToken is a legacy token (tok_) or modern PaymentMethod (pm_)
-        bool isPaymentMethod = model.StripeToken?.StartsWith("pm_", StringComparison.Ordinal) == true;
+        bool isPaymentMethod = model.StripeToken?.StartsWith("pm_", StringComparison.Ordinal) is true;
 
         try
         {
@@ -512,7 +488,6 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
                 var customer = await customerService.CreateAsync(createCustomer);
 
-                // Create subscription separately (Plan on CustomerCreateOptions is deprecated)
                 var subscriptionOptions = new SubscriptionCreateOptions
                 {
                     Customer = customer.Id,
@@ -542,14 +517,12 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 if (!Request.IsGlobalAdmin())
                     customerUpdateOptions.Email = CurrentUser.EmailAddress;
 
-                // Start subscription list fetch immediately — it's independent of customer/payment ops
                 var listSubscriptionsTask = subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
 
                 if (!String.IsNullOrEmpty(model.StripeToken))
                 {
                     if (isPaymentMethod)
                     {
-                        // Attach runs in parallel with listSubscriptionsTask
                         await paymentMethodService.AttachAsync(model.StripeToken, new PaymentMethodAttachOptions
                         {
                             Customer = organization.StripeCustomerId
@@ -566,7 +539,6 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                     cardUpdated = true;
                 }
 
-                // Customer update and subscription list are independent — run in parallel
                 await Task.WhenAll(
                     customerService.UpdateAsync(organization.StripeCustomerId, customerUpdateOptions),
                     listSubscriptionsTask
@@ -610,12 +582,12 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         }
         catch (StripeException ex)
         {
-            _logger.LogCritical(ex, "An error occurred while trying to update your billing plan: {Message}", ex.Message);
+            _logger.LogCritical(ex, "Error occurred update billing plan: {Message}", ex.Message);
             return Ok(ChangePlanResult.FailWithMessage("An error occurred while changing plans. Please try again or contact support."));
         }
         catch (Exception ex)
         {
-            _logger.LogCritical(ex, "An unexpected error occurred while trying to update your billing plan");
+            _logger.LogCritical(ex, "An unexpected error occurred while trying to update your billing plan: {Message}", ex.Message);
             return Ok(ChangePlanResult.FailWithMessage("An error occurred while changing plans. Please try again."));
         }
 
