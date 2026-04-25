@@ -171,6 +171,7 @@ export function addOrganizationUser(request: AddOrganizationUserRequest) {
  * Mutation to change an organization's billing plan.
  */
 export function changePlanMutation(request: ChangePlanMutationRequest) {
+    const queryClient = useQueryClient();
     return createMutation<ChangePlanResult, ProblemDetails, ChangePlanRequest>(() => ({
         enabled: () => !!accessToken.current && !!request.route.organizationId,
         mutationFn: async (params: ChangePlanRequest) => {
@@ -178,7 +179,12 @@ export function changePlanMutation(request: ChangePlanMutationRequest) {
             const response = await client.postJSON<ChangePlanResult>(`organizations/${request.route.organizationId}/change-plan`, params);
             return response.data!;
         },
-        mutationKey: queryKeys.changePlan(request.route.organizationId)
+        mutationKey: queryKeys.changePlan(request.route.organizationId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, undefined) });
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, 'stats') });
+            queryClient.invalidateQueries({ queryKey: queryKeys.plans(request.route.organizationId) });
+        }
     }));
 }
 
