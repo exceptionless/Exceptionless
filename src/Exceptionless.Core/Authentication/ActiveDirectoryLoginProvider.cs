@@ -61,7 +61,8 @@ public class ActiveDirectoryLoginProvider : IDomainLoginProvider
     private SearchResult? FindUser(string username)
     {
         using var entry = new DirectoryEntry(_authOptions.LdapConnectionString);
-        using var searcher = new DirectorySearcher(entry, $"(&({AD_USERNAME}={username}))", [AD_FIRSTNAME,
+        using var searcher = new DirectorySearcher(entry, $"(&({AD_USERNAME}={username}))", [
+            AD_FIRSTNAME,
             AD_LASTNAME,
             AD_EMAIL
         ]);
