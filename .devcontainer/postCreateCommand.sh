@@ -1,11 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
-if ! command -v aspire >/dev/null 2>&1; then
-	curl -sSL https://aspire.dev/install.sh | bash
+export PATH="$HOME/.dotnet/tools:$PATH"
+
+if dotnet tool list --global | grep -Eiq '^aspire\.cli[[:space:]]'; then
+	dotnet tool update --global Aspire.Cli --version 13.2.3
+else
+	dotnet tool install --global Aspire.Cli --version 13.2.3
 fi
 
-export PATH="$HOME/.aspire/bin:$PATH"
 export SSL_CERT_DIR="$HOME/.aspnet/dev-certs/trust:/etc/ssl/certs${SSL_CERT_DIR:+:$SSL_CERT_DIR}"
 aspire --version
 dotnet dev-certs https
@@ -15,3 +18,5 @@ if ! dotnet dev-certs https --trust; then
 fi
 
 dotnet restore Exceptionless.slnx
+npm ci --prefix src/Exceptionless.Web/ClientApp
+npm ci --prefix src/Exceptionless.Web/ClientApp.angular
