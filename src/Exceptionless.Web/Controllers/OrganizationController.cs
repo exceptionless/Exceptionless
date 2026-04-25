@@ -490,6 +490,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
                 var customer = await customerService.CreateAsync(createCustomer);
 
+                // Persist the Stripe customer ID immediately so a retry won't create a duplicate customer
+                organization.StripeCustomerId = customer.Id;
+                organization.CardLast4 = model.Last4;
+                await _repository.SaveAsync(organization, o => o.Cache().Originals());
+
                 var subscriptionOptions = new SubscriptionCreateOptions
                 {
                     Customer = customer.Id,
@@ -506,8 +511,6 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
 
                 organization.BillingStatus = BillingStatus.Active;
                 organization.RemoveSuspension();
-                organization.StripeCustomerId = customer.Id;
-                organization.CardLast4 = model.Last4;
             }
             // Existing customer: update (or create) their Stripe subscription and optionally swap payment method.
             else
