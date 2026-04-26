@@ -167,9 +167,6 @@ export function addOrganizationUser(request: AddOrganizationUserRequest) {
     }));
 }
 
-/**
- * Mutation to change an organization's billing plan.
- */
 export function changePlanMutation(request: ChangePlanMutationRequest) {
     const queryClient = useQueryClient();
     return createMutation<ChangePlanResult, ProblemDetails, ChangePlanRequest>(() => ({

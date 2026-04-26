@@ -23,31 +23,25 @@ export const upgradeRequiredDialog = {
     },
     set open(value: boolean) {
         state.open = value;
-        if (!value) {
-            state.retryCallback = undefined;
-        }
     },
     get organizationId() {
         return state.organizationId;
+    },
+    reset() {
+        state.open = false;
+        state.message = '';
+        state.organizationId = undefined;
+        state.retryCallback = undefined;
     },
     get retryCallback() {
         return state.retryCallback;
     }
 };
 
-/**
- * Checks if a ProblemDetails error represents a 426 Upgrade Required response.
- */
 export function isUpgradeRequired(error: unknown): error is ProblemDetails {
     return error instanceof ProblemDetails && error.status === 426;
 }
 
-/**
- * If the error is a 426 Upgrade Required ProblemDetails, opens the billing
- * dialog and optionally wires a retry callback. No-ops for any other error.
- *
- * Returns true if the dialog was opened, false otherwise.
- */
 export function showBillingDialogOnUpgradeProblem(error: unknown, organizationId: string | undefined, retryCallback?: () => Promise<void> | void): boolean {
     if (!isUpgradeRequired(error)) {
         return false;
@@ -61,10 +55,6 @@ export function showBillingDialogOnUpgradeProblem(error: unknown, organizationId
     return true;
 }
 
-/**
- * Opens the upgrade dialog directly (without a 426 response).
- * Use for proactive upgrade prompts like premium notification settings.
- */
 export function showUpgradeDialog(organizationId: string, message?: string): void {
     state.message = message || 'Please upgrade your plan to enable this feature.';
     state.organizationId = organizationId;

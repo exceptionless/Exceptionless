@@ -364,7 +364,7 @@
             return;
         }
 
-        couponApplied = code.toUpperCase();
+        couponApplied = code;
         couponOpen = false;
         couponInput = '';
         couponError = null;

@@ -223,9 +223,7 @@
             params: eventsQueryParameters as Record<string, unknown>
         });
 
-        if (clientResponse.problem) {
-            showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData());
-        }
+        showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData());
     }
 
     const throttledLoadData = throttle(5000, loadData);

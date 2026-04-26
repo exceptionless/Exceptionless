@@ -26,6 +26,7 @@
     async function onChangePlanClose(success: boolean) {
         const retry = success ? upgradeRequiredDialog.retryCallback : undefined;
         showChangePlan = false;
+        upgradeRequiredDialog.reset();
 
         if (retry) {
             await retry();
@@ -33,7 +34,7 @@
     }
 
     function onCancel() {
-        upgradeRequiredDialog.open = false;
+        upgradeRequiredDialog.reset();
         showChangePlan = false;
     }
 

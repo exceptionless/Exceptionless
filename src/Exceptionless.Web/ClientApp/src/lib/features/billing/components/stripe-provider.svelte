@@ -14,17 +14,6 @@
 
     let { appearance, clientSecret, currency = 'usd', mode = 'setup', onElementsChange, onload }: Props = $props();
 
-    /**
-     * Fully imperative approach: bypasses both svelte-stripe's <Elements> and
-     * <PaymentElement> components, and avoids Svelte 5 reactive template
-     * guards entirely.
-     *
-     * Why: Svelte 5 has a reactivity issue where $state/$derived/stores set
-     * from async callbacks (onMount, .then) don't reliably trigger template
-     * {#if} re-renders. We sidestep this by using direct DOM manipulation
-     * for show/hide and mounting the Stripe PaymentElement imperatively.
-     */
-
     let stripeInstance: null | Stripe = null;
     let elementsInstance: null | StripeElements = null;
     let paymentElement: null | StripePaymentElement = null;
@@ -36,11 +25,10 @@
     let errorDiv: HTMLDivElement;
 
     onMount(() => {
-        loadStripeOnce()
-            .then((stripe) => {
-                if (disposed) {
-                    return;
-                }
+        async function init() {
+            try {
+                const stripe = await loadStripeOnce();
+                if (disposed) return;
 
                 if (!stripe) {
                     showError('Stripe is not configured. Please contact support.');
@@ -65,13 +53,13 @@
 
                 onload?.(stripe);
                 onElementsChange?.(elementsInstance);
-            })
-            .catch((ex) => {
-                if (disposed) {
-                    return;
-                }
+            } catch (ex) {
+                if (disposed) return;
                 showError(ex instanceof Error ? ex.message : 'Failed to load payment system');
-            });
+            }
+        }
+
+        init();
 
         return () => {
             disposed = true;
@@ -86,8 +74,6 @@
         errorDiv.style.display = 'block';
     }
 
-    // Provide context for svelte-stripe's PaymentElement (in case it's used)
-    // and for useStripe() in form submission handlers.
     setContext('stripe', {
         get elements() {
             return elementsInstance;
