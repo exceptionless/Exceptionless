@@ -4,23 +4,23 @@ Real-time error monitoring platform handling billions of requests (ASP.NET Core 
 
 ## Start Here
 
-- Start everything with the Aspire CLI: `aspire run --project src/Exceptionless.AppHost`, or run `Exceptionless.AppHost` directly from your IDE.
+- Start everything with the Aspire CLI: `aspire run`, or run `Exceptionless.AppHost` directly from your IDE.
 - The AppHost launches required services (Elasticsearch, Redis, API, Job worker) and opens the Aspire dashboard. Integration tests bootstrap their own infrastructure.
 
 ## Common Commands
 
-| Task                | Command                                                                      |
-| ------------------- | ---------------------------------------------------------------------------- |
-| Run (Aspire)        | `aspire run --project src/Exceptionless.AppHost`                             |
-| Backend build       | `dotnet build`                                                               |
-| Backend test        | `dotnet test --project tests/Exceptionless.Tests/Exceptionless.Tests.csproj` |
-| Frontend build      | `cd src/Exceptionless.Web/ClientApp && npm ci && npm run build`              |
-| Frontend unit tests | `cd src/Exceptionless.Web/ClientApp && npm run test:unit`                    |
-| Frontend E2E tests  | `cd src/Exceptionless.Web/ClientApp && npm run test:e2e`                     |
+| Task                | Command                                                         |
+| ------------------- | --------------------------------------------------------------- |
+| Run (Aspire)        | `aspire run`                                                    |
+| Backend build       | `dotnet build`                                                  |
+| Backend test        | `dotnet test`                                                   |
+| Frontend build      | `cd src/Exceptionless.Web/ClientApp && npm ci && npm run build` |
+| Frontend unit tests | `cd src/Exceptionless.Web/ClientApp && npm run test:unit`       |
+| Frontend E2E tests  | `cd src/Exceptionless.Web/ClientApp && npm run test:e2e`        |
 
 ## Repo-Specific Notes
 
-- Backend test filtering uses Microsoft Testing Platform test-app options after `--`, for example `dotnet test --project tests/Exceptionless.Tests/Exceptionless.Tests.csproj -- --filter-class Exceptionless.Tests.Controllers.EventControllerTests`.
+- Backend test filtering uses Microsoft Testing Platform test-app options after `--`, for example `dotnet test -- --filter-class Exceptionless.Tests.Controllers.EventControllerTests`.
 - Elasticsearch-backed repository or job tests should derive from `IntegrationTestsBase`, not `TestWithServices`.
 - The current main site UI is the legacy Angular app in `src/Exceptionless.Web/ClientApp.angular`; the folders you will usually touch there are `app/`, `components/`, `less/`, `img/`, `lang/`, and `grunt/`.
 - The Svelte 5 UI in `src/Exceptionless.Web/ClientApp` is still under development.

@@ -1,6 +1,6 @@
 {
     "profiles": {
-        "Exceptionless": {
+        "http": {
             "commandName": "Project",
             "launchBrowser": false,
             "environmentVariables": {
@@ -8,6 +8,15 @@
             },
             "dotnetRunMessages": true,
             "applicationUrl": "http://localhost:5200"
+        },
+        "https": {
+            "commandName": "Project",
+            "launchBrowser": false,
+            "environmentVariables": {
+                "EX_AppMode": "Development"
+            },
+            "dotnetRunMessages": true,
+            "applicationUrl": "https://localhost:7517;http://localhost:5200"
         }
     }
 }

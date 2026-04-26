@@ -6,13 +6,14 @@ var proxyRequest = require("grunt-connect-proxy2/lib/utils").proxyRequest;
 
 module.exports = function () {
     var target = getTarget();
-    var certs = target.ssl ? generateCerts() : { cert: undefined, key: undefined };
+    var useHttps = String(process.env.USE_HTTPS || "").toLowerCase() === "true";
+    var certs = useHttps ? generateCerts() : { cert: undefined, key: undefined };
 
     return {
         main: {
             options: {
                 port: 5100,
-                protocol: "http",
+                protocol: useHttps ? "https" : "http",
                 key: certs.key,
                 cert: certs.cert,
                 middleware: function (connect, options, middlewares) {
@@ -63,48 +64,31 @@ module.exports = function () {
 };
 
 function getTarget() {
-    var port = 5200;
-    var host = "localhost";
-    var ssl = false;
+    var url = process.env.API_HTTPS || process.env.API_HTTP;
 
-    if (process.env.ASPNETCORE_HTTPS_PORT) {
-        port = process.env.ASPNETCORE_HTTPS_PORT;
-    } else if (process.env.ASPNETCORE_URLS) {
-        var url = process.env.ASPNETCORE_URLS.split(";")[0];
-        var parts = url.split(":");
-        if (url.startsWith("http://")) ssl = false;
-        if (parts.length >= 2) host = parts[1].substring(2);
-        if (parts.length >= 3) port = parts[2];
-        else port = ssl ? 443 : 80;
+    if (url) {
+        var parsed = new URL(url);
+        var ssl = parsed.protocol === "https:";
+        return {
+            host: parsed.hostname,
+            port: Number(parsed.port) || (ssl ? 443 : 80),
+            ssl,
+        };
     }
 
-    return {
-        port,
-        host,
-        ssl,
-    };
+    return { host: "localhost", port: 5200, ssl: false };
 }
 
-/** Function taken from aspnetcore-https.js in ASP.NET React template https://github.com/microsoft/commercial-marketplace-offer-deploy/blob/main/src/ClientApp/ClientApp/aspnetcore-https.ts */
 function generateCerts() {
     var baseFolder =
         process.env.APPDATA !== undefined && process.env.APPDATA !== ""
             ? `${process.env.APPDATA}/ASP.NET/https`
             : `${process.env.HOME}/.aspnet/https`;
-    var certificateArg = process.argv
-        .map((arg) => {
-            var match = arg.match(/--name=(.+)/i);
-            return match ? { value: match[1] } : null;
-        })
-        .filter(Boolean)[0];
-
-    var certificateName = certificateArg ? certificateArg.groups.value : process.env.npm_package_name;
+    var certificateName = process.env.npm_package_name;
 
     if (!certificateName) {
         // eslint-disable-next-line no-console
-        console.error(
-            "Invalid certificate name. Run this script in the context of an npm/yarn script or pass --name=<<app>> explicitly."
-        );
+        console.error("Invalid certificate name. Run this script in the context of an npm script.");
         process.exit(-1);
     }
 
@@ -112,12 +96,7 @@ function generateCerts() {
     var keyFilePath = path.join(baseFolder, `${certificateName}.key`);
 
     if (!fs.existsSync(certFilePath) || !fs.existsSync(keyFilePath)) {
-        var outp = s.execSync(
-            "dotnet " +
-                ["dev-certs", "https", "--export-path", `"${certFilePath}"`, "--format", "Pem", "--no-password"].join(
-                    " "
-                )
-        );
+        var outp = s.execSync(`dotnet dev-certs https --export-path "${certFilePath}" --format Pem --no-password`);
         // eslint-disable-next-line no-console
         console.log(outp.toString());
     }
