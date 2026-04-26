@@ -41,14 +41,14 @@ public static class ElasticsearchBuilderExtensions
             options.UseServer(connectionString);
         });
 
-        var healthCheckKey = $"{name}_check";
+        string healthCheckKey = $"{name}_check";
         builder.Services.AddHealthChecks()
           .Add(new HealthCheckRegistration(
               healthCheckKey,
               sp => new ElasticsearchHealthCheck(options!),
-              failureStatus: default,
-              tags: default,
-              timeout: default));
+              failureStatus: null,
+              tags: null,
+              timeout: null));
 
         return builder.AddResource(elasticsearch)
             .WithImage(ElasticsearchContainerImageTags.Image, ElasticsearchContainerImageTags.Tag)
