@@ -25,12 +25,8 @@ public class OpenApiControllerTests : IntegrationTestsBase
         string actualJson = await response.Content.ReadAsStringAsync(TestCancellationToken);
 
         // Assert
-        string expectedJson = (await File.ReadAllTextAsync(baselinePath, TestCancellationToken))
-            .ReplaceLineEndings("\n")
-            .Replace("\\r\\n", "\\n");
-        actualJson = actualJson
-            .ReplaceLineEndings("\n")
-            .Replace("\\r\\n", "\\n");
+        string expectedJson = (await File.ReadAllTextAsync(baselinePath, TestCancellationToken)).Replace("\\r\\n", "\\n");
+        actualJson = actualJson.Replace("\\r\\n", "\\n");
 
         Assert.Equal(expectedJson, actualJson);
     }

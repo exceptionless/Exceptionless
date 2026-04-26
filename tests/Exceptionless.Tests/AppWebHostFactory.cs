@@ -12,7 +12,6 @@ namespace Exceptionless.Tests;
 
 public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 {
-    private static readonly Uri s_elasticsearchUri = new("http://127.0.0.1:9200");
     private static int s_counter = -1;
     private static readonly ConcurrentQueue<int> s_pool = new();
     private static readonly Lazy<Task<DistributedApplication>> s_sharedApplication = new(StartSharedApplicationAsync, LazyThreadSafetyMode.ExecutionAndPublication);
@@ -44,19 +43,22 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
         // don't use random ports for tests
         builder.Configuration["DcpPublisher:RandomizePorts"] = "false";
 
-        builder.AddElasticsearch("Elasticsearch", port: 9200)
+        var elasticsearch = builder.AddElasticsearch("Elasticsearch", port: 9200)
             .WithContainerName("Exceptionless-Elasticsearch-Test")
             .WithLifetime(ContainerLifetime.Persistent);
 
         var app = builder.Build();
 
         await app.StartAsync();
-        await WaitForElasticsearchAsync();
+
+        var connectionString = await elasticsearch.Resource.GetConnectionStringAsync()
+            ?? throw new InvalidOperationException("Could not resolve Elasticsearch connection string.");
+        await WaitForElasticsearchAsync(new Uri(connectionString));
 
         return app;
     }
 
-    private static async Task WaitForElasticsearchAsync()
+    private static async Task WaitForElasticsearchAsync(Uri elasticsearchUri)
     {
         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(1) };
         var deadline = TimeProvider.System.GetUtcNow() + TimeSpan.FromSeconds(60);
@@ -65,7 +67,7 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
         {
             try
             {
-                using var response = await client.GetAsync(s_elasticsearchUri);
+                using var response = await client.GetAsync(elasticsearchUri);
                 if (response.StatusCode == HttpStatusCode.OK)
                     return;
             }
