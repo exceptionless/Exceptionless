@@ -3,8 +3,8 @@
     import type { BillingPlan } from '$lib/generated/api';
     import type { Stripe, StripeElements } from '@stripe/stripe-js';
 
-    import Currency from '$comp/formatters/currency.svelte';
     import ErrorMessage from '$comp/error-message.svelte';
+    import Currency from '$comp/formatters/currency.svelte';
     import { Muted, Small } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Badge } from '$comp/ui/badge';
@@ -262,8 +262,8 @@
                     onclose(true);
 
                     return null;
-                // TODO: Extract a shared error handler utility (toast + Exceptionless reporting)
-                //       to reduce boilerplate across mutation catch blocks.
+                    // TODO: Extract a shared error handler utility (toast + Exceptionless reporting)
+                    //       to reduce boilerplate across mutation catch blocks.
                 } catch (error: unknown) {
                     if (error instanceof ProblemDetails) {
                         const formErrors = problemDetailsToFormErrors(error);
@@ -607,8 +607,8 @@
                                     </div>
                                     <div class="text-right whitespace-nowrap">
                                         <div>
-                                            <span class="text-sm font-semibold"><Currency value={price.amount} /></span><Muted class="inline text-xs font-medium"
-                                                >{price.period}</Muted
+                                            <span class="text-sm font-semibold"><Currency value={price.amount} /></span><Muted
+                                                class="inline text-xs font-medium">{price.period}</Muted
                                             >
                                         </div>
                                         {#if price.subAmount !== null}

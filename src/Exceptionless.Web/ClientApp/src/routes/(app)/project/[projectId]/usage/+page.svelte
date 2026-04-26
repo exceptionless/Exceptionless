@@ -137,7 +137,9 @@
                     (<TimeAgo value={nextBillingDate} />).
 
                     {#if canChangePlan}
-                        <A class="cursor-pointer" role="button" tabindex={0} onclick={() => (changePlanDialogOpen = true)}>Click here to change your plan or billing information.</A>
+                        <A class="cursor-pointer" role="button" tabindex={0} onclick={() => (changePlanDialogOpen = true)}
+                            >Click here to change your plan or billing information.</A
+                        >
                     {/if}
                 </p>
             </div>

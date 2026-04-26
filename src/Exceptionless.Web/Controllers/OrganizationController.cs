@@ -493,7 +493,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 // Persist the Stripe customer ID immediately so a retry won't create a duplicate customer
                 organization.StripeCustomerId = customer.Id;
                 organization.CardLast4 = model.Last4;
-                await _repository.SaveAsync(organization, o => o.Cache().Originals());
+                await _repository.SaveAsync(organization, o => o.Cache());
 
                 var subscriptionOptions = new SubscriptionCreateOptions
                 {

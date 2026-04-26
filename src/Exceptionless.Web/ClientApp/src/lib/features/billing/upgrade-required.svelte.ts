@@ -36,6 +36,13 @@ export const upgradeRequiredDialog = {
 };
 
 /**
+ * Checks if a ProblemDetails error represents a 426 Upgrade Required response.
+ */
+export function isUpgradeRequired(error: unknown): error is ProblemDetails {
+    return error instanceof ProblemDetails && error.status === 426;
+}
+
+/**
  * If the error is a 426 Upgrade Required ProblemDetails, opens the billing
  * dialog and optionally wires a retry callback. No-ops for any other error.
  *
@@ -52,13 +59,6 @@ export function showBillingDialogOnUpgradeProblem(error: unknown, organizationId
     state.open = true;
 
     return true;
-}
-
-/**
- * Checks if a ProblemDetails error represents a 426 Upgrade Required response.
- */
-export function isUpgradeRequired(error: unknown): error is ProblemDetails {
-    return error instanceof ProblemDetails && error.status === 426;
 }
 
 /**
