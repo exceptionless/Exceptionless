@@ -5,7 +5,7 @@
             "commandName": "Project",
             "dotnetRunMessages": true,
             "launchBrowser": true,
-            "applicationUrl": "https://ex.dev.localhost:17056;http://ex.dev.localhost:15161",
+            "applicationUrl": "https://ex.dev.localhost:7101;http://ex.dev.localhost:7100",
             "environmentVariables": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
                 "DOTNET_ENVIRONMENT": "Development",
@@ -17,7 +17,7 @@
             "commandName": "Project",
             "dotnetRunMessages": true,
             "launchBrowser": true,
-            "applicationUrl": "https://ex.dev.localhost:17056;http://ex.dev.localhost:15161",
+            "applicationUrl": "https://ex.dev.localhost:7101;http://ex.dev.localhost:7100",
             "environmentVariables": {
                 "EX_ALL": "true",
                 "ASPNETCORE_ENVIRONMENT": "Development",
@@ -30,7 +30,7 @@
             "commandName": "Project",
             "dotnetRunMessages": true,
             "launchBrowser": true,
-            "applicationUrl": "http://ex.dev.localhost:15161",
+            "applicationUrl": "http://ex.dev.localhost:7100",
             "environmentVariables": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
                 "DOTNET_ENVIRONMENT": "Development",

@@ -7,7 +7,8 @@
     "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
     "remoteEnv": {
         "PATH": "${containerEnv:PATH}:/home/vscode/.aspire/bin",
-        "SSL_CERT_DIR": "/home/vscode/.aspnet/dev-certs/trust:/etc/ssl/certs"
+        "SSL_CERT_DIR": "/home/vscode/.aspnet/dev-certs/trust:/etc/ssl/certs",
+        "ASPIRE_CLI_NOLOGO": "true"
     },
     "customizations": {
         "vscode": {
@@ -15,20 +16,39 @@
                 "microsoft-aspire.aspire-vscode",
                 "ms-dotnettools.csharp",
                 "ms-dotnettools.csdevkit",
-                "ms-azuretools.vscode-docker",
+                "ms-azuretools.vscode-containers",
                 "tintoy.msbuild-project-tools",
                 "streetsidesoftware.code-spell-checker",
                 "humao.rest-client"
             ]
         }
     },
-    "forwardPorts": [5003, 5100, 5173, 5200, 5201, 5601, 6379, 8025, 9200],
+    "forwardPorts": [5601, 7101, 7111, 7121, 7131, 8025],
+    "otherPortsAttributes": {
+        "onAutoForward": "ignore"
+    },
     "portsAttributes": {
-        "7049": {
+        "5601": {
+            "label": "Kibana"
+        },
+        "7101": {
+            "label": "Aspire Dashboard",
             "protocol": "https"
         },
-        "5100": {
+        "7111": {
+            "label": "API",
             "protocol": "https"
+        },
+        "7121": {
+            "label": "OldApp",
+            "protocol": "https"
+        },
+        "7131": {
+            "label": "App",
+            "protocol": "https"
+        },
+        "8025": {
+            "label": "Mail UI"
         }
     },
     "hostRequirements": {

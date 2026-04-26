@@ -7,12 +7,13 @@ var proxyRequest = require("grunt-connect-proxy2/lib/utils").proxyRequest;
 module.exports = function () {
     var target = getTarget();
     var useHttps = String(process.env.USE_HTTPS || "").toLowerCase() === "true";
+    var port = Number(process.env.PORT) || 7121;
     var certs = useHttps ? generateCerts() : { cert: undefined, key: undefined };
 
     return {
         main: {
             options: {
-                port: 5100,
+                port: port,
                 protocol: useHttps ? "https" : "http",
                 key: certs.key,
                 cert: certs.cert,
@@ -76,7 +77,7 @@ function getTarget() {
         };
     }
 
-    return { host: "localhost", port: 5200, ssl: false };
+    return { host: "localhost", port: 7110, ssl: false };
 }
 
 function generateCerts() {

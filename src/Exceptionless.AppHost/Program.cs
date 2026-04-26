@@ -100,9 +100,9 @@ if (!servicesOnly)
     var oldApp = builder.AddJavaScriptApp("OldApp", "../../src/Exceptionless.Web/ClientApp.angular", "serve")
         .WithReference(api)
         .RemoveJavaScriptDebuggingAnnotation()
-        .WithEnvironment("ASPNETCORE_URLS", "http://localhost:5200")
+        .WithEnvironment("ASPNETCORE_URLS", "http://localhost:7120")
         .WithEnvironment("USE_HTTPS", "true")
-        .WithHttpEndpoint(port: 5100, targetPort: 5100, name: "https", env: "PORT", isProxied: false)
+        .WithHttpEndpoint(port: 7121, targetPort: 7121, name: "https", env: "PORT", isProxied: false)
         .WithEndpoint("https", e =>
         {
             e.TargetHost = "angular-ex.dev.localhost";
@@ -118,8 +118,9 @@ if (!servicesOnly)
         .RemoveJavaScriptDebuggingAnnotation()
         .WithEndpoint("http", e =>
         {
-            e.Port = 5173;
-            e.TargetPort = 5173;
+            // 7131 (HTTPS via Aspire dev cert) instead of Vite's default 5173 to avoid clashing with other local Vite projects.
+            e.Port = 7131;
+            e.TargetPort = 7131;
             e.TargetHost = "web-ex.dev.localhost";
             e.IsProxied = false;
         })

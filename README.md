@@ -19,8 +19,8 @@ We provide very reasonably priced hosting at [Exceptionless](https://exceptionle
 
 Exceptionless can easily be run locally using Docker:
 
-- `docker run --rm -it -p 5200:8080 exceptionless/exceptionless:latest`
-- Open `http://localhost:5200`
+- `docker run --rm -it -p 7110:8080 exceptionless/exceptionless:latest`
+- Open `http://localhost:7110`
 - Create an account. The first account in the system will automatically be an admin.
 
 This will run a completely self-contained simple instance of Exceptionless. It is only suitable for testing purposes since it will not persist data. For more complete setups, check out the [self hosting documentation](https://exceptionless.com/docs/self-hosting/). Also, if you want to support the project while self hosting you can send us a pull request or [donation](https://github.com/sponsors/exceptionless).
@@ -40,7 +40,7 @@ Start here:
 
 After startup:
 
-1. Open `https://localhost:5100/` if a browser does not open automatically.
+1. Open `https://localhost:7121/` if a browser does not open automatically.
 2. In `Development` mode, a global administrator user `test@localhost` with password `tester` is created automatically.
 
 Notes:

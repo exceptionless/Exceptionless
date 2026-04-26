@@ -11,7 +11,11 @@ const oldAppProxy = { changeOrigin: true, secure: false, target: oldAppTarget };
 
 const codespaceName = process.env.CODESPACE_NAME;
 const codespaceDomain = process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN;
-const hmr = codespaceName && codespaceDomain ? { clientPort: 443, host: `${codespaceName}-5173.${codespaceDomain}`, protocol: 'wss' as const } : undefined;
+const hmr = codespaceName && codespaceDomain ? { clientPort: 443, host: `${codespaceName}-7131.${codespaceDomain}`, protocol: 'wss' as const } : undefined;
+const allowedHosts = ['web-ex.dev.localhost', 'localhost', '127.0.0.1'];
+if (codespaceName && codespaceDomain) {
+    allowedHosts.push(`${codespaceName}-7131.${codespaceDomain}`);
+}
 
 export default defineConfig({
     base: '/next/',
@@ -26,7 +30,9 @@ export default defineConfig({
     },
     plugins: [tailwindcss(), sveltekit()],
     server: {
+        allowedHosts,
         hmr,
+        port: 7131,
         proxy: {
             '/api': { ...apiProxy, ws: true },
             '/docs': apiProxy,
@@ -34,6 +40,7 @@ export default defineConfig({
             '/ready': apiProxy,
             '^/(?!(next|api|docs|health|ready|_)).*': oldAppProxy
         },
+        strictPort: true,
         warmup: {
             clientFiles: ['src/routes/**/*.svelte']
         }
