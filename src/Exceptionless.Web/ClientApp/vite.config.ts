@@ -15,27 +15,27 @@ const hmr = codespaceName && codespaceDomain ? { clientPort: 443, host: `${codes
 
 export default defineConfig({
     base: '/next/',
-    clearScreen: false,
-    logLevel: 'info',
     build: {
         sourcemap: true,
         target: 'esnext'
     },
+    clearScreen: false,
+    logLevel: 'info',
     optimizeDeps: {
         entries: ['src/**/*.{svelte,ts,js}']
     },
     plugins: [tailwindcss(), sveltekit()],
     server: {
         hmr,
-        warmup: {
-            clientFiles: ['src/routes/**/*.svelte']
-        },
         proxy: {
             '/api': { ...apiProxy, ws: true },
             '/docs': apiProxy,
             '/health': apiProxy,
             '/ready': apiProxy,
             '^/(?!(next|api|docs|health|ready|_)).*': oldAppProxy
+        },
+        warmup: {
+            clientFiles: ['src/routes/**/*.svelte']
         }
     },
     test: {
