@@ -20,7 +20,7 @@
     --input: hsl(220 13% 91%);
 
     --primary: hsl(96 64% 46%);
-    --primary-foreground: hsl(0 0% 100%);
+    --primary-foreground: hsl(0 0% 10%);
 
     --secondary: hsl(210 20% 98%);
     --secondary-foreground: hsl(240 5.9% 10%);
@@ -69,7 +69,7 @@
     --input: hsl(215 12.24% 19.22%);
 
     --primary: hsl(96 64.1% 45.88%);
-    --primary-foreground: hsl(60 100% 96.27%);
+    --primary-foreground: hsl(0 0% 10%);
 
     --secondary: hsl(215 15.38% 15.29%);
     --secondary-foreground: hsl(0 0% 97.25%);

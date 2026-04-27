@@ -7,6 +7,7 @@
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import { Spinner } from '$comp/ui/spinner';
+    import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import { postOrganization } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
@@ -18,6 +19,7 @@
 
     let toastId = $state<number | string>();
     const createOrganization = postOrganization();
+    const CREATE_ERROR_MESSAGE = 'Error creating organization. Please try again.';
 
     useHideOrganizationNotifications();
 
@@ -37,11 +39,16 @@
                     await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: id }));
                     return null;
                 } catch (error: unknown) {
-                    toastId = toast.error('Error creating organization. Please try again.');
+                    if (showBillingDialogOnUpgradeProblem(error, organization.current, () => form.handleSubmit())) {
+                        return null;
+                    }
+
                     if (error instanceof ProblemDetails) {
+                        toastId = toast.error(error.title || CREATE_ERROR_MESSAGE);
                         return problemDetailsToFormErrors(error);
                     }
 
+                    toastId = toast.error(CREATE_ERROR_MESSAGE);
                     return { form: 'An unexpected error occurred, please try again.' };
                 }
             }

@@ -9,6 +9,7 @@
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import { Spinner } from '$comp/ui/spinner';
+    import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import { organization } from '$features/organizations/context.svelte';
     import { postProject } from '$features/projects/api.svelte';
     import { type NewProjectFormData, NewProjectSchema } from '$features/projects/schemas';
@@ -36,11 +37,16 @@
                     await goto(resolve('/(app)/project/[projectId]/configure', { projectId: id }) + '?redirect=true');
                     return null;
                 } catch (error: unknown) {
-                    toastId = toast.error('Error creating project. Please try again.');
+                    if (showBillingDialogOnUpgradeProblem(error, organization.current, () => form.handleSubmit())) {
+                        return null;
+                    }
+
                     if (error instanceof ProblemDetails) {
+                        toastId = toast.error(error.title || 'Error creating project. Please try again.');
                         return problemDetailsToFormErrors(error);
                     }
 
+                    toastId = toast.error('Error creating project. Please try again.');
                     return { form: 'An unexpected error occurred, please try again.' };
                 }
             }

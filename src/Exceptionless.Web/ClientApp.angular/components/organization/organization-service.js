@@ -30,7 +30,13 @@
             }
 
             function changePlan(id, options) {
-                return Restangular.one("organizations", id).customPOST(null, "change-plan", options);
+                const body = {
+                    plan_id: options.planId,
+                    stripe_token: options.stripeToken,
+                    last4: options.last4,
+                    coupon_id: options.couponId
+                };
+                return Restangular.one("organizations", id).customPOST(body, "change-plan");
             }
 
             function getOldestCreationDate(organizations) {
