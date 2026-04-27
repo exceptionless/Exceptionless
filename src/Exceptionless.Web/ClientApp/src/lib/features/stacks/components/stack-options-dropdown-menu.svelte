@@ -3,6 +3,7 @@
     import { resolve } from '$app/paths';
     import Button from '$comp/ui/button/button.svelte';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
+    import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import Reference from '@lucide/svelte/icons/link-2';
     import Settings from '@lucide/svelte/icons/settings';
     import Delete from '@lucide/svelte/icons/trash';
@@ -73,11 +74,7 @@
         }
 
         if (response.status === 426) {
-            toast.error(
-                'Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.'
-            );
-            //await confirmUpgradePlan(message, tack.organization_id);
-            //await promoteToExternal();
+            showBillingDialogOnUpgradeProblem(response.problem, stack.organization_id, () => promoteToExternal());
             return;
         }
 
@@ -85,6 +82,8 @@
             openRequiresPromotedWebHookDialog = true;
             return;
         }
+
+        toast.error(response.problem?.detail ?? 'An error occurred while promoting the stack.');
     }
 
     async function navigateToProjectIntegrations() {

@@ -38,6 +38,13 @@ export interface ChangePasswordModel {
   password: string;
 }
 
+export interface ChangePlanRequest {
+  plan_id: string;
+  stripe_token?: null | string;
+  last4?: null | string;
+  coupon_id?: null | string;
+}
+
 export interface ChangePlanResult {
   success: boolean;
   message?: null | string;
@@ -125,9 +132,9 @@ export interface NewProject {
 
 export interface NewToken {
   /** @pattern ^[a-fA-F0-9]{24}$ */
-  organization_id?: null | string;
+  organization_id: string;
   /** @pattern ^[a-fA-F0-9]{24}$ */
-  project_id?: null | string;
+  project_id: string;
   /** @pattern ^[a-fA-F0-9]{24}$ */
   default_project_id?: null | string;
   scopes: string[];
@@ -196,7 +203,7 @@ export interface PersistentEvent {
    */
   created_utc: string;
   /** Used to store primitive data type custom data values for searching the event. */
-  idx: Record<string, unknown>;
+  idx?: null | Record<string, unknown>;
   /** The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types. */
   type?: null | string;
   /** The event source (ie. machine name, log name, feature name). */

@@ -44,6 +44,7 @@ public class Program
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
             .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
+            .AddYamlFile($"appsettings.Local.yml", optional: true, reloadOnChange: true)
             .AddCustomEnvironmentVariables()
             .AddCommandLine(args)
             .Build();
