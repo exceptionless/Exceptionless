@@ -92,15 +92,6 @@
               "pattern": "^[a-zA-Z\\d]{24,36}$",
               "type": "string"
             }
-          },
-          {
-            "name": "is_private",
-            "in": "query",
-            "description": "If true, the view will only be visible to the current user.",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
           }
         ],
         "requestBody": {
@@ -7797,8 +7788,7 @@
         "required": [
           "name",
           "view",
-          "organization_id",
-          "is_default"
+          "organization_id"
         ],
         "type": "object",
         "properties": {
@@ -7847,7 +7837,18 @@
             }
           },
           "is_default": {
-            "type": "boolean"
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "If true, this view will be the default for its view type. Defaults to false."
+          },
+          "is_private": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "If true, the view will only be visible to the current user. Defaults to false."
           }
         }
       },

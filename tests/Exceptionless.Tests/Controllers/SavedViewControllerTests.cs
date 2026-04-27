@@ -92,7 +92,8 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "My Private Filter",
             Filter = "status:regressed",
-            View = "issues"
+            View = "issues",
+            IsPrivate = true
         };
 
         // Act
@@ -100,7 +101,6 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .QueryString("is_private", "true")
             .Content(newFilter)
             .StatusCodeShouldBeCreated()
         );
@@ -607,8 +607,6 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         );
     }
 
-    // Feature flag tests
-
     [Fact]
     public async Task PostAsync_WhenFeatureDisabled_ReturnsUnprocessableEntity()
     {
@@ -693,8 +691,6 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
-
-    // Cleanup tests
 
     [Fact]
     public async Task RemoveUser_DeletesPrivateSavedViews_ButPreservesOrganizationWideViews()
@@ -828,7 +824,8 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             Name = name,
             Filter = filter,
             View = view,
-            IsDefault = isDefault
+            IsDefault = isDefault,
+            IsPrivate = isPrivate
         };
 
         var result = await SendRequestAsAsync<ViewSavedView>(r =>
@@ -838,11 +835,6 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
                 .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
                 .Content(newView)
                 .StatusCodeShouldBeCreated();
-
-            if (isPrivate)
-            {
-                r.QueryString("is_private", "true");
-            }
         });
 
         await RefreshDataAsync();
@@ -1323,7 +1315,8 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             Name = "Private Default",
             Filter = "status:open",
             View = "events",
-            IsDefault = true
+            IsDefault = true,
+            IsPrivate = true
         };
 
         // Act & Assert - private + default should be rejected with 422
@@ -1331,7 +1324,6 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .QueryString("is_private", "true")
             .Content(newView)
             .StatusCodeShouldBeUnprocessableEntity()
         );

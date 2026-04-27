@@ -33,9 +33,13 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
     [MaxLength(50)]
     public Dictionary<string, bool>? Columns { get; set; }
 
-    public bool IsDefault { get; set; }
+    /// <summary>If true, this view will be the default for its view type. Defaults to false.</summary>
+    public bool? IsDefault { get; set; }
 
-    /// <summary>Set by the controller when ?is_private=true. Not deserialized from the request body.</summary>
+    /// <summary>If true, the view will only be visible to the current user. Defaults to false.</summary>
+    public bool? IsPrivate { get; set; }
+
+    /// <summary>Set by the controller based on <see cref="IsPrivate"/>. Not deserialized from the request body.</summary>
     [JsonIgnore]
     public string? UserId { get; set; }
 

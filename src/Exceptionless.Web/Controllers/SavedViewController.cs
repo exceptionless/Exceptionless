@@ -107,26 +107,26 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     /// </summary>
     /// <param name="organizationId">The identifier of the organization.</param>
     /// <param name="savedView">The saved view.</param>
-    /// <param name="is_private">If true, the view will only be visible to the current user.</param>
     /// <response code="400">An error occurred while creating the saved view.</response>
     /// <response code="409">The saved view already exists.</response>
     [HttpPost("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/saved-views")]
     [Consumes("application/json")]
     [ProducesResponseType<ViewSavedView>(StatusCodes.Status201Created)]
-    public async Task<ActionResult<ViewSavedView>> PostAsync(string organizationId, NewSavedView savedView, [FromQuery] bool is_private = false)
+    public async Task<ActionResult<ViewSavedView>> PostAsync(string organizationId, NewSavedView savedView)
     {
         if (!IsInOrganization(organizationId))
             return BadRequest();
 
-        if (is_private && savedView.IsDefault)
+        if (savedView.IsPrivate is true && savedView.IsDefault is true)
         {
             ModelState.AddModelError(nameof(NewSavedView.IsDefault), "Private views cannot be set as the default. Default views are organization-wide.");
             return ValidationProblem(ModelState);
         }
 
         savedView.OrganizationId = organizationId;
-        if (is_private)
+        if (savedView.IsPrivate is true)
             savedView.UserId = CurrentUser.Id;
+
         return await PostImplAsync(savedView);
     }
 

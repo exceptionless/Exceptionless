@@ -47,7 +47,7 @@ public class SavedViewRepository : RepositoryOwnedByOrganization<SavedView>, ISa
             .Organization(organizationId)
             .FieldEquals(e => e.UserId!, userId), o => o.PageLimit(1000));
 
-        if (results.Total == 0)
+        if (results.Total is 0)
             return 0;
 
         await RemoveAsync(results.Documents);

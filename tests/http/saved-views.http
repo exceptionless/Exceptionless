@@ -54,7 +54,7 @@ Content-Type: application/json
 @savedViewId = {{newSavedView.response.body.$.id}}
 
 ### Create private saved view
-POST {{apiUrl}}/organizations/{{organizationId}}/saved-views?is_private=true
+POST {{apiUrl}}/organizations/{{organizationId}}/saved-views
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -67,7 +67,8 @@ Content-Type: application/json
         "user": true,
         "date": true
     },
-    "is_default": false
+    "is_default": false,
+    "is_private": true
 }
 
 ### Get saved view by id
