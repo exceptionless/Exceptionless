@@ -189,9 +189,7 @@ export const NewSavedViewSchema = object({
     .max(100, "Time must be at most 100 characters")
     .nullable()
     .optional(),
-  view: string()
-    .min(1, "View is required")
-    .regex(/^(events|issues|stream)$/, "View has invalid format"),
+  view: string().min(1, "View is required"),
   filter_definitions: string()
     .min(1, "Filter definitions is required")
     .max(10000, "Filter definitions must be at most 10000 characters")
@@ -417,7 +415,7 @@ export const UpdateSavedViewSchema = object({
     .min(1, "Filter definitions is required")
     .nullable()
     .optional(),
-  columns: array(unknown()).optional(),
+  columns: record(string(), boolean()).nullable().optional(),
   is_default: boolean().nullable().optional(),
 });
 export type UpdateSavedViewFormData = Infer<typeof UpdateSavedViewSchema>;

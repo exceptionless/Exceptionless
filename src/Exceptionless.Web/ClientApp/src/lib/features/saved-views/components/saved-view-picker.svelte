@@ -66,18 +66,7 @@
         view: string;
     }
 
-    let {
-        activeSavedView,
-        columnVisibility,
-        filters,
-        isModified,
-        onClearSavedView,
-        onLoadView,
-        onResetToSaved,
-        savedViews,
-        time,
-        view
-    }: Props = $props();
+    let { activeSavedView, columnVisibility, filters, isModified, onClearSavedView, onLoadView, onResetToSaved, savedViews, time, view }: Props = $props();
 
     let isSaveDialogOpen = $state(false);
     let isRenameDialogOpen = $state(false);
@@ -178,9 +167,7 @@
                 view
             };
 
-            const url = isPrivate
-                ? `organizations/${organizationId}/saved-views?is_private=true`
-                : `organizations/${organizationId}/saved-views`;
+            const url = isPrivate ? `organizations/${organizationId}/saved-views?is_private=true` : `organizations/${organizationId}/saved-views`;
 
             const response = await client.postJSON<SavedView>(url, body, { expectedStatusCodes: [422] });
 

@@ -1,17 +1,11 @@
-import type { NewSavedView as GeneratedNewSavedView, UpdateSavedView as GeneratedUpdateSavedView, ViewSavedView } from '$generated/api';
+import type { NewSavedView as GeneratedNewSavedView, UpdateSavedView, ViewSavedView } from '$generated/api';
 
-// TODO: Remove these overrides after regenerating API types (`npm run generate-models`).
-// The generated types are stale: NewSavedView.filter is required (should be optional),
-// NewSavedView.is_default is required (should be optional), and
-// UpdateSavedView.columns is unknown[] (should be Record<string, boolean>).
-export type NewSavedView = Omit<GeneratedNewSavedView, 'filter' | 'is_default'> & {
-    filter?: null | string;
+// NewSavedView.is_default is generated as required boolean, but the frontend
+// omits it (defaults to false on the server), so we make it optional here.
+export type NewSavedView = Omit<GeneratedNewSavedView, 'is_default'> & {
     is_default?: boolean;
 };
 
 export type SavedView = ViewSavedView;
 
-export type UpdateSavedView = Omit<GeneratedUpdateSavedView, 'columns' | 'is_default'> & {
-    columns?: Record<string, boolean>;
-    is_default?: boolean;
-};
+export type { UpdateSavedView };

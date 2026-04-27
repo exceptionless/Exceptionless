@@ -1152,7 +1152,7 @@
           "200": {
             "description": "User successfully logged-out",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "401": {
@@ -1483,7 +1483,7 @@
           "200": {
             "description": "Forgot password email was sent.",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -1517,7 +1517,7 @@
           "200": {
             "description": "Password reset email was sent.",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "422": {
@@ -1548,7 +1548,7 @@
           "200": {
             "description": "Password reset email was cancelled.",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -1969,7 +1969,7 @@
           "202": {
             "description": "Accepted",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -2265,7 +2265,7 @@
           "202": {
             "description": "Accepted",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -3218,7 +3218,7 @@
           "202": {
             "description": "Accepted",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -3279,7 +3279,7 @@
           "202": {
             "description": "Accepted",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -3326,7 +3326,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         },
@@ -3362,7 +3362,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -3402,7 +3402,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         },
@@ -3446,7 +3446,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         },
@@ -3490,7 +3490,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         },
@@ -3543,7 +3543,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         },
@@ -3672,7 +3672,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -3808,7 +3808,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -3944,7 +3944,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -4090,7 +4090,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -4137,7 +4137,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         },
@@ -4179,7 +4179,7 @@
           "202": {
             "description": "Accepted",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         },
@@ -4230,7 +4230,7 @@
           "202": {
             "description": "Accepted",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         },
@@ -4889,7 +4889,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -4949,7 +4949,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "404": {
@@ -4988,7 +4988,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "404": {
@@ -5017,7 +5017,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "201": {
@@ -5567,7 +5567,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -5607,7 +5607,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -5758,7 +5758,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "404": {
@@ -5826,7 +5826,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "404": {
@@ -5865,7 +5865,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "404": {
@@ -5935,7 +5935,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "404": {
@@ -6006,7 +6006,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "404": {
@@ -6048,7 +6048,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -6088,7 +6088,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -6128,7 +6128,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -6160,7 +6160,7 @@
           "201": {
             "description": "The project name is available.",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "204": {
@@ -6199,7 +6199,7 @@
           "201": {
             "description": "The project name is available.",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "204": {
@@ -6254,7 +6254,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -6294,7 +6294,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -6380,7 +6380,7 @@
           "200": {
             "description": "The stacks were marked as fixed.",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "404": {
@@ -6420,7 +6420,7 @@
           "200": {
             "description": "The stacks were snoozed.",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "404": {
@@ -6467,7 +6467,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -6517,7 +6517,7 @@
           "204": {
             "description": "The reference link was removed.",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -6551,7 +6551,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "404": {
@@ -6580,7 +6580,7 @@
           "204": {
             "description": "The stacks were marked as not critical.",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "404": {
@@ -6619,7 +6619,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "404": {
@@ -6650,7 +6650,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "404": {
@@ -7358,7 +7358,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "404": {
@@ -7392,7 +7392,7 @@
           "200": {
             "description": "The user verification email has been sent.",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "404": {
@@ -7622,7 +7622,7 @@
         "properties": {
           "data": {
             "type": "object",
-            "additionalProperties": { },
+            "additionalProperties": {},
             "description": "Additional data associated with the aggregate."
           }
         },
@@ -7827,7 +7827,6 @@
             ]
           },
           "view": {
-            "pattern": "^(events|issues|stream)$",
             "type": "string"
           },
           "filter_definitions": {
@@ -8055,7 +8054,7 @@
               "null",
               "object"
             ],
-            "additionalProperties": { },
+            "additionalProperties": {},
             "description": "Used to store primitive data type custom data values for searching the event."
           },
           "type": {
@@ -8129,7 +8128,7 @@
               "null",
               "object"
             ],
-            "additionalProperties": { },
+            "additionalProperties": {},
             "description": "Optional data entries that contain additional information about this event."
           },
           "reference_id": {
@@ -8721,7 +8720,7 @@
               "null",
               "object"
             ],
-            "additionalProperties": { },
+            "additionalProperties": {},
             "description": "Extended data entries for this user description."
           }
         }
@@ -8985,7 +8984,7 @@
               "null",
               "object"
             ],
-            "additionalProperties": { }
+            "additionalProperties": {}
           },
           "is_throttled": {
             "type": "boolean"
@@ -9046,7 +9045,7 @@
               "null",
               "object"
             ],
-            "additionalProperties": { }
+            "additionalProperties": {}
           },
           "promoted_tabs": {
             "uniqueItems": true,

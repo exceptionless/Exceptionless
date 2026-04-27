@@ -136,7 +136,6 @@ export interface NewSavedView {
   name: string;
   filter?: null | string;
   time?: null | string;
-  /** @pattern ^(events|issues|stream)$ */
   view: string;
   filter_definitions?: null | string;
   columns?: null | Record<string, boolean>;
@@ -368,7 +367,7 @@ export interface UpdateSavedView {
   filter?: null | string;
   time?: null | string;
   filter_definitions?: null | string;
-  columns: unknown[];
+  columns?: null | Record<string, boolean>;
   is_default?: null | boolean;
 }
 
