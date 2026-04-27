@@ -254,8 +254,10 @@ describe('useSavedViews', () => {
                 if (!old) {
                     return old;
                 }
+
                 return old.map((v) => (v.id === viewId ? { ...v, name: newName } : v));
             };
+
             const updated = updateViews(views);
 
             // Assert
@@ -279,8 +281,10 @@ describe('useSavedViews', () => {
                 if (!old) {
                     return old;
                 }
+
                 return old.map((v) => (v.id === viewId ? { ...v, name: newName } : v));
             };
+
             const updated = updateViews(undefined);
 
             // Assert

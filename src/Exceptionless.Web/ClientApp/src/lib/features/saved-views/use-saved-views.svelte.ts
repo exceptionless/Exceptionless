@@ -175,15 +175,19 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         if (!view || !options.queryParams.saved) {
             return false;
         }
+
         if ((options.queryParams.filter ?? null) !== (view.filter ?? null)) {
             return true;
         }
+
         if (supportsTime && (options.queryParams.time ?? null) !== (view.time ?? null)) {
             return true;
         }
+
         if (options.getColumnVisibility && !columnsEqual(options.getColumnVisibility(), view.columns)) {
             return true;
         }
+
         return false;
     });
 
@@ -201,6 +205,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             const hydrated = deserializeFilters(view.filter_definitions);
             options.updateFilterCache(options.filterCacheKey(view.filter ?? null), hydrated);
         }
+
         options.queryParams.filter = view.filter ?? null;
         setTimeQueryParam(options.queryParams, view.time ?? null);
         if (view.columns && options.setColumnVisibility) {
@@ -236,7 +241,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     };
 }
 
-function columnsEqual(a: undefined | ColumnVisibilityState, b: null | Record<string, boolean> | undefined): boolean {
+function columnsEqual(a: ColumnVisibilityState | undefined, b: null | Record<string, boolean> | undefined): boolean {
     const aEntries = Object.entries(a ?? {}).sort(([k1], [k2]) => k1.localeCompare(k2));
     const bEntries = Object.entries(b ?? {}).sort(([k1], [k2]) => k1.localeCompare(k2));
 

@@ -1,18 +1,33 @@
 import { accessToken } from '$features/auth/index.svelte';
-import { type WebSocketMessageValue } from '$features/websockets/models';
+import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, type QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { NewSavedView, SavedView, UpdateSavedView } from './models';
 
+const ES_REFRESH_DELAY_MS = 1500;
+
 export function invalidateSavedViewQueries(queryClient: QueryClient, message: WebSocketMessageValue<'SavedViewChanged'>) {
     const { organization_id } = message;
+    const invalidate = () => {
+        if (organization_id) {
+            return queryClient.invalidateQueries({ queryKey: queryKeys.organization(organization_id) });
+        }
 
-    if (organization_id) {
-        return queryClient.invalidateQueries({ queryKey: queryKeys.organization(organization_id) });
+        return queryClient.invalidateQueries({ queryKey: queryKeys.type });
+    };
+
+    // Delay invalidation for Added/Saved to avoid overwriting optimistic cache with stale Elasticsearch data.
+    if (message.change_type === ChangeType.Added || message.change_type === ChangeType.Saved) {
+        return new Promise<void>((resolve) => {
+            setTimeout(async () => {
+                await invalidate();
+                resolve();
+            }, ES_REFRESH_DELAY_MS);
+        });
     }
 
-    return queryClient.invalidateQueries({ queryKey: queryKeys.type });
+    return invalidate();
 }
 
 export const queryKeys = {
@@ -84,15 +99,11 @@ export function patchSavedView(request: { route: { id: string | undefined } }) {
 export function postSavedView(request: { route: { organizationId: string | undefined } }) {
     const queryClient = useQueryClient();
 
-    return createMutation<SavedView, ProblemDetails, NewSavedView & { is_private?: boolean }>(() => ({
+    return createMutation<SavedView, ProblemDetails, NewSavedView>(() => ({
         enabled: () => !!accessToken.current && !!request.route.organizationId,
-        mutationFn: async (data: NewSavedView & { is_private?: boolean }) => {
+        mutationFn: async (data: NewSavedView) => {
             const client = useFetchClient();
-            const { is_private, ...body } = data;
-            const url = is_private
-                ? `organizations/${request.route.organizationId}/saved-views?is_private=true`
-                : `organizations/${request.route.organizationId}/saved-views`;
-            const response = await client.postJSON<SavedView>(url, body);
+            const response = await client.postJSON<SavedView>(`organizations/${request.route.organizationId}/saved-views`, data);
             return response.data!;
         },
         onSuccess: (savedView: SavedView) => {

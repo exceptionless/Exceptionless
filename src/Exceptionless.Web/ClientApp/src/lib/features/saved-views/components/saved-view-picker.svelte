@@ -109,21 +109,34 @@
             if (left.is_default && !right.is_default) {
                 return -1;
             }
+
             if (!left.is_default && right.is_default) {
                 return 1;
             }
+
             return left.name.localeCompare(right.name);
         });
     });
 
     // Auto-detect if current filters match an existing saved view (even without ?saved=)
     const matchingSavedView = $derived.by(() => {
-        if (activeSavedView) return undefined;
-        if (!currentFilterString) return undefined;
+        if (activeSavedView) {
+            return undefined;
+        }
+
+        if (!currentFilterString) {
+            return undefined;
+        }
 
         return savedViews.find((savedView) => {
-            if (savedView.filter !== currentFilterString) return false;
-            if (savedView.time && (time ?? '') !== savedView.time) return false;
+            if (savedView.filter !== currentFilterString) {
+                return false;
+            }
+
+            if (savedView.time && (time ?? '') !== savedView.time) {
+                return false;
+            }
+
             return true;
         });
     });
@@ -142,8 +155,14 @@
 
     const duplicateView = $derived.by(() => {
         return savedViews.find((savedView) => {
-            if (savedView.filter !== currentFilterString) return false;
-            if (savedView.time && (time ?? '') !== savedView.time) return false;
+            if (savedView.filter !== currentFilterString) {
+                return false;
+            }
+
+            if (savedView.time && (time ?? '') !== savedView.time) {
+                return false;
+            }
+
             return true;
         });
     });
@@ -178,7 +197,7 @@
         }
 
         const filterDefinitions = serializeFilters(filters);
-        const body: NewSavedView & { is_private?: boolean } = {
+        const body: NewSavedView = {
             columns: columnVisibility,
             filter: currentFilterString || undefined,
             filter_definitions: filterDefinitions,
