@@ -73,27 +73,13 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
     });
 
-    // Find the active saved view by ID from the list query (no separate fetch needed)
-    const activeSavedView = $derived.by(() => {
-        const savedId = options.queryParams.saved;
-        if (!savedId) {
-            return undefined;
-        }
-
-        const views = savedViewsListQuery.data;
-        if (!views) {
-            return undefined;
-        }
-
-        const found = views.find((v) => v.id === savedId);
-        return found;
-    });
+    const activeSavedView = $derived(savedViewsListQuery.data?.find((v) => v.id === options.queryParams.saved));
 
     // Hydrate filters/columns when a saved view loads, or clear params if the view is no longer found.
-    // lastHydratedId prevents re-hydration on background refetches (which would stomp user edits).
-    let lastHydratedId = '';
-    let hasAttemptedRestore = false;
-    let lastRestoredOrganizationId = '';
+    // lastLoadedViewId prevents re-hydration on background refetches (which would stomp user edits).
+    let lastLoadedViewId = '';
+    let hasAutoRestored = false;
+    let lastAutoRestoredOrganizationId = '';
     $effect(() => {
         const savedId = options.queryParams.saved;
         const isLoading = savedViewsListQuery.isLoading;
@@ -102,7 +88,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         if (!savedId || isLoading || !views) {
             if (!savedId) {
-                lastHydratedId = '';
+                lastLoadedViewId = '';
             }
 
             return;
@@ -122,16 +108,16 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             });
             options.queryParams.filter = null;
             setTimeQueryParam(options.queryParams, null);
-            hasAttemptedRestore = false;
+            hasAutoRestored = false;
             return;
         }
 
-        // Already hydrated this view — skip to avoid stomping user edits on background refetch
-        if (savedId === lastHydratedId) {
+        // Already loaded this view — skip to avoid stomping user edits on background refetch
+        if (savedId === lastLoadedViewId) {
             return;
         }
 
-        lastHydratedId = savedId;
+        lastLoadedViewId = savedId;
 
         if (view.filter_definitions) {
             const hydrated = deserializeFilters(view.filter_definitions);
@@ -150,22 +136,17 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     $effect(() => {
         const organizationId = organization.current;
         const views = savedViewsListQuery.data;
-        if (!organizationId) {
-            return;
+        if (!organizationId) return;
+
+        if (organizationId !== lastAutoRestoredOrganizationId) {
+            hasAutoRestored = false;
+            lastAutoRestoredOrganizationId = organizationId;
         }
 
-        if (organizationId !== lastRestoredOrganizationId) {
-            hasAttemptedRestore = false;
-            lastRestoredOrganizationId = organizationId;
-        }
-        if (hasAttemptedRestore) {
-            return;
-        }
-        if (savedViewsListQuery.isLoading) {
-            return;
-        }
+        if (hasAutoRestored) return;
+        if (savedViewsListQuery.isLoading) return;
 
-        hasAttemptedRestore = true;
+        hasAutoRestored = true;
 
         const search = window.location.search;
         const hasExplicitParams = /[?&]saved(?:[=&]|$)/.test(search) || /[?&]filter(?:[=&]|$)/.test(search) || /[?&]time(?:[=&]|$)/.test(search);
@@ -251,9 +232,11 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 function columnsEqual(a: undefined | VisibilityState, b: null | Record<string, boolean> | undefined): boolean {
     const aEntries = Object.entries(a ?? {}).sort(([k1], [k2]) => k1.localeCompare(k2));
     const bEntries = Object.entries(b ?? {}).sort(([k1], [k2]) => k1.localeCompare(k2));
+
     if (aEntries.length !== bEntries.length) {
         return false;
     }
+
     return aEntries.every(([k, v], i) => {
         const bEntry = bEntries[i];
         return bEntry !== undefined && bEntry[0] === k && bEntry[1] === v;

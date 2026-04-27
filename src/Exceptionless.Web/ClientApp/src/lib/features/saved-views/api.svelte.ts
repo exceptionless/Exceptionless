@@ -5,6 +5,17 @@ import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanst
 
 import type { NewSavedView, SavedView, UpdateSavedView } from './models';
 
+/** Elasticsearch has ~1s indexing delay before writes are visible to search. */
+const ES_INDEXING_DELAY_MS = 1500;
+
+/**
+ * Delay cache invalidation to allow Elasticsearch indexing to complete,
+ * preventing stale data from overwriting optimistic cache updates.
+ */
+export function delayedInvalidate(queryClient: QueryClient): void {
+    void delay(ES_INDEXING_DELAY_MS).then(() => queryClient.invalidateQueries({ queryKey: queryKeys.type }));
+}
+
 // Elasticsearch needs ~1s to reflect saved-view writes.
 // Delay Added and Saved invalidations so the background refetch does not
 // overwrite optimistic cache updates with stale data while indexing catches up.
@@ -12,7 +23,7 @@ export async function invalidateSavedViewQueries(queryClient: QueryClient, messa
     const { change_type, organization_id } = message;
 
     if (change_type === ChangeType.Added || change_type === ChangeType.Saved) {
-        await new Promise<void>((resolve) => setTimeout(resolve, 1500));
+        await delay(ES_INDEXING_DELAY_MS);
     }
 
     if (organization_id) {
@@ -20,6 +31,10 @@ export async function invalidateSavedViewQueries(queryClient: QueryClient, messa
     } else {
         await queryClient.invalidateQueries({ queryKey: queryKeys.type });
     }
+}
+
+function delay(ms: number): Promise<void> {
+    return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
 export const queryKeys = {

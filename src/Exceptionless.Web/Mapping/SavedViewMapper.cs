@@ -10,7 +10,6 @@ public partial class SavedViewMapper
     [MapperIgnoreTarget(nameof(SavedView.Version))]
     [MapperIgnoreTarget(nameof(SavedView.CreatedByUserId))]
     [MapperIgnoreTarget(nameof(SavedView.UpdatedByUserId))]
-    [MapperIgnoreTarget(nameof(SavedView.UserId))]
     public partial SavedView MapToSavedView(NewSavedView source);
 
     public partial ViewSavedView MapToViewSavedView(SavedView source);

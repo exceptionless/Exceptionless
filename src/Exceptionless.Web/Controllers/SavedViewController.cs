@@ -18,7 +18,6 @@ namespace Exceptionless.App.Controllers.API;
 public class SavedViewController : RepositoryApiController<ISavedViewRepository, SavedView, ViewSavedView, NewSavedView, UpdateSavedView>
 {
     private const int MaxViewsPerOrganization = 100;
-    private bool _isPrivateRequest;
     private readonly IOrganizationRepository _organizationRepository;
 
     public SavedViewController(
@@ -126,7 +125,8 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         }
 
         savedView.OrganizationId = organizationId;
-        _isPrivateRequest = is_private;
+        if (is_private)
+            savedView.UserId = CurrentUser.Id;
         return await PostImplAsync(savedView);
     }
 
@@ -230,9 +230,6 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         value.CreatedByUserId = CurrentUser.Id;
         value.Version = 1;
 
-        if (_isPrivateRequest)
-            value.UserId = CurrentUser.Id;
-
         if (value.IsDefault)
             await ClearDefaultForViewAsync(value.OrganizationId, value.View);
 
@@ -256,7 +253,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 
     private async Task ClearDefaultForViewAsync(string organizationId, string view)
     {
-        var existing = await _repository.GetByViewAsync(organizationId, view, o => o.ImmediateConsistency());
+        var existing = await _repository.GetByViewAsync(organizationId, view, o => o.ImmediateConsistency().PageLimit(MaxViewsPerOrganization));
         var defaults = existing.Documents.Where(savedView => savedView.IsDefault && savedView.UserId is null).ToList();
 
         if (defaults.Count > 0)

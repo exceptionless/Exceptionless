@@ -111,11 +111,13 @@
     );
 
     async function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
+        // If this is a stack filter, redirect to the Events page
         if (addedOrUpdated.type === 'string' && addedOrUpdated.key === 'string-stack') {
             await redirectToEventsWithFilter(organization.current, addedOrUpdated);
             return;
         }
 
+        // For all other filters (skipping date filters), apply them to the current page
         if (addedOrUpdated.type !== 'date') {
             updateFilters(filterChanged(filters ?? [], addedOrUpdated));
         }

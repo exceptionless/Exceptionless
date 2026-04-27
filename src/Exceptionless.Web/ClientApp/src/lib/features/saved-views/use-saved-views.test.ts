@@ -7,20 +7,23 @@ import type { SavedView } from './models';
 import { invalidateSavedViewQueries, queryKeys, syncSavedViewCaches, upsertSavedViewCache } from './api.svelte';
 import { type SavedViewQueryParams, setTimeQueryParam, supportsTimeQueryParam } from './use-saved-views.svelte';
 
+const TEST_ORG_ID = '507f1f77bcf86cd799439011';
+const TEST_USER_ID = '66a1b2c3d4e5f6a7b8c9d0e1';
+
 function buildSavedView({ id, name, ...overrides }: Partial<SavedView> & Pick<SavedView, 'id' | 'name'>): SavedView {
     return {
         columns: {},
-        created_by_user_id: 'user-1',
-        created_utc: '2024-01-01T00:00:00Z',
+        created_by_user_id: TEST_USER_ID,
+        created_utc: new Date().toISOString(),
         filter: null,
         filter_definitions: null,
         id,
         is_default: false,
         name,
-        organization_id: 'org-123',
+        organization_id: TEST_ORG_ID,
         time: null,
         updated_by_user_id: null,
-        updated_utc: '2024-01-01T00:00:00Z',
+        updated_utc: new Date().toISOString(),
         user_id: null,
         version: 1,
         view: 'issues',
@@ -149,7 +152,7 @@ describe('useSavedViews', () => {
                 name: 'Updated View'
             };
 
-            queryClient.setQueryData(queryKeys.organization('org-123'), [optimisticSavedView]);
+            queryClient.setQueryData(queryKeys.organization(TEST_ORG_ID), [optimisticSavedView]);
             const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async (filters) => {
                 if (filters?.queryKey) {
                     queryClient.setQueryData(filters.queryKey, [staleSavedView]);
@@ -160,7 +163,7 @@ describe('useSavedViews', () => {
             const invalidatePromise = invalidateSavedViewQueries(queryClient, {
                 change_type: ChangeType.Saved,
                 data: {},
-                organization_id: 'org-123',
+                organization_id: TEST_ORG_ID,
                 type: 'SavedView'
             });
 
@@ -168,15 +171,15 @@ describe('useSavedViews', () => {
 
             // Assert
             expect(invalidateSpy).not.toHaveBeenCalled();
-            expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization('org-123'))).toEqual([optimisticSavedView]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([optimisticSavedView]);
 
             // Act
             await vi.advanceTimersByTimeAsync(1);
             await invalidatePromise;
 
             // Assert
-            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization('org-123') });
-            expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization('org-123'))).toEqual([staleSavedView]);
+            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization(TEST_ORG_ID) });
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([staleSavedView]);
         });
     });
 
@@ -187,15 +190,15 @@ describe('useSavedViews', () => {
             const existingView = buildSavedView({ id: 'view-1', name: 'Existing View' });
             const createdView = buildSavedView({ id: 'view-2', name: 'New View' });
 
-            queryClient.setQueryData(queryKeys.view('org-123', 'issues'), [existingView]);
-            queryClient.setQueryData(queryKeys.organization('org-123'), [existingView]);
+            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'issues'), [existingView]);
+            queryClient.setQueryData(queryKeys.organization(TEST_ORG_ID), [existingView]);
 
             // Act
             syncSavedViewCaches(queryClient, createdView);
 
             // Assert
-            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view('org-123', 'issues'))).toEqual([existingView, createdView]);
-            expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization('org-123'))).toEqual([existingView, createdView]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'issues'))).toEqual([existingView, createdView]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([existingView, createdView]);
         });
 
         it('syncs an updated view into both caches immediately', () => {
@@ -209,15 +212,15 @@ describe('useSavedViews', () => {
                 time: '[now-15m TO now]'
             };
 
-            queryClient.setQueryData(queryKeys.view('org-123', 'issues'), [existingView, otherView]);
-            queryClient.setQueryData(queryKeys.organization('org-123'), [existingView, otherView]);
+            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'issues'), [existingView, otherView]);
+            queryClient.setQueryData(queryKeys.organization(TEST_ORG_ID), [existingView, otherView]);
 
             // Act
             syncSavedViewCaches(queryClient, updatedView);
 
             // Assert
-            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view('org-123', 'issues'))).toEqual([updatedView, otherView]);
-            expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization('org-123'))).toEqual([updatedView, otherView]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'issues'))).toEqual([updatedView, otherView]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([updatedView, otherView]);
         });
 
         it('keeps only one default per saved-view type in the cached list', () => {
@@ -240,40 +243,8 @@ describe('useSavedViews', () => {
         it('correctly updates the name of a specific view in a list', () => {
             // Arrange
             const views: SavedView[] = [
-                {
-                    columns: {},
-                    created_by_user_id: 'user-1',
-                    created_utc: '2024-01-01T00:00:00Z',
-                    filter: 'type:error',
-                    filter_definitions: null,
-                    id: 'view-1',
-                    is_default: false,
-                    name: 'Old Name',
-                    organization_id: 'org-123',
-                    time: null,
-                    updated_by_user_id: null,
-                    updated_utc: '2024-01-01T00:00:00Z',
-                    user_id: null,
-                    version: 1,
-                    view: 'issues'
-                },
-                {
-                    columns: {},
-                    created_by_user_id: 'user-1',
-                    created_utc: '2024-01-02T00:00:00Z',
-                    filter: 'type:log',
-                    filter_definitions: null,
-                    id: 'view-2',
-                    is_default: false,
-                    name: 'Other View',
-                    organization_id: 'org-123',
-                    time: null,
-                    updated_by_user_id: null,
-                    updated_utc: '2024-01-02T00:00:00Z',
-                    user_id: null,
-                    version: 1,
-                    view: 'issues'
-                }
+                buildSavedView({ filter: 'type:error', id: 'view-1', name: 'Old Name' }),
+                buildSavedView({ filter: 'type:log', id: 'view-2', name: 'Other View' })
             ];
             const viewId = 'view-1';
             const newName = 'New Name';

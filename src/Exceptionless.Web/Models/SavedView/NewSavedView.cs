@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Exceptionless.Core.Attributes;
 using Exceptionless.Core.Models;
 
@@ -7,6 +8,9 @@ namespace Exceptionless.Web.Models;
 
 public record NewSavedView : IOwnedByOrganization, IValidatableObject
 {
+    /// <summary>Regex pattern derived from <see cref="SavedView.ValidViews"/>.</summary>
+    public static readonly string ValidViewsPattern = $"^({String.Join("|", SavedView.ValidViews)})$";
+
     [ObjectId]
     public string OrganizationId { get; set; } = null!;
 
@@ -21,7 +25,6 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
     public string? Time { get; set; }
 
     [Required]
-    [RegularExpression("^(events|issues|stream)$")]
     public string View { get; set; } = null!;
 
     [MaxLength(10000)]
@@ -31,6 +34,10 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
     public Dictionary<string, bool>? Columns { get; set; }
 
     public bool IsDefault { get; set; }
+
+    /// <summary>Set by the controller when ?is_private=true. Not deserialized from the request body.</summary>
+    [JsonIgnore]
+    public string? UserId { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

@@ -30,9 +30,8 @@
 
     import type { NewSavedView, SavedView, UpdateSavedView } from '../models';
 
-    import { queryKeys, syncSavedViewCaches } from '../api.svelte';
+    import { delayedInvalidate, queryKeys, syncSavedViewCaches } from '../api.svelte';
 
-    // Map date-math time values to friendly labels
     const timeLabels = new SvelteMap<string, string>();
     for (const section of quickRanges) {
         for (const option of section.options) {
@@ -42,12 +41,15 @@
 
     function formatViewSummary(savedView: SavedView): string {
         const parts: string[] = [];
+
         if (savedView.filter) {
             parts.push(savedView.filter);
         }
+
         if (savedView.time) {
             parts.push(timeLabels.get(savedView.time) ?? savedView.time);
         }
+
         return parts.join(' · ') || 'No filters';
     }
 
@@ -64,15 +66,26 @@
         view: string;
     }
 
-    let { activeSavedView, columnVisibility, filters, isModified, onClearSavedView, onLoadView, onResetToSaved, savedViews, time, view }: Props = $props();
+    let {
+        activeSavedView,
+        columnVisibility,
+        filters,
+        isModified,
+        onClearSavedView,
+        onLoadView,
+        onResetToSaved,
+        savedViews,
+        time,
+        view
+    }: Props = $props();
 
-    let saveDialogOpen = $state(false);
-    let renameDialogOpen = $state(false);
-    let deleteDialogOpen = $state(false);
+    let isSaveDialogOpen = $state(false);
+    let isRenameDialogOpen = $state(false);
+    let isDeleteDialogOpen = $state(false);
     let deleteTarget = $state<null | SavedView>(null);
     let saveName = $state('');
-    let savePrivate = $state(false);
-    let saveAsDefault = $state(false);
+    let isPrivate = $state(false);
+    let isDefault = $state(false);
     let renameName = $state('');
     let saving = $state(false);
 
@@ -80,45 +93,32 @@
     const queryClient = useQueryClient();
     const organizationId = $derived(organization.current);
 
-    // Compute current filter string for matching
     const currentFilterString = $derived(toFilter(filters.filter((f) => f.type !== 'date')));
 
-    // Sort: default view first, then alphabetically by name
     const sortedViews = $derived.by(() => {
         return [...savedViews].sort((a, b) => {
-            if (a.is_default && !b.is_default) {
-                return -1;
-            }
-            if (!a.is_default && b.is_default) {
-                return 1;
-            }
+            if (a.is_default && !b.is_default) return -1;
+            if (!a.is_default && b.is_default) return 1;
             return a.name.localeCompare(b.name);
         });
     });
 
     // Auto-detect if current filters match an existing saved view (even without ?saved=)
     const matchingSavedView = $derived.by(() => {
-        if (activeSavedView) {
-            return undefined;
-        }
-        if (!currentFilterString) {
-            return undefined;
-        }
+        if (activeSavedView) return undefined;
+        if (!currentFilterString) return undefined;
+
         return savedViews.find((savedView) => {
-            if (savedView.filter !== currentFilterString) {
-                return false;
-            }
-            if (savedView.time && (time ?? '') !== savedView.time) {
-                return false;
-            }
+            if (savedView.filter !== currentFilterString) return false;
+            if (savedView.time && (time ?? '') !== savedView.time) return false;
             return true;
         });
     });
 
-    // The effective filter (explicitly loaded OR auto-matched)
-    const effectiveView = $derived(activeSavedView ?? matchingSavedView);
+    // The currently active view: either explicitly loaded via ?saved= or auto-matched by filter content
+    const activeView = $derived(activeSavedView ?? matchingSavedView);
 
-    // When a view is auto-matched (filter matches without an explicit ?saved= param),
+    // When filters match an existing view without an explicit ?saved= param,
     // update the URL so the sidebar highlights the correct view.
     $effect(() => {
         const matched = matchingSavedView;
@@ -127,45 +127,38 @@
         }
     });
 
-    // Check if saving would duplicate an existing filter
     const duplicateView = $derived.by(() => {
         return savedViews.find((savedView) => {
-            if (savedView.filter !== currentFilterString) {
-                return false;
-            }
-            if (savedView.time && (time ?? '') !== savedView.time) {
-                return false;
-            }
+            if (savedView.filter !== currentFilterString) return false;
+            if (savedView.time && (time ?? '') !== savedView.time) return false;
             return true;
         });
     });
 
     async function openSaveDialog() {
         saveName = '';
-        savePrivate = false;
-        saveAsDefault = false;
+        isPrivate = false;
+        isDefault = false;
         await tick();
-        saveDialogOpen = true;
+        isSaveDialogOpen = true;
     }
 
     async function openRenameDialog() {
-        if (effectiveView) {
-            renameName = effectiveView.name;
-            await tick();
-            renameDialogOpen = true;
-        }
+        if (!activeView) return;
+
+        renameName = activeView.name;
+        await tick();
+        isRenameDialogOpen = true;
     }
 
     async function openDeleteDialog(savedView: SavedView) {
         deleteTarget = savedView;
         await tick();
-        deleteDialogOpen = true;
+        isDeleteDialogOpen = true;
     }
 
     async function handleSave() {
-        if (!organizationId || !saveName.trim()) {
-            return;
-        }
+        if (!organizationId || !saveName.trim()) return;
 
         saving = true;
         try {
@@ -174,25 +167,26 @@
                 columns: columnVisibility,
                 filter: currentFilterString || undefined,
                 filter_definitions: filterDefinitions,
-                is_default: saveAsDefault || undefined,
+                is_default: isDefault || undefined,
                 name: saveName.trim(),
                 organization_id: organizationId,
                 time: time || undefined,
                 view
             };
-            const url = savePrivate ? `organizations/${organizationId}/saved-views?is_private=true` : `organizations/${organizationId}/saved-views`;
+
+            const url = isPrivate
+                ? `organizations/${organizationId}/saved-views?is_private=true`
+                : `organizations/${organizationId}/saved-views`;
+
             const response = await client.postJSON<SavedView>(url, body, { expectedStatusCodes: [422] });
+
             if (response.ok && response.data) {
-                const savedView = response.data;
-                // Keep both caches aligned immediately so the picker and sidebar stay in sync
-                // while the delayed WebSocket invalidation waits for Elasticsearch to refresh.
-                syncSavedViewCaches(queryClient, savedView, organizationId);
-                saveDialogOpen = false;
-                onLoadView(savedView.id);
-                toast.success(`Saved view "${savedView.name}" created.`);
+                syncSavedViewCaches(queryClient, response.data, organizationId);
+                isSaveDialogOpen = false;
+                onLoadView(response.data.id);
+                toast.success(`Saved view "${response.data.name}" created.`);
             } else {
-                const message = response.problem?.title ?? 'Failed to save view. Please try again.';
-                toast.error(message);
+                toast.error(response.problem?.title ?? 'Failed to save view. Please try again.');
             }
         } catch {
             toast.error('An error occurred while saving the view.');
@@ -201,10 +195,8 @@
         }
     }
 
-    async function handleUpdate() {
-        if (!activeSavedView || !organizationId) {
-            return;
-        }
+    async function handleUpdateFilters() {
+        if (!activeSavedView || !organizationId) return;
 
         saving = true;
         try {
@@ -215,15 +207,14 @@
                 filter_definitions: filterDefinitions,
                 time: time || null
             };
+
             const response = await client.patchJSON<SavedView>(`saved-views/${activeSavedView.id}`, body, { expectedStatusCodes: [422] });
+
             if (response.ok && response.data) {
-                // Keep both caches aligned immediately so the picker and sidebar stay in sync
-                // while the delayed WebSocket invalidation waits for Elasticsearch to refresh.
                 syncSavedViewCaches(queryClient, response.data, organizationId);
                 toast.success(`View "${activeSavedView.name}" updated.`);
             } else {
-                const message = response.problem?.title ?? 'Failed to update view. Please try again.';
-                toast.error(message);
+                toast.error(response.problem?.title ?? 'Failed to update view. Please try again.');
             }
         } catch {
             toast.error('An error occurred while updating the view.');
@@ -233,39 +224,20 @@
     }
 
     async function handleRename() {
-        if (!effectiveView || !organizationId || !renameName.trim()) {
-            return;
-        }
+        if (!activeView || !organizationId || !renameName.trim()) return;
 
         saving = true;
-        const viewId = effectiveView.id;
-        const viewName = effectiveView.view;
-        const newName = renameName.trim();
         try {
-            const body: UpdateSavedView = { name: newName };
-            const response = await client.patchJSON(`saved-views/${viewId}`, body, { expectedStatusCodes: [422] });
-            if (response.ok) {
-                renameDialogOpen = false;
+            const body: UpdateSavedView = { name: renameName.trim() };
+            const response = await client.patchJSON<SavedView>(`saved-views/${activeView.id}`, body, { expectedStatusCodes: [422] });
+
+            if (response.ok && response.data) {
+                isRenameDialogOpen = false;
+                syncSavedViewCaches(queryClient, response.data, organizationId);
+                delayedInvalidate(queryClient);
                 toast.success('View renamed.');
-
-                // Optimistically update the name in all caches immediately (ES has ~1s refresh delay)
-                const updateViews = (old: SavedView[] | undefined): SavedView[] | undefined => {
-                    if (!old) {
-                        return old;
-                    }
-                    return old.map((v) => (v.id === viewId ? { ...v, name: newName } : v));
-                };
-
-                queryClient.setQueryData(queryKeys.view(organizationId, viewName), updateViews);
-                queryClient.setQueryData(queryKeys.organization(organizationId), updateViews);
-                // Delay invalidation to allow Elasticsearch (~1s refresh) to index the rename
-                // so the background refetch doesn't overwrite the optimistic update
-                setTimeout(() => {
-                    void queryClient.invalidateQueries({ queryKey: queryKeys.type });
-                }, 1500);
             } else {
-                const message = response.problem?.title ?? 'Failed to rename view. Please try again.';
-                toast.error(message);
+                toast.error(response.problem?.title ?? 'Failed to rename view. Please try again.');
             }
         } catch {
             toast.error('An error occurred while renaming the view.');
@@ -275,33 +247,28 @@
     }
 
     async function handleDelete() {
-        if (!deleteTarget || !organizationId) {
-            return;
-        }
+        if (!deleteTarget || !organizationId) return;
 
         const target = deleteTarget;
         try {
             const response = await client.delete(`saved-views/${target.id}`, { expectedStatusCodes: [202] });
+
             if (response.ok) {
                 if (activeSavedView?.id === target.id) {
                     onClearSavedView();
                 }
-                toast.success(`View "${target.name}" deleted.`);
 
-                // Optimistically remove from all caches immediately (ES has ~1s refresh delay)
                 queryClient.setQueryData(queryKeys.view(organizationId, target.view), (old: SavedView[] | undefined) => old?.filter((v) => v.id !== target.id));
                 queryClient.setQueryData(queryKeys.organization(organizationId), (old: SavedView[] | undefined) => old?.filter((v) => v.id !== target.id));
-                // Delay invalidation to allow Elasticsearch (~1s refresh) to index the deletion
-                setTimeout(() => {
-                    void queryClient.invalidateQueries({ queryKey: queryKeys.type });
-                }, 1500);
+                delayedInvalidate(queryClient);
+                toast.success(`View "${target.name}" deleted.`);
             } else {
                 toast.error('Failed to delete view. Please try again.');
             }
         } catch {
             toast.error('An error occurred while deleting the view.');
         } finally {
-            deleteDialogOpen = false;
+            isDeleteDialogOpen = false;
             deleteTarget = null;
         }
     }
@@ -311,26 +278,19 @@
     }
 
     async function handleToggleDefault() {
-        if (!effectiveView || !organizationId) {
-            return;
-        }
+        if (!activeView || !organizationId) return;
 
         saving = true;
         try {
             const body: UpdateSavedView = { is_default: true };
-            const response = await client.patchJSON<SavedView>(`saved-views/${effectiveView.id}`, body, { expectedStatusCodes: [422] });
-            if (response.ok && response.data) {
-                toast.success('Set as default.');
+            const response = await client.patchJSON<SavedView>(`saved-views/${activeView.id}`, body, { expectedStatusCodes: [422] });
 
+            if (response.ok && response.data) {
                 syncSavedViewCaches(queryClient, response.data, organizationId);
-                // Delay invalidation to allow Elasticsearch (~1s refresh) to index the change
-                // so the background refetch doesn't overwrite the optimistic update
-                setTimeout(() => {
-                    void queryClient.invalidateQueries({ queryKey: queryKeys.type });
-                }, 1500);
+                delayedInvalidate(queryClient);
+                toast.success('Set as default.');
             } else {
-                const message = response.problem?.title ?? 'Failed to update default setting.';
-                toast.error(message);
+                toast.error(response.problem?.title ?? 'Failed to update default setting.');
             }
         } catch {
             toast.error('An error occurred while updating the default setting.');
@@ -345,8 +305,8 @@
         {#snippet child({ props })}
             <Button {...props} class="gap-x-1.5 px-3" size="lg" variant="outline">
                 <Save class="size-4" />
-                {#if effectiveView}
-                    <span class="max-w-37.5 truncate">{effectiveView.name}</span>
+                {#if activeView}
+                    <span class="max-w-37.5 truncate">{activeView.name}</span>
                     {#if isModified}
                         <Badge variant="secondary" class="px-1.5 py-0 text-[10px]">modified</Badge>
                     {/if}
@@ -361,7 +321,7 @@
         {#if activeSavedView && isModified}
             <DropdownMenu.Group>
                 <DropdownMenu.GroupHeading>Modified View</DropdownMenu.GroupHeading>
-                <DropdownMenu.Item disabled={saving} onclick={handleUpdate}>
+                <DropdownMenu.Item disabled={saving} onclick={handleUpdateFilters}>
                     <Save class="mr-2 size-4" />
                     Update "{activeSavedView.name}"
                 </DropdownMenu.Item>
@@ -384,7 +344,7 @@
                     <DropdownMenu.Item class="flex items-center justify-between" onclick={() => handleSelect(savedView)}>
                         <span class="flex min-w-0 items-start gap-2">
                             <span class="flex size-4 shrink-0 items-center justify-center pt-0.5">
-                                {#if effectiveView?.id === savedView.id}
+                                {#if activeView?.id === savedView.id}
                                     <Check class="size-3.5" />
                                 {/if}
                             </span>
@@ -421,17 +381,18 @@
                                 {/if}
                             </span>
                         </span>
-                        <button
-                            class="text-muted-foreground hover:text-destructive -mr-1 flex size-5 shrink-0 items-center justify-center rounded-sm"
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            class="text-muted-foreground hover:text-destructive -mr-1 size-5 shrink-0"
                             aria-label="Delete {savedView.name}"
-                            title="Delete {savedView.name}"
                             onclick={(e) => {
                                 e.stopPropagation();
                                 openDeleteDialog(savedView);
                             }}
                         >
                             <Trash2 class="size-3" aria-hidden="true" />
-                        </button>
+                        </Button>
                     </DropdownMenu.Item>
                 {/each}
             </DropdownMenu.Group>
@@ -445,27 +406,27 @@
                     Load "{duplicateView.name}" (matches current)
                 </DropdownMenu.Item>
             {/if}
-            {#if !effectiveView}
+            {#if !activeView}
                 <DropdownMenu.Item onclick={openSaveDialog}>
                     <Plus class="mr-2 size-4" />
                     Save current view
                 </DropdownMenu.Item>
             {/if}
-            {#if effectiveView}
+            {#if activeView}
                 <DropdownMenu.Item onclick={openRenameDialog}>
                     <Pencil class="mr-2 size-4" />
-                    Rename "{effectiveView.name}"
+                    Rename "{activeView.name}"
                 </DropdownMenu.Item>
-                {#if !effectiveView.user_id && !effectiveView.is_default}
+                {#if !activeView.user_id && !activeView.is_default}
                     <DropdownMenu.Item disabled={saving} onclick={handleToggleDefault}>
                         <Star class="mr-2 size-4" />
                         Set as default for everyone
                     </DropdownMenu.Item>
                 {/if}
                 <DropdownMenu.Separator />
-                <DropdownMenu.Item class="text-destructive" onclick={() => openDeleteDialog(effectiveView)}>
+                <DropdownMenu.Item class="text-destructive" onclick={() => openDeleteDialog(activeView)}>
                     <Trash2 class="mr-2 size-4" />
-                    Delete "{effectiveView.name}"
+                    Delete "{activeView.name}"
                 </DropdownMenu.Item>
                 {#if !isModified}
                     <DropdownMenu.Separator />
@@ -476,9 +437,8 @@
     </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<!-- Save Dialog -->
-{#if saveDialogOpen}
-    <Dialog.Root bind:open={saveDialogOpen}>
+{#if isSaveDialogOpen}
+    <Dialog.Root bind:open={isSaveDialogOpen}>
         <Dialog.Content class="sm:max-w-100">
             <Dialog.Header>
                 <Dialog.Title>Save View</Dialog.Title>
@@ -488,12 +448,13 @@
                 <div class="bg-muted rounded-md p-3">
                     <p class="text-sm">
                         Current filters match <strong>"{duplicateView.name}"</strong>. You can
-                        <button
-                            class="text-primary underline"
+                        <Button
+                            variant="link"
+                            class="h-auto p-0 text-sm"
                             onclick={() => {
-                                saveDialogOpen = false;
+                                isSaveDialogOpen = false;
                                 handleSelect(duplicateView);
-                            }}>load it</button
+                            }}>load it</Button
                         > instead, or save with a different name.
                     </p>
                 </div>
@@ -516,25 +477,25 @@
                     </div>
                     <Switch
                         id="filter-private"
-                        bind:checked={savePrivate}
+                        bind:checked={isPrivate}
                         onCheckedChange={(checked) => {
                             if (checked) {
-                                saveAsDefault = false;
+                                isDefault = false;
                             }
                         }}
                     />
                 </div>
-                {#if !savePrivate}
+                {#if !isPrivate}
                     <div class="flex items-center justify-between">
                         <div>
                             <Label for="filter-default" class="text-sm">Set as default</Label>
                             <p class="text-muted-foreground text-xs">Auto-loads for everyone on page visit</p>
                         </div>
-                        <Switch id="filter-default" bind:checked={saveAsDefault} />
+                        <Switch id="filter-default" bind:checked={isDefault} />
                     </div>
                 {/if}
                 <Dialog.Footer>
-                    <Button variant="outline" onclick={() => (saveDialogOpen = false)}>Cancel</Button>
+                    <Button variant="outline" onclick={() => (isSaveDialogOpen = false)}>Cancel</Button>
                     <Button type="submit" disabled={!saveName.trim() || saving}>
                         {saving ? 'Saving...' : 'Save'}
                     </Button>
@@ -544,9 +505,8 @@
     </Dialog.Root>
 {/if}
 
-<!-- Rename Dialog -->
-{#if renameDialogOpen}
-    <Dialog.Root bind:open={renameDialogOpen}>
+{#if isRenameDialogOpen}
+    <Dialog.Root bind:open={isRenameDialogOpen}>
         <Dialog.Content class="sm:max-w-100">
             <Dialog.Header>
                 <Dialog.Title>Rename View</Dialog.Title>
@@ -564,7 +524,7 @@
                     <Input id="rename-filter" bind:value={renameName} placeholder="View name" required />
                 </div>
                 <Dialog.Footer>
-                    <Button variant="outline" onclick={() => (renameDialogOpen = false)}>Cancel</Button>
+                    <Button variant="outline" onclick={() => (isRenameDialogOpen = false)}>Cancel</Button>
                     <Button type="submit" disabled={!renameName.trim() || saving}>
                         {saving ? 'Saving...' : 'Rename'}
                     </Button>
@@ -574,9 +534,8 @@
     </Dialog.Root>
 {/if}
 
-<!-- Delete Confirmation -->
-{#if deleteDialogOpen && deleteTarget}
-    <AlertDialog.Root bind:open={deleteDialogOpen}>
+{#if isDeleteDialogOpen && deleteTarget}
+    <AlertDialog.Root bind:open={isDeleteDialogOpen}>
         <AlertDialog.Content>
             <AlertDialog.Header>
                 <AlertDialog.Title>Delete Saved View</AlertDialog.Title>

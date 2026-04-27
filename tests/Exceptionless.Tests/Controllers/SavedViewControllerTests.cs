@@ -32,14 +32,11 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         await service.CreateDataAsync();
 
         // Enable saved views feature for all tests in this class
-        var org = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
-        if (org is not null)
-        {
-            org.Features.Add(OrganizationFeatures.SavedViews);
-            await _organizationRepository.SaveAsync(org, o => o.ImmediateConsistency());
-        }
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.Features.Add(OrganizationFeatures.SavedViews);
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
     }
-
 
     [Fact]
     public async Task PostAsync_NewSavedView_MapsAllPropertiesToSavedView()
@@ -187,12 +184,6 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         Assert.Equal("Organization User Filter", viewFilter.Name);
     }
 
-
-
-
-
-
-
     [Fact]
     public Task PostAsync_WithEmptyName_ReturnsUnprocessableEntity()
     {
@@ -267,8 +258,6 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         Assert.Equal(view, viewFilter.View);
     }
 
-
-
     [Fact]
     public async Task GetAsync_ExistingFilter_ReturnsFilter()
     {
@@ -318,8 +307,8 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(filters);
         Assert.True(filters.Count >= 2);
-        Assert.Contains(filters, f => f.Id == organizationFilter.Id);
-        Assert.Contains(filters, f => f.Id == privateFilter.Id);
+        Assert.Contains(filters, f => String.Equals(f.Id, organizationFilter.Id));
+        Assert.Contains(filters, f => String.Equals(f.Id, privateFilter.Id));
     }
 
     [Fact]
@@ -338,7 +327,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
 
         // Assert - should not see the admin's private filter
         Assert.NotNull(filters);
-        Assert.DoesNotContain(filters, f => f.Id == privateFilter.Id);
+        Assert.DoesNotContain(filters, f => String.Equals(f.Id, privateFilter.Id));
     }
 
     [Fact]
@@ -359,13 +348,9 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(filters);
-        Assert.Contains(filters, f => f.Id == eventsFilter.Id);
-        Assert.DoesNotContain(filters, f => f.Id == issuesFilter.Id);
+        Assert.Contains(filters, f => String.Equals(f.Id, eventsFilter.Id));
+        Assert.DoesNotContain(filters, f => String.Equals(f.Id, issuesFilter.Id));
     }
-
-
-
-
 
     [Fact]
     public async Task PatchAsync_UpdateName_UpdatesNameAndSetsUpdatedByUserId()
@@ -444,8 +429,6 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         );
     }
 
-
-
     [Fact]
     public async Task DeleteAsync_OwnOrganizationWideFilter_Succeeds()
     {
@@ -507,8 +490,6 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         Assert.Null(await _savedViewRepository.GetByIdAsync(first.Id));
         Assert.Null(await _savedViewRepository.GetByIdAsync(second.Id));
     }
-
-
 
     [Fact]
     public async Task GetAsync_PrivateFilterByOwner_ReturnsFilter()
@@ -587,8 +568,6 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         );
     }
 
-
-
     [Fact]
     public async Task PostAsync_ExceedsPerOrgCap_ReturnsBadRequest()
     {
@@ -628,17 +607,16 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         );
     }
 
-
     // Feature flag tests
 
     [Fact]
     public async Task PostAsync_WhenFeatureDisabled_ReturnsUnprocessableEntity()
     {
         // Arrange — disable the saved views feature
-        var org = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
-        Assert.NotNull(org);
-        org.Features.Remove(OrganizationFeatures.SavedViews);
-        await _organizationRepository.SaveAsync(org, o => o.ImmediateConsistency());
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.Features.Remove(OrganizationFeatures.SavedViews);
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
 
         var newView = new NewSavedView
         {
@@ -673,10 +651,10 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             UpdatedUtc = DateTime.UtcNow
         }, o => o.ImmediateConsistency());
 
-        var org = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
-        Assert.NotNull(org);
-        org.Features.Remove(OrganizationFeatures.SavedViews);
-        await _organizationRepository.SaveAsync(org, o => o.ImmediateConsistency());
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.Features.Remove(OrganizationFeatures.SavedViews);
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
 
         await SendRequestAsync(r => r
             .Patch()
@@ -703,10 +681,10 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             UpdatedUtc = DateTime.UtcNow
         }, o => o.ImmediateConsistency());
 
-        var org = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
-        Assert.NotNull(org);
-        org.Features.Remove(OrganizationFeatures.SavedViews);
-        await _organizationRepository.SaveAsync(org, o => o.ImmediateConsistency());
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.Features.Remove(OrganizationFeatures.SavedViews);
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
 
         await SendRequestAsync(r => r
             .Delete()
@@ -715,7 +693,6 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
-
 
     // Cleanup tests
 

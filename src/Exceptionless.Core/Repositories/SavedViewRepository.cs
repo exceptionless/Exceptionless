@@ -48,7 +48,7 @@ public class SavedViewRepository : RepositoryOwnedByOrganization<SavedView>, ISa
     {
         var results = await FindAsync(q => q
             .Organization(organizationId)
-            .FieldEquals(e => e.UserId, userId), o => o.PageLimit(1000));
+            .FieldEquals(e => e.UserId!, userId), o => o.PageLimit(1000));
 
         if (results.Total == 0)
             return 0;
