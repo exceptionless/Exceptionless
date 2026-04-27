@@ -17,7 +17,6 @@
     import { FREE_PLAN_ID, isStripeEnabled, StripeProvider } from '$features/billing';
     import { type ChangePlanFormData, ChangePlanSchema } from '$features/billing/schemas';
     import { changePlanMutation, getPlansQuery } from '$features/organizations/api.svelte';
-    import { formatCurrency } from '$features/shared/utils/formatters';
     import { getFormErrorMessages, problemDetailsToFormErrors } from '$features/shared/validation';
     import { Exceptionless } from '@exceptionless/browser';
     import { ProblemDetails } from '@exceptionless/fetchclient';
@@ -466,16 +465,16 @@
         return opts.includeInterval ? `${tier.name} ${intervalWord(intervalOf(planId))}` : tier.name;
     }
 
-    const currentSubtitle = $derived.by(() => {
+    const currentPlanInfo = $derived.by(() => {
         if (organization.plan_id === FREE_PLAN_ID) {
-            return 'Free plan';
+            return { isFree: true as const, label: 'Free plan', period: '', price: 0 };
         }
 
         const plan = plansQuery.data?.find((p: BillingPlan) => p.id === organization.plan_id);
         const price = organization.billing_price > 0 ? organization.billing_price : (plan?.price ?? 0);
         const name = tiers.find((t) => t.id === currentTierId)?.name ?? organization.plan_name;
         const period = currentInterval === 'year' ? '/yr' : '/mo';
-        return `${name} · ${formatCurrency(price)}${period}, billed ${intervalWord(currentInterval)}`;
+        return { billedLabel: `billed ${intervalWord(currentInterval)}`, isFree: false as const, name, period, price };
     });
 
     const ctaLabel = $derived.by(() => {
@@ -526,7 +525,11 @@
             <Muted class="text-xs">
                 <Small class="text-foreground text-xs">{organization.name}</Small>
                 <span> · </span>
-                {currentSubtitle}
+                {#if currentPlanInfo.isFree}
+                    {currentPlanInfo.label}
+                {:else}
+                    {currentPlanInfo.name} · <Currency value={currentPlanInfo.price} />{currentPlanInfo.period}, {currentPlanInfo.billedLabel}
+                {/if}
             </Muted>
         </Dialog.Header>
 
