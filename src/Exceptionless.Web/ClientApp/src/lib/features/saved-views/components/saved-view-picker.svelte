@@ -144,7 +144,9 @@
     }
 
     async function openRenameDialog() {
-        if (!activeView) return;
+        if (!activeView) {
+            return;
+        }
 
         renameName = activeView.name;
         await tick();
@@ -158,7 +160,9 @@
     }
 
     async function handleSave() {
-        if (!organizationId || !saveName.trim()) return;
+        if (!organizationId || !saveName.trim()) {
+            return;
+        }
 
         saving = true;
         try {
@@ -196,7 +200,9 @@
     }
 
     async function handleUpdateFilters() {
-        if (!activeSavedView || !organizationId) return;
+        if (!activeSavedView || !organizationId) {
+            return;
+        }
 
         saving = true;
         try {
@@ -224,7 +230,9 @@
     }
 
     async function handleRename() {
-        if (!activeView || !organizationId || !renameName.trim()) return;
+        if (!activeView || !organizationId || !renameName.trim()) {
+            return;
+        }
 
         saving = true;
         try {
@@ -234,7 +242,7 @@
             if (response.ok && response.data) {
                 isRenameDialogOpen = false;
                 syncSavedViewCaches(queryClient, response.data, organizationId);
-                delayedInvalidate(queryClient);
+                void delayedInvalidate(queryClient);
                 toast.success('View renamed.');
             } else {
                 toast.error(response.problem?.title ?? 'Failed to rename view. Please try again.');
@@ -247,7 +255,9 @@
     }
 
     async function handleDelete() {
-        if (!deleteTarget || !organizationId) return;
+        if (!deleteTarget || !organizationId) {
+            return;
+        }
 
         const target = deleteTarget;
         try {
@@ -260,7 +270,7 @@
 
                 queryClient.setQueryData(queryKeys.view(organizationId, target.view), (old: SavedView[] | undefined) => old?.filter((v) => v.id !== target.id));
                 queryClient.setQueryData(queryKeys.organization(organizationId), (old: SavedView[] | undefined) => old?.filter((v) => v.id !== target.id));
-                delayedInvalidate(queryClient);
+                void delayedInvalidate(queryClient);
                 toast.success(`View "${target.name}" deleted.`);
             } else {
                 toast.error('Failed to delete view. Please try again.');
@@ -278,7 +288,9 @@
     }
 
     async function handleToggleDefault() {
-        if (!activeView || !organizationId) return;
+        if (!activeView || !organizationId) {
+            return;
+        }
 
         saving = true;
         try {
@@ -287,7 +299,7 @@
 
             if (response.ok && response.data) {
                 syncSavedViewCaches(queryClient, response.data, organizationId);
-                delayedInvalidate(queryClient);
+                void delayedInvalidate(queryClient);
                 toast.success('Set as default.');
             } else {
                 toast.error(response.problem?.title ?? 'Failed to update default setting.');

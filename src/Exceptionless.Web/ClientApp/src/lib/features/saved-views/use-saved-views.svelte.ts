@@ -136,15 +136,22 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     $effect(() => {
         const organizationId = organization.current;
         const views = savedViewsListQuery.data;
-        if (!organizationId) return;
+        if (!organizationId) {
+            return;
+        }
 
         if (organizationId !== lastAutoRestoredOrganizationId) {
             hasAutoRestored = false;
             lastAutoRestoredOrganizationId = organizationId;
         }
 
-        if (hasAutoRestored) return;
-        if (savedViewsListQuery.isLoading) return;
+        if (hasAutoRestored) {
+            return;
+        }
+
+        if (savedViewsListQuery.isLoading) {
+            return;
+        }
 
         hasAutoRestored = true;
 

@@ -12,8 +12,9 @@ const ES_INDEXING_DELAY_MS = 1500;
  * Delay cache invalidation to allow Elasticsearch indexing to complete,
  * preventing stale data from overwriting optimistic cache updates.
  */
-export function delayedInvalidate(queryClient: QueryClient): void {
-    void delay(ES_INDEXING_DELAY_MS).then(() => queryClient.invalidateQueries({ queryKey: queryKeys.type }));
+export async function delayedInvalidate(queryClient: QueryClient): Promise<void> {
+    await delay(ES_INDEXING_DELAY_MS);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.type });
 }
 
 // Elasticsearch needs ~1s to reflect saved-view writes.
