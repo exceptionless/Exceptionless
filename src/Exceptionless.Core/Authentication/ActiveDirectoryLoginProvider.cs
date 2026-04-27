@@ -1,9 +1,10 @@
-﻿# pragma warning disable CA1416
+﻿using System.Diagnostics.CodeAnalysis;
 using System.DirectoryServices;
 using Exceptionless.Core.Configuration;
 
 namespace Exceptionless.Core.Authentication;
 
+[SuppressMessage("Interoperability", "CA1416:Validate platform compatibility")]
 public class ActiveDirectoryLoginProvider : IDomainLoginProvider
 {
     private const string AD_EMAIL = "mail";
@@ -69,4 +70,3 @@ public class ActiveDirectoryLoginProvider : IDomainLoginProvider
         return searcher.FindOne();
     }
 }
-#pragma warning restore CA1416
