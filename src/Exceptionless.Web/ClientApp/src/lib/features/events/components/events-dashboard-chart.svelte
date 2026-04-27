@@ -63,12 +63,17 @@
                 axis={false}
                 grid={false}
                 brush={{
-                    onBrushEnd: (detail) => {
-                        const start = detail.brush.xDomainMin;
-                        const end = detail.brush.xDomainMax;
+                    onBrushEnd: (e) => {
+                        if (!e.brush.active) {
+                            return;
+                        }
+
+                        const [start, end] = e.brush.x;
                         if (start instanceof Date && end instanceof Date) {
                             onRangeSelect?.(start, end);
                         }
+
+                        e.brush.reset();
                     }
                 }}
                 props={{
@@ -84,7 +89,7 @@
                 }}
             >
                 {#snippet tooltip()}
-                    <Chart.Tooltip class="min-w-[250px]" indicator="line" labelFormatter={(v) => formatDateLabel(v as Date)} />
+                    <Chart.Tooltip class="min-w-62.5" indicator="line" labelFormatter={(v) => formatDateLabel(v as Date)} />
                 {/snippet}
             </AreaChart>
         </Chart.Container>

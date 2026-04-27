@@ -3,6 +3,7 @@
 
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
+    import { A } from '$comp/typography';
     import * as Collapsible from '$comp/ui/collapsible';
     import * as Sidebar from '$comp/ui/sidebar';
     import { useSidebar } from '$comp/ui/sidebar';
@@ -59,7 +60,8 @@
                                         {#snippet child({ props: triggerProps })}
                                             <Sidebar.MenuButton isActive={route.href === page.url.pathname} {...triggerProps}>
                                                 {#snippet child({ props: buttonProps })}
-                                                    <a
+                                                    <A
+                                                        variant="ghost"
                                                         href={route.href}
                                                         title={route.title}
                                                         onclick={onMenuClick}
@@ -71,7 +73,7 @@
                                                         <ChevronRight
                                                             class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
                                                         />
-                                                    </a>
+                                                    </A>
                                                 {/snippet}
                                             </Sidebar.MenuButton>
                                         {/snippet}
@@ -88,9 +90,15 @@
                                                                 : page.url.searchParams.get('saved') === savedId)}
                                                     >
                                                         {#snippet child({ props: subProps })}
-                                                            <a href={savedItem.href} title={savedItem.title} onclick={onMenuClick} {...subProps}>
+                                                            <A
+                                                                variant="ghost"
+                                                                href={savedItem.href}
+                                                                title={savedItem.title}
+                                                                onclick={onMenuClick}
+                                                                {...subProps}
+                                                            >
                                                                 <span class="truncate">{savedItem.title}</span>
-                                                            </a>
+                                                            </A>
                                                         {/snippet}
                                                     </Sidebar.MenuSubButton>
                                                 </Sidebar.MenuSubItem>
@@ -104,10 +112,10 @@
                         <Sidebar.MenuItem>
                             <Sidebar.MenuButton isActive={route.href === page.url.pathname}>
                                 {#snippet child({ props })}
-                                    <a href={route.href} title={route.title} onclick={onMenuClick} {...props}>
+                                    <A variant="ghost" href={route.href} title={route.title} onclick={onMenuClick} {...props}>
                                         <Icon />
                                         <span>{route.title}</span>
-                                    </a>
+                                    </A>
                                 {/snippet}
                             </Sidebar.MenuButton>
                         </Sidebar.MenuItem>
@@ -136,13 +144,13 @@
                                         <Sidebar.MenuSubItem>
                                             <Sidebar.MenuSubButton isActive={subItem.href === page.url.pathname}>
                                                 {#snippet child({ props })}
-                                                    <a href={subItem.href} title={subItem.title} onclick={onMenuClick} {...props}>
+                                                    <A variant="ghost" href={subItem.href} title={subItem.title} onclick={onMenuClick} {...props}>
                                                         {#if subItem.icon}
                                                             {@const Icon = subItem.icon}
                                                             <Icon />
                                                         {/if}
                                                         <span>{subItem.title}</span>
-                                                    </a>
+                                                    </A>
                                                 {/snippet}
                                             </Sidebar.MenuSubButton>
                                         </Sidebar.MenuSubItem>
@@ -176,13 +184,13 @@
                                             <Sidebar.MenuSubItem>
                                                 <Sidebar.MenuSubButton isActive={subItem.href === page.url.pathname}>
                                                     {#snippet child({ props })}
-                                                        <a href={subItem.href} title={subItem.title} onclick={onMenuClick} {...props}>
+                                                        <A variant="ghost" href={subItem.href} title={subItem.title} onclick={onMenuClick} {...props}>
                                                             {#if subItem.icon}
                                                                 {@const Icon = subItem.icon}
                                                                 <Icon />
                                                             {/if}
                                                             <span>{subItem.title}</span>
-                                                        </a>
+                                                        </A>
                                                     {/snippet}
                                                 </Sidebar.MenuSubButton>
                                             </Sidebar.MenuSubItem>

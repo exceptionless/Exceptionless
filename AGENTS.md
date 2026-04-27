@@ -51,6 +51,7 @@ Available in `.claude/agents/`. Use `@agent-name` to invoke:
 - **API test files:** Update `tests/http/*.http` files whenever endpoints change (new, modified, or removed).
 - **PR descriptions:** When creating a PR, fill out any existing PR template. Provide concise context: what changed, why, new APIs/features/behaviors, and any breaking changes. No essays — just enough for reviewers to understand the value and impact.
 - **App URL for QA:** `http://localhost:5200` — probe `/api/v2/about` for health check.
+- **Fix what you find:** If you encounter a broken test, bug, or issue during your work — fix it. Never label something "pre-existing" and move on. Own every problem you touch.
 
 ## Frontend Notes
 
