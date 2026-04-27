@@ -28,7 +28,9 @@
         async function init() {
             try {
                 const stripe = await loadStripeOnce();
-                if (disposed) return;
+                if (disposed) {
+                    return;
+                }
 
                 if (!stripe) {
                     showError('Stripe is not configured. Please contact support.');
@@ -54,7 +56,10 @@
                 onload?.(stripe);
                 onElementsChange?.(elementsInstance);
             } catch (ex) {
-                if (disposed) return;
+                if (disposed) {
+                    return;
+                }
+
                 showError(ex instanceof Error ? ex.message : 'Failed to load payment system');
             }
         }

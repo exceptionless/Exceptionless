@@ -70,7 +70,10 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
 
     // Use the persistKey if provided, otherwise default to events-column-visibility
     const visibilityKey = configuration.columnPersistenceKey ? `${configuration.columnPersistenceKey}-column-visibility` : 'events-column-visibility';
-    const [columnVisibility, setColumnVisibility] = createPersistedTableState(visibilityKey, configuration.defaultColumnVisibility ?? <ColumnVisibilityState>{});
+    const [columnVisibility, setColumnVisibility] = createPersistedTableState(
+        visibilityKey,
+        configuration.defaultColumnVisibility ?? <ColumnVisibilityState>{}
+    );
 
     // Initialize pagination state from parameters
     const initialPageIndex = isOffsetPaging
@@ -191,6 +194,8 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
 
     const configureOptions = configuration.configureOptions ?? ((options) => options);
     return configureOptions({
+        _features: stockFeatures,
+        _rowModels: { coreRowModel: createCoreRowModel<StockFeatures, TData>() },
         get columns() {
             return columns();
         },
@@ -206,8 +211,6 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         enableMultiRowSelection: true,
         enableRowSelection: true,
         enableSortingRemoval: false,
-        _features: stockFeatures,
-        _rowModels: { coreRowModel: createCoreRowModel<StockFeatures, TData>() },
         getRowId: (originalRow) => {
             return originalRow && typeof originalRow === 'object' && 'id' in originalRow && originalRow.id != null
                 ? String(originalRow.id)
@@ -255,7 +258,10 @@ export function isTableEmpty<TData extends RowData>(table: Table<StockFeatures, 
  * @param predicate A function that determines whether a row should be removed.
  * @returns True if data was removed, false otherwise.
  */
-export function removeTableData<TData extends RowData>(table: Table<StockFeatures, TData>, predicate: (value: TData, index: number, array: TData[]) => boolean): boolean {
+export function removeTableData<TData extends RowData>(
+    table: Table<StockFeatures, TData>,
+    predicate: (value: TData, index: number, array: TData[]) => boolean
+): boolean {
     if ([...table.options.data].some(predicate)) {
         table.options.data = [...table.options.data].filter((value, index, array) => !predicate(value, index, array));
 

@@ -108,6 +108,7 @@
         } else {
             toast.success(`Successfully marked ${Intl.NumberFormat().format(ids.length)} stacks as snoozed.`);
         }
+
         table.resetRowSelection();
     }
 

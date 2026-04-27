@@ -267,6 +267,7 @@
         if (savedView.filter) {
             queryEntries.push(['filter', savedView.filter]);
         }
+
         if (savedView.time) {
             queryEntries.push(['time', savedView.time]);
         }
@@ -312,9 +313,11 @@
                 if (a.is_default && !b.is_default) {
                     return -1;
                 }
+
                 if (!a.is_default && b.is_default) {
                     return 1;
                 }
+
                 return a.name.localeCompare(b.name);
             });
 

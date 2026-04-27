@@ -25,9 +25,11 @@
         if (!metaClass) {
             return '';
         }
+
         if (metaClass.includes('text-right')) {
             return [metaClass, 'justify-end'].join(' ');
         }
+
         return metaClass;
     }
 
@@ -73,9 +75,7 @@
                     {#each headerGroup.headers as header (header.id)}
                         {@const headerClass = getHeaderColumnClass(header)}
                         <Table.Head class={headerClass}>
-                            <DataTableColumnHeader class={headerClass} column={header.column}
-                                ><FlexRender {header} /></DataTableColumnHeader
-                            >
+                            <DataTableColumnHeader class={headerClass} column={header.column}><FlexRender {header} /></DataTableColumnHeader>
                         </Table.Head>
                     {/each}
                 </Table.Row>

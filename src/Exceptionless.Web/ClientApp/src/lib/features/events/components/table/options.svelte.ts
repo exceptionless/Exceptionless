@@ -14,7 +14,9 @@ import EventsUserIdentitySummaryCell from './events-user-identity-summary-cell.s
 import StackStatusCell from './stack-status-cell.svelte';
 import StackUsersSummaryCell from './stack-users-summary-cell.svelte';
 
-export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(mode: GetEventsMode = 'summary'): ColumnDef<StockFeatures, TSummaryModel, unknown>[] {
+export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
+    mode: GetEventsMode = 'summary'
+): ColumnDef<StockFeatures, TSummaryModel, unknown>[] {
     const columns: ColumnDef<StockFeatures, TSummaryModel, unknown>[] = [
         {
             cell: (props) =>

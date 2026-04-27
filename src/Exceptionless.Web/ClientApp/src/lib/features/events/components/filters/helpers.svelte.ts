@@ -26,6 +26,7 @@ let filterCacheVersion = $state(1);
 export function filterCacheVersionNumber() {
     return filterCacheVersion;
 }
+
 const filterCache = new SvelteMap<null | string, IFilter[]>();
 
 interface SerializedFilter {
