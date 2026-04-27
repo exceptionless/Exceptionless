@@ -184,7 +184,7 @@ namespace Exceptionless.Core.Repositories.Queries
             return new DateRangeQuery { Field = field, Gte = $"now/d-{(int)retentionDays}d", Lte = "now/d+1d" };
         }
 
-        private static bool ShouldApplyRetentionFilter<T>(IIndex index, QueryBuilderContext<T> ctx) where T : class, new()
+        private static bool ShouldApplyRetentionFilter<T>(IIndex? index, QueryBuilderContext<T> ctx) where T : class, new()
         {
             ArgumentNullException.ThrowIfNull(index);
 
@@ -198,7 +198,7 @@ namespace Exceptionless.Core.Repositories.Queries
             return false;
         }
 
-        private string? GetDateField(IIndex index)
+        private string? GetDateField(IIndex? index)
         {
             ArgumentNullException.ThrowIfNull(index);
 
