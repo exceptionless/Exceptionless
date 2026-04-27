@@ -33,7 +33,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         _serializer = GetService<ITextSerializer>();
     }
 
-    [Fact(Skip = "https://github.com/elastic/elasticsearch-net/issues/2463")]
+    [Fact]
     public async Task GetAsync()
     {
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
@@ -50,7 +50,17 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
             Geo = "40,-70"
         });
 
-        Assert.Equal(ev, await _repository.GetByIdAsync(ev.Id));
+        var actual = await actual.GetByIdAsync(ev.Id);
+        Assert.NotNull(actual);
+        Assert.Equal(ev.Id, actual.Id);
+        Assert.Equal(ev.Type, actual.Type);
+        Assert.Equal(ev.OrganizationId, actual.OrganizationId);
+        Assert.Equal(ev.ProjectId, actual.ProjectId);
+        Assert.Equal(ev.StackId, actual.StackId);
+        Assert.Equal(ev.Date, actual.Date);
+        Assert.Equal(ev.Count, actual.Count);
+        Assert.Equal(ev.Value, actual.Value);
+        Assert.Equal(ev.Geo, actual.Geo);
     }
 
     [Fact(Skip = "Performance Testing")]
