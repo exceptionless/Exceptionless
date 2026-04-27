@@ -135,11 +135,21 @@
         }
     });
 
+    // Auth guard — re-check on navigation and token changes
     $effect(() => {
-        // Direct read of accessToken.current establishes reactive dependency, working around PersistedState reactivity bug
         const currentToken = accessToken.current;
-        // Track page.url to ensure effect re-runs on navigation
         void page.url.pathname;
+
+        if (!currentToken) {
+            queryClient.cancelQueries();
+            queryClient.invalidateQueries();
+            gotoLogin();
+        }
+    });
+
+    // WebSocket + keyboard shortcut — only depends on token, not navigation
+    $effect(() => {
+        const currentToken = accessToken.current;
 
         function handleKeydown(e: KeyboardEvent) {
             if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
@@ -148,12 +158,7 @@
             }
         }
 
-        // Check token directly instead of using derived isAuthenticated
         if (!currentToken) {
-            queryClient.cancelQueries();
-            queryClient.invalidateQueries();
-
-            gotoLogin();
             return;
         }
 
