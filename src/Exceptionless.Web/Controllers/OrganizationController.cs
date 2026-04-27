@@ -700,10 +700,10 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 return BadRequest("An organization must contain at least one user.");
 
             await _organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
+            await _organizationService.RemoveUserSavedViewsAsync(organization.Id, user.Id);
 
             user.OrganizationIds.Remove(organization.Id);
             await _userRepository.SaveAsync(user, o => o.Cache());
-            await _organizationService.RemoveUserSavedViewsAsync(organization.Id, user.Id);
             await _messagePublisher.PublishAsync(new UserMembershipChanged
             {
                 ChangeType = ChangeType.Removed,

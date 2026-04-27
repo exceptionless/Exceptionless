@@ -38,8 +38,8 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 
     private async Task<bool> IsFeatureEnabledAsync(string organizationId)
     {
-        var org = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
-        return org?.Features?.Contains(OrganizationFeatures.SavedViews) ?? false;
+        var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
+        return organization?.Features?.Contains(OrganizationFeatures.SavedViews) ?? false;
     }
 
     /// <summary>
@@ -52,10 +52,8 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/saved-views")]
     public async Task<ActionResult<IReadOnlyCollection<ViewSavedView>>> GetByOrganizationAsync(string organizationId, int page = 1, int limit = 25)
     {
-        if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
-        {
+        if (!CanAccessOrganization(organizationId))
             return NotFound();
-        }
 
         // Reads remain available even when the feature is disabled to preserve access to existing saved views.
 
@@ -78,15 +76,11 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/saved-views/{view}")]
     public async Task<ActionResult<IReadOnlyCollection<ViewSavedView>>> GetByViewAsync(string organizationId, string view, int page = 1, int limit = 25)
     {
-        if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
-        {
+        if (!CanAccessOrganization(organizationId))
             return NotFound();
-        }
 
         if (!SavedView.ValidViews.Contains(view))
-        {
             return NotFound();
-        }
 
         // Reads remain available even when the feature is disabled to preserve access to existing saved views.
 
@@ -123,9 +117,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     public async Task<ActionResult<ViewSavedView>> PostAsync(string organizationId, NewSavedView savedView, [FromQuery] bool is_private = false)
     {
         if (!IsInOrganization(organizationId))
-        {
             return BadRequest();
-        }
 
         if (is_private && savedView.IsDefault)
         {
@@ -171,25 +163,17 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     protected override async Task<SavedView?> GetModelAsync(string id, bool useCache = true)
     {
         if (String.IsNullOrEmpty(id))
-        {
             return null;
-        }
 
         var model = await _repository.GetByIdAsync(id, o => o.Cache(useCache));
         if (model is null)
-        {
             return null;
-        }
 
         if (!String.IsNullOrEmpty(model.OrganizationId) && !IsInOrganization(model.OrganizationId))
-        {
             return null;
-        }
 
         if (model.UserId is not null && model.UserId != CurrentUser.Id && !User.IsInRole(AuthorizationRoles.GlobalAdmin))
-        {
             return null;
-        }
 
         return model;
     }
@@ -197,20 +181,14 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     protected override async Task<PermissionResult> CanAddAsync(SavedView value)
     {
         if (String.IsNullOrEmpty(value.OrganizationId) || !IsInOrganization(value.OrganizationId))
-        {
             return PermissionResult.Deny;
-        }
 
         if (!await IsFeatureEnabledAsync(value.OrganizationId))
-        {
             return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "The saved views feature is not enabled for this organization.");
-        }
 
         var count = await _repository.CountByOrganizationIdAsync(value.OrganizationId);
         if (count >= MaxViewsPerOrganization)
-        {
             return PermissionResult.DenyWithMessage($"Organization is limited to {MaxViewsPerOrganization} saved views.");
-        }
 
         return await base.CanAddAsync(value);
     }
@@ -218,14 +196,10 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     protected override async Task<PermissionResult> CanUpdateAsync(SavedView original, Delta<UpdateSavedView> changes)
     {
         if (original.UserId is not null && original.UserId != CurrentUser.Id && !User.IsInRole(AuthorizationRoles.GlobalAdmin))
-        {
             return PermissionResult.DenyWithNotFound(original.Id);
-        }
 
         if (!await IsFeatureEnabledAsync(original.OrganizationId))
-        {
             return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "The saved views feature is not enabled for this organization.");
-        }
 
         // Private views cannot be set as the default
         if (original.UserId is not null
@@ -257,14 +231,10 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         value.Version = 1;
 
         if (_isPrivateRequest)
-        {
             value.UserId = CurrentUser.Id;
-        }
 
         if (value.IsDefault)
-        {
             await ClearDefaultForViewAsync(value.OrganizationId, value.View);
-        }
 
         return await base.AddModelAsync(value);
     }
@@ -303,14 +273,10 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     protected override async Task<PermissionResult> CanDeleteAsync(SavedView value)
     {
         if (value.UserId is not null && value.UserId != CurrentUser.Id && !User.IsInRole(AuthorizationRoles.GlobalAdmin))
-        {
             return PermissionResult.DenyWithNotFound(value.Id);
-        }
 
         if (!await IsFeatureEnabledAsync(value.OrganizationId))
-        {
             return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "The saved views feature is not enabled for this organization.");
-        }
 
         return await base.CanDeleteAsync(value);
     }

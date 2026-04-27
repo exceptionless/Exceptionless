@@ -15,37 +15,41 @@ public class SavedViewRepository : RepositoryOwnedByOrganization<SavedView>, ISa
 
     public Task<FindResults<SavedView>> GetByViewAsync(string organizationId, string view, CommandOptionsDescriptor<SavedView>? options = null)
     {
-        var filter = Query<SavedView>.Term(e => e.OrganizationId, organizationId)
-                     && Query<SavedView>.Term(e => e.View, view);
-
-        return FindAsync(q => q.ElasticFilter(filter).SortAscending(e => e.Name.Suffix("keyword")), options);
+        return FindAsync(q => q
+            .Organization(organizationId)
+            .FieldEquals(e => e.View, view)
+            .SortAscending(e => e.Name.Suffix("keyword")), options);
     }
 
     public Task<FindResults<SavedView>> GetByViewForUserAsync(string organizationId, string view, string userId, CommandOptionsDescriptor<SavedView>? options = null)
     {
-        var filter = Query<SavedView>.Term(e => e.OrganizationId, organizationId)
-                     && Query<SavedView>.Term(e => e.View, view)
-                     && (!Query<SavedView>.Exists(e => e.Field(f => f.UserId))
-                         || Query<SavedView>.Term(e => e.UserId, userId));
+        var userFilter = !Query<SavedView>.Exists(e => e.Field(f => f.UserId))
+                         || Query<SavedView>.Term(e => e.UserId, userId);
 
-        return FindAsync(q => q.ElasticFilter(filter).SortAscending(e => e.Name.Suffix("keyword")), options);
+        return FindAsync(q => q
+            .Organization(organizationId)
+            .FieldEquals(e => e.View, view)
+            .ElasticFilter(userFilter)
+            .SortAscending(e => e.Name.Suffix("keyword")), options);
     }
 
     public Task<FindResults<SavedView>> GetByOrganizationForUserAsync(string organizationId, string userId, CommandOptionsDescriptor<SavedView>? options = null)
     {
-        var filter = Query<SavedView>.Term(e => e.OrganizationId, organizationId)
-                     && (!Query<SavedView>.Exists(e => e.Field(f => f.UserId))
-                         || Query<SavedView>.Term(e => e.UserId, userId));
+        var userFilter = !Query<SavedView>.Exists(e => e.Field(f => f.UserId))
+                         || Query<SavedView>.Term(e => e.UserId, userId);
 
-        return FindAsync(q => q.ElasticFilter(filter).SortAscending(e => e.Name.Suffix("keyword")), options);
+        return FindAsync(q => q
+            .Organization(organizationId)
+            .ElasticFilter(userFilter)
+            .SortAscending(e => e.Name.Suffix("keyword")), options);
     }
 
     public async Task<long> RemovePrivateByUserIdAsync(string organizationId, string userId)
     {
-        var filter = Query<SavedView>.Term(e => e.OrganizationId, organizationId)
-                     && Query<SavedView>.Term(e => e.UserId, userId);
+        var results = await FindAsync(q => q
+            .Organization(organizationId)
+            .FieldEquals(e => e.UserId, userId), o => o.PageLimit(1000));
 
-        var results = await FindAsync(q => q.ElasticFilter(filter), o => o.PageLimit(1000));
         if (results.Total == 0)
             return 0;
 
