@@ -1,12 +1,12 @@
 <script module lang="ts">
-    type TData = unknown;
+    type TData = RowData;
 </script>
 
-<script generics="TData" lang="ts">
+<script generics="TData extends RowData" lang="ts">
     import Button from '$comp/ui/button/button.svelte';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
-    import { type Table as SvelteTable } from '@tanstack/svelte-table';
+    import { type RowData, type StockFeatures, type Table } from '@tanstack/svelte-table';
     import { toast } from 'svelte-sonner';
     import { SvelteDate } from 'svelte/reactivity';
 
@@ -17,7 +17,7 @@
     import RemoveStackDialog from './dialogs/remove-stack-dialog.svelte';
 
     interface Props {
-        table: SvelteTable<TData>;
+        table: Table<StockFeatures, TData>;
     }
 
     let { table }: Props = $props();

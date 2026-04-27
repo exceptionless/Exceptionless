@@ -1,12 +1,12 @@
 <script module lang="ts">
-    type TData = unknown;
+    type TData = RowData;
 </script>
 
-<script generics="TData" lang="ts">
+<script generics="TData extends RowData" lang="ts">
     import type { Snippet } from 'svelte';
     import type { HTMLAttributes } from 'svelte/elements';
 
-    import { type Table as SvelteTable } from '@tanstack/svelte-table';
+    import { type RowData, type StockFeatures, type Table } from '@tanstack/svelte-table';
 
     import DataTablePageCount from './data-table-page-count.svelte';
     import DataTablePagination from './data-table-pagination.svelte';
@@ -14,7 +14,7 @@
 
     type Props = HTMLAttributes<Element> & {
         children?: Snippet;
-        table: SvelteTable<TData>;
+        table: Table<StockFeatures, TData>;
     };
 
     let { children, class: className, table }: Props = $props();

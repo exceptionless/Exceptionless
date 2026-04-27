@@ -1,5 +1,5 @@
 import type { IFilter } from '$comp/faceted-filter';
-import type { VisibilityState } from '@tanstack/svelte-table';
+import type { ColumnVisibilityState } from '@tanstack/svelte-table';
 
 import { deserializeFilters } from '$features/events/components/filters/helpers.svelte';
 import { getOrganizationQuery } from '$features/organizations/api.svelte';
@@ -20,9 +20,9 @@ export interface SavedViewQueryParams {
 
 export interface UseSavedViewsOptions {
     filterCacheKey: (filter: null | string) => string;
-    getColumnVisibility?: () => VisibilityState;
+    getColumnVisibility?: () => ColumnVisibilityState;
     queryParams: SavedViewQueryParams;
-    setColumnVisibility?: (visibility: VisibilityState) => void;
+    setColumnVisibility?: (visibility: ColumnVisibilityState) => void;
     updateFilterCache: (key: string, filters: IFilter[]) => void;
     view: string;
 }
@@ -236,7 +236,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     };
 }
 
-function columnsEqual(a: undefined | VisibilityState, b: null | Record<string, boolean> | undefined): boolean {
+function columnsEqual(a: undefined | ColumnVisibilityState, b: null | Record<string, boolean> | undefined): boolean {
     const aEntries = Object.entries(a ?? {}).sort(([k1], [k2]) => k1.localeCompare(k2));
     const bEntries = Object.entries(b ?? {}).sort(([k1], [k2]) => k1.localeCompare(k2));
 

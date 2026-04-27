@@ -64,7 +64,8 @@
                 grid={false}
                 brush={{
                     onBrushEnd: (detail) => {
-                        const [start, end] = detail.xDomain ?? [];
+                        const start = detail.brush.xDomainMin;
+                        const end = detail.brush.xDomainMax;
                         if (start instanceof Date && end instanceof Date) {
                             onRangeSelect?.(start, end);
                         }

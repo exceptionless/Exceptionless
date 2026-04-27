@@ -100,7 +100,7 @@
 </script>
 
 <div bind:this={skeletonDiv} class="bg-accent h-32 w-full animate-pulse rounded-md"></div>
-<div bind:this={paymentDiv} class="min-h-[200px]" style="display:none;"></div>
+<div bind:this={paymentDiv} class="min-h-50" style="display:none;"></div>
 <div bind:this={errorDiv} style="display:none;">
     <ErrorMessage message={errorMessage ?? 'An error occurred'} />
 </div>

@@ -84,7 +84,7 @@
     const VIEW = 'stream';
     const savedViewsState = useSavedViews({
         filterCacheKey,
-        getColumnVisibility: () => table.getState().columnVisibility,
+        getColumnVisibility: () => table.store.state.columnVisibility,
         queryParams,
         setColumnVisibility: (v) => table.setColumnVisibility(v),
         updateFilterCache,
@@ -280,7 +280,7 @@
             {#if savedViewsState.isEnabled}
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
-                    columnVisibility={table.getState().columnVisibility}
+                    columnVisibility={table.store.state.columnVisibility}
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}

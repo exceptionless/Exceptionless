@@ -3,13 +3,16 @@ import type { FetchClientResponse } from '@exceptionless/fetchclient';
 import {
     type ColumnDef,
     type ColumnSort,
-    getCoreRowModel,
+    type ColumnVisibilityState,
+    createCoreRowModel,
     type PaginationState,
+    type RowData,
     type RowSelectionState,
-    type Table as SvelteTable,
+    stockFeatures,
+    type StockFeatures,
+    type Table,
     type TableOptions,
-    type Updater,
-    type VisibilityState
+    type Updater
 } from '@tanstack/svelte-table';
 import { PersistedState } from 'runed';
 
@@ -18,11 +21,11 @@ import { DEFAULT_LIMIT } from './api/api.svelte';
 export type PaginationStrategy = 'cursor' | 'memory' | 'offset';
 export type QueryMeta = FetchClientResponse<unknown>['meta'];
 
-export interface TableConfiguration<TData, TPaginationStrategy extends PaginationStrategy = PaginationStrategy> {
+export interface TableConfiguration<TData extends RowData, TPaginationStrategy extends PaginationStrategy = PaginationStrategy> {
     columnPersistenceKey: string;
-    columns: ColumnDef<TData>[];
-    configureOptions?: (options: TableOptions<TData>) => TableOptions<TData>;
-    defaultColumnVisibility?: VisibilityState;
+    columns: ColumnDef<StockFeatures, TData, unknown>[];
+    configureOptions?: (options: TableOptions<StockFeatures, TData>) => TableOptions<StockFeatures, TData>;
+    defaultColumnVisibility?: ColumnVisibilityState;
     paginationStrategy: TPaginationStrategy;
     queryData?: TData[];
     queryMeta?: QueryMeta;
@@ -55,19 +58,19 @@ export type TablePagingParameters<T extends PaginationStrategy = PaginationStrat
         ? TableMemoryPagingParameters
         : never;
 
-export function getSharedTableOptions<TData, TPaginationStrategy extends PaginationStrategy = PaginationStrategy>(
+export function getSharedTableOptions<TData extends RowData, TPaginationStrategy extends PaginationStrategy = PaginationStrategy>(
     configuration: TableConfiguration<TData, TPaginationStrategy>
-): TableOptions<TData> {
+): TableOptions<StockFeatures, TData> {
     const isCursorPaging = $derived(!configuration.paginationStrategy || configuration.paginationStrategy === 'cursor');
     const isOffsetPaging = $derived(configuration.paginationStrategy === 'offset');
     const isMemoryPaging = $derived(configuration.paginationStrategy === 'memory');
 
     const [pageCount, setPageCount] = createTableState(0);
-    const [columns, setColumns] = createTableState<ColumnDef<TData>[]>(configuration.columns);
+    const [columns, setColumns] = createTableState<ColumnDef<StockFeatures, TData, unknown>[]>(configuration.columns);
 
     // Use the persistKey if provided, otherwise default to events-column-visibility
     const visibilityKey = configuration.columnPersistenceKey ? `${configuration.columnPersistenceKey}-column-visibility` : 'events-column-visibility';
-    const [columnVisibility, setColumnVisibility] = createPersistedTableState(visibilityKey, configuration.defaultColumnVisibility ?? <VisibilityState>{});
+    const [columnVisibility, setColumnVisibility] = createPersistedTableState(visibilityKey, configuration.defaultColumnVisibility ?? <ColumnVisibilityState>{});
 
     // Initialize pagination state from parameters
     const initialPageIndex = isOffsetPaging
@@ -203,7 +206,8 @@ export function getSharedTableOptions<TData, TPaginationStrategy extends Paginat
         enableMultiRowSelection: true,
         enableRowSelection: true,
         enableSortingRemoval: false,
-        getCoreRowModel: getCoreRowModel(),
+        _features: stockFeatures,
+        _rowModels: { coreRowModel: createCoreRowModel<StockFeatures, TData>() },
         getRowId: (originalRow) => {
             return originalRow && typeof originalRow === 'object' && 'id' in originalRow && originalRow.id != null
                 ? String(originalRow.id)
@@ -241,7 +245,7 @@ export function getSharedTableOptions<TData, TPaginationStrategy extends Paginat
     });
 }
 
-export function isTableEmpty<TData>(table: SvelteTable<TData>): boolean {
+export function isTableEmpty<TData extends RowData>(table: Table<StockFeatures, TData>): boolean {
     return table.options.data.length === 0;
 }
 
@@ -251,9 +255,9 @@ export function isTableEmpty<TData>(table: SvelteTable<TData>): boolean {
  * @param predicate A function that determines whether a row should be removed.
  * @returns True if data was removed, false otherwise.
  */
-export function removeTableData<TData>(table: SvelteTable<TData>, predicate: (value: TData, index: number, array: TData[]) => boolean): boolean {
-    if (table.options.data.some(predicate)) {
-        table.options.data = table.options.data.filter((value, index, array) => !predicate(value, index, array));
+export function removeTableData<TData extends RowData>(table: Table<StockFeatures, TData>, predicate: (value: TData, index: number, array: TData[]) => boolean): boolean {
+    if ([...table.options.data].some(predicate)) {
+        table.options.data = [...table.options.data].filter((value, index, array) => !predicate(value, index, array));
 
         return true;
     }
@@ -267,11 +271,11 @@ export function removeTableData<TData>(table: SvelteTable<TData>, predicate: (va
  * @param selectionId The id of the selection to remove.
  * @returns True if the selection was removed, false otherwise.
  */
-export function removeTableSelection<TData>(table: SvelteTable<TData>, selectionId: string): boolean {
+export function removeTableSelection<TData extends RowData>(table: Table<StockFeatures, TData>, selectionId: string): boolean {
     if (table.getIsSomeRowsSelected()) {
-        const { rowSelection } = table.getState();
+        const { rowSelection } = table.store.state;
         if (rowSelection[selectionId]) {
-            table.setRowSelection((old: Record<string, boolean>) => {
+            table.setRowSelection((old) => {
                 const filtered = Object.entries(old).filter(([id]) => id !== selectionId);
                 return Object.fromEntries(filtered);
             });

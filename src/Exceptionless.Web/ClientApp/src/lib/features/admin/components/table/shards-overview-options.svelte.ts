@@ -1,12 +1,12 @@
 import type { ShardMetric } from '$features/admin/models';
 
 import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
-import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
+import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
 import ShardMetricCell from './shard-metric-cell.svelte';
 import ShardValueCell from './shard-value-cell.svelte';
 
-export function getColumns(): ColumnDef<ShardMetric>[] {
+export function getColumns(): ColumnDef<StockFeatures, ShardMetric, unknown>[] {
     return [
         {
             accessorKey: 'label',

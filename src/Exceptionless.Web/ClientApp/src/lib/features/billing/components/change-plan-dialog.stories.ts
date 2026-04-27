@@ -152,6 +152,7 @@ function makeOrg(overrides: Partial<ViewOrganization> = {}): ViewOrganization {
         created_utc: '2024-01-15T00:00:00Z',
         data: null,
         event_count: 427,
+        features: [],
         has_premium_features: false,
         id: '507f1f77bcf86cd799439011',
         invites: [],

@@ -91,7 +91,7 @@
     const VIEW = 'events';
     const savedViewsState = useSavedViews({
         filterCacheKey,
-        getColumnVisibility: () => table.getState().columnVisibility,
+        getColumnVisibility: () => table.store.state.columnVisibility,
         queryParams,
         setColumnVisibility: (v) => table.setColumnVisibility(v),
         updateFilterCache,
@@ -187,7 +187,7 @@
         })
     );
 
-    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.getState().pagination.pageIndex === 0);
+    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.store.state.pagination.pageIndex === 0);
 
     function reset() {
         table.resetRowSelection();
@@ -295,7 +295,7 @@
             {#if savedViewsState.isEnabled}
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
-                    columnVisibility={table.getState().columnVisibility}
+                    columnVisibility={table.store.state.columnVisibility}
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}
