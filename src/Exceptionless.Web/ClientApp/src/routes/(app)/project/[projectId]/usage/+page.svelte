@@ -3,11 +3,13 @@
     import ErrorMessage from '$comp/error-message.svelte';
     import Number from '$comp/formatters/number.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import { A, H4, Muted, Small } from '$comp/typography';
+    import { H4, Muted, Small } from '$comp/typography';
+    import { Button } from '$comp/ui/button';
     import * as Chart from '$comp/ui/chart/index';
     import { Separator } from '$comp/ui/separator';
     import { Skeleton } from '$comp/ui/skeleton';
     import { env } from '$env/dynamic/public';
+    import { ChangePlanDialog } from '$features/billing';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { getNextBillingDateUtc, getRemainingEventLimit } from '$features/organizations/utils';
@@ -41,11 +43,7 @@
         }
     });
 
-    function handleChangePlan() {
-        // Navigate to plan change page or open modal
-        // This is a placeholder for future implementation
-        console.log('Change plan clicked');
-    }
+    let changePlanDialogOpen = $state(false);
 
     const chartConfig = {
         blocked: { color: 'var(--chart-2)', label: 'Blocked' },
@@ -125,9 +123,9 @@
                 <p>
                     You are currently on the
                     {#if canChangePlan}
-                        <A onclick={handleChangePlan}>
-                            <span class="font-bold">{organizationQuery.data?.plan_name}</span> plan
-                        </A>
+                        <Button variant="link" class="h-auto p-0" onclick={() => (changePlanDialogOpen = true)}>
+                            <span class="font-bold">{organizationQuery.data?.plan_name}</span> plan</Button
+                        >
                     {:else}
                         <span class="font-bold">{organizationQuery.data?.plan_name}</span> plan
                     {/if}
@@ -140,7 +138,9 @@
                     (<TimeAgo value={nextBillingDate} />).
 
                     {#if canChangePlan}
-                        <A onclick={handleChangePlan}>Click here to change your plan or billing information.</A>
+                        <Button variant="link" class="h-auto p-0" onclick={() => (changePlanDialogOpen = true)}
+                            >Click here to change your plan or billing information.</Button
+                        >
                     {/if}
                 </p>
             </div>
@@ -169,3 +169,7 @@
         </div>
     {/if}
 </div>
+
+{#if changePlanDialogOpen && organizationQuery.data}
+    <ChangePlanDialog organization={organizationQuery.data} onclose={() => (changePlanDialogOpen = false)} />
+{/if}

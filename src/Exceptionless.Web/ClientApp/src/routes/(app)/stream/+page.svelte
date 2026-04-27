@@ -13,6 +13,7 @@
     import { H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
+    import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
     import EventsOverview from '$features/events/components/events-overview.svelte';
     import { ProjectFilter, StatusFilter } from '$features/events/components/filters';
     import {
@@ -34,7 +35,7 @@
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
+    import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
@@ -44,6 +45,11 @@
     import { redirectToEventsWithFilter } from '../redirect-to-events.svelte';
 
     let selectedEventId: null | string = $state(null);
+
+    function handleEventError(problem: ProblemDetails) {
+        showBillingDialogOnUpgradeProblem(problem, organization.current);
+        selectedEventId = null;
+    }
 
     function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
         selectedEventId = row.id;
@@ -205,6 +211,10 @@
             }
         });
 
+        if (clientResponse.problem && showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData(true))) {
+            return;
+        }
+
         if (clientResponse.ok) {
             if (clientResponse.meta.links.previous?.before) {
                 before = clientResponse.meta.links.previous?.before;
@@ -314,7 +324,7 @@
             >
         </Sheet.Header>
         <div class="px-4">
-            <EventsOverview filterChanged={onFilterChanged} id={selectedEventId || ''} handleError={() => (selectedEventId = null)} />
+            <EventsOverview filterChanged={onFilterChanged} id={selectedEventId || ''} handleError={handleEventError} />
         </div>
     </Sheet.Content>
 </Sheet.Root>

@@ -38,6 +38,13 @@ export interface ChangePasswordModel {
   password: string;
 }
 
+export interface ChangePlanRequest {
+  plan_id: string;
+  stripe_token?: null | string;
+  last4?: null | string;
+  coupon_id?: null | string;
+}
+
 export interface ChangePlanResult {
   success: boolean;
   message?: null | string;

@@ -61,6 +61,17 @@ export type ChangePasswordModelFormData = Infer<
   typeof ChangePasswordModelSchema
 >;
 
+export const ChangePlanRequestSchema = object({
+  plan_id: string().min(1, "Plan id is required"),
+  stripe_token: string()
+    .min(1, "Stripe token is required")
+    .nullable()
+    .optional(),
+  last4: string().min(1, '"last4" is required').nullable().optional(),
+  coupon_id: string().min(1, "Coupon id is required").nullable().optional(),
+});
+export type ChangePlanRequestFormData = Infer<typeof ChangePlanRequestSchema>;
+
 export const ChangePlanResultSchema = object({
   success: boolean(),
   message: string().min(1, "Message is required").nullable().optional(),
@@ -80,8 +91,8 @@ export const CountResultSchema = object({
   aggregations: record(
     string(),
     lazy(() => IAggregateSchema),
-  ).optional(),
-  data: record(string(), unknown()).nullable().optional(),
+  ),
+  data: record(string(), unknown()).nullable(),
 });
 export type CountResultFormData = Infer<typeof CountResultSchema>;
 
