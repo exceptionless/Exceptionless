@@ -61,6 +61,17 @@ export type ChangePasswordModelFormData = Infer<
   typeof ChangePasswordModelSchema
 >;
 
+export const ChangePlanRequestSchema = object({
+  plan_id: string().min(1, "Plan id is required"),
+  stripe_token: string()
+    .min(1, "Stripe token is required")
+    .nullable()
+    .optional(),
+  last4: string().min(1, '"last4" is required').nullable().optional(),
+  coupon_id: string().min(1, "Coupon id is required").nullable().optional(),
+});
+export type ChangePlanRequestFormData = Infer<typeof ChangePlanRequestSchema>;
+
 export const ChangePlanResultSchema = object({
   success: boolean(),
   message: string().min(1, "Message is required").nullable().optional(),
@@ -80,8 +91,8 @@ export const CountResultSchema = object({
   aggregations: record(
     string(),
     lazy(() => IAggregateSchema),
-  ).optional(),
-  data: record(string(), unknown()).nullable().optional(),
+  ),
+  data: record(string(), unknown()).nullable(),
 });
 export type CountResultFormData = Infer<typeof CountResultSchema>;
 
@@ -164,14 +175,10 @@ export type NewProjectFormData = Infer<typeof NewProjectSchema>;
 export const NewTokenSchema = object({
   organization_id: string()
     .length(24, "Organization id must be exactly 24 characters")
-    .regex(/^[a-fA-F0-9]{24}$/, "Organization id has invalid format")
-    .nullable()
-    .optional(),
+    .regex(/^[a-fA-F0-9]{24}$/, "Organization id has invalid format"),
   project_id: string()
     .length(24, "Project id must be exactly 24 characters")
-    .regex(/^[a-fA-F0-9]{24}$/, "Project id has invalid format")
-    .nullable()
-    .optional(),
+    .regex(/^[a-fA-F0-9]{24}$/, "Project id has invalid format"),
   default_project_id: string()
     .length(24, "Default project id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Default project id has invalid format")
@@ -243,7 +250,7 @@ export const PersistentEventSchema = object({
     .regex(/^[a-fA-F0-9]{24}$/, "Stack id has invalid format"),
   is_first_occurrence: boolean(),
   created_utc: iso.datetime(),
-  idx: record(string(), unknown()),
+  idx: record(string(), unknown()).nullable().optional(),
   type: string()
     .min(1, "Type is required")
     .max(100, "Type must be at most 100 characters")

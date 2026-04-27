@@ -6,6 +6,7 @@
     import { page } from '$app/state';
     import * as FacetedFilter from '$comp/faceted-filter';
     import { H3 } from '$comp/typography';
+    import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import EventsOverview from '$features/events/components/events-overview.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { watch } from 'runed';
@@ -27,8 +28,8 @@
     }
 
     async function handleError(problem: ProblemDetails) {
-        if (problem.status === 426) {
-            // TODO: Show a message to the user that they need to upgrade their subscription.
+        if (showBillingDialogOnUpgradeProblem(problem, organization.current)) {
+            return;
         }
 
         toast.error(`The event "${page.params.eventId}" could not be found.`);

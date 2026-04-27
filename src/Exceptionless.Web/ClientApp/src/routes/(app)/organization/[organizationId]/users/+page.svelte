@@ -4,6 +4,7 @@
     import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';
+    import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import { addOrganizationUser } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
@@ -79,6 +80,10 @@
             await addUserMutation.mutateAsync(email);
             toastId = toast.success('User invited successfully');
         } catch (error: unknown) {
+            if (showBillingDialogOnUpgradeProblem(error, organizationId, () => inviteUser(email))) {
+                return;
+            }
+
             const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
             toastId = toast.error(`An error occurred while trying to invite the user: ${message}`);
             throw error;

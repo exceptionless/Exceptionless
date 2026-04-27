@@ -7,6 +7,7 @@
     import { Separator } from '$comp/ui/separator';
     import { Skeleton } from '$comp/ui/skeleton';
     import { Switch } from '$comp/ui/switch';
+    import { showUpgradeDialog } from '$features/billing/upgrade-required.svelte';
     import { getProjectsQuery, getProjectUserNotificationSettings, postProjectUserNotificationSettings } from '$features/projects/api.svelte';
     import UserNotificationSettingsForm from '$features/projects/components/user-notification-settings-form.svelte';
     import AlertDescription from '$features/shared/components/ui/alert/alert-description.svelte';
@@ -118,8 +119,10 @@
         }
     }
 
-    async function handleUpgrade() {
-        console.log('TODO: Upgrade to premium features');
+    function handleUpgrade() {
+        if (selectedProject?.organization_id) {
+            showUpgradeDialog(selectedProject.organization_id, 'Please upgrade your plan to enable occurrence level notifications.');
+        }
     }
 </script>
 

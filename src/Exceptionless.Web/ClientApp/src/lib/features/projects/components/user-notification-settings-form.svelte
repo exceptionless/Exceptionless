@@ -15,7 +15,7 @@
         hasPremiumFeatures?: boolean;
         save: (settings: NotificationSettings) => Promise<void>;
         settings?: NotificationSettings;
-        upgrade: () => Promise<void>;
+        upgrade: () => Promise<void> | void;
     }
 
     let { emailNotificationsEnabled = true, hasPremiumFeatures = false, save, settings, upgrade }: Props = $props();
