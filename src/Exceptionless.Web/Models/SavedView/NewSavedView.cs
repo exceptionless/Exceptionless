@@ -41,7 +41,7 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (!String.IsNullOrEmpty(View) && !SavedView.ValidViews.Contains(View))
+        if (View is { Length: > 0 } && !SavedView.ValidViews.Contains(View))
         {
             yield return new ValidationResult(
                 $"View must be one of: {String.Join(", ", SavedView.ValidViews)}",
@@ -49,7 +49,7 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
             );
         }
 
-        if (!String.IsNullOrEmpty(FilterDefinitions) && !IsValidJsonArray(FilterDefinitions))
+        if (FilterDefinitions is { Length: > 0 } && !IsValidJsonArray(FilterDefinitions))
         {
             yield return new ValidationResult(
                 "FilterDefinitions must be a valid JSON array",
@@ -89,7 +89,6 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
         try
         {
             using var document = JsonDocument.Parse(json);
-
             return document.RootElement.ValueKind == JsonValueKind.Array;
         }
         catch (JsonException)

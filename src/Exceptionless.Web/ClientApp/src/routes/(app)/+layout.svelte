@@ -267,7 +267,6 @@
         }
 
         const queryParams = new URLSearchParams(queryEntries);
-
         return `${baseHref}?${queryParams.toString()}`;
     }
 

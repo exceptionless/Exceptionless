@@ -700,26 +700,26 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     public async Task RemoveUser_DeletesPrivateSavedViews_ButPreservesOrganizationWideViews()
     {
         // Arrange — create an organization-wide view and a private view for the test organization user
-        var orgUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
-        Assert.NotNull(orgUser);
+        var testUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(testUser);
 
-        var orgWideView = await _savedViewRepository.AddAsync(new SavedView
+        var organizationWideView = await _savedViewRepository.AddAsync(new SavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Organization Wide",
             Filter = "status:open",
             View = "events",
-            CreatedByUserId = orgUser.Id
+            CreatedByUserId = testUser.Id
         });
 
         var privateView = await _savedViewRepository.AddAsync(new SavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
-            UserId = orgUser.Id,
+            UserId = testUser.Id,
             Name = "My Private View",
             Filter = "type:error",
             View = "events",
-            CreatedByUserId = orgUser.Id
+            CreatedByUserId = testUser.Id
         });
 
         await RefreshDataAsync();
@@ -736,15 +736,15 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
 
         // Assert — private view is gone, organization-wide view remains
         Assert.Null(await _savedViewRepository.GetByIdAsync(privateView.Id));
-        Assert.NotNull(await _savedViewRepository.GetByIdAsync(orgWideView.Id));
+        Assert.NotNull(await _savedViewRepository.GetByIdAsync(organizationWideView.Id));
     }
 
     [Fact]
     public async Task SoftDeleteOrganization_RemovesAllSavedViews()
     {
         // Arrange
-        var orgUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
-        Assert.NotNull(orgUser);
+        var testUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(testUser);
 
         await _savedViewRepository.AddAsync(new SavedView
         {
@@ -752,17 +752,17 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             Name = "Organization View",
             Filter = "status:open",
             View = "events",
-            CreatedByUserId = orgUser.Id
+            CreatedByUserId = testUser.Id
         });
 
         await _savedViewRepository.AddAsync(new SavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
-            UserId = orgUser.Id,
+            UserId = testUser.Id,
             Name = "Private View",
             Filter = "type:error",
             View = "events",
-            CreatedByUserId = orgUser.Id
+            CreatedByUserId = testUser.Id
         });
 
         await RefreshDataAsync();
@@ -774,7 +774,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         var organizationRepository = GetService<IOrganizationRepository>();
         var organization = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(organization);
-        await _organizationService.SoftDeleteOrganizationAsync(organization, orgUser.Id);
+        await _organizationService.SoftDeleteOrganizationAsync(organization, testUser.Id);
         await RefreshDataAsync();
 
         // Assert
@@ -786,38 +786,38 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     public async Task RemoveUserSavedViews_OnlyDeletesPrivateViews()
     {
         // Arrange
-        var orgUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
-        Assert.NotNull(orgUser);
+        var testUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(testUser);
 
-        var orgWide = await _savedViewRepository.AddAsync(new SavedView
+        var organizationWide = await _savedViewRepository.AddAsync(new SavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Organization Wide",
             Filter = "status:open",
             View = "events",
-            CreatedByUserId = orgUser.Id
+            CreatedByUserId = testUser.Id
         });
 
         var privateView = await _savedViewRepository.AddAsync(new SavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
-            UserId = orgUser.Id,
+            UserId = testUser.Id,
             Name = "Private",
             Filter = "type:error",
             View = "events",
-            CreatedByUserId = orgUser.Id
+            CreatedByUserId = testUser.Id
         });
 
         await RefreshDataAsync();
 
         // Act
-        var removed = await _organizationService.RemoveUserSavedViewsAsync(SampleDataService.TEST_ORG_ID, orgUser.Id);
+        var removed = await _organizationService.RemoveUserSavedViewsAsync(SampleDataService.TEST_ORG_ID, testUser.Id);
         await RefreshDataAsync();
 
         // Assert
         Assert.Equal(1, removed);
         Assert.Null(await _savedViewRepository.GetByIdAsync(privateView.Id));
-        Assert.NotNull(await _savedViewRepository.GetByIdAsync(orgWide.Id));
+        Assert.NotNull(await _savedViewRepository.GetByIdAsync(organizationWide.Id));
     }
 
     private async Task<ViewSavedView?> CreateSavedViewAsync(string name, string filter, string view, bool isPrivate = false, bool isDefault = false)

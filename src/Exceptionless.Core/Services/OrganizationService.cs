@@ -190,6 +190,7 @@ public class OrganizationService : IStartupAction
 
     public Task<long> RemoveUserSavedViewsAsync(string organizationId, string userId)
     {
+        _logger.LogDebug("Removing private saved views for user {UserId} in organization {OrganizationId}", userId, organizationId);
         return _savedViewRepository.RemovePrivateByUserIdAsync(organizationId, userId);
     }
 

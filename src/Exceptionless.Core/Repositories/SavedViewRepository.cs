@@ -12,29 +12,37 @@ public class SavedViewRepository : RepositoryOwnedByOrganization<SavedView>, ISa
     {
     }
 
-    public Task<FindResults<SavedView>> GetByViewAsync(string organizationId, string dashboardView, CommandOptionsDescriptor<SavedView>? options = null)
+    public Task<FindResults<SavedView>> GetByViewAsync(string organizationId, string viewName, CommandOptionsDescriptor<SavedView>? options = null)
     {
         return FindAsync(q => q
             .Organization(organizationId)
-            .FieldEquals(e => e.View, dashboardView)
+            .FieldEquals(e => e.View, viewName)
             .SortExpression("name"), options);
     }
 
-    public Task<FindResults<SavedView>> GetByViewForUserAsync(string organizationId, string dashboardView, string userId, CommandOptionsDescriptor<SavedView>? options = null)
+    public Task<FindResults<SavedView>> GetByViewForUserAsync(string organizationId, string viewName, string userId, CommandOptionsDescriptor<SavedView>? options = null)
     {
+#pragma warning disable CS8603 // FieldOr is non-null at runtime; Foundatio nullable annotation issue
         return FindAsync(q => q
             .Organization(organizationId)
-            .FieldEquals(e => e.View, dashboardView)
-            .FilterExpression($"(_missing_:user_id OR user_id:{userId})")
-            .SortExpression("name"), options);
+            .FieldEquals(e => e.View, viewName)
+            .SortExpression("name")
+            .FieldOr(g => g
+                .FieldEmpty(e => e.UserId)
+                .FieldEquals(e => e.UserId!, userId)), options);
+#pragma warning restore CS8603
     }
 
     public Task<FindResults<SavedView>> GetByOrganizationForUserAsync(string organizationId, string userId, CommandOptionsDescriptor<SavedView>? options = null)
     {
+#pragma warning disable CS8603 // FieldOr is non-null at runtime; Foundatio nullable annotation issue
         return FindAsync(q => q
             .Organization(organizationId)
-            .FilterExpression($"(_missing_:user_id OR user_id:{userId})")
-            .SortExpression("name"), options);
+            .SortExpression("name")
+            .FieldOr(g => g
+                .FieldEmpty(e => e.UserId)
+                .FieldEquals(e => e.UserId!, userId)), options);
+#pragma warning restore CS8603
     }
 
     public async Task<long> RemovePrivateByUserIdAsync(string organizationId, string userId)

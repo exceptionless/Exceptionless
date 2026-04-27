@@ -226,7 +226,6 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 
     protected override async Task<SavedView> AddModelAsync(SavedView value)
     {
-        value.CreatedUtc = value.UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
         value.CreatedByUserId = CurrentUser.Id;
         value.Version = 1;
 
@@ -238,7 +237,6 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 
     protected override async Task<SavedView> UpdateModelAsync(SavedView original, Delta<UpdateSavedView> changes)
     {
-        original.UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
         original.UpdatedByUserId = CurrentUser.Id;
 
         if (changes.GetChangedPropertyNames().Contains(nameof(UpdateSavedView.IsDefault))
