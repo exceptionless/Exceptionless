@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
 
+    import { Muted } from '$comp/typography';
     import * as AlertDialog from '$comp/ui/alert-dialog';
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
@@ -14,7 +15,6 @@
     import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { quickRanges } from '$features/shared/components/date-range-picker/quick-ranges';
-    import { useFetchClient } from '@exceptionless/fetchclient';
     import Check from '@lucide/svelte/icons/check';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import Pencil from '@lucide/svelte/icons/pencil';
@@ -23,14 +23,13 @@
     import Star from '@lucide/svelte/icons/star';
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import Undo2 from '@lucide/svelte/icons/undo-2';
-    import { useQueryClient } from '@tanstack/svelte-query';
     import { tick, untrack } from 'svelte';
     import { toast } from 'svelte-sonner';
     import { SvelteMap } from 'svelte/reactivity';
 
     import type { NewSavedView, SavedView, UpdateSavedView } from '../models';
 
-    import { delayedInvalidate, queryKeys, syncSavedViewCaches } from '../api.svelte';
+    import { deleteSavedView, patchSavedView, postSavedView } from '../api.svelte';
 
     const timeLabels = new SvelteMap<string, string>();
     for (const section of quickRanges) {
@@ -71,24 +70,49 @@
     let isSaveDialogOpen = $state(false);
     let isRenameDialogOpen = $state(false);
     let isDeleteDialogOpen = $state(false);
-    let deleteTarget = $state<null | SavedView>(null);
+    let viewToDelete = $state<null | SavedView>(null);
     let saveName = $state('');
     let isPrivate = $state(false);
     let isDefault = $state(false);
     let renameName = $state('');
-    let saving = $state(false);
 
-    const client = useFetchClient();
-    const queryClient = useQueryClient();
     const organizationId = $derived(organization.current);
+
+    const createMutation = postSavedView({
+        route: {
+            get organizationId() {
+                return organizationId;
+            }
+        }
+    });
+    const updateMutation = patchSavedView({
+        route: {
+            get id() {
+                return activeView?.id;
+            }
+        }
+    });
+    const removeMutation = deleteSavedView({
+        route: {
+            get organizationId() {
+                return organizationId;
+            }
+        }
+    });
+
+    const saving = $derived(createMutation.isPending || updateMutation.isPending || removeMutation.isPending);
 
     const currentFilterString = $derived(toFilter(filters.filter((f) => f.type !== 'date')));
 
     const sortedViews = $derived.by(() => {
-        return [...savedViews].sort((a, b) => {
-            if (a.is_default && !b.is_default) return -1;
-            if (!a.is_default && b.is_default) return 1;
-            return a.name.localeCompare(b.name);
+        return [...savedViews].sort((left, right) => {
+            if (left.is_default && !right.is_default) {
+                return -1;
+            }
+            if (!left.is_default && right.is_default) {
+                return 1;
+            }
+            return left.name.localeCompare(right.name);
         });
     });
 
@@ -143,7 +167,7 @@
     }
 
     async function openDeleteDialog(savedView: SavedView) {
-        deleteTarget = savedView;
+        viewToDelete = savedView;
         await tick();
         isDeleteDialogOpen = true;
     }
@@ -153,36 +177,27 @@
             return;
         }
 
-        saving = true;
+        const filterDefinitions = serializeFilters(filters);
+        const body: NewSavedView & { is_private?: boolean } = {
+            columns: columnVisibility,
+            filter: currentFilterString || undefined,
+            filter_definitions: filterDefinitions,
+            is_default: isDefault || undefined,
+            is_private: isPrivate || undefined,
+            name: saveName.trim(),
+            organization_id: organizationId,
+            time: time || undefined,
+            view
+        };
+
         try {
-            const filterDefinitions = serializeFilters(filters);
-            const body: NewSavedView = {
-                columns: columnVisibility,
-                filter: currentFilterString || undefined,
-                filter_definitions: filterDefinitions,
-                is_default: isDefault || undefined,
-                name: saveName.trim(),
-                organization_id: organizationId,
-                time: time || undefined,
-                view
-            };
-
-            const url = isPrivate ? `organizations/${organizationId}/saved-views?is_private=true` : `organizations/${organizationId}/saved-views`;
-
-            const response = await client.postJSON<SavedView>(url, body, { expectedStatusCodes: [422] });
-
-            if (response.ok && response.data) {
-                syncSavedViewCaches(queryClient, response.data, organizationId);
-                isSaveDialogOpen = false;
-                onLoadView(response.data.id);
-                toast.success(`Saved view "${response.data.name}" created.`);
-            } else {
-                toast.error(response.problem?.title ?? 'Failed to save view. Please try again.');
-            }
-        } catch {
-            toast.error('An error occurred while saving the view.');
-        } finally {
-            saving = false;
+            const result = await createMutation.mutateAsync(body);
+            isSaveDialogOpen = false;
+            onLoadView(result.id);
+            toast.success(`Saved view "${result.name}" created.`);
+        } catch (error) {
+            const problem = (error as { title?: string })?.title;
+            toast.error(problem ?? 'Failed to save view. Please try again.');
         }
     }
 
@@ -191,28 +206,20 @@
             return;
         }
 
-        saving = true;
+        const filterDefinitions = serializeFilters(filters);
+        const body: UpdateSavedView = {
+            columns: columnVisibility,
+            filter: currentFilterString || null,
+            filter_definitions: filterDefinitions,
+            time: time || null
+        };
+
         try {
-            const filterDefinitions = serializeFilters(filters);
-            const body: UpdateSavedView = {
-                columns: columnVisibility,
-                filter: currentFilterString || null,
-                filter_definitions: filterDefinitions,
-                time: time || null
-            };
-
-            const response = await client.patchJSON<SavedView>(`saved-views/${activeSavedView.id}`, body, { expectedStatusCodes: [422] });
-
-            if (response.ok && response.data) {
-                syncSavedViewCaches(queryClient, response.data, organizationId);
-                toast.success(`View "${activeSavedView.name}" updated.`);
-            } else {
-                toast.error(response.problem?.title ?? 'Failed to update view. Please try again.');
-            }
-        } catch {
-            toast.error('An error occurred while updating the view.');
-        } finally {
-            saving = false;
+            await updateMutation.mutateAsync(body);
+            toast.success(`View "${activeSavedView.name}" updated.`);
+        } catch (error) {
+            const problem = (error as { title?: string })?.title;
+            toast.error(problem ?? 'Failed to update view. Please try again.');
         }
     }
 
@@ -221,52 +228,35 @@
             return;
         }
 
-        saving = true;
         try {
-            const body: UpdateSavedView = { name: renameName.trim() };
-            const response = await client.patchJSON<SavedView>(`saved-views/${activeView.id}`, body, { expectedStatusCodes: [422] });
-
-            if (response.ok && response.data) {
-                isRenameDialogOpen = false;
-                syncSavedViewCaches(queryClient, response.data, organizationId);
-                void delayedInvalidate(queryClient);
-                toast.success('View renamed.');
-            } else {
-                toast.error(response.problem?.title ?? 'Failed to rename view. Please try again.');
-            }
-        } catch {
-            toast.error('An error occurred while renaming the view.');
-        } finally {
-            saving = false;
+            await updateMutation.mutateAsync({ name: renameName.trim() });
+            isRenameDialogOpen = false;
+            toast.success('View renamed.');
+        } catch (error) {
+            const problem = (error as { title?: string })?.title;
+            toast.error(problem ?? 'Failed to rename view. Please try again.');
         }
     }
 
     async function handleDelete() {
-        if (!deleteTarget || !organizationId) {
+        if (!viewToDelete || !organizationId) {
             return;
         }
 
-        const target = deleteTarget;
+        const target = viewToDelete;
         try {
-            const response = await client.delete(`saved-views/${target.id}`, { expectedStatusCodes: [202] });
+            await removeMutation.mutateAsync(target);
 
-            if (response.ok) {
-                if (activeSavedView?.id === target.id) {
-                    onClearSavedView();
-                }
-
-                queryClient.setQueryData(queryKeys.view(organizationId, target.view), (old: SavedView[] | undefined) => old?.filter((v) => v.id !== target.id));
-                queryClient.setQueryData(queryKeys.organization(organizationId), (old: SavedView[] | undefined) => old?.filter((v) => v.id !== target.id));
-                void delayedInvalidate(queryClient);
-                toast.success(`View "${target.name}" deleted.`);
-            } else {
-                toast.error('Failed to delete view. Please try again.');
+            if (activeSavedView?.id === target.id) {
+                onClearSavedView();
             }
+
+            toast.success(`View "${target.name}" deleted.`);
         } catch {
-            toast.error('An error occurred while deleting the view.');
+            toast.error('Failed to delete view. Please try again.');
         } finally {
             isDeleteDialogOpen = false;
-            deleteTarget = null;
+            viewToDelete = null;
         }
     }
 
@@ -279,22 +269,12 @@
             return;
         }
 
-        saving = true;
         try {
-            const body: UpdateSavedView = { is_default: true };
-            const response = await client.patchJSON<SavedView>(`saved-views/${activeView.id}`, body, { expectedStatusCodes: [422] });
-
-            if (response.ok && response.data) {
-                syncSavedViewCaches(queryClient, response.data, organizationId);
-                void delayedInvalidate(queryClient);
-                toast.success('Set as default.');
-            } else {
-                toast.error(response.problem?.title ?? 'Failed to update default setting.');
-            }
-        } catch {
-            toast.error('An error occurred while updating the default setting.');
-        } finally {
-            saving = false;
+            await updateMutation.mutateAsync({ is_default: true });
+            toast.success('Set as default.');
+        } catch (error) {
+            const problem = (error as { title?: string })?.title;
+            toast.error(problem ?? 'Failed to update default setting.');
         }
     }
 </script>
@@ -445,7 +425,7 @@
             </Dialog.Header>
             {#if duplicateView}
                 <div class="bg-muted rounded-md p-3">
-                    <p class="text-sm">
+                    <Muted>
                         Current filters match <strong>"{duplicateView.name}"</strong>. You can
                         <Button
                             variant="link"
@@ -455,7 +435,7 @@
                                 handleSelect(duplicateView);
                             }}>load it</Button
                         > instead, or save with a different name.
-                    </p>
+                    </Muted>
                 </div>
             {/if}
             <form
@@ -472,7 +452,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <Label for="filter-private" class="text-sm">Private</Label>
-                        <p class="text-muted-foreground text-xs">Only visible to you</p>
+                        <Muted>Only visible to you</Muted>
                     </div>
                     <Switch
                         id="filter-private"
@@ -488,7 +468,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <Label for="filter-default" class="text-sm">Set as default</Label>
-                            <p class="text-muted-foreground text-xs">Auto-loads for everyone on page visit</p>
+                            <Muted>Auto-loads for everyone on page visit</Muted>
                         </div>
                         <Switch id="filter-default" bind:checked={isDefault} />
                     </div>
@@ -533,13 +513,13 @@
     </Dialog.Root>
 {/if}
 
-{#if isDeleteDialogOpen && deleteTarget}
+{#if isDeleteDialogOpen && viewToDelete}
     <AlertDialog.Root bind:open={isDeleteDialogOpen}>
         <AlertDialog.Content>
             <AlertDialog.Header>
                 <AlertDialog.Title>Delete Saved View</AlertDialog.Title>
                 <AlertDialog.Description>
-                    Are you sure you want to delete "{deleteTarget.name}"? This action cannot be undone.
+                    Are you sure you want to delete "{viewToDelete.name}"? This action cannot be undone.
                 </AlertDialog.Description>
             </AlertDialog.Header>
             <AlertDialog.Footer>

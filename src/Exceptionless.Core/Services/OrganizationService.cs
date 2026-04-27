@@ -188,10 +188,8 @@ public class OrganizationService : IStartupAction
         return _savedViewRepository.RemoveAllByOrganizationIdAsync(organization.Id);
     }
 
-    /// <summary>Removes all private saved views for a user leaving an organization. Org-wide views created by that user are preserved.</summary>
     public Task<long> RemoveUserSavedViewsAsync(string organizationId, string userId)
     {
-        _logger.LogDebug("Removing private saved views for user {UserId} from organization {OrganizationId}", userId, organizationId);
         return _savedViewRepository.RemovePrivateByUserIdAsync(organizationId, userId);
     }
 

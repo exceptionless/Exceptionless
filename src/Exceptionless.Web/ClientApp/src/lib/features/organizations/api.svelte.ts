@@ -479,6 +479,7 @@ export function removeOrganizationFeature(request: SetOrganizationFeatureRequest
     const queryClient = useQueryClient();
     return createMutation<boolean, ProblemDetails, string>(() => ({
         mutationFn: async (feature: string) => {
+            if (!request.route.id) throw new Error('Organization ID is required');
             const client = useFetchClient();
             const response = await client.delete(`organizations/${request.route.id}/features/${feature}`);
             return response.ok;
@@ -498,6 +499,7 @@ export function setOrganizationFeature(request: SetOrganizationFeatureRequest) {
     const queryClient = useQueryClient();
     return createMutation<boolean, ProblemDetails, string>(() => ({
         mutationFn: async (feature: string) => {
+            if (!request.route.id) throw new Error('Organization ID is required');
             const client = useFetchClient();
             const response = await client.post(`organizations/${request.route.id}/features/${feature}`);
             return response.ok;

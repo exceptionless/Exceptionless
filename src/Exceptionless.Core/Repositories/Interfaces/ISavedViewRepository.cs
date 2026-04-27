@@ -6,8 +6,8 @@ namespace Exceptionless.Core.Repositories;
 
 public interface ISavedViewRepository : IRepositoryOwnedByOrganization<SavedView>
 {
-    Task<FindResults<SavedView>> GetByViewAsync(string organizationId, string view, CommandOptionsDescriptor<SavedView>? options = null);
-    Task<FindResults<SavedView>> GetByViewForUserAsync(string organizationId, string view, string userId, CommandOptionsDescriptor<SavedView>? options = null);
+    Task<FindResults<SavedView>> GetByViewAsync(string organizationId, string dashboardView, CommandOptionsDescriptor<SavedView>? options = null);
+    Task<FindResults<SavedView>> GetByViewForUserAsync(string organizationId, string dashboardView, string userId, CommandOptionsDescriptor<SavedView>? options = null);
     Task<FindResults<SavedView>> GetByOrganizationForUserAsync(string organizationId, string userId, CommandOptionsDescriptor<SavedView>? options = null);
     Task<long> CountByOrganizationIdAsync(string organizationId);
 

@@ -1,41 +1,18 @@
 import { accessToken } from '$features/auth/index.svelte';
-import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+import { type WebSocketMessageValue } from '$features/websockets/models';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
+import { createMutation, createQuery, type QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { NewSavedView, SavedView, UpdateSavedView } from './models';
 
-/** Elasticsearch has ~1s indexing delay before writes are visible to search. */
-const ES_INDEXING_DELAY_MS = 1500;
-
-/**
- * Delay cache invalidation to allow Elasticsearch indexing to complete,
- * preventing stale data from overwriting optimistic cache updates.
- */
-export async function delayedInvalidate(queryClient: QueryClient): Promise<void> {
-    await delay(ES_INDEXING_DELAY_MS);
-    await queryClient.invalidateQueries({ queryKey: queryKeys.type });
-}
-
-// Elasticsearch needs ~1s to reflect saved-view writes.
-// Delay Added and Saved invalidations so the background refetch does not
-// overwrite optimistic cache updates with stale data while indexing catches up.
-export async function invalidateSavedViewQueries(queryClient: QueryClient, message: WebSocketMessageValue<'SavedViewChanged'>) {
-    const { change_type, organization_id } = message;
-
-    if (change_type === ChangeType.Added || change_type === ChangeType.Saved) {
-        await delay(ES_INDEXING_DELAY_MS);
-    }
+export function invalidateSavedViewQueries(queryClient: QueryClient, message: WebSocketMessageValue<'SavedViewChanged'>) {
+    const { organization_id } = message;
 
     if (organization_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.organization(organization_id) });
-    } else {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        return queryClient.invalidateQueries({ queryKey: queryKeys.organization(organization_id) });
     }
-}
 
-function delay(ms: number): Promise<void> {
-    return new Promise<void>((resolve) => setTimeout(resolve, ms));
+    return queryClient.invalidateQueries({ queryKey: queryKeys.type });
 }
 
 export const queryKeys = {
@@ -45,19 +22,19 @@ export const queryKeys = {
     view: (organizationId: string | undefined, view: string | undefined) => [...queryKeys.type, 'organization', organizationId, 'view', view] as const
 };
 
-export function deleteSavedView(request: { route: { ids: string[] } }) {
+export function deleteSavedView(request: { route: { organizationId: string | undefined } }) {
     const queryClient = useQueryClient();
 
-    return createMutation<void, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.ids?.length,
-        mutationFn: async () => {
+    return createMutation<void, ProblemDetails, SavedView>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.organizationId,
+        mutationFn: async (savedView: SavedView) => {
             const client = useFetchClient();
-            await client.delete(`saved-views/${request.route.ids.join(',')}`, {
+            await client.delete(`saved-views/${savedView.id}`, {
                 expectedStatusCodes: [202]
             });
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        onSuccess: (_data: void, savedView: SavedView) => {
+            removeSavedViewFromCaches(queryClient, savedView, request.route.organizationId);
         }
     }));
 }
@@ -70,12 +47,7 @@ export function getSavedViewsByViewQuery(request: { route: { organizationId: str
             const response = await client.getJSON<SavedView[]>(`organizations/${request.route.organizationId}/saved-views/${request.route.view}`, { signal });
             return response.data!;
         },
-        queryKey: queryKeys.view(request.route.organizationId, request.route.view),
-        // Saved views are managed via optimistic updates and WebSocket events.
-        // Disabling focus-triggered refetch prevents the race condition where a dialog
-        // closing fires a window focus event, causing a refetch that returns stale
-        // Elasticsearch data (1s indexing delay) and overwrites optimistic cache updates.
-        refetchOnWindowFocus: false
+        queryKey: queryKeys.view(request.route.organizationId, request.route.view)
     }));
 }
 
@@ -127,6 +99,12 @@ export function postSavedView(request: { route: { organizationId: string | undef
             syncSavedViewCaches(queryClient, savedView);
         }
     }));
+}
+
+export function removeSavedViewFromCaches(queryClient: QueryClient, savedView: SavedView, organizationId: string | undefined = savedView.organization_id) {
+    const evict = (cachedViews: SavedView[] | undefined) => cachedViews?.filter((v) => v.id !== savedView.id);
+    queryClient.setQueryData(queryKeys.view(organizationId, savedView.view), evict);
+    queryClient.setQueryData(queryKeys.organization(organizationId), evict);
 }
 
 export function syncSavedViewCaches(queryClient: QueryClient, savedView: SavedView, organizationId: string | undefined = savedView.organization_id) {
