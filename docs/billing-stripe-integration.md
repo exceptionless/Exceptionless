@@ -166,8 +166,8 @@ bool isPaymentMethod = stripeToken?.StartsWith("pm_", StringComparison.Ordinal) 
 ## Known Limitations
 
 1. ~~**Coupon not applied for existing customers changing plans**~~ — Fixed. Coupons are now applied in all paths: new customer, existing customer updating subscription, and existing customer creating a new subscription.
-2. **Potential orphaned Stripe customers** — If subscription creation fails after customer creation, a retry would create a duplicate Stripe customer. Mitigated by the low likelihood of this failure path.
-3. **N+1 price fetches in invoice view** — Each unique price ID in an invoice makes a separate Stripe API call. Mitigated by a per-request cache (`priceCache`). Most invoices have 1-3 distinct prices.
+2. ~~**Potential orphaned Stripe customers**~~ — Fixed. `StripeCustomerId` is now persisted immediately after customer creation (before subscription creation), so a retry will reuse the existing customer.
+3. ~~**N+1 price fetches in invoice view**~~ — N/A. Invoice line items are resolved against the local billing plan registry (`_billingManager.GetBillingPlan`) rather than fetching Stripe Price objects.
 4. **svelte-stripe package unused** — Listed in `package.json` but bypassed due to Svelte 5 incompatibility. Only `@stripe/stripe-js` is used directly.
 
 ## Storybook

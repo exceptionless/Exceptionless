@@ -82,6 +82,8 @@
             openRequiresPromotedWebHookDialog = true;
             return;
         }
+
+        toast.error(response.problem?.detail ?? 'An error occurred while promoting the stack.');
     }
 
     async function navigateToProjectIntegrations() {

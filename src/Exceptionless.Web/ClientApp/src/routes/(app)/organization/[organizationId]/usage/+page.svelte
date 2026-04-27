@@ -3,7 +3,8 @@
     import ErrorMessage from '$comp/error-message.svelte';
     import Number from '$comp/formatters/number.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import { A, H4, Muted, Small } from '$comp/typography';
+    import { H4, Muted, Small } from '$comp/typography';
+    import { Button } from '$comp/ui/button';
     import * as Chart from '$comp/ui/chart/index';
     import { Separator } from '$comp/ui/separator';
     import { Skeleton } from '$comp/ui/skeleton';
@@ -94,9 +95,9 @@
                 <p>
                     You are currently on the
                     {#if canChangePlan}
-                        <A class="cursor-pointer" role="button" tabindex={0} onclick={() => (changePlanDialogOpen = true)}>
-                            <span class="font-bold">{organizationQuery.data?.plan_name}</span> plan
-                        </A>
+                        <Button variant="link" class="h-auto p-0" onclick={() => (changePlanDialogOpen = true)}>
+                            <span class="font-bold">{organizationQuery.data?.plan_name}</span> plan</Button
+                        >
                     {:else}
                         <span class="font-bold">{organizationQuery.data?.plan_name}</span> plan
                     {/if}
@@ -109,8 +110,8 @@
                     (<TimeAgo value={nextBillingDate} />).
 
                     {#if canChangePlan}
-                        <A class="cursor-pointer" role="button" tabindex={0} onclick={() => (changePlanDialogOpen = true)}
-                            >Click here to change your plan or billing information.</A
+                        <Button variant="link" class="h-auto p-0" onclick={() => (changePlanDialogOpen = true)}
+                            >Click here to change your plan or billing information.</Button
                         >
                     {/if}
                 </p>

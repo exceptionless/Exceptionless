@@ -263,6 +263,9 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             if (!String.IsNullOrEmpty(priceId))
             {
                 var billingPlan = _billingManager.GetBillingPlan(priceId);
+                if (billingPlan is null)
+                    _logger.LogWarning("Billing plan not found for price {PriceId} on invoice {InvoiceId}", priceId, id);
+
                 string planName = billingPlan?.Name ?? priceId;
                 string interval = priceId.EndsWith("_YEARLY", StringComparison.OrdinalIgnoreCase) ? "year" : "month";
                 item.Description = $"Exceptionless - {planName} Plan ({line.Amount / 100.0m:c}/{interval})";
@@ -449,6 +452,8 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         try
         {
             // If they are on a paid plan and then downgrade to a free plan then cancel their stripe subscription.
+            // NOTE: organization.PlanId still reflects the OLD plan here; it is updated at the end
+            // of this block by _billingManager.ApplyBillingPlan(organization, plan, CurrentUser).
             if (!String.Equals(organization.PlanId, _plans.FreePlan.Id) && String.Equals(plan.Id, _plans.FreePlan.Id))
             {
                 if (!String.IsNullOrEmpty(organization.StripeCustomerId))
@@ -495,6 +500,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 organization.CardLast4 = model.Last4;
                 await _repository.SaveAsync(organization, o => o.Cache());
 
+                // Create the Stripe subscription for the selected plan, attach payment method and coupon if provided.
                 var subscriptionOptions = new SubscriptionCreateOptions
                 {
                     Customer = customer.Id,

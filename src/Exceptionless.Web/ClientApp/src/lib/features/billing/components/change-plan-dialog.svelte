@@ -5,6 +5,7 @@
 
     import ErrorMessage from '$comp/error-message.svelte';
     import Currency from '$comp/formatters/currency.svelte';
+    import NumberCompact from '$comp/formatters/number-compact.svelte';
     import { Muted, Small } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Badge } from '$comp/ui/badge';
@@ -77,11 +78,8 @@
         if (plan.is_hidden) {
             return false;
         }
-        if (plan.id === FREE_PLAN_ID) {
-            return false;
-        }
 
-        return true;
+        return plan.id !== FREE_PLAN_ID;
     }
 
     const tiers = $derived.by<PlanTier[]>(() => {
@@ -378,22 +376,6 @@
         onclose(false);
     }
 
-    function formatEvents(n: number): string {
-        if (n < 0) {
-            return 'Unlimited events';
-        }
-
-        if (n >= 1_000_000) {
-            return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M events/mo`;
-        }
-
-        if (n >= 1_000) {
-            return `${Math.round(n / 1_000)}K events/mo`;
-        }
-
-        return `${n} events/mo`;
-    }
-
     function formatUsers(n: number): string {
         if (n < 0) {
             return 'Unlimited users';
@@ -600,7 +582,9 @@
                                         </div>
                                         {#if planForInterval}
                                             <Muted class="mt-0.5 text-xs">
-                                                {formatEvents(planForInterval.max_events_per_month)}
+                                                {#if planForInterval.max_events_per_month < 0}Unlimited events{:else}<NumberCompact
+                                                        value={planForInterval.max_events_per_month}
+                                                    /> events/mo{/if}
                                                 <span class="text-muted-foreground/60 mx-1">·</span>
                                                 {formatRetention(planForInterval.retention_days)}
                                                 <span class="text-muted-foreground/60 mx-1">·</span>
@@ -643,7 +627,9 @@
                                     </div>
                                     {#if freePlan}
                                         <Muted class="mt-0.5 text-xs">
-                                            {formatEvents(freePlan.max_events_per_month)}
+                                            {#if freePlan.max_events_per_month < 0}Unlimited events{:else}<NumberCompact
+                                                    value={freePlan.max_events_per_month}
+                                                /> events/mo{/if}
                                             <span class="text-muted-foreground/60 mx-1">·</span>
                                             {formatRetention(freePlan.retention_days)}
                                             <span class="text-muted-foreground/60 mx-1">·</span>
