@@ -76,7 +76,7 @@
         "@tanstack/svelte-form": "^1.29.1",
         "@tanstack/svelte-query": "^6.1.24",
         "@tanstack/svelte-query-devtools": "^6.1.24",
-        "@tanstack/svelte-table": "^9.0.0-alpha.10",
+        "@tanstack/svelte-table": "^9.0.0-alpha.37",
         "@types/d3-scale": "^4.0.9",
         "@types/d3-shape": "^3.1.8",
         "bits-ui": "^2.18.0",
