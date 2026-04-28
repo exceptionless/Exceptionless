@@ -204,6 +204,14 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "Private views cannot be set as the default. Default views are organization-wide.");
         }
 
+        if (changes.GetChangedPropertyNames().Contains(nameof(UpdateSavedView.FilterDefinitions))
+            && changes.TryGetPropertyValue(nameof(UpdateSavedView.FilterDefinitions), out object? filterDefsValue)
+            && filterDefsValue is string filterDefs
+            && !NewSavedView.IsValidJsonArray(filterDefs))
+        {
+            return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "FilterDefinitions must be a valid JSON array.");
+        }
+
         if (changes.GetChangedPropertyNames().Contains(nameof(UpdateSavedView.Columns)))
         {
             var patchedChanges = new UpdateSavedView();
