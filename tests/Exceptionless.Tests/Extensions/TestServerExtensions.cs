@@ -6,16 +6,12 @@ namespace Exceptionless.Tests;
 
 public static class TestServerExtensions
 {
-    private static bool _alreadyWaited;
-
     public static async Task WaitForReadyAsync(this TestServer server)
     {
         var startupContext = server.Services.GetService<StartupActionsContext>();
-        var maxWaitTime = !_alreadyWaited ? TimeSpan.FromSeconds(30) : TimeSpan.FromSeconds(2);
+        var maxWaitTime = TimeSpan.FromSeconds(30);
         if (Debugger.IsAttached)
             maxWaitTime = maxWaitTime.Add(TimeSpan.FromMinutes(1));
-
-        _alreadyWaited = true;
 
         var client = server.CreateClient();
         var startTime = DateTime.UtcNow;

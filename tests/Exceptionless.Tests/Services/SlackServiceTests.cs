@@ -8,14 +8,14 @@ using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Tests.Services;
 
-public sealed class SlackServiceTests : TestWithServices
+public sealed class SlackServiceTests : IntegrationTestsBase
 {
     private readonly Project _project;
     private readonly SlackService _slackService;
     private readonly ProjectData _projectData;
     private readonly EventData _eventData;
 
-    public SlackServiceTests(ITestOutputHelper output) : base(output)
+    public SlackServiceTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _projectData = GetService<ProjectData>();
         _eventData = GetService<EventData>();
