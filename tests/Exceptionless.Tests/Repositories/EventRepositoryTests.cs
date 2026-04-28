@@ -16,7 +16,7 @@ namespace Exceptionless.Tests.Repositories;
 public sealed class EventRepositoryTests : IntegrationTestsBase
 {
     private readonly List<Tuple<string, DateTime>> _ids = new();
-    private readonly RandomEventGenerator _randomEventGenerator;
+    private readonly Exceptionless.Helpers.RandomEventGenerator _randomEventGenerator;
     private readonly EventData _eventData;
     private readonly IEventRepository _repository;
     private readonly StackData _stackData;
@@ -25,7 +25,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
     public EventRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
-        _randomEventGenerator = GetService<RandomEventGenerator>();
+        _randomEventGenerator = GetService<Exceptionless.Helpers.RandomEventGenerator>();
         _eventData = GetService<EventData>();
         _repository = GetService<IEventRepository>();
         _stackData = GetService<StackData>();

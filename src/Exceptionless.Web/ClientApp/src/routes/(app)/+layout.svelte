@@ -373,9 +373,9 @@
             />
         {/snippet}
     </Sidebar>
-    <div class="flex min-w-0 flex-1 pt-16">
-        <div class="text-secondary-foreground min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
-            <main class="px-4 pt-4">
+    <div class="flex min-h-screen min-w-0 flex-1 pt-16">
+        <div class="text-secondary-foreground flex min-h-full min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
+            <main class="flex-1 px-4 pt-4">
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
 
                 {#if showOrganizationNotifications.current}

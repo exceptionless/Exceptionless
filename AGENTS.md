@@ -2,22 +2,30 @@
 
 Real-time error monitoring platform handling billions of requests (ASP.NET Core 10 + Svelte 5). Act as a distinguished engineer focusing on readability, performance while maintaining backwards compatibility.
 
-## Quick Start
+## Start Here
 
-Start everything with the Aspire CLI: `aspire run --project src/Exceptionless.AppHost`. This launches all services (Elasticsearch, Redis, API, Job worker) and opens the Aspire dashboard. Alternatively, run `Exceptionless.AppHost` directly from your IDE.
+- Start everything with the Aspire CLI: `aspire run`, or run `Exceptionless.AppHost` directly from your IDE.
+- The AppHost launches required services (Elasticsearch, Redis, API, Job worker) and opens the Aspire dashboard. Integration tests bootstrap their own infrastructure.
 
-## Build & Test
+## Common Commands
 
-| Task           | Command                                                         |
-| -------------- | --------------------------------------------------------------- |
-| Run (Aspire)   | `aspire run --project src/Exceptionless.AppHost`                |
-| Backend build  | `dotnet build`                                                  |
-| Backend test   | `dotnet test`                                                   |
-| Frontend build | `cd src/Exceptionless.Web/ClientApp && npm ci && npm run build` |
-| Frontend test  | `npm run test:unit`                                             |
-| E2E test       | `npm run test:e2e`                                              |
+| Task                | Command                                                         |
+| ------------------- | --------------------------------------------------------------- |
+| Run (Aspire)        | `aspire run`                                                    |
+| Backend build       | `dotnet build`                                                  |
+| Backend test        | `dotnet test`                                                   |
+| Frontend build      | `cd src/Exceptionless.Web/ClientApp && npm ci && npm run build` |
+| Frontend unit tests | `cd src/Exceptionless.Web/ClientApp && npm run test:unit`       |
+| Frontend E2E tests  | `cd src/Exceptionless.Web/ClientApp && npm run test:e2e`        |
 
-Test filtering note: the backend test project uses Microsoft Testing Platform, so targeted runs use test-app options after `--`, for example `dotnet test -- --filter-class Exceptionless.Tests.Controllers.EventControllerTests`.
+## Repo-Specific Notes
+
+- Backend test filtering uses Microsoft Testing Platform test-app options after `--`, for example `dotnet test -- --filter-class Exceptionless.Tests.Controllers.EventControllerTests`.
+- Elasticsearch-backed repository or job tests should derive from `IntegrationTestsBase`, not `TestWithServices`.
+- The current main site UI is the legacy Angular app in `src/Exceptionless.Web/ClientApp.angular`; the folders you will usually touch there are `app/`, `components/`, `less/`, `img/`, `lang/`, and `grunt/`.
+- The Svelte 5 UI in `src/Exceptionless.Web/ClientApp` is still under development.
+- Standard pull requests build `api`, `job`, and `app` images. The all-in-one `exceptionless` image is only built for tags.
+- If you touch Docker publish stages that use `dotnet publish --no-build`, make sure the stage still has the build output and NuGet package cache available.
 
 ## Project Structure
 
@@ -26,7 +34,9 @@ src/
 ├── Exceptionless.AppHost      # Aspire orchestrator (start here)
 ├── Exceptionless.Core         # Domain logic
 ├── Exceptionless.Insulation   # Infrastructure (Elasticsearch, Redis, Azure)
-├── Exceptionless.Web          # API + Svelte SPA (ClientApp/)
+├── Exceptionless.Web          # API host
+│   ├── ClientApp.angular/     # Legacy Angular UI that still powers the main site
+│   └── ClientApp/             # Svelte 5 UI that is still under development
 └── Exceptionless.Job          # Background workers
 tests/                         # C# tests + HTTP samples
 ```
@@ -50,7 +60,7 @@ Available in `.claude/agents/`. Use `@agent-name` to invoke:
 - **Backwards compatibility:** Never break existing public APIs, WebSocket message formats, config keys, or exported library interfaces without explicit user approval. Call out any breaking change as a BLOCKER in reviews.
 - **API test files:** Update `tests/http/*.http` files whenever endpoints change (new, modified, or removed).
 - **PR descriptions:** When creating a PR, fill out any existing PR template. Provide concise context: what changed, why, new APIs/features/behaviors, and any breaking changes. No essays — just enough for reviewers to understand the value and impact.
-- **App URL for QA:** `http://localhost:5200` — probe `/api/v2/about` for health check.
+- **App URL for QA:** `http://localhost:7110` — probe `/api/v2/about` for health check.
 - **Fix what you find:** If you encounter a broken test, bug, or issue during your work — fix it. Never label something "pre-existing" and move on. Own every problem you touch.
 
 ## Frontend Notes
