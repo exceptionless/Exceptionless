@@ -27,6 +27,7 @@
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
+    import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
@@ -212,6 +213,10 @@
         clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events/sessions`, {
             params: eventsQueryParameters as Record<string, unknown>
         });
+
+        if (clientResponse.problem) {
+            showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData());
+        }
     }
 
     const throttledLoadData = throttle(10000, loadData);
@@ -237,6 +242,7 @@
 
     // Session stats query with aggregations
     const statsQuery = getOrganizationSessionsCountQuery({
+        enabled: () => hasPremiumFeatures && organizationQuery.isSuccess,
         params: {
             get aggregations() {
                 return `avg:value cardinality:user date:(date${DEFAULT_OFFSET ? `^${DEFAULT_OFFSET}` : ''} cardinality:user)`;
