@@ -136,13 +136,10 @@ export interface NewSavedView {
   name: string;
   filter?: null | string;
   time?: null | string;
-  view: string;
+  view_type: string;
   filter_definitions?: null | string;
   columns?: null | Record<string, boolean>;
-  /** If true, this view will be the default for its view type. Defaults to false. */
-  is_default?: boolean | null;
-  /** If true, the view will only be visible to the current user. Defaults to false. */
-  is_private?: boolean | null;
+  is_default: boolean;
 }
 
 export interface NewToken {
@@ -568,7 +565,7 @@ export interface ViewSavedView {
   time?: null | string;
   /** @format int32 */
   version: number;
-  view: string;
+  view_type: string;
   /** @format date-time */
   created_utc: string;
   /** @format date-time */

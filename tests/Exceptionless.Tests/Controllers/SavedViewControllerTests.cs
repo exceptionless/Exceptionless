@@ -48,7 +48,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             Name = "Production Errors",
             Filter = "status:open",
             Time = "[now-7D TO now]",
-            View = "events",
+            ViewType = "events",
             FilterDefinitions = """[{"type":"keyword","value":"status:open"}]"""
         };
 
@@ -69,7 +69,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         Assert.Equal("Production Errors", viewFilter.Name);
         Assert.Equal("status:open", viewFilter.Filter);
         Assert.Equal("[now-7D TO now]", viewFilter.Time);
-        Assert.Equal("events", viewFilter.View);
+        Assert.Equal("events", viewFilter.ViewType);
         Assert.NotNull(viewFilter.FilterDefinitions);
         Assert.Equal(1, viewFilter.Version);
         Assert.NotNull(viewFilter.CreatedByUserId);
@@ -92,7 +92,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "My Private Filter",
             Filter = "status:regressed",
-            View = "issues",
+            ViewType = "issues",
             IsPrivate = true
         };
 
@@ -119,7 +119,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Organization Wide Filter",
             Filter = "status:open",
-            View = "events"
+            ViewType = "events"
         };
 
         // Act
@@ -145,7 +145,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.FREE_ORG_ID,
             Name = "Unauthorized Filter",
             Filter = "status:open",
-            View = "events"
+            ViewType = "events"
         };
 
         // Act & Assert
@@ -167,7 +167,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Organization User Filter",
             Filter = "type:error",
-            View = "stream"
+            ViewType = "stream"
         };
 
         // Act
@@ -192,7 +192,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "",
             Filter = "status:open",
-            View = "events"
+            ViewType = "events"
         };
 
         return SendRequestAsync(r => r
@@ -212,7 +212,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Show All",
             Filter = "",
-            View = "events"
+            ViewType = "events"
         };
 
         return SendRequestAsync(r => r
@@ -232,7 +232,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Invalid View Filter",
             Filter = "status:open",
-            View = "invalid-view"
+            ViewType = "invalid-view"
         };
 
         return SendRequestAsync(r => r
@@ -255,7 +255,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(viewFilter);
-        Assert.Equal(view, viewFilter.View);
+        Assert.Equal(view, viewFilter.ViewType);
     }
 
     [Fact]
@@ -555,7 +555,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Anonymous Filter",
             Filter = "status:open",
-            View = "events"
+            ViewType = "events"
         };
 
         // Act & Assert
@@ -580,7 +580,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
                 OrganizationId = SampleDataService.TEST_ORG_ID,
                 Name = $"Cap Test {i}",
                 Filter = "status:open",
-                View = "events",
+                ViewType = "events",
                 Version = 1,
                 CreatedByUserId = "537650f3b77efe23a47914f0",
                 CreatedUtc = DateTime.UtcNow,
@@ -595,7 +595,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "One Too Many",
             Filter = "status:open",
-            View = "events"
+            ViewType = "events"
         };
 
         await SendRequestAsync(r => r
@@ -621,7 +621,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Blocked View",
             Filter = "status:open",
-            View = "events"
+            ViewType = "events"
         };
 
         await SendRequestAsync(r => r
@@ -642,7 +642,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Existing View",
             Filter = "status:open",
-            View = "events",
+            ViewType = "events",
             Version = 1,
             CreatedByUserId = "537650f3b77efe23a47914f0",
             CreatedUtc = DateTime.UtcNow,
@@ -672,7 +672,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "View To Delete",
             Filter = "status:open",
-            View = "events",
+            ViewType = "events",
             Version = 1,
             CreatedByUserId = "537650f3b77efe23a47914f0",
             CreatedUtc = DateTime.UtcNow,
@@ -704,7 +704,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Organization Wide",
             Filter = "status:open",
-            View = "events",
+            ViewType = "events",
             CreatedByUserId = testUser.Id
         });
 
@@ -714,7 +714,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             UserId = testUser.Id,
             Name = "My Private View",
             Filter = "type:error",
-            View = "events",
+            ViewType = "events",
             CreatedByUserId = testUser.Id
         });
 
@@ -747,7 +747,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Organization View",
             Filter = "status:open",
-            View = "events",
+            ViewType = "events",
             CreatedByUserId = testUser.Id
         });
 
@@ -757,7 +757,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             UserId = testUser.Id,
             Name = "Private View",
             Filter = "type:error",
-            View = "events",
+            ViewType = "events",
             CreatedByUserId = testUser.Id
         });
 
@@ -790,7 +790,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Organization Wide",
             Filter = "status:open",
-            View = "events",
+            ViewType = "events",
             CreatedByUserId = testUser.Id
         });
 
@@ -800,7 +800,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             UserId = testUser.Id,
             Name = "Private",
             Filter = "type:error",
-            View = "events",
+            ViewType = "events",
             CreatedByUserId = testUser.Id
         });
 
@@ -823,7 +823,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = name,
             Filter = filter,
-            View = view,
+            ViewType = view,
             IsDefault = isDefault,
             IsPrivate = isPrivate
         };
@@ -1048,7 +1048,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "<script>alert('xss')</script>",
             Filter = "status:open",
-            View = "events"
+            ViewType = "events"
         };
 
         return SendRequestAsync(r => r
@@ -1068,7 +1068,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Long Filter",
             Filter = new string('x', 2001),
-            View = "events"
+            ViewType = "events"
         };
 
         return SendRequestAsync(r => r
@@ -1088,7 +1088,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Long FilterDefs",
             Filter = "status:open",
-            View = "events",
+            ViewType = "events",
             FilterDefinitions = new string('x', 10001)
         };
 
@@ -1109,7 +1109,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Long Time",
             Filter = "status:open",
-            View = "events",
+            ViewType = "events",
             Time = new string('t', 101)
         };
 
@@ -1130,7 +1130,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = new string('n', 101),
             Filter = "status:open",
-            View = "events"
+            ViewType = "events"
         };
 
         return SendRequestAsync(r => r
@@ -1207,7 +1207,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Max Length Filter",
             Filter = new string('x', 2000),
-            View = "events"
+            ViewType = "events"
         };
 
         return SendRequestAsync(r => r
@@ -1227,7 +1227,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Bad JSON",
             Filter = "status:open",
-            View = "events",
+            ViewType = "events",
             FilterDefinitions = "not valid json"
         };
 
@@ -1248,7 +1248,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "JSON Object",
             Filter = "status:open",
-            View = "events",
+            ViewType = "events",
             FilterDefinitions = """{"type":"keyword","value":"test"}"""
         };
 
@@ -1269,7 +1269,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Valid JSON Array",
             Filter = "status:open",
-            View = "events",
+            ViewType = "events",
             FilterDefinitions = """[{"type":"keyword","value":"test"}]"""
         };
 
@@ -1290,7 +1290,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Empty Array",
             Filter = "status:open",
-            View = "events",
+            ViewType = "events",
             FilterDefinitions = "[]"
         };
 
@@ -1314,7 +1314,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Private Default",
             Filter = "status:open",
-            View = "events",
+            ViewType = "events",
             IsDefault = true,
             IsPrivate = true
         };
@@ -1444,7 +1444,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             {
                 OrganizationId = SampleDataService.TEST_ORG_ID,
                 Name = "Bad Columns",
-                View = "events",
+                ViewType = "events",
                 Columns = new Dictionary<string, bool> { ["status"] = true }
             })
             .StatusCodeShouldBeUnprocessableEntity()
@@ -1483,7 +1483,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             {
                 OrganizationId = SampleDataService.TEST_ORG_ID,
                 Name = "Valid Columns",
-                View = "events",
+                ViewType = "events",
                 Columns = new Dictionary<string, bool> { ["user"] = true, ["date"] = false }
             })
             .StatusCodeShouldBeCreated()

@@ -214,7 +214,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         {
             var patchedChanges = new UpdateSavedView();
             changes.Patch(patchedChanges);
-            var validationError = NewSavedView.ValidateColumnKeys(original.View, patchedChanges.Columns).FirstOrDefault();
+            var validationError = NewSavedView.ValidateColumnKeys(original.ViewType, patchedChanges.Columns).FirstOrDefault();
             if (validationError is not null)
             {
                 return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, validationError.ErrorMessage ?? "Invalid column keys.");
@@ -230,7 +230,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         value.Version = 1;
 
         if (value.IsDefault)
-            await ClearDefaultForViewAsync(value.OrganizationId, value.View);
+            await ClearDefaultForViewAsync(value.OrganizationId, value.ViewType);
 
         return await base.AddModelAsync(value);
     }
@@ -243,7 +243,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             && changes.TryGetPropertyValue(nameof(UpdateSavedView.IsDefault), out object? isDefaultValue)
             && isDefaultValue is true)
         {
-            await ClearDefaultForViewAsync(original.OrganizationId, original.View);
+            await ClearDefaultForViewAsync(original.OrganizationId, original.ViewType);
         }
 
         return await base.UpdateModelAsync(original, changes);

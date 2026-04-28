@@ -62,7 +62,7 @@ public record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
     /// <summary>Dashboard page identifier: "events", "issues", or "stream".</summary>
     [Required]
     [RegularExpression("^(events|issues|stream)$")]
-    public string View { get; set; } = null!;
+    public string ViewType { get; set; } = null!;
 
     // Timestamps
     public DateTime CreatedUtc { get; set; }

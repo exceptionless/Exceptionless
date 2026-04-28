@@ -295,7 +295,7 @@
                 return route;
             }
 
-            const viewSavedViews = savedViews.filter((savedView: SavedView) => savedView.view === viewKey);
+            const viewSavedViews = savedViews.filter((savedView: SavedView) => savedView.view_type === viewKey);
             if (viewSavedViews.length === 0) {
                 return route;
             }

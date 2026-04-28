@@ -26,7 +26,7 @@ public sealed class SavedViewIndex : VersionedIndex<Models.SavedView>
                 .Keyword(f => f.Name(e => e.CreatedByUserId))
                 .Keyword(f => f.Name(e => e.UpdatedByUserId))
                 .Text(f => f.Name(e => e.Name).Analyzer(KEYWORD_LOWERCASE_ANALYZER).AddKeywordField())
-                .Keyword(f => f.Name(e => e.View))
+                .Keyword(f => f.Name(e => e.ViewType))
                 .Boolean(f => f.Name(e => e.IsDefault))
                 .Number(f => f.Name(e => e.Version).Type(NumberType.Integer)));
     }

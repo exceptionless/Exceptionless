@@ -41,7 +41,7 @@ Content-Type: application/json
     "name": "Open Events",
     "filter": "status:open",
     "time": "[now-7d TO now]",
-    "view": "events",
+    "view_type": "events",
     "columns": {
         "user": true,
         "date": true
@@ -62,7 +62,7 @@ Content-Type: application/json
     "organization_id": "{{organizationId}}",
     "name": "My Private View",
     "filter": "type:error",
-    "view": "stream",
+    "view_type": "stream",
     "columns": {
         "user": true,
         "date": true

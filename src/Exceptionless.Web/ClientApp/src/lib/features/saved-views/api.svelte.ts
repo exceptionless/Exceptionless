@@ -114,12 +114,12 @@ export function postSavedView(request: { route: { organizationId: string | undef
 
 export function removeSavedViewFromCaches(queryClient: QueryClient, savedView: SavedView, organizationId: string | undefined = savedView.organization_id) {
     const evict = (cachedViews: SavedView[] | undefined) => cachedViews?.filter((v) => v.id !== savedView.id);
-    queryClient.setQueryData(queryKeys.view(organizationId, savedView.view), evict);
+    queryClient.setQueryData(queryKeys.view(organizationId, savedView.view_type), evict);
     queryClient.setQueryData(queryKeys.organization(organizationId), evict);
 }
 
 export function syncSavedViewCaches(queryClient: QueryClient, savedView: SavedView, organizationId: string | undefined = savedView.organization_id) {
-    queryClient.setQueryData(queryKeys.view(organizationId, savedView.view), (cachedViews: SavedView[] | undefined) =>
+    queryClient.setQueryData(queryKeys.view(organizationId, savedView.view_type), (cachedViews: SavedView[] | undefined) =>
         upsertSavedViewCache(cachedViews, savedView)
     );
     queryClient.setQueryData(queryKeys.organization(organizationId), (cachedViews: SavedView[] | undefined) => upsertSavedViewCache(cachedViews, savedView));
@@ -128,7 +128,7 @@ export function syncSavedViewCaches(queryClient: QueryClient, savedView: SavedVi
 export function upsertSavedViewCache(cachedViews: SavedView[] | undefined, savedView: SavedView): SavedView[] {
     const views = savedView.is_default
         ? (cachedViews ?? []).map((view) => {
-              if (view.id === savedView.id || view.view !== savedView.view || !view.is_default) {
+              if (view.id === savedView.id || view.view_type !== savedView.view_type || !view.is_default) {
                   return view;
               }
 

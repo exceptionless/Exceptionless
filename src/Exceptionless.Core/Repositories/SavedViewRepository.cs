@@ -16,7 +16,7 @@ public class SavedViewRepository : RepositoryOwnedByOrganization<SavedView>, ISa
     {
         return FindAsync(q => q
             .Organization(organizationId)
-            .FieldEquals(e => e.View, viewName)
+            .FieldEquals(e => e.ViewType, viewName)
             .SortExpression("name"), options);
     }
 
@@ -24,7 +24,7 @@ public class SavedViewRepository : RepositoryOwnedByOrganization<SavedView>, ISa
     {
         return FindAsync(q => q
             .Organization(organizationId)
-            .FieldEquals(e => e.View, viewName)
+            .FieldEquals(e => e.ViewType, viewName)
             .SortExpression("name")
             .FieldOr(g => g
                 .FieldEmpty(e => e.UserId!)

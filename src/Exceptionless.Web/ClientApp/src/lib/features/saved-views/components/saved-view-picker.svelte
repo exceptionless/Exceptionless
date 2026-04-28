@@ -206,7 +206,7 @@
             name: saveName.trim(),
             organization_id: organizationId,
             time: time || undefined,
-            view
+            view_type: view
         };
 
         try {

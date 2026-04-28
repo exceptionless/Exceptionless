@@ -24,7 +24,7 @@ public sealed class SavedViewMapperTests
             Name = "Open Issues",
             Filter = "(status:open OR status:regressed)",
             Time = "[now-7d TO now]",
-            View = "issues",
+            ViewType = "issues",
             FilterDefinitions = "[{\"type\":\"status\",\"values\":[\"open\",\"regressed\"]}]",
             Columns = new Dictionary<string, bool> { ["status"] = true, ["users"] = false },
             IsDefault = true
@@ -38,7 +38,7 @@ public sealed class SavedViewMapperTests
         Assert.Equal("Open Issues", result.Name);
         Assert.Equal("(status:open OR status:regressed)", result.Filter);
         Assert.Equal("[now-7d TO now]", result.Time);
-        Assert.Equal("issues", result.View);
+        Assert.Equal("issues", result.ViewType);
         Assert.Equal("[{\"type\":\"status\",\"values\":[\"open\",\"regressed\"]}]", result.FilterDefinitions);
         Assert.NotNull(result.Columns);
         Assert.True(result.Columns["status"]);
@@ -54,7 +54,7 @@ public sealed class SavedViewMapperTests
         {
             OrganizationId = "537650f3b77efe23a47914f3",
             Name = "Test View",
-            View = "events"
+            ViewType = "events"
         };
 
         // Act
@@ -76,7 +76,7 @@ public sealed class SavedViewMapperTests
         {
             OrganizationId = "537650f3b77efe23a47914f3",
             Name = "Minimal View",
-            View = "stream"
+            ViewType = "stream"
         };
 
         // Act
@@ -109,7 +109,7 @@ public sealed class SavedViewMapperTests
             Name = "My View",
             Time = "[now-30d TO now]",
             Version = 1,
-            View = "issues",
+            ViewType = "issues",
             CreatedUtc = now.AddDays(-1),
             UpdatedUtc = now
         };
@@ -131,7 +131,7 @@ public sealed class SavedViewMapperTests
         Assert.Equal("My View", result.Name);
         Assert.Equal("[now-30d TO now]", result.Time);
         Assert.Equal(1, result.Version);
-        Assert.Equal("issues", result.View);
+        Assert.Equal("issues", result.ViewType);
         Assert.Equal(now.AddDays(-1), result.CreatedUtc);
         Assert.Equal(now, result.UpdatedUtc);
     }
@@ -146,7 +146,7 @@ public sealed class SavedViewMapperTests
             OrganizationId = "537650f3b77efe23a47914f3",
             CreatedByUserId = "1ecd0826e447ad1e78822555",
             Name = "Organization Wide View",
-            View = "events",
+            ViewType = "events",
             Version = 1
         };
 
@@ -168,9 +168,9 @@ public sealed class SavedViewMapperTests
         // Arrange
         var views = new List<SavedView>
         {
-            new() { Id = "88cd0826e447a44e78877ab1", OrganizationId = "537650f3b77efe23a47914f3", CreatedByUserId = "1ecd0826e447ad1e78822555", Name = "View 1", View = "events" },
-            new() { Id = "88cd0826e447a44e78877ab2", OrganizationId = "537650f3b77efe23a47914f3", CreatedByUserId = "1ecd0826e447ad1e78822555", Name = "View 2", View = "issues" },
-            new() { Id = "88cd0826e447a44e78877ab3", OrganizationId = "537650f3b77efe23a47914f3", CreatedByUserId = "1ecd0826e447ad1e78822555", Name = "View 3", View = "stream" }
+            new() { Id = "88cd0826e447a44e78877ab1", OrganizationId = "537650f3b77efe23a47914f3", CreatedByUserId = "1ecd0826e447ad1e78822555", Name = "View 1", ViewType = "events" },
+            new() { Id = "88cd0826e447a44e78877ab2", OrganizationId = "537650f3b77efe23a47914f3", CreatedByUserId = "1ecd0826e447ad1e78822555", Name = "View 2", ViewType = "issues" },
+            new() { Id = "88cd0826e447a44e78877ab3", OrganizationId = "537650f3b77efe23a47914f3", CreatedByUserId = "1ecd0826e447ad1e78822555", Name = "View 3", ViewType = "stream" }
         };
 
         // Act

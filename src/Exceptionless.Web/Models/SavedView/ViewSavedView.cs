@@ -27,7 +27,7 @@ public record ViewSavedView : IIdentity, IHaveDates
     public string Name { get; set; } = null!;
     public string? Time { get; set; }
     public int Version { get; set; }
-    public string View { get; set; } = null!;
+    public string ViewType { get; set; } = null!;
 
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }

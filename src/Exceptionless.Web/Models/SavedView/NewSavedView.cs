@@ -40,7 +40,7 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
     public string? Time { get; set; }
 
     [Required]
-    public string View { get; set; } = null!;
+    public string ViewType { get; set; } = null!;
 
     [MaxLength(10000)]
     public string? FilterDefinitions { get; set; }
@@ -60,11 +60,11 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (View is { Length: > 0 } && !ValidViews.Contains(View))
+        if (ViewType is { Length: > 0 } && !ValidViews.Contains(ViewType))
         {
             yield return new ValidationResult(
                 $"View must be one of: {String.Join(", ", ValidViews)}",
-                [nameof(View)]
+                [nameof(ViewType)]
             );
         }
 
@@ -76,7 +76,7 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
             );
         }
 
-        foreach (var error in ValidateColumnKeys(View, Columns))
+        foreach (var error in ValidateColumnKeys(ViewType, Columns))
         {
             yield return error;
         }

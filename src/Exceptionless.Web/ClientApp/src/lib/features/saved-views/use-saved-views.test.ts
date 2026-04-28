@@ -26,7 +26,7 @@ function buildSavedView({ id, name, ...overrides }: Partial<SavedView> & Pick<Sa
         updated_utc: new Date().toISOString(),
         user_id: null,
         version: 1,
-        view: 'issues',
+        view_type: 'issues',
         ...overrides
     };
 }
@@ -227,15 +227,15 @@ describe('useSavedViews', () => {
             // Arrange
             const currentDefault = buildSavedView({ id: 'view-1', is_default: true, name: 'Current Default' });
             const otherIssuesView = buildSavedView({ id: 'view-2', name: 'Other Issues View' });
-            const streamDefault = buildSavedView({ id: 'view-3', is_default: true, name: 'Stream Default', view: 'stream' });
+            const streamDefault = buildSavedView({ id: 'view-3', is_default: true, name: 'Stream Default', view_type: 'stream' });
             const newDefault = buildSavedView({ id: 'view-4', is_default: true, name: 'New Default' });
 
             // Act
             const updatedViews = upsertSavedViewCache([currentDefault, otherIssuesView, streamDefault], newDefault);
 
             // Assert
-            expect(updatedViews.filter((view) => view.view === 'issues' && view.is_default)).toEqual([newDefault]);
-            expect(updatedViews.filter((view) => view.view === 'stream' && view.is_default)).toEqual([streamDefault]);
+            expect(updatedViews.filter((view) => view.view_type === 'issues' && view.is_default)).toEqual([newDefault]);
+            expect(updatedViews.filter((view) => view.view_type === 'stream' && view.is_default)).toEqual([streamDefault]);
         });
     });
 
