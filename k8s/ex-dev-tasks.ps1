@@ -9,7 +9,7 @@ open "http://kibana-ex-dev.localtest.me:5601"
 $ELASTIC_JOB = kubectl port-forward --namespace ex-dev service/ex-dev-es-http 9200 &
 Remove-Job $ELASTIC_JOB
 
-# connect to redis OR use k9s to shell into a redis pod
+# connect to redis (KubeBlocks) OR use k9s to shell into a redis pod
 $REDIS_PASSWORD = $(kubectl get secret --namespace ex-dev ex-dev-redis-account-default -o jsonpath='{.data.password}' | ForEach-Object { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) })
 kubectl exec -it ex-dev-redis-0 -n ex-dev -c redis -- redis-cli -a $REDIS_PASSWORD
 

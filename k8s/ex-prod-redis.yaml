@@ -1,7 +1,7 @@
 apiVersion: apps.kubeblocks.io/v1
 kind: Cluster
 metadata:
-  name: ex-prod
+  name: ex-prod-kb
   namespace: ex-prod
 spec:
   terminationPolicy: DoNotTerminate
@@ -12,6 +12,10 @@ spec:
       serviceVersion: "8.4.0"
       disableExporter: false
       replicas: 2
+      systemAccounts:
+        - name: default
+          secretRef:
+            name: ex-prod-redis-password
       resources:
         requests:
           cpu: "200m"

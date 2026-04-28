@@ -32,7 +32,7 @@ Common OTEL environment variables. Only rendered when otel.enabled is true.
 Usage: {{ include "exceptionless.otel-env" . | indent N }}
 */}}
 {{- define "exceptionless.otel-env" -}}
-{{- if .Values.otel.enabled }}
+{{- if and .Values.otel .Values.otel.enabled }}
 - name: EX_OTEL_EXPORTER_OTLP_INSECURE
   value: "true"
 - name: OTEL_EXPORTER_OTLP_INSECURE
