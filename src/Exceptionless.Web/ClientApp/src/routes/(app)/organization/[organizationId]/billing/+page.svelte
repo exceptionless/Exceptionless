@@ -9,8 +9,8 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import { env } from '$env/dynamic/public';
+    import { ChangePlanDialog } from '$features/billing';
     import { getInvoicesQuery, getOrganizationQuery } from '$features/organizations/api.svelte';
-    import ChangePlanDialog from '$features/organizations/components/dialogs/change-plan-dialog.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import GlobalUser from '$features/users/components/global-user.svelte';
     import CreditCard from '@lucide/svelte/icons/credit-card';
@@ -42,8 +42,16 @@
         schema: { changePlan: 'boolean' }
     });
 
+    let changePlanDialogOpen = $state(!!params.changePlan);
+
     function handleChangePlan() {
+        changePlanDialogOpen = true;
         params.changePlan = true;
+    }
+
+    function handleChangePlanClose() {
+        changePlanDialogOpen = false;
+        params.changePlan = false;
     }
 
     function handleOpenInvoice(invoiceId: string) {
@@ -51,7 +59,7 @@
     }
 
     function handleViewStripeInvoice(invoiceId: string) {
-        window.open(`https://manage.stripe.com/invoices/in_${invoiceId}`, '_blank');
+        window.open(`https://manage.stripe.com/invoices/in_${encodeURIComponent(invoiceId)}`, '_blank');
     }
 </script>
 
@@ -157,6 +165,6 @@
     {/if}
 </div>
 
-{#if params.changePlan}
-    <ChangePlanDialog bind:open={params.changePlan} />
+{#if changePlanDialogOpen && organizationQuery.data}
+    <ChangePlanDialog onclose={handleChangePlanClose} organization={organizationQuery.data} />
 {/if}

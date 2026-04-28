@@ -82,7 +82,7 @@
                             return true;
                         }
 
-                        if ([400, 401, 403, 404, 410, 422].includes(status)) {
+                        if ([400, 401, 403, 404, 410, 422, 426].includes(status)) {
                             return false;
                         }
 

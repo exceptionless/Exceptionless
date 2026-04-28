@@ -8,7 +8,10 @@
     import { env } from '$env/dynamic/public';
     import { getIntercomTokenQuery } from '$features/auth/api.svelte';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
+    import { UpgradeRequiredDialog } from '$features/billing';
+    import { upgradeRequiredDialog } from '$features/billing/upgrade-required.svelte';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
+    import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
     import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
     import { shouldLoadIntercomOrganization } from '$features/intercom/config';
     import { getOrganizationQuery, getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
@@ -40,6 +43,7 @@
 
     let { children }: Props = $props();
     let isAuthenticated = $derived(!!accessToken.current);
+    let requiresPremium = $derived(filterUsesPremiumFeatures(page.url.searchParams.get('filter')));
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
 
@@ -278,7 +282,7 @@
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
 
                 {#if showOrganizationNotifications.current}
-                    <OrganizationNotifications {isChatEnabled} {openChat} class="mb-4" />
+                    <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} class="mb-4" />
                 {/if}
 
                 <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>
@@ -302,4 +306,8 @@
             {@render appShell(openChat)}
         {/snippet}
     </IntercomShell>
+
+    {#if upgradeRequiredDialog.open}
+        <UpgradeRequiredDialog />
+    {/if}
 {/if}
