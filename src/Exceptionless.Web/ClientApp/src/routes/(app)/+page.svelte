@@ -203,7 +203,7 @@
     }
 
     async function loadData() {
-        if (client.isLoading || !organization.current) {
+        if (!organization.current) {
             return;
         }
 
