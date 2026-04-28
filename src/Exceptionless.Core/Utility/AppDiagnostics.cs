@@ -121,6 +121,8 @@ public static class AppDiagnostics
     internal static readonly Counter<int> PostsDecompressionErrors = Meter.CreateCounter<int>("ex.posts.decompression.errors", description: "Time to get event post");
 
     internal static readonly Counter<int> UsageGeocodingApi = Meter.CreateCounter<int>("ex.usage.geocoding", description: "Geocode API calls");
+
+    internal static readonly Counter<int> SavedViewsRetrieved = Meter.CreateCounter<int>("ex.savedviews.retrieved", description: "Saved views retrieved");
 }
 
 public static class MetricsClientExtensions

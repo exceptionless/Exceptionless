@@ -53,7 +53,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         page = GetPage(page);
         limit = GetLimit(limit);
         var results = await _repository.GetByOrganizationForUserAsync(organizationId, CurrentUser.Id, o => o.PageNumber(page).PageLimit(limit));
-        AppDiagnostics.Counter("saved_views.get", (int)results.Total);
+        AppDiagnostics.SavedViewsRetrieved.Add((int)results.Total);
 
         var viewModels = MapToViewModels(results.Documents);
         return OkWithResourceLinks(viewModels, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
@@ -81,7 +81,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         page = GetPage(page);
         limit = GetLimit(limit);
         var results = await _repository.GetByViewForUserAsync(organizationId, viewType, CurrentUser.Id, o => o.PageNumber(page).PageLimit(limit));
-        AppDiagnostics.Counter("saved_views.get", (int)results.Total);
+        AppDiagnostics.SavedViewsRetrieved.Add((int)results.Total);
 
         var viewModels = MapToViewModels(results.Documents);
         return OkWithResourceLinks(viewModels, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
@@ -208,6 +208,14 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 
         // Delta<T> bypasses IValidatableObject — enforce data-annotation and custom validation manually.
         var changedNames = changes.GetChangedPropertyNames();
+
+        if (changedNames.Contains(nameof(UpdateSavedView.Name))
+            && changes.TryGetPropertyValue(nameof(UpdateSavedView.Name), out object? nameValue)
+            && nameValue is string name && String.IsNullOrWhiteSpace(name))
+        {
+            return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "Name cannot be empty or whitespace.");
+        }
+
         var lengthResult = ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Name), 100)
             ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Filter), 2000)
             ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Time), 100)

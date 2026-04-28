@@ -1611,17 +1611,35 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         var created = await CreateSavedViewAsync("Column Count Test", "status:open", "events");
         Assert.NotNull(created);
 
-        // Build a columns dict with 51 entries (exceeds max of 50)
+        // Build a columns dict with 51 entries (exceeds max of 50).
+        // Count validation fires before key validation, so arbitrary keys work here.
         var columns = new Dictionary<string, bool>();
         for (int i = 0; i < 51; i++)
-            columns[$"user"] = true; // Use valid key — count enforcement is what matters
-        // The above only creates 1 entry with repeated keys. Use valid keys:
-        columns.Clear();
-        // We can't actually create 51 valid keys since only a few are valid.
-        // This test validates that the count check exists; column key validation will catch invalid keys first.
-        // Instead, test at the boundary with a direct repository insert:
-        var view = await _savedViewRepository.GetByIdAsync(created.Id);
-        Assert.NotNull(view);
+            columns[$"col{i}"] = true;
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .Patch()
+            .AppendPaths("saved-views", created.Id)
+            .Content(new { columns })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Fact]
+    public async Task PatchAsync_EmptyName_ReturnsUnprocessableEntity()
+    {
+        // Arrange
+        var created = await CreateSavedViewAsync("Whitespace Test", "status:open", "events");
+        Assert.NotNull(created);
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .Patch()
+            .AppendPaths("saved-views", created.Id)
+            .Content(new { name = "   " })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
     }
 
     // Repository coverage tests
