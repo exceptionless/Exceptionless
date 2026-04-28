@@ -8,8 +8,7 @@ import type { NewSavedView, SavedView, UpdateSavedView } from './models';
 export function invalidateSavedViewQueries(queryClient: QueryClient, message: WebSocketMessageValue<'SavedViewChanged'>) {
     const { organization_id } = message;
 
-    if (organization_id)
-        return queryClient.invalidateQueries({ queryKey: queryKeys.organization(organization_id) });
+    if (organization_id) return queryClient.invalidateQueries({ queryKey: queryKeys.organization(organization_id) });
 
     return queryClient.invalidateQueries({ queryKey: queryKeys.type });
 }

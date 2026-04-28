@@ -121,15 +121,12 @@
 
     // Auto-detect if current filters match an existing saved view for "load existing" hint
     const duplicateView = $derived.by(() => {
-        if (activeSavedView || !currentFilterString)
-            return undefined;
+        if (activeSavedView || !currentFilterString) return undefined;
 
         return savedViews.find((savedView) => {
-            if (savedView.filter !== currentFilterString)
-                return false;
+            if (savedView.filter !== currentFilterString) return false;
 
-            if (savedView.time && (time ?? '') !== savedView.time)
-                return false;
+            if (savedView.time && (time ?? '') !== savedView.time) return false;
 
             return true;
         });

@@ -997,6 +997,23 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PatchAsync_WithInvalidFilterDefinitions_ReturnsUnprocessableEntity()
+    {
+        // Arrange
+        var created = await CreateSavedViewAsync("FilterDef Validation", "status:open", "events");
+        Assert.NotNull(created);
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", created.Id)
+            .Content(new UpdateSavedView { FilterDefinitions = "not valid json" })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Fact]
     public Task GetByOrganizationAsync_WithUnauthorizedOrg_ReturnsNotFound()
     {
         // Act & Assert

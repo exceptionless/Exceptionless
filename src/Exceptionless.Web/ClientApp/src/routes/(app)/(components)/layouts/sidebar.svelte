@@ -84,7 +84,9 @@
                                                 {@const savedId = new URL(savedItem.href, page.url.origin).searchParams.get('saved')}
                                                 {@const activeSavedParam = page.url.searchParams.get('saved')}
                                                 {@const isOnRoute = route.href === page.url.pathname}
-                                                {@const isActive = isOnRoute && (savedItem.isDefault ? !activeSavedParam || activeSavedParam === savedId : activeSavedParam === savedId)}
+                                                {@const isActive =
+                                                    isOnRoute &&
+                                                    (savedItem.isDefault ? !activeSavedParam || activeSavedParam === savedId : activeSavedParam === savedId)}
                                                 <Sidebar.MenuSubItem>
                                                     <Sidebar.MenuSubButton {isActive}>
                                                         {#snippet child({ props: subProps })}

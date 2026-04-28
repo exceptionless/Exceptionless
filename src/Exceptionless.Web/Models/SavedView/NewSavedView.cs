@@ -103,7 +103,7 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
         }
     }
 
-    private static bool IsValidJsonArray(string json)
+    internal static bool IsValidJsonArray(string json)
     {
         try
         {

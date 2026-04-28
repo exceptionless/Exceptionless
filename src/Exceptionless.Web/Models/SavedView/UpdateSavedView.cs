@@ -18,6 +18,14 @@ public class UpdateSavedView : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        if (FilterDefinitions is { Length: > 0 } && !NewSavedView.IsValidJsonArray(FilterDefinitions))
+        {
+            yield return new ValidationResult(
+                "FilterDefinitions must be a valid JSON array",
+                [nameof(FilterDefinitions)]
+            );
+        }
+
         foreach (var error in NewSavedView.ValidateColumnKeys(null, Columns))
         {
             yield return error;
