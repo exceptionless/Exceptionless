@@ -1,5 +1,6 @@
-import { accessToken } from '$features/auth/index.svelte';
 import type { WebSocketMessageValue } from '$features/websockets/models';
+
+import { accessToken } from '$features/auth/index.svelte';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, type QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
@@ -8,7 +9,9 @@ import type { NewSavedView, SavedView, UpdateSavedView } from './models';
 export function invalidateSavedViewQueries(queryClient: QueryClient, message: WebSocketMessageValue<'SavedViewChanged'>) {
     const { organization_id } = message;
 
-    if (organization_id) return queryClient.invalidateQueries({ queryKey: queryKeys.organization(organization_id) });
+    if (organization_id) {
+        return queryClient.invalidateQueries({ queryKey: queryKeys.organization(organization_id) });
+    }
 
     return queryClient.invalidateQueries({ queryKey: queryKeys.type });
 }
