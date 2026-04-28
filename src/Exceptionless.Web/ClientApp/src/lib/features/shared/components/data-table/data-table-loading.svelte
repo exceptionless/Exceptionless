@@ -1,23 +1,23 @@
 <script module lang="ts">
-    type TData = unknown;
+    type TData = RowData;
 </script>
 
-<script generics="TData" lang="ts">
+<script generics="TData extends RowData" lang="ts">
     import type { Snippet } from 'svelte';
 
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
-    import { type Column, type Table as SvelteTable } from '@tanstack/svelte-table';
+    import { type Column, type RowData, type StockFeatures, type Table as SvelteTable } from '@tanstack/svelte-table';
 
     interface Props {
         children?: Snippet;
         isLoading?: boolean;
-        table: SvelteTable<TData>;
+        table: SvelteTable<StockFeatures, TData>;
     }
 
     let { children, isLoading = true, table }: Props = $props();
 
-    function shouldRenderCell(column: Column<TData, unknown>): boolean {
+    function shouldRenderCell(column: Column<StockFeatures, TData, unknown>): boolean {
         return column.id !== 'select';
     }
 

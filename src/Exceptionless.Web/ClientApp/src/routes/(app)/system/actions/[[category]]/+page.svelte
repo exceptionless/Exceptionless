@@ -37,6 +37,7 @@
             } else {
                 url.searchParams.delete('q');
             }
+
             goto(url.pathname + url.search, { keepFocus: true, noScroll: true, replaceState: true });
         }
     });

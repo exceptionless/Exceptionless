@@ -25,6 +25,7 @@
         if (hideSystemIndices) {
             indices = indices.filter((index) => !index.index?.startsWith('.'));
         }
+
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
             indices = indices.filter((index) => index.index?.toLowerCase().includes(query));

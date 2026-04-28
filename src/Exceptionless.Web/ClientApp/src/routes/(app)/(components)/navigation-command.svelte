@@ -9,7 +9,10 @@
     const groupedRoutes = $derived(
         Object.entries(Object.groupBy(routes, (item: NavigationItem) => item.group)).reduce(
             (acc, [key, value]) => {
-                if (value) acc[key] = value;
+                if (value) {
+                    acc[key] = value;
+                }
+
                 return acc;
             },
             {} as Record<string, NavigationItem[]>

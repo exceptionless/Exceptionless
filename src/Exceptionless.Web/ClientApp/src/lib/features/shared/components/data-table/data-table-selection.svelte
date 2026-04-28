@@ -1,14 +1,14 @@
 <script module lang="ts">
-    type TData = unknown;
+    type TData = RowData;
 </script>
 
-<script generics="TData" lang="ts">
-    import type { Table } from '@tanstack/svelte-table';
+<script generics="TData extends RowData" lang="ts">
+    import type { RowData, StockFeatures, Table } from '@tanstack/svelte-table';
 
     import Number from '$comp/formatters/number.svelte';
 
     interface Props {
-        table: Table<TData>;
+        table: Table<StockFeatures, TData>;
     }
 
     let { table }: Props = $props();

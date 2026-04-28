@@ -105,6 +105,7 @@
         if (v instanceof Date) {
             return v.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
         }
+
         return String(v);
     }
 
@@ -124,6 +125,7 @@
             for (const s of statusBuckets) {
                 row[s.key as string] = s.total ?? 0;
             }
+
             return row;
         })
     );
@@ -139,6 +141,7 @@
                 }
             }
         }
+
         return statuses.sort();
     });
 

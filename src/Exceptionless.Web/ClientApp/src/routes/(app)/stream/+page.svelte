@@ -29,6 +29,8 @@
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import { getColumns } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
+    import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import { getSharedTableOptions, isTableEmpty, removeTableData } from '$features/shared/table.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
@@ -60,7 +62,8 @@
     const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
     const DEFAULT_PARAMS = {
         filter: '(status:open OR status:regressed)',
-        limit: DEFAULT_LIMIT
+        limit: DEFAULT_LIMIT,
+        saved: undefined as string | undefined
     };
 
     function filterCacheKey(filter: null | string): string {
@@ -73,8 +76,19 @@
         pushHistory: true,
         schema: {
             filter: 'string',
-            limit: 'number'
+            limit: 'number',
+            saved: 'string'
         }
+    });
+
+    const VIEW = 'stream';
+    const savedViewsState = useSavedViews({
+        filterCacheKey,
+        getColumnVisibility: () => table.store.state.columnVisibility,
+        queryParams,
+        setColumnVisibility: (v) => table.setColumnVisibility(v),
+        updateFilterCache,
+        view: VIEW
     });
 
     watch(
@@ -264,6 +278,19 @@
             </FacetedFilter.Root>
         </div>
         <div class="ml-auto flex shrink-0 items-start gap-2">
+            {#if savedViewsState.isEnabled}
+                <SavedViewPicker
+                    activeSavedView={savedViewsState.activeSavedView}
+                    columnVisibility={table.store.state.columnVisibility}
+                    filters={filters ?? []}
+                    isModified={savedViewsState.isModified}
+                    onLoadView={savedViewsState.handleLoadView}
+                    onResetToSaved={savedViewsState.handleResetToSaved}
+                    onClearSavedView={savedViewsState.handleClearSavedView}
+                    savedViews={savedViewsState.savedViews}
+                    view={VIEW}
+                />
+            {/if}
             <DataTableViewOptions size="icon-lg" {table} />
             <StreamingIndicatorButton onToggle={handleToggle} {paused} size="icon-lg" />
         </div>

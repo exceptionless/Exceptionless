@@ -1,4 +1,6 @@
 <script lang="ts">
+    import type { ViewOrganization } from '$features/organizations/models';
+    import type { SavedView } from '$features/saved-views/models';
     import type { Snippet } from 'svelte';
 
     import { goto } from '$app/navigation';
@@ -18,6 +20,7 @@
     import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
     import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
+    import { getSavedViewsQuery, invalidateSavedViewQueries } from '$features/saved-views/api.svelte';
     import { invalidateStackQueries } from '$features/stacks/api.svelte';
     import { invalidateTokenQueries } from '$features/tokens/api.svelte';
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
@@ -91,6 +94,9 @@
                 case 'ProjectChanged':
                     await invalidateProjectQueries(queryClient, data.message);
                     break;
+                case 'SavedViewChanged':
+                    await invalidateSavedViewQueries(queryClient, data.message);
+                    break;
                 case 'StackChanged':
                     await invalidateStackQueries(queryClient, data.message);
                     break;
@@ -129,11 +135,21 @@
         }
     });
 
+    // Auth guard — re-check on navigation and token changes
     $effect(() => {
-        // Direct read of accessToken.current establishes reactive dependency, working around PersistedState reactivity bug
         const currentToken = accessToken.current;
-        // Track page.url to ensure effect re-runs on navigation
         void page.url.pathname;
+
+        if (!currentToken) {
+            queryClient.cancelQueries();
+            queryClient.invalidateQueries();
+            gotoLogin();
+        }
+    });
+
+    // WebSocket + keyboard shortcut — only depends on token, not navigation
+    $effect(() => {
+        const currentToken = accessToken.current;
 
         function handleKeydown(e: KeyboardEvent) {
             if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
@@ -142,12 +158,7 @@
             }
         }
 
-        // Check token directly instead of using derived isAuthenticated
         if (!currentToken) {
-            queryClient.cancelQueries();
-            queryClient.invalidateQueries();
-
-            gotoLogin();
             return;
         }
 
@@ -206,7 +217,7 @@
             }
         }
     });
-    const currentOrganization = $derived(shouldFetchIntercomOrganization ? currentOrganizationQuery.data : undefined);
+    const intercomOrganization = $derived(shouldFetchIntercomOrganization ? currentOrganizationQuery.data : undefined);
 
     // Simple organization selection - pick first available if none selected
     $effect(() => {
@@ -234,14 +245,100 @@
 
     const isImpersonating = $derived(!!impersonatedOrganization);
 
+    const currentOrganization = $derived(organizations.find((organizationItem: ViewOrganization) => organizationItem.id === organization.current));
+    const hasSavedViewsFeature = $derived(currentOrganization?.features?.includes('feature-saved-views') ?? false);
+
+    const savedViewsQuery = getSavedViewsQuery({
+        route: {
+            get organizationId() {
+                return hasSavedViewsFeature ? organization.current : undefined;
+            }
+        }
+    });
+
+    const viewToHref: Record<string, string> = {
+        events: resolve('/(app)'),
+        issues: resolve('/(app)/issues'),
+        stream: resolve('/(app)/stream')
+    };
+
+    function buildSavedViewHref(baseHref: string, savedView: SavedView): string {
+        const queryEntries: [string, string][] = [['saved', savedView.id]];
+        if (savedView.filter) {
+            queryEntries.push(['filter', savedView.filter]);
+        }
+
+        if (savedView.time) {
+            queryEntries.push(['time', savedView.time]);
+        }
+
+        const queryParams = new URLSearchParams(queryEntries);
+        return `${baseHref}?${queryParams.toString()}`;
+    }
+
     const filteredRoutes = $derived.by(() => {
         const context: NavigationItemContext = { authenticated: isAuthenticated, impersonating: isImpersonating, user: meQuery.data };
-        return routes().filter((route) => (route.show ? route.show(context) : true));
+        const allRoutes = routes().filter((route) => (route.show ? route.show(context) : true));
+
+        const savedViews = savedViewsQuery.data ?? [];
+        if (savedViews.length === 0) {
+            return allRoutes;
+        }
+
+        return allRoutes.map((route) => {
+            if (route.group !== 'Dashboards') {
+                return route;
+            }
+
+            const viewKey = Object.entries(viewToHref).find(([, href]) => href === route.href)?.[0];
+            if (!viewKey) {
+                return route;
+            }
+
+            const viewSavedViews = savedViews.filter((savedView: SavedView) => savedView.view_type === viewKey);
+            if (viewSavedViews.length === 0) {
+                return route;
+            }
+
+            const defaultView = viewSavedViews.find((savedView: SavedView) => savedView.is_default);
+            const nonDefaultViews = viewSavedViews.filter((savedView: SavedView) => !savedView.is_default);
+
+            // Only show submenu if there are non-default views
+            if (nonDefaultViews.length === 0) {
+                return { ...route, defaultViewId: defaultView?.id, view: viewKey };
+            }
+
+            // Show all views sorted: default first, then alphabetically by name
+            const sortedViews = [...viewSavedViews].sort((a, b) => {
+                if (a.is_default && !b.is_default) {
+                    return -1;
+                }
+
+                if (!a.is_default && b.is_default) {
+                    return 1;
+                }
+
+                return a.name.localeCompare(b.name);
+            });
+
+            const children = sortedViews.map((savedView) => ({
+                href: buildSavedViewHref(route.href, savedView),
+                isDefault: savedView.is_default,
+                title: savedView.name
+            }));
+
+            return {
+                ...route,
+                children,
+                defaultViewId: defaultView?.id,
+                view: viewKey
+            };
+        });
     });
 
     // Intercom configuration
     const intercomToken = $derived(intercomAppId ? intercomTokenQuery.data?.token : undefined);
-    const intercomBootOptions = $derived(buildIntercomBootOptions(meQuery.data, currentOrganization, intercomToken));
+    const intercomBootOptions = $derived(buildIntercomBootOptions(meQuery.data, intercomOrganization, intercomToken));
     let intercomUnreadCount = $state(0);
     const isChatEnabled = $derived(!!intercomAppId && !!intercomBootOptions);
 

@@ -72,7 +72,7 @@
     {#if organizationQuery.isLoading}
         <div class="space-y-4">
             <Skeleton class="h-12 w-3/4" />
-            <Skeleton class="h-[200px] w-full" />
+            <Skeleton class="h-50 w-full" />
         </div>
     {:else if organizationQuery.error}
         <ErrorMessage message="Unable to load organization data." />
@@ -108,7 +108,7 @@
                                 <Table.Head>Payment Number</Table.Head>
                                 <Table.Head>Date</Table.Head>
                                 <Table.Head>Status</Table.Head>
-                                <Table.Head class="w-[100px]">Actions</Table.Head>
+                                <Table.Head class="w-25">Actions</Table.Head>
                             </Table.Row>
                         </Table.Header>
                         <Table.Body>

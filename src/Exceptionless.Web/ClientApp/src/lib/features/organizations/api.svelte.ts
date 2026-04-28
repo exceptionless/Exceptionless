@@ -33,6 +33,7 @@ export const queryKeys = {
     plans: (id: string | undefined) => [...queryKeys.type, id, 'plans'] as const,
     postOrganization: () => [...queryKeys.type, 'post-organization'] as const,
     setBonusOrganization: (id: string | undefined) => [...queryKeys.type, id, 'set-bonus'] as const,
+    setFeature: (id: string | undefined) => [...queryKeys.type, id, 'set-feature'] as const,
     suspendOrganization: (id: string | undefined) => [...queryKeys.type, id, 'suspend'] as const,
     type: ['Organization'] as const,
     unsuspendOrganization: (id: string | undefined) => [...queryKeys.type, id, 'unsuspend'] as const
@@ -143,6 +144,12 @@ export interface PostSuspendOrganizationParams {
 }
 
 export interface PostSuspendOrganizationRequest {
+    route: {
+        id: string | undefined;
+    };
+}
+
+export interface SetOrganizationFeatureRequest {
     route: {
         id: string | undefined;
     };
@@ -463,6 +470,52 @@ export function postSuspendOrganization(request: PostSuspendOrganizationRequest)
             // TODO: Normalize all this invalidation.
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, 'stats') });
+            queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
+        }
+    }));
+}
+
+export function removeOrganizationFeature(request: SetOrganizationFeatureRequest) {
+    const queryClient = useQueryClient();
+    return createMutation<boolean, ProblemDetails, string>(() => ({
+        mutationFn: async (feature: string) => {
+            if (!request.route.id) {
+                throw new Error('Organization ID is required');
+            }
+
+            const client = useFetchClient();
+            const response = await client.delete(`organizations/${request.route.id}/features/${feature}`);
+            return response.ok;
+        },
+        mutationKey: queryKeys.setFeature(request.route.id),
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+            queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
+        }
+    }));
+}
+
+export function setOrganizationFeature(request: SetOrganizationFeatureRequest) {
+    const queryClient = useQueryClient();
+    return createMutation<boolean, ProblemDetails, string>(() => ({
+        mutationFn: async (feature: string) => {
+            if (!request.route.id) {
+                throw new Error('Organization ID is required');
+            }
+
+            const client = useFetchClient();
+            const response = await client.post(`organizations/${request.route.id}/features/${feature}`);
+            return response.ok;
+        },
+        mutationKey: queryKeys.setFeature(request.route.id),
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
             queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
         }
     }));

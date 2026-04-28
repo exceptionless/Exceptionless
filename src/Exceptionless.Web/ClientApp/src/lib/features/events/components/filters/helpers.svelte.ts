@@ -1,15 +1,39 @@
 import type { IFilter } from '$comp/faceted-filter';
+import type { PersistentEventKnownTypes } from '$features/events/models';
+import type { LogLevel } from '$features/events/models/event-data';
+import type { StackStatus } from '$features/stacks/models';
 
 import { organization } from '$features/organizations/context.svelte';
 import { SvelteMap } from 'svelte/reactivity';
 
-import { DateFilter, KeywordFilter, type ProjectFilter, type StringFilter } from './models.svelte';
+import {
+    BooleanFilter,
+    DateFilter,
+    KeywordFilter,
+    LevelFilter,
+    NumberFilter,
+    ProjectFilter,
+    ReferenceFilter,
+    SessionFilter,
+    StatusFilter,
+    StringFilter,
+    TagFilter,
+    TypeFilter,
+    VersionFilter
+} from './models.svelte';
 
 let filterCacheVersion = $state(1);
 export function filterCacheVersionNumber() {
     return filterCacheVersion;
 }
+
 const filterCache = new SvelteMap<null | string, IFilter[]>();
+
+interface SerializedFilter {
+    term?: string;
+    type: string;
+    value?: unknown;
+}
 
 export function applyTimeFilter(filters: IFilter[], time: null | string): IFilter[] {
     const dateFilterIndex = filters.findIndex((f) => f.key === 'date-date');
@@ -32,6 +56,20 @@ export function buildFilterCacheKey(organization: string | undefined, scope: str
 export function clearFilterCache() {
     filterCache.clear();
     filterCacheVersion = 1;
+}
+
+export function deserializeFilters(json: string): IFilter[] {
+    try {
+        const parsed: SerializedFilter[] = JSON.parse(json);
+
+        if (!Array.isArray(parsed)) {
+            return [];
+        }
+
+        return parsed.map(reconstructFilter).filter((f): f is IFilter => f !== null);
+    } catch {
+        return [];
+    }
 }
 
 export function filterChanged(filters: IFilter[], addedOrUpdated: IFilter): IFilter[] {
@@ -103,6 +141,24 @@ export function quoteIfSpecialCharacters(value?: null | string): null | string |
     }
 
     return trimmed;
+}
+
+export function serializeFilters(filters: IFilter[]): string {
+    const serialized: SerializedFilter[] = filters.map((filter) => {
+        const entry: SerializedFilter = { type: filter.type };
+
+        if ('term' in filter && (filter as { term?: string }).term !== undefined) {
+            entry.term = (filter as { term?: string }).term;
+        }
+
+        if ('value' in filter) {
+            entry.value = (filter as { value?: unknown }).value;
+        }
+
+        return entry;
+    });
+
+    return JSON.stringify(serialized);
 }
 
 export function shouldRefreshPersistentEventChanged(
@@ -194,4 +250,37 @@ function processFilterRules(filters: IFilter[]): IFilter[] {
     }
 
     return Array.from(uniqueFilters.values());
+}
+
+function reconstructFilter(data: SerializedFilter): IFilter | null {
+    switch (data.type) {
+        case 'boolean':
+            return new BooleanFilter(data.term, data.value as boolean | undefined);
+        case 'date':
+            return new DateFilter(data.term, data.value as Date | string | undefined);
+        case 'keyword':
+            return new KeywordFilter(data.value as string | undefined);
+        case 'level':
+            return new LevelFilter(data.value as LogLevel[] | undefined);
+        case 'number':
+            return new NumberFilter(data.term, data.value as number | undefined);
+        case 'project':
+            return new ProjectFilter(data.value as string[] | undefined);
+        case 'reference':
+            return new ReferenceFilter(data.value as string | undefined);
+        case 'session':
+            return new SessionFilter(data.value as string | undefined);
+        case 'status':
+            return new StatusFilter(data.value as StackStatus[] | undefined);
+        case 'string':
+            return new StringFilter(data.term, data.value as string | undefined);
+        case 'tag':
+            return new TagFilter(data.value as PersistentEventKnownTypes[] | undefined);
+        case 'type':
+            return new TypeFilter(data.value as PersistentEventKnownTypes[] | undefined);
+        case 'version':
+            return new VersionFilter(data.term, data.value as string | undefined);
+        default:
+            return null;
+    }
 }

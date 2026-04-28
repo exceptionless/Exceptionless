@@ -4,7 +4,7 @@
 
     import * as DataTable from '$comp/data-table';
     import DelayedRender from '$comp/delayed-render.svelte';
-    import { type Table } from '@tanstack/svelte-table';
+    import { type StockFeatures, type Table } from '@tanstack/svelte-table';
 
     interface Props {
         bodyChildren?: Snippet;
@@ -12,7 +12,7 @@
         isLoading: boolean;
         limit: number;
         rowClick?: (row: ViewToken) => void;
-        table: Table<ViewToken>;
+        table: Table<StockFeatures, ViewToken>;
         toolbarChildren?: Snippet;
     }
 
