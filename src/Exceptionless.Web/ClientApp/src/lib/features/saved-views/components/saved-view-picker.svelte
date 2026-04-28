@@ -439,7 +439,7 @@
             >
                 <div class="flex flex-col gap-2">
                     <Label for="filter-name">Name</Label>
-                    <Input id="filter-name" bind:value={saveName} placeholder="e.g., Production Errors" required />
+                    <Input id="filter-name" bind:value={saveName} placeholder="e.g., Production Errors" required autofocus />
                 </div>
                 <div class="flex items-center justify-between">
                     <div>
@@ -492,7 +492,7 @@
             >
                 <div class="flex flex-col gap-2">
                     <Label for="rename-filter">Name</Label>
-                    <Input id="rename-filter" bind:value={renameName} placeholder="View name" required />
+                    <Input id="rename-filter" bind:value={renameName} placeholder="View name" required autofocus />
                 </div>
                 <Dialog.Footer>
                     <Button variant="outline" onclick={() => (isRenameDialogOpen = false)}>Cancel</Button>

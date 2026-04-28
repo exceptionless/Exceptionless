@@ -119,8 +119,12 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         lastLoadedViewId = savedId;
 
         if (view.filter_definitions) {
-            const hydrated = deserializeFilters(view.filter_definitions);
-            options.updateFilterCache(options.filterCacheKey(view.filter ?? null), hydrated);
+            try {
+                const hydrated = deserializeFilters(view.filter_definitions);
+                options.updateFilterCache(options.filterCacheKey(view.filter ?? null), hydrated);
+            } catch {
+                console.error('Failed to deserialize saved view filter definitions');
+            }
         }
 
         options.queryParams.filter = view.filter ?? null;
@@ -201,8 +205,12 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         if (view.filter_definitions) {
-            const hydrated = deserializeFilters(view.filter_definitions);
-            options.updateFilterCache(options.filterCacheKey(view.filter ?? null), hydrated);
+            try {
+                const hydrated = deserializeFilters(view.filter_definitions);
+                options.updateFilterCache(options.filterCacheKey(view.filter ?? null), hydrated);
+            } catch {
+                console.error('Failed to deserialize saved view filter definitions');
+            }
         }
 
         options.queryParams.filter = view.filter ?? null;
