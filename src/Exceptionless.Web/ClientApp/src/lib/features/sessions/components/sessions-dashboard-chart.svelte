@@ -63,11 +63,17 @@
                 axis={false}
                 grid={false}
                 brush={{
-                    onBrushEnd: (detail) => {
-                        const [start, end] = detail.xDomain ?? [];
+                    onBrushEnd: (e) => {
+                        if (!e.brush.active) {
+                            return;
+                        }
+
+                        const [start, end] = e.brush.x;
                         if (start instanceof Date && end instanceof Date) {
                             onRangeSelect?.(start, end);
                         }
+
+                        e.brush.reset();
                     }
                 }}
                 props={{

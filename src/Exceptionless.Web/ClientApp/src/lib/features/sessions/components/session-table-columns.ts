@@ -2,14 +2,14 @@ import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/co
 
 import TimeAgo from '$comp/formatters/time-ago.svelte';
 import { Checkbox } from '$comp/ui/checkbox';
-import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
+import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
 import Summary from '$features/events/components/summary/summary.svelte';
 import EventsUserIdentitySummaryCell from '$features/events/components/table/events-user-identity-summary-cell.svelte';
 
 import SessionDurationCell from './session-duration-cell.svelte';
 
-export function getSessionColumns(): ColumnDef<EventSummaryModel<SummaryTemplateKeys>>[] {
+export function getSessionColumns(): ColumnDef<StockFeatures, EventSummaryModel<SummaryTemplateKeys>, unknown>[] {
     return [
         {
             cell: (props) =>

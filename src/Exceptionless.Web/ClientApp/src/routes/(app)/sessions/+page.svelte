@@ -189,7 +189,7 @@
         })
     );
 
-    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.getState().pagination.pageIndex === 0);
+    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.store.state.pagination.pageIndex === 0);
 
     function reset() {
         table.resetRowSelection();
