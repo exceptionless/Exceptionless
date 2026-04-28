@@ -89,7 +89,7 @@
                 }}
             >
                 {#snippet tooltip()}
-                    <Chart.Tooltip class="min-w-62.5" indicator="line" labelFormatter={(v) => formatDateLabel(v as Date)} />
+                    <Chart.Tooltip class="min-w-62.5" indicator="line" labelFormatter={(v) => formatDateLabel(v instanceof Date ? v : new Date(v as number | string))} />
                 {/snippet}
             </AreaChart>
         </Chart.Container>
