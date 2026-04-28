@@ -35,12 +35,6 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     protected override ViewSavedView MapToViewModel(SavedView model) => _mapper.MapToViewSavedView(model);
     protected override List<ViewSavedView> MapToViewModels(IEnumerable<SavedView> models) => _mapper.MapToViewSavedViews(models);
 
-    private async Task<bool> IsFeatureEnabledAsync(string organizationId)
-    {
-        var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
-        return organization?.Features?.Contains(OrganizationFeatures.SavedViews) ?? false;
-    }
-
     /// <summary>
     /// Get by organization
     /// </summary>
@@ -78,7 +72,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         if (!CanAccessOrganization(organizationId))
             return NotFound();
 
-        if (!NewSavedView.ValidViews.Contains(view))
+        if (!NewSavedView.ValidViewTypes.Contains(view))
             return NotFound();
 
         // Reads remain available even when the feature is disabled to preserve access to existing saved views.
@@ -249,9 +243,9 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         return await base.UpdateModelAsync(original, changes);
     }
 
-    private async Task ClearDefaultForViewAsync(string organizationId, string view)
+    private async Task ClearDefaultForViewAsync(string organizationId, string viewType)
     {
-        var existing = await _repository.GetByViewAsync(organizationId, view, o => o.ImmediateConsistency().PageLimit(MaxViewsPerOrganization));
+        var existing = await _repository.GetByViewAsync(organizationId, viewType, o => o.ImmediateConsistency().PageLimit(MaxViewsPerOrganization));
         var defaults = existing.Documents.Where(savedView => savedView.IsDefault && savedView.UserId is null).ToList();
 
         if (defaults.Count > 0)
@@ -274,5 +268,11 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "The saved views feature is not enabled for this organization.");
 
         return await base.CanDeleteAsync(value);
+    }
+
+    private async Task<bool> IsFeatureEnabledAsync(string organizationId)
+    {
+        var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
+        return organization?.Features?.Contains(OrganizationFeatures.SavedViews) ?? false;
     }
 }

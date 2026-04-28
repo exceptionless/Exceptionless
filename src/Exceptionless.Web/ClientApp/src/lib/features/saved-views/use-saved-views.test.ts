@@ -134,52 +134,21 @@ describe('useSavedViews', () => {
     });
 
     describe('saved view websocket invalidation', () => {
-        beforeEach(() => {
-            vi.useFakeTimers();
-        });
-
-        afterEach(() => {
-            vi.useRealTimers();
-        });
-
-        it('delays Saved websocket invalidation so stale organization data does not overwrite the optimistic cache early', async () => {
+        it('invalidates organization cache immediately on Saved event', async () => {
             // Arrange
             const queryClient = new QueryClient();
-            const staleSavedView = buildSavedView({ filter: 'type:error', id: 'view-1', name: 'Original View' });
-            const optimisticSavedView = {
-                ...staleSavedView,
-                filter: 'type:log',
-                name: 'Updated View'
-            };
-
-            queryClient.setQueryData(queryKeys.organization(TEST_ORG_ID), [optimisticSavedView]);
-            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async (filters) => {
-                if (filters?.queryKey) {
-                    queryClient.setQueryData(filters.queryKey, [staleSavedView]);
-                }
-            });
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
 
             // Act
-            const invalidatePromise = invalidateSavedViewQueries(queryClient, {
+            await invalidateSavedViewQueries(queryClient, {
                 change_type: ChangeType.Saved,
                 data: {},
                 organization_id: TEST_ORG_ID,
                 type: 'SavedView'
             });
 
-            await vi.advanceTimersByTimeAsync(1499);
-
-            // Assert
-            expect(invalidateSpy).not.toHaveBeenCalled();
-            expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([optimisticSavedView]);
-
-            // Act
-            await vi.advanceTimersByTimeAsync(1);
-            await invalidatePromise;
-
             // Assert
             expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization(TEST_ORG_ID) });
-            expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([staleSavedView]);
         });
     });
 

@@ -8,8 +8,8 @@ namespace Exceptionless.Web.Models;
 
 public record NewSavedView : IOwnedByOrganization, IValidatableObject
 {
-    /// <summary>The set of valid dashboard view identifiers.</summary>
-    public static readonly string[] ValidViews = ["events", "issues", "stream"];
+    /// <summary>The set of valid dashboard view type identifiers.</summary>
+    public static readonly string[] ValidViewTypes = ["events", "issues", "stream"];
 
     /// <summary>Valid column IDs per view, matching the TanStack Table column definitions.</summary>
     public static readonly IReadOnlyDictionary<string, IReadOnlySet<string>> ValidColumnIds =
@@ -24,7 +24,7 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
     public static readonly IReadOnlySet<string> AllValidColumnIds =
         new HashSet<string>(ValidColumnIds.Values.SelectMany(ids => ids));
 
-    public static readonly string ValidViewsPattern = $"^({String.Join("|", ValidViews)})$";
+    public static readonly string ValidViewTypesPattern = $"^({String.Join("|", ValidViewTypes)})$";
 
     [ObjectId]
     public string OrganizationId { get; set; } = null!;
@@ -60,10 +60,10 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (ViewType is { Length: > 0 } && !ValidViews.Contains(ViewType))
+        if (ViewType is { Length: > 0 } && !ValidViewTypes.Contains(ViewType))
         {
             yield return new ValidationResult(
-                $"View must be one of: {String.Join(", ", ValidViews)}",
+                $"View type must be one of: {String.Join(", ", ValidViewTypes)}",
                 [nameof(ViewType)]
             );
         }

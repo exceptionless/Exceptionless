@@ -2,6 +2,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Nest;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -17,7 +18,7 @@ public class SavedViewRepository : RepositoryOwnedByOrganization<SavedView>, ISa
         return FindAsync(q => q
             .Organization(organizationId)
             .FieldEquals(e => e.ViewType, viewName)
-            .SortExpression("name"), options);
+            .SortAscending(e => e.Name.Suffix("keyword")), options);
     }
 
     public Task<FindResults<SavedView>> GetByViewForUserAsync(string organizationId, string viewName, string userId, CommandOptionsDescriptor<SavedView>? options = null)
@@ -25,7 +26,7 @@ public class SavedViewRepository : RepositoryOwnedByOrganization<SavedView>, ISa
         return FindAsync(q => q
             .Organization(organizationId)
             .FieldEquals(e => e.ViewType, viewName)
-            .SortExpression("name")
+            .SortAscending(e => e.Name.Suffix("keyword"))
             .FieldOr(g => g
                 .FieldEmpty(e => e.UserId!)
                 .FieldEquals(e => e.UserId!, userId)), options);
@@ -35,7 +36,7 @@ public class SavedViewRepository : RepositoryOwnedByOrganization<SavedView>, ISa
     {
         return FindAsync(q => q
             .Organization(organizationId)
-            .SortExpression("name")
+            .SortAscending(e => e.Name.Suffix("keyword"))
             .FieldOr(g => g
                 .FieldEmpty(e => e.UserId!)
                 .FieldEquals(e => e.UserId!, userId)), options);

@@ -1,33 +1,17 @@
 import { accessToken } from '$features/auth/index.svelte';
-import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+import type { WebSocketMessageValue } from '$features/websockets/models';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, type QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { NewSavedView, SavedView, UpdateSavedView } from './models';
 
-const ES_REFRESH_DELAY_MS = 1500;
-
 export function invalidateSavedViewQueries(queryClient: QueryClient, message: WebSocketMessageValue<'SavedViewChanged'>) {
     const { organization_id } = message;
-    const invalidate = () => {
-        if (organization_id) {
-            return queryClient.invalidateQueries({ queryKey: queryKeys.organization(organization_id) });
-        }
 
-        return queryClient.invalidateQueries({ queryKey: queryKeys.type });
-    };
+    if (organization_id)
+        return queryClient.invalidateQueries({ queryKey: queryKeys.organization(organization_id) });
 
-    // Delay invalidation for Added/Saved to avoid overwriting optimistic cache with stale Elasticsearch data.
-    if (message.change_type === ChangeType.Added || message.change_type === ChangeType.Saved) {
-        return new Promise<void>((resolve) => {
-            setTimeout(async () => {
-                await invalidate();
-                resolve();
-            }, ES_REFRESH_DELAY_MS);
-        });
-    }
-
-    return invalidate();
+    return queryClient.invalidateQueries({ queryKey: queryKeys.type });
 }
 
 export const queryKeys = {

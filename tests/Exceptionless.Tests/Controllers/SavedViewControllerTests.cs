@@ -190,7 +190,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         var newFilter = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
-            Name = "",
+            Name = String.Empty,
             Filter = "status:open",
             ViewType = "events"
         };
@@ -211,7 +211,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Show All",
-            Filter = "",
+            Filter = String.Empty,
             ViewType = "events"
         };
 
@@ -289,7 +289,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetByOrganizationAsync_ReturnsOrganizationWideAndCurrentUserFilters()
+    public async Task GetByOrganizationAsync_WithMultipleUsers_ReturnsOrganizationWideAndCurrentUserFilters()
     {
         // Arrange
         var organizationFilter = await CreateSavedViewAsync("Organization Filter", "status:open", "events");
@@ -312,7 +312,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetByOrganizationAsync_ExcludesOtherUsersPrivateFilters()
+    public async Task GetByOrganizationAsync_WithOtherUsersPrivateFilters_ExcludesThem()
     {
         // Arrange - Global admin creates a private filter
         var privateFilter = await CreateSavedViewAsync("Admin Private", "status:open", "events", isPrivate: true);
@@ -331,7 +331,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetByViewAsync_ReturnsOnlyMatchingViewFilters()
+    public async Task GetByViewAsync_WithMixedViewTypes_ReturnsOnlyMatchingViewFilters()
     {
         // Arrange
         var eventsFilter = await CreateSavedViewAsync("Events Only", "status:open", "events");
@@ -736,7 +736,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task SoftDeleteOrganization_RemovesAllSavedViews()
+    public async Task SoftDeleteOrganization_WithSavedViews_RemovesAllSavedViews()
     {
         // Arrange
         var testUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
@@ -779,7 +779,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RemoveUserSavedViews_OnlyDeletesPrivateViews()
+    public async Task RemoveUserSavedViews_WithMixedVisibility_OnlyDeletesPrivateViews()
     {
         // Arrange
         var testUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);

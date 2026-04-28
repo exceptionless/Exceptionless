@@ -1,7 +1,8 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
+    import type { ProblemDetails } from '@exceptionless/fetchclient';
 
-    import { Muted } from '$comp/typography';
+    import { Muted, P } from '$comp/typography';
     import * as AlertDialog from '$comp/ui/alert-dialog';
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
@@ -23,7 +24,7 @@
     import Star from '@lucide/svelte/icons/star';
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import Undo2 from '@lucide/svelte/icons/undo-2';
-    import { tick, untrack } from 'svelte';
+    import { tick } from 'svelte';
     import { toast } from 'svelte-sonner';
     import { SvelteMap } from 'svelte/reactivity';
 
@@ -118,54 +119,23 @@
         });
     });
 
-    // Auto-detect if current filters match an existing saved view (even without ?saved=)
-    const matchingSavedView = $derived.by(() => {
-        if (activeSavedView) {
-            return undefined;
-        }
-
-        if (!currentFilterString) {
-            return undefined;
-        }
-
-        return savedViews.find((savedView) => {
-            if (savedView.filter !== currentFilterString) {
-                return false;
-            }
-
-            if (savedView.time && (time ?? '') !== savedView.time) {
-                return false;
-            }
-
-            return true;
-        });
-    });
-
-    // The currently active view: either explicitly loaded via ?saved= or auto-matched by filter content
-    const activeView = $derived(activeSavedView ?? matchingSavedView);
-
-    // When filters match an existing view without an explicit ?saved= param,
-    // update the URL so the sidebar highlights the correct view.
-    $effect(() => {
-        const matched = matchingSavedView;
-        if (matched) {
-            untrack(() => onLoadView(matched.id));
-        }
-    });
-
+    // Auto-detect if current filters match an existing saved view for "load existing" hint
     const duplicateView = $derived.by(() => {
-        return savedViews.find((savedView) => {
-            if (savedView.filter !== currentFilterString) {
-                return false;
-            }
+        if (activeSavedView || !currentFilterString)
+            return undefined;
 
-            if (savedView.time && (time ?? '') !== savedView.time) {
+        return savedViews.find((savedView) => {
+            if (savedView.filter !== currentFilterString)
                 return false;
-            }
+
+            if (savedView.time && (time ?? '') !== savedView.time)
+                return false;
 
             return true;
         });
     });
+
+    const activeView = $derived(activeSavedView);
 
     async function openSaveDialog() {
         saveName = '';
@@ -215,8 +185,8 @@
             onLoadView(result.id);
             toast.success(`Saved view "${result.name}" created.`);
         } catch (error) {
-            const problem = (error as { title?: string })?.title;
-            toast.error(problem ?? 'Failed to save view. Please try again.');
+            const problem = error as ProblemDetails;
+            toast.error(problem?.title ?? 'Failed to save view. Please try again.');
         }
     }
 
@@ -237,8 +207,8 @@
             await updateMutation.mutateAsync(body);
             toast.success(`View "${activeSavedView.name}" updated.`);
         } catch (error) {
-            const problem = (error as { title?: string })?.title;
-            toast.error(problem ?? 'Failed to update view. Please try again.');
+            const problem = error as ProblemDetails;
+            toast.error(problem?.title ?? 'Failed to update view. Please try again.');
         }
     }
 
@@ -252,8 +222,8 @@
             isRenameDialogOpen = false;
             toast.success('View renamed.');
         } catch (error) {
-            const problem = (error as { title?: string })?.title;
-            toast.error(problem ?? 'Failed to rename view. Please try again.');
+            const problem = error as ProblemDetails;
+            toast.error(problem?.title ?? 'Failed to rename view. Please try again.');
         }
     }
 
@@ -292,8 +262,8 @@
             await updateMutation.mutateAsync({ is_default: true });
             toast.success('Set as default.');
         } catch (error) {
-            const problem = (error as { title?: string })?.title;
-            toast.error(problem ?? 'Failed to update default setting.');
+            const problem = error as ProblemDetails;
+            toast.error(problem?.title ?? 'Failed to update default setting.');
         }
     }
 </script>
@@ -367,10 +337,10 @@
                                         </Tooltip.Trigger>
                                         <Tooltip.Content class="max-w-xs" side="right">
                                             {#if savedView.filter}
-                                                <p class="font-mono text-xs">{savedView.filter}</p>
+                                                <P class="font-mono text-xs">{savedView.filter}</P>
                                             {/if}
                                             {#if savedView.time}
-                                                <p class="text-muted-foreground text-xs">{timeLabels.get(savedView.time) ?? savedView.time}</p>
+                                                <Muted class="text-xs">{timeLabels.get(savedView.time) ?? savedView.time}</Muted>
                                             {/if}
                                         </Tooltip.Content>
                                     </Tooltip.Root>
