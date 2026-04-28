@@ -75,21 +75,13 @@ jobs:
       - name: Reset Redis
         if: ${{ inputs.reset_redis }}
         run: |
-          REDIS_PASSWORD=$(kubectl get secret --namespace $NAMESPACE ex-dev-redis-secret -o go-template='{{index .data "password" | base64decode }}')
-          # Flush standalone Redis
-          STANDALONE_POD=$(kubectl get pods -n $NAMESPACE -l app=ex-dev-redis -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
-          if [ -n "$STANDALONE_POD" ]; then
-            echo "Flushing standalone Redis ($STANDALONE_POD)..."
-            kubectl exec -n $NAMESPACE "$STANDALONE_POD" -- redis-cli -a "$REDIS_PASSWORD" FLUSHALL
-          fi
-          # Flush all Redis Cluster leader nodes
-          CLUSTER_LEADERS=$(kubectl get pods -n $NAMESPACE -l redis_setup_type=cluster,role=leader -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || echo "")
-          for POD in $CLUSTER_LEADERS; do
-            echo "Flushing cluster leader $POD..."
-            kubectl exec -n $NAMESPACE "$POD" -- redis-cli -a "$REDIS_PASSWORD" FLUSHALL
-          done
-          if [ -z "$STANDALONE_POD" ] && [ -z "$CLUSTER_LEADERS" ]; then
-            echo "::error::No Redis pods found."
+          REDIS_PASSWORD=$(kubectl get secret --namespace $NAMESPACE ex-dev-redis-account-default -o jsonpath='{.data.password}' | base64 -d)
+          PRIMARY_POD=$(kubectl get pods -n $NAMESPACE -l apps.kubeblocks.io/component-name=redis,kubeblocks.io/role=primary -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+          if [ -n "$PRIMARY_POD" ]; then
+            echo "Flushing KubeBlocks Redis primary ($PRIMARY_POD)..."
+            kubectl exec -n $NAMESPACE "$PRIMARY_POD" -c redis -- redis-cli -a "$REDIS_PASSWORD" FLUSHALL
+          else
+            echo "::error::No Redis primary pod found."
             exit 1
           fi
           echo "Redis data flushed."

@@ -19,8 +19,8 @@ We provide very reasonably priced hosting at [Exceptionless](https://exceptionle
 
 Exceptionless can easily be run locally using Docker:
 
-- `docker run --rm -it -p 5200:8080 exceptionless/exceptionless:latest`
-- Open `http://localhost:5200`
+- `docker run --rm -it -p 7110:8080 exceptionless/exceptionless:latest`
+- Open `http://localhost:7110`
 - Create an account. The first account in the system will automatically be an admin.
 
 This will run a completely self-contained simple instance of Exceptionless. It is only suitable for testing purposes since it will not persist data. For more complete setups, check out the [self hosting documentation](https://exceptionless.com/docs/self-hosting/). Also, if you want to support the project while self hosting you can send us a pull request or [donation](https://github.com/sponsors/exceptionless).
@@ -29,33 +29,35 @@ This will run a completely self-contained simple instance of Exceptionless. It i
 
 _In appreciation for anyone who submits a non-trivial pull request, we will give you a free [Exceptionless](https://exceptionless.com) paid plan for a year. After your pull request is accepted, simply send an email to <team@exceptionless.io> with the name of your organization and we will upgrade you to a paid plan._
 
-- Please read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/main/CONTRIBUTING.md)
-- Requirements
-  - [Docker](https://www.docker.com/get-docker)
-  - [.NET 10.0](https://dotnet.microsoft.com/)
-  - [Node 24+](https://nodejs.org/)
-- Visual Studio Code
-  - Open Visual Studio Code and then open the Exceptionless root folder
-  - Go to the `Terminal` menu and select `Run Task...` and then select `Start Elasticsearch` (you can stop the service when you are done using the `Stop Elasticsearch` task)
-  - Go to the `Debug` menu and select the `Web` launch configuration then click the `Start Debugging` button
-  - A browser window should be automatically opened to `https://localhost:5100/`
-  - When running locally in `Development` mode, a global administrator user `test@localhost` is automatically created with password `tester`. You can also click the `Signup` button to create a new account
-- Visual Studio
-  - Open Visual Studio and then open the `Exceptionless.slnx` solution in the root folder
-  - Start Elasticsearch by either configuring multiple startup projects for the `docker-compose` and `Exceptionless.Web` projects or by running the `start-services.ps1` script in the root folder
-  - Run the `Exceptionless.Web` project
-  - A browser window should be automatically opened to `https://localhost:5100/`
-  - When running locally in `Development` mode, a global administrator user `test@localhost` is automatically created with password `tester`. You can also click the `Signup` button to create a new account
+Start here:
+
+1. Read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/main/CONTRIBUTING.md).
+2. Install [Docker](https://www.docker.com/get-docker), [.NET 10.0](https://dotnet.microsoft.com/), and [Node 24+](https://nodejs.org/).
+3. Run the app with one of these entry points:
+    - Visual Studio Code: open the repo root and start the `Aspire` launch configuration.
+    - Visual Studio: open `Exceptionless.slnx`, set `Exceptionless.AppHost` as the startup project, and run it.
+    - CLI or Dev Container: run `aspire run` from the repo root.
+
+After startup:
+
+1. Open `https://localhost:7121/` if a browser does not open automatically.
+2. In `Development` mode, a global administrator user `test@localhost` with password `tester` is created automatically.
+
+Notes:
+
+1. Running `Exceptionless.AppHost` starts the app and required infrastructure together.
+2. Backend tests bootstrap required infrastructure automatically.
 
 ![image](https://user-images.githubusercontent.com/282584/223168564-6518d509-d292-4078-a61f-ab493d2bb812.png)
 
-## UI Only Development
+## UI Development
 
-The UI is a SPA application that runs against the Exceptionless API. The source is located in the `src/Exceptionless.Web/ClientApp` folder. The UI will automatically be started when running the whole project, but if you want to work on just the UI, then open Visual Studio Code to the `src/Exceptionless.Web/ClientApp` folder and run the `npm run serve (use exceptionless api)` task to start the UI pointing at the official Exceptionless API. You will need to login to your actual Exceptionless account.
+Frontend work currently spans two apps:
 
-## API Only Development
+1. The legacy Angular UI in `src/Exceptionless.Web/ClientApp.angular` is still the main site UI. Most of that app lives in `app/`, `components/`, `less/`, `img/`, `lang/`, and `grunt/`.
+2. The Svelte 5 UI in `src/Exceptionless.Web/ClientApp` is still under development.
 
-You can work on just the API without running the SPA UI by selecting the `Exceptionless API` launch configuration in Visual Studio. You can then run requests using the `exceptionless.http` file. Make sure that you have the [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension installed.
+For examples of API requests, see `exceptionless.http`. If you use that file in Visual Studio Code, install the [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension.
 
 ## Thanks
 

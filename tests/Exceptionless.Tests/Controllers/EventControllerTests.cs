@@ -39,7 +39,7 @@ public class EventControllerTests : IntegrationTestsBase
     private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly StackData _stackData;
-    private readonly RandomEventGenerator _randomEventGenerator;
+    private readonly Exceptionless.Helpers.RandomEventGenerator _randomEventGenerator;
     private readonly EventData _eventData;
     private readonly IEventRepository _eventRepository;
     private readonly IQueue<EventPost> _eventQueue;
@@ -51,7 +51,7 @@ public class EventControllerTests : IntegrationTestsBase
         _jsonSerializerOptions = GetService<JsonSerializerOptions>();
         _organizationRepository = GetService<IOrganizationRepository>();
         _stackData = GetService<StackData>();
-        _randomEventGenerator = GetService<RandomEventGenerator>();
+        _randomEventGenerator = GetService<Exceptionless.Helpers.RandomEventGenerator>();
         _eventData = GetService<EventData>();
         _eventRepository = GetService<IEventRepository>();
         _eventQueue = GetService<IQueue<EventPost>>();
