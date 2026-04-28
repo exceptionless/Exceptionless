@@ -4,7 +4,7 @@ import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import ProjectConfigActionsCell from '$features/projects/components/table/project-config-actions-cell.svelte';
 import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
-import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
+import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
 export type ConfigurationSettingsColumnParameters = {
     projectId: string;
@@ -12,8 +12,8 @@ export type ConfigurationSettingsColumnParameters = {
 
 export function getColumns<TClientConfigurationSetting extends ClientConfigurationSetting>(
     params: ConfigurationSettingsColumnParameters
-): ColumnDef<TClientConfigurationSetting>[] {
-    const columns: ColumnDef<TClientConfigurationSetting>[] = [
+): ColumnDef<StockFeatures, TClientConfigurationSetting, unknown>[] {
+    const columns: ColumnDef<StockFeatures, TClientConfigurationSetting, unknown>[] = [
         {
             accessorKey: 'key',
             cell: (info) => info.getValue(),

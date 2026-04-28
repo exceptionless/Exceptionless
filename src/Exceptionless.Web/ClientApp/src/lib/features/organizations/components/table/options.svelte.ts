@@ -4,7 +4,7 @@ import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import NumberFormatter from '$comp/formatters/number.svelte';
 import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
-import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
+import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
 import type { GetOrganizationsMode, GetOrganizationsParams } from '../../api.svelte';
 
@@ -13,8 +13,8 @@ import OrganizationOverLimitCell from './organization-over-limit-cell.svelte';
 import OrganizationRetentionDaysCell from './organization-retention-days-cell.svelte';
 import OrganizationSuspensionCell from './organization-suspension-cell.svelte';
 
-export function getColumns<TOrganizations extends ViewOrganization>(mode: GetOrganizationsMode = 'stats'): ColumnDef<TOrganizations>[] {
-    const columns: ColumnDef<TOrganizations>[] = [
+export function getColumns<TOrganizations extends ViewOrganization>(mode: GetOrganizationsMode = 'stats'): ColumnDef<StockFeatures, TOrganizations, unknown>[] {
+    const columns: ColumnDef<StockFeatures, TOrganizations, unknown>[] = [
         {
             accessorKey: 'name',
             cell: (info) => info.getValue(),

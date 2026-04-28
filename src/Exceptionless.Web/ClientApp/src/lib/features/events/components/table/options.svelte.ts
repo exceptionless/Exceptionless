@@ -4,7 +4,7 @@ import NumberFormatter from '$comp/formatters/number.svelte';
 import TimeAgo from '$comp/formatters/time-ago.svelte';
 import { Checkbox } from '$comp/ui/checkbox';
 import { nameof } from '$lib/utils';
-import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
+import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
 import type { GetEventsMode } from '../../api.svelte';
 import type { EventSummaryModel, StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '../summary/index';
@@ -14,8 +14,10 @@ import EventsUserIdentitySummaryCell from './events-user-identity-summary-cell.s
 import StackStatusCell from './stack-status-cell.svelte';
 import StackUsersSummaryCell from './stack-users-summary-cell.svelte';
 
-export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(mode: GetEventsMode = 'summary'): ColumnDef<TSummaryModel>[] {
-    const columns: ColumnDef<TSummaryModel>[] = [
+export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
+    mode: GetEventsMode = 'summary'
+): ColumnDef<StockFeatures, TSummaryModel, unknown>[] {
+    const columns: ColumnDef<StockFeatures, TSummaryModel, unknown>[] = [
         {
             cell: (props) =>
                 renderComponent(Checkbox, {

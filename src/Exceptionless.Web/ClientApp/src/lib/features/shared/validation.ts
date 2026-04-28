@@ -27,9 +27,11 @@ export function extractErrorMessage(error: unknown): string {
     if (typeof error === 'string') {
         return error;
     }
+
     if (error && typeof error === 'object' && 'message' in error && typeof (error as { message: unknown }).message === 'string') {
         return (error as { message: string }).message;
     }
+
     return String(error);
 }
 
@@ -49,6 +51,7 @@ export function getFieldError(field: FieldWithErrors): string | undefined {
     if (errors.length === 0) {
         return undefined;
     }
+
     return extractErrorMessage(errors[0]);
 }
 
@@ -67,6 +70,7 @@ export function getFieldErrors(field: FieldWithErrors, separator = ', '): string
     if (errors.length === 0) {
         return undefined;
     }
+
     return errors.map((e) => extractErrorMessage(e)).join(separator);
 }
 

@@ -1,9 +1,9 @@
 <script module lang="ts">
-    type TData = unknown;
+    type TData = RowData;
 </script>
 
-<script generics="TData" lang="ts">
-    import type { Column } from '@tanstack/svelte-table';
+<script generics="TData extends RowData" lang="ts">
+    import type { Column, RowData, StockFeatures } from '@tanstack/svelte-table';
     import type { HTMLAttributes } from 'svelte/elements';
 
     import { Button } from '$comp/ui/button';
@@ -15,7 +15,7 @@
     import EyeOff from '@lucide/svelte/icons/eye-off';
 
     type Props = HTMLAttributes<HTMLDivElement> & {
-        column: Column<TData, unknown>;
+        column: Column<StockFeatures, TData, unknown>;
     };
 
     let { children, class: className, column, ...restProps }: Props = $props();

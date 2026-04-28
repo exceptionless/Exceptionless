@@ -15,6 +15,7 @@ public class ApiMapper
     private readonly UserMapper _userMapper;
     private readonly WebHookMapper _webHookMapper;
     private readonly InvoiceMapper _invoiceMapper;
+    private readonly SavedViewMapper _savedViewMapper;
 
     public ApiMapper(TimeProvider timeProvider)
     {
@@ -24,6 +25,7 @@ public class ApiMapper
         _userMapper = new UserMapper();
         _webHookMapper = new WebHookMapper();
         _invoiceMapper = new InvoiceMapper();
+        _savedViewMapper = new SavedViewMapper();
     }
 
     // Organization mappings
@@ -73,4 +75,14 @@ public class ApiMapper
 
     public List<InvoiceGridModel> MapToInvoiceGridModels(IEnumerable<Stripe.Invoice> source)
         => _invoiceMapper.MapToInvoiceGridModels(source);
+
+    // SavedView mappings
+    public SavedView MapToSavedView(NewSavedView source)
+        => _savedViewMapper.MapToSavedView(source);
+
+    public ViewSavedView MapToViewSavedView(SavedView source)
+        => _savedViewMapper.MapToViewSavedView(source);
+
+    public List<ViewSavedView> MapToViewSavedViews(IEnumerable<SavedView> source)
+        => _savedViewMapper.MapToViewSavedViews(source);
 }

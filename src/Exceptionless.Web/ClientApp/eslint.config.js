@@ -45,6 +45,12 @@ export default ts.config(
     },
     {
         rules: {
+            curly: ['error', 'all'],
+            'padding-line-between-statements': ['error', { blankLine: 'always', next: '*', prev: 'block-like' }]
+        }
+    },
+    {
+        rules: {
             'svelte/no-navigation-without-resolve': 'off'
         }
     },

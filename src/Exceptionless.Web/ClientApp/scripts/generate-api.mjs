@@ -29,7 +29,9 @@ const FILE_PREFIX_PATTERN = /^\/\* eslint-disable \*\/\n\/\* tslint:disable \*\/
  * This function converts to the equivalent `type: "array"` + `nullable: true` format.
  */
 function fixNullableArrays(obj) {
-    if (!obj || typeof obj !== 'object') return;
+    if (!obj || typeof obj !== 'object') {
+        return;
+    }
 
     if (Array.isArray(obj)) {
         for (const item of obj) {

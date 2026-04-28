@@ -6,13 +6,22 @@ import type { Component } from 'svelte';
 import { routes as appRoutes } from './(app)/routes.svelte';
 import { routes as authRoutes } from './(auth)/routes.svelte';
 
+export type NavigationChild = {
+    href: string;
+    isDefault?: boolean;
+    title: string;
+};
+
 export type NavigationItem = {
+    children?: NavigationChild[];
+    defaultViewId?: string;
     group: string;
     href: ResolvedPathname | string;
     icon: Component | typeof Icon;
     openInNewTab?: boolean;
     show?: (context: NavigationItemContext) => boolean;
     title: string;
+    view?: string;
 };
 
 export type NavigationItemContext = {

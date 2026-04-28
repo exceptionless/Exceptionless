@@ -2,11 +2,10 @@
 	import { cn, type WithElementRef, type WithoutChildren } from "$lib/utils.js";
 	import type { HTMLAttributes } from "svelte/elements";
 	import { getPayloadConfigFromPayload, useChart, type TooltipPayload } from "./chart-utils.js";
-	import { getTooltipContext, Tooltip as TooltipPrimitive } from "layerchart";
+	import { getChartContext, Tooltip as TooltipPrimitive } from "layerchart";
 	import type { Snippet } from "svelte";
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	function defaultFormatter(value: any, _payload: TooltipPayload[]) {
+	function defaultFormatter(value: unknown, _payload: TooltipPayload[]) {
 		return `${value}`;
 	}
 
@@ -32,8 +31,8 @@
 		labelKey?: string;
 		hideIndicator?: boolean;
 		labelClassName?: string;
-		labelFormatter?: // eslint-disable-next-line @typescript-eslint/no-explicit-any
-			((value: any, payload: TooltipPayload[]) => string | number | Snippet) | null;
+		labelFormatter?:
+			((value: unknown, payload: TooltipPayload[]) => string | number | Snippet) | null;
 		formatter?: Snippet<
 			[
 				{
@@ -48,13 +47,14 @@
 	} = $props();
 
 	const chart = useChart();
-	const tooltipCtx = getTooltipContext();
+	const chartCtx = getChartContext();
+	const tooltipSeries = $derived(chartCtx.tooltip.series);
 
 	const formattedLabel = $derived.by(() => {
-		if (hideLabel || !tooltipCtx.payload?.length) return null;
+		if (hideLabel || !tooltipSeries?.length) return null;
 
-		const [item] = tooltipCtx.payload;
-		const key = labelKey ?? item?.label ?? item?.name ?? "value";
+		const [item] = tooltipSeries;
+		const key = labelKey ?? item?.label ?? item?.key ?? "value";
 
 		const itemConfig = item ? getPayloadConfigFromPayload(chart.config, item, key) : undefined;
 
@@ -65,10 +65,10 @@
 
 		if (value === undefined) return null;
 		if (!labelFormatter) return value;
-		return labelFormatter(value, tooltipCtx.payload);
+		return labelFormatter(value, tooltipSeries);
 	});
 
-	const nestLabel = $derived(tooltipCtx.payload.length === 1 && indicator !== "dot");
+	const nestLabel = $derived(tooltipSeries.length === 1 && indicator !== "dot");
 </script>
 
 {#snippet TooltipLabel()}
@@ -86,7 +86,7 @@
 <TooltipPrimitive.Root variant="none">
 	<div
 		class={cn(
-			"border-border/50 bg-background grid min-w-[9rem] items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl",
+			"border-border/50 bg-background grid min-w-36 items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl",
 			className
 		)}
 		{...restProps}
@@ -95,23 +95,23 @@
 			{@render TooltipLabel()}
 		{/if}
 		<div class="grid gap-1.5">
-			{#each tooltipCtx.payload as item, i (item.key + i)}
-				{@const key = `${nameKey || item.key || item.name || "value"}`}
+			{#each tooltipSeries as item, i (item.key + i)}
+				{@const key = `${nameKey || item.key || item.label || "value"}`}
 				{@const itemConfig = getPayloadConfigFromPayload(chart.config, item, key)}
-				{@const indicatorColor = color || item.payload?.color || item.color}
+				{@const indicatorColor = color || item.color}
 				<div
 					class={cn(
 						"[&>svg]:text-muted-foreground flex w-full flex-wrap items-stretch gap-2 [&>svg]:size-2.5",
 						indicator === "dot" && "items-center"
 					)}
 				>
-					{#if formatter && item.value !== undefined && item.name}
+					{#if formatter && item.value !== undefined && item.label}
 						{@render formatter({
 							value: item.value,
-							name: item.name,
+							name: item.label,
 							item,
 							index: i,
-							payload: tooltipCtx.payload,
+							payload: tooltipSeries,
 						})}
 					{:else}
 						{#if itemConfig?.icon}
@@ -142,7 +142,7 @@
 									{@render TooltipLabel()}
 								{/if}
 								<span class="text-muted-foreground">
-									{itemConfig?.label || item.name}
+									{itemConfig?.label || item.label}
 								</span>
 							</div>
 							{#if item.value !== undefined}

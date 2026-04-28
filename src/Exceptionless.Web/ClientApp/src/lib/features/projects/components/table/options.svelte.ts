@@ -5,12 +5,12 @@ import type { CreateQueryResult } from '@tanstack/svelte-query';
 import NumberFormatter from '$comp/formatters/number.svelte';
 import ProjectActionsCell from '$features/projects/components/table/project-actions-cell.svelte';
 import { getSharedTableOptions } from '$features/shared/table.svelte';
-import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
+import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
 import type { GetOrganizationProjectsParams, GetProjectsMode } from '../../api.svelte';
 
-export function getColumns<TProject extends ViewProject>(mode: GetProjectsMode = 'stats'): ColumnDef<TProject>[] {
-    const columns: ColumnDef<TProject>[] = [
+export function getColumns<TProject extends ViewProject>(mode: GetProjectsMode = 'stats'): ColumnDef<StockFeatures, TProject, unknown>[] {
+    const columns: ColumnDef<StockFeatures, TProject, unknown>[] = [
         {
             accessorKey: 'name',
             cell: (info) => info.getValue(),

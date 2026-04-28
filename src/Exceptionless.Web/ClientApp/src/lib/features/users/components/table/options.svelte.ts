@@ -5,12 +5,12 @@ import type { CreateQueryResult } from '@tanstack/svelte-query';
 import BooleanFormatter from '$features/shared/components/formatters/boolean.svelte';
 import { getSharedTableOptions } from '$features/shared/table.svelte';
 import UserActionsCell from '$features/users/components/table/user-actions-cell.svelte';
-import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
+import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
 import type { GetOrganizationUsersParams } from '../../api.svelte';
 
-export function getColumns<TUser extends ViewUser>(organizationId: string): ColumnDef<TUser>[] {
-    const columns: ColumnDef<TUser>[] = [
+export function getColumns<TUser extends ViewUser>(organizationId: string): ColumnDef<StockFeatures, TUser, unknown>[] {
+    const columns: ColumnDef<StockFeatures, TUser, unknown>[] = [
         {
             accessorKey: 'email_address',
             cell: (info) => info.getValue(),

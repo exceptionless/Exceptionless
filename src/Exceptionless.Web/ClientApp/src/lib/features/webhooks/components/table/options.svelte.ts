@@ -4,12 +4,12 @@ import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import { getSharedTableOptions } from '$features/shared/table.svelte';
 import WebhookActionsCell from '$features/webhooks/components/table/webhook-actions-cell.svelte';
-import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
+import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
 import type { GetProjectWebhooksParams } from '../../api.svelte';
 
-export function getColumns<TWebhook extends Webhook>(): ColumnDef<TWebhook>[] {
-    const columns: ColumnDef<TWebhook>[] = [
+export function getColumns<TWebhook extends Webhook>(): ColumnDef<StockFeatures, TWebhook, unknown>[] {
+    const columns: ColumnDef<StockFeatures, TWebhook, unknown>[] = [
         {
             accessorKey: 'url',
             cell: (info) => info.getValue(),

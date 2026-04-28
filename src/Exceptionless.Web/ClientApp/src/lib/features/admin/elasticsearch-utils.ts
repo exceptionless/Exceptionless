@@ -38,6 +38,7 @@ export function healthLabel(status: null | number | string | undefined): string 
     if (typeof status === 'string') {
         return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
     }
+
     switch (status) {
         case 0:
             return 'Green';

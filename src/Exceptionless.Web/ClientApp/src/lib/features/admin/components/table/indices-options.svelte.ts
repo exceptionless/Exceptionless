@@ -3,12 +3,12 @@ import type { ElasticsearchIndexDetail } from '$features/admin/models';
 import Bytes from '$comp/formatters/bytes.svelte';
 import Number from '$comp/formatters/number.svelte';
 import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
-import { type ColumnDef, getSortedRowModel, renderComponent } from '@tanstack/svelte-table';
+import { type ColumnDef, createSortedRowModel, renderComponent, sortFns, type StockFeatures } from '@tanstack/svelte-table';
 
 import HealthBadgeCell from './health-badge-cell.svelte';
 import UnassignedShardsCell from './unassigned-shards-cell.svelte';
 
-export function getColumns(): ColumnDef<ElasticsearchIndexDetail>[] {
+export function getColumns(): ColumnDef<StockFeatures, ElasticsearchIndexDetail, unknown>[] {
     return [
         {
             accessorKey: 'index',
@@ -86,7 +86,7 @@ export function getTableOptions(queryParameters: TableMemoryPagingParameters, ge
             return getColumns();
         },
         configureOptions: (options) => {
-            options.getSortedRowModel = getSortedRowModel();
+            options._rowModels = { ...options._rowModels, sortedRowModel: createSortedRowModel(sortFns) };
             options.initialState = { sorting: [{ desc: true, id: 'store_size_in_bytes' }] };
             options.manualSorting = false;
             return options;

@@ -4,12 +4,12 @@
 
     import * as DataTable from '$comp/data-table';
     import DelayedRender from '$comp/delayed-render.svelte';
-    import { type Table } from '@tanstack/svelte-table';
+    import { type StockFeatures, type Table } from '@tanstack/svelte-table';
 
     interface Props {
         isLoading: boolean;
         limit: number;
-        table: Table<MigrationStateRow>;
+        table: Table<StockFeatures, MigrationStateRow>;
         toolbarChildren?: Snippet;
     }
 
