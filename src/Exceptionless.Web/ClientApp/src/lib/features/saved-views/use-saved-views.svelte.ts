@@ -95,7 +95,6 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         const view = views.find((v) => v.id === savedId);
-
         if (!view) {
             // Skip while refetching to avoid false-positive clears during cache invalidation
             if (isFetching) {
