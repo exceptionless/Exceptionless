@@ -204,7 +204,16 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "Private views cannot be set as the default. Default views are organization-wide.");
         }
 
-        if (changes.GetChangedPropertyNames().Contains(nameof(UpdateSavedView.FilterDefinitions))
+        // Delta<T> bypasses IValidatableObject — enforce MaxLength and format validation manually
+        var changedNames = changes.GetChangedPropertyNames();
+        var lengthResult = ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Name), 100)
+            ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Filter), 2000)
+            ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Time), 100)
+            ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.FilterDefinitions), 10000);
+        if (lengthResult is not null)
+            return lengthResult;
+
+        if (changedNames.Contains(nameof(UpdateSavedView.FilterDefinitions))
             && changes.TryGetPropertyValue(nameof(UpdateSavedView.FilterDefinitions), out object? filterDefsValue)
             && filterDefsValue is string filterDefs
             && !NewSavedView.IsValidJsonArray(filterDefs))
@@ -212,7 +221,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "FilterDefinitions must be a valid JSON array.");
         }
 
-        if (changes.GetChangedPropertyNames().Contains(nameof(UpdateSavedView.Columns)))
+        if (changedNames.Contains(nameof(UpdateSavedView.Columns)))
         {
             var patchedChanges = new UpdateSavedView();
             changes.Patch(patchedChanges);
@@ -224,6 +233,18 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         }
 
         return await base.CanUpdateAsync(original, changes);
+    }
+
+    private static PermissionResult? ValidateStringLength<T>(Delta<T> changes, IEnumerable<string> changedNames, string propertyName, int maxLength) where T : class, new()
+    {
+        if (changedNames.Contains(propertyName)
+            && changes.TryGetPropertyValue(propertyName, out object? value)
+            && value is string s && s.Length > maxLength)
+        {
+            return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, $"{propertyName} cannot exceed {maxLength} characters.");
+        }
+
+        return null;
     }
 
     protected override async Task<SavedView> AddModelAsync(SavedView value)

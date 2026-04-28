@@ -1507,4 +1507,38 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         );
     }
 
+    [Fact]
+    public async Task PatchAsync_NameExceedsMaxLength_ReturnsUnprocessableEntity()
+    {
+        // Arrange
+        var created = await CreateSavedViewAsync("MaxLen Test", "status:open", "events");
+        Assert.NotNull(created);
+
+        // Act & Assert — Name max is 100
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", created.Id)
+            .Content(new UpdateSavedView { Name = new string('x', 101) })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Fact]
+    public async Task PatchAsync_FilterExceedsMaxLength_ReturnsUnprocessableEntity()
+    {
+        // Arrange
+        var created = await CreateSavedViewAsync("MaxLen Filter", "status:open", "events");
+        Assert.NotNull(created);
+
+        // Act & Assert — Filter max is 2000
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", created.Id)
+            .Content(new UpdateSavedView { Filter = new string('x', 2001) })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
 }
