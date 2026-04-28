@@ -28,8 +28,8 @@ curl -X PUT -H "Content-Type: application/json" -g -k -d '{ "index_patterns": ["
 curl -k -X DELETE "https://elastic:$ELASTIC_MONITOR_PASSWORD@localhost:9280/.ds-metrics-elastic_agent.filebeat_input-default-2024.12.03-000001"
 
 # connect to redis OR use k9s to shell into a redis pod
-$REDIS_PASSWORD = $(kubectl get secret --namespace ex-prod ex-prod-redis-secret -o go-template='{{index .data "password" | base64decode }}')
-kubectl exec -it ex-prod-redis-cluster-leader-0 -n ex-prod -- redis-cli -a $REDIS_PASSWORD
+$REDIS_PASSWORD = $(kubectl get secret --namespace ex-prod ex-prod-kb-redis-account-default -o jsonpath='{.data.password}' | ForEach-Object { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) })
+kubectl exec -it ex-prod-kb-redis-0 -n ex-prod -c redis -- redis-cli -a $REDIS_PASSWORD
 
 # open kubernetes dashboard
 $DASHBOARD_PASSWORD = $(kubectl get secret --namespace kubernetes-dashboard admin-user-token-w8jg7 -o go-template='{{.data.token | base64decode }}')
