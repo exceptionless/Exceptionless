@@ -1,13 +1,13 @@
 <script module lang="ts">
-    type TData = unknown;
+    type TData = RowData;
 </script>
 
-<script generics="TData" lang="ts">
+<script generics="TData extends RowData" lang="ts">
     import type { Snippet } from 'svelte';
 
     import { A } from '$comp/typography';
     import * as Table from '$comp/ui/table';
-    import { type Cell, FlexRender, type Header, type Table as SvelteTable } from '@tanstack/svelte-table';
+    import { type Cell, FlexRender, type Header, type RowData, type StockFeatures, type Table as SvelteTable } from '@tanstack/svelte-table';
 
     import DataTableColumnHeader from './data-table-column-header.svelte';
 
@@ -15,23 +15,25 @@
         children?: Snippet;
         rowClick?: (row: TData, event?: MouseEvent) => void;
         rowHref?: (row: TData) => string;
-        table: SvelteTable<TData>;
+        table: SvelteTable<StockFeatures, TData>;
     }
 
     let { children, rowClick, rowHref, table }: Props = $props();
 
-    function getHeaderColumnClass(header: Header<TData, unknown>) {
+    function getHeaderColumnClass(header: Header<StockFeatures, TData, unknown>) {
         const metaClass = (header.column.columnDef.meta as { class?: string })?.class || '';
         if (!metaClass) {
             return '';
         }
+
         if (metaClass.includes('text-right')) {
             return [metaClass, 'justify-end'].join(' ');
         }
+
         return metaClass;
     }
 
-    function getCellClass(cell: Cell<TData, unknown>) {
+    function getCellClass(cell: Cell<StockFeatures, TData, unknown>) {
         if (cell.column.id === 'select') {
             return;
         }
@@ -41,7 +43,7 @@
         return classes.filter(Boolean).join(' ');
     }
 
-    function onCellClick(event: MouseEvent, cell: Cell<TData, unknown>): void {
+    function onCellClick(event: MouseEvent, cell: Cell<StockFeatures, TData, unknown>): void {
         if (cell.column.id === 'select') {
             return;
         }
@@ -73,9 +75,7 @@
                     {#each headerGroup.headers as header (header.id)}
                         {@const headerClass = getHeaderColumnClass(header)}
                         <Table.Head class={headerClass}>
-                            <DataTableColumnHeader class={headerClass} column={header.column}
-                                ><FlexRender content={header.column.columnDef.header} context={header.getContext()} /></DataTableColumnHeader
-                            >
+                            <DataTableColumnHeader class={headerClass} column={header.column}><FlexRender {header} /></DataTableColumnHeader>
                         </Table.Head>
                     {/each}
                 </Table.Row>
@@ -92,12 +92,12 @@
                             {@const href = rowHref(cell.row.original)}
                             <A {href} class="contents" onclick={(event) => onCellClick(event, cell)} variant="ghost">
                                 <Table.Cell class={getCellClass(cell)}>
-                                    <FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
+                                    <FlexRender {cell} />
                                 </Table.Cell>
                             </A>
                         {:else}
                             <Table.Cell class={getCellClass(cell)} onclick={(event) => onCellClick(event, cell)}>
-                                <FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
+                                <FlexRender {cell} />
                             </Table.Cell>
                         {/if}
                     {/each}

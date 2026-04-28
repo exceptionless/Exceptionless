@@ -29,6 +29,8 @@
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { getColumns } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
+    import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import * as agg from '$features/shared/api/aggregations';
     import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts';
@@ -86,6 +88,7 @@
     const DEFAULT_PARAMS = {
         filter: '(type:404 OR type:error) (status:open OR status:regressed)',
         limit: DEFAULT_LIMIT,
+        saved: undefined as string | undefined,
         time: DEFAULT_TIME_RANGE
     };
 
@@ -100,8 +103,19 @@
         schema: {
             filter: 'string',
             limit: 'number',
+            saved: 'string',
             time: 'string'
         }
+    });
+
+    const VIEW = 'issues';
+    const savedViewsState = useSavedViews({
+        filterCacheKey,
+        getColumnVisibility: () => table.store.state.columnVisibility,
+        queryParams,
+        setColumnVisibility: (v) => table.setColumnVisibility(v),
+        updateFilterCache,
+        view: VIEW
     });
 
     watch(
@@ -199,7 +213,7 @@
         })
     );
 
-    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.getState().pagination.pageIndex === 0);
+    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.store.state.pagination.pageIndex === 0);
 
     function reset() {
         table.resetRowSelection();
@@ -232,7 +246,7 @@
         if (message.id && message.change_type === ChangeType.Removed) {
             removeTableSelection(table, message.id);
 
-            if (removeTableData(table, (doc) => doc.id === message.id)) {
+            if (removeTableData(table, (doc: EventSummaryModel<SummaryTemplateKeys>) => doc.id === message.id)) {
                 // If the grid data is empty from all events being removed, we should refresh the data.
                 if (isTableEmpty(table)) {
                     await throttledLoadData();
@@ -305,6 +319,20 @@
             </FacetedFilter.Root>
         </div>
         <div class="ml-auto flex shrink-0 items-start gap-2">
+            {#if savedViewsState.isEnabled}
+                <SavedViewPicker
+                    activeSavedView={savedViewsState.activeSavedView}
+                    columnVisibility={table.store.state.columnVisibility}
+                    filters={filters ?? []}
+                    isModified={savedViewsState.isModified}
+                    onLoadView={savedViewsState.handleLoadView}
+                    onResetToSaved={savedViewsState.handleResetToSaved}
+                    onClearSavedView={savedViewsState.handleClearSavedView}
+                    savedViews={savedViewsState.savedViews}
+                    time={queryParams.time ?? undefined}
+                    view={VIEW}
+                />
+            {/if}
             <RefreshButton
                 onRefresh={handleRefresh}
                 isRefreshing={clientStatus.isLoading}

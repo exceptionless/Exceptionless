@@ -6,6 +6,7 @@ import Billing from '@lucide/svelte/icons/credit-card';
 import Folder from '@lucide/svelte/icons/folder';
 import Settings from '@lucide/svelte/icons/settings';
 import Users from '@lucide/svelte/icons/users';
+import Zap from '@lucide/svelte/icons/zap';
 
 import type { NavigationItem } from '../../../routes.svelte';
 
@@ -46,6 +47,13 @@ export function routes(): NavigationItem[] {
             href: resolve('/(app)/organization/[organizationId]/billing', { organizationId }),
             icon: Billing,
             title: 'Billing'
+        },
+        {
+            group: 'Organization Settings',
+            href: resolve('/(app)/organization/[organizationId]/features', { organizationId }),
+            icon: Zap,
+            show: (ctx) => !!ctx.user?.roles?.includes('global'),
+            title: 'Features'
         },
         {
             group: 'Settings',

@@ -26,6 +26,7 @@ public sealed class OrganizationIndex : VersionedIndex<Organization>
                 .Text(e => e.Name, t => t.AddKeywordField())
                 .Keyword(e => e.StripeCustomerId)
                 .Boolean(e => e.HasPremiumFeatures)
+                .Keyword(e => e.Features)
                 .Keyword(e => e.PlanId)
                 .Keyword(e => e.PlanName, k => k.IgnoreAbove(256))
                 .Date(e => e.SubscribeDate)

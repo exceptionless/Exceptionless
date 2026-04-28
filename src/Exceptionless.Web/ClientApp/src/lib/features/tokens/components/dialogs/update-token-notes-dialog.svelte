@@ -32,6 +32,7 @@
                     if (error instanceof ProblemDetails) {
                         return problemDetailsToFormErrors(error);
                     }
+
                     return { form: 'An unexpected error occurred' };
                 }
             }

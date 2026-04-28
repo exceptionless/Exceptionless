@@ -3,12 +3,12 @@ import type { ElasticsearchSnapshot } from '$features/admin/models';
 import DateTime from '$comp/formatters/date-time.svelte';
 import Number from '$comp/formatters/number.svelte';
 import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
-import { type ColumnDef, getSortedRowModel, renderComponent } from '@tanstack/svelte-table';
+import { type ColumnDef, createSortedRowModel, renderComponent, sortFns, type StockFeatures } from '@tanstack/svelte-table';
 
 import ShardsCell from './shards-cell.svelte';
 import SnapshotStatusCell from './snapshot-status-cell.svelte';
 
-export function getColumns(): ColumnDef<ElasticsearchSnapshot>[] {
+export function getColumns(): ColumnDef<StockFeatures, ElasticsearchSnapshot, unknown>[] {
     return [
         {
             accessorKey: 'name',
@@ -80,7 +80,7 @@ export function getTableOptions(queryParameters: TableMemoryPagingParameters, ge
         },
         configureOptions: (options) => {
             options.getRowId = (row) => row.repository + '/' + row.name;
-            options.getSortedRowModel = getSortedRowModel();
+            options._rowModels = { ...options._rowModels, sortedRowModel: createSortedRowModel(sortFns) };
             options.initialState = { sorting: [{ desc: true, id: 'start_time' }] };
             options.manualSorting = false;
             return options;
