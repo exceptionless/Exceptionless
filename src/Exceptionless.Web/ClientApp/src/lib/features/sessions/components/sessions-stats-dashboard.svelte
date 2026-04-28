@@ -79,7 +79,7 @@
             {:else}
                 <div class="text-2xl font-bold">
                     <!-- avgDuration is in seconds, Duration expects milliseconds -->
-                    <Duration value={avgDuration * 1000} />
+                    <Duration value={avgDuration > 0 ? avgDuration * 1000 : undefined} />
                 </div>
             {/if}
         </Card.Content>

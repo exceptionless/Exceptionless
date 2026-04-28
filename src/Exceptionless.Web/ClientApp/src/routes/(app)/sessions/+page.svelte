@@ -8,8 +8,7 @@
     import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
     import RefreshButton from '$comp/refresh-button.svelte';
-    import { A, H3 } from '$comp/typography';
-    import * as Alert from '$comp/ui/alert';
+    import { H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Label } from '$comp/ui/label';
     import * as Sheet from '$comp/ui/sheet';
@@ -43,7 +42,6 @@
     import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import ExternalLink from '@lucide/svelte/icons/external-link';
-    import InfoIcon from '@lucide/svelte/icons/info';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
@@ -319,26 +317,9 @@
     function onRangeSelect(start: Date, end: Date) {
         onFilterChanged(new DateFilter('date', toDateMathRange(start, end)));
     }
-
-    function handleUpgrade() {
-        // Navigate to billing page
-        if (organization.current) {
-            window.location.href = resolve('/(app)/organization/[organizationId]/billing', { organizationId: organization.current });
-        }
-    }
 </script>
 
 <div class="flex flex-col">
-    {#if organizationQuery.isSuccess && !hasPremiumFeatures}
-        <Alert.Root variant="destructive" class="mb-4">
-            <InfoIcon class="size-4" />
-            <Alert.Title>Premium Feature</Alert.Title>
-            <Alert.Description>
-                <A onclick={handleUpgrade}>Upgrade now</A> to enable sessions and other premium features!
-            </Alert.Description>
-        </Alert.Root>
-    {/if}
-
     <div class="mb-4 flex flex-wrap items-start gap-2">
         <H3 class="my-0 shrink-0">Sessions</H3>
         <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">

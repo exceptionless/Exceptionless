@@ -46,7 +46,7 @@
 
     let { children }: Props = $props();
     let isAuthenticated = $derived(!!accessToken.current);
-    let requiresPremium = $derived(filterUsesPremiumFeatures(page.url.searchParams.get('filter')));
+    let requiresPremium = $derived(page.url.pathname.endsWith('/sessions') || filterUsesPremiumFeatures(page.url.searchParams.get('filter')));
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
 
@@ -385,7 +385,7 @@
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
 
                 {#if showOrganizationNotifications.current}
-                    <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} class="mb-4" />
+                    <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} premiumFeatureName={page.url.pathname.endsWith('/sessions') ? 'Sessions' : undefined} class="mb-4" />
                 {/if}
 
                 <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>
