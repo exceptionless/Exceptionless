@@ -1620,6 +1620,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         // Act & Assert
         await SendRequestAsync(r => r
             .Patch()
+            .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
             .Content(new { columns })
             .StatusCodeShouldBeUnprocessableEntity()
@@ -1636,6 +1637,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         // Act & Assert
         await SendRequestAsync(r => r
             .Patch()
+            .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
             .Content(new { name = "   " })
             .StatusCodeShouldBeUnprocessableEntity()

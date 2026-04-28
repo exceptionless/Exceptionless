@@ -53,7 +53,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         page = GetPage(page);
         limit = GetLimit(limit);
         var results = await _repository.GetByOrganizationForUserAsync(organizationId, CurrentUser.Id, o => o.PageNumber(page).PageLimit(limit));
-        AppDiagnostics.SavedViewsRetrieved.Add((int)results.Total);
+        AppDiagnostics.SavedViewsSize.Add((int)results.Total);
 
         var viewModels = MapToViewModels(results.Documents);
         return OkWithResourceLinks(viewModels, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
@@ -81,7 +81,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         page = GetPage(page);
         limit = GetLimit(limit);
         var results = await _repository.GetByViewForUserAsync(organizationId, viewType, CurrentUser.Id, o => o.PageNumber(page).PageLimit(limit));
-        AppDiagnostics.SavedViewsRetrieved.Add((int)results.Total);
+        AppDiagnostics.SavedViewsViewTypeSize.Add((int)results.Total);
 
         var viewModels = MapToViewModels(results.Documents);
         return OkWithResourceLinks(viewModels, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
