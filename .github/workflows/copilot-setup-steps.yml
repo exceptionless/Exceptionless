@@ -28,16 +28,23 @@ jobs:
           dotnet-version: 10.0.*
           dotnet-quality: ga
 
-      - name: Start Services
-        working-directory: docker
-        run: docker compose up -d elasticsearch &
+      - name: Install Aspire CLI
+        run: |
+          export PATH="$HOME/.dotnet/tools:$PATH"
+          if dotnet tool list --global | grep -Eiq '^aspire\.cli[[:space:]]'; then
+            dotnet tool update --global Aspire.Cli --version 13.2.4
+          else
+            dotnet tool install --global Aspire.Cli --version 13.2.4
+          fi
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+          aspire --version
 
       - uses: actions/cache@v5
         with:
-            path: ~/.nuget/packages
-            key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
-            restore-keys: |
-                nuget-${{ runner.os }}-
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
 
       - name: Nuget Restore
         run: dotnet restore

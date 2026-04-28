@@ -124,9 +124,18 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
         {
             schemaType |= JsonSchemaType.String;
         }
+        else if (type.IsGenericType && type.GetInterfaces().Concat([type]).Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDictionary<,>)))
+        {
+            schemaType |= JsonSchemaType.Object;
+            var valueType = type.GetGenericArguments().ElementAtOrDefault(1);
+            if (valueType is not null)
+            {
+                schema.AdditionalProperties = CreateSchemaForType(valueType, false);
+            }
+        }
         else if (type.IsArray || (type.IsGenericType && typeof(System.Collections.IEnumerable).IsAssignableFrom(type)))
         {
-            schemaType = JsonSchemaType.Array;
+            schemaType |= JsonSchemaType.Array;
         }
         else
         {

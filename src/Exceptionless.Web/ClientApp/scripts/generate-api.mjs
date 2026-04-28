@@ -10,7 +10,7 @@ const rootDir = path.resolve(__dirname, '..');
 const outputDir = path.resolve(rootDir, 'src/lib/generated');
 
 // SWAGGER_URL can be an HTTP URL or a file path (for regenerating from baseline during development)
-const swaggerSource = process.env.SWAGGER_URL || 'http://localhost:5200/docs/v2/openapi.json';
+const swaggerSource = process.env.SWAGGER_URL || 'http://localhost:7110/docs/v2/openapi.json';
 const isLocalFile = swaggerSource.startsWith('/') || swaggerSource.startsWith('.');
 
 if (isLocalFile && !existsSync(swaggerSource)) {
@@ -29,7 +29,9 @@ const FILE_PREFIX_PATTERN = /^\/\* eslint-disable \*\/\n\/\* tslint:disable \*\/
  * This function converts to the equivalent `type: "array"` + `nullable: true` format.
  */
 function fixNullableArrays(obj) {
-    if (!obj || typeof obj !== 'object') return;
+    if (!obj || typeof obj !== 'object') {
+        return;
+    }
 
     if (Array.isArray(obj)) {
         for (const item of obj) {

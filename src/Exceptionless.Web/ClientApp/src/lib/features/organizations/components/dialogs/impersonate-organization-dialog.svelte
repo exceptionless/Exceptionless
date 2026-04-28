@@ -172,6 +172,7 @@
                 return hoursWithEvents[0]!.date;
             }
         }
+
         // Fall back to monthly usage if no hourly data
         if (org.usage && org.usage.length > 0) {
             const monthsWithEvents = org.usage.filter((u) => u.total > 0).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -179,6 +180,7 @@
                 return monthsWithEvents[0]!.date;
             }
         }
+
         return null;
     }
 </script>

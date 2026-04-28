@@ -112,6 +112,7 @@ public class Bootstrapper
             handlers.Register<SetProjectIsConfiguredWorkItem>(s.GetRequiredService<SetProjectIsConfiguredWorkItemHandler>);
             handlers.Register<UpdateProjectNotificationSettingsWorkItem>(s.GetRequiredService<UpdateProjectNotificationSettingsWorkItemHandler>);
             handlers.Register<UserMaintenanceWorkItem>(s.GetRequiredService<UserMaintenanceWorkItemHandler>);
+            handlers.Register<GenerateSampleEventsWorkItem>(s.GetRequiredService<GenerateSampleEventsWorkItemHandler>);
             return handlers;
         });
 
@@ -153,6 +154,7 @@ public class Bootstrapper
         services.AddSingleton<IProjectRepository, ProjectRepository>();
         services.AddSingleton<IUserRepository, UserRepository>();
         services.AddSingleton<IWebHookRepository, WebHookRepository>();
+        services.AddSingleton<ISavedViewRepository, SavedViewRepository>();
         services.AddSingleton<ITokenRepository, TokenRepository>();
 
         services.AddSingleton<IGeocodeService, NullGeocodeService>();
@@ -253,6 +255,7 @@ public class Bootstrapper
 
         var dataHelper = container.GetRequiredService<SampleDataService>();
         await dataHelper.CreateDataAsync();
+        await dataHelper.EnqueueSampleEventsAsync(eventCount: 100, daysBack: 7);
     }
 
     public static void AddHostedJobs(IServiceCollection services, ILoggerFactory loggerFactory)

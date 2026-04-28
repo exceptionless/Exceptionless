@@ -135,6 +135,7 @@ export function parseDate(expression: string, relativeBaseTime?: Date, isUpperLi
     if (!result.success) {
         throw new Error(result.error || 'Failed to parse date math expression');
     }
+
     return result.date;
 }
 
@@ -217,6 +218,7 @@ export function parseDateMath(expression: string, relativeBaseTime?: Date, isUpp
                     success: false
                 };
             }
+
             baseTime = parseResult.date;
         } else {
             return {
@@ -546,6 +548,7 @@ function roundToUnit(date: Date, unit: TimeUnit, isUpperLimit = false): Date {
                 // End of day: 23:59:59.999
                 result.setUTCHours(23, 59, 59, 999);
             }
+
             break;
         case 'h':
         case 'H':
@@ -554,6 +557,7 @@ function roundToUnit(date: Date, unit: TimeUnit, isUpperLimit = false): Date {
                 result.setUTCHours(result.getUTCHours() + 1);
                 result.setTime(result.getTime() - 1);
             }
+
             break;
         case 'M':
             result.setUTCDate(1);
@@ -562,6 +566,7 @@ function roundToUnit(date: Date, unit: TimeUnit, isUpperLimit = false): Date {
                 result.setUTCMonth(result.getUTCMonth() + 1);
                 result.setTime(result.getTime() - 1);
             }
+
             break;
         case 'm':
             result.setUTCSeconds(0, 0);
@@ -569,6 +574,7 @@ function roundToUnit(date: Date, unit: TimeUnit, isUpperLimit = false): Date {
                 result.setUTCMinutes(result.getUTCMinutes() + 1);
                 result.setTime(result.getTime() - 1);
             }
+
             break;
         case 's':
             result.setUTCMilliseconds(0);
@@ -576,6 +582,7 @@ function roundToUnit(date: Date, unit: TimeUnit, isUpperLimit = false): Date {
                 result.setUTCSeconds(result.getUTCSeconds() + 1);
                 result.setTime(result.getTime() - 1);
             }
+
             break;
         case 'w': {
             // Round to start of week (Sunday like backend) - use UTC
@@ -586,8 +593,10 @@ function roundToUnit(date: Date, unit: TimeUnit, isUpperLimit = false): Date {
                 result.setUTCDate(result.getUTCDate() + 7);
                 result.setTime(result.getTime() - 1);
             }
+
             break;
         }
+
         case 'y':
             result.setUTCMonth(0, 1);
             result.setUTCHours(0, 0, 0, 0);
@@ -595,6 +604,7 @@ function roundToUnit(date: Date, unit: TimeUnit, isUpperLimit = false): Date {
                 result.setUTCFullYear(result.getUTCFullYear() + 1);
                 result.setTime(result.getTime() - 1);
             }
+
             break;
         default:
             throw new Error(`Invalid time unit for rounding: ${unit}`);

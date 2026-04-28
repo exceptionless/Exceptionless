@@ -38,6 +38,7 @@ export class WebSocketClient {
                 this._url = `${wsProtocol}${host}${this._path}`;
             }
         }
+
         return this._url;
     }
 
@@ -210,6 +211,7 @@ export class WebSocketClient {
         if (this._options.reconnectDelay) {
             return this._options.reconnectDelay(attempt);
         }
+
         // Default: exponential backoff 1s, 2s, 4s, 8s, 16s, max 30s
         return Math.min(1000 * Math.pow(2, attempt - 1), 30000);
     }

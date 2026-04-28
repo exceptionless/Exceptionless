@@ -1,4 +1,5 @@
 import type { WebSocketMessageValue } from '$features/websockets/models';
+import type { BillingPlan, ChangePlanRequest, ChangePlanResult } from '$lib/generated/api';
 import type { QueryClient } from '@tanstack/svelte-query';
 
 import { accessToken } from '$features/auth/index.svelte';
@@ -22,20 +23,29 @@ export async function invalidateOrganizationQueries(queryClient: QueryClient, me
 
 export const queryKeys = {
     adminSearch: (params: GetAdminSearchOrganizationsParams) => [...queryKeys.list(params.mode), 'admin', { ...params }] as const,
+    changePlan: (id: string | undefined) => [...queryKeys.type, id, 'change-plan'] as const,
     deleteOrganization: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'delete'] as const,
     id: (id: string | undefined, mode: 'stats' | undefined) => (mode ? ([...queryKeys.type, id, { mode }] as const) : ([...queryKeys.type, id] as const)),
     ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
     invoice: (id: string | undefined) => [...queryKeys.type, 'invoice', id] as const,
     invoices: (id: string | undefined) => [...queryKeys.type, id, 'invoices'] as const,
     list: (mode: 'stats' | undefined) => (mode ? ([...queryKeys.type, 'list', { mode }] as const) : ([...queryKeys.type, 'list'] as const)),
+    plans: (id: string | undefined) => [...queryKeys.type, id, 'plans'] as const,
     postOrganization: () => [...queryKeys.type, 'post-organization'] as const,
     setBonusOrganization: (id: string | undefined) => [...queryKeys.type, id, 'set-bonus'] as const,
+    setFeature: (id: string | undefined) => [...queryKeys.type, id, 'set-feature'] as const,
     suspendOrganization: (id: string | undefined) => [...queryKeys.type, id, 'suspend'] as const,
     type: ['Organization'] as const,
     unsuspendOrganization: (id: string | undefined) => [...queryKeys.type, id, 'unsuspend'] as const
 };
 
 export interface AddOrganizationUserRequest {
+    route: {
+        organizationId: string;
+    };
+}
+
+export interface ChangePlanMutationRequest {
     route: {
         organizationId: string;
     };
@@ -110,6 +120,12 @@ export interface GetOrganizationsRequest {
     params?: GetOrganizationsParams;
 }
 
+export interface GetPlansRequest {
+    route: {
+        organizationId: string;
+    };
+}
+
 export interface PatchOrganizationRequest {
     route: {
         id: string;
@@ -133,6 +149,12 @@ export interface PostSuspendOrganizationRequest {
     };
 }
 
+export interface SetOrganizationFeatureRequest {
+    route: {
+        id: string | undefined;
+    };
+}
+
 export function addOrganizationUser(request: AddOrganizationUserRequest) {
     const queryClient = useQueryClient();
     return createMutation<{ emailAddress: string }, ProblemDetails, string>(() => ({
@@ -146,7 +168,26 @@ export function addOrganizationUser(request: AddOrganizationUserRequest) {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, undefined) });
+            // Also invalidate the user list for this org (different query namespace from Organization)
             queryClient.invalidateQueries({ queryKey: ['User', 'organization', request.route.organizationId] });
+        }
+    }));
+}
+
+export function changePlanMutation(request: ChangePlanMutationRequest) {
+    const queryClient = useQueryClient();
+    return createMutation<ChangePlanResult, ProblemDetails, ChangePlanRequest>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.organizationId,
+        mutationFn: async (params: ChangePlanRequest) => {
+            const client = useFetchClient();
+            const response = await client.postJSON<ChangePlanResult>(`organizations/${request.route.organizationId}/change-plan`, params);
+            return response.data!;
+        },
+        mutationKey: queryKeys.changePlan(request.route.organizationId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, undefined) });
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, 'stats') });
+            queryClient.invalidateQueries({ queryKey: queryKeys.plans(request.route.organizationId) });
         }
     }));
 }
@@ -184,6 +225,7 @@ export function deleteOrganizationUser(request: DeleteOrganizationUserRequest) {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, undefined) });
+            // Also invalidate the user list for this org (different query namespace from Organization)
             queryClient.invalidateQueries({ queryKey: ['User', 'organization', request.route.organizationId] });
         }
     }));
@@ -325,6 +367,24 @@ export function getOrganizationsQuery(request: GetOrganizationsRequest) {
     }));
 }
 
+/**
+ * Query to fetch available billing plans for an organization.
+ */
+export function getPlansQuery(request: GetPlansRequest) {
+    return createQuery<BillingPlan[], ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.organizationId,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<BillingPlan[]>(`organizations/${request.route.organizationId}/plans`, {
+                signal
+            });
+
+            return response.data!;
+        },
+        queryKey: queryKeys.plans(request.route.organizationId)
+    }));
+}
+
 export function patchOrganization(request: PatchOrganizationRequest) {
     const queryClient = useQueryClient();
 
@@ -410,6 +470,52 @@ export function postSuspendOrganization(request: PostSuspendOrganizationRequest)
             // TODO: Normalize all this invalidation.
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, 'stats') });
+            queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
+        }
+    }));
+}
+
+export function removeOrganizationFeature(request: SetOrganizationFeatureRequest) {
+    const queryClient = useQueryClient();
+    return createMutation<boolean, ProblemDetails, string>(() => ({
+        mutationFn: async (feature: string) => {
+            if (!request.route.id) {
+                throw new Error('Organization ID is required');
+            }
+
+            const client = useFetchClient();
+            const response = await client.delete(`organizations/${request.route.id}/features/${feature}`);
+            return response.ok;
+        },
+        mutationKey: queryKeys.setFeature(request.route.id),
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+            queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
+        }
+    }));
+}
+
+export function setOrganizationFeature(request: SetOrganizationFeatureRequest) {
+    const queryClient = useQueryClient();
+    return createMutation<boolean, ProblemDetails, string>(() => ({
+        mutationFn: async (feature: string) => {
+            if (!request.route.id) {
+                throw new Error('Organization ID is required');
+            }
+
+            const client = useFetchClient();
+            const response = await client.post(`organizations/${request.route.id}/features/${feature}`);
+            return response.ok;
+        },
+        mutationKey: queryKeys.setFeature(request.route.id),
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
             queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
         }
     }));

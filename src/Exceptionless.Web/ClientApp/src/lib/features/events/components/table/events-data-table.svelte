@@ -3,7 +3,7 @@
 
     import * as DataTable from '$comp/data-table';
     import DelayedRender from '$comp/delayed-render.svelte';
-    import { type Table } from '@tanstack/svelte-table';
+    import { type StockFeatures, type Table } from '@tanstack/svelte-table';
 
     import type { EventSummaryModel, SummaryTemplateKeys } from '../summary/index';
 
@@ -14,7 +14,7 @@
         limit: number;
         rowClick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
         rowHref?: (row: EventSummaryModel<SummaryTemplateKeys>) => string;
-        table: Table<EventSummaryModel<SummaryTemplateKeys>>;
+        table: Table<StockFeatures, EventSummaryModel<SummaryTemplateKeys>>;
         toolbarChildren?: Snippet;
     }
 

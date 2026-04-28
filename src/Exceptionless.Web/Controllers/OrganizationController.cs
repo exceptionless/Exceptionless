@@ -20,6 +20,7 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Stripe;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 using Invoice = Exceptionless.Web.Models.Invoice;
@@ -221,15 +222,20 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             id = "in_" + id;
 
         Stripe.Invoice? stripeInvoice = null;
+        var client = new StripeClient(_options.StripeOptions.StripeApiKey);
+
         try
         {
-            var client = new StripeClient(_options.StripeOptions.StripeApiKey);
             var invoiceService = new InvoiceService(client);
             stripeInvoice = await invoiceService.GetAsync(id);
         }
+        catch (StripeException ex)
+        {
+            _logger.LogCritical(ex, "Error getting invoice ({InvoiceId}): {Message}", id, ex.Message);
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while getting the invoice: {InvoiceId}", id);
+            _logger.LogCritical(ex, "Unexpected error getting invoice ({InvoiceId}): {Message}", id, ex.Message);
         }
 
         if (String.IsNullOrEmpty(stripeInvoice?.CustomerId))
@@ -245,17 +251,24 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             OrganizationId = organization.Id,
             OrganizationName = organization.Name,
             Date = stripeInvoice.Created,
-            Paid = stripeInvoice.Paid,
+            Paid = String.Equals(stripeInvoice.Status, "paid", StringComparison.OrdinalIgnoreCase),
             Total = stripeInvoice.Total / 100.0m
         };
 
         foreach (var line in stripeInvoice.Lines.Data)
         {
             var item = new InvoiceLineItem { Amount = line.Amount / 100.0m, Description = line.Description };
-            if (line.Plan is not null)
+
+            var priceId = line.Pricing?.PriceDetails?.PriceId;
+            if (!String.IsNullOrEmpty(priceId))
             {
-                string planName = line.Plan.Nickname ?? _billingManager.GetBillingPlan(line.Plan.Id)?.Name ?? line.Plan.Id;
-                item.Description = $"Exceptionless - {planName} Plan ({(line.Plan.Amount / 100.0):c}/{line.Plan.Interval})";
+                var billingPlan = _billingManager.GetBillingPlan(priceId);
+                if (billingPlan is null)
+                    _logger.LogWarning("Billing plan not found for price {PriceId} on invoice {InvoiceId}", priceId, id);
+
+                string planName = billingPlan?.Name ?? priceId;
+                string interval = priceId.EndsWith("_YEARLY", StringComparison.OrdinalIgnoreCase) ? "year" : "month";
+                item.Description = $"Exceptionless - {planName} Plan ({line.Amount / 100.0m:c}/{interval})";
             }
 
             var periodStart = line.Period.Start >= DateTime.MinValue ? line.Period.Start : stripeInvoice.PeriodStart;
@@ -264,7 +277,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             invoice.Items.Add(item);
         }
 
-        var coupon = stripeInvoice.Discount?.Coupon;
+        var coupon = stripeInvoice.Discounts?.FirstOrDefault(d => d.Deleted is not true)?.Source?.Coupon;
         if (coupon is not null)
         {
             if (coupon.AmountOff.HasValue)
@@ -335,9 +348,9 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (organization is null)
             return NotFound();
 
-        var plans = _plans.Plans;
-        if (!Request.IsGlobalAdmin())
-            plans = plans.Where(p => !p.IsHidden || p.Id == organization.PlanId).ToList();
+        var plans = Request.IsGlobalAdmin()
+            ? _plans.Plans.ToList()
+            : _plans.Plans.Where(p => !p.IsHidden || String.Equals(p.Id, organization.PlanId, StringComparison.OrdinalIgnoreCase)).ToList();
 
         var currentPlan = new BillingPlan
         {
@@ -353,10 +366,11 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             HasPremiumFeatures = organization.HasPremiumFeatures
         };
 
-        if (plans.All(p => p.Id != organization.PlanId))
-            plans.Add(currentPlan);
+        int idx = plans.FindIndex(p => String.Equals(p.Id, organization.PlanId, StringComparison.OrdinalIgnoreCase));
+        if (idx >= 0)
+            plans[idx] = currentPlan;
         else
-            plans[plans.FindIndex(p => p.Id == organization.PlanId)] = currentPlan;
+            plans.Add(currentPlan);
 
         return Ok(plans);
     }
@@ -365,19 +379,37 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// Change plan
     /// </summary>
     /// <remarks>
-    /// Upgrades or downgrades the organizations plan.
+    /// Upgrades or downgrades the organization's plan.
+    /// Accepts parameters via JSON body (preferred) or query string (legacy).
     /// </remarks>
     /// <param name="id">The identifier of the organization.</param>
-    /// <param name="planId">The identifier of the plan.</param>
-    /// <param name="stripeToken">The token returned from the stripe service.</param>
-    /// <param name="last4">The last four numbers of the card.</param>
-    /// <param name="couponId">The coupon id.</param>
+    /// <param name="model">The plan change request (JSON body).</param>
+    /// <param name="planId">Legacy query parameter: the plan identifier.</param>
+    /// <param name="stripeToken">Legacy query parameter: the Stripe token.</param>
+    /// <param name="last4">Legacy query parameter: last four digits of the card.</param>
+    /// <param name="couponId">Legacy query parameter: the coupon identifier.</param>
     /// <response code="404">The organization was not found.</response>
     [HttpPost]
-    [Consumes("application/json")]
     [Route("{id:objectid}/change-plan")]
-    public async Task<ActionResult<ChangePlanResult>> ChangePlanAsync(string id, string planId, string? stripeToken = null, string? last4 = null, string? couponId = null)
+    public async Task<ActionResult<ChangePlanResult>> ChangePlanAsync(
+        string id,
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] ChangePlanRequest? model = null,
+        [FromQuery] string? planId = null,
+        [FromQuery] string? stripeToken = null,
+        [FromQuery] string? last4 = null,
+        [FromQuery] string? couponId = null)
     {
+        // Support legacy clients that send query parameters instead of a JSON body
+        model ??= new ChangePlanRequest { PlanId = planId ?? String.Empty };
+        if (String.IsNullOrEmpty(model.PlanId) && !String.IsNullOrEmpty(planId))
+            model.PlanId = planId;
+        if (String.IsNullOrEmpty(model.StripeToken) && !String.IsNullOrEmpty(stripeToken))
+            model.StripeToken = stripeToken;
+        if (String.IsNullOrEmpty(model.Last4) && !String.IsNullOrEmpty(last4))
+            model.Last4 = last4;
+        if (String.IsNullOrEmpty(model.CouponId) && !String.IsNullOrEmpty(couponId))
+            model.CouponId = couponId;
+
         if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
             return NotFound();
 
@@ -385,15 +417,19 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             .Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext));
 
         if (!_options.StripeOptions.EnableBilling)
-            return Ok(ChangePlanResult.FailWithMessage("Plans cannot be changed while billing is disabled."));
+            return NotFound();
 
         var organization = await GetModelAsync(id, false);
         if (organization is null)
-            return Ok(ChangePlanResult.FailWithMessage("Invalid OrganizationId."));
+            return NotFound();
 
-        var plan = _billingManager.GetBillingPlan(planId);
+        var plan = _billingManager.GetBillingPlan(model.PlanId);
         if (plan is null)
-            return Ok(ChangePlanResult.FailWithMessage("Invalid PlanId."));
+        {
+            _logger.LogWarning("Plan {PlanId} not found for organization {OrganizationId}", model.PlanId, id);
+            ModelState.AddModelError("general", "Invalid plan. Please select a valid plan.");
+            return ValidationProblem(ModelState);
+        }
 
         if (String.Equals(organization.PlanId, plan.Id) && String.Equals(_plans.FreePlan.Id, plan.Id))
             return Ok(ChangePlanResult.SuccessWithMessage("Your plan was not changed as you were already on the free plan."));
@@ -409,10 +445,15 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         var client = new StripeClient(_options.StripeOptions.StripeApiKey);
         var customerService = new CustomerService(client);
         var subscriptionService = new SubscriptionService(client);
+        var paymentMethodService = new PaymentMethodService(client);
+
+        bool isPaymentMethod = model.StripeToken?.StartsWith("pm_", StringComparison.Ordinal) is true;
 
         try
         {
             // If they are on a paid plan and then downgrade to a free plan then cancel their stripe subscription.
+            // NOTE: organization.PlanId still reflects the OLD plan here; it is updated at the end
+            // of this block by _billingManager.ApplyBillingPlan(organization, plan, CurrentUser).
             if (!String.Equals(organization.PlanId, _plans.FreePlan.Id) && String.Equals(plan.Id, _plans.FreePlan.Id))
             {
                 if (!String.IsNullOrEmpty(organization.StripeCustomerId))
@@ -425,31 +466,59 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 organization.BillingStatus = BillingStatus.Trialing;
                 organization.RemoveSuspension();
             }
+            // New customer: create a Stripe customer and subscription from the provided payment token.
             else if (String.IsNullOrEmpty(organization.StripeCustomerId))
             {
-                if (String.IsNullOrEmpty(stripeToken))
+                if (String.IsNullOrEmpty(model.StripeToken))
                     return Ok(ChangePlanResult.FailWithMessage("Billing information was not set."));
 
                 organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
 
                 var createCustomer = new CustomerCreateOptions
                 {
-                    Source = stripeToken,
-                    Plan = planId,
                     Description = organization.Name,
                     Email = CurrentUser.EmailAddress
                 };
 
-                if (!String.IsNullOrWhiteSpace(couponId))
-                    createCustomer.Coupon = couponId;
+                if (isPaymentMethod)
+                {
+                    createCustomer.PaymentMethod = model.StripeToken;
+                    createCustomer.InvoiceSettings = new CustomerInvoiceSettingsOptions
+                    {
+                        DefaultPaymentMethod = model.StripeToken
+                    };
+                }
+                else
+                {
+                    createCustomer.Source = model.StripeToken;
+                }
 
                 var customer = await customerService.CreateAsync(createCustomer);
 
+                // Persist the Stripe customer ID immediately so a retry won't create a duplicate customer
+                organization.StripeCustomerId = customer.Id;
+                organization.CardLast4 = model.Last4;
+                await _repository.SaveAsync(organization, o => o.Cache());
+
+                // Create the Stripe subscription for the selected plan, attach payment method and coupon if provided.
+                var subscriptionOptions = new SubscriptionCreateOptions
+                {
+                    Customer = customer.Id,
+                    Items = [new SubscriptionItemOptions { Price = model.PlanId }]
+                };
+
+                if (isPaymentMethod)
+                    subscriptionOptions.DefaultPaymentMethod = model.StripeToken;
+
+                if (!String.IsNullOrWhiteSpace(model.CouponId))
+                    subscriptionOptions.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
+
+                await subscriptionService.CreateAsync(subscriptionOptions);
+
                 organization.BillingStatus = BillingStatus.Active;
                 organization.RemoveSuspension();
-                organization.StripeCustomerId = customer.Id;
-                organization.CardLast4 = last4;
             }
+            // Existing customer: update (or create) their Stripe subscription and optionally swap payment method.
             else
             {
                 var update = new SubscriptionUpdateOptions { Items = [] };
@@ -460,29 +529,60 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 if (!Request.IsGlobalAdmin())
                     customerUpdateOptions.Email = CurrentUser.EmailAddress;
 
-                if (!String.IsNullOrEmpty(stripeToken))
+                var listSubscriptionsTask = subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
+
+                if (!String.IsNullOrEmpty(model.StripeToken))
                 {
-                    customerUpdateOptions.Source = stripeToken;
+                    if (isPaymentMethod)
+                    {
+                        await paymentMethodService.AttachAsync(model.StripeToken, new PaymentMethodAttachOptions
+                        {
+                            Customer = organization.StripeCustomerId
+                        });
+                        customerUpdateOptions.InvoiceSettings = new CustomerInvoiceSettingsOptions
+                        {
+                            DefaultPaymentMethod = model.StripeToken
+                        };
+                    }
+                    else
+                    {
+                        customerUpdateOptions.Source = model.StripeToken;
+                    }
                     cardUpdated = true;
                 }
 
-                await customerService.UpdateAsync(organization.StripeCustomerId, customerUpdateOptions);
+                await Task.WhenAll(
+                    customerService.UpdateAsync(organization.StripeCustomerId, customerUpdateOptions),
+                    listSubscriptionsTask
+                );
 
-                var subscriptionList = await subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
+                var subscriptionList = await listSubscriptionsTask;
                 var subscription = subscriptionList.FirstOrDefault(s => !s.CanceledAt.HasValue);
-                if (subscription is not null)
+                if (subscription is not null && subscription.Items.Data.Count > 0)
                 {
-                    update.Items.Add(new SubscriptionItemOptions { Id = subscription.Items.Data[0].Id, Plan = planId });
+                    update.Items.Add(new SubscriptionItemOptions { Id = subscription.Items.Data[0].Id, Price = model.PlanId });
+                    if (!String.IsNullOrWhiteSpace(model.CouponId))
+                        update.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
+                    await subscriptionService.UpdateAsync(subscription.Id, update);
+                }
+                else if (subscription is not null)
+                {
+                    _logger.LogWarning("Subscription {SubscriptionId} has no items for organization {OrganizationId}, adding new item", subscription.Id, id);
+                    update.Items.Add(new SubscriptionItemOptions { Price = model.PlanId });
+                    if (!String.IsNullOrWhiteSpace(model.CouponId))
+                        update.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
                     await subscriptionService.UpdateAsync(subscription.Id, update);
                 }
                 else
                 {
-                    create.Items.Add(new SubscriptionItemOptions { Plan = planId });
+                    create.Items.Add(new SubscriptionItemOptions { Price = model.PlanId });
+                    if (!String.IsNullOrWhiteSpace(model.CouponId))
+                        create.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
                     await subscriptionService.CreateAsync(create);
                 }
 
                 if (cardUpdated)
-                    organization.CardLast4 = last4;
+                    organization.CardLast4 = model.Last4;
 
                 organization.BillingStatus = BillingStatus.Active;
                 organization.RemoveSuspension();
@@ -492,10 +592,15 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             await _repository.SaveAsync(organization, o => o.Cache().Originals());
             await _messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
         }
+        catch (StripeException ex)
+        {
+            _logger.LogCritical(ex, "Error occurred update billing plan: {Message}", ex.Message);
+            return Ok(ChangePlanResult.FailWithMessage("An error occurred while changing plans. Please try again or contact support."));
+        }
         catch (Exception ex)
         {
-            _logger.LogCritical(ex, "An error occurred while trying to update your billing plan: {Message}", ex.Message);
-            return Ok(ChangePlanResult.FailWithMessage(ex.Message));
+            _logger.LogCritical(ex, "An unexpected error occurred while trying to update your billing plan: {Message}", ex.Message);
+            return Ok(ChangePlanResult.FailWithMessage("An error occurred while changing plans. Please try again."));
         }
 
         return Ok(new ChangePlanResult { Success = true });
@@ -595,6 +700,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 return BadRequest("An organization must contain at least one user.");
 
             await _organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
+            await _organizationService.RemoveUserSavedViewsAsync(organization.Id, user.Id);
 
             user.OrganizationIds.Remove(organization.Id);
             await _userRepository.SaveAsync(user, o => o.Cache());
@@ -691,6 +797,60 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             return NotFound();
 
         if (organization.Data is not null && organization.Data.Remove(key))
+            await _repository.SaveAsync(organization, o => o.Cache());
+
+        return Ok();
+    }
+
+    /// <summary>
+    /// Enable a feature flag
+    /// </summary>
+    /// <param name="id">The identifier of the organization.</param>
+    /// <param name="feature">The feature flag identifier (e.g., "feature-saved-views").</param>
+    /// <response code="200">The feature flag was enabled.</response>
+    /// <response code="404">The organization was not found.</response>
+    [HttpPost]
+    [Route("{id:objectid}/features/{feature:minlength(1)}")]
+    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> SetFeatureAsync(string id, string feature)
+    {
+        var organization = await GetModelAsync(id, false);
+        if (organization is null)
+            return NotFound();
+
+        var normalizedFeature = feature.Trim().ToLowerInvariant();
+        if (String.IsNullOrEmpty(normalizedFeature))
+            return BadRequest("Invalid feature flag.");
+
+        organization.Features.Add(normalizedFeature);
+        await _repository.SaveAsync(organization, o => o.Cache());
+
+        return Ok();
+    }
+
+    /// <summary>
+    /// Disable a feature flag
+    /// </summary>
+    /// <param name="id">The identifier of the organization.</param>
+    /// <param name="feature">The feature flag identifier (e.g., "feature-saved-views").</param>
+    /// <response code="200">The feature flag was disabled.</response>
+    /// <response code="404">The organization was not found.</response>
+    [HttpDelete]
+    [Route("{id:objectid}/features/{feature:minlength(1)}")]
+    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> RemoveFeatureAsync(string id, string feature)
+    {
+        var organization = await GetModelAsync(id, false);
+        if (organization is null)
+            return NotFound();
+
+        var normalizedFeature = feature.Trim().ToLowerInvariant();
+        if (String.IsNullOrEmpty(normalizedFeature))
+            return BadRequest("Invalid feature flag.");
+
+        if (organization.Features.Remove(normalizedFeature))
             await _repository.SaveAsync(organization, o => o.Cache());
 
         return Ok();

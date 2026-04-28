@@ -11,6 +11,7 @@
     import { H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
+    import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
     import { getOrganizationCountQuery } from '$features/events/api.svelte';
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
     import EventsOverview from '$features/events/components/events-overview.svelte';
@@ -30,6 +31,8 @@
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { getColumns } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
+    import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import * as agg from '$features/shared/api/aggregations';
     import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts.js';
@@ -38,7 +41,7 @@
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
+    import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
@@ -46,6 +49,12 @@
     import { throttle } from 'throttle-debounce';
 
     let selectedEventId: null | string = $state(null);
+
+    function handleEventError(problem: ProblemDetails) {
+        showBillingDialogOnUpgradeProblem(problem, organization.current);
+        selectedEventId = null;
+    }
+
     function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
         selectedEventId = row.id;
     }
@@ -59,6 +68,7 @@
     const DEFAULT_PARAMS = {
         filter: '(status:open OR status:regressed)',
         limit: DEFAULT_LIMIT,
+        saved: undefined as string | undefined,
         time: DEFAULT_TIME_RANGE
     };
 
@@ -73,8 +83,19 @@
         schema: {
             filter: 'string',
             limit: 'number',
+            saved: 'string',
             time: 'string'
         }
+    });
+
+    const VIEW = 'events';
+    const savedViewsState = useSavedViews({
+        filterCacheKey,
+        getColumnVisibility: () => table.store.state.columnVisibility,
+        queryParams,
+        setColumnVisibility: (v) => table.setColumnVisibility(v),
+        updateFilterCache,
+        view: VIEW
     });
 
     // NOTE: This might be applying query string parameters when redirecting away.
@@ -166,7 +187,7 @@
         })
     );
 
-    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.getState().pagination.pageIndex === 0);
+    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.store.state.pagination.pageIndex === 0);
 
     function reset() {
         table.resetRowSelection();
@@ -189,6 +210,10 @@
         clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
             params: eventsQueryParameters as Record<string, unknown>
         });
+
+        if (clientResponse.problem) {
+            showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData());
+        }
     }
 
     const throttledLoadData = throttle(10000, loadData);
@@ -197,7 +222,7 @@
         if (message.id && message.change_type === ChangeType.Removed) {
             removeTableSelection(table, message.id);
 
-            if (removeTableData(table, (doc) => doc.id === message.id)) {
+            if (removeTableData(table, (doc: EventSummaryModel<SummaryTemplateKeys>) => doc.id === message.id)) {
                 // If the grid data is empty from all events being removed, we should refresh the data.
                 if (isTableEmpty(table)) {
                     await throttledLoadData();
@@ -267,6 +292,20 @@
             </FacetedFilter.Root>
         </div>
         <div class="ml-auto flex shrink-0 items-start gap-2">
+            {#if savedViewsState.isEnabled}
+                <SavedViewPicker
+                    activeSavedView={savedViewsState.activeSavedView}
+                    columnVisibility={table.store.state.columnVisibility}
+                    filters={filters ?? []}
+                    isModified={savedViewsState.isModified}
+                    onLoadView={savedViewsState.handleLoadView}
+                    onResetToSaved={savedViewsState.handleResetToSaved}
+                    onClearSavedView={savedViewsState.handleClearSavedView}
+                    savedViews={savedViewsState.savedViews}
+                    time={queryParams.time ?? undefined}
+                    view={VIEW}
+                />
+            {/if}
             <RefreshButton
                 onRefresh={handleRefresh}
                 isRefreshing={clientStatus.isLoading}
@@ -312,7 +351,7 @@
             >
         </Sheet.Header>
         <div class="px-4">
-            <EventsOverview filterChanged={onFilterChanged} id={selectedEventId || ''} handleError={() => (selectedEventId = null)} />
+            <EventsOverview filterChanged={onFilterChanged} id={selectedEventId || ''} handleError={handleEventError} />
         </div>
     </Sheet.Content>
 </Sheet.Root>

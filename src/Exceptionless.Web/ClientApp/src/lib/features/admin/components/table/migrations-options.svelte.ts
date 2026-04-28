@@ -2,7 +2,7 @@ import type { MigrationState, MigrationStatus } from '$features/admin/models';
 
 import DateTime from '$comp/formatters/date-time.svelte';
 import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
-import { type ColumnDef, getSortedRowModel, renderComponent } from '@tanstack/svelte-table';
+import { type ColumnDef, createSortedRowModel, renderComponent, sortFns, type StockFeatures } from '@tanstack/svelte-table';
 
 import MigrationDurationCell from './migration-duration-cell.svelte';
 import MigrationErrorCell from './migration-error-cell.svelte';
@@ -11,7 +11,7 @@ import MigrationTypeCell from './migration-type-cell.svelte';
 
 export type MigrationStateRow = MigrationState & { status: MigrationStatus };
 
-export function getColumns(): ColumnDef<MigrationStateRow>[] {
+export function getColumns(): ColumnDef<StockFeatures, MigrationStateRow, unknown>[] {
     return [
         {
             accessorKey: 'id',
@@ -85,7 +85,7 @@ export function getTableOptions(queryParameters: TableMemoryPagingParameters, ge
         },
         configureOptions: (options) => {
             options.getRowId = (row) => row.id;
-            options.getSortedRowModel = getSortedRowModel();
+            options._rowModels = { ...options._rowModels, sortedRowModel: createSortedRowModel(sortFns) };
             options.initialState = {
                 sorting: [{ desc: true, id: 'version' }]
             };

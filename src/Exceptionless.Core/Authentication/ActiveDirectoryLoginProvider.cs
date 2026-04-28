@@ -1,9 +1,10 @@
-﻿# pragma warning disable CA1416
+﻿using System.Diagnostics.CodeAnalysis;
 using System.DirectoryServices;
 using Exceptionless.Core.Configuration;
 
 namespace Exceptionless.Core.Authentication;
 
+[SuppressMessage("Interoperability", "CA1416:Validate platform compatibility")]
 public class ActiveDirectoryLoginProvider : IDomainLoginProvider
 {
     private const string AD_EMAIL = "mail";
@@ -61,11 +62,11 @@ public class ActiveDirectoryLoginProvider : IDomainLoginProvider
     private SearchResult? FindUser(string username)
     {
         using var entry = new DirectoryEntry(_authOptions.LdapConnectionString);
-        using var searcher = new DirectorySearcher(entry, $"(&({AD_USERNAME}={username}))", [AD_FIRSTNAME,
+        using var searcher = new DirectorySearcher(entry, $"(&({AD_USERNAME}={username}))", [
+            AD_FIRSTNAME,
             AD_LASTNAME,
             AD_EMAIL
         ]);
         return searcher.FindOne();
     }
 }
-#pragma warning restore CA1416

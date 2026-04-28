@@ -1,15 +1,21 @@
 ---
 name: frontend-architecture
 description: >
-    Use this skill when working on the Svelte SPA's project structure — adding routes, creating
+    Use this skill when working on the Svelte 5 app in ClientApp — adding routes, creating
     feature slices, organizing shared components, or understanding the ClientApp directory layout.
     Covers route groups, $lib conventions, barrel exports, API client organization, and vertical
-    slice architecture. Apply when deciding where to place new files or components.
+    slice architecture. Apply when deciding where to place new files or components. The legacy
+    Angular app that still powers most of the site lives beside it in ClientApp.angular.
 ---
 
 # Frontend Architecture
 
-Located in `src/Exceptionless.Web/ClientApp`. The Svelte SPA is the primary client.
+Exceptionless.Web currently has two frontend codebases:
+
+- `src/Exceptionless.Web/ClientApp.angular` is the legacy Angular UI and still powers most of the site. The main folders there are `app/`, `components/`, `less/`, `img/`, `lang/`, and `grunt/`.
+- `src/Exceptionless.Web/ClientApp` is the Svelte 5 app that is still under development.
+
+Use this skill for `ClientApp` work.
 
 ## Directory Structure
 
@@ -97,6 +103,12 @@ import { Button } from "$comp/ui/button";       // $lib/components
 import { User } from "$features/users/models";  // $lib/features
 import { formatDate } from "$shared/formatters"; // $lib/features/shared
 ```
+
+## Project Svelte Rules
+
+- Prefer `$derived` for computed state and `$effect` for side effects.
+- Use `untrack()` inside `$effect` when needed to avoid reactive loops.
+- Prefer `kit-query-params` (`queryParamsState`) for route query parameter binding instead of ad-hoc URL parsing.
 
 ## Consistency Rule
 

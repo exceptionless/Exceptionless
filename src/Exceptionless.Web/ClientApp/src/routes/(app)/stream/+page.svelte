@@ -13,6 +13,7 @@
     import { H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
+    import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
     import EventsOverview from '$features/events/components/events-overview.svelte';
     import { ProjectFilter, StatusFilter } from '$features/events/components/filters';
     import {
@@ -28,11 +29,13 @@
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import { getColumns } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
+    import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import { getSharedTableOptions, isTableEmpty, removeTableData } from '$features/shared/table.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
+    import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
@@ -42,6 +45,12 @@
     import { redirectToEventsWithFilter } from '../redirect-to-events.svelte';
 
     let selectedEventId: null | string = $state(null);
+
+    function handleEventError(problem: ProblemDetails) {
+        showBillingDialogOnUpgradeProblem(problem, organization.current);
+        selectedEventId = null;
+    }
+
     function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
         selectedEventId = row.id;
     }
@@ -53,7 +62,8 @@
     const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
     const DEFAULT_PARAMS = {
         filter: '(status:open OR status:regressed)',
-        limit: DEFAULT_LIMIT
+        limit: DEFAULT_LIMIT,
+        saved: undefined as string | undefined
     };
 
     function filterCacheKey(filter: null | string): string {
@@ -66,8 +76,19 @@
         pushHistory: true,
         schema: {
             filter: 'string',
-            limit: 'number'
+            limit: 'number',
+            saved: 'string'
         }
+    });
+
+    const VIEW = 'stream';
+    const savedViewsState = useSavedViews({
+        filterCacheKey,
+        getColumnVisibility: () => table.store.state.columnVisibility,
+        queryParams,
+        setColumnVisibility: (v) => table.setColumnVisibility(v),
+        updateFilterCache,
+        view: VIEW
     });
 
     watch(
@@ -193,6 +214,10 @@
             }
         });
 
+        if (clientResponse.problem && showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData(true))) {
+            return;
+        }
+
         if (clientResponse.ok) {
             if (clientResponse.meta.links.previous?.before) {
                 before = clientResponse.meta.links.previous?.before;
@@ -253,6 +278,19 @@
             </FacetedFilter.Root>
         </div>
         <div class="ml-auto flex shrink-0 items-start gap-2">
+            {#if savedViewsState.isEnabled}
+                <SavedViewPicker
+                    activeSavedView={savedViewsState.activeSavedView}
+                    columnVisibility={table.store.state.columnVisibility}
+                    filters={filters ?? []}
+                    isModified={savedViewsState.isModified}
+                    onLoadView={savedViewsState.handleLoadView}
+                    onResetToSaved={savedViewsState.handleResetToSaved}
+                    onClearSavedView={savedViewsState.handleClearSavedView}
+                    savedViews={savedViewsState.savedViews}
+                    view={VIEW}
+                />
+            {/if}
             <DataTableViewOptions size="icon-lg" {table} />
             <StreamingIndicatorButton onToggle={handleToggle} {paused} size="icon-lg" />
         </div>
@@ -289,7 +327,7 @@
             >
         </Sheet.Header>
         <div class="px-4">
-            <EventsOverview filterChanged={onFilterChanged} id={selectedEventId || ''} handleError={() => (selectedEventId = null)} />
+            <EventsOverview filterChanged={onFilterChanged} id={selectedEventId || ''} handleError={handleEventError} />
         </div>
     </Sheet.Content>
 </Sheet.Root>

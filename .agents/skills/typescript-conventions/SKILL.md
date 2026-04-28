@@ -16,6 +16,13 @@ description: >
 - **Minimize diffs**: Change only what's necessary, preserve existing formatting and structure
 - Match surrounding code style exactly
 
+## Project Frontend Rules
+
+- Always use braces for all control flow statements (`if`, `for`, `while`, etc.).
+- Always use block bodies for arrow functions that return statements; avoid single-expression shorthand in project code.
+- Do not use abbreviations in identifiers (`organization`, not `org`; `filter`, not `filt`).
+- Avoid inline single-line condition + return patterns; use multi-line blocks for readability.
+
 ## File Naming
 
 - Use **kebab-case** for files and directories
@@ -35,6 +42,8 @@ import { formatDate, formatNumber } from "$lib/utils/formatters";
 // ❌ Avoid: Namespace imports (except allowed exceptions)
 import * as utils from "$lib/utils";
 ```
+
+- Named imports are preferred for most modules; namespace imports should be limited to approved patterns (e.g., shadcn composite imports).
 
 ### Allowed Namespace Imports
 

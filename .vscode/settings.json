@@ -113,7 +113,7 @@
     "tailwindCSS.includeLanguages": {
         "svelte": "html"
     },
-    "js/ts.tsdk.path": "src/Exceptionless.Web/ClientApp/node_modules/typescript/lib",
+    "typescript.tsdk": "src/Exceptionless.Web/ClientApp/node_modules/typescript/lib",
     "workbench.editor.customLabels.patterns": {
         "**/lib/**/*.ts": "${dirname}/${filename}.${extname}",
         "**/routes/**/+page.svelte": "${dirname(1)}/${dirname}",

@@ -3,6 +3,7 @@ using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Helpers;
@@ -31,15 +32,15 @@ namespace Exceptionless.Tests;
 
 public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLifetime, IClassFixture<AppWebHostFactory>
 {
-    private static bool _indexesHaveBeenConfigured = false;
-    private static readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
     private readonly ExceptionlessElasticConfiguration _configuration;
+    private readonly AppWebHostFactory _factory;
     protected readonly TestServer _server;
     private readonly ProxyTimeProvider _timeProvider;
     protected readonly IList<IDisposable> _disposables = new List<IDisposable>();
 
     public IntegrationTestsBase(ITestOutputHelper output, AppWebHostFactory factory) : base(output)
     {
+        _factory = factory;
         Log.DefaultLogLevel = LogLevel.Information;
         Log.SetLogLevel<ScheduledTimer>(LogLevel.Warning);
         Log.SetLogLevel<InMemoryMessageBus>(LogLevel.Warning);
@@ -73,8 +74,10 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         _disposables.Add(new DisposableAction(() => _timeProvider.Restore()));
     }
 
-    public virtual async ValueTask InitializeAsync()
+    public override async ValueTask InitializeAsync()
     {
+        await base.InitializeAsync();
+
         Log.SetLogLevel("Microsoft.AspNetCore.Hosting.Internal.WebHost", LogLevel.Warning);
         Log.SetLogLevel("Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService", LogLevel.None);
         await _server.WaitForReadyAsync();
@@ -107,7 +110,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         services.AddTransient<EventDataBuilder>();
         services.AddSingleton<OrganizationData>();
         services.AddSingleton<ProjectData>();
-        services.AddSingleton<RandomEventGenerator>();
+        services.AddSingleton<Exceptionless.Helpers.RandomEventGenerator>();
         services.AddSingleton<StackData>();
         services.AddSingleton<TokenData>();
         services.AddSingleton<UserData>();
@@ -143,18 +146,17 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
     protected virtual async Task ResetDataAsync()
     {
-        await _semaphoreSlim.WaitAsync();
+        var oldLoggingLevel = Log.DefaultLogLevel;
+        Log.DefaultLogLevel = LogLevel.Warning;
+
         try
         {
-            var oldLoggingLevel = Log.DefaultLogLevel;
-            Log.DefaultLogLevel = LogLevel.Warning;
-
             await RefreshDataAsync();
-            if (!_indexesHaveBeenConfigured)
+            if (!_factory.IndexesHaveBeenConfigured)
             {
                 await _configuration.DeleteIndexesAsync();
                 await _configuration.ConfigureIndexesAsync();
-                _indexesHaveBeenConfigured = true;
+                _factory.IndexesHaveBeenConfigured = true;
             }
             else
             {
@@ -167,7 +169,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
                 });
             }
 
-            _logger.LogTrace("Configured Indexes");
+            _logger.LogTrace("Configured indexes for {AppScope}", _factory.AppScope);
 
             foreach (var index in _configuration.Indexes)
                 index.QueryParser.Configuration?.MappingResolver?.RefreshMapping();
@@ -178,14 +180,17 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
             var fileStorage = GetService<IFileStorage>();
             await fileStorage.DeleteFilesAsync(await fileStorage.GetFileListAsync());
 
+            await GetService<IQueue<EventPost>>().DeleteQueueAsync();
+            await GetService<IQueue<EventUserDescription>>().DeleteQueueAsync();
+            await GetService<IQueue<EventNotification>>().DeleteQueueAsync();
+            await GetService<IQueue<WebHookNotification>>().DeleteQueueAsync();
+            await GetService<IQueue<MailMessage>>().DeleteQueueAsync();
             await GetService<IQueue<WorkItemData>>().DeleteQueueAsync();
-
-            Log.DefaultLogLevel = oldLoggingLevel;
         }
         finally
         {
-            _semaphoreSlim.Release();
-            _logger.LogDebug("Reset Data");
+            Log.DefaultLogLevel = oldLoggingLevel;
+            _logger.LogDebug("Reset data for {AppScope}", _factory.AppScope);
         }
     }
 
@@ -260,7 +265,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
         return response.DeserializeAsync<T>();
     }
 
-    public virtual ValueTask DisposeAsync()
+    public override ValueTask DisposeAsync()
     {
         foreach (var disposable in _disposables)
         {
@@ -273,6 +278,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
                 _logger?.LogError(ex, "Error disposing resource");
             }
         }
-        return ValueTask.CompletedTask;
+
+        return base.DisposeAsync();
     }
 }
