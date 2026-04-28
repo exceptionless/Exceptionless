@@ -141,36 +141,26 @@ kubectl describe certificate -n tls-secret
 # apply namespace default limits
 kubectl apply -f namespace-default-limits.yaml
 
-# setup redis operator
-# https://github.com/OT-CONTAINER-KIT/redis-operator
-# https://redis-operator.opstree.dev/docs/installation/installation/
-helm repo add ot-helm https://ot-container-kit.github.io/helm-charts/
-helm install redis-operator ot-helm/redis-operator `
-    --namespace ot-operators --create-namespace `
-    --set featureGates.GenerateConfigInInitContainer=true
+# install KubeBlocks operator
+# https://kubeblocks.io/docs/release-0.9/user_docs/installation/install-kubeblocks
+helm repo add kubeblocks https://apecloud.github.io/helm-charts
+helm repo update kubeblocks
+helm install kubeblocks kubeblocks/kubeblocks --namespace kb-system --create-namespace
+# enable the redis addon
+helm install kb-addon-redis kubeblocks/kb-addon-redis --namespace kb-system
 
-# verify operator is running
-kubectl get pods -n ot-operators
-
-# create redis auth secret (set $REDIS_PASSWORD first)
-kubectl create secret generic ex-$ENV-redis-secret `
-    --from-literal=password=$REDIS_PASSWORD -n ex-$ENV
-
-# create redis standalone instance
+# setup redis (KubeBlocks)
+# The Cluster CRD creates redis + sentinel pods and auto-generates a password
 kubectl apply -f ex-$ENV-redis.yaml -n ex-$ENV
+
+# retrieve the auto-generated redis password
+$REDIS_PASSWORD = $(kubectl get secret --namespace ex-$ENV ex-$ENV-redis-account-default -o jsonpath='{.data.password}' | ForEach-Object { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) })
 
 # verify redis is running
-kubectl get redis -n ex-$ENV
+kubectl get cluster.apps.kubeblocks.io -n ex-$ENV
 
-# upgrade redis operator
-helm upgrade redis-operator ot-helm/redis-operator -n ot-operators
-
-# upgrade redis instance (edit the CRD manifest, then re-apply)
+# upgrade redis (KubeBlocks - edit the CRD manifest, then re-apply)
 kubectl apply -f ex-$ENV-redis.yaml -n ex-$ENV
-
-# for cluster-mode validation, use the cluster manifest instead:
-kubectl apply -f ex-$ENV-redis-cluster.yaml -n ex-$ENV
-kubectl get rediscluster -n ex-$ENV
 
 # install signoz otel collector
 helm repo add signoz https://charts.signoz.io

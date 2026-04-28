@@ -9,6 +9,14 @@ description: >
 
 # Backend Architecture
 
+## Quick Start
+
+Run `Exceptionless.AppHost` from your IDE, or start everything from the repo root:
+
+```bash
+aspire run --project src/Exceptionless.AppHost
+```
+
 ## Project Layering
 
 ```text
@@ -119,7 +127,7 @@ After any API change (new endpoint, changed status codes, modified request/respo
 
 ```bash
 # Requires the API to be running (aspire run --project src/Exceptionless.AppHost)
-Invoke-WebRequest -Uri "http://localhost:5200/docs/v2/openapi.json" \
+Invoke-WebRequest -Uri "http://localhost:7110/docs/v2/openapi.json" \
   -OutFile "tests/Exceptionless.Tests/Controllers/Data/openapi.json"
 ```
 

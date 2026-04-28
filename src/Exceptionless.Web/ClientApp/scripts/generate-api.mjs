@@ -10,7 +10,7 @@ const rootDir = path.resolve(__dirname, '..');
 const outputDir = path.resolve(rootDir, 'src/lib/generated');
 
 // SWAGGER_URL can be an HTTP URL or a file path (for regenerating from baseline during development)
-const swaggerSource = process.env.SWAGGER_URL || 'http://localhost:5200/docs/v2/openapi.json';
+const swaggerSource = process.env.SWAGGER_URL || 'http://localhost:7110/docs/v2/openapi.json';
 const isLocalFile = swaggerSource.startsWith('/') || swaggerSource.startsWith('.');
 
 if (isLocalFile && !existsSync(swaggerSource)) {

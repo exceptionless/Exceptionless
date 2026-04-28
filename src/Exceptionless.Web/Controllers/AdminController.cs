@@ -43,6 +43,7 @@ public class AdminController : ExceptionlessApiController
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
     private readonly IMigrationStateRepository _migrationStateRepository;
+    private readonly SampleDataService _sampleDataService;
 
     public AdminController(
         ExceptionlessElasticConfiguration configuration,
@@ -59,6 +60,7 @@ public class AdminController : ExceptionlessApiController
         BillingManager billingManager,
         BillingPlans plans,
         IMigrationStateRepository migrationStateRepository,
+        SampleDataService sampleDataService,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory) : base(timeProvider)
     {
@@ -77,6 +79,7 @@ public class AdminController : ExceptionlessApiController
         _billingManager = billingManager;
         _plans = plans;
         _migrationStateRepository = migrationStateRepository;
+        _sampleDataService = sampleDataService;
     }
 
     [HttpGet("settings")]
@@ -433,6 +436,25 @@ public class AdminController : ExceptionlessApiController
             _logger.LogError(ex, "Unable to retrieve snapshot information");
             return Problem(title: "Unable to retrieve snapshot information.");
         }
+    }
+
+    [HttpPost("generate-sample-events")]
+    public async Task<IActionResult> GenerateSampleEventsAsync(int eventCount = 100, int daysBack = 7)
+    {
+        if (eventCount < 1 || eventCount > 10000)
+        {
+            ModelState.AddModelError(nameof(eventCount), "Event count must be between 1 and 10,000.");
+            return ValidationProblem(ModelState);
+        }
+
+        if (daysBack < 1 || daysBack > 365)
+        {
+            ModelState.AddModelError(nameof(daysBack), "Days back must be between 1 and 365.");
+            return ValidationProblem(ModelState);
+        }
+
+        await _sampleDataService.EnqueueSampleEventsAsync(eventCount, daysBack);
+        return Ok(new { Success = true, Message = $"Enqueued generation of {eventCount} sample events over {daysBack} days. Events will appear shortly." });
     }
 }
 

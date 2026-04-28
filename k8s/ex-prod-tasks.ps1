@@ -93,6 +93,12 @@ helm upgrade --reset-values es-exporter prometheus-community/prometheus-elastics
   --set "es.uri=http://elastic:$ELASTIC_PASSWORD@ex-prod-es-http:9200" `
   --set serviceMonitor.enabled=false --dry-run
 
+# upgrade KubeBlocks operator
+# https://kubeblocks.io/docs/release-0.9/user_docs/installation/install-kubeblocks
+helm repo update kubeblocks
+helm upgrade kubeblocks kubeblocks/kubeblocks --namespace kb-system --dry-run
+helm upgrade kb-addon-redis kubeblocks/kb-addon-redis --namespace kb-system --dry-run
+
 # upgrade elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
@@ -100,13 +106,8 @@ kubectl replace -f https://download.elastic.co/downloads/eck/3.3.2/crds.yaml
 kubectl create -f https://download.elastic.co/downloads/eck/3.3.2/crds.yaml
 kubectl apply -f https://download.elastic.co/downloads/eck/3.3.2/operator.yaml
 
-# upgrade redis operator
-# https://github.com/OT-CONTAINER-KIT/redis-operator/releases
-helm repo update
-helm upgrade redis-operator ot-helm/redis-operator -n ot-operators
-
-# upgrade redis instance (edit the CRD manifest, then re-apply)
-kubectl apply -f ex-prod-redis-cluster.yaml -n ex-prod
+# upgrade redis (KubeBlocks)
+kubectl apply -f ex-prod-redis.yaml -n ex-prod
 
 # upgrade elasticsearch
 kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml

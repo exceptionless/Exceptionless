@@ -74,6 +74,9 @@
                     <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
                 {/snippet}
             </form.Subscribe>
+            {#if dev}
+                <Muted class="mb-2 block text-center text-xs">Default credentials: <strong>test@localhost</strong> / <strong>tester</strong></Muted>
+            {/if}
             <form.Field name="email">
                 {#snippet children(field)}
                     <Field.Field data-invalid={ariaInvalid(field)}>
