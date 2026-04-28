@@ -348,7 +348,7 @@
                                         </Tooltip.Content>
                                     </Tooltip.Root>
                                 {:else}
-                                    <span class="text-muted-foreground text-left text-[11px]">No filters</span>
+                                    <Muted class="text-left text-[11px]">No filters</Muted>
                                 {/if}
                             </span>
                         </span>

@@ -62,24 +62,24 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     /// Get by organization and view
     /// </summary>
     /// <param name="organizationId">The identifier of the organization.</param>
-    /// <param name="view">The dashboard view (events, issues, stream).</param>
+    /// <param name="viewType">The dashboard view type (events, issues, stream).</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <response code="404">The organization could not be found.</response>
-    [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/saved-views/{view}")]
-    public async Task<ActionResult<IReadOnlyCollection<ViewSavedView>>> GetByViewAsync(string organizationId, string view, int page = 1, int limit = 25)
+    [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/saved-views/{viewType}")]
+    public async Task<ActionResult<IReadOnlyCollection<ViewSavedView>>> GetByViewAsync(string organizationId, string viewType, int page = 1, int limit = 25)
     {
         if (!CanAccessOrganization(organizationId))
             return NotFound();
 
-        if (!NewSavedView.ValidViewTypes.Contains(view))
+        if (!NewSavedView.ValidViewTypes.Contains(viewType))
             return NotFound();
 
         // Reads remain available even when the feature is disabled to preserve access to existing saved views.
 
         page = GetPage(page);
         limit = GetLimit(limit);
-        var results = await _repository.GetByViewForUserAsync(organizationId, view, CurrentUser.Id, o => o.PageNumber(page).PageLimit(limit));
+        var results = await _repository.GetByViewForUserAsync(organizationId, viewType, CurrentUser.Id, o => o.PageNumber(page).PageLimit(limit));
 
         var viewModels = MapToViewModels(results.Documents);
         return OkWithResourceLinks(viewModels, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
@@ -253,7 +253,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         value.Version = 1;
 
         if (value.IsDefault)
-            await ClearDefaultForViewAsync(value.OrganizationId, value.ViewType);
+            await ClearDefaultAsync(value.OrganizationId, value.ViewType);
 
         return await base.AddModelAsync(value);
     }
@@ -266,13 +266,13 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             && changes.TryGetPropertyValue(nameof(UpdateSavedView.IsDefault), out object? isDefaultValue)
             && isDefaultValue is true)
         {
-            await ClearDefaultForViewAsync(original.OrganizationId, original.ViewType);
+            await ClearDefaultAsync(original.OrganizationId, original.ViewType);
         }
 
         return await base.UpdateModelAsync(original, changes);
     }
 
-    private async Task ClearDefaultForViewAsync(string organizationId, string viewType)
+    private async Task ClearDefaultAsync(string organizationId, string viewType)
     {
         var existing = await _repository.GetByViewAsync(organizationId, viewType, o => o.ImmediateConsistency().PageLimit(MaxViewsPerOrganization));
         var defaults = existing.Documents.Where(savedView => savedView.IsDefault && savedView.UserId is null).ToList();

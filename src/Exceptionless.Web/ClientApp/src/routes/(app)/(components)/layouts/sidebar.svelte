@@ -13,6 +13,14 @@
 
     import type { NavigationItem } from '../../../routes.svelte';
 
+    function isSavedItemActive(savedItem: { href: string; isDefault?: boolean }, routeHref: string): boolean {
+        const savedId = new URL(savedItem.href, page.url.origin).searchParams.get('saved');
+        const activeSavedParam = page.url.searchParams.get('saved');
+        const isOnRoute = routeHref === page.url.pathname;
+
+        return isOnRoute && (savedItem.isDefault ? !activeSavedParam || activeSavedParam === savedId : activeSavedParam === savedId);
+    }
+
     type Props = ComponentProps<typeof Sidebar.Root> & {
         footer?: Snippet;
         header?: Snippet;
@@ -81,14 +89,8 @@
                                     <Collapsible.Content>
                                         <Sidebar.MenuSub>
                                             {#each route.children as savedItem (savedItem.href)}
-                                                {@const savedId = new URL(savedItem.href, page.url.origin).searchParams.get('saved')}
-                                                {@const activeSavedParam = page.url.searchParams.get('saved')}
-                                                {@const isOnRoute = route.href === page.url.pathname}
-                                                {@const isActive =
-                                                    isOnRoute &&
-                                                    (savedItem.isDefault ? !activeSavedParam || activeSavedParam === savedId : activeSavedParam === savedId)}
                                                 <Sidebar.MenuSubItem>
-                                                    <Sidebar.MenuSubButton {isActive}>
+                                                    <Sidebar.MenuSubButton isActive={isSavedItemActive(savedItem, route.href)}>
                                                         {#snippet child({ props: subProps })}
                                                             <A
                                                                 variant="ghost"

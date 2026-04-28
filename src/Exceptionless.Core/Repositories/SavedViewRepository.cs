@@ -13,19 +13,19 @@ public class SavedViewRepository : RepositoryOwnedByOrganization<SavedView>, ISa
     {
     }
 
-    public Task<FindResults<SavedView>> GetByViewAsync(string organizationId, string viewName, CommandOptionsDescriptor<SavedView>? options = null)
+    public Task<FindResults<SavedView>> GetByViewAsync(string organizationId, string viewType, CommandOptionsDescriptor<SavedView>? options = null)
     {
         return FindAsync(q => q
             .Organization(organizationId)
-            .FieldEquals(e => e.ViewType, viewName)
+            .FieldEquals(e => e.ViewType, viewType)
             .SortAscending(e => e.Name.Suffix("keyword")), options);
     }
 
-    public Task<FindResults<SavedView>> GetByViewForUserAsync(string organizationId, string viewName, string userId, CommandOptionsDescriptor<SavedView>? options = null)
+    public Task<FindResults<SavedView>> GetByViewForUserAsync(string organizationId, string viewType, string userId, CommandOptionsDescriptor<SavedView>? options = null)
     {
         return FindAsync(q => q
             .Organization(organizationId)
-            .FieldEquals(e => e.ViewType, viewName)
+            .FieldEquals(e => e.ViewType, viewType)
             .SortAscending(e => e.Name.Suffix("keyword"))
             .FieldOr(g => g
                 .FieldEmpty(e => e.UserId!)

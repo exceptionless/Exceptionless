@@ -130,7 +130,7 @@
         }
       }
     },
-    "/api/v2/organizations/{organizationId}/saved-views/{view}": {
+    "/api/v2/organizations/{organizationId}/saved-views/{viewType}": {
       "get": {
         "tags": [
           "SavedView"
@@ -148,9 +148,9 @@
             }
           },
           {
-            "name": "view",
+            "name": "viewType",
             "in": "path",
-            "description": "The dashboard view (events, issues, stream).",
+            "description": "The dashboard view type (events, issues, stream).",
             "required": true,
             "schema": {
               "type": "string"
