@@ -58,10 +58,8 @@
                 {#each dashboardRoutes as route (route.href)}
                     {@const Icon = route.icon}
                     {#if route.children?.length}
-                        <Collapsible.Root
-                            open={route.href === page.url.pathname || route.children?.some((c) => page.url.href.includes(c.href))}
-                            class="group/collapsible"
-                        >
+                        {@const isChildActive = route.href === page.url.pathname || route.children.some((c) => isSavedItemActive(c, route.href))}
+                        <Collapsible.Root open={isChildActive} class="group/collapsible">
                             {#snippet child({ props: collapsibleProps })}
                                 <Sidebar.MenuItem {...collapsibleProps}>
                                     <Collapsible.Trigger>

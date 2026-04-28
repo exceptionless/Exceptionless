@@ -193,7 +193,7 @@ public abstract class ExceptionlessApiController : Controller
         if (permission.StatusCode is StatusCodes.Status422UnprocessableEntity)
         {
             if (!String.IsNullOrEmpty(permission.Message))
-                ModelState.AddModelError(String.Empty, permission.Message);
+                ModelState.AddModelError("general", permission.Message);
 
             return (ObjectResult)ValidationProblem(ModelState);
         }

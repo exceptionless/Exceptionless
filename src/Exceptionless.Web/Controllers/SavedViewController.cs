@@ -53,6 +53,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         page = GetPage(page);
         limit = GetLimit(limit);
         var results = await _repository.GetByOrganizationForUserAsync(organizationId, CurrentUser.Id, o => o.PageNumber(page).PageLimit(limit));
+        AppDiagnostics.Counter("saved_views.get", (int)results.Total);
 
         var viewModels = MapToViewModels(results.Documents);
         return OkWithResourceLinks(viewModels, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
@@ -80,6 +81,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         page = GetPage(page);
         limit = GetLimit(limit);
         var results = await _repository.GetByViewForUserAsync(organizationId, viewType, CurrentUser.Id, o => o.PageNumber(page).PageLimit(limit));
+        AppDiagnostics.Counter("saved_views.get", (int)results.Total);
 
         var viewModels = MapToViewModels(results.Documents);
         return OkWithResourceLinks(viewModels, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
@@ -204,7 +206,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "Private views cannot be set as the default. Default views are organization-wide.");
         }
 
-        // Delta<T> bypasses IValidatableObject — enforce MaxLength and format validation manually
+        // Delta<T> bypasses IValidatableObject — enforce data-annotation and custom validation manually.
         var changedNames = changes.GetChangedPropertyNames();
         var lengthResult = ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Name), 100)
             ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Filter), 2000)
@@ -225,6 +227,10 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         {
             var patchedChanges = new UpdateSavedView();
             changes.Patch(patchedChanges);
+
+            if (patchedChanges.Columns is not null && patchedChanges.Columns.Count > 50)
+                return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "Columns cannot exceed 50 items.");
+
             var validationError = NewSavedView.ValidateColumnKeys(original.ViewType, patchedChanges.Columns).FirstOrDefault();
             if (validationError is not null)
             {

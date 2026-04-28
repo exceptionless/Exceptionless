@@ -8462,6 +8462,12 @@
               "string"
             ]
           },
+          "is_default": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
           "filter": {
             "type": [
               "null",
@@ -8488,12 +8494,6 @@
             "additionalProperties": {
               "type": "boolean"
             }
-          },
-          "is_default": {
-            "type": [
-              "null",
-              "boolean"
-            ]
           }
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."

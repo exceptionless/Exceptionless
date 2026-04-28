@@ -60,8 +60,8 @@ public sealed class SavedViewMapperTests
         // Act
         var result = _mapper.MapToSavedView(source);
 
-        // Assert - Version, CreatedByUserId, UpdatedByUserId, UserId are ignored by mapper
-        // Version keeps its C# record initializer default of 1
+        // Assert - Version, CreatedByUserId, UpdatedByUserId are ignored by mapper
+        // UserId is mapped when set on NewSavedView (it's JsonIgnore for request deserialization only)
         Assert.Equal(1, result.Version);
         Assert.Null(result.CreatedByUserId);
         Assert.Null(result.UpdatedByUserId);

@@ -3,14 +3,9 @@
     import type { ProblemDetails } from '@exceptionless/fetchclient';
 
     import { Muted, P } from '$comp/typography';
-    import * as AlertDialog from '$comp/ui/alert-dialog';
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
-    import * as Dialog from '$comp/ui/dialog';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { Input } from '$comp/ui/input';
-    import { Label } from '$comp/ui/label';
-    import { Switch } from '$comp/ui/switch';
     import * as Tooltip from '$comp/ui/tooltip';
     import { toFilter } from '$features/events/components/filters/helpers.svelte';
     import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
@@ -31,6 +26,9 @@
     import type { NewSavedView, SavedView, UpdateSavedView } from '../models';
 
     import { deleteSavedView, patchSavedView, postSavedView } from '../api.svelte';
+    import DeleteViewDialog from './delete-view-dialog.svelte';
+    import RenameViewDialog from './rename-view-dialog.svelte';
+    import SaveViewDialog from './save-view-dialog.svelte';
 
     const timeLabels = new SvelteMap<string, string>();
     for (const section of quickRanges) {
@@ -53,6 +51,16 @@
         return parts.join(' · ') || 'No filters';
     }
 
+    function getErrorMessage(error: unknown, fallback: string): string {
+        const problem = error as ProblemDetails;
+        const generalErrors = problem?.errors?.general;
+        if (generalErrors?.[0]) {
+            return generalErrors[0];
+        }
+
+        return problem?.title ?? fallback;
+    }
+
     interface Props {
         activeSavedView?: SavedView;
         columnVisibility?: Record<string, boolean>;
@@ -72,10 +80,6 @@
     let isRenameDialogOpen = $state(false);
     let isDeleteDialogOpen = $state(false);
     let viewToDelete = $state<null | SavedView>(null);
-    let saveName = $state('');
-    let isPrivate = $state(false);
-    let isDefault = $state(false);
-    let renameName = $state('');
 
     const organizationId = $derived(organization.current);
 
@@ -141,9 +145,6 @@
     const activeView = $derived(activeSavedView);
 
     async function openSaveDialog() {
-        saveName = '';
-        isPrivate = false;
-        isDefault = false;
         await tick();
         isSaveDialogOpen = true;
     }
@@ -153,7 +154,6 @@
             return;
         }
 
-        renameName = activeView.name;
         await tick();
         isRenameDialogOpen = true;
     }
@@ -164,8 +164,8 @@
         isDeleteDialogOpen = true;
     }
 
-    async function handleSave() {
-        if (!organizationId || !saveName.trim()) {
+    async function handleSave(name: string, isPrivate: boolean, isDefault: boolean) {
+        if (!organizationId) {
             return;
         }
 
@@ -176,7 +176,7 @@
             filter_definitions: filterDefinitions,
             is_default: isDefault || undefined,
             is_private: isPrivate || undefined,
-            name: saveName.trim(),
+            name,
             organization_id: organizationId,
             time: time || undefined,
             view_type: view
@@ -188,8 +188,7 @@
             onLoadView(result.id);
             toast.success(`Saved view "${result.name}" created.`);
         } catch (error) {
-            const problem = error as ProblemDetails;
-            toast.error(problem?.title ?? 'Failed to save view. Please try again.');
+            toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
         }
     }
 
@@ -210,23 +209,21 @@
             await updateMutation.mutateAsync(body);
             toast.success(`View "${activeSavedView.name}" updated.`);
         } catch (error) {
-            const problem = error as ProblemDetails;
-            toast.error(problem?.title ?? 'Failed to update view. Please try again.');
+            toast.error(getErrorMessage(error, 'Failed to update view. Please try again.'));
         }
     }
 
-    async function handleRename() {
-        if (!activeView || !organizationId || !renameName.trim()) {
+    async function handleRename(newName: string) {
+        if (!activeView || !organizationId) {
             return;
         }
 
         try {
-            await updateMutation.mutateAsync({ name: renameName.trim() });
+            await updateMutation.mutateAsync({ name: newName });
             isRenameDialogOpen = false;
             toast.success('View renamed.');
         } catch (error) {
-            const problem = error as ProblemDetails;
-            toast.error(problem?.title ?? 'Failed to rename view. Please try again.');
+            toast.error(getErrorMessage(error, 'Failed to rename view. Please try again.'));
         }
     }
 
@@ -265,8 +262,7 @@
             await updateMutation.mutateAsync({ is_default: true });
             toast.success('Set as default.');
         } catch (error) {
-            const problem = error as ProblemDetails;
-            toast.error(problem?.title ?? 'Failed to update default setting.');
+            toast.error(getErrorMessage(error, 'Failed to update default setting.'));
         }
     }
 </script>
@@ -409,115 +405,13 @@
 </DropdownMenu.Root>
 
 {#if isSaveDialogOpen}
-    <Dialog.Root bind:open={isSaveDialogOpen}>
-        <Dialog.Content class="sm:max-w-100">
-            <Dialog.Header>
-                <Dialog.Title>Save View</Dialog.Title>
-                <Dialog.Description>Save the current view configuration for quick access.</Dialog.Description>
-            </Dialog.Header>
-            {#if duplicateView}
-                <div class="bg-muted rounded-md p-3">
-                    <Muted>
-                        Current filters match <strong>"{duplicateView.name}"</strong>. You can
-                        <Button
-                            variant="link"
-                            class="h-auto p-0 text-sm"
-                            onclick={() => {
-                                isSaveDialogOpen = false;
-                                handleSelect(duplicateView);
-                            }}>load it</Button
-                        > instead, or save with a different name.
-                    </Muted>
-                </div>
-            {/if}
-            <form
-                class="flex flex-col gap-4"
-                onsubmit={(e) => {
-                    e.preventDefault();
-                    handleSave();
-                }}
-            >
-                <div class="flex flex-col gap-2">
-                    <Label for="view-name">Name</Label>
-                    <Input id="view-name" bind:value={saveName} placeholder="e.g., Production Errors" required autofocus />
-                </div>
-                <div class="flex items-center justify-between">
-                    <div>
-                        <Label for="view-private" class="text-sm">Private</Label>
-                        <Muted>Only visible to you</Muted>
-                    </div>
-                    <Switch
-                        id="view-private"
-                        bind:checked={isPrivate}
-                        onCheckedChange={(checked) => {
-                            if (checked) {
-                                isDefault = false;
-                            }
-                        }}
-                    />
-                </div>
-                {#if !isPrivate}
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <Label for="view-default" class="text-sm">Set as default</Label>
-                            <Muted>Auto-loads for everyone on page visit</Muted>
-                        </div>
-                        <Switch id="view-default" bind:checked={isDefault} />
-                    </div>
-                {/if}
-                <Dialog.Footer>
-                    <Button variant="outline" onclick={() => (isSaveDialogOpen = false)}>Cancel</Button>
-                    <Button type="submit" disabled={!saveName.trim() || saving}>
-                        {saving ? 'Saving...' : 'Save'}
-                    </Button>
-                </Dialog.Footer>
-            </form>
-        </Dialog.Content>
-    </Dialog.Root>
+    <SaveViewDialog bind:open={isSaveDialogOpen} {duplicateView} {saving} onSave={handleSave} onClose={() => (isSaveDialogOpen = false)} {onLoadView} />
 {/if}
 
-{#if isRenameDialogOpen}
-    <Dialog.Root bind:open={isRenameDialogOpen}>
-        <Dialog.Content class="sm:max-w-100">
-            <Dialog.Header>
-                <Dialog.Title>Rename View</Dialog.Title>
-                <Dialog.Description>Change the display name for this saved view.</Dialog.Description>
-            </Dialog.Header>
-            <form
-                class="flex flex-col gap-4"
-                onsubmit={(e) => {
-                    e.preventDefault();
-                    handleRename();
-                }}
-            >
-                <div class="flex flex-col gap-2">
-                    <Label for="rename-view">Name</Label>
-                    <Input id="rename-view" bind:value={renameName} placeholder="View name" required autofocus />
-                </div>
-                <Dialog.Footer>
-                    <Button variant="outline" onclick={() => (isRenameDialogOpen = false)}>Cancel</Button>
-                    <Button type="submit" disabled={!renameName.trim() || saving}>
-                        {saving ? 'Saving...' : 'Rename'}
-                    </Button>
-                </Dialog.Footer>
-            </form>
-        </Dialog.Content>
-    </Dialog.Root>
+{#if isRenameDialogOpen && activeView}
+    <RenameViewDialog bind:open={isRenameDialogOpen} name={activeView.name} {saving} onRename={handleRename} onClose={() => (isRenameDialogOpen = false)} />
 {/if}
 
-{#if isDeleteDialogOpen && viewToDelete}
-    <AlertDialog.Root bind:open={isDeleteDialogOpen}>
-        <AlertDialog.Content>
-            <AlertDialog.Header>
-                <AlertDialog.Title>Delete Saved View</AlertDialog.Title>
-                <AlertDialog.Description>
-                    Are you sure you want to delete "{viewToDelete.name}"? This action cannot be undone.
-                </AlertDialog.Description>
-            </AlertDialog.Header>
-            <AlertDialog.Footer>
-                <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-                <AlertDialog.Action onclick={handleDelete}>Delete</AlertDialog.Action>
-            </AlertDialog.Footer>
-        </AlertDialog.Content>
-    </AlertDialog.Root>
+{#if isDeleteDialogOpen}
+    <DeleteViewDialog bind:open={isDeleteDialogOpen} {viewToDelete} onDelete={handleDelete} />
 {/if}
