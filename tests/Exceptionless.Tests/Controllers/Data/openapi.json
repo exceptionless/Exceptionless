@@ -7787,7 +7787,7 @@
       "NewSavedView": {
         "required": [
           "name",
-          "view",
+          "view_type",
           "organization_id"
         ],
         "type": "object",
@@ -7816,7 +7816,7 @@
               "string"
             ]
           },
-          "view": {
+          "view_type": {
             "type": "string"
           },
           "filter_definitions": {
@@ -9097,7 +9097,7 @@
           "is_default",
           "name",
           "version",
-          "view",
+          "view_type",
           "created_utc",
           "updated_utc"
         ],
@@ -9176,7 +9176,7 @@
             "type": "integer",
             "format": "int32"
           },
-          "view": {
+          "view_type": {
             "type": "string"
           },
           "created_utc": {

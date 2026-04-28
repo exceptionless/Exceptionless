@@ -189,14 +189,15 @@ export const NewSavedViewSchema = object({
     .max(100, "Time must be at most 100 characters")
     .nullable()
     .optional(),
-  view: string().min(1, "View is required"),
+  view_type: string().min(1, "View type is required"),
   filter_definitions: string()
     .min(1, "Filter definitions is required")
     .max(10000, "Filter definitions must be at most 10000 characters")
     .nullable()
     .optional(),
   columns: record(string(), boolean()).nullable().optional(),
-  is_default: boolean(),
+  is_default: boolean().nullable().optional(),
+  is_private: boolean().nullable().optional(),
 });
 export type NewSavedViewFormData = Infer<typeof NewSavedViewSchema>;
 
@@ -609,7 +610,7 @@ export const ViewSavedViewSchema = object({
   name: string().min(1, "Name is required"),
   time: string().min(1, "Time is required").nullable().optional(),
   version: int32(),
-  view: string().min(1, "View is required"),
+  view_type: string().min(1, "View type is required"),
   created_utc: iso.datetime(),
   updated_utc: iso.datetime(),
 });

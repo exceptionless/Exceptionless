@@ -139,7 +139,10 @@ export interface NewSavedView {
   view_type: string;
   filter_definitions?: null | string;
   columns?: null | Record<string, boolean>;
-  is_default: boolean;
+  /** If true, this view will be the default for its view type. Defaults to false. */
+  is_default?: null | boolean;
+  /** If true, the view will only be visible to the current user. Defaults to false. */
+  is_private?: null | boolean;
 }
 
 export interface NewToken {
