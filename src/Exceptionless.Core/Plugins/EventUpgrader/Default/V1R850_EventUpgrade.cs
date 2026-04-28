@@ -20,7 +20,7 @@ public class V1R850EventUpgrade : PluginBase, IEventUpgraderPlugin
             var current = doc;
             while (current is not null)
             {
-                if (doc["ExtendedData"] is JsonObject extendedData)
+                if (current["ExtendedData"] is JsonObject extendedData)
                 {
                     if (extendedData["ExtraExceptionProperties"] is not null)
                         extendedData.Rename("ExtraExceptionProperties", "__ExceptionInfo");

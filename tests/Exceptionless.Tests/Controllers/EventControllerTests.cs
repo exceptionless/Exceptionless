@@ -103,7 +103,6 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.NotNull(identity);
         Assert.Equal("Test user", identity.Identity);
         Assert.Null(identity.Name);
-        Assert.Null(identity.Name);
         Assert.Null(ev.GetUserDescription(serializer));
 
         // post description

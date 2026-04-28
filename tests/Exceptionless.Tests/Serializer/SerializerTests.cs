@@ -568,7 +568,8 @@ public class SerializerTests : TestWithServices
         var ev = _serializer.Deserialize<Event>(json);
 
         // Assert
-        Assert.NotNull(ev?.Data);
+        Assert.NotNull(ev);
+        Assert.NotNull(ev.Data);
         Assert.Equal(4, ev.Data.Count);
         Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.Error));
         Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.RequestInfo));
