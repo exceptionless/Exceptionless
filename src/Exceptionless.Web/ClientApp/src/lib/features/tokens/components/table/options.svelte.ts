@@ -5,12 +5,12 @@ import type { CreateQueryResult } from '@tanstack/svelte-query';
 import { getSharedTableOptions } from '$features/shared/table.svelte';
 import TokenActionsCell from '$features/tokens/components/table/token-actions-cell.svelte';
 import TokenIdCell from '$features/tokens/components/table/token-id-cell.svelte';
-import { type ColumnDef, renderComponent } from '@tanstack/svelte-table';
+import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
 import type { GetProjectTokensParams } from '../../api.svelte';
 
-export function getColumns<TToken extends ViewToken>(): ColumnDef<TToken>[] {
-    const columns: ColumnDef<TToken>[] = [
+export function getColumns<TToken extends ViewToken>(): ColumnDef<StockFeatures, TToken, unknown>[] {
+    const columns: ColumnDef<StockFeatures, TToken, unknown>[] = [
         {
             accessorKey: 'id',
             cell: (info) => renderComponent(TokenIdCell, { token: info.row.original }),

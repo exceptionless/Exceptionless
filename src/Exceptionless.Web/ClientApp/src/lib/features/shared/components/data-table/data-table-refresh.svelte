@@ -1,18 +1,18 @@
 <script module lang="ts">
-    type TData = unknown;
+    type TData = RowData;
 </script>
 
-<script generics="TData" lang="ts">
+<script generics="TData extends RowData" lang="ts">
     import type { Snippet } from 'svelte';
 
     import { Button } from '$comp/ui/button';
     import * as Table from '$comp/ui/table';
-    import { type Table as SvelteTable } from '@tanstack/svelte-table';
+    import { type RowData, type StockFeatures, type Table as SvelteTable } from '@tanstack/svelte-table';
 
     interface Props {
         children?: Snippet;
         refresh: () => Promise<void>;
-        table: SvelteTable<TData>;
+        table: SvelteTable<StockFeatures, TData>;
     }
 
     let { children, refresh, table }: Props = $props();

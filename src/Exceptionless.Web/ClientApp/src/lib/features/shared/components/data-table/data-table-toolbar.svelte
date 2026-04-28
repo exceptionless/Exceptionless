@@ -1,10 +1,10 @@
 <script module lang="ts">
-    type TData = unknown;
+    type TData = RowData;
 </script>
 
-<script generics="TData" lang="ts">
+<script generics="TData extends RowData" lang="ts">
     import type { ButtonSize } from '$comp/ui/button';
-    import type { Table } from '@tanstack/svelte-table';
+    import type { RowData, StockFeatures, Table } from '@tanstack/svelte-table';
     import type { Snippet } from 'svelte';
 
     import DataTableViewOptions from './data-table-view-options.svelte';
@@ -12,7 +12,7 @@
     interface Props {
         children?: Snippet;
         size?: ButtonSize;
-        table: Table<TData>;
+        table: Table<StockFeatures, TData>;
     }
 
     let { children, size = 'icon', table }: Props = $props();

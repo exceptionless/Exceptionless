@@ -311,6 +311,7 @@
                 } else {
                     selectedTierId = currentTierId === FREE_PLAN_ID ? '' : currentTierId;
                 }
+
                 // Always default to yearly to promote savings (especially for free→paid upgrades)
                 interval = isFreeCurrent ? 'year' : currentInterval;
                 paymentExpanded = false;
@@ -495,7 +496,9 @@
 <Dialog.Root
     open={true}
     onOpenChange={(v) => {
-        if (!v) onclose(false);
+        if (!v) {
+            onclose(false);
+        }
     }}
 >
     <Dialog.Content class="max-w-xl sm:max-w-xl">

@@ -31,6 +31,7 @@ public record ViewOrganization : IIdentity, IData, IHaveDates
     public string? SuspensionNotes { get; set; }
     public DateTime? SuspensionDate { get; set; }
     public bool HasPremiumFeatures { get; set; }
+    public ISet<string> Features { get; set; } = new HashSet<string>();
     public int MaxUsers { get; set; }
     public int MaxProjects { get; set; }
     public long ProjectCount { get; set; }

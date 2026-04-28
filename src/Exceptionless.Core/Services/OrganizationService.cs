@@ -13,6 +13,7 @@ public class OrganizationService : IStartupAction
     private const int BATCH_SIZE = 50;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
+    private readonly ISavedViewRepository _savedViewRepository;
     private readonly ITokenRepository _tokenRepository;
     private readonly IUserRepository _userRepository;
     private readonly IWebHookRepository _webHookRepository;
@@ -20,10 +21,11 @@ public class OrganizationService : IStartupAction
     private readonly UsageService _usageService;
     private readonly ILogger _logger;
 
-    public OrganizationService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, AppOptions appOptions, UsageService usageService, ILoggerFactory loggerFactory)
+    public OrganizationService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ISavedViewRepository savedViewRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, AppOptions appOptions, UsageService usageService, ILoggerFactory loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
+        _savedViewRepository = savedViewRepository;
         _tokenRepository = tokenRepository;
         _userRepository = userRepository;
         _webHookRepository = webHookRepository;
@@ -180,6 +182,18 @@ public class OrganizationService : IStartupAction
         return _webHookRepository.RemoveAllByOrganizationIdAsync(organization.Id);
     }
 
+    public Task<long> RemoveSavedViewsAsync(Organization organization)
+    {
+        _logger.LogDebug("Removing saved views for {OrganizationName} ({OrganizationId})", organization.Name, organization.Id);
+        return _savedViewRepository.RemoveAllByOrganizationIdAsync(organization.Id);
+    }
+
+    public Task<long> RemoveUserSavedViewsAsync(string organizationId, string userId)
+    {
+        _logger.LogDebug("Removing private saved views for user {UserId} in organization {OrganizationId}", userId, organizationId);
+        return _savedViewRepository.RemovePrivateByUserIdAsync(organizationId, userId);
+    }
+
     public async Task SoftDeleteOrganizationAsync(Organization organization, string currentUserId)
     {
         if (organization.IsDeleted)
@@ -187,6 +201,7 @@ public class OrganizationService : IStartupAction
 
         await RemoveTokensAsync(organization);
         await RemoveWebHooksAsync(organization);
+        await RemoveSavedViewsAsync(organization);
         await CancelSubscriptionsAsync(organization);
         await RemoveUsersAsync(organization, currentUserId);
         await CleanupProjectNotificationSettingsAsync(organization, []);

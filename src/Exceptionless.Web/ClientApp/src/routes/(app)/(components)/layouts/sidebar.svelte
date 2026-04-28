@@ -3,6 +3,7 @@
 
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
+    import { A } from '$comp/typography';
     import * as Collapsible from '$comp/ui/collapsible';
     import * as Sidebar from '$comp/ui/sidebar';
     import { useSidebar } from '$comp/ui/sidebar';
@@ -11,6 +12,14 @@
     import Wrench from '@lucide/svelte/icons/wrench';
 
     import type { NavigationItem } from '../../../routes.svelte';
+
+    function isSavedItemActive(savedItem: { href: string; isDefault?: boolean }, routeHref: string): boolean {
+        const savedId = new URL(savedItem.href, page.url.origin).searchParams.get('saved');
+        const activeSavedParam = page.url.searchParams.get('saved');
+        const isOnRoute = routeHref === page.url.pathname;
+
+        return isOnRoute && (savedItem.isDefault ? !activeSavedParam || activeSavedParam === savedId : activeSavedParam === savedId);
+    }
 
     type Props = ComponentProps<typeof Sidebar.Root> & {
         footer?: Snippet;
@@ -48,16 +57,69 @@
             <Sidebar.Menu>
                 {#each dashboardRoutes as route (route.href)}
                     {@const Icon = route.icon}
-                    <Sidebar.MenuItem>
-                        <Sidebar.MenuButton isActive={route.href === page.url.pathname}>
-                            {#snippet child({ props })}
-                                <a href={route.href} title={route.title} onclick={onMenuClick} {...props}>
-                                    <Icon />
-                                    <span>{route.title}</span>
-                                </a>
+                    {#if route.children?.length}
+                        {@const isChildActive = route.href === page.url.pathname || route.children.some((c) => isSavedItemActive(c, route.href))}
+                        <Collapsible.Root open={isChildActive} class="group/collapsible">
+                            {#snippet child({ props: collapsibleProps })}
+                                <Sidebar.MenuItem {...collapsibleProps}>
+                                    <Collapsible.Trigger>
+                                        {#snippet child({ props: triggerProps })}
+                                            <Sidebar.MenuButton isActive={route.href === page.url.pathname} {...triggerProps}>
+                                                {#snippet child({ props: buttonProps })}
+                                                    <A
+                                                        variant="ghost"
+                                                        href={route.href}
+                                                        title={route.title}
+                                                        onclick={onMenuClick}
+                                                        class="flex min-w-0 flex-1 items-center gap-2"
+                                                        {...buttonProps}
+                                                    >
+                                                        <Icon />
+                                                        <span>{route.title}</span>
+                                                        <ChevronRight
+                                                            class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                                                        />
+                                                    </A>
+                                                {/snippet}
+                                            </Sidebar.MenuButton>
+                                        {/snippet}
+                                    </Collapsible.Trigger>
+                                    <Collapsible.Content>
+                                        <Sidebar.MenuSub>
+                                            {#each route.children as savedItem (savedItem.href)}
+                                                <Sidebar.MenuSubItem>
+                                                    <Sidebar.MenuSubButton isActive={isSavedItemActive(savedItem, route.href)}>
+                                                        {#snippet child({ props: subProps })}
+                                                            <A
+                                                                variant="ghost"
+                                                                href={savedItem.href}
+                                                                title={savedItem.title}
+                                                                onclick={onMenuClick}
+                                                                {...subProps}
+                                                            >
+                                                                <span class="truncate">{savedItem.title}</span>
+                                                            </A>
+                                                        {/snippet}
+                                                    </Sidebar.MenuSubButton>
+                                                </Sidebar.MenuSubItem>
+                                            {/each}
+                                        </Sidebar.MenuSub>
+                                    </Collapsible.Content>
+                                </Sidebar.MenuItem>
                             {/snippet}
-                        </Sidebar.MenuButton>
-                    </Sidebar.MenuItem>
+                        </Collapsible.Root>
+                    {:else}
+                        <Sidebar.MenuItem>
+                            <Sidebar.MenuButton isActive={route.href === page.url.pathname}>
+                                {#snippet child({ props })}
+                                    <A variant="ghost" href={route.href} title={route.title} onclick={onMenuClick} {...props}>
+                                        <Icon />
+                                        <span>{route.title}</span>
+                                    </A>
+                                {/snippet}
+                            </Sidebar.MenuButton>
+                        </Sidebar.MenuItem>
+                    {/if}
                 {/each}
             </Sidebar.Menu>
         </Sidebar.Group>
@@ -82,13 +144,13 @@
                                         <Sidebar.MenuSubItem>
                                             <Sidebar.MenuSubButton isActive={subItem.href === page.url.pathname}>
                                                 {#snippet child({ props })}
-                                                    <a href={subItem.href} title={subItem.title} onclick={onMenuClick} {...props}>
+                                                    <A variant="ghost" href={subItem.href} title={subItem.title} onclick={onMenuClick} {...props}>
                                                         {#if subItem.icon}
                                                             {@const Icon = subItem.icon}
                                                             <Icon />
                                                         {/if}
                                                         <span>{subItem.title}</span>
-                                                    </a>
+                                                    </A>
                                                 {/snippet}
                                             </Sidebar.MenuSubButton>
                                         </Sidebar.MenuSubItem>
@@ -122,13 +184,13 @@
                                             <Sidebar.MenuSubItem>
                                                 <Sidebar.MenuSubButton isActive={subItem.href === page.url.pathname}>
                                                     {#snippet child({ props })}
-                                                        <a href={subItem.href} title={subItem.title} onclick={onMenuClick} {...props}>
+                                                        <A variant="ghost" href={subItem.href} title={subItem.title} onclick={onMenuClick} {...props}>
                                                             {#if subItem.icon}
                                                                 {@const Icon = subItem.icon}
                                                                 <Icon />
                                                             {/if}
                                                             <span>{subItem.title}</span>
-                                                        </a>
+                                                        </A>
                                                     {/snippet}
                                                 </Sidebar.MenuSubButton>
                                             </Sidebar.MenuSubItem>

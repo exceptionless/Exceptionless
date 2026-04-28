@@ -130,6 +130,21 @@ export interface NewProject {
   delete_bot_data_enabled: boolean;
 }
 
+export interface NewSavedView {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  organization_id: string;
+  name: string;
+  filter?: null | string;
+  time?: null | string;
+  view_type: string;
+  filter_definitions?: null | string;
+  columns?: null | Record<string, boolean>;
+  /** If true, this view will be the default for its view type. Defaults to false. */
+  is_default?: null | boolean;
+  /** If true, the view will only be visible to the current user. Defaults to false. */
+  is_private?: null | boolean;
+}
+
 export interface NewToken {
   /** @pattern ^[a-fA-F0-9]{24}$ */
   organization_id: string;
@@ -350,6 +365,16 @@ export interface UpdateProject {
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
+export interface UpdateSavedView {
+  name?: null | string;
+  filter?: null | string;
+  time?: null | string;
+  filter_definitions?: null | string;
+  columns?: null | Record<string, boolean>;
+  is_default?: null | boolean;
+}
+
+/** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
 export interface UpdateToken {
   is_disabled: boolean;
   notes?: null | string;
@@ -481,6 +506,7 @@ export interface ViewOrganization {
   /** @format date-time */
   suspension_date?: null | string;
   has_premium_features: boolean;
+  features: string[];
   /** @format int32 */
   max_users: number;
   /** @format int32 */
@@ -521,6 +547,32 @@ export interface ViewProject {
   has_slack_integration: boolean;
   usage_hours: UsageHourInfo[];
   usage: UsageInfo[];
+}
+
+export interface ViewSavedView {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  id: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  organization_id: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  user_id?: null | string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  created_by_user_id: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  updated_by_user_id?: null | string;
+  filter?: null | string;
+  filter_definitions?: null | string;
+  columns?: null | Record<string, boolean>;
+  is_default: boolean;
+  name: string;
+  time?: null | string;
+  /** @format int32 */
+  version: number;
+  view_type: string;
+  /** @format date-time */
+  created_utc: string;
+  /** @format date-time */
+  updated_utc: string;
 }
 
 export interface ViewToken {

@@ -700,6 +700,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 return BadRequest("An organization must contain at least one user.");
 
             await _organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
+            await _organizationService.RemoveUserSavedViewsAsync(organization.Id, user.Id);
 
             user.OrganizationIds.Remove(organization.Id);
             await _userRepository.SaveAsync(user, o => o.Cache());
@@ -796,6 +797,60 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             return NotFound();
 
         if (organization.Data is not null && organization.Data.Remove(key))
+            await _repository.SaveAsync(organization, o => o.Cache());
+
+        return Ok();
+    }
+
+    /// <summary>
+    /// Enable a feature flag
+    /// </summary>
+    /// <param name="id">The identifier of the organization.</param>
+    /// <param name="feature">The feature flag identifier (e.g., "feature-saved-views").</param>
+    /// <response code="200">The feature flag was enabled.</response>
+    /// <response code="404">The organization was not found.</response>
+    [HttpPost]
+    [Route("{id:objectid}/features/{feature:minlength(1)}")]
+    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> SetFeatureAsync(string id, string feature)
+    {
+        var organization = await GetModelAsync(id, false);
+        if (organization is null)
+            return NotFound();
+
+        var normalizedFeature = feature.Trim().ToLowerInvariant();
+        if (String.IsNullOrEmpty(normalizedFeature))
+            return BadRequest("Invalid feature flag.");
+
+        organization.Features.Add(normalizedFeature);
+        await _repository.SaveAsync(organization, o => o.Cache());
+
+        return Ok();
+    }
+
+    /// <summary>
+    /// Disable a feature flag
+    /// </summary>
+    /// <param name="id">The identifier of the organization.</param>
+    /// <param name="feature">The feature flag identifier (e.g., "feature-saved-views").</param>
+    /// <response code="200">The feature flag was disabled.</response>
+    /// <response code="404">The organization was not found.</response>
+    [HttpDelete]
+    [Route("{id:objectid}/features/{feature:minlength(1)}")]
+    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> RemoveFeatureAsync(string id, string feature)
+    {
+        var organization = await GetModelAsync(id, false);
+        if (organization is null)
+            return NotFound();
+
+        var normalizedFeature = feature.Trim().ToLowerInvariant();
+        if (String.IsNullOrEmpty(normalizedFeature))
+            return BadRequest("Invalid feature flag.");
+
+        if (organization.Features.Remove(normalizedFeature))
             await _repository.SaveAsync(organization, o => o.Cache());
 
         return Ok();
