@@ -8,8 +8,23 @@ namespace Exceptionless.Web.Models;
 
 public record NewSavedView : IOwnedByOrganization, IValidatableObject
 {
-    /// <summary>Regex pattern derived from <see cref="SavedView.ValidViews"/>.</summary>
-    public static readonly string ValidViewsPattern = $"^({String.Join("|", SavedView.ValidViews)})$";
+    /// <summary>The set of valid dashboard view identifiers.</summary>
+    public static readonly string[] ValidViews = ["events", "issues", "stream"];
+
+    /// <summary>Valid column IDs per view, matching the TanStack Table column definitions.</summary>
+    public static readonly IReadOnlyDictionary<string, IReadOnlySet<string>> ValidColumnIds =
+        new Dictionary<string, IReadOnlySet<string>>
+        {
+            ["events"] = new HashSet<string> { "user", "date" },
+            ["issues"] = new HashSet<string> { "status", "users", "events", "first", "last" },
+            ["stream"] = new HashSet<string> { "user", "date" }
+        };
+
+    /// <summary>Union of all valid column IDs across all views.</summary>
+    public static readonly IReadOnlySet<string> AllValidColumnIds =
+        new HashSet<string>(ValidColumnIds.Values.SelectMany(ids => ids));
+
+    public static readonly string ValidViewsPattern = $"^({String.Join("|", ValidViews)})$";
 
     [ObjectId]
     public string OrganizationId { get; set; } = null!;
@@ -45,10 +60,10 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (View is { Length: > 0 } && !SavedView.ValidViews.Contains(View))
+        if (View is { Length: > 0 } && !ValidViews.Contains(View))
         {
             yield return new ValidationResult(
-                $"View must be one of: {String.Join(", ", SavedView.ValidViews)}",
+                $"View must be one of: {String.Join(", ", ValidViews)}",
                 [nameof(View)]
             );
         }
@@ -74,9 +89,9 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
             yield break;
         }
 
-        var validKeys = view is not null && SavedView.ValidColumnIds.TryGetValue(view, out var viewKeys)
+        var validKeys = view is not null && ValidColumnIds.TryGetValue(view, out var viewKeys)
             ? viewKeys
-            : SavedView.AllValidColumnIds;
+            : AllValidColumnIds;
 
         var invalidKeys = columns.Keys.Where(key => !validKeys.Contains(key));
         foreach (var key in invalidKeys)

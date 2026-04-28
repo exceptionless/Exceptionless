@@ -78,7 +78,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         if (!CanAccessOrganization(organizationId))
             return NotFound();
 
-        if (!SavedView.ValidViews.Contains(view))
+        if (!NewSavedView.ValidViews.Contains(view))
             return NotFound();
 
         // Reads remain available even when the feature is disabled to preserve access to existing saved views.

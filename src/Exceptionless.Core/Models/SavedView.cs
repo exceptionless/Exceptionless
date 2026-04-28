@@ -10,22 +10,6 @@ namespace Exceptionless.Core.Models;
 /// </summary>
 public record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
 {
-    /// <summary>The set of valid dashboard view identifiers.</summary>
-    public static readonly string[] ValidViews = ["events", "issues", "stream"];
-
-    /// <summary>Valid column IDs per view, matching the TanStack Table column definitions.</summary>
-    public static readonly IReadOnlyDictionary<string, IReadOnlySet<string>> ValidColumnIds =
-        new Dictionary<string, IReadOnlySet<string>>
-        {
-            ["events"] = new HashSet<string> { "user", "date" },
-            ["issues"] = new HashSet<string> { "status", "users", "events", "first", "last" },
-            ["stream"] = new HashSet<string> { "user", "date" }
-        };
-
-    /// <summary>Union of all valid column IDs across all views.</summary>
-    public static readonly IReadOnlySet<string> AllValidColumnIds =
-        new HashSet<string>(ValidColumnIds.Values.SelectMany(ids => ids));
-
     // Identity
     [ObjectId]
     public string Id { get; set; } = null!;
