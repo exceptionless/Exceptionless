@@ -42,7 +42,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     public async Task PostAsync_NewSavedView_MapsAllPropertiesToSavedView()
     {
         // Arrange
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Production Errors",
@@ -53,32 +53,32 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         };
 
         // Act
-        var viewFilter = await SendRequestAsAsync<ViewSavedView>(r => r
+        var result = await SendRequestAsAsync<ViewSavedView>(r => r
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeCreated()
         );
 
         // Assert
-        Assert.NotNull(viewFilter);
-        Assert.NotNull(viewFilter.Id);
-        Assert.Equal(SampleDataService.TEST_ORG_ID, viewFilter.OrganizationId);
-        Assert.Null(viewFilter.UserId);
-        Assert.Equal("Production Errors", viewFilter.Name);
-        Assert.Equal("status:open", viewFilter.Filter);
-        Assert.Equal("[now-7D TO now]", viewFilter.Time);
-        Assert.Equal("events", viewFilter.ViewType);
-        Assert.NotNull(viewFilter.FilterDefinitions);
-        Assert.Equal(1, viewFilter.Version);
-        Assert.NotNull(viewFilter.CreatedByUserId);
-        Assert.Null(viewFilter.UpdatedByUserId);
-        Assert.True(viewFilter.CreatedUtc > DateTime.MinValue);
-        Assert.True(viewFilter.UpdatedUtc > DateTime.MinValue);
+        Assert.NotNull(result);
+        Assert.NotNull(result.Id);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, result.OrganizationId);
+        Assert.Null(result.UserId);
+        Assert.Equal("Production Errors", result.Name);
+        Assert.Equal("status:open", result.Filter);
+        Assert.Equal("[now-7D TO now]", result.Time);
+        Assert.Equal("events", result.ViewType);
+        Assert.NotNull(result.FilterDefinitions);
+        Assert.Equal(1, result.Version);
+        Assert.NotNull(result.CreatedByUserId);
+        Assert.Null(result.UpdatedByUserId);
+        Assert.True(result.CreatedUtc > DateTime.MinValue);
+        Assert.True(result.UpdatedUtc > DateTime.MinValue);
 
         // Verify persisted
-        var savedView = await _savedViewRepository.GetByIdAsync(viewFilter.Id);
+        var savedView = await _savedViewRepository.GetByIdAsync(result.Id);
         Assert.NotNull(savedView);
         Assert.Equal("Production Errors", savedView.Name);
     }
@@ -87,63 +87,63 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     public async Task PostAsync_WithIsPrivate_SetsUserIdOnSavedView()
     {
         // Arrange
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
-            Name = "My Private Filter",
+            Name = "My Private View",
             Filter = "status:regressed",
             ViewType = "issues",
             IsPrivate = true
         };
 
         // Act
-        var viewFilter = await SendRequestAsAsync<ViewSavedView>(r => r
+        var result = await SendRequestAsAsync<ViewSavedView>(r => r
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeCreated()
         );
 
         // Assert
-        Assert.NotNull(viewFilter);
-        Assert.NotNull(viewFilter.UserId);
+        Assert.NotNull(result);
+        Assert.NotNull(result.UserId);
     }
 
     [Fact]
     public async Task PostAsync_WithoutIsPrivate_DoesNotSetUserId()
     {
         // Arrange
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
-            Name = "Organization Wide Filter",
+            Name = "Organization Wide View",
             Filter = "status:open",
             ViewType = "events"
         };
 
         // Act
-        var viewFilter = await SendRequestAsAsync<ViewSavedView>(r => r
+        var result = await SendRequestAsAsync<ViewSavedView>(r => r
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeCreated()
         );
 
         // Assert
-        Assert.NotNull(viewFilter);
-        Assert.Null(viewFilter.UserId);
+        Assert.NotNull(result);
+        Assert.Null(result.UserId);
     }
 
     [Fact]
     public Task PostAsync_WithUnauthorizedOrganization_ReturnsBadRequest()
     {
         // Arrange
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.FREE_ORG_ID,
-            Name = "Unauthorized Filter",
+            Name = "Unauthorized View",
             Filter = "status:open",
             ViewType = "events"
         };
@@ -153,7 +153,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Post()
             .AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeBadRequest()
         );
     }
@@ -162,32 +162,32 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     public async Task PostAsync_AsOrganizationUser_CanCreateSavedView()
     {
         // Arrange
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
-            Name = "Organization User Filter",
+            Name = "Organization User View",
             Filter = "type:error",
             ViewType = "stream"
         };
 
         // Act
-        var viewFilter = await SendRequestAsAsync<ViewSavedView>(r => r
+        var result = await SendRequestAsAsync<ViewSavedView>(r => r
             .Post()
             .AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeCreated()
         );
 
         // Assert
-        Assert.NotNull(viewFilter);
-        Assert.Equal("Organization User Filter", viewFilter.Name);
+        Assert.NotNull(result);
+        Assert.Equal("Organization User View", result.Name);
     }
 
     [Fact]
     public Task PostAsync_WithEmptyName_ReturnsUnprocessableEntity()
     {
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = String.Empty,
@@ -199,7 +199,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
@@ -207,7 +207,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     [Fact]
     public Task PostAsync_WithEmptyFilter_ReturnsCreated()
     {
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Show All",
@@ -219,7 +219,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeCreated()
         );
     }
@@ -227,10 +227,10 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     [Fact]
     public Task PostAsync_WithInvalidView_ReturnsUnprocessableEntity()
     {
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
-            Name = "Invalid View Filter",
+            Name = "Invalid View Type",
             Filter = "status:open",
             ViewType = "invalid-view"
         };
@@ -239,7 +239,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
@@ -251,31 +251,31 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     public async Task PostAsync_WithValidView_Succeeds(string view)
     {
         // Arrange & Act
-        var viewFilter = await CreateSavedViewAsync($"View Test {view}", "status:open", view);
+        var result = await CreateSavedViewAsync($"View Test {view}", "status:open", view);
 
         // Assert
-        Assert.NotNull(viewFilter);
-        Assert.Equal(view, viewFilter.ViewType);
+        Assert.NotNull(result);
+        Assert.Equal(view, result.ViewType);
     }
 
     [Fact]
     public async Task GetAsync_ExistingFilter_ReturnsFilter()
     {
         // Arrange
-        var created = await CreateSavedViewAsync("Get Test Filter", "status:open", "events");
+        var created = await CreateSavedViewAsync("Get Test View", "status:open", "events");
         Assert.NotNull(created);
 
         // Act
-        var viewFilter = await SendRequestAsAsync<ViewSavedView>(r => r
+        var result = await SendRequestAsAsync<ViewSavedView>(r => r
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
             .StatusCodeShouldBeOk()
         );
 
         // Assert
-        Assert.NotNull(viewFilter);
-        Assert.Equal(created.Id, viewFilter.Id);
-        Assert.Equal(created.Name, viewFilter.Name);
+        Assert.NotNull(result);
+        Assert.Equal(created.Id, result.Id);
+        Assert.Equal(created.Name, result.Name);
     }
 
     [Fact]
@@ -292,8 +292,8 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     public async Task GetByOrganizationAsync_WithMultipleUsers_ReturnsOrganizationWideAndCurrentUserFilters()
     {
         // Arrange
-        var organizationFilter = await CreateSavedViewAsync("Organization Filter", "status:open", "events");
-        var privateFilter = await CreateSavedViewAsync("Private Filter", "status:regressed", "events", isPrivate: true);
+        var organizationFilter = await CreateSavedViewAsync("Organization View", "status:open", "events");
+        var privateFilter = await CreateSavedViewAsync("Private View", "status:regressed", "events", isPrivate: true);
         Assert.NotNull(organizationFilter);
         Assert.NotNull(privateFilter);
 
@@ -499,15 +499,15 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         Assert.NotNull(created);
 
         // Act - same user who created it
-        var viewFilter = await SendRequestAsAsync<ViewSavedView>(r => r
+        var result = await SendRequestAsAsync<ViewSavedView>(r => r
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
             .StatusCodeShouldBeOk()
         );
 
         // Assert
-        Assert.NotNull(viewFilter);
-        Assert.Equal(created.Id, viewFilter.Id);
+        Assert.NotNull(result);
+        Assert.Equal(created.Id, result.Id);
     }
 
     [Fact]
@@ -529,7 +529,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     public async Task PatchAsync_OrganizationWideFilterByOrganizationMember_Succeeds()
     {
         // Arrange - Global admin creates organization-wide filter
-        var created = await CreateSavedViewAsync("Shared Filter", "status:open", "events");
+        var created = await CreateSavedViewAsync("Shared View", "status:open", "events");
         Assert.NotNull(created);
 
         // Act - Organization user updates it
@@ -550,10 +550,10 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     public Task PostAsync_AnonymousUser_ReturnsUnauthorized()
     {
         // Arrange
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
-            Name = "Anonymous Filter",
+            Name = "Anonymous View",
             Filter = "status:open",
             ViewType = "events"
         };
@@ -563,7 +563,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Post()
             .AsAnonymousUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeUnauthorized()
         );
     }
@@ -590,7 +590,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         await _savedViewRepository.AddAsync(filters, o => o.ImmediateConsistency());
 
         // Act - try to add one more
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "One Too Many",
@@ -602,7 +602,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeBadRequest()
         );
     }
@@ -1060,7 +1060,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     public Task PostAsync_WithXssInName_StoresLiterally()
     {
         // XSS in the name should be stored as-is; escaping is the frontend's job
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "<script>alert('xss')</script>",
@@ -1072,7 +1072,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeCreated()
         );
     }
@@ -1080,10 +1080,10 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     [Fact]
     public Task PostAsync_FilterExceedsMaxLength_ReturnsUnprocessableEntity()
     {
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
-            Name = "Long Filter",
+            Name = "Long View",
             Filter = new string('x', 2001),
             ViewType = "events"
         };
@@ -1092,7 +1092,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
@@ -1100,7 +1100,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     [Fact]
     public Task PostAsync_FilterDefinitionsExceedsMaxLength_ReturnsUnprocessableEntity()
     {
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Long FilterDefs",
@@ -1113,7 +1113,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
@@ -1121,7 +1121,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     [Fact]
     public Task PostAsync_TimeExceedsMaxLength_ReturnsUnprocessableEntity()
     {
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Long Time",
@@ -1134,7 +1134,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
@@ -1142,7 +1142,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     [Fact]
     public Task PostAsync_NameExceedsMaxLength_ReturnsUnprocessableEntity()
     {
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = new string('n', 101),
@@ -1154,7 +1154,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
@@ -1219,10 +1219,10 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     [Fact]
     public Task PostAsync_FilterAtMaxLength_Succeeds()
     {
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
-            Name = "Max Length Filter",
+            Name = "Max Length View",
             Filter = new string('x', 2000),
             ViewType = "events"
         };
@@ -1231,7 +1231,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeCreated()
         );
     }
@@ -1239,7 +1239,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     [Fact]
     public Task PostAsync_InvalidJsonFilterDefinitions_ReturnsUnprocessableEntity()
     {
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Bad JSON",
@@ -1252,7 +1252,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
@@ -1260,7 +1260,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     [Fact]
     public Task PostAsync_JsonObjectFilterDefinitions_ReturnsUnprocessableEntity()
     {
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "JSON Object",
@@ -1273,7 +1273,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
@@ -1281,7 +1281,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     [Fact]
     public Task PostAsync_ValidJsonArrayFilterDefinitions_Succeeds()
     {
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Valid JSON Array",
@@ -1294,7 +1294,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeCreated()
         );
     }
@@ -1302,7 +1302,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     [Fact]
     public Task PostAsync_EmptyArrayFilterDefinitions_Succeeds()
     {
-        var newFilter = new NewSavedView
+        var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Empty Array",
@@ -1315,7 +1315,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newFilter)
+            .Content(newView)
             .StatusCodeShouldBeCreated()
         );
     }
@@ -1528,7 +1528,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     public async Task PatchAsync_FilterExceedsMaxLength_ReturnsUnprocessableEntity()
     {
         // Arrange
-        var created = await CreateSavedViewAsync("MaxLen Filter", "status:open", "events");
+        var created = await CreateSavedViewAsync("MaxLen View", "status:open", "events");
         Assert.NotNull(created);
 
         // Act & Assert — Filter max is 2000

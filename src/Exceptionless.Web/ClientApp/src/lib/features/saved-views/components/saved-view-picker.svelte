@@ -438,16 +438,16 @@
                 }}
             >
                 <div class="flex flex-col gap-2">
-                    <Label for="filter-name">Name</Label>
-                    <Input id="filter-name" bind:value={saveName} placeholder="e.g., Production Errors" required autofocus />
+                    <Label for="view-name">Name</Label>
+                    <Input id="view-name" bind:value={saveName} placeholder="e.g., Production Errors" required autofocus />
                 </div>
                 <div class="flex items-center justify-between">
                     <div>
-                        <Label for="filter-private" class="text-sm">Private</Label>
+                        <Label for="view-private" class="text-sm">Private</Label>
                         <Muted>Only visible to you</Muted>
                     </div>
                     <Switch
-                        id="filter-private"
+                        id="view-private"
                         bind:checked={isPrivate}
                         onCheckedChange={(checked) => {
                             if (checked) {
@@ -459,10 +459,10 @@
                 {#if !isPrivate}
                     <div class="flex items-center justify-between">
                         <div>
-                            <Label for="filter-default" class="text-sm">Set as default</Label>
+                            <Label for="view-default" class="text-sm">Set as default</Label>
                             <Muted>Auto-loads for everyone on page visit</Muted>
                         </div>
-                        <Switch id="filter-default" bind:checked={isDefault} />
+                        <Switch id="view-default" bind:checked={isDefault} />
                     </div>
                 {/if}
                 <Dialog.Footer>
@@ -491,8 +491,8 @@
                 }}
             >
                 <div class="flex flex-col gap-2">
-                    <Label for="rename-filter">Name</Label>
-                    <Input id="rename-filter" bind:value={renameName} placeholder="View name" required autofocus />
+                    <Label for="rename-view">Name</Label>
+                    <Input id="rename-view" bind:value={renameName} placeholder="View name" required autofocus />
                 </div>
                 <Dialog.Footer>
                     <Button variant="outline" onclick={() => (isRenameDialogOpen = false)}>Cancel</Button>
