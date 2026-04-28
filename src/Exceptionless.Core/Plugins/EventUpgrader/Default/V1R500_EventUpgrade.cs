@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.Globalization;
+using System.Text.Json.Nodes;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
 
@@ -27,7 +28,7 @@ public class V1R500EventUpgrade : PluginBase, IEventUpgraderPlugin
             {
                 clientInfo.Remove("InstallDate");
                 // Format date as ISO 8601 with offset (matching Newtonsoft behavior)
-                clientInfo.Add("InstallDate", JsonValue.Create(date.ToString("yyyy-MM-ddTHH:mm:ss.FFFFFFFzzz")));
+                clientInfo.Add("InstallDate", JsonValue.Create(date.ToString("yyyy-MM-ddTHH:mm:ss.FFFFFFFzzz", CultureInfo.InvariantCulture)));
             }
             else
             {

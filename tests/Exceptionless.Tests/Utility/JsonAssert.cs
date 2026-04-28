@@ -5,8 +5,8 @@ using Xunit;
 namespace Exceptionless.Tests.Utility;
 
 /// <summary>
-/// Compares two JSON strings semantically, ignoring null properties and empty collections
-/// that differ between Newtonsoft and STJ serialization.
+/// Compares two JSON strings semantically, ignoring null properties, empty arrays,
+/// and empty objects that differ between Newtonsoft and STJ serialization.
 /// </summary>
 public static class JsonAssert
 {
@@ -32,7 +32,11 @@ public static class JsonAssert
                 else if (prop.Value is JsonArray arr && arr.Count == 0)
                     keysToRemove.Add(prop.Key);
                 else
+                {
                     RemoveNullAndEmptyProperties(prop.Value);
+                    if (prop.Value is JsonObject inner && inner.Count == 0)
+                        keysToRemove.Add(prop.Key);
+                }
             }
 
             foreach (string key in keysToRemove)
