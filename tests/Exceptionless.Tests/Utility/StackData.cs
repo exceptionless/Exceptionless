@@ -88,7 +88,7 @@ public class StackData
             if (file.EndsWith("summary.json"))
                 continue;
 
-            await using var stream = new FileStream(file, FileMode.Open);
+            await using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             var stack = _serializer.Deserialize<Stack>(stream);
             Assert.NotNull(stack);
 

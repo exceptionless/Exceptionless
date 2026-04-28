@@ -2,7 +2,10 @@
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
+using Foundatio.Jobs;
+using Foundatio.Queues;
 using Foundatio.Repositories;
 using Microsoft.Extensions.Logging;
 
@@ -13,6 +16,7 @@ public class SampleDataService
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly ITokenRepository _tokenRepository;
+    private readonly IQueue<WorkItemData> _workItemQueue;
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _billingPlans;
     private readonly TimeProvider _timeProvider;
@@ -43,6 +47,7 @@ public class SampleDataService
         IProjectRepository projectRepository,
         IUserRepository userRepository,
         ITokenRepository tokenRepository,
+        IQueue<WorkItemData> workItemQueue,
         BillingManager billingManager,
         BillingPlans billingPlans,
         TimeProvider timeProvider,
@@ -53,6 +58,7 @@ public class SampleDataService
         _projectRepository = projectRepository;
         _userRepository = userRepository;
         _tokenRepository = tokenRepository;
+        _workItemQueue = workItemQueue;
         _billingManager = billingManager;
         _billingPlans = billingPlans;
         _timeProvider = timeProvider;
@@ -269,5 +275,15 @@ public class SampleDataService
         user.OrganizationIds.Add(organization.Id);
         await _userRepository.SaveAsync(user, o => o.Cache());
         _logger.LogDebug("Created Internal Organization {OrganizationName} and Project {ProjectName}", organization.Name, project.Name);
+    }
+
+    public async Task EnqueueSampleEventsAsync(int eventCount = 100, int daysBack = 7)
+    {
+        await _workItemQueue.EnqueueAsync(new GenerateSampleEventsWorkItem
+        {
+            EventCount = eventCount,
+            DaysBack = daysBack
+        });
+        _logger.LogInformation("Enqueued sample event generation: {EventCount} events over {DaysBack} days", eventCount, daysBack);
     }
 }

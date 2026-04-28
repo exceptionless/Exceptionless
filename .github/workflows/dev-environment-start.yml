@@ -3,17 +3,17 @@ name: Start Dev Environment
 on:
   workflow_dispatch:
     inputs:
-      auto_stop_hours:
-        description: "Automatically stop after N hours (0 to disable)"
+      auto_stop_days:
+        description: "Automatically stop after N days"
         required: false
-        default: "8"
+        default: "1"
         type: choice
         options:
-          - "0"
-          - "4"
-          - "8"
-          - "24"
-          - "48"
+          - "1"
+          - "2"
+          - "3"
+          - "5"
+          - "7"
 
 permissions:
   contents: read
@@ -79,7 +79,8 @@ jobs:
       - name: Record Start Time
         run: |
           kubectl annotate namespace $NAMESPACE exceptionless.io/dev-started-at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --overwrite
-          kubectl annotate namespace $NAMESPACE exceptionless.io/dev-auto-stop-hours="${{ inputs.auto_stop_hours }}" --overwrite
+          kubectl annotate namespace $NAMESPACE exceptionless.io/dev-auto-stop-days="${{ inputs.auto_stop_days }}" --overwrite
+          kubectl annotate namespace $NAMESPACE exceptionless.io/dev-auto-stop-hours- --overwrite 2>/dev/null || true
 
       - name: Summary
         run: |
@@ -88,4 +89,4 @@ jobs:
           echo "- **App**: https://dev-app.exceptionless.io" >> $GITHUB_STEP_SUMMARY
           echo "- **Collector**: https://dev-collector.exceptionless.io" >> $GITHUB_STEP_SUMMARY
           echo "- **Kibana**: \`kubectl port-forward -n ex-dev svc/ex-dev-kb-http 5601\` → http://localhost:5601" >> $GITHUB_STEP_SUMMARY
-          echo "- **Auto-stop**: ${{ inputs.auto_stop_hours }}h (0 = disabled)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Auto-stop**: ${{ inputs.auto_stop_days }} day(s)" >> $GITHUB_STEP_SUMMARY
