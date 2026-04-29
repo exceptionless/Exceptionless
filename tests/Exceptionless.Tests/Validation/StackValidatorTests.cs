@@ -7,11 +7,11 @@ namespace Exceptionless.Tests.Validation;
 public sealed class StackValidatorTests : TestWithServices
 {
     private const string ValidObjectId = "123456789012345678901234";
-    private readonly StackValidator _validator;
+    private readonly MiniValidationValidator _validator;
 
     public StackValidatorTests(ITestOutputHelper output) : base(output)
     {
-        _validator = new StackValidator();
+        _validator = GetService<MiniValidationValidator>();
     }
 
     private Stack CreateValidStack()
@@ -29,17 +29,17 @@ public sealed class StackValidatorTests : TestWithServices
     }
 
     [Fact]
-    public void Validate_WhenIdIsValidObjectId_ReturnsSuccess()
+    public async Task Validate_WhenIdIsValidObjectId_ReturnsSuccess()
     {
         // Arrange
         var stack = CreateValidStack();
         stack.Id = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
@@ -48,32 +48,32 @@ public sealed class StackValidatorTests : TestWithServices
     [InlineData("invalid-id")]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenIdIsInvalid_ReturnsError(string? id)
+    public async Task Validate_WhenIdIsInvalid_ReturnsError(string? id)
     {
         // Arrange
         var stack = CreateValidStack();
         stack.Id = id!;
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Stack.Id)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Stack.Id)));
     }
 
     [Fact]
-    public void Validate_WhenOrganizationIdIsValidObjectId_ReturnsSuccess()
+    public async Task Validate_WhenOrganizationIdIsValidObjectId_ReturnsSuccess()
     {
         // Arrange
         var stack = CreateValidStack();
         stack.OrganizationId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
@@ -82,32 +82,32 @@ public sealed class StackValidatorTests : TestWithServices
     [InlineData("invalid-id")]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenOrganizationIdIsInvalid_ReturnsError(string? organizationId)
+    public async Task Validate_WhenOrganizationIdIsInvalid_ReturnsError(string? organizationId)
     {
         // Arrange
         var stack = CreateValidStack();
         stack.OrganizationId = organizationId!;
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Stack.OrganizationId)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Stack.OrganizationId)));
     }
 
     [Fact]
-    public void Validate_WhenProjectIdIsValidObjectId_ReturnsSuccess()
+    public async Task Validate_WhenProjectIdIsValidObjectId_ReturnsSuccess()
     {
         // Arrange
         var stack = CreateValidStack();
         stack.ProjectId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
@@ -116,47 +116,47 @@ public sealed class StackValidatorTests : TestWithServices
     [InlineData("invalid-id")]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenProjectIdIsInvalid_ReturnsError(string? projectId)
+    public async Task Validate_WhenProjectIdIsInvalid_ReturnsError(string? projectId)
     {
         // Arrange
         var stack = CreateValidStack();
         stack.ProjectId = projectId!;
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Stack.ProjectId)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Stack.ProjectId)));
     }
 
     [Fact]
-    public void Validate_WhenTitleExceedsMaxLength_ReturnsError()
+    public async Task Validate_WhenTitleExceedsMaxLength_ReturnsError()
     {
         // Arrange
         var stack = CreateValidStack();
         stack.Title = new string('a', 1001);
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Stack.Title)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Stack.Title)));
     }
 
     [Fact]
-    public void Validate_WhenTitleIsWithinMaxLength_ReturnsSuccess()
+    public async Task Validate_WhenTitleIsWithinMaxLength_ReturnsSuccess()
     {
         // Arrange
         var stack = CreateValidStack();
         stack.Title = new string('a', 1000);
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
@@ -164,184 +164,184 @@ public sealed class StackValidatorTests : TestWithServices
     [InlineData("log")]
     [InlineData("a")]
     [InlineData(null)]
-    public void Validate_WhenTypeIsValid_ReturnsSuccess(string? type)
+    public async Task Validate_WhenTypeIsValid_ReturnsSuccess(string? type)
     {
         // Arrange
         var stack = CreateValidStack();
         stack.Type = type!;
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Fact]
-    public void Validate_WhenTypeIsEmpty_ReturnsError()
+    public async Task Validate_WhenTypeIsEmpty_ReturnsError()
     {
         // Arrange
         var stack = CreateValidStack();
         stack.Type = "";
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Stack.Type)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Stack.Type)));
     }
 
     [Fact]
-    public void Validate_WhenTypeExceedsMaxLength_ReturnsError()
+    public async Task Validate_WhenTypeExceedsMaxLength_ReturnsError()
     {
         // Arrange
         var stack = CreateValidStack();
         stack.Type = new string('a', 101);
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Stack.Type)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Stack.Type)));
     }
 
     [Fact]
-    public void Validate_WhenTypeIsWithinMaxLength_ReturnsSuccess()
+    public async Task Validate_WhenTypeIsWithinMaxLength_ReturnsSuccess()
     {
         // Arrange
         var stack = CreateValidStack();
         stack.Type = new string('a', 100);
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
 
     [Theory]
     [InlineData("valid-tag")]
-    public void Validate_WhenTagIsValid_ReturnsSuccess(string tag)
+    public async Task Validate_WhenTagIsValid_ReturnsSuccess(string tag)
     {
         // Arrange
         var stack = CreateValidStack();
         stack.Tags.Add(tag);
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenTagIsEmpty_ReturnsError(string? tag)
+    public async Task Validate_WhenTagIsEmpty_ReturnsError(string? tag)
     {
         // Arrange
         var stack = CreateValidStack();
         stack.Tags.Add(tag);
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Stack.Tags)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Stack.Tags)));
     }
 
     [Fact]
-    public void Validate_WhenTagExceedsMaxLength_ReturnsError()
+    public async Task Validate_WhenTagExceedsMaxLength_ReturnsError()
     {
         // Arrange
         var stack = CreateValidStack();
         stack.Tags.Add(new string('a', 256));
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Stack.Tags)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Stack.Tags)));
     }
 
     [Fact]
-    public void Validate_WhenTagIsWithinMaxLength_ReturnsSuccess()
+    public async Task Validate_WhenTagIsWithinMaxLength_ReturnsSuccess()
     {
         // Arrange
         var stack = CreateValidStack();
         stack.Tags.Add(new string('a', 255));
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
 
     [Theory]
     [InlineData("hash")]
-    public void Validate_WhenSignatureHashIsValid_ReturnsSuccess(string signatureHash)
+    public async Task Validate_WhenSignatureHashIsValid_ReturnsSuccess(string signatureHash)
     {
         // Arrange
         var stack = CreateValidStack();
         stack.SignatureHash = signatureHash;
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenSignatureHashIsEmpty_ReturnsError(string? signatureHash)
+    public async Task Validate_WhenSignatureHashIsEmpty_ReturnsError(string? signatureHash)
     {
         // Arrange
         var stack = CreateValidStack();
         stack.SignatureHash = signatureHash!;
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Stack.SignatureHash)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Stack.SignatureHash)));
     }
 
     [Fact]
-    public void Validate_WhenSignatureInfoIsNull_ReturnsError()
+    public async Task Validate_WhenSignatureInfoIsNull_ReturnsError()
     {
         // Arrange
         var stack = CreateValidStack();
         stack.SignatureInfo = null!;
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Stack.SignatureInfo)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Stack.SignatureInfo)));
     }
 
     [Fact]
-    public void Validate_WhenStackIsValid_ReturnsSuccess()
+    public async Task Validate_WhenStackIsValid_ReturnsSuccess()
     {
         // Arrange
         var stack = CreateValidStack();
 
         // Act
-        var result = _validator.Validate(stack);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Fact]
@@ -351,9 +351,9 @@ public sealed class StackValidatorTests : TestWithServices
         var stack = CreateValidStack();
 
         // Act
-        var result = await _validator.ValidateAsync(stack, TestCancellationToken);
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Runtime.Serialization;
@@ -10,7 +10,7 @@ using Newtonsoft.Json.Converters;
 namespace Exceptionless.Core.Models;
 
 [DebuggerDisplay("Id={Id} Type={Type} Status={Status} IsDeleted={IsDeleted} Title={Title} TotalOccurrences={TotalOccurrences}")]
-public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISupportSoftDeletes
+public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISupportSoftDeletes, IValidatableObject
 {
     /// <summary>
     /// Unique id that identifies a stack.
@@ -21,19 +21,21 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     /// <summary>
     /// The organization that the stack belongs to.
     /// </summary>
+    [Required]
     [ObjectId]
     public string OrganizationId { get; set; } = null!;
 
     /// <summary>
     /// The project that the stack belongs to.
     /// </summary>
+    [Required]
     [ObjectId]
     public string ProjectId { get; set; } = null!;
 
     /// <summary>
     /// The stack type (ie. error, log message, feature usage). Check <see cref="KnownTypes">Stack.KnownTypes</see> for standard stack types.
     /// </summary>
-    [StringLength(100)]
+    [StringLength(100, MinimumLength = 1)]
     public string Type { get; set; } = null!;
 
     /// <summary>

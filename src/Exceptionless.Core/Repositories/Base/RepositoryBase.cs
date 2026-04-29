@@ -1,7 +1,7 @@
 ﻿using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Options;
-using FluentValidation;
+using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Repositories.Elasticsearch.Configuration;
@@ -13,10 +13,10 @@ namespace Exceptionless.Core.Repositories;
 
 public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : class, IIdentity, new()
 {
-    protected readonly IValidator<T>? _validator;
+    protected readonly MiniValidationValidator _validator;
     protected readonly AppOptions _options;
 
-    public RepositoryBase(IIndex index, IValidator<T>? validator, AppOptions options) : base(index)
+    public RepositoryBase(IIndex index, MiniValidationValidator validator, AppOptions options) : base(index)
     {
         _validator = validator;
         _options = options;
@@ -25,10 +25,6 @@ public abstract class RepositoryBase<T> : ElasticRepositoryBase<T> where T : cla
 
     protected override Task ValidateAndThrowAsync(T document)
     {
-        // TODO: Move this to MiniValidationValidator
-        if (_validator is null)
-            return Task.CompletedTask;
-
         return _validator.ValidateAndThrowAsync(document);
     }
 

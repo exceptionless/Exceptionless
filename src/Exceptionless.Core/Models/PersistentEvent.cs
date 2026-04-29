@@ -1,11 +1,13 @@
-﻿using System.Diagnostics;
+using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using Exceptionless.Core.Attributes;
+using Exceptionless.Core.Extensions;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
 
 [DebuggerDisplay("Id: {Id}, Type: {Type}, Date: {Date}, Message: {Message}, Value: {Value}, Count: {Count}")]
-public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWithIdentity, IHaveCreatedDate
+public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWithIdentity, IHaveCreatedDate, IValidatableObject
 {
     /// <summary>
     /// Unique id that identifies an event.
@@ -16,18 +18,21 @@ public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWith
     /// <summary>
     /// The organization that the event belongs to.
     /// </summary>
+    [Required]
     [ObjectId]
     public string OrganizationId { get; set; } = null!;
 
     /// <summary>
     /// The project that the event belongs to.
     /// </summary>
+    [Required]
     [ObjectId]
     public string ProjectId { get; set; } = null!;
 
     /// <summary>
     /// The stack that the event belongs to.
     /// </summary>
+    [Required]
     [ObjectId]
     public string StackId { get; set; } = null!;
 

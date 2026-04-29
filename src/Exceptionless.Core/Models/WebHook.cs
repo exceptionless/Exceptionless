@@ -1,14 +1,16 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using Exceptionless.Core.Attributes;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
 
-public class WebHook : IOwnedByOrganizationAndProjectWithIdentity, IHaveCreatedDate
+public class WebHook : IOwnedByOrganizationAndProjectWithIdentity, IHaveCreatedDate, IValidatableObject
 {
+    [Required]
     [ObjectId]
     public string Id { get; set; } = null!;
 
+    [Required]
     [ObjectId]
     public string OrganizationId { get; set; } = null!;
 
@@ -24,6 +26,7 @@ public class WebHook : IOwnedByOrganizationAndProjectWithIdentity, IHaveCreatedD
     /// <summary>
     /// The schema version that should be used.
     /// </summary>
+    [Required]
     public string Version { get; set; } = null!;
 
     public DateTime CreatedUtc { get; set; }

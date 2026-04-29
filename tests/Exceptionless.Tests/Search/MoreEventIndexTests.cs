@@ -132,14 +132,14 @@ public sealed class MoreEventIndexTests : IntegrationTestsBase
     [InlineData("project:000000000000000000000000", 0)]
     [InlineData("project:" + SampleDataService.TEST_PROJECT_ID, 1)]
     [InlineData("project:" + SampleDataService.FREE_PROJECT_ID, 1)]
-    [InlineData("project:123", 1)]
+    [InlineData("project:aaa000000000000000000123", 1)]
     public async Task GetByProjectIdAsync(string search, int count)
     {
         await CreateDataAsync(d =>
         {
             d.Event().TestProject();
             d.Event().FreeProject();
-            d.Event().Project("123");
+            d.Event().Project("aaa000000000000000000123");
         });
 
         var result = await GetEventsAsync(search);
@@ -151,14 +151,14 @@ public sealed class MoreEventIndexTests : IntegrationTestsBase
     [InlineData("organization:000000000000000000000000", 0)]
     [InlineData("organization:" + SampleDataService.TEST_ORG_ID, 1)]
     [InlineData("organization:" + SampleDataService.FREE_ORG_ID, 1)]
-    [InlineData("organization:123", 1)]
+    [InlineData("organization:bbb000000000000000000123", 1)]
     public async Task GetByOrganizationIdAsync(string search, int count)
     {
         await CreateDataAsync(d =>
         {
             d.Event().TestProject();
             d.Event().FreeProject();
-            d.Event().Organization("123");
+            d.Event().Organization("bbb000000000000000000123");
         });
 
         var result = await GetEventsAsync(search);

@@ -3,7 +3,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories.Configuration;
-using FluentValidation;
+using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Nest;
@@ -15,7 +15,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
     private readonly BillingPlans _plans;
     private readonly TimeProvider _timeProvider;
 
-    public OrganizationRepository(ExceptionlessElasticConfiguration configuration, IValidator<Organization> validator, BillingPlans plans, AppOptions options)
+    public OrganizationRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, BillingPlans plans, AppOptions options)
         : base(configuration.Organizations, validator, options)
     {
         _plans = plans;

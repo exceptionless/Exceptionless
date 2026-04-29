@@ -3,6 +3,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
+using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Repositories;
@@ -1675,11 +1676,11 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         var otherPrivateView = await _savedViewRepository.AddAsync(new SavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
-            UserId = "other-user-id",
+            UserId = TestConstants.UserId2,
             Name = "Other Private",
             Filter = "type:log",
             ViewType = "events",
-            CreatedByUserId = "other-user-id"
+            CreatedByUserId = TestConstants.UserId2
         });
 
         await RefreshDataAsync();

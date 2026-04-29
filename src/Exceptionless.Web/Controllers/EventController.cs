@@ -19,7 +19,7 @@ using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.OpenApi;
-using FluentValidation;
+using Exceptionless.Core.Validation;
 using Foundatio.Caching;
 using Foundatio.Queues;
 using Foundatio.Repositories;
@@ -44,7 +44,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     private readonly IStackRepository _stackRepository;
     private readonly EventPostService _eventPostService;
     private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
-    private readonly IValidator<UserDescription> _userDescriptionValidator;
+    private readonly MiniValidationValidator _miniValidationValidator;
     private readonly FormattingPluginManager _formattingPluginManager;
     private readonly ICacheClient _cache;
     private readonly JsonSerializerSettings _jsonSerializerSettings;
@@ -56,7 +56,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         IStackRepository stackRepository,
         EventPostService eventPostService,
         IQueue<EventUserDescription> eventUserDescriptionQueue,
-        IValidator<UserDescription> userDescriptionValidator,
+        MiniValidationValidator miniValidationValidator,
         FormattingPluginManager formattingPluginManager,
         ICacheClient cacheClient,
         JsonSerializerSettings jsonSerializerSettings,
@@ -72,7 +72,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         _stackRepository = stackRepository;
         _eventPostService = eventPostService;
         _eventUserDescriptionQueue = eventUserDescriptionQueue;
-        _userDescriptionValidator = userDescriptionValidator;
+        _miniValidationValidator = miniValidationValidator;
         _formattingPluginManager = formattingPluginManager;
         _cache = cacheClient;
         _jsonSerializerSettings = jsonSerializerSettings;
@@ -807,9 +807,15 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         if (String.IsNullOrEmpty(projectId))
             return BadRequest("No project id specified and no default project was found");
 
-        var result = await _userDescriptionValidator.ValidateAsync(description);
-        if (!result.IsValid)
-            return BadRequest(result.Errors.ToErrorMessage());
+        var (isValid, errors) = await _miniValidationValidator.ValidateAsync(description);
+        if (!isValid)
+        {
+            foreach (var error in errors)
+                foreach (var message in error.Value)
+                    ModelState.AddModelError(error.Key, message);
+
+            return ValidationProblem(ModelState);
+        }
 
         var project = await GetProjectAsync(projectId);
         if (project is null)

@@ -8,11 +8,11 @@ namespace Exceptionless.Tests.Validation;
 public sealed class TokenValidatorTests : TestWithServices
 {
     private const string ValidObjectId = "123456789012345678901234";
-    private readonly TokenValidator _validator;
+    private readonly MiniValidationValidator _validator;
 
     public TokenValidatorTests(ITestOutputHelper output) : base(output)
     {
-        _validator = new TokenValidator();
+        _validator = GetService<MiniValidationValidator>();
     }
 
     private Token CreateValidToken()
@@ -30,69 +30,69 @@ public sealed class TokenValidatorTests : TestWithServices
 
     [Theory]
     [InlineData("test-api-key")]
-    public void Validate_WhenIdIsValid_ReturnsSuccess(string id)
+    public async Task Validate_WhenIdIsValid_ReturnsSuccess(string id)
     {
         // Arrange
         var token = CreateValidToken();
         token.Id = id;
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenIdIsEmpty_ReturnsError(string? id)
+    public async Task Validate_WhenIdIsEmpty_ReturnsError(string? id)
     {
         // Arrange
         var token = CreateValidToken();
         token.Id = id!;
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Token.Id)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Token.Id)));
     }
 
     [Fact]
-    public void Validate_WhenOrganizationIdIsValidObjectId_ReturnsSuccess()
+    public async Task Validate_WhenOrganizationIdIsValidObjectId_ReturnsSuccess()
     {
         // Arrange
         var token = CreateValidToken();
         token.OrganizationId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
     [InlineData("1234567890123456789012345")]
     [InlineData("invalid-id")]
-    public void Validate_WhenOrganizationIdIsInvalidObjectId_ReturnsError(string organizationId)
+    public async Task Validate_WhenOrganizationIdIsInvalidObjectId_ReturnsError(string organizationId)
     {
         // Arrange
         var token = CreateValidToken();
         token.OrganizationId = organizationId;
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Token.OrganizationId)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Token.OrganizationId)));
     }
 
     [Fact]
-    public void Validate_WhenOrganizationIdIsEmptyAndProjectIdIsSet_ReturnsError()
+    public async Task Validate_WhenOrganizationIdIsEmptyAndProjectIdIsSet_ReturnsError()
     {
         // Arrange
         var token = CreateValidToken();
@@ -100,11 +100,11 @@ public sealed class TokenValidatorTests : TestWithServices
         token.ProjectId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Token.OrganizationId)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Token.OrganizationId)));
     }
 
     [Fact]
@@ -140,34 +140,34 @@ public sealed class TokenValidatorTests : TestWithServices
     }
 
     [Fact]
-    public void Validate_WhenProjectIdIsValidObjectId_ReturnsSuccess()
+    public async Task Validate_WhenProjectIdIsValidObjectId_ReturnsSuccess()
     {
         // Arrange
         var token = CreateValidToken();
         token.ProjectId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
     [InlineData("1234567890123456789012345")]
     [InlineData("invalid-id")]
-    public void Validate_WhenProjectIdIsInvalidObjectId_ReturnsError(string projectId)
+    public async Task Validate_WhenProjectIdIsInvalidObjectId_ReturnsError(string projectId)
     {
         // Arrange
         var token = CreateValidToken();
         token.ProjectId = projectId;
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Token.ProjectId)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Token.ProjectId)));
     }
 
     [Fact]
@@ -185,38 +185,38 @@ public sealed class TokenValidatorTests : TestWithServices
     }
 
     [Fact]
-    public void Validate_WhenDefaultProjectIdIsValidObjectId_ReturnsSuccess()
+    public async Task Validate_WhenDefaultProjectIdIsValidObjectId_ReturnsSuccess()
     {
         // Arrange
         var token = CreateValidToken();
         token.DefaultProjectId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
     [InlineData("1234567890123456789012345")]
     [InlineData("invalid-id")]
-    public void Validate_WhenDefaultProjectIdIsInvalidObjectId_ReturnsError(string defaultProjectId)
+    public async Task Validate_WhenDefaultProjectIdIsInvalidObjectId_ReturnsError(string defaultProjectId)
     {
         // Arrange
         var token = CreateValidToken();
         token.DefaultProjectId = defaultProjectId;
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Token.DefaultProjectId)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Token.DefaultProjectId)));
     }
 
     [Fact]
-    public void Validate_WhenDefaultProjectIdIsSetAndProjectIdIsDefined_ReturnsError()
+    public async Task Validate_WhenDefaultProjectIdIsSetAndProjectIdIsDefined_ReturnsError()
     {
         // Arrange
         var token = CreateValidToken();
@@ -224,15 +224,15 @@ public sealed class TokenValidatorTests : TestWithServices
         token.DefaultProjectId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Token.DefaultProjectId)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Token.DefaultProjectId)));
     }
 
     [Fact]
-    public void Validate_WhenUserIdIsSetAndProjectIdIsDefined_ReturnsError()
+    public async Task Validate_WhenUserIdIsSetAndProjectIdIsDefined_ReturnsError()
     {
         // Arrange
         var token = CreateValidToken();
@@ -240,48 +240,48 @@ public sealed class TokenValidatorTests : TestWithServices
         token.UserId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Token.UserId)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Token.UserId)));
     }
 
     [Fact]
-    public void Validate_WhenCreatedUtcIsDefault_ReturnsError()
+    public async Task Validate_WhenCreatedUtcIsDefault_ReturnsError()
     {
         // Arrange
         var token = CreateValidToken();
         token.CreatedUtc = default;
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Token.CreatedUtc)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Token.CreatedUtc)));
     }
 
     [Fact]
-    public void Validate_WhenUpdatedUtcIsDefault_ReturnsError()
+    public async Task Validate_WhenUpdatedUtcIsDefault_ReturnsError()
     {
         // Arrange
         var token = CreateValidToken();
         token.UpdatedUtc = default;
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Token.UpdatedUtc)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Token.UpdatedUtc)));
     }
 
     [Theory]
     [InlineData(TokenType.Access, false)]
     [InlineData(TokenType.Access, true)]
     [InlineData(TokenType.Authentication, false)]
-    public void Validate_WhenTokenTypeAndDisabledStateAreValid_ReturnsSuccess(TokenType type, bool isDisabled)
+    public async Task Validate_WhenTokenTypeAndDisabledStateAreValid_ReturnsSuccess(TokenType type, bool isDisabled)
     {
         // Arrange
         var token = new Token
@@ -295,17 +295,17 @@ public sealed class TokenValidatorTests : TestWithServices
         };
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        if (!result.IsValid)
-            _logger.LogInformation(result.ToString());
+        if (!isValid)
+            _logger.LogInformation(String.Join(", ", errors.SelectMany(e => e.Value)));
 
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Fact]
-    public void Validate_WhenAuthenticationTokenIsDisabled_ReturnsError()
+    public async Task Validate_WhenAuthenticationTokenIsDisabled_ReturnsError()
     {
         // Arrange
         var token = new Token
@@ -319,23 +319,23 @@ public sealed class TokenValidatorTests : TestWithServices
         };
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.False(result.IsValid);
+        Assert.False(isValid);
     }
 
     [Fact]
-    public void Validate_WhenTokenIsValid_ReturnsSuccess()
+    public async Task Validate_WhenTokenIsValid_ReturnsSuccess()
     {
         // Arrange
         var token = CreateValidToken();
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Fact]
@@ -345,9 +345,9 @@ public sealed class TokenValidatorTests : TestWithServices
         var token = CreateValidToken();
 
         // Act
-        var result = await _validator.ValidateAsync(token, TestCancellationToken);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 }

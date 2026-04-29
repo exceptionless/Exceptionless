@@ -9,13 +9,13 @@ namespace Exceptionless.Tests.Validation;
 public sealed class OrganizationValidatorTests : TestWithServices
 {
     private const string ValidObjectId = "123456789012345678901234";
-    private readonly OrganizationValidator _validator;
+    private readonly MiniValidationValidator _validator;
     private readonly BillingPlans _plans;
 
     public OrganizationValidatorTests(ITestOutputHelper output) : base(output)
     {
         _plans = GetService<BillingPlans>();
-        _validator = new OrganizationValidator(_plans);
+        _validator = GetService<MiniValidationValidator>();
     }
 
     private Organization CreateValidOrganization()
@@ -31,69 +31,69 @@ public sealed class OrganizationValidatorTests : TestWithServices
     }
 
     [Fact]
-    public void Validate_WhenNameIsValid_ReturnsSuccess()
+    public async Task Validate_WhenNameIsValid_ReturnsSuccess()
     {
         // Arrange
         var org = CreateValidOrganization();
         org.Name = "Valid Name";
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenNameIsEmpty_ReturnsError(string? name)
+    public async Task Validate_WhenNameIsEmpty_ReturnsError(string? name)
     {
         // Arrange
         var org = CreateValidOrganization();
         org.Name = name!;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Organization.Name)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Organization.Name)));
     }
 
     [Fact]
-    public void Validate_WhenPlanIdIsValid_ReturnsSuccess()
+    public async Task Validate_WhenPlanIdIsValid_ReturnsSuccess()
     {
         // Arrange
         var org = CreateValidOrganization();
         org.PlanId = "Valid-Plan-Id";
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenPlanIdIsEmpty_ReturnsError(string? planId)
+    public async Task Validate_WhenPlanIdIsEmpty_ReturnsError(string? planId)
     {
         // Arrange
         var org = CreateValidOrganization();
         org.PlanId = planId!;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Organization.PlanId)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Organization.PlanId)));
     }
 
     [Fact]
-    public void Validate_WhenHasPremiumFeaturesOnFreePlan_ReturnsError()
+    public async Task Validate_WhenHasPremiumFeaturesOnFreePlan_ReturnsError()
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -101,15 +101,15 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.HasPremiumFeatures = true;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Organization.HasPremiumFeatures)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Organization.HasPremiumFeatures)));
     }
 
     [Fact]
-    public void Validate_WhenNoPremiumFeaturesOnFreePlan_ReturnsSuccess()
+    public async Task Validate_WhenNoPremiumFeaturesOnFreePlan_ReturnsSuccess()
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -117,14 +117,14 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.HasPremiumFeatures = false;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Fact]
-    public void Validate_WhenHasPremiumFeaturesOnPaidPlan_ReturnsSuccess()
+    public async Task Validate_WhenHasPremiumFeaturesOnPaidPlan_ReturnsSuccess()
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -133,14 +133,14 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.BillingPrice = 0;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Fact]
-    public void Validate_WhenBillingPriceGreaterThanZeroAndStripeCustomerIdIsValid_ReturnsSuccess()
+    public async Task Validate_WhenBillingPriceGreaterThanZeroAndStripeCustomerIdIsValid_ReturnsSuccess()
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -153,16 +153,16 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.BillingChangedByUserId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenBillingPriceGreaterThanZeroAndStripeCustomerIdIsEmpty_ReturnsError(string? stripeCustomerId)
+    public async Task Validate_WhenBillingPriceGreaterThanZeroAndStripeCustomerIdIsEmpty_ReturnsError(string? stripeCustomerId)
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -175,17 +175,17 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.BillingChangedByUserId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Organization.StripeCustomerId)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Organization.StripeCustomerId)));
     }
 
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenBillingPriceGreaterThanZeroAndCardLast4IsEmpty_ReturnsError(string? cardLast4)
+    public async Task Validate_WhenBillingPriceGreaterThanZeroAndCardLast4IsEmpty_ReturnsError(string? cardLast4)
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -198,15 +198,15 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.BillingChangedByUserId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Organization.CardLast4)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Organization.CardLast4)));
     }
 
     [Fact]
-    public void Validate_WhenBillingPriceGreaterThanZeroAndSubscribeDateIsNull_ReturnsError()
+    public async Task Validate_WhenBillingPriceGreaterThanZeroAndSubscribeDateIsNull_ReturnsError()
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -219,15 +219,15 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.BillingChangedByUserId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Organization.SubscribeDate)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Organization.SubscribeDate)));
     }
 
     [Fact]
-    public void Validate_WhenBillingPriceGreaterThanZeroAndBillingChangeDateIsMinValue_ReturnsError()
+    public async Task Validate_WhenBillingPriceGreaterThanZeroAndBillingChangeDateIsMinValue_ReturnsError()
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -240,18 +240,18 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.BillingChangedByUserId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Organization.BillingChangeDate)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Organization.BillingChangeDate)));
     }
 
     [Theory]
     [InlineData("invalid")]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenBillingPriceGreaterThanZeroAndBillingChangedByUserIdIsInvalid_ReturnsError(string? userId)
+    public async Task Validate_WhenBillingPriceGreaterThanZeroAndBillingChangedByUserIdIsInvalid_ReturnsError(string? userId)
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -264,18 +264,18 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.BillingChangedByUserId = userId;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Organization.BillingChangedByUserId)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Organization.BillingChangedByUserId)));
     }
 
     [Theory]
     [InlineData(SuspensionCode.Billing)]
     [InlineData(SuspensionCode.Abuse)]
     [InlineData(SuspensionCode.Overage)]
-    public void Validate_WhenSuspendedWithValidSuspensionCode_ReturnsSuccess(SuspensionCode suspensionCode)
+    public async Task Validate_WhenSuspendedWithValidSuspensionCode_ReturnsSuccess(SuspensionCode suspensionCode)
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -285,14 +285,14 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.SuspendedByUserId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Fact]
-    public void Validate_WhenSuspendedAndSuspensionCodeIsNull_ReturnsError()
+    public async Task Validate_WhenSuspendedAndSuspensionCodeIsNull_ReturnsError()
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -302,15 +302,15 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.SuspendedByUserId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Organization.SuspensionCode)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Organization.SuspensionCode)));
     }
 
     [Fact]
-    public void Validate_WhenNotSuspendedAndSuspensionCodeIsSet_ReturnsError()
+    public async Task Validate_WhenNotSuspendedAndSuspensionCodeIsSet_ReturnsError()
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -318,15 +318,15 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.SuspensionCode = SuspensionCode.Billing;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Organization.SuspensionCode)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Organization.SuspensionCode)));
     }
 
     [Fact]
-    public void Validate_WhenSuspendedAndSuspensionDateIsNull_ReturnsError()
+    public async Task Validate_WhenSuspendedAndSuspensionDateIsNull_ReturnsError()
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -336,15 +336,15 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.SuspendedByUserId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Organization.SuspensionDate)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Organization.SuspensionDate)));
     }
 
     [Fact]
-    public void Validate_WhenNotSuspendedAndSuspensionDateIsSet_ReturnsError()
+    public async Task Validate_WhenNotSuspendedAndSuspensionDateIsSet_ReturnsError()
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -352,15 +352,15 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.SuspensionDate = DateTime.UtcNow;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Organization.SuspensionDate)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Organization.SuspensionDate)));
     }
 
     [Fact]
-    public void Validate_WhenSuspendedAndSuspendedByUserIdIsValid_ReturnsSuccess()
+    public async Task Validate_WhenSuspendedAndSuspendedByUserIdIsValid_ReturnsSuccess()
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -370,16 +370,16 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.SuspendedByUserId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenSuspendedAndSuspendedByUserIdIsEmpty_ReturnsError(string? userId)
+    public async Task Validate_WhenSuspendedAndSuspendedByUserIdIsEmpty_ReturnsError(string? userId)
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -389,15 +389,15 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.SuspendedByUserId = userId;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Organization.SuspendedByUserId)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Organization.SuspendedByUserId)));
     }
 
     [Fact]
-    public void Validate_WhenNotSuspendedAndSuspendedByUserIdIsSet_ReturnsError()
+    public async Task Validate_WhenNotSuspendedAndSuspendedByUserIdIsSet_ReturnsError()
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -405,15 +405,15 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.SuspendedByUserId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Organization.SuspendedByUserId)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Organization.SuspendedByUserId)));
     }
 
     [Fact]
-    public void Validate_WhenSuspendedWithOtherCodeAndNotesIsSet_ReturnsSuccess()
+    public async Task Validate_WhenSuspendedWithOtherCodeAndNotesIsSet_ReturnsSuccess()
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -424,16 +424,16 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.SuspensionNotes = "Suspended for suspicious activity";
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenSuspendedWithOtherCodeAndNotesIsEmpty_ReturnsError(string? notes)
+    public async Task Validate_WhenSuspendedWithOtherCodeAndNotesIsEmpty_ReturnsError(string? notes)
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -444,15 +444,15 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.SuspensionNotes = notes;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Organization.SuspensionNotes)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Organization.SuspensionNotes)));
     }
 
     [Fact]
-    public void Validate_WhenSuspendedWithNonOtherCodeAndNotesIsNull_ReturnsSuccess()
+    public async Task Validate_WhenSuspendedWithNonOtherCodeAndNotesIsNull_ReturnsSuccess()
     {
         // Arrange
         var org = CreateValidOrganization();
@@ -463,22 +463,22 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.SuspensionNotes = null;
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Fact]
-    public void Validate_WhenOrganizationIsValid_ReturnsSuccess()
+    public async Task Validate_WhenOrganizationIsValid_ReturnsSuccess()
     {
         // Arrange
         var org = CreateValidOrganization();
 
         // Act
-        var result = _validator.Validate(org);
+        var (isValid, errors) = await _validator.ValidateAsync(org);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 }

@@ -7,11 +7,11 @@ namespace Exceptionless.Tests.Validation;
 public sealed class ProjectValidatorTests : TestWithServices
 {
     private const string ValidObjectId = "123456789012345678901234";
-    private readonly ProjectValidator _validator;
+    private readonly MiniValidationValidator _validator;
 
     public ProjectValidatorTests(ITestOutputHelper output) : base(output)
     {
-        _validator = new ProjectValidator();
+        _validator = GetService<MiniValidationValidator>();
     }
 
     private Project CreateValidProject()
@@ -26,17 +26,17 @@ public sealed class ProjectValidatorTests : TestWithServices
     }
 
     [Fact]
-    public void Validate_WhenOrganizationIdIsValidObjectId_ReturnsSuccess()
+    public async Task Validate_WhenOrganizationIdIsValidObjectId_ReturnsSuccess()
     {
         // Arrange
         var project = CreateValidProject();
         project.OrganizationId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(project);
+        var (isValid, errors) = await _validator.ValidateAsync(project);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
@@ -44,95 +44,95 @@ public sealed class ProjectValidatorTests : TestWithServices
     [InlineData("invalid-id")]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenOrganizationIdIsInvalid_ReturnsError(string? organizationId)
+    public async Task Validate_WhenOrganizationIdIsInvalid_ReturnsError(string? organizationId)
     {
         // Arrange
         var project = CreateValidProject();
         project.OrganizationId = organizationId!;
 
         // Act
-        var result = _validator.Validate(project);
+        var (isValid, errors) = await _validator.ValidateAsync(project);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Project.OrganizationId)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Project.OrganizationId)));
     }
 
     [Theory]
     [InlineData("My Project")]
-    public void Validate_WhenNameIsValid_ReturnsSuccess(string name)
+    public async Task Validate_WhenNameIsValid_ReturnsSuccess(string name)
     {
         // Arrange
         var project = CreateValidProject();
         project.Name = name;
 
         // Act
-        var result = _validator.Validate(project);
+        var (isValid, errors) = await _validator.ValidateAsync(project);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenNameIsEmpty_ReturnsError(string? name)
+    public async Task Validate_WhenNameIsEmpty_ReturnsError(string? name)
     {
         // Arrange
         var project = CreateValidProject();
         project.Name = name!;
 
         // Act
-        var result = _validator.Validate(project);
+        var (isValid, errors) = await _validator.ValidateAsync(project);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Project.Name)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Project.Name)));
     }
 
     [Theory]
     [InlineData(638000000000000000)]
     [InlineData(1)]
     [InlineData(-1)]
-    public void Validate_WhenNextSummaryEndOfDayTicksIsNonZero_ReturnsSuccess(long ticks)
+    public async Task Validate_WhenNextSummaryEndOfDayTicksIsNonZero_ReturnsSuccess(long ticks)
     {
         // Arrange
         var project = CreateValidProject();
         project.NextSummaryEndOfDayTicks = ticks;
 
         // Act
-        var result = _validator.Validate(project);
+        var (isValid, errors) = await _validator.ValidateAsync(project);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Fact]
-    public void Validate_WhenNextSummaryEndOfDayTicksIsZero_ReturnsError()
+    public async Task Validate_WhenNextSummaryEndOfDayTicksIsZero_ReturnsError()
     {
         // Arrange
         var project = CreateValidProject();
         project.NextSummaryEndOfDayTicks = 0;
 
         // Act
-        var result = _validator.Validate(project);
+        var (isValid, errors) = await _validator.ValidateAsync(project);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Project.NextSummaryEndOfDayTicks)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Project.NextSummaryEndOfDayTicks)));
     }
 
     [Fact]
-    public void Validate_WhenProjectIsValid_ReturnsSuccess()
+    public async Task Validate_WhenProjectIsValid_ReturnsSuccess()
     {
         // Arrange
         var project = CreateValidProject();
 
         // Act
-        var result = _validator.Validate(project);
+        var (isValid, errors) = await _validator.ValidateAsync(project);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Fact]
@@ -142,14 +142,14 @@ public sealed class ProjectValidatorTests : TestWithServices
         var project = CreateValidProject();
 
         // Act
-        var result = await _validator.ValidateAsync(project, TestCancellationToken);
+        var (isValid, errors) = await _validator.ValidateAsync(project);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Fact]
-    public void Validate_WhenMultipleFieldsAreInvalid_ReturnsMultipleErrors()
+    public async Task Validate_WhenMultipleFieldsAreInvalid_ReturnsMultipleErrors()
     {
         // Arrange
         var project = new Project
@@ -161,10 +161,10 @@ public sealed class ProjectValidatorTests : TestWithServices
         };
 
         // Act
-        var result = _validator.Validate(project);
+        var (isValid, errors) = await _validator.ValidateAsync(project);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.True(result.Errors.Count >= 3);
+        Assert.False(isValid);
+        Assert.True(errors.Count >= 3);
     }
 }

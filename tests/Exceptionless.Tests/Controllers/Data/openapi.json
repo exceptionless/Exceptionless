@@ -7786,9 +7786,9 @@
       },
       "NewSavedView": {
         "required": [
+          "organization_id",
           "name",
-          "view_type",
-          "organization_id"
+          "view_type"
         ],
         "type": "object",
         "properties": {
@@ -8596,9 +8596,9 @@
       },
       "User": {
         "required": [
+          "id",
           "full_name",
           "email_address",
-          "id",
           "organization_ids",
           "password_reset_token_expiration",
           "o_auth_accounts",
@@ -8701,6 +8701,9 @@
         }
       },
       "UserDescription": {
+        "required": [
+          "description"
+        ],
         "type": "object",
         "properties": {
           "email_address": {
@@ -9333,11 +9336,11 @@
         "required": [
           "id",
           "organization_id",
-          "project_id",
           "url",
+          "version",
+          "project_id",
           "event_types",
           "is_enabled",
-          "version",
           "created_utc"
         ],
         "type": "object",

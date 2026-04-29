@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using Exceptionless.Core.Attributes;
 using Foundatio.Repositories.Models;
 
@@ -24,9 +25,11 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
     [ObjectId]
     public string Id { get; set; } = null!;
 
+    [Required]
     [ObjectId]
     public string OrganizationId { get; set; } = null!;
 
+    [Required]
     public string Name { get; set; } = null!;
 
     /// <summary>

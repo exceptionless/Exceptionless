@@ -1,7 +1,6 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Validation;
 using Exceptionless.Plugins;
-using FluentValidation;
 
 namespace Exceptionless.Web.Utility.Handlers;
 
@@ -22,14 +21,7 @@ public class ExceptionToProblemDetailsHandler()
             httpContext.Items.Add("reference-id", referenceId);
         }
 
-        if (exception is ValidationException legacyValidationException)
-        {
-            httpContext.Items.Add("errors", legacyValidationException.Errors.ToDictionary(
-                error => error.PropertyName.ToLowerUnderscoredWords(),
-                error => new[] { error.ErrorMessage }
-            ));
-        }
-        else if (exception is MiniValidatorException validationException)
+        if (exception is MiniValidatorException validationException)
         {
             httpContext.Items.Add("errors", validationException.Errors.ToDictionary(
                 error => error.Key.ToLowerUnderscoredWords(),
