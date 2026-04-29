@@ -61,7 +61,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
     public async Task DeleteOrphanedEventsByStackAsync(JobContext context)
     {
         // get approximate number of unique stack ids
-        var stackCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
+        var stackCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Size(0).Aggregations(a => a
             .Cardinality("cardinality_stack_id", c => c.Field(f => f.StackId).PrecisionThreshold(40000))));
 
         double? uniqueStackIdCount = stackCardinality.Aggregations.Cardinality("cardinality_stack_id")?.Value;
@@ -79,7 +79,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         {
             await RenewLockAsync(context);
 
-            var stackIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
+            var stackIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Size(0).Aggregations(a => a
                 .Terms("terms_stack_id", c => c.Field(f => f.StackId).Include(batchNumber, buckets).Size(batchSize * 2))));
 
             string[] stackIds = stackIdTerms.Aggregations.Terms("terms_stack_id").Buckets.Select(b => b.Key).ToArray();
@@ -109,7 +109,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
     public async Task DeleteOrphanedEventsByProjectAsync(JobContext context)
     {
         // get approximate number of unique project ids
-        var projectCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
+        var projectCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Size(0).Aggregations(a => a
             .Cardinality("cardinality_project_id", c => c.Field(f => f.ProjectId).PrecisionThreshold(40000))));
 
         double? uniqueProjectIdCount = projectCardinality.Aggregations.Cardinality("cardinality_project_id")?.Value;
@@ -127,7 +127,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         {
             await RenewLockAsync(context);
 
-            var projectIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
+            var projectIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Size(0).Aggregations(a => a
                 .Terms("terms_project_id", c => c.Field(f => f.ProjectId).Include(batchNumber, buckets).Size(batchSize * 2))));
 
             string[] projectIds = projectIdTerms.Aggregations.Terms("terms_project_id").Buckets.Select(b => b.Key).ToArray();
@@ -155,7 +155,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
     public async Task DeleteOrphanedEventsByOrganizationAsync(JobContext context)
     {
         // get approximate number of unique organization ids
-        var organizationCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
+        var organizationCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Size(0).Aggregations(a => a
             .Cardinality("cardinality_organization_id", c => c.Field(f => f.OrganizationId).PrecisionThreshold(40000))));
 
         double? uniqueOrganizationIdCount = organizationCardinality.Aggregations.Cardinality("cardinality_organization_id")?.Value;
@@ -173,7 +173,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         {
             await RenewLockAsync(context);
 
-            var organizationIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Aggregations(a => a
+            var organizationIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s.Size(0).Aggregations(a => a
                 .Terms("terms_organization_id", c => c.Field(f => f.OrganizationId).Include(batchNumber, buckets).Size(batchSize * 2))));
 
             string[] organizationIds = organizationIdTerms.Aggregations.Terms("terms_organization_id").Buckets.Select(b => b.Key).ToArray();
