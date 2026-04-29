@@ -219,7 +219,10 @@ export interface PersistentEvent {
   created_utc: string;
   /** Used to store primitive data type custom data values for searching the event. */
   idx?: null | Record<string, unknown>;
-  /** The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types. */
+  /**
+   * The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types.
+   * Nullable in transit; the pipeline infers a default before save. Validated as required on repository save.
+   */
   type?: null | string;
   /** The event source (ie. machine name, log name, feature name). */
   source?: null | string;
@@ -367,11 +370,11 @@ export interface UpdateProject {
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
 export interface UpdateSavedView {
   name?: null | string;
+  is_default?: null | boolean;
   filter?: null | string;
   time?: null | string;
   filter_definitions?: null | string;
   columns?: null | Record<string, boolean>;
-  is_default?: null | boolean;
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */

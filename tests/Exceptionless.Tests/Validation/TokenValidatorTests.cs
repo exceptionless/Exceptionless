@@ -92,9 +92,25 @@ public sealed class TokenValidatorTests : TestWithServices
     }
 
     [Fact]
-    public async Task Validate_WhenOrganizationIdIsEmptyAndProjectIdIsSet_ReturnsError()
+    public async Task Validate_WhenOrganizationIdIsNullAndProjectIdIsSet_ReturnsError()
     {
         // Arrange
+        var token = CreateValidToken();
+        token.OrganizationId = null!;
+        token.ProjectId = ValidObjectId;
+
+        // Act
+        var (isValid, errors) = await _validator.ValidateAsync(token);
+
+        // Assert
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Token.OrganizationId)));
+    }
+
+    [Fact]
+    public async Task Validate_WhenOrganizationIdIsEmptyAndProjectIdIsSet_ReturnsError()
+    {
+        // Arrange — empty string fails [ObjectId] attribute (length 0 < 24)
         var token = CreateValidToken();
         token.OrganizationId = "";
         token.ProjectId = ValidObjectId;
@@ -108,35 +124,49 @@ public sealed class TokenValidatorTests : TestWithServices
     }
 
     [Fact]
-    public void Validate_WhenOrganizationIdIsEmptyAndUserIdIsEmpty_ReturnsError()
+    public async Task Validate_WhenOrganizationIdIsNullAndUserIdIsNull_ReturnsSuccess()
     {
-        // Arrange
+        // Arrange — no org, no user, no project = system token, valid
+        var token = CreateValidToken();
+        token.OrganizationId = null!;
+        token.UserId = null;
+
+        // Act
+        var (isValid, errors) = await _validator.ValidateAsync(token);
+
+        // Assert
+        Assert.True(isValid);
+    }
+
+    [Fact]
+    public async Task Validate_WhenOrganizationIdIsEmptyAndUserIdIsEmpty_ReturnsError()
+    {
+        // Arrange — empty strings fail [ObjectId] attribute
         var token = CreateValidToken();
         token.OrganizationId = "";
         token.UserId = "";
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(Token.OrganizationId)));
+        Assert.False(isValid);
     }
 
     [Fact]
-    public void Validate_WhenOrganizationIdIsEmptyButUserIdIsSet_ReturnsSuccess()
+    public async Task Validate_WhenOrganizationIdIsNullButUserIdIsSet_ReturnsSuccess()
     {
-        // Arrange
+        // Arrange — user-scope token, no org needed
         var token = CreateValidToken();
-        token.OrganizationId = "";
+        token.OrganizationId = null!;
         token.UserId = ValidObjectId;
-        token.ProjectId = "";
+        token.ProjectId = null!;
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Fact]
@@ -171,17 +201,32 @@ public sealed class TokenValidatorTests : TestWithServices
     }
 
     [Fact]
-    public void Validate_WhenProjectIdIsEmpty_ReturnsSuccess()
+    public async Task Validate_WhenProjectIdIsNull_ReturnsSuccess()
     {
-        // Arrange
+        // Arrange — no project = org-scope token, valid
+        var token = CreateValidToken();
+        token.ProjectId = null!;
+
+        // Act
+        var (isValid, errors) = await _validator.ValidateAsync(token);
+
+        // Assert
+        Assert.True(isValid);
+    }
+
+    [Fact]
+    public async Task Validate_WhenProjectIdIsEmpty_ReturnsError()
+    {
+        // Arrange — empty string fails [ObjectId] attribute (length 0 < 24)
         var token = CreateValidToken();
         token.ProjectId = "";
 
         // Act
-        var result = _validator.Validate(token);
+        var (isValid, errors) = await _validator.ValidateAsync(token);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Token.ProjectId)));
     }
 
     [Fact]

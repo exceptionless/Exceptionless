@@ -8003,10 +8003,11 @@
       },
       "PersistentEvent": {
         "required": [
-          "id",
           "organization_id",
           "project_id",
           "stack_id",
+          "type",
+          "id",
           "is_first_occurrence",
           "created_utc",
           "date"
@@ -8060,16 +8061,16 @@
           },
           "type": {
             "maxLength": 100,
-            "minLength": 0,
+            "minLength": 1,
             "type": [
               "null",
               "string"
             ],
-            "description": "The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types."
+            "description": "The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types.\nNullable in transit; the pipeline infers a default before save. Validated as required on repository save."
           },
           "source": {
             "maxLength": 2000,
-            "minLength": 0,
+            "minLength": 1,
             "type": [
               "null",
               "string"
@@ -8094,7 +8095,7 @@
           },
           "message": {
             "maxLength": 2000,
-            "minLength": 0,
+            "minLength": 1,
             "type": [
               "null",
               "string"
@@ -8192,13 +8193,13 @@
       },
       "Stack": {
         "required": [
-          "id",
           "organization_id",
           "project_id",
-          "type",
-          "status",
           "signature_hash",
           "signature_info",
+          "id",
+          "type",
+          "status",
           "title",
           "total_occurrences",
           "first_occurrence",
@@ -8237,7 +8238,7 @@
           },
           "type": {
             "maxLength": 100,
-            "minLength": 0,
+            "minLength": 1,
             "type": "string",
             "description": "The stack type (ie. error, log message, feature usage). Check KnownTypes for standard stack types."
           },
@@ -8596,9 +8597,9 @@
       },
       "User": {
         "required": [
-          "id",
           "full_name",
           "email_address",
+          "id",
           "organization_ids",
           "password_reset_token_expiration",
           "o_auth_accounts",
@@ -9334,12 +9335,12 @@
       },
       "WebHook": {
         "required": [
-          "id",
           "organization_id",
           "url",
-          "version",
-          "project_id",
           "event_types",
+          "version",
+          "id",
+          "project_id",
           "is_enabled",
           "created_utc"
         ],
@@ -9368,6 +9369,8 @@
             "format": "uri"
           },
           "event_types": {
+            "maxItems": 6,
+            "minItems": 1,
             "type": "array",
             "items": {
               "type": "string"

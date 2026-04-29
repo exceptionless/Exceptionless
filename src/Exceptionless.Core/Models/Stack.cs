@@ -51,11 +51,13 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     /// <summary>
     /// The signature used for stacking future occurrences.
     /// </summary>
+    [Required]
     public string SignatureHash { get; set; } = null!;
 
     /// <summary>
     /// The collection of information that went into creating the signature hash for the stack.
     /// </summary>
+    [Required]
     public SettingsDictionary SignatureInfo { get; set; } = new();
 
     /// <summary>
@@ -129,6 +131,21 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
         public const string NotFound = "404";
         public const string Session = "session";
         public const string SessionEnd = "sessionend";
+    }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        foreach (string? tag in Tags)
+        {
+            if (String.IsNullOrEmpty(tag))
+            {
+                yield return new ValidationResult("Tags can't be empty.", [nameof(Tags)]);
+            }
+            else if (tag.Length > 255)
+            {
+                yield return new ValidationResult("A tag cannot be longer than 255 characters.", [nameof(Tags)]);
+            }
+        }
     }
 }
 

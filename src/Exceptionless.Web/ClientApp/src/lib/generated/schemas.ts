@@ -283,8 +283,7 @@ export const PersistentEventSchema = object({
   type: string()
     .min(1, "Type is required")
     .max(100, "Type must be at most 100 characters")
-    .nullable()
-    .optional(),
+    .nullable(),
   source: string()
     .min(1, "Source is required")
     .max(2000, "Source must be at most 2000 characters")
@@ -410,6 +409,7 @@ export type UpdateProjectFormData = Infer<typeof UpdateProjectSchema>;
 
 export const UpdateSavedViewSchema = object({
   name: string().min(1, "Name is required").nullable().optional(),
+  is_default: boolean().nullable().optional(),
   filter: string().min(1, "Filter is required").nullable().optional(),
   time: string().min(1, "Time is required").nullable().optional(),
   filter_definitions: string()
@@ -417,7 +417,6 @@ export const UpdateSavedViewSchema = object({
     .nullable()
     .optional(),
   columns: record(string(), boolean()).nullable().optional(),
-  is_default: boolean().nullable().optional(),
 });
 export type UpdateSavedViewFormData = Infer<typeof UpdateSavedViewSchema>;
 
@@ -483,7 +482,7 @@ export type UserFormData = Infer<typeof UserSchema>;
 
 export const UserDescriptionSchema = object({
   email_address: email().nullable().optional(),
-  description: string().min(1, "Description is required").nullable().optional(),
+  description: string().min(1, "Description is required").nullable(),
   data: record(string(), unknown()).nullable().optional(),
 });
 export type UserDescriptionFormData = Infer<typeof UserDescriptionSchema>;

@@ -22,7 +22,6 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     /// <summary>
     /// Unique id that identifies the organization.
     /// </summary>
-    [Required]
     [ObjectId]
     public string Id { get; set; } = null!;
 

@@ -50,4 +50,39 @@ public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWith
     /// Used to store primitive data type custom data values for searching the event.
     /// </summary>
     public DataDictionary? Idx { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (Date == DateTimeOffset.MinValue)
+        {
+            yield return new ValidationResult("Date must be specified.", [nameof(Date)]);
+        }
+
+        var timeProvider = validationContext.GetService(typeof(TimeProvider)) as TimeProvider
+            ?? throw new InvalidOperationException("TimeProvider is not registered.");
+        if (Date.UtcDateTime > timeProvider.GetUtcNow().UtcDateTime.AddHours(1))
+        {
+            yield return new ValidationResult("Date cannot be in the future.", [nameof(Date)]);
+        }
+
+        if (!this.HasValidReferenceId())
+        {
+            yield return new ValidationResult("ReferenceId must contain between 8 and 100 alphanumeric or '-' characters.", [nameof(ReferenceId)]);
+        }
+
+        if (Tags is not null)
+        {
+            foreach (string? tag in Tags)
+            {
+                if (String.IsNullOrEmpty(tag))
+                {
+                    yield return new ValidationResult("Tags can't be empty.", [nameof(Tags)]);
+                }
+                else if (tag.Length > 255)
+                {
+                    yield return new ValidationResult("A tag cannot be longer than 255 characters.", [nameof(Tags)]);
+                }
+            }
+        }
+    }
 }
