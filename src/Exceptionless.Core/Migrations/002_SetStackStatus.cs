@@ -1,17 +1,18 @@
 using System.Diagnostics;
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Core.ReindexRethrottle;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Caching;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Migrations;
 using Microsoft.Extensions.Logging;
-using Nest;
 
 namespace Exceptionless.Core.Migrations;
 
 public sealed class SetStackStatus : MigrationBase
 {
-    private readonly IElasticClient _client;
+    private readonly ElasticsearchClient _client;
     private readonly ExceptionlessElasticConfiguration _config;
     private readonly ICacheClient _cache;
     private readonly TimeProvider _timeProvider;
@@ -37,9 +38,9 @@ public sealed class SetStackStatus : MigrationBase
         var sw = Stopwatch.StartNew();
         const string script = "if (ctx._source.is_regressed == true) ctx._source.status = 'regressed'; else if (ctx._source.is_hidden == true) ctx._source.status = 'ignored'; else if (ctx._source.disable_notifications == true) ctx._source.status = 'ignored'; else if (ctx._source.is_fixed == true) ctx._source.status = 'fixed'; else if (ctx._source.containsKey('date_fixed')) ctx._source.status = 'fixed'; else ctx._source.status = 'open';";
         var stackResponse = await _client.UpdateByQueryAsync<Stack>(x => x
-            .QueryOnQueryString("NOT _exists_:status")
-            .Script(s => s.Source(script).Lang(ScriptLang.Painless))
-            .Conflicts(Elasticsearch.Net.Conflicts.Proceed)
+            .Query(q => q.QueryString(qs => qs.Query("NOT _exists_:status")))
+            .Script(s => s.Source(script).Lang(ScriptLanguage.Painless))
+            .Conflicts(Conflicts.Proceed)
             .WaitForCompletion(false));
 
         _logger.LogRequest(stackResponse, Microsoft.Extensions.Logging.LogLevel.Information);
@@ -50,22 +51,22 @@ public sealed class SetStackStatus : MigrationBase
         do
         {
             attempts++;
-            var taskStatus = await _client.Tasks.GetTaskAsync(taskId);
-            var status = taskStatus.Task.Status;
+            var taskStatus = await _client.Tasks.GetAsync(taskId!.FullyQualifiedId);
+            var status = taskStatus.Task.Status as ReindexStatus;
             if (taskStatus.Completed)
             {
                 // TODO: need to check to see if the task failed or completed successfully. Throw if it failed.
-                _logger.LogInformation("Script operation task ({TaskId}) completed: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
-                affectedRecords += status.Created + status.Updated + status.Deleted;
+                _logger.LogInformation("Script operation task ({TaskId}) completed: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status?.Created, status?.Updated, status?.Deleted, status?.VersionConflicts, status?.Total);
+                affectedRecords += (status?.Created ?? 0) + (status?.Updated ?? 0) + (status?.Deleted ?? 0);
                 break;
             }
 
-            _logger.LogInformation("Checking script operation task ({TaskId}) status: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status.Created, status.Updated, status.Deleted, status.VersionConflicts, status.Total);
+            _logger.LogInformation("Checking script operation task ({TaskId}) status: Created: {Created} Updated: {Updated} Deleted: {Deleted} Conflicts: {Conflicts} Total: {Total}", taskId, status?.Created, status?.Updated, status?.Deleted, status?.VersionConflicts, status?.Total);
             var delay = TimeSpan.FromSeconds(attempts <= 5 ? 1 : 5);
             await Task.Delay(delay, _timeProvider);
         } while (true);
 
-        _logger.LogInformation("Finished adding stack status: Time={Duration:d\\.hh\\:mm} Completed={Completed:N0} Total={Total:N0} Errors={Errors:N0}", sw.Elapsed, affectedRecords, stackResponse.Total, stackResponse.Failures.Count);
+        _logger.LogInformation("Finished adding stack status: Time={Duration:d\\.hh\\:mm} Completed={Completed:N0} Total={Total:N0} Errors={Errors:N0}", sw.Elapsed, affectedRecords, stackResponse.Total, stackResponse.Failures?.Count ?? 0);
 
         _logger.LogInformation("Invalidating Stack Cache");
         await _cache.RemoveByPrefixAsync(nameof(Stack));

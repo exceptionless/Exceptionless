@@ -1,7 +1,7 @@
-﻿using System.Text.Json;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor;
@@ -9,11 +9,11 @@ namespace Exceptionless.Core.Plugins.EventProcessor;
 [Priority(10)]
 public sealed class NotFoundPlugin : EventProcessorPluginBase
 {
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly ITextSerializer _serializer;
 
-    public NotFoundPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    public NotFoundPlugin(ITextSerializer serializer, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
-        _jsonOptions = jsonOptions;
+        _serializer = serializer;
     }
 
     public override Task EventProcessingAsync(EventContext context)
@@ -24,7 +24,7 @@ public sealed class NotFoundPlugin : EventProcessorPluginBase
         context.Event.Data.Remove(Event.KnownDataKeys.EnvironmentInfo);
         context.Event.Data.Remove(Event.KnownDataKeys.TraceLog);
 
-        var req = context.Event.GetRequestInfo(_jsonOptions);
+        var req = context.Event.GetRequestInfo(_serializer);
         if (req is null)
             return Task.CompletedTask;
 

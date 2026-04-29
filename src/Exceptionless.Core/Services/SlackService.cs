@@ -14,7 +14,7 @@ public class SlackService
     private readonly HttpClient _client = new();
     private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
     private readonly FormattingPluginManager _pluginManager;
-    private readonly ISerializer _serializer;
+    private readonly ITextSerializer _serializer;
     private readonly AppOptions _appOptions;
     private readonly ILogger _logger;
 
@@ -117,7 +117,7 @@ public class SlackService
 
     public async Task<bool> SendEventNoticeAsync(PersistentEvent ev, Project project, bool isNew, bool isRegression)
     {
-        var token = project.GetSlackToken();
+        var token = project.GetSlackToken(_serializer);
         if (token?.IncomingWebhook?.Url is null)
             return false;
 

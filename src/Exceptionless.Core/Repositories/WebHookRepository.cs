@@ -1,11 +1,12 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using Elastic.Clients.Elasticsearch.QueryDsl;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
-using Nest;
+using ElasticInfer = Elastic.Clients.Elasticsearch.Infer;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -27,7 +28,20 @@ public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<
         ArgumentException.ThrowIfNullOrEmpty(organizationId);
         ArgumentException.ThrowIfNullOrEmpty(projectId);
 
-        var filter = (Query<WebHook>.Term(e => e.OrganizationId, organizationId) && !Query<WebHook>.Exists(e => e.Field(f => f.ProjectId))) || Query<WebHook>.Term(e => e.ProjectId, projectId);
+        Query filter = new BoolQuery
+        {
+            Should = [
+                new BoolQuery
+                {
+                    Must = [
+                        new TermQuery { Field = ElasticInfer.Field<WebHook>(w => w.OrganizationId), Value = organizationId },
+                        new BoolQuery { MustNot = [new ExistsQuery { Field = ElasticInfer.Field<WebHook>(w => w.ProjectId) }] }
+                    ]
+                },
+                new TermQuery { Field = ElasticInfer.Field<WebHook>(w => w.ProjectId), Value = projectId }
+            ],
+            MinimumShouldMatch = 1
+        };
         return FindAsync(q => q.ElasticFilter(filter).Sort(f => f.CreatedUtc), o => o.Cache(PagedCacheKey(organizationId, projectId)));
     }
 

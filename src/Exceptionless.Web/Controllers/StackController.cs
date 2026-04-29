@@ -599,7 +599,7 @@ public class StackController : RepositoryApiController<IStackRepository, Stack, 
             return new List<StackSummaryModel>();
 
         var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(eventSystemFilter).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date).Index(ti.Range.UtcStart, ti.Range.UtcEnd);
-        var stackTerms = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(String.Join(" OR ", stacks.Select(r => $"stack:{r.Id}"))).AggregationsExpression($"terms:(stack_id~{stacks.Count} cardinality:user sum:count~1 min:date max:date)"));
+        var stackTerms = await _eventRepository.CountAsync(q => q.SystemFilter(systemFilter).Stack(stacks.Select(r => r.Id)).AggregationsExpression($"terms:(stack_id~{stacks.Count} cardinality:user sum:count~1 min:date max:date)"));
         var buckets = stackTerms.Aggregations.Terms<string>("terms_stack_id")?.Buckets ?? [];
         return await GetStackSummariesAsync(stacks, buckets, eventSystemFilter, ti);
     }

@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Text.Json;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
@@ -8,6 +7,7 @@ using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
+using Foundatio.Serializer;
 using Xunit;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
@@ -21,7 +21,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     private readonly IEventRepository _repository;
     private readonly StackData _stackData;
     private readonly IStackRepository _stackRepository;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly ITextSerializer _serializer;
 
     public EventRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -30,10 +30,10 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         _repository = GetService<IEventRepository>();
         _stackData = GetService<StackData>();
         _stackRepository = GetService<IStackRepository>();
-        _jsonOptions = GetService<JsonSerializerOptions>();
+        _serializer = GetService<ITextSerializer>();
     }
 
-    [Fact(Skip = "https://github.com/elastic/elasticsearch-net/issues/2463")]
+    [Fact]
     public async Task GetAsync()
     {
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
@@ -50,7 +50,17 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
             Geo = "40,-70"
         });
 
-        Assert.Equal(ev, await _repository.GetByIdAsync(ev.Id));
+        var actual = await _repository.GetByIdAsync(ev.Id);
+        Assert.NotNull(actual);
+        Assert.Equal(ev.Id, actual.Id);
+        Assert.Equal(ev.Type, actual.Type);
+        Assert.Equal(ev.OrganizationId, actual.OrganizationId);
+        Assert.Equal(ev.ProjectId, actual.ProjectId);
+        Assert.Equal(ev.StackId, actual.StackId);
+        Assert.Equal(ev.Date, actual.Date);
+        Assert.Equal(ev.Count, actual.Count);
+        Assert.Equal(ev.Value, actual.Value);
+        Assert.Equal(ev.Geo, actual.Geo);
     }
 
     [Fact(Skip = "Performance Testing")]
@@ -224,7 +234,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
         events.ForEach(e =>
         {
-            var ri = e.GetRequestInfo(_jsonOptions);
+            var ri = e.GetRequestInfo(_serializer);
             Assert.NotNull(ri);
             Assert.Equal(_clientIpAddress, ri.ClientIpAddress);
         });

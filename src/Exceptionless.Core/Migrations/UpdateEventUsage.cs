@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -8,7 +9,6 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
-using Nest;
 
 namespace Exceptionless.Core.Migrations;
 
