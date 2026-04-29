@@ -107,7 +107,7 @@
         }
     });
 
-    const hasPremiumFeatures = $derived(!!organizationQuery.data?.has_premium_features);
+    const hasPremiumFeatures = $derived(!organizationQuery.isSuccess || !!organizationQuery.data?.has_premium_features);
 
     type TabType = 'Environment' | 'Exception' | 'Extended Data' | 'Overview' | 'Request' | 'Trace Log' | string;
 

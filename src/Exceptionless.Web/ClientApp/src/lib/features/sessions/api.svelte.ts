@@ -12,7 +12,7 @@ export const queryKeys = {
         [...queryKeys.organizations(id), 'count', params] as const,
     projects: (id: string | undefined) => [...queryKeys.type, 'projects', id] as const,
     projectsCount: (id: string | undefined, params?: GetProjectSessionsCountRequest['params']) => [...queryKeys.projects(id), 'count', params] as const,
-    sessionEvents: (id: string | undefined) => [...queryKeys.type, 'session', id] as const,
+    sessionEvents: (id: string | undefined, params?: GetSessionEventsRequest['params']) => [...queryKeys.type, 'session', id, params] as const,
     type: ['Session'] as const
 };
 
@@ -115,6 +115,6 @@ export function getSessionEventsQuery(request: GetSessionEventsRequest) {
 
             return response.data!;
         },
-        queryKey: queryKeys.sessionEvents(request.route.sessionId)
+        queryKey: queryKeys.sessionEvents(request.route.sessionId, request.params)
     }));
 }
