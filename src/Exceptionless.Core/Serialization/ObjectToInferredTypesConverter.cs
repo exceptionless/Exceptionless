@@ -2,7 +2,6 @@ using System.Buffers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Exceptionless.Core.Models;
-using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Serialization;
 
@@ -92,17 +91,6 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
         if (value is JsonElement element)
         {
             element.WriteTo(writer);
-            return;
-        }
-
-        // Handle Newtonsoft JToken types (stored in DataDictionary by DataObjectConverter
-        // when reading from Elasticsearch via NEST). Without this, STJ enumerates JToken's
-        // IEnumerable<JToken> interface, producing nested empty arrays instead of proper JSON.
-        // TODO: Remove this shim after full re-index confirms no JToken instances remain in live data.
-        if (value is JToken jToken)
-        {
-            using var doc = JsonDocument.Parse(jToken.ToString(Newtonsoft.Json.Formatting.None));
-            doc.RootElement.WriteTo(writer);
             return;
         }
 

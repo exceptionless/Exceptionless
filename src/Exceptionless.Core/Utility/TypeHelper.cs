@@ -52,9 +52,9 @@ public static class TypeHelper
             catch { }
         }
 
-        // Handle JsonElement comparison by comparing string representations
+        // Handle JsonElement comparison semantically
         if (a is JsonElement jsonA && b is JsonElement jsonB)
-            return String.Equals(jsonA.GetRawText(), jsonB.GetRawText());
+            return JsonElement.DeepEquals(jsonA, jsonB);
 
         if (a != b && !a.Equals(b))
             return false;

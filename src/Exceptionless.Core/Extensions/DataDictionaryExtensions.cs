@@ -58,7 +58,6 @@ public static class DataDictionaryExtensions
     ///   <item><description><see cref="JsonNode"/> - extracts JSON string and deserializes via ITextSerializer</description></item>
     ///   <item><description><see cref="Dictionary{TKey,TValue}"/> - re-serializes to JSON then deserializes via ITextSerializer</description></item>
     ///   <item><description><see cref="List{T}"/> of objects - re-serializes to JSON then deserializes via ITextSerializer</description></item>
-    ///   <item><description><see cref="Newtonsoft.Json.Linq.JObject"/> - uses ToObject for Elasticsearch compatibility</description></item>
     ///   <item><description>JSON string - deserializes via ITextSerializer</description></item>
     ///   <item><description>Fallback - attempts type conversion via ToType</description></item>
     /// </list>
@@ -157,21 +156,6 @@ public static class DataDictionaryExtensions
             }
         }
 
-        // Newtonsoft.Json.Linq.JObject - for Elasticsearch compatibility.
-        // When data is read from Elasticsearch (which uses JSON.NET via NEST), complex objects
-        // in DataDictionary are deserialized as JObject. This handler converts them to the target type.
-        if (data is Newtonsoft.Json.Linq.JObject jObject)
-        {
-            try
-            {
-                return jObject.ToObject<T>();
-            }
-            catch
-            {
-                // Ignored - fall through to next handler
-            }
-        }
-
         // JSON string - deserialize via ITextSerializer
         if (data is string json && json.IsJson())
         {
@@ -181,7 +165,7 @@ public static class DataDictionaryExtensions
                 if (result is not null)
                     return result;
             }
-            catch
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException or ArgumentException)
             {
                 // Ignored - fall through to next handler
             }
@@ -195,7 +179,7 @@ public static class DataDictionaryExtensions
                 return data.ToType<T>();
             }
         }
-        catch
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException or InvalidCastException or ArgumentException)
         {
             // Ignored
         }
