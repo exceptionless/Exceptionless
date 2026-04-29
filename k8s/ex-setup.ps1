@@ -150,11 +150,11 @@ helm install kubeblocks kubeblocks/kubeblocks --namespace kb-system --create-nam
 helm install kb-addon-redis kubeblocks/kb-addon-redis --namespace kb-system
 
 # setup redis (KubeBlocks)
-# The Cluster CRD creates redis + sentinel pods and auto-generates a password
+# Create a stable password secret first (persists across cluster delete/recreate)
+$REDIS_PASSWORD = "<set-a-stable-password>"
+kubectl create secret generic ex-$ENV-redis-password --namespace ex-$ENV --from-literal=password=$REDIS_PASSWORD --dry-run=client -o yaml | kubectl apply -f -
+# The Cluster CRD creates redis + sentinel pods and reads the password from the secret
 kubectl apply -f ex-$ENV-redis.yaml -n ex-$ENV
-
-# retrieve the auto-generated redis password
-$REDIS_PASSWORD = $(kubectl get secret --namespace ex-$ENV ex-$ENV-redis-account-default -o jsonpath='{.data.password}' | ForEach-Object { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) })
 
 # verify redis is running
 kubectl get cluster.apps.kubeblocks.io -n ex-$ENV

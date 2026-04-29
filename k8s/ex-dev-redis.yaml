@@ -12,6 +12,10 @@ spec:
       serviceVersion: "8.4.0"
       disableExporter: false
       replicas: 2
+      systemAccounts:
+        - name: default
+          secretRef:
+            name: ex-dev-redis-password
       resources:
         requests:
           cpu: "100m"
