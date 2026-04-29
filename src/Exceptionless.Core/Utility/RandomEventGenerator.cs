@@ -16,12 +16,15 @@ public class RandomEventGenerator
 
     public List<PersistentEvent> Generate(string organizationId, string projectId, int count, DateTime? minDate = null, DateTime? maxDate = null)
     {
+        if (count <= 0)
+            return [];
+
         var events = new List<PersistentEvent>(count);
         var min = minDate ?? _timeProvider.GetUtcNow().UtcDateTime.AddDays(-7);
         var max = maxDate ?? _timeProvider.GetUtcNow().UtcDateTime;
 
-        // Reserve ~20% of events for sessions (generated as start+end pairs)
-        int sessionCount = Math.Max(1, count / 5);
+        // Reserve ~20% of events for sessions
+        int sessionCount = Math.Clamp(count / 5, 0, count);
         int regularCount = count - sessionCount;
 
         for (int i = 0; i < regularCount; i++)

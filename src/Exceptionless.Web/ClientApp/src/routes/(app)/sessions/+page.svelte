@@ -65,7 +65,7 @@
         }
     });
 
-    const hasPremiumFeatures = $derived(organizationQuery.data?.has_premium_features ?? false);
+    const hasPremiumFeatures = $derived(!organizationQuery.isSuccess || !!organizationQuery.data?.has_premium_features);
 
     // View Active toggle state
     let viewActive = $state(false);
@@ -206,7 +206,7 @@
     }
 
     async function loadData() {
-        if (client.isLoading || !organization.current) {
+        if (!organization.current) {
             return;
         }
 
@@ -290,7 +290,7 @@
     });
 
     // Chart data from date histogram
-    const chartData = $derived(() => {
+    const chartData = $derived.by(() => {
         const timeRange = parseDateMathRange(queryParams.time);
 
         const buildZeroFilledSeries = () =>
@@ -353,7 +353,7 @@
             totalUsers={stats.totalUsers}
         />
 
-        <SessionsDashboardChart data={chartData()} isLoading={clientStatus.isLoading || statsQuery.isLoading} {onRangeSelect} />
+        <SessionsDashboardChart data={chartData} isLoading={clientStatus.isLoading || statsQuery.isLoading} {onRangeSelect} />
 
         <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {rowHref} {table}>
             {#snippet footerChildren()}

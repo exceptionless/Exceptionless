@@ -122,7 +122,7 @@ X-ApiKey: {{clientToken}}
 Event 1
 
 ### Sessions - Get session count with stats and chart aggregations
-GET {{apiUrl}}/organizations/{{organizationId}}/events/count?filter=type:session&aggregations=avg:value cardinality:user date:(date^-06:00 cardinality:user)&time=last 7 days
+GET {{apiUrl}}/organizations/{{organizationId}}/events/count?filter=type:session&aggregations=avg:value+cardinality:user+date:(date^-06:00+cardinality:user)&time=last+7+days
 Authorization: Bearer {{token}}
 
 ### Sessions - Get session events by session ID

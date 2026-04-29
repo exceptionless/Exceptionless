@@ -4,7 +4,7 @@
     "private": true,
     "scripts": {
         "dev": "cross-env NODE_OPTIONS=--trace-warnings vite dev",
-        "dev:api": "cross-env API_HTTP=http://localhost:7110 OLDAPP_HTTP=http://localhost:7110 vite dev",
+        "dev:api": "cross-env API_HTTP=https://dev-collector.exceptionless.io OLDAPP_HTTP=https://dev-app.exceptionless.io vite dev",
         "build": "vite build",
         "preview": "vite preview",
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",

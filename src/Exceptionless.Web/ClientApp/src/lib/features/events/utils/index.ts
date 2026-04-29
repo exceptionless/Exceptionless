@@ -63,7 +63,7 @@ export function getSessionId(event?: null | PersistentEvent): string | undefined
  */
 export function getSessionStartDuration(event: PersistentEvent): Date | number {
     if (event.data?.sessionend) {
-        if (event.value) {
+        if (event.value != null) {
             return event.value * 1000;
         }
 

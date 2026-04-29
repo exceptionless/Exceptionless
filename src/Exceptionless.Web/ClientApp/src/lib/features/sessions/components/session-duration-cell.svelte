@@ -12,10 +12,14 @@
     const data = $derived(summary.data as EventSessionSummaryData);
     const isActive = $derived(!data?.SessionEnd);
     const durationMs = $derived.by(() => {
-        if (data?.Value) return parseFloat(data.Value) * 1000;
+        if (data?.Value) {
+            return parseFloat(data.Value) * 1000;
+        }
+
         if (data?.SessionEnd && summary.date) {
             return new Date(data.SessionEnd).getTime() - new Date(summary.date).getTime();
         }
+
         return 0;
     });
     // For active sessions, use the event date so Duration live-updates
