@@ -1,5 +1,6 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Foundatio.Repositories.Utility;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Core.Utility;
@@ -19,7 +20,11 @@ public class RandomEventGenerator
         var min = minDate ?? _timeProvider.GetUtcNow().UtcDateTime.AddDays(-7);
         var max = maxDate ?? _timeProvider.GetUtcNow().UtcDateTime;
 
-        for (int i = 0; i < count; i++)
+        // Reserve ~20% of events for sessions (generated as start+end pairs)
+        int sessionCount = Math.Max(1, count / 5);
+        int regularCount = count - sessionCount;
+
+        for (int i = 0; i < regularCount; i++)
         {
             var ev = new PersistentEvent
             {
@@ -31,6 +36,51 @@ public class RandomEventGenerator
             PopulateEvent(ev);
             events.Add(ev);
         }
+
+        // Generate session events
+        for (int i = 0; i < sessionCount; i++)
+        {
+            var sessionEvents = GenerateSession(organizationId, projectId, min, max);
+            events.AddRange(sessionEvents);
+        }
+
+        return events;
+    }
+
+    private List<PersistentEvent> GenerateSession(string organizationId, string projectId, DateTime minDate, DateTime maxDate)
+    {
+        var events = new List<PersistentEvent>();
+        string sessionId = ObjectId.GenerateNewId().ToString();
+        string? identity = Identities.Random();
+        var startDate = RandomData.GetDateTime(minDate, maxDate.AddHours(-1));
+        int durationSeconds = RandomData.GetInt(30, 7200); // 30s to 2 hours
+        var endDate = startDate.AddSeconds(durationSeconds);
+        bool isActive = endDate > _timeProvider.GetUtcNow().UtcDateTime || RandomData.GetBool(15); // 15% chance of active
+
+        // Session start event
+        var sessionStart = new PersistentEvent
+        {
+            OrganizationId = organizationId,
+            ProjectId = projectId,
+            Date = startDate,
+            Type = Event.KnownTypes.Session,
+            ReferenceId = sessionId,
+            Value = isActive ? null : durationSeconds,
+            Data = new DataDictionary()
+        };
+
+        if (!String.IsNullOrEmpty(identity))
+            sessionStart.SetUserIdentity(identity);
+
+        if (!isActive)
+            sessionStart.Data["sessionend"] = endDate;
+
+        sessionStart.SetVersion(RandomData.GetVersion("2.0", "4.0"));
+
+        if (RandomData.GetBool(60))
+            sessionStart.Geo = RandomData.GetCoordinate();
+
+        events.Add(sessionStart);
 
         return events;
     }

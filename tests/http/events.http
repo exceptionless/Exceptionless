@@ -120,3 +120,15 @@ Content-Type: application/json
 X-ApiKey: {{clientToken}}
 
 Event 1
+
+### Sessions - Get session count with stats and chart aggregations
+GET {{apiUrl}}/organizations/{{organizationId}}/events/count?filter=type:session&aggregations=avg:value cardinality:user date:(date^-06:00 cardinality:user)&time=last 7 days
+Authorization: Bearer {{token}}
+
+### Sessions - Get session events by session ID
+GET {{apiUrl}}/events/sessions/12345?mode=summary
+Authorization: Bearer {{token}}
+
+### Sessions - Get sessions list (summary mode)
+GET {{apiUrl}}/organizations/{{organizationId}}/events?filter=type:session&mode=summary&limit=10&sort=-date
+Authorization: Bearer {{token}}
