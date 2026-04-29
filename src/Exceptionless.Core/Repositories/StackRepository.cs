@@ -32,7 +32,9 @@ public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, I
         return FindAsync(q => q
             .Organization(organizationId)
             .DateRange(null, cutoff, (Stack s) => s.LastOccurrence)
-            .FieldEquals(f => f.Status, StackStatus.Open)
+            // Pass the serialized enum string directly because Foundatio's FieldValueHelper.ToFieldValue
+            // calls .ToString() on enums (producing "Open") instead of respecting [JsonStringEnumMemberName("open")].
+            .FieldEquals(f => f.Status, "open")
             .FieldEmpty(f => f.References)
             .Include(f => f.Id, f => f.OrganizationId, f => f.ProjectId, f => f.SignatureHash)
         , o => o.SearchAfterPaging().PageLimit(500));
