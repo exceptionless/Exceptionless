@@ -320,7 +320,7 @@ internal static class EventIndexExtensions
     public static PropertiesDescriptor<PersistentEvent> AddCopyToMappings(this PropertiesDescriptor<PersistentEvent> descriptor)
     {
         return descriptor
-            .Text(EventIndex.Alias.IpAddress, t => t.Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER))
+            .Text(EventIndex.Alias.IpAddress, t => t.Analyzer(EventIndex.COMMA_WHITESPACE_ANALYZER).AddKeywordField())
             .Text(EventIndex.Alias.OperatingSystem, t => t.Analyzer(EventIndex.WHITESPACE_LOWERCASE_ANALYZER).AddKeywordField())
             .Object(EventIndex.Alias.Error, o => o.Properties(p1 => p1
                 .Keyword("code", k => k.IgnoreAbove(1024))

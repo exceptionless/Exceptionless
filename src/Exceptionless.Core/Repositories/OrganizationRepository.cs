@@ -87,15 +87,14 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
             else
                 query.ElasticFilter(new BoolQuery
                 {
-                    Should = [
+                    Must = [
                         new BoolQuery { Should = [
                             new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Active },
                             new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Trialing },
                             new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Canceled }
                         ], MinimumShouldMatch = 1 },
                         new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.IsSuspended), Value = false }
-                    ],
-                    MinimumShouldMatch = 1
+                    ]
                 });
         }
 
