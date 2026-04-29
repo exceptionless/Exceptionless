@@ -13,6 +13,7 @@
     import { Label } from '$comp/ui/label';
     import * as Sheet from '$comp/ui/sheet';
     import { Switch } from '$comp/ui/switch';
+    import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
     import EventsOverview from '$features/events/components/events-overview.svelte';
     import { DateFilter, ProjectFilter, TypeFilter } from '$features/events/components/filters';
     import {
@@ -26,13 +27,12 @@
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
-    import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { getOrganizationSessionsCountQuery } from '$features/sessions/api.svelte';
-    import SessionsDashboardChart from '$features/sessions/components/sessions-dashboard-chart.svelte';
     import { getSessionColumns } from '$features/sessions/components/session-table-columns';
+    import SessionsDashboardChart from '$features/sessions/components/sessions-dashboard-chart.svelte';
     import SessionsStatsDashboard from '$features/sessions/components/sessions-stats-dashboard.svelte';
     import * as agg from '$features/shared/api/aggregations';
     import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
@@ -96,6 +96,7 @@
     watch(
         () => organization.current,
         () => {
+            viewActive = false;
             updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
             Object.assign(queryParams, DEFAULT_PARAMS);
             reset();
@@ -139,6 +140,7 @@
         if (viewActive) {
             filter += ' _missing_:data.sessionend';
         }
+
         return filter;
     }
 

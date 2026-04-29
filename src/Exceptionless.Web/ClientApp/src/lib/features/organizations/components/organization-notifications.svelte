@@ -26,7 +26,15 @@
         requiresPremium?: boolean;
     }
 
-    let { ignoreConfigureProjects = false, ignoreFree = false, isChatEnabled, openChat, premiumFeatureName, requiresPremium = false, ...restProps }: Props = $props();
+    let {
+        ignoreConfigureProjects = false,
+        ignoreFree = false,
+        isChatEnabled,
+        openChat,
+        premiumFeatureName,
+        requiresPremium = false,
+        ...restProps
+    }: Props = $props();
 
     const meQuery = getMeQuery();
     const isGlobalAdmin = $derived(!!meQuery.data?.roles?.includes('global'));

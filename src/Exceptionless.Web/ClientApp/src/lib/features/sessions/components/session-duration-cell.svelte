@@ -12,13 +12,13 @@
     const data = $derived(summary.data as EventSessionSummaryData);
     const isActive = $derived(!data?.SessionEnd);
     const durationMs = $derived(data?.Value ? parseFloat(data.Value) * 1000 : 0);
+    // For active sessions, use the event date so Duration live-updates
+    const durationValue = $derived<Date | number>(isActive && summary.date ? new Date(summary.date) : durationMs);
 </script>
 
 <div class="flex items-center gap-1.5">
     <Live live={isActive} liveTitle="Online" notLiveTitle="Ended" />
-    {#if durationMs > 0}
-        <Duration value={durationMs} />
-    {:else if isActive}
-        <span class="text-muted-foreground text-xs">Active</span>
+    {#if isActive || durationMs > 0}
+        <Duration value={durationValue} />
     {/if}
 </div>

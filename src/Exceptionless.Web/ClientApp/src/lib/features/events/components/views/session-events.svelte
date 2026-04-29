@@ -1,12 +1,9 @@
 <script lang="ts">
     import type { PersistentEvent } from '$features/events/models';
-    import type { SummaryTemplateKeys } from '$features/events/components/summary/index';
 
-    import { resolve } from '$app/paths';
     import Duration from '$comp/formatters/duration.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
     import Live from '$comp/live.svelte';
-    import { A } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';

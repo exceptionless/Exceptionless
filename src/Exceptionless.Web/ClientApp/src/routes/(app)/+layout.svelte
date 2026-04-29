@@ -385,7 +385,13 @@
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
 
                 {#if showOrganizationNotifications.current}
-                    <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} premiumFeatureName={page.url.pathname.endsWith('/sessions') ? 'Sessions' : undefined} class="mb-4" />
+                    <OrganizationNotifications
+                        {isChatEnabled}
+                        {openChat}
+                        {requiresPremium}
+                        premiumFeatureName={page.url.pathname.endsWith('/sessions') ? 'Sessions' : undefined}
+                        class="mb-4"
+                    />
                 {/if}
 
                 <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>

@@ -57,20 +57,23 @@ export function getSessionId(event?: null | PersistentEvent): string | undefined
 }
 
 /**
- * Returns the session duration in milliseconds for a given event.
- * If the session has ended, uses the event value or the difference between sessionend and start.
- * If the session is active, returns the duration from start to now.
+ * Returns the session duration for a given event.
+ * If the session has ended, returns a numeric duration in milliseconds.
+ * If the session is active, returns the session start date so Duration component live-updates.
  */
-export function getSessionStartDuration(event: PersistentEvent): number {
+export function getSessionStartDuration(event: PersistentEvent): Date | number {
     if (event.data?.sessionend) {
         if (event.value) {
             return event.value * 1000;
         }
+
         if (event.date) {
             return new Date(event.data.sessionend).getTime() - new Date(event.date).getTime();
         }
+
         return 0;
     }
-    // If session is active, duration is from start to now
-    return Date.now() - new Date(event.date).getTime();
+
+    // Return start date so Duration component live-updates via interval
+    return new Date(event.date);
 }
