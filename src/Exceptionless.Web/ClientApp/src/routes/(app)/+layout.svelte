@@ -46,7 +46,7 @@
 
     let { children }: Props = $props();
     let isAuthenticated = $derived(!!accessToken.current);
-    let requiresPremium = $derived(filterUsesPremiumFeatures(page.url.searchParams.get('filter')));
+    let requiresPremium = $derived(page.url.pathname.endsWith('/sessions') || filterUsesPremiumFeatures(page.url.searchParams.get('filter')));
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
 
@@ -192,7 +192,13 @@
     const organizations = $derived(organizationsQuery.data?.data ?? []);
 
     const impersonatingOrganizationId = $derived.by(() => {
-        const isUserOrganization = meQuery.data?.organization_ids.includes(organization.current ?? '');
+        // Only consider impersonation if user data is loaded and user has organizations
+        const userOrgIds = meQuery.data?.organization_ids;
+        if (!userOrgIds || userOrgIds.length === 0 || !organization.current) {
+            return undefined;
+        }
+
+        const isUserOrganization = userOrgIds.includes(organization.current);
         return isUserOrganization ? undefined : organization.current;
     });
 
@@ -379,7 +385,13 @@
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
 
                 {#if showOrganizationNotifications.current}
-                    <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} class="mb-4" />
+                    <OrganizationNotifications
+                        {isChatEnabled}
+                        {openChat}
+                        {requiresPremium}
+                        premiumFeatureName={page.url.pathname.endsWith('/sessions') ? 'Sessions' : undefined}
+                        class="mb-4"
+                    />
                 {/if}
 
                 <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>
