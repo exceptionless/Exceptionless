@@ -31,9 +31,11 @@ You test through the eyes of a user: browser, screenshots, console, E2E. Report 
 | Frontend | Browser dogfood + E2E |
 | Fullstack | Both |
 
-2. **Preflight — verify app is running.** Probe the app URL. If unavailable:
-   - Standalone: `ask_user` — "App not running. Please start it or provide URL."
-   - SILENT_MODE: report `BLOCKED — app not reachable` and exit. Engineer must not treat as PASS.
+2. **Infrastructure.** Ensure services are healthy — start if not (see AGENTS.md "Infrastructure before tests").
+
+3. **Preflight — verify app is running.** Probe the health check endpoint (see AGENTS.md). If unavailable, attempt to start the app using AGENTS.md commands. If still unavailable:
+   - Standalone: `ask_user` — "App not running and could not be started."
+   - SILENT_MODE: report `BLOCKED — app not reachable, auto-start failed` and exit.
 
 # API Smoke (Backend)
 
@@ -58,6 +60,15 @@ Follow the **dogfood** and **agent-browser** skills. High-level flow:
 # E2E (When UI flows changed)
 
 Run the project's E2E test command. Report: PASS (all green) or FAIL (specific tests + errors).
+
+# Dependency Migration Verification
+
+When the change includes dependency upgrades with breaking change migrations (from PR description, AC, or invoking prompt): exercise affected code paths, verify migrated behavior matches AC, check for regressions. Report in QA output:
+
+```
+### Dependency Migration
+- [PASS/FAIL] package vOLD->vNEW: [migration description] — [evidence]
+```
 
 # Report Format
 
