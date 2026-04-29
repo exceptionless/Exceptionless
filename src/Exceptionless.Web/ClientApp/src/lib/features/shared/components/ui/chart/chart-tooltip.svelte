@@ -58,8 +58,14 @@
 
 		const itemConfig = item ? getPayloadConfigFromPayload(chart.config, item, key) : undefined;
 
-		const value =
-			!labelKey && typeof label === "string"
+		// Use the x-axis value from the tooltip data when available (e.g. the hovered date),
+		// falling back to config labels for non-time-series charts.
+		const tooltipData = chartCtx.tooltip.data;
+		const xValue = tooltipData != null ? chartCtx.x(tooltipData) : undefined;
+
+		const value = xValue !== undefined
+			? xValue
+			: !labelKey && typeof label === "string"
 				? (chart.config[label as keyof typeof chart.config]?.label ?? label)
 				: (itemConfig?.label ?? item?.label);
 
