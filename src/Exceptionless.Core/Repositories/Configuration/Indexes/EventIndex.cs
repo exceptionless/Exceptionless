@@ -91,9 +91,8 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
                 .AddDataDictionaryAliases()
         );
 
-        // SizeField is not available in the v8 Elastic client
-        // if (Options is not null && Options.EnableMapperSizePlugin)
-        //     map.SizeField(s => s.Enabled(true));
+        if (Options is not null && Options.EnableMapperSizePlugin)
+            map.Size(s => s.Enabled(true));
     }
 
     public override void ConfigureIndex(CreateIndexRequestDescriptor idx)
