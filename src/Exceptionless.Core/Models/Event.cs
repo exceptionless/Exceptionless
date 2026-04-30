@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using Exceptionless.Core.Extensions;
+using MiniValidation;
 
 namespace Exceptionless.Core.Models;
 
@@ -55,6 +56,7 @@ public class Event : IData
     /// <summary>
     /// Optional data entries that contain additional information about this event.
     /// </summary>
+    [SkipRecursion]
     public DataDictionary? Data { get; set; } = new();
 
     /// <summary>

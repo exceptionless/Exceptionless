@@ -7786,9 +7786,9 @@
       },
       "NewSavedView": {
         "required": [
-          "organization_id",
           "name",
-          "view_type"
+          "view_type",
+          "organization_id"
         ],
         "type": "object",
         "properties": {
@@ -8195,10 +8195,10 @@
         "required": [
           "organization_id",
           "project_id",
+          "type",
           "signature_hash",
           "signature_info",
           "id",
-          "type",
           "status",
           "title",
           "total_occurrences",

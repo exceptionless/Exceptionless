@@ -27,6 +27,7 @@ public class UserDescription : IData, IValidatableObject
     /// <summary>
     /// Extended data entries for this user description.
     /// </summary>
+    [MiniValidation.SkipRecursion]
     public DataDictionary? Data { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
