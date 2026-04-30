@@ -30,6 +30,7 @@
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import { premiumPage } from '$features/organizations/premium-page.svelte';
     import { getOrganizationSessionsCountQuery } from '$features/sessions/api.svelte';
     import { getSessionColumns } from '$features/sessions/components/session-table-columns';
     import SessionsDashboardChart from '$features/sessions/components/sessions-dashboard-chart.svelte';
@@ -55,6 +56,12 @@
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
         return resolve('/(app)/event/[eventId]', { eventId: row.id });
     }
+
+    // Register this page as requiring premium features
+    premiumPage.set('Sessions');
+    $effect(() => {
+        return () => premiumPage.reset();
+    });
 
     // Organization query to check premium features
     const organizationQuery = getOrganizationQuery({
@@ -210,6 +217,11 @@
             return;
         }
 
+        if (!hasPremiumFeatures) {
+            clientResponse = undefined;
+            return;
+        }
+
         clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events/sessions`, {
             params: eventsQueryParameters as Record<string, unknown>
         });
@@ -240,9 +252,8 @@
         loadData();
     });
 
-    // Session stats query with aggregations
+    // Session stats query with aggregations - only runs when premium
     const statsQuery = getOrganizationSessionsCountQuery({
-        enabled: () => hasPremiumFeatures && organizationQuery.isSuccess,
         params: {
             get aggregations() {
                 return `avg:value cardinality:user date:(date${DEFAULT_OFFSET ? `^${DEFAULT_OFFSET}` : ''} cardinality:user)`;
@@ -256,7 +267,7 @@
         },
         route: {
             get organizationId() {
-                return organization.current;
+                return hasPremiumFeatures && organizationQuery.isSuccess ? organization.current : undefined;
             }
         }
     });

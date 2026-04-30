@@ -130,5 +130,5 @@ GET {{apiUrl}}/events/sessions/12345?mode=summary
 Authorization: Bearer {{token}}
 
 ### Sessions - Get sessions list (summary mode)
-GET {{apiUrl}}/organizations/{{organizationId}}/events?filter=type:session&mode=summary&limit=10&sort=-date
+GET {{apiUrl}}/organizations/{{organizationId}}/events/sessions?mode=summary&limit=10&sort=-date
 Authorization: Bearer {{token}}

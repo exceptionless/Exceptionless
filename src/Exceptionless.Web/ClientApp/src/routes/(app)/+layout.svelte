@@ -19,6 +19,7 @@
     import { getOrganizationQuery, getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
     import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
     import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
+    import { premiumPage } from '$features/organizations/premium-page.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
     import { getSavedViewsQuery, invalidateSavedViewQueries } from '$features/saved-views/api.svelte';
     import { invalidateStackQueries } from '$features/stacks/api.svelte';
@@ -46,7 +47,7 @@
 
     let { children }: Props = $props();
     let isAuthenticated = $derived(!!accessToken.current);
-    let requiresPremium = $derived(page.url.pathname.endsWith('/sessions') || filterUsesPremiumFeatures(page.url.searchParams.get('filter')));
+    let requiresPremium = $derived(premiumPage.requiresPremium || filterUsesPremiumFeatures(page.url.searchParams.get('filter')));
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
 
@@ -193,12 +194,12 @@
 
     const impersonatingOrganizationId = $derived.by(() => {
         // Only consider impersonation if user data is loaded and user has organizations
-        const userOrgIds = meQuery.data?.organization_ids;
-        if (!userOrgIds || userOrgIds.length === 0 || !organization.current) {
+        const organizationIds = meQuery.data?.organization_ids;
+        if (!organizationIds || organizationIds.length === 0 || !organization.current) {
             return undefined;
         }
 
-        const isUserOrganization = userOrgIds.includes(organization.current);
+        const isUserOrganization = organizationIds.includes(organization.current);
         return isUserOrganization ? undefined : organization.current;
     });
 
@@ -385,13 +386,7 @@
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
 
                 {#if showOrganizationNotifications.current}
-                    <OrganizationNotifications
-                        {isChatEnabled}
-                        {openChat}
-                        {requiresPremium}
-                        premiumFeatureName={page.url.pathname.endsWith('/sessions') ? 'Sessions' : undefined}
-                        class="mb-4"
-                    />
+                    <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} premiumFeatureName={premiumPage.featureName} class="mb-4" />
                 {/if}
 
                 <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>

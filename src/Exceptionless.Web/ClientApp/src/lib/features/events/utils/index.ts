@@ -1,3 +1,4 @@
+import type { EventSessionSummaryData } from '../components/summary/index';
 import type { PersistentEvent } from '../models';
 import type { LogLevel } from '../models/event-data';
 
@@ -76,4 +77,30 @@ export function getSessionStartDuration(event: PersistentEvent): Date | number {
 
     // Return start date so Duration component live-updates via interval
     return new Date(event.date);
+}
+
+/**
+ * Returns session duration from summary data (used in table cells).
+ * For active sessions, returns the event date so Duration component live-updates.
+ * For ended sessions, returns a numeric duration in milliseconds.
+ */
+export function getSessionSummaryDuration(data: EventSessionSummaryData | undefined, eventDate?: string): Date | number | undefined {
+    if (!data) {
+        return undefined;
+    }
+
+    const isActive = !data.SessionEnd;
+    if (isActive) {
+        return eventDate ? new Date(eventDate) : undefined;
+    }
+
+    if (data.Value) {
+        return parseFloat(data.Value) * 1000;
+    }
+
+    if (data.SessionEnd && eventDate) {
+        return new Date(data.SessionEnd).getTime() - new Date(eventDate).getTime();
+    }
+
+    return 0;
 }

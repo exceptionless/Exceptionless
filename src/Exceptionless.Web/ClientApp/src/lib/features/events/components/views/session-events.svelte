@@ -19,7 +19,7 @@
         time?: string;
     }
 
-    let { event, hasPremiumFeatures = true, time }: Props = $props();
+    let { event, hasPremiumFeatures = false, time }: Props = $props();
 
     const sessionId = $derived(getSessionId(event));
     const isSessionStart = $derived(event.type === 'session');

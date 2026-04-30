@@ -2,22 +2,19 @@ import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/co
 import type { CountResult } from '$shared/models';
 
 import { accessToken } from '$features/auth/index.svelte';
+import { queryKeys as eventQueryKeys } from '$features/events/api.svelte';
 import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 
 export const queryKeys = {
-    organizations: (id: string | undefined) => [...queryKeys.type, 'organizations', id] as const,
+    organizations: (id: string | undefined) => [...eventQueryKeys.type, 'sessions', 'organizations', id] as const,
     organizationsCount: (id: string | undefined, params?: GetOrganizationSessionsCountRequest['params']) =>
         [...queryKeys.organizations(id), 'count', params] as const,
-    projects: (id: string | undefined) => [...queryKeys.type, 'projects', id] as const,
-    projectsCount: (id: string | undefined, params?: GetProjectSessionsCountRequest['params']) => [...queryKeys.projects(id), 'count', params] as const,
-    sessionEvents: (id: string | undefined, params?: GetSessionEventsRequest['params']) => [...queryKeys.type, 'session', id, params] as const,
-    type: ['Session'] as const
+    sessionEvents: (id: string | undefined, params?: GetSessionEventsRequest['params']) => [...eventQueryKeys.type, 'sessions', 'session', id, params] as const
 };
 
 export interface GetOrganizationSessionsCountRequest {
-    enabled?: () => boolean;
     params?: {
         aggregations?: string;
         filter?: string;
@@ -26,18 +23,6 @@ export interface GetOrganizationSessionsCountRequest {
     };
     route: {
         organizationId: string | undefined;
-    };
-}
-
-export interface GetProjectSessionsCountRequest {
-    params?: {
-        aggregations?: string;
-        filter?: string;
-        offset?: string;
-        time?: string;
-    };
-    route: {
-        projectId: string | undefined;
     };
 }
 
@@ -57,18 +42,6 @@ export interface GetSessionEventsRequest {
     };
 }
 
-export interface GetSessionsParams {
-    after?: string;
-    before?: string;
-    filter?: string;
-    limit?: number;
-    mode?: 'summary';
-    offset?: string;
-    page?: number;
-    sort?: string;
-    time?: string;
-}
-
 /**
  * Get session count with aggregations for stats and chart data.
  * Uses aggregation: avg:value cardinality:user date:(date^offset cardinality:user)
@@ -77,7 +50,7 @@ export function getOrganizationSessionsCountQuery(request: GetOrganizationSessio
     const queryClient = useQueryClient();
 
     return createQuery<CountResult, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.organizationId && (request.enabled?.() ?? true),
+        enabled: () => !!accessToken.current && !!request.route.organizationId,
         queryClient,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
