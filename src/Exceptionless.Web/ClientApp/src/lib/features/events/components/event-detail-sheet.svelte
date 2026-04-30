@@ -1,10 +1,10 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
+    import type { ProblemDetails } from '@exceptionless/fetchclient';
 
     import { resolve } from '$app/paths';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
-    import type { ProblemDetails } from '@exceptionless/fetchclient';
     import ExternalLink from '@lucide/svelte/icons/external-link';
 
     import EventsOverview from './events-overview.svelte';
