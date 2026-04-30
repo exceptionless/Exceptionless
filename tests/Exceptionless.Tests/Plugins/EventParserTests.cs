@@ -1,7 +1,8 @@
-using Exceptionless.Core.Extensions;
+using System.Text.Json;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
-using Newtonsoft.Json;
+using Exceptionless.Tests.Utility;
+using Foundatio.Serializer;
 using Xunit;
 
 namespace Exceptionless.Tests.Plugins;
@@ -9,10 +10,14 @@ namespace Exceptionless.Tests.Plugins;
 public sealed class EventParserTests : TestWithServices
 {
     private readonly EventParserPluginManager _parser;
+    private readonly ITextSerializer _serializer;
+    private readonly JsonSerializerOptions _jsonOptions;
 
     public EventParserTests(ITestOutputHelper output) : base(output)
     {
         _parser = GetService<EventParserPluginManager>();
+        _serializer = GetService<ITextSerializer>();
+        _jsonOptions = GetService<JsonSerializerOptions>();
     }
 
     public static IEnumerable<object?[]> EventData => new[] {
@@ -52,9 +57,14 @@ public sealed class EventParserTests : TestWithServices
 
         var events = _parser.ParseEvents(json, 2, "exceptionless/2.0.0.0");
         Assert.Single(events);
+        var ev = events.First();
 
+        // Verify structural equivalence: parse → serialize should produce
+        // content equivalent to the original file (ignoring nulls and empty collections
+        // that STJ's WhenWritingNull and EmptyCollectionModifier skip).
         string expectedContent = File.ReadAllText(eventsFilePath);
-        Assert.Equal(expectedContent, events.First().ToJson(Formatting.Indented, GetService<JsonSerializerSettings>()));
+        string actualContent = JsonSerializer.Serialize(ev, _jsonOptions);
+        JsonAssert.AssertJsonEquivalent(expectedContent, actualContent);
     }
 
     [Theory]
@@ -63,7 +73,7 @@ public sealed class EventParserTests : TestWithServices
     {
         string json = File.ReadAllText(eventsFilePath);
 
-        var ev = json.FromJson<PersistentEvent>(GetService<JsonSerializerSettings>());
+        var ev = _serializer.Deserialize<PersistentEvent>(json);
         Assert.NotNull(ev);
     }
 

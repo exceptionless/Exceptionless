@@ -1,3 +1,5 @@
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -6,7 +8,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Nest;
+using ElasticInfer = Elastic.Clients.Elasticsearch.Infer;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -33,8 +35,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
     {
         ArgumentException.ThrowIfNullOrEmpty(token);
 
-        var filter = Query<Organization>.Term(f => f.Field(o => o.Invites.First().Token).Value(token));
-        var hit = await FindOneAsync(q => q.ElasticFilter(filter));
+        var hit = await FindOneAsync(q => q.FieldEquals(o => o.Invites.First().Token, token));
         return hit?.Document;
     }
 
@@ -42,41 +43,61 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
     {
         ArgumentException.ThrowIfNullOrEmpty(customerId);
 
-        var filter = Query<Organization>.Term(f => f.Field(o => o.StripeCustomerId).Value(customerId));
-        var hit = await FindOneAsync(q => q.ElasticFilter(filter));
+        var hit = await FindOneAsync(q => q.FieldEquals(o => o.StripeCustomerId, customerId));
         return hit?.Document;
     }
 
     public Task<FindResults<Organization>> GetByCriteriaAsync(string? criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null)
     {
-        var filter = Query<Organization>.MatchAll();
+        var query = new RepositoryQuery<Organization>();
+
         if (!String.IsNullOrWhiteSpace(criteria))
-            filter &= (Query<Organization>.Term(o => o.Id, criteria) || Query<Organization>.Term(o => o.Name, criteria));
+            query.ElasticFilter(new BoolQuery
+            {
+                Should = [
+                    new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.Id), Value = criteria },
+                    new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.Name), Value = criteria }
+                ],
+                MinimumShouldMatch = 1
+            });
 
         if (paid.HasValue)
         {
             if (paid.Value)
-                filter &= !Query<Organization>.Term(o => o.PlanId, _plans.FreePlan.Id);
+                query.ElasticFilter(new BoolQuery { MustNot = [new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.PlanId), Value = _plans.FreePlan.Id }] });
             else
-                filter &= Query<Organization>.Term(o => o.PlanId, _plans.FreePlan.Id);
+                query.FieldEquals(o => o.PlanId, _plans.FreePlan.Id);
         }
 
         if (suspended.HasValue)
         {
             if (suspended.Value)
-                filter &= (!Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) &&
-                        !Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) &&
-                        !Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Canceled)
-                    ) || Query<Organization>.Term(o => o.IsSuspended, true);
+                query.ElasticFilter(new BoolQuery
+                {
+                    Should = [
+                        new BoolQuery { MustNot = [
+                            new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Active },
+                            new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Trialing },
+                            new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Canceled }
+                        ] },
+                        new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.IsSuspended), Value = true }
+                    ],
+                    MinimumShouldMatch = 1
+                });
             else
-                filter &= (
-                        Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) &&
-                        Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) &&
-                        Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Canceled)
-                    ) || Query<Organization>.Term(o => o.IsSuspended, false);
+                query.ElasticFilter(new BoolQuery
+                {
+                    Must = [
+                        new BoolQuery { Should = [
+                            new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Active },
+                            new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Trialing },
+                            new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Canceled }
+                        ], MinimumShouldMatch = 1 },
+                        new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.IsSuspended), Value = false }
+                    ]
+                });
         }
 
-        var query = new RepositoryQuery<Organization>().ElasticFilter(filter);
         switch (sortBy)
         {
             case OrganizationSortBy.Newest:
@@ -89,7 +110,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
             //    query.WithSortDescending((Organization o) => o.TotalEventCount);
             //    break;
             default:
-                query.SortAscending(o => o.Name.Suffix("keyword"));
+                query.SortAscending((Field)"name.keyword");
                 break;
         }
 

@@ -1,7 +1,7 @@
+using System.Buffers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Exceptionless.Core.Models;
-using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Serialization;
 
@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Serialization;
 /// </para>
 /// <list type="bullet">
 ///   <item><description><c>true</c>/<c>false</c> → <see cref="bool"/></description></item>
-///   <item><description>Numbers → <see cref="long"/> (if fits) or <see cref="double"/></description></item>
+///   <item><description>Numbers → <see cref="int"/> (if fits), <see cref="long"/>, or <see cref="decimal"/>; with <c>preferInt64</c>, always <see cref="long"/> for integers and <see cref="double"/> for floats</description></item>
 ///   <item><description>Strings with ISO 8601 date format → <see cref="DateTimeOffset"/></description></item>
 ///   <item><description>Other strings → <see cref="string"/></description></item>
 ///   <item><description><c>null</c> → <c>null</c></description></item>
@@ -43,6 +43,25 @@ namespace Exceptionless.Core.Serialization;
 /// <seealso href="https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/converters-how-to#deserialize-inferred-types-to-object-properties"/>
 public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
 {
+    private readonly bool _preferInt64;
+
+    /// <summary>
+    /// Initializes a new instance with default settings (integers that fit Int32 are returned as <see cref="int"/>).
+    /// </summary>
+    public ObjectToInferredTypesConverter() : this(preferInt64: false) { }
+
+    /// <summary>
+    /// Initializes a new instance with configurable integer handling.
+    /// </summary>
+    /// <param name="preferInt64">
+    /// When <c>true</c>, all integers are returned as <see cref="long"/> to match JSON.NET behavior.
+    /// Used by the Elasticsearch serializer to maintain compatibility with <c>DataObjectConverter</c>.
+    /// </param>
+    public ObjectToInferredTypesConverter(bool preferInt64)
+    {
+        _preferInt64 = preferInt64;
+    }
+
     /// <inheritdoc />
     public override object? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
@@ -75,38 +94,62 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
             return;
         }
 
-        // Handle Newtonsoft JToken types (stored in DataDictionary by DataObjectConverter
-        // when reading from Elasticsearch via NEST). Without this, STJ enumerates JToken's
-        // IEnumerable<JToken> interface, producing nested empty arrays instead of proper JSON.
-        if (value is JToken jToken)
-        {
-            using var doc = JsonDocument.Parse(jToken.ToString(Newtonsoft.Json.Formatting.None));
-            doc.RootElement.WriteTo(writer);
-            return;
-        }
-
         // Serialize using the runtime type to get proper converter handling
         JsonSerializer.Serialize(writer, value, value.GetType(), options);
     }
 
     /// <summary>
-    /// Reads a JSON number, preferring <see cref="long"/> for integers and <see cref="double"/> for decimals.
+    /// Reads a JSON number, preserving the original representation (integer vs floating-point).
     /// </summary>
-    private static object ReadNumber(ref Utf8JsonReader reader)
+    /// <remarks>
+    /// <para>This method preserves data integrity by checking the raw JSON text to determine
+    /// if a number was written with a decimal point (e.g., <c>0.0</c>) vs as an integer (<c>0</c>).</para>
+    /// <para>This is critical because:</para>
+    /// <list type="bullet">
+    ///   <item><description>User data must be preserved exactly as provided</description></item>
+    ///   <item><description><c>TryGetInt64</c> would succeed for <c>0.0</c> since 0.0 == 0 mathematically</description></item>
+    ///   <item><description>Serializing back would lose the decimal representation</description></item>
+    /// </list>
+    /// </remarks>
+    private object ReadNumber(ref Utf8JsonReader reader)
     {
-        // Try smallest to largest integer types first for optimal boxing
-        if (reader.TryGetInt32(out int i))
-            return i;
+        // Check the raw text to preserve decimal vs integer representation
+        // This is critical for data integrity - 0.0 should stay as double, not become 0L
+        ReadOnlySpan<byte> rawValue = reader.HasValueSequence
+            ? reader.ValueSequence.ToArray()
+            : reader.ValueSpan;
 
-        if (reader.TryGetInt64(out long l))
-            return l;
+        // If the raw text contains a decimal point or exponent, treat as floating-point
+        if (rawValue.Contains((byte)'.') || rawValue.Contains((byte)'e') || rawValue.Contains((byte)'E'))
+        {
+            if (_preferInt64)
+                return reader.GetDouble();
 
-        // Try decimal for precise values (e.g., financial data) before double
-        if (reader.TryGetDecimal(out decimal d))
-            return d;
+            return reader.GetDecimal();
+        }
 
-        // Fall back to double for floating-point
-        return reader.GetDouble();
+        // No decimal point - this is an integer
+        if (_preferInt64)
+        {
+            // Match JSON.NET DataObjectConverter behavior: always return Int64
+            if (reader.TryGetInt64(out long l))
+                return l;
+        }
+        else
+        {
+            // Default STJ behavior: return smallest fitting integer type
+            if (reader.TryGetInt32(out int i))
+                return i;
+
+            if (reader.TryGetInt64(out long l))
+                return l;
+        }
+
+        // For very large integers that don't fit in long, fall back to decimal/double
+        if (_preferInt64)
+            return reader.GetDouble();
+
+        return reader.GetDecimal();
     }
 
     /// <summary>
@@ -131,7 +174,7 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
     /// Uses <see cref="StringComparer.OrdinalIgnoreCase"/> for property name matching,
     /// consistent with <see cref="DataDictionary"/> behavior.
     /// </remarks>
-    private static Dictionary<string, object?> ReadObject(ref Utf8JsonReader reader, JsonSerializerOptions options)
+    private Dictionary<string, object?> ReadObject(ref Utf8JsonReader reader, JsonSerializerOptions options)
     {
         var dictionary = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
 
@@ -157,7 +200,7 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
     /// <summary>
     /// Recursively reads a JSON array into a <see cref="List{T}"/> of objects.
     /// </summary>
-    private static List<object?> ReadArray(ref Utf8JsonReader reader, JsonSerializerOptions options)
+    private List<object?> ReadArray(ref Utf8JsonReader reader, JsonSerializerOptions options)
     {
         var list = new List<object?>();
 
@@ -175,7 +218,7 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
     /// <summary>
     /// Reads a single JSON value of any type, dispatching to the appropriate reader method.
     /// </summary>
-    private static object? ReadValue(ref Utf8JsonReader reader, JsonSerializerOptions options)
+    private object? ReadValue(ref Utf8JsonReader reader, JsonSerializerOptions options)
     {
         return reader.TokenType switch
         {
@@ -188,5 +231,68 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
             JsonTokenType.StartArray => ReadArray(ref reader, options),
             _ => JsonDocument.ParseValue(ref reader).RootElement.Clone()
         };
+    }
+
+    /// <summary>
+    /// Converts a <see cref="JsonElement"/> to its native .NET type equivalent.
+    /// Used by Event.OnDeserialized to avoid duplicating conversion logic.
+    /// </summary>
+    /// <remarks>
+    /// This method provides the same type inference behavior as the main converter:
+    /// objects → case-insensitive Dictionary, arrays → List, numbers → smallest fitting type, etc.
+    /// </remarks>
+    public static object? ConvertJsonElement(JsonElement element)
+    {
+        return element.ValueKind switch
+        {
+            JsonValueKind.String => ConvertJsonElementString(element),
+            JsonValueKind.Number => ConvertJsonElementNumber(element),
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Null => null,
+            JsonValueKind.Array => element.EnumerateArray()
+                .Select(ConvertJsonElement)
+                .ToList(),
+            JsonValueKind.Object => element.EnumerateObject()
+                .ToDictionary(p => p.Name, p => ConvertJsonElement(p.Value), StringComparer.OrdinalIgnoreCase),
+            _ => element.GetRawText()
+        };
+    }
+
+    /// <summary>
+    /// Converts a JsonElement number, preserving the original representation (integer vs floating-point).
+    /// </summary>
+    internal static object ConvertJsonElementNumber(JsonElement element)
+    {
+        // Check raw text for decimal point to preserve decimal vs integer representation
+        string rawText = element.GetRawText();
+        if (rawText.Contains('.') || rawText.Contains('e') || rawText.Contains('E'))
+        {
+            // Has decimal point or exponent - return decimal (default mode)
+            return element.GetDecimal();
+        }
+
+        // No decimal point - integer. Try Int32 first, then Int64, then Decimal
+        if (element.TryGetInt32(out int i))
+            return i;
+
+        if (element.TryGetInt64(out long l))
+            return l;
+
+        return element.GetDecimal();
+    }
+
+    /// <summary>
+    /// Converts a JsonElement string, attempting DateTimeOffset parsing for ISO 8601 dates.
+    /// </summary>
+    internal static object? ConvertJsonElementString(JsonElement element)
+    {
+        if (element.TryGetDateTimeOffset(out DateTimeOffset dateTimeOffset))
+            return dateTimeOffset;
+
+        if (element.TryGetDateTime(out DateTime dt))
+            return dt;
+
+        return element.GetString();
     }
 }

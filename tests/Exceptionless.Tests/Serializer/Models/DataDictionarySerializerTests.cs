@@ -1,6 +1,5 @@
 using Exceptionless.Core.Models;
 using Foundatio.Serializer;
-using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Exceptionless.Tests.Serializer.Models;
@@ -56,27 +55,26 @@ public class DataDictionarySerializerTests : TestWithServices
     }
 
     /// <summary>
-    /// Reproduces production bug where JObject/JArray values in DataDictionary
-    /// (stored by Newtonsoft-based DataObjectConverter when reading from Elasticsearch)
-    /// serialize as nested empty arrays instead of proper JSON when written by STJ.
+    /// Verifies Dictionary values in DataDictionary (from ObjectToInferredTypesConverter
+    /// when reading from Elasticsearch) serialize correctly to JSON.
     /// </summary>
     [Fact]
-    public void Serialize_JObjectValue_WritesCorrectJson()
+    public void Serialize_DictionaryValue_WritesCorrectJson()
     {
-        // Arrange — simulate Elasticsearch read path storing JObject in DataDictionary
-        var jObject = JObject.Parse("""
+        // Arrange — simulate Elasticsearch read path storing Dictionary in DataDictionary
+        var dict = new Dictionary<string, object?>
+        {
+            ["docsSecondari"] = new List<object?>
             {
-                "docsSecondari": [
-                    { "tipo": "CI", "numero": "AB123" },
-                    { "tipo": "PP", "numero": "CD456" }
-                ],
-                "docPrimario": { "tipo": "DL", "numero": "XY789" },
-                "numeroDocumentiSecondari": 2,
-                "AlreadyImported": true
-            }
-            """);
+                new Dictionary<string, object?> { ["tipo"] = "CI", ["numero"] = "AB123" },
+                new Dictionary<string, object?> { ["tipo"] = "PP", ["numero"] = "CD456" }
+            },
+            ["docPrimario"] = new Dictionary<string, object?> { ["tipo"] = "DL", ["numero"] = "XY789" },
+            ["numeroDocumentiSecondari"] = 2,
+            ["AlreadyImported"] = true
+        };
 
-        var data = new DataDictionary { ["TestUfficialeVO"] = jObject };
+        var data = new DataDictionary { ["TestUfficialeVO"] = dict };
 
         // Act
         string json = _serializer.SerializeToString(data);
@@ -91,14 +89,14 @@ public class DataDictionarySerializerTests : TestWithServices
     }
 
     /// <summary>
-    /// Verifies JArray values in DataDictionary serialize correctly.
+    /// Verifies List values in DataDictionary serialize correctly.
     /// </summary>
     [Fact]
-    public void Serialize_JArrayValue_WritesCorrectJson()
+    public void Serialize_ListValue_WritesCorrectJson()
     {
-        // Arrange — simulate Elasticsearch storing JArray in DataDictionary
-        var jArray = JArray.Parse("""["tag1", "tag2", "tag3"]""");
-        var data = new DataDictionary { ["Tags"] = jArray };
+        // Arrange — simulate Elasticsearch storing List in DataDictionary
+        var list = new List<object?> { "tag1", "tag2", "tag3" };
+        var data = new DataDictionary { ["Tags"] = list };
 
         // Act
         string json = _serializer.SerializeToString(data);
@@ -111,29 +109,31 @@ public class DataDictionarySerializerTests : TestWithServices
     }
 
     /// <summary>
-    /// Verifies deeply nested JObject structures serialize correctly,
-    /// matching the exact production data pattern that was broken.
+    /// Verifies deeply nested Dictionary structures serialize correctly,
+    /// matching the exact production data pattern.
     /// </summary>
     [Fact]
-    public void Serialize_DeeplyNestedJObject_PreservesStructure()
+    public void Serialize_DeeplyNestedDictionary_PreservesStructure()
     {
         // Arrange — nested structure matching production data shape
-        var jObject = JObject.Parse("""
+        var dict = new Dictionary<string, object?>
+        {
+            ["items"] = new List<object?>
             {
-                "items": [
+                new Dictionary<string, object?>
+                {
+                    ["name"] = "item1",
+                    ["children"] = new List<object?>
                     {
-                        "name": "item1",
-                        "children": [
-                            { "id": 1, "value": "a" },
-                            { "id": 2, "value": "b" }
-                        ]
+                        new Dictionary<string, object?> { ["id"] = 1, ["value"] = "a" },
+                        new Dictionary<string, object?> { ["id"] = 2, ["value"] = "b" }
                     }
-                ],
-                "count": 1
-            }
-            """);
+                }
+            },
+            ["count"] = 1
+        };
 
-        var data = new DataDictionary { ["NestedData"] = jObject };
+        var data = new DataDictionary { ["NestedData"] = dict };
 
         // Act
         string json = _serializer.SerializeToString(data);

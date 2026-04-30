@@ -7,7 +7,6 @@ using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
 using Microsoft.Extensions.Logging;
-using Nest;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -25,15 +24,17 @@ public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, I
 
     public Task<FindResults<Stack>> GetExpiredSnoozedStatuses(DateTime utcNow, CommandOptionsDescriptor<Stack>? options = null)
     {
-        return FindAsync(q => q.ElasticFilter(Query<Stack>.DateRange(d => d.Field(f => f.SnoozeUntilUtc).LessThanOrEquals(utcNow))), options);
+        return FindAsync(q => q.DateRange(null, utcNow, (Stack s) => s.SnoozeUntilUtc), options);
     }
 
     public Task<FindResults<Stack>> GetStacksForCleanupAsync(string organizationId, DateTime cutoff)
     {
         return FindAsync(q => q
             .Organization(organizationId)
-            .ElasticFilter(Query<Stack>.DateRange(d => d.Field(f => f.LastOccurrence).LessThanOrEquals(cutoff)))
-            .FieldEquals(f => f.Status, StackStatus.Open)
+            .DateRange(null, cutoff, (Stack s) => s.LastOccurrence)
+            // Pass the serialized enum string directly because Foundatio's FieldValueHelper.ToFieldValue
+            // calls .ToString() on enums (producing "Open") instead of respecting [JsonStringEnumMemberName("open")].
+            .FieldEquals(f => f.Status, "open")
             .FieldEmpty(f => f.References)
             .Include(f => f.Id, f => f.OrganizationId, f => f.ProjectId, f => f.SignatureHash)
         , o => o.SearchAfterPaging().PageLimit(500));
@@ -155,7 +156,7 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
     public async Task<Stack?> GetStackBySignatureHashAsync(string projectId, string signatureHash)
     {
         string key = GetStackSignatureCacheKey(projectId, signatureHash);
-        var hit = await FindOneAsync(q => q.Project(projectId).ElasticFilter(Query<Stack>.Term(s => s.SignatureHash, signatureHash)), o => o.Cache(key));
+        var hit = await FindOneAsync(q => q.Project(projectId).FieldEquals(s => s.SignatureHash, signatureHash), o => o.Cache(key));
         return hit?.Document;
     }
 

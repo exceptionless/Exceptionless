@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
 
 namespace Exceptionless.Core.Helpers;
 
@@ -52,8 +52,9 @@ public static class TypeHelper
             catch { }
         }
 
-        if (a is JToken && b is JToken)
-            return String.Equals(a.ToString(), b.ToString());
+        // Handle JsonElement comparison semantically
+        if (a is JsonElement jsonA && b is JsonElement jsonB)
+            return JsonElement.DeepEquals(jsonA, jsonB);
 
         if (a != b && !a.Equals(b))
             return false;

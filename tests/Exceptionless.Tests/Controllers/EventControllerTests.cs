@@ -3,6 +3,7 @@ using System.IO.Compression;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Web;
 using Exceptionless.Core.Billing;
@@ -25,6 +26,7 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Foundatio.Serializer;
 using Microsoft.Net.Http.Headers;
 using Xunit;
 using MediaTypeHeaderValue = System.Net.Http.Headers.MediaTypeHeaderValue;
@@ -70,7 +72,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PostEvent_WithValidPayload_EnqueuesAndProcessesEventAsync()
     {
-        var jsonOptions = GetService<JsonSerializerOptions>();
+        var serializer = GetService<ITextSerializer>();
         /* language=json */
         const string json = """{"message":"test","reference_id":"TestReferenceId","@user":{"identity":"Test user","name":null}}""";
         await SendRequestAsync(r => r
@@ -97,12 +99,11 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("test", ev.Message);
         Assert.Equal("TestReferenceId", ev.ReferenceId);
 
-        var identity = ev.GetUserIdentity(jsonOptions);
+        var identity = ev.GetUserIdentity(serializer);
         Assert.NotNull(identity);
         Assert.Equal("Test user", identity.Identity);
         Assert.Null(identity.Name);
-        Assert.Null(identity.Name);
-        Assert.Null(ev.GetUserDescription(jsonOptions));
+        Assert.Null(ev.GetUserDescription(serializer));
 
         // post description
         await _eventUserDescriptionQueue.DeleteQueueAsync();
@@ -128,13 +129,13 @@ public class EventControllerTests : IntegrationTestsBase
 
         ev = await _eventRepository.GetByIdAsync(ev.Id);
         Assert.NotNull(ev);
-        identity = ev.GetUserIdentity(jsonOptions);
+        identity = ev.GetUserIdentity(serializer);
         Assert.NotNull(identity);
         Assert.Equal("Test user", identity.Identity);
         Assert.Null(identity.Name);
         Assert.Null(identity.Name);
 
-        var description = ev.GetUserDescription(jsonOptions);
+        var description = ev.GetUserDescription(serializer);
         Assert.NotNull(description);
         Assert.Equal("Test Description", description.Description);
         Assert.Equal(TestConstants.UserEmail, description.EmailAddress);
@@ -230,7 +231,7 @@ public class EventControllerTests : IntegrationTestsBase
     [Fact]
     public async Task CanPostJsonWithUserInfoAsync()
     {
-        var jsonOptions = GetService<JsonSerializerOptions>();
+        var serializer = GetService<ITextSerializer>();
         /* language=json */
         const string json = """{"message":"test","@user":{"identity":"Test user","name":null}}""";
         await SendRequestAsync(r => r
@@ -256,7 +257,7 @@ public class EventControllerTests : IntegrationTestsBase
         var ev = events.Documents.Single(e => String.Equals(e.Type, Event.KnownTypes.Log));
         Assert.Equal("test", ev.Message);
 
-        var userInfo = ev.GetUserIdentity(jsonOptions);
+        var userInfo = ev.GetUserIdentity(serializer);
         Assert.NotNull(userInfo);
         Assert.Equal("Test user", userInfo.Identity);
         Assert.Null(userInfo.Name);
@@ -1653,7 +1654,7 @@ public class EventControllerTests : IntegrationTestsBase
             .Replace("<EVENT_ID>", processedEvent.Id)
             .Replace("<STACK_ID>", processedEvent.StackId);
 
-        Assert.Equal(ToPrettyJson(expectedJson), ToPrettyJson(actualJson));
+        Assert.Equal(ToNormalizedJson(expectedJson), ToNormalizedJson(actualJson));
     }
 
     [Fact]
@@ -1737,7 +1738,7 @@ public class EventControllerTests : IntegrationTestsBase
         await processEventsJob.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
-        var jsonOptions = GetService<JsonSerializerOptions>();
+        var serializer = GetService<ITextSerializer>();
 
         // Assert
         var events = await _eventRepository.GetAllAsync();
@@ -1747,7 +1748,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("Error with mixed data", ev.Message);
 
         // Verify known data is properly deserialized
-        var userInfo = ev.GetUserIdentity(jsonOptions);
+        var userInfo = ev.GetUserIdentity(serializer);
         Assert.NotNull(userInfo);
         Assert.Equal("user@example.com", userInfo.Identity);
         Assert.Equal("Test User", userInfo.Name);
@@ -1854,5 +1855,39 @@ public class EventControllerTests : IntegrationTestsBase
             WriteIndented = true
         };
         return JsonSerializer.Serialize(document.RootElement, prettyJsonOptions);
+    }
+
+    /// <summary>
+    /// Normalizes JSON for comparison by sorting object keys recursively.
+    /// This makes comparisons independent of property serialization order.
+    /// </summary>
+    private string ToNormalizedJson(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        var normalized = SortElement(document.RootElement);
+        var options = new JsonSerializerOptions(_jsonSerializerOptions)
+        {
+            WriteIndented = true
+        };
+        return JsonSerializer.Serialize(normalized, options);
+    }
+
+    private static JsonNode? SortElement(JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Object:
+                var obj = new JsonObject();
+                foreach (var prop in element.EnumerateObject().OrderBy(p => p.Name, StringComparer.Ordinal))
+                    obj[prop.Name] = SortElement(prop.Value);
+                return obj;
+            case JsonValueKind.Array:
+                var arr = new JsonArray();
+                foreach (var item in element.EnumerateArray())
+                    arr.Add(SortElement(item));
+                return arr;
+            default:
+                return JsonNode.Parse(element.GetRawText());
+        }
     }
 }

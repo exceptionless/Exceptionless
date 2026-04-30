@@ -1,7 +1,7 @@
-﻿using System.Text.Json;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.Formatting;
@@ -9,7 +9,7 @@ namespace Exceptionless.Core.Plugins.Formatting;
 [Priority(50)]
 public sealed class SessionFormattingPlugin : FormattingPluginBase
 {
-    public SessionFormattingPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(jsonOptions, options, loggerFactory) { }
+    public SessionFormattingPlugin(ITextSerializer serializer, AppOptions options, ILoggerFactory loggerFactory) : base(serializer, options, loggerFactory) { }
 
     private bool ShouldHandle(PersistentEvent ev)
     {
@@ -41,7 +41,7 @@ public sealed class SessionFormattingPlugin : FormattingPluginBase
             return null;
 
         var data = new Dictionary<string, object?> { { "SessionId", ev.GetSessionId() }, { "Type", ev.Type } };
-        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_jsonOptions));
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_serializer));
 
         if (ev.IsSessionStart())
         {

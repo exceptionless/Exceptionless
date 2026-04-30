@@ -13,8 +13,8 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Exceptions;
 using Foundatio.Resilience;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Jobs;
 
@@ -30,10 +30,10 @@ public class EventPostsJob : QueueJobBase<EventPost>
     private readonly UsageService _usageService;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
-    private readonly JsonSerializerSettings _jsonSerializerSettings;
+    private readonly ITextSerializer _serializer;
     private readonly AppOptions _appOptions;
 
-    public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, JsonSerializerSettings jsonSerializerSettings, AppOptions appOptions, TimeProvider timeProvider,
+    public EventPostsJob(IQueue<EventPost> queue, EventPostService eventPostService, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, UsageService usageService, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ITextSerializer serializer, AppOptions appOptions, TimeProvider timeProvider,
         IResiliencePolicyProvider resiliencePolicyProvider, ILoggerFactory loggerFactory) : base(queue, timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _eventPostService = eventPostService;
@@ -42,7 +42,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
         _usageService = usageService;
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
-        _jsonSerializerSettings = jsonSerializerSettings;
+        _serializer = serializer;
 
         _appOptions = appOptions;
         _maximumEventPostFileSize = _appOptions.MaximumEventPostSize + 1024;
@@ -306,7 +306,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
         {
             try
             {
-                var stream = new MemoryStream(ev.GetBytes(_jsonSerializerSettings));
+                using var stream = new MemoryStream(ev.GetBytes(_serializer));
 
                 // Put this single event back into the queue so we can retry it separately.
                 await _eventPostService.EnqueueAsync(new EventPost(false)

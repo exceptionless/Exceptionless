@@ -1,9 +1,10 @@
+using Elastic.Clients.Elasticsearch.IndexManagement;
+using Elastic.Clients.Elasticsearch.Mapping;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Parsers.ElasticQueries;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
-using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration;
 
@@ -21,50 +22,51 @@ public sealed class StackIndex : VersionedIndex<Stack>
         _configuration = configuration;
     }
 
-    public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx)
+    public override void ConfigureIndex(CreateIndexRequestDescriptor idx)
     {
-        return base.ConfigureIndex(idx.Settings(s => s
-            .Analysis(BuildAnalysis)
+        base.ConfigureIndex(idx);
+        idx.Settings(s => s
+            .Analysis(a => BuildAnalysis(a))
             .NumberOfShards(_configuration.Options.NumberOfShards)
             .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
-            .Priority(5)));
+            .Priority(5));
     }
 
-    public override TypeMappingDescriptor<Stack> ConfigureIndexMapping(TypeMappingDescriptor<Stack> map)
+    public override void ConfigureIndexMapping(TypeMappingDescriptor<Stack> map)
     {
-        return map
-            .Dynamic(false)
+        map
+            .Dynamic(DynamicMapping.False)
             .Properties(p => p
                 .SetupDefaults()
-                .Keyword(f => f.Name(s => s.OrganizationId).IgnoreAbove(1024))
-                    .FieldAlias(a => a.Name(Alias.OrganizationId).Path(f => f.OrganizationId))
-                .Keyword(f => f.Name(s => s.ProjectId).IgnoreAbove(1024))
-                    .FieldAlias(a => a.Name(Alias.ProjectId).Path(f => f.ProjectId))
-                .Keyword(f => f.Name(s => s.Status))
-                .Date(f => f.Name(s => s.SnoozeUntilUtc))
-                .Keyword(f => f.Name(s => s.SignatureHash).IgnoreAbove(1024))
-                    .FieldAlias(a => a.Name(Alias.SignatureHash).Path(f => f.SignatureHash))
-                .Keyword(f => f.Name(s => s.DuplicateSignature))
-                .Keyword(f => f.Name(e => e.Type).IgnoreAbove(1024))
-                .Date(f => f.Name(s => s.FirstOccurrence))
-                    .FieldAlias(a => a.Name(Alias.FirstOccurrence).Path(f => f.FirstOccurrence))
-                .Date(f => f.Name(s => s.LastOccurrence))
-                    .FieldAlias(a => a.Name(Alias.LastOccurrence).Path(f => f.LastOccurrence))
-                .Text(f => f.Name(s => s.Title))
-                .Text(f => f.Name(s => s.Description))
-                .Keyword(f => f.Name(s => s.Tags).IgnoreAbove(1024))
-                    .FieldAlias(a => a.Name(Alias.Tags).Path(f => f.Tags))
-                .Keyword(f => f.Name(s => s.References).IgnoreAbove(1024))
-                    .FieldAlias(a => a.Name(Alias.References).Path(f => f.References))
-                .Date(f => f.Name(s => s.DateFixed))
-                    .FieldAlias(a => a.Name(Alias.DateFixed).Path(f => f.DateFixed))
-                .Boolean(f => f.Name(Alias.IsFixed))
-                .Keyword(f => f.Name(s => s.FixedInVersion).IgnoreAbove(1024))
-                    .FieldAlias(a => a.Name(Alias.FixedInVersion).Path(f => f.FixedInVersion))
-                .Boolean(f => f.Name(s => s.OccurrencesAreCritical))
-                    .FieldAlias(a => a.Name(Alias.OccurrencesAreCritical).Path(f => f.OccurrencesAreCritical))
-                .Scalar(f => f.TotalOccurrences)
-                    .FieldAlias(a => a.Name(Alias.TotalOccurrences).Path(f => f.TotalOccurrences))
+                .Keyword(e => e.OrganizationId, k => k.IgnoreAbove(1024))
+                    .FieldAlias(Alias.OrganizationId, a => a.Path(f => f.OrganizationId))
+                .Keyword(e => e.ProjectId, k => k.IgnoreAbove(1024))
+                    .FieldAlias(Alias.ProjectId, a => a.Path(f => f.ProjectId))
+                .Keyword(e => e.Status)
+                .Date(e => e.SnoozeUntilUtc)
+                .Keyword(e => e.SignatureHash, k => k.IgnoreAbove(1024))
+                    .FieldAlias(Alias.SignatureHash, a => a.Path(f => f.SignatureHash))
+                .Keyword(e => e.DuplicateSignature)
+                .Keyword(e => e.Type, k => k.IgnoreAbove(1024))
+                .Date(e => e.FirstOccurrence)
+                    .FieldAlias(Alias.FirstOccurrence, a => a.Path(f => f.FirstOccurrence))
+                .Date(e => e.LastOccurrence)
+                    .FieldAlias(Alias.LastOccurrence, a => a.Path(f => f.LastOccurrence))
+                .Text(e => e.Title)
+                .Text(e => e.Description)
+                .Keyword(e => e.Tags, k => k.IgnoreAbove(1024))
+                    .FieldAlias(Alias.Tags, a => a.Path(f => f.Tags))
+                .Keyword(e => e.References, k => k.IgnoreAbove(1024))
+                    .FieldAlias(Alias.References, a => a.Path(f => f.References))
+                .Date(e => e.DateFixed)
+                    .FieldAlias(Alias.DateFixed, a => a.Path(f => f.DateFixed))
+                .Boolean(Alias.IsFixed)
+                .Keyword(e => e.FixedInVersion, k => k.IgnoreAbove(1024))
+                    .FieldAlias(Alias.FixedInVersion, a => a.Path(f => f.FixedInVersion))
+                .Boolean(e => e.OccurrencesAreCritical)
+                    .FieldAlias(Alias.OccurrencesAreCritical, a => a.Path(f => f.OccurrencesAreCritical))
+                .IntegerNumber(e => e.TotalOccurrences)
+                    .FieldAlias(Alias.TotalOccurrences, a => a.Path(f => f.TotalOccurrences))
             );
     }
 
@@ -79,12 +81,12 @@ public sealed class StackIndex : VersionedIndex<Stack>
             });
     }
 
-    private AnalysisDescriptor BuildAnalysis(AnalysisDescriptor ad)
+    private void BuildAnalysis(IndexSettingsAnalysisDescriptor ad)
     {
-        return ad.Analyzers(a => a
+        ad.Analyzers(a => a
                 .Pattern(COMMA_WHITESPACE_ANALYZER, p => p.Pattern(@"[,\s]+"))
-                .Custom(STANDARDPLUS_ANALYZER, c => c.Filters("lowercase", "stop", "unique").Tokenizer(COMMA_WHITESPACE_TOKENIZER))
-                .Custom(WHITESPACE_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("whitespace")))
+                .Custom(STANDARDPLUS_ANALYZER, c => c.Filter("lowercase", "stop", "unique").Tokenizer(COMMA_WHITESPACE_TOKENIZER))
+                .Custom(WHITESPACE_LOWERCASE_ANALYZER, c => c.Filter("lowercase").Tokenizer("whitespace")))
             .Tokenizers(t => t
                 .Pattern(COMMA_WHITESPACE_TOKENIZER, p => p.Pattern(@"[,\s]+")));
     }

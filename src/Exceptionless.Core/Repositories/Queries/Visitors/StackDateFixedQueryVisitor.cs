@@ -1,7 +1,7 @@
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Parsers.LuceneQueries.Nodes;
 using Foundatio.Parsers.LuceneQueries.Visitors;
-using Nest;
 
 namespace Exceptionless.Core.Repositories.Queries;
 
@@ -23,8 +23,12 @@ public class StackDateFixedQueryVisitor : ChainableQueryVisitor
         if (!Boolean.TryParse(node.Term, out bool isFixed))
             return Task.FromResult<IQueryNode>(node);
 
-        var query = new ExistsQuery { Field = _dateFixedFieldName };
-        node.SetQuery(isFixed ? query : !query);
+        var existsQuery = new ExistsQuery { Field = _dateFixedFieldName };
+        Query query = isFixed
+            ? existsQuery
+            : new BoolQuery { MustNot = new Query[] { existsQuery } };
+
+        node.SetQuery(query);
 
         return Task.FromResult<IQueryNode>(node);
     }

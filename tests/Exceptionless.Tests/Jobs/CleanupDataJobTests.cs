@@ -136,7 +136,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
 
         var options = GetService<AppOptions>();
         var date = DateTimeOffset.UtcNow.SubtractDays(options.MaximumRetentionDays);
-        var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id, date, date, date), o => o.ImmediateConsistency());
+        var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id, occurrenceDate: date), o => o.ImmediateConsistency());
 
         await _job.RunAsync(TestCancellationToken);
 

@@ -1,7 +1,8 @@
+using Elastic.Clients.Elasticsearch.IndexManagement;
+using Elastic.Clients.Elasticsearch.Mapping;
 using Exceptionless.Core.Models;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
-using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration;
 
@@ -14,25 +15,26 @@ public sealed class WebHookIndex : VersionedIndex<WebHook>
         _configuration = configuration;
     }
 
-    public override TypeMappingDescriptor<WebHook> ConfigureIndexMapping(TypeMappingDescriptor<WebHook> map)
+    public override void ConfigureIndexMapping(TypeMappingDescriptor<WebHook> map)
     {
-        return map
-            .Dynamic(false)
+        map
+            .Dynamic(DynamicMapping.False)
             .Properties(p => p
                 .SetupDefaults()
-                .Keyword(f => f.Name(e => e.OrganizationId))
-                .Keyword(f => f.Name(e => e.ProjectId))
-                .Keyword(f => f.Name(e => e.Url))
-                .Keyword(f => f.Name(e => e.EventTypes))
-                .Boolean(f => f.Name(e => e.IsEnabled))
+                .Keyword(e => e.OrganizationId)
+                .Keyword(e => e.ProjectId)
+                .Keyword(e => e.Url)
+                .Keyword(e => e.EventTypes)
+                .Boolean(e => e.IsEnabled)
             );
     }
 
-    public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx)
+    public override void ConfigureIndex(CreateIndexRequestDescriptor idx)
     {
-        return base.ConfigureIndex(idx.Settings(s => s
+        base.ConfigureIndex(idx);
+        idx.Settings(s => s
             .NumberOfShards(_configuration.Options.NumberOfShards)
             .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
-            .Priority(5)));
+            .Priority(5));
     }
 }

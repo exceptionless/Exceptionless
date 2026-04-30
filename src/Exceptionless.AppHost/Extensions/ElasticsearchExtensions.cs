@@ -1,4 +1,4 @@
-using HealthChecks.Elasticsearch;
+using Elastic.Clients.Elasticsearch;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
@@ -27,7 +27,6 @@ public static class ElasticsearchBuilderExtensions
         var elasticsearch = new ElasticsearchResource(name);
 
         string? connectionString = null;
-        ElasticsearchOptions? options = null;
 
         builder.Eventing.Subscribe<ConnectionStringAvailableEvent>(elasticsearch, async (@event, ct) =>
         {
@@ -36,16 +35,13 @@ public static class ElasticsearchBuilderExtensions
             {
                 throw new DistributedApplicationException($"ConnectionStringAvailableEvent was published for the '{elasticsearch.Name}' resource but the connection string was null.");
             }
-
-            options = new ElasticsearchOptions();
-            options.UseServer(connectionString);
         });
 
         string healthCheckKey = $"{name}_check";
         builder.Services.AddHealthChecks()
           .Add(new HealthCheckRegistration(
               healthCheckKey,
-              sp => new ElasticsearchHealthCheck(options!),
+              sp => new ElasticsearchConnectionHealthCheck(() => connectionString),
               failureStatus: null,
               tags: null,
               timeout: null));
@@ -126,4 +122,20 @@ internal static class ElasticsearchContainerImageTags
     public const string KibanaRegistry = "docker.elastic.co";
     public const string KibanaImage = "kibana/kibana";
     public const string Tag = "8.19.14";
+}
+
+internal sealed class ElasticsearchConnectionHealthCheck(Func<string?> connectionStringFactory) : IHealthCheck
+{
+    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    {
+        var connectionString = connectionStringFactory();
+        if (string.IsNullOrEmpty(connectionString))
+            return new HealthCheckResult(context.Registration.FailureStatus, "Connection string not available.");
+
+        var client = new ElasticsearchClient(new Uri(connectionString));
+        var response = await client.PingAsync(cancellationToken);
+        return response.IsValidResponse
+            ? HealthCheckResult.Healthy()
+            : new HealthCheckResult(context.Registration.FailureStatus, $"Elasticsearch ping failed: {response.DebugInformation}");
+    }
 }

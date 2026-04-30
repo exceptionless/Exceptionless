@@ -49,7 +49,7 @@ public sealed class AggregationTests : IntegrationTestsBase
         await CreateDataAsync(eventCount, false);
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
-        var result = await _eventRepository.CountAsync(q => q.FilterExpression($"project:{TestConstants.ProjectId}").AggregationsExpression("cardinality:stack_id cardinality:id"));
+        var result = await _eventRepository.CountAsync(q => q.Project(TestConstants.ProjectId).AggregationsExpression("cardinality:stack_id cardinality:id"));
         Assert.Equal(eventCount, result.Total);
         Assert.Equal(eventCount, result.Aggregations.Cardinality("cardinality_id")?.Value.GetValueOrDefault() ?? 0);
         Assert.Equal(await _stackRepository.CountAsync(), result.Aggregations.Cardinality("cardinality_stack_id")?.Value.GetValueOrDefault() ?? 0);
@@ -62,7 +62,7 @@ public sealed class AggregationTests : IntegrationTestsBase
         await CreateDataAsync(eventCount, false);
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
-        var result = await _eventRepository.CountAsync(q => q.FilterExpression($"project:{TestConstants.ProjectId}").AggregationsExpression("date:(date cardinality:id) cardinality:id"));
+        var result = await _eventRepository.CountAsync(q => q.Project(TestConstants.ProjectId).AggregationsExpression("date:(date cardinality:id) cardinality:id"));
         Assert.Equal(eventCount, result.Total);
         var dateHistogram = result.Aggregations.DateHistogram("date_date");
         Assert.NotNull(dateHistogram);
@@ -76,7 +76,7 @@ public sealed class AggregationTests : IntegrationTestsBase
         var stacks = await _stackRepository.GetByOrganizationIdAsync(TestConstants.OrganizationId, o => o.PageLimit(100));
         foreach (var stack in stacks.Documents)
         {
-            var stackResult = await _eventRepository.CountAsync(q => q.FilterExpression($"stack:{stack.Id}").AggregationsExpression("cardinality:id"));
+            var stackResult = await _eventRepository.CountAsync(q => q.Stack(stack.Id).AggregationsExpression("cardinality:id"));
             Assert.Equal(stack.TotalOccurrences, stackResult.Total);
             Assert.Equal(stack.TotalOccurrences, stackResult.Aggregations.Cardinality("cardinality_id")?.Value.GetValueOrDefault() ?? 0);
         }
@@ -89,7 +89,7 @@ public sealed class AggregationTests : IntegrationTestsBase
         await CreateDataAsync(eventCount, false);
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
 
-        var result = await _eventRepository.CountAsync(q => q.FilterExpression($"project:{TestConstants.ProjectId}").AggregationsExpression("terms:(is_first_occurrence @include:true)"));
+        var result = await _eventRepository.CountAsync(q => q.Project(TestConstants.ProjectId).AggregationsExpression("terms:(is_first_occurrence @include:true)"));
         Assert.Equal(eventCount, result.Total);
 
         var termsAggregation = result.Aggregations.Terms<string>("terms_is_first_occurrence");
@@ -107,7 +107,7 @@ public sealed class AggregationTests : IntegrationTestsBase
             await CreateEventsAsync(1, null, value);
 
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
-        var result = await _eventRepository.CountAsync(q => q.FilterExpression($"project:{TestConstants.ProjectId}").AggregationsExpression("avg:value~0 cardinality:value~0 sum:value~0 min:value~0 max:value~0"));
+        var result = await _eventRepository.CountAsync(q => q.Project(TestConstants.ProjectId).AggregationsExpression("avg:value~0 cardinality:value~0 sum:value~0 min:value~0 max:value~0"));
 
         Assert.Equal(values.Length, result.Total);
         Assert.Equal(5, result.Aggregations.Count);
@@ -191,7 +191,7 @@ public sealed class AggregationTests : IntegrationTestsBase
         Assert.NotEmpty(termsAggregation.Buckets);
         var largestStackBucket = termsAggregation.Buckets.First();
 
-        var events = await _eventRepository.FindAsync(q => q.FilterExpression($"stack:{largestStackBucket.Key}"), o => o.PageLimit(eventCount));
+        var events = await _eventRepository.FindAsync(q => q.Stack(largestStackBucket.Key), o => o.PageLimit(eventCount));
         Assert.Equal(largestStackBucket.Total.GetValueOrDefault(), events.Total);
 
         var oldestEvent = events.Documents.OrderBy(e => e.Date).First();
