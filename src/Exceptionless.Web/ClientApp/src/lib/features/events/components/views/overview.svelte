@@ -2,7 +2,6 @@
     import type { IFilter } from '$comp/faceted-filter';
 
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
-    import TimeAgo from '$comp/formatters/time-ago.svelte';
     import { A, H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Table from '$comp/ui/table';

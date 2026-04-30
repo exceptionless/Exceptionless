@@ -16,8 +16,6 @@
     const durationValue = $derived(getSessionStartDuration(event));
 </script>
 
-<Live live={isActive} liveTitle="Online" notLiveTitle="Ended" /><Duration
-    value={durationValue}
-/>{#if !isActive}
+<Live live={isActive} liveTitle="Online" notLiveTitle="Ended" /><Duration value={durationValue} />{#if !isActive}
     <span class="text-muted-foreground"> (ended <TimeAgo value={event.data!.sessionend} />)</span>
 {/if}

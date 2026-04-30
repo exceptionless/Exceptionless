@@ -1,9 +1,7 @@
 <script lang="ts">
     import type { PersistentEvent } from '$features/events/models';
 
-    import Duration from '$comp/formatters/duration.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import Live from '$comp/live.svelte';
     import { H3 } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Skeleton } from '$comp/ui/skeleton';

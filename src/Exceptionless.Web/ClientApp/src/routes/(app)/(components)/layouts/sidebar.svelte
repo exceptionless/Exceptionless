@@ -134,10 +134,10 @@
                         <Sidebar.MenuItem>
                             <Sidebar.MenuButton isActive={route.href === page.url.pathname}>
                                 {#snippet child({ props })}
-                                    <a href={route.href} title={route.title} onclick={onMenuClick} {...props}>
+                                    <A variant="ghost" href={route.href} title={route.title} onclick={onMenuClick} {...props}>
                                         <Icon />
                                         <span>{route.title}</span>
-                                    </a>
+                                    </A>
                                 {/snippet}
                             </Sidebar.MenuButton>
                         </Sidebar.MenuItem>
