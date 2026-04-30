@@ -6,7 +6,6 @@ namespace Exceptionless.Web.Models;
 
 public record NewProject : UpdateProject, IOwnedByOrganization
 {
-    [Required]
     [ObjectId]
     public string OrganizationId { get; set; } = null!;
 }

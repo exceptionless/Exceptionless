@@ -7,7 +7,7 @@ public class MiniValidationValidator(IServiceProvider serviceProvider)
 {
     public ValueTask<(bool IsValid, IDictionary<string, string[]> Errors)> ValidateAsync<T>(T instance)
     {
-        return MiniValidator.TryValidateAsync(instance, serviceProvider, recurse: false);
+        return MiniValidator.TryValidateAsync(instance, serviceProvider, recurse: true);
     }
 
     public async Task ValidateAndThrowAsync<T>(T instance)

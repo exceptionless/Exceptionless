@@ -26,7 +26,6 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
 
     public static readonly string ValidViewTypesPattern = $"^({String.Join("|", ValidViewTypes)})$";
 
-    [Required]
     [ObjectId]
     public string OrganizationId { get; set; } = null!;
 

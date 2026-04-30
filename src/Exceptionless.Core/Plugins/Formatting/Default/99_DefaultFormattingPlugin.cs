@@ -21,7 +21,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
 
     public override SummaryData GetStackSummaryData(Stack stack)
     {
-        var data = new Dictionary<string, object?> { { "Type", stack.Type } };
+        var data = new Dictionary<string, object> { { "Type", stack.Type } };
 
         if (stack.SignatureInfo.TryGetValue("Source", out string? value))
             data.Add("Source", value);

@@ -6,11 +6,9 @@ namespace Exceptionless.Web.Models;
 
 public record NewWebHook : IOwnedByOrganizationAndProject
 {
-    [Required]
     [ObjectId]
     public string OrganizationId { get; set; } = null!;
 
-    [Required]
     [ObjectId]
     public string ProjectId { get; set; } = null!;
 

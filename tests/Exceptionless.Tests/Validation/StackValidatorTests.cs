@@ -176,7 +176,6 @@ public sealed class StackValidatorTests : TestWithServices
     [InlineData("error")]
     [InlineData("log")]
     [InlineData("a")]
-    [InlineData(null)]
     public async Task Validate_WhenTypeIsValid_ReturnsSuccess(string? type)
     {
         // Arrange
@@ -188,6 +187,23 @@ public sealed class StackValidatorTests : TestWithServices
 
         // Assert
         Assert.True(isValid);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    public async Task Validate_WhenTypeIsNull_ReturnsError(string? type)
+    {
+        // Arrange — Stack.Type is [Required]: null is no longer valid (behavior change vs old FluentValidation).
+        // A migration is needed to cleanup legacy stacks that may have null Type.
+        var stack = CreateValidStack();
+        stack.Type = type!;
+
+        // Act
+        var (isValid, errors) = await _validator.ValidateAsync(stack);
+
+        // Assert
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(Stack.Type)));
     }
 
     [Fact]
