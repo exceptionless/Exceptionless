@@ -2,9 +2,7 @@
     import type { IFilter } from '$comp/faceted-filter';
 
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
-    import Duration from '$comp/formatters/duration.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import Live from '$comp/live.svelte';
     import { A, H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Table from '$comp/ui/table';
@@ -18,7 +16,6 @@
         getStackTrace,
         hasErrorOrSimpleError
     } from '$features/events/persistent-event';
-    import { getSessionStartDuration } from '$features/events/utils';
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import Filter from '@lucide/svelte/icons/filter';
     import Email from '@lucide/svelte/icons/mail';
@@ -26,6 +23,7 @@
     import type { PersistentEvent } from '../../models/index';
 
     import LogLevel from '../log-level.svelte';
+    import SessionEventDuration from '../session-event-duration.svelte';
     import SimpleStackTrace from '../simple-stack-trace/simple-stack-trace.svelte';
     import StackTrace from '../stack-trace/stack-trace.svelte';
 
@@ -76,11 +74,7 @@
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Duration</Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell>
-                    <Live live={!event.data?.sessionend} liveTitle="Online" notLiveTitle="Ended" />
-                    <Duration value={getSessionStartDuration(event)}></Duration>
-                    {#if event.data?.sessionend}
-                        (ended <TimeAgo value={event.data.sessionend}></TimeAgo>)
-                    {/if}
+                    <SessionEventDuration {event} />
                 </Table.Cell>
             </Table.Row>
         {/if}

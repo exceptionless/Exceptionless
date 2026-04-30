@@ -78,8 +78,12 @@
                 <Skeleton class="h-8 w-24" />
             {:else}
                 <div class="text-2xl font-bold">
-                    <!-- avgDuration is in seconds, Duration expects milliseconds -->
-                    <Duration value={avgDuration > 0 ? avgDuration * 1000 : undefined} />
+                    {#if avgDuration > 0}
+                        <!-- avgDuration is in seconds, Duration expects milliseconds -->
+                        <Duration value={avgDuration * 1000} />
+                    {:else}
+                        —
+                    {/if}
                 </div>
             {/if}
         </Card.Content>

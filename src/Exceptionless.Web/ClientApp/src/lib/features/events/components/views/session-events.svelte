@@ -10,9 +10,10 @@
     import * as Table from '$comp/ui/table';
     import { getSessionEventsQuery } from '$features/events/api.svelte';
     import Summary from '$features/events/components/summary/summary.svelte';
-    import { getSessionStartDuration } from '$features/events/utils';
     import { getSessionId } from '$features/events/utils/index';
     import InfoIcon from '@lucide/svelte/icons/info';
+
+    import SessionEventDuration from '../session-event-duration.svelte';
 
     interface Props {
         event: PersistentEvent;
@@ -63,11 +64,7 @@
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">Duration</Table.Head>
                     <Table.Cell class="w-4 pr-0"></Table.Cell>
                     <Table.Cell>
-                        <Live live={!event.data?.sessionend} liveTitle="Online" notLiveTitle="Ended" />
-                        <Duration value={getSessionStartDuration(event)} />
-                        {#if event.data?.sessionend}
-                            (ended <TimeAgo value={event.data.sessionend} />)
-                        {/if}
+                        <SessionEventDuration {event} />
                     </Table.Cell>
                 </Table.Row>
                 {#if userIdentity}
