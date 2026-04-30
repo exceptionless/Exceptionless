@@ -28,10 +28,10 @@
             <PaginationFirstButton currentPage={page} />
         </PaginationItem>
         <PaginationItem>
-            <PaginationPrevious />
+            <PaginationPrevious page={{ type: 'page', value: Math.max(1, page - 1) }} isActive={false} />
         </PaginationItem>
         <PaginationItem>
-            <PaginationNext />
+            <PaginationNext page={{ type: 'page', value: Math.min(pageCount, page + 1) }} isActive={false} />
         </PaginationItem>
     </PaginationContent>
 </Pagination>
