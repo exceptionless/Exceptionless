@@ -6,6 +6,7 @@ import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
+import type { EventSummaryModel, SummaryTemplateKeys } from './components/summary/index';
 import type { PersistentEvent } from './models';
 
 export async function invalidatePersistentEventQueries(queryClient: QueryClient, message: WebSocketMessageValue<'PersistentEventChanged'>) {
@@ -38,6 +39,9 @@ export const queryKeys = {
     organizationsCount: (id: string | undefined, params?: GetOrganizationCountRequest['params']) => [...queryKeys.organizations(id), 'count', params] as const,
     projects: (id: string | undefined) => [...queryKeys.type, 'projects', id] as const,
     projectsCount: (id: string | undefined, params?: GetProjectCountRequest['params']) => [...queryKeys.projects(id), 'count', params] as const,
+    sessionEvents: (id: string | undefined, params?: GetSessionEventsRequest['params']) => [...queryKeys.type, 'sessions', 'session', id, params] as const,
+    sessions: (id: string | undefined) => [...queryKeys.type, 'sessions', 'organizations', id] as const,
+    sessionsCount: (id: string | undefined, params?: GetOrganizationSessionsCountRequest['params']) => [...queryKeys.sessions(id), 'count', params] as const,
     stacks: (id: string | undefined) => [...queryKeys.type, 'stacks', id] as const,
     stacksCount: (id: string | undefined, params?: GetStackCountRequest['params']) => [...queryKeys.stacks(id), 'count', params] as const,
     type: ['PersistentEvent'] as const
@@ -87,6 +91,18 @@ export interface GetOrganizationCountRequest {
     };
 }
 
+export interface GetOrganizationSessionsCountRequest {
+    params?: {
+        aggregations?: string;
+        filter?: string;
+        offset?: string;
+        time?: string;
+    };
+    route: {
+        organizationId: string | undefined;
+    };
+}
+
 export interface GetProjectCountRequest {
     params?: {
         aggregations?: string;
@@ -97,6 +113,22 @@ export interface GetProjectCountRequest {
     };
     route: {
         projectId: string | undefined;
+    };
+}
+
+export interface GetSessionEventsRequest {
+    params?: {
+        after?: string;
+        before?: string;
+        filter?: string;
+        limit?: number;
+        mode?: 'summary';
+        offset?: string;
+        sort?: string;
+        time?: string;
+    };
+    route: {
+        sessionId: string | undefined;
     };
 }
 
@@ -190,6 +222,32 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
     }));
 }
 
+/**
+ * Get session count with aggregations for stats and chart data.
+ * Uses aggregation: avg:value cardinality:user date:(date^offset cardinality:user)
+ */
+export function getOrganizationSessionsCountQuery(request: GetOrganizationSessionsCountRequest) {
+    const queryClient = useQueryClient();
+
+    return createQuery<CountResult, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.organizationId,
+        queryClient,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<CountResult>(`/organizations/${request.route.organizationId}/events/count`, {
+                params: {
+                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...request.params
+                },
+                signal
+            });
+
+            return response.data!;
+        },
+        queryKey: queryKeys.sessionsCount(request.route.organizationId, request.params)
+    }));
+}
+
 export function getProjectCountQuery(request: GetProjectCountRequest) {
     const queryClient = useQueryClient();
 
@@ -209,6 +267,30 @@ export function getProjectCountQuery(request: GetProjectCountRequest) {
             return response.data!;
         },
         queryKey: queryKeys.projectsCount(request.route.projectId, request.params)
+    }));
+}
+
+/**
+ * Get events within a session by session ID.
+ * Uses endpoint: /events/sessions/{sessionId}
+ */
+export function getSessionEventsQuery(request: GetSessionEventsRequest) {
+    return createQuery<EventSummaryModel<SummaryTemplateKeys>[], ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.sessionId,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`events/sessions/${request.route.sessionId}`, {
+                params: {
+                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    mode: 'summary',
+                    ...request.params
+                },
+                signal
+            });
+
+            return response.data!;
+        },
+        queryKey: queryKeys.sessionEvents(request.route.sessionId, request.params)
     }));
 }
 

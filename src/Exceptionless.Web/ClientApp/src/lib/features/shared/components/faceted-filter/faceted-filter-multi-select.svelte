@@ -89,7 +89,7 @@
 <Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="gap-x-1 px-3" size="lg" variant="outline" aria-describedby={`${title}-help`}>
+            <Button {...props} class="gap-x-1 px-3" size="xl" variant="outline" aria-describedby={`${title}-help`}>
                 {title}
                 <Separator class="mx-2" orientation="vertical" />
                 {#if loading}
@@ -120,11 +120,11 @@
                             <Command.Item id={option.value} onSelect={() => onValueSelected(option.value)} value={option.value}>
                                 <div
                                     class={cn(
-                                        'border-primary mr-2 flex h-4 w-4 items-center justify-center rounded-sm border',
+                                        'border-primary mr-2 flex size-4 items-center justify-center rounded-sm border',
                                         updatedValues.includes(option.value) ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
                                     )}
                                 >
-                                    <Check className={cn('h-4 w-4')} />
+                                    <Check className={cn('size-4')} />
                                 </div>
                                 <span>
                                     {option.label}

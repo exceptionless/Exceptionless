@@ -45,6 +45,8 @@ If Pass 0 finds security BLOCKERs: **STOP**. Report immediately.
 
 # Pass 1 — Machine Checks
 
+Before running build/check commands, ensure infrastructure is healthy per AGENTS.md "Infrastructure before tests."
+
 After Pass 0 clears, run the project's build/check commands (scope-appropriate).
 
 If fails: report as BLOCKERs, **STOP**.
@@ -60,6 +62,18 @@ If fails: report as BLOCKERs, **STOP**.
 - Missing error handling, missing CancellationToken propagation
 - **Root cause validation:** Is this fix addressing the actual root cause? Null checks hiding upstream bugs, try/catch swallowing errors, defensive code masking broken assumptions = BLOCKER
 - **API contract changes:** HTTP method changes = breaking. Missing .http updates = BLOCKER
+- **Requirements contradiction:** If issue/PR acceptance criteria context was provided, does the code contradict any stated acceptance criteria? Implementation that conflicts with AC = BLOCKER
+
+## Requirements Coverage
+
+When issue/PR acceptance criteria context is provided, produce an explicit **AC coverage matrix**:
+
+| AC | Status | Evidence |
+|----|--------|----------|
+| [criterion text] | COVERED / NOT COVERED / PARTIAL | file:line reference |
+
+Flag NOT COVERED or PARTIAL criteria as WARNINGs. Implementation that conflicts with stated AC = BLOCKER (not just WARNING).
+If no issue/PR acceptance criteria context is available, proceed with review and note the gap in the summary.
 
 ### Architecture & Design
 - **Does the solution fit the architecture?** Wrong layer, wrong abstraction, wrong pattern = WARNING
@@ -72,6 +86,11 @@ If fails: report as BLOCKERs, **STOP**.
 - N+1 patterns
 - Blocking calls in async paths (.Result, .Wait(), Thread.Sleep())
 - Missing caching for expensive operations
+- Memory allocation patterns: closures in hot loops, large object heap pressure, excessive string concatenation, boxing in generic paths
+
+## Security (Logic-Level)
+
+Re-check Pass 0 concerns with the benefit of traced execution paths — auth bypass via logic flow, IDOR through data layer, input validation gaps only visible at runtime.
 
 # Pass 3 — Style & Maintainability
 
@@ -93,6 +112,11 @@ PASS / FAIL [details]
 ## Pass 2 — Correctness & Performance
 [BLOCKER] src/path/file.cs:45 — Description and consequence.
 [WARNING] src/path/file.ts:23 — Description and impact.
+
+### AC Coverage (when issue/PR acceptance criteria context provided)
+| AC | Status | Evidence |
+|----|--------|----------|
+| [criterion] | COVERED / NOT COVERED / PARTIAL | file:line |
 
 ## Pass 3 — Style & Maintainability
 [NIT] src/path/file.cs:112 — Description with suggestion.
@@ -116,3 +140,5 @@ PASS / FAIL [details]
 **Default (user invocation):** Output findings, then `ask_user`: blockers count + top blocker, warnings count + top warning, ask whether to hand off to engineer.
 
 **SILENT_MODE (engineer invocation):** Output findings and stop. No ask_user. The engineer handles next steps.
+
+**SECURITY_FOCUS (high-risk re-review):** When `SECURITY_FOCUS` is set alongside `SILENT_MODE`, narrow scope to auth bypass, data leaks, privilege escalation, injection, and IDOR. Skip style, performance, and general correctness. Findings use the same severity scale (BLOCKER/WARNING/NIT).

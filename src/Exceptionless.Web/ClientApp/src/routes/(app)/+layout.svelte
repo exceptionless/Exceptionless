@@ -3,7 +3,7 @@
     import type { SavedView } from '$features/saved-views/models';
     import type { Snippet } from 'svelte';
 
-    import { goto } from '$app/navigation';
+    import { beforeNavigate, goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { useSidebar } from '$comp/ui/sidebar';
@@ -19,6 +19,7 @@
     import { getOrganizationQuery, getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
     import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
     import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
+    import { premiumPage } from '$features/organizations/premium-page.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
     import { getSavedViewsQuery, invalidateSavedViewQueries } from '$features/saved-views/api.svelte';
     import { invalidateStackQueries } from '$features/stacks/api.svelte';
@@ -46,9 +47,14 @@
 
     let { children }: Props = $props();
     let isAuthenticated = $derived(!!accessToken.current);
-    let requiresPremium = $derived(filterUsesPremiumFeatures(page.url.searchParams.get('filter')));
+    let requiresPremium = $derived(premiumPage.requiresPremium || filterUsesPremiumFeatures(page.url.searchParams.get('filter')));
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
+
+    // Auto-reset premium page state on navigation so pages don't need cleanup
+    beforeNavigate(() => {
+        premiumPage.current = undefined;
+    });
 
     function openCommandPalette(): void {
         isCommandOpen = true;
@@ -192,7 +198,13 @@
     const organizations = $derived(organizationsQuery.data?.data ?? []);
 
     const impersonatingOrganizationId = $derived.by(() => {
-        const isUserOrganization = meQuery.data?.organization_ids.includes(organization.current ?? '');
+        // Only consider impersonation if user data is loaded and user has organizations
+        const userOrganizationIds = meQuery.data?.organization_ids;
+        if (!userOrganizationIds || userOrganizationIds.length === 0 || !organization.current) {
+            return undefined;
+        }
+
+        const isUserOrganization = userOrganizationIds.includes(organization.current);
         return isUserOrganization ? undefined : organization.current;
     });
 
@@ -379,7 +391,7 @@
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
 
                 {#if showOrganizationNotifications.current}
-                    <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} class="mb-4" />
+                    <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} premiumFeatureName={premiumPage.current} class="mb-4" />
                 {/if}
 
                 <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>

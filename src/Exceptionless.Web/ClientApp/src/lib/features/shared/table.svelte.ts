@@ -76,11 +76,12 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     );
 
     // Initialize pagination state from parameters
-    const initialPageIndex = isOffsetPaging
-        ? (configuration.queryParameters as TableOffsetPagingParameters).page !== undefined
-            ? Number((configuration.queryParameters as TableOffsetPagingParameters).page) - 1
-            : 0
-        : 0;
+    const initialPageIndex =
+        configuration.paginationStrategy === 'offset'
+            ? (configuration.queryParameters as TableOffsetPagingParameters).page !== undefined
+                ? Number((configuration.queryParameters as TableOffsetPagingParameters).page) - 1
+                : 0
+            : 0;
 
     const [pagination, setPagination] = createTableState<PaginationState>({
         pageIndex: initialPageIndex,
