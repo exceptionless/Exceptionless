@@ -21,6 +21,12 @@
       "sourceType": "github",
       "computedHash": "1b12297eacd1cd24b9f1eda16dada205b96d9c75fd3bf07474a54775559fff09"
     },
+    "shadcn-svelte": {
+      "source": "huntabyte/shadcn-svelte",
+      "sourceType": "github",
+      "skillPath": "skills/shadcn-svelte/SKILL.md",
+      "computedHash": "e2cc56b65eb0c28042934ec7d7b253e842b6e22456917276d53a0c71266303e7"
+    },
     "stripe-best-practices": {
       "source": "stripe/ai",
       "sourceType": "github",

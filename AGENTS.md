@@ -61,6 +61,7 @@ Available in `.claude/agents/`. Use `@agent-name` to invoke:
 - **API test files:** Update `tests/http/*.http` files whenever endpoints change (new, modified, or removed).
 - **PR descriptions:** When creating a PR, fill out any existing PR template. Provide concise context: what changed, why, new APIs/features/behaviors, and any breaking changes. No essays — just enough for reviewers to understand the value and impact.
 - **App URL for QA:** `http://localhost:7110` — probe `/api/v2/about` for health check.
+- **Never test against production:** Always dogfood, QA test, and run API smoke tests against `localhost` only. Never use production URLs (e.g., `be.exceptionless.io`) in scripts, tests, or browser automation. Start the app locally via `aspire run` or the AppHost before testing.
 - **Fix what you find:** If you encounter a broken test, bug, or issue during your work — fix it. Never label something "pre-existing" and move on. Own every problem you touch.
 - **Local testing only:** All testing and dogfooding MUST target localhost. Never test against staging or production unless the user explicitly provides an external URL.
 - **Infrastructure before tests:** Verify infrastructure is healthy before test runs — use `aspire run` or start services via the AppHost. Never skip tests because infrastructure is down.

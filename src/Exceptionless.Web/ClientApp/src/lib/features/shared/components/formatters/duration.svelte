@@ -39,33 +39,6 @@
         const interval = setInterval(setDurationText, getSetIntervalTime(value));
         return () => clearInterval(interval);
     });
-
-    $effect(() => {
-        function setDurationText() {
-            if (typeof value === 'number') {
-                durationText = prettyMilliseconds(value, {
-                    secondsDecimalDigits: 0,
-                    verbose: true
-                });
-            } else if (value instanceof Date || typeof value === 'string') {
-                const time = value instanceof Date ? value.getTime() : new Date(value).getTime();
-                durationText = prettyMilliseconds(new Date().getTime() - time, {
-                    secondsDecimalDigits: 0,
-                    verbose: true
-                });
-            } else {
-                durationText = 'never';
-            }
-        }
-
-        if (value && typeof value !== 'number') {
-            setDurationText();
-            const interval = setInterval(setDurationText, getSetIntervalTime(value));
-            return () => clearInterval(interval);
-        } else {
-            setDurationText();
-        }
-    });
 </script>
 
 {durationText}
