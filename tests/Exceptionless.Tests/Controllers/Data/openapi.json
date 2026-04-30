@@ -8702,9 +8702,6 @@
         }
       },
       "UserDescription": {
-        "required": [
-          "description"
-        ],
         "type": "object",
         "properties": {
           "email_address": {

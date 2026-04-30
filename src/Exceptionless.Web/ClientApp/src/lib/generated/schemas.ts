@@ -482,7 +482,7 @@ export type UserFormData = Infer<typeof UserSchema>;
 
 export const UserDescriptionSchema = object({
   email_address: email().nullable().optional(),
-  description: string().min(1, "Description is required").nullable(),
+  description: string().nullable().optional(),
   data: record(string(), unknown()).nullable().optional(),
 });
 export type UserDescriptionFormData = Infer<typeof UserDescriptionSchema>;

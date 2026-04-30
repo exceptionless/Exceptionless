@@ -253,7 +253,7 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
                     [nameof(SuspensionCode)]);
             }
 
-            if (SuspensionDate is not null && SuspensionDate != DateTime.MinValue)
+            if (SuspensionDate is not null)
             {
                 yield return new ValidationResult("The suspension date cannot be set while an organization is not suspended.",
                     [nameof(SuspensionDate)]);

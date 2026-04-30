@@ -22,7 +22,6 @@ public class UserDescription : IData
     [EmailAddress]
     public string? EmailAddress { get; set; }
 
-    [Required]
     public string? Description { get; set; }
 
     /// <summary>

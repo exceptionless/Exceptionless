@@ -104,7 +104,7 @@ public sealed class UserDescriptionValidatorTests : TestWithServices
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public async Task Validate_WhenDescriptionIsEmpty_ReturnsError(string? description)
+    public async Task Validate_WhenDescriptionIsEmpty_ReturnsSuccess(string? description)
     {
         // Arrange
         var userDescription = CreateValidUserDescription();
@@ -114,8 +114,7 @@ public sealed class UserDescriptionValidatorTests : TestWithServices
         var (isValid, errors) = await _validator.ValidateAsync(userDescription);
 
         // Assert
-        Assert.False(isValid);
-        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(UserDescription.Description)));
+        Assert.True(isValid);
     }
 
     [Fact]
