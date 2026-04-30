@@ -35,6 +35,7 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     /// <summary>
     /// The stack type (ie. error, log message, feature usage). Check <see cref="KnownTypes">Stack.KnownTypes</see> for standard stack types.
     /// </summary>
+    [Required]
     [StringLength(100, MinimumLength = 1)]
     public string Type { get; set; } = null!;
 
@@ -135,6 +136,10 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        // NOTE: We need to write a migration to cleanup all old stacks of 50 or more tags so there never is an error while saving.
+        //if (Tags.Count > 50)
+        //    yield return new ValidationResult("Tags can't include more than 50 tags.", [nameof(Tags)]);
+
         foreach (string? tag in Tags)
         {
             if (String.IsNullOrEmpty(tag))
