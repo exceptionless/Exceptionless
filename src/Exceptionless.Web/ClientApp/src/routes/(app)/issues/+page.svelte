@@ -8,12 +8,10 @@
     import * as FacetedFilter from '$comp/faceted-filter';
     import RefreshButton from '$comp/refresh-button.svelte';
     import { H3 } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as Sheet from '$comp/ui/sheet';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
     import { type GetEventsParams, getOrganizationCountQuery, getStackEventsQuery } from '$features/events/api.svelte';
+    import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
-    import EventsOverview from '$features/events/components/events-overview.svelte';
     import { DateFilter, ProjectFilter, StatusFilter, TypeFilter } from '$features/events/components/filters';
     import {
         applyTimeFilter,
@@ -40,7 +38,6 @@
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
     import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-    import ExternalLink from '@lucide/svelte/icons/external-link';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
@@ -363,20 +360,4 @@
     </div>
 </div>
 
-<Sheet.Root onOpenChange={() => (selectedStackId = undefined)} open={eventsQuery.isSuccess}>
-    <Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
-        <Sheet.Header>
-            <Sheet.Title
-                >Event Details <Button
-                    href={eventId ? resolve('/(app)/event/[eventId]', { eventId }) : '#'}
-                    size="sm"
-                    title="Open in new window"
-                    variant="ghost"><ExternalLink /></Button
-                ></Sheet.Title
-            >
-        </Sheet.Header>
-        <div class="px-4">
-            <EventsOverview filterChanged={onFilterChanged} id={eventId || ''} handleError={handleStackError} />
-        </div>
-    </Sheet.Content>
-</Sheet.Root>
+<EventDetailSheet eventId={eventId ?? null} filterChanged={onFilterChanged} onClose={() => (selectedStackId = undefined)} onError={handleStackError} />

@@ -68,6 +68,7 @@ Trace the full execution path. Don't just grep.
 5. **Pattern search:** Suspicious pattern? Search entire codebase for same pattern.
 6. **Config check:** Environment variables, settings files, feature flags.
 7. **Dependencies:** Version issues? Known bugs in libraries?
+8. **Branch/PR discovery:** `gh pr list --search "keywords"` — if a branch or PR is found, check it out using the AGENTS.md "Branch Management" safe checkout protocol. Ensure infrastructure is healthy per AGENTS.md "Infrastructure before tests." Build, test, and analyze on the checked-out branch. Always restore the original branch when done.
 
 # Step 5 — Root Cause (Bugs) / Requirements (Features)
 

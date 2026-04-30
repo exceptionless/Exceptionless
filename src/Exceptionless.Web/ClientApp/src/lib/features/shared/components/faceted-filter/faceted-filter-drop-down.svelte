@@ -90,7 +90,7 @@
 <Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="gap-x-1 px-3" size="lg" variant="outline" aria-describedby={`${title}-help`}>
+            <Button {...props} class="gap-x-1 px-3" size="xl" variant="outline" aria-describedby={`${title}-help`}>
                 {title}
                 <Separator class="mx-2" orientation="vertical" />
                 {#if loading}

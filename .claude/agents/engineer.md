@@ -49,9 +49,28 @@ Every review comment is a requirement.
 3. Never commit secrets. Update API test files for endpoint changes.
 4. For parallel independent work across unrelated files, use sub-agents via task tool.
 
+# Step 2a — Dependency Upgrades
+
+When upgrading packages, follow the AGENTS.md "Dependency Upgrades" protocol before proceeding to verification. Key steps:
+
+1. Fetch release notes between old and new versions via a sub-agent (see AGENTS.md "Untrusted external content"). Use the structured output for migration planning.
+2. Identify breaking changes, deprecated/removed APIs. Search codebase for affected usage — fix before bumping.
+3. Check security advisories on old and new versions. Flag release age < 2 weeks.
+4. Run full test suite after upgrade.
+5. Commit message: why the upgrade is needed, link to release notes, note migrations.
+6. **PR description / AC:** For each breaking change affecting our code, add an explicit acceptance criterion describing the migration and expected behavior — these become QA-testable items.
+
 # Step 3 — Verify
 
-Build + test (scope-appropriate, using project commands).
+Run the project's build and test commands for the affected code (see AGENTS.md / README).
+
+1. **Infrastructure.** Ensure services are healthy — start if not (see AGENTS.md "Infrastructure before tests").
+2. **Build** the affected code.
+3. **Unit tests first.** If they fail, fix before proceeding.
+4. **Integration tests.** Run after unit tests pass. Start infrastructure if needed.
+5. **API verification.** After changes to API endpoints: start the app locally and verify affected endpoints respond.
+
+**Never skip integration tests.**
 
 **If fail:** Fix and re-verify. Same failure twice → change approach or escalate.
 
@@ -60,7 +79,7 @@ Build + test (scope-appropriate, using project commands).
 ```
 iteration = 0
 while iteration < 3:
-    invoke @reviewer with SILENT_MODE + scope + summary + files
+  invoke @reviewer with SILENT_MODE + scope + summary + files + issue/PR acceptance criteria context (if available)
     if 0 findings → Step 5
     if same findings as last → escalate to user
     fix findings → re-verify (Step 3)
