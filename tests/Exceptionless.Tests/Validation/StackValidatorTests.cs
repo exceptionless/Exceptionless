@@ -36,7 +36,7 @@ public sealed class StackValidatorTests : TestWithServices
         stack.Id = ValidObjectId;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(stack);
+        var (isValid, _) = await _validator.ValidateAsync(stack);
 
         // Assert
         Assert.True(isValid);
@@ -50,7 +50,7 @@ public sealed class StackValidatorTests : TestWithServices
         stack.Id = null!;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(stack);
+        var (isValid, _) = await _validator.ValidateAsync(stack);
 
         // Assert
         Assert.True(isValid);
@@ -83,7 +83,7 @@ public sealed class StackValidatorTests : TestWithServices
         stack.OrganizationId = ValidObjectId;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(stack);
+        var (isValid, _) = await _validator.ValidateAsync(stack);
 
         // Assert
         Assert.True(isValid);
@@ -117,7 +117,7 @@ public sealed class StackValidatorTests : TestWithServices
         stack.ProjectId = ValidObjectId;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(stack);
+        var (isValid, _) = await _validator.ValidateAsync(stack);
 
         // Assert
         Assert.True(isValid);
@@ -166,7 +166,7 @@ public sealed class StackValidatorTests : TestWithServices
         stack.Title = new string('a', 1000);
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(stack);
+        var (isValid, _) = await _validator.ValidateAsync(stack);
 
         // Assert
         Assert.True(isValid);
@@ -184,7 +184,7 @@ public sealed class StackValidatorTests : TestWithServices
         stack.Type = type!;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(stack);
+        var (isValid, _) = await _validator.ValidateAsync(stack);
 
         // Assert
         Assert.True(isValid);
@@ -228,7 +228,7 @@ public sealed class StackValidatorTests : TestWithServices
         stack.Type = new string('a', 100);
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(stack);
+        var (isValid, _) = await _validator.ValidateAsync(stack);
 
         // Assert
         Assert.True(isValid);
@@ -244,7 +244,7 @@ public sealed class StackValidatorTests : TestWithServices
         stack.Tags.Add(tag);
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(stack);
+        var (isValid, _) = await _validator.ValidateAsync(stack);
 
         // Assert
         Assert.True(isValid);
@@ -290,7 +290,7 @@ public sealed class StackValidatorTests : TestWithServices
         stack.Tags.Add(new string('a', 255));
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(stack);
+        var (isValid, _) = await _validator.ValidateAsync(stack);
 
         // Assert
         Assert.True(isValid);
@@ -306,7 +306,7 @@ public sealed class StackValidatorTests : TestWithServices
         stack.SignatureHash = signatureHash;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(stack);
+        var (isValid, _) = await _validator.ValidateAsync(stack);
 
         // Assert
         Assert.True(isValid);
@@ -351,7 +351,7 @@ public sealed class StackValidatorTests : TestWithServices
         var stack = CreateValidStack();
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(stack);
+        var (isValid, _) = await _validator.ValidateAsync(stack);
 
         // Assert
         Assert.True(isValid);
@@ -364,7 +364,7 @@ public sealed class StackValidatorTests : TestWithServices
         var stack = CreateValidStack();
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(stack);
+        var (isValid, _) = await _validator.ValidateAsync(stack);
 
         // Assert
         Assert.True(isValid);

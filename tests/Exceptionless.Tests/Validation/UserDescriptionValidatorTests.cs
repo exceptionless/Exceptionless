@@ -33,7 +33,7 @@ public sealed class UserDescriptionValidatorTests : TestWithServices
         userDescription.EmailAddress = email;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(userDescription);
+        var (isValid, _) = await _validator.ValidateAsync(userDescription);
 
         // Assert
         Assert.True(isValid);
@@ -64,7 +64,7 @@ public sealed class UserDescriptionValidatorTests : TestWithServices
         userDescription.EmailAddress = null;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(userDescription);
+        var (isValid, _) = await _validator.ValidateAsync(userDescription);
 
         // Assert
         Assert.True(isValid);
@@ -95,7 +95,7 @@ public sealed class UserDescriptionValidatorTests : TestWithServices
         userDescription.Description = description;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(userDescription);
+        var (isValid, _) = await _validator.ValidateAsync(userDescription);
 
         // Assert
         Assert.True(isValid);
@@ -111,7 +111,7 @@ public sealed class UserDescriptionValidatorTests : TestWithServices
         userDescription.Description = description;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(userDescription);
+        var (isValid, _) = await _validator.ValidateAsync(userDescription);
 
         // Assert
         Assert.True(isValid);
@@ -124,7 +124,7 @@ public sealed class UserDescriptionValidatorTests : TestWithServices
         var userDescription = CreateValidUserDescription();
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(userDescription);
+        var (isValid, _) = await _validator.ValidateAsync(userDescription);
 
         // Assert
         Assert.True(isValid);
@@ -140,7 +140,7 @@ public sealed class UserDescriptionValidatorTests : TestWithServices
         };
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(userDescription);
+        var (isValid, _) = await _validator.ValidateAsync(userDescription);
 
         // Assert
         Assert.True(isValid);
@@ -153,7 +153,7 @@ public sealed class UserDescriptionValidatorTests : TestWithServices
         var userDescription = CreateValidUserDescription();
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(userDescription);
+        var (isValid, _) = await _validator.ValidateAsync(userDescription);
 
         // Assert
         Assert.True(isValid);

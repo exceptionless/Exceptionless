@@ -38,7 +38,7 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.Name = "Valid Name";
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(org);
+        var (isValid, _) = await _validator.ValidateAsync(org);
 
         // Assert
         Assert.True(isValid);
@@ -69,7 +69,7 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.PlanId = "Valid-Plan-Id";
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(org);
+        var (isValid, _) = await _validator.ValidateAsync(org);
 
         // Assert
         Assert.True(isValid);
@@ -117,7 +117,7 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.HasPremiumFeatures = false;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(org);
+        var (isValid, _) = await _validator.ValidateAsync(org);
 
         // Assert
         Assert.True(isValid);
@@ -133,7 +133,7 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.BillingPrice = 0;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(org);
+        var (isValid, _) = await _validator.ValidateAsync(org);
 
         // Assert
         Assert.True(isValid);
@@ -153,7 +153,7 @@ public sealed class OrganizationValidatorTests : TestWithServices
         org.BillingChangedByUserId = ValidObjectId;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(org);
+        var (isValid, _) = await _validator.ValidateAsync(org);
 
         // Assert
         Assert.True(isValid);

@@ -37,7 +37,7 @@ public sealed class TokenValidatorTests : TestWithServices
         token.Id = id;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(token);
+        var (isValid, _) = await _validator.ValidateAsync(token);
 
         // Assert
         Assert.True(isValid);
@@ -68,7 +68,7 @@ public sealed class TokenValidatorTests : TestWithServices
         token.OrganizationId = ValidObjectId;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(token);
+        var (isValid, _) = await _validator.ValidateAsync(token);
 
         // Assert
         Assert.True(isValid);
@@ -165,7 +165,7 @@ public sealed class TokenValidatorTests : TestWithServices
         token.ProjectId = null!;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(token);
+        var (isValid, _) = await _validator.ValidateAsync(token);
 
         // Assert
         Assert.True(isValid);
@@ -179,7 +179,7 @@ public sealed class TokenValidatorTests : TestWithServices
         token.ProjectId = ValidObjectId;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(token);
+        var (isValid, _) = await _validator.ValidateAsync(token);
 
         // Assert
         Assert.True(isValid);
@@ -210,7 +210,7 @@ public sealed class TokenValidatorTests : TestWithServices
         token.ProjectId = null!;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(token);
+        var (isValid, _) = await _validator.ValidateAsync(token);
 
         // Assert
         Assert.True(isValid);
@@ -239,7 +239,7 @@ public sealed class TokenValidatorTests : TestWithServices
         token.DefaultProjectId = ValidObjectId;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(token);
+        var (isValid, _) = await _validator.ValidateAsync(token);
 
         // Assert
         Assert.True(isValid);

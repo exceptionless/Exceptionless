@@ -275,7 +275,7 @@ public sealed class EventValidatorTests : TestWithServices
         ev.ReferenceId = referenceId;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(ev);
+        var (isValid, _) = await _validator.ValidateAsync(ev);
 
         // Assert
         Assert.True(isValid);
@@ -289,7 +289,7 @@ public sealed class EventValidatorTests : TestWithServices
         ev.ReferenceId = "1234567";
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(ev);
+        var (isValid, _) = await _validator.ValidateAsync(ev);
 
         // Assert
         Assert.False(isValid);
@@ -303,7 +303,7 @@ public sealed class EventValidatorTests : TestWithServices
         ev.ReferenceId = new string('1', 321);
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(ev);
+        var (isValid, _) = await _validator.ValidateAsync(ev);
 
         // Assert
         Assert.False(isValid);
@@ -336,7 +336,7 @@ public sealed class EventValidatorTests : TestWithServices
         ev.Date = DateTimeOffset.MinValue;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(ev);
+        var (isValid, _) = await _validator.ValidateAsync(ev);
 
         // Assert
         Assert.False(isValid);
@@ -372,7 +372,7 @@ public sealed class EventValidatorTests : TestWithServices
         ev.Type = type;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(ev);
+        var (isValid, _) = await _validator.ValidateAsync(ev);
 
         // Assert
         Assert.True(isValid);
@@ -386,7 +386,7 @@ public sealed class EventValidatorTests : TestWithServices
         ev.Type = new string('x', 101);
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(ev);
+        var (isValid, _) = await _validator.ValidateAsync(ev);
 
         // Assert
         Assert.False(isValid);
@@ -419,7 +419,7 @@ public sealed class EventValidatorTests : TestWithServices
         ev.Message = message;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(ev);
+        var (isValid, _) = await _validator.ValidateAsync(ev);
 
         // Assert
         Assert.True(isValid);
@@ -465,7 +465,7 @@ public sealed class EventValidatorTests : TestWithServices
         ev.Source = source;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(ev);
+        var (isValid, _) = await _validator.ValidateAsync(ev);
 
         // Assert
         Assert.True(isValid);
@@ -508,7 +508,7 @@ public sealed class EventValidatorTests : TestWithServices
         var ev = CreateValidEvent();
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(ev);
+        var (isValid, _) = await _validator.ValidateAsync(ev);
 
         // Assert
         Assert.True(isValid);
@@ -521,7 +521,7 @@ public sealed class EventValidatorTests : TestWithServices
         var ev = CreateValidEvent();
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(ev);
+        var (isValid, _) = await _validator.ValidateAsync(ev);
 
         // Assert
         Assert.True(isValid);

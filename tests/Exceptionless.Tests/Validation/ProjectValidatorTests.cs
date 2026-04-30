@@ -33,7 +33,7 @@ public sealed class ProjectValidatorTests : TestWithServices
         project.OrganizationId = ValidObjectId;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(project);
+        var (isValid, _) = await _validator.ValidateAsync(project);
 
         // Assert
         Assert.True(isValid);
@@ -67,7 +67,7 @@ public sealed class ProjectValidatorTests : TestWithServices
         project.Name = name;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(project);
+        var (isValid, _) = await _validator.ValidateAsync(project);
 
         // Assert
         Assert.True(isValid);
@@ -101,7 +101,7 @@ public sealed class ProjectValidatorTests : TestWithServices
         project.NextSummaryEndOfDayTicks = ticks;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(project);
+        var (isValid, _) = await _validator.ValidateAsync(project);
 
         // Assert
         Assert.True(isValid);
@@ -129,7 +129,7 @@ public sealed class ProjectValidatorTests : TestWithServices
         var project = CreateValidProject();
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(project);
+        var (isValid, _) = await _validator.ValidateAsync(project);
 
         // Assert
         Assert.True(isValid);
@@ -142,7 +142,7 @@ public sealed class ProjectValidatorTests : TestWithServices
         var project = CreateValidProject();
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(project);
+        var (isValid, _) = await _validator.ValidateAsync(project);
 
         // Assert
         Assert.True(isValid);

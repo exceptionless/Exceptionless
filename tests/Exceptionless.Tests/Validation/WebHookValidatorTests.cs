@@ -35,7 +35,7 @@ public sealed class WebHookValidatorTests : TestWithServices
         webHook.OrganizationId = ValidObjectId;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(webHook);
+        var (isValid, _) = await _validator.ValidateAsync(webHook);
 
         // Assert
         Assert.True(isValid);
@@ -85,7 +85,7 @@ public sealed class WebHookValidatorTests : TestWithServices
         webHook.ProjectId = ValidObjectId;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(webHook);
+        var (isValid, _) = await _validator.ValidateAsync(webHook);
 
         // Assert
         Assert.False(isValid);
@@ -100,7 +100,7 @@ public sealed class WebHookValidatorTests : TestWithServices
         webHook.Url = url;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(webHook);
+        var (isValid, _) = await _validator.ValidateAsync(webHook);
 
         // Assert
         Assert.True(isValid);
@@ -167,7 +167,7 @@ public sealed class WebHookValidatorTests : TestWithServices
         webHook.EventTypes = [eventType];
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(webHook);
+        var (isValid, _) = await _validator.ValidateAsync(webHook);
 
         // Assert
         Assert.True(isValid);
@@ -203,7 +203,7 @@ public sealed class WebHookValidatorTests : TestWithServices
         ];
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(webHook);
+        var (isValid, _) = await _validator.ValidateAsync(webHook);
 
         // Assert
         Assert.True(isValid);
@@ -221,7 +221,7 @@ public sealed class WebHookValidatorTests : TestWithServices
         ];
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(webHook);
+        var (isValid, _) = await _validator.ValidateAsync(webHook);
 
         // Assert
         Assert.False(isValid);
@@ -237,7 +237,7 @@ public sealed class WebHookValidatorTests : TestWithServices
         webHook.Version = version;
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(webHook);
+        var (isValid, _) = await _validator.ValidateAsync(webHook);
 
         // Assert
         Assert.True(isValid);
@@ -267,7 +267,7 @@ public sealed class WebHookValidatorTests : TestWithServices
         var webHook = CreateValidWebHook();
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(webHook);
+        var (isValid, _) = await _validator.ValidateAsync(webHook);
 
         // Assert
         Assert.True(isValid);
@@ -280,7 +280,7 @@ public sealed class WebHookValidatorTests : TestWithServices
         var webHook = CreateValidWebHook();
 
         // Act
-        var (isValid, errors) = await _validator.ValidateAsync(webHook);
+        var (isValid, _) = await _validator.ValidateAsync(webHook);
 
         // Assert
         Assert.True(isValid);
