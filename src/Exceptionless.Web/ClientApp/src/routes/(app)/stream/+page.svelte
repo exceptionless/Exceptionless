@@ -11,10 +11,8 @@
     import * as FacetedFilter from '$comp/faceted-filter';
     import StreamingIndicatorButton from '$comp/streaming-indicator-button.svelte';
     import { H3 } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as Sheet from '$comp/ui/sheet';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
-    import EventsOverview from '$features/events/components/events-overview.svelte';
+    import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
     import { ProjectFilter, StatusFilter } from '$features/events/components/filters';
     import {
         buildFilterCacheKey,
@@ -36,7 +34,6 @@
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
     import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-    import ExternalLink from '@lucide/svelte/icons/external-link';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
@@ -314,20 +311,4 @@
     </DataTable.Footer>
 </DataTable.Root>
 
-<Sheet.Root onOpenChange={() => (selectedEventId = null)} open={!!selectedEventId}>
-    <Sheet.Content class="w-full overflow-y-auto sm:max-w-full md:w-5/6">
-        <Sheet.Header>
-            <Sheet.Title
-                >Event Details <Button
-                    href={selectedEventId ? resolve('/(app)/event/[eventId]', { eventId: selectedEventId }) : '#'}
-                    size="sm"
-                    title="Open in new window"
-                    variant="ghost"><ExternalLink /></Button
-                ></Sheet.Title
-            >
-        </Sheet.Header>
-        <div class="px-4">
-            <EventsOverview filterChanged={onFilterChanged} id={selectedEventId || ''} handleError={handleEventError} />
-        </div>
-    </Sheet.Content>
-</Sheet.Root>
+<EventDetailSheet eventId={selectedEventId} filterChanged={onFilterChanged} onClose={() => (selectedEventId = null)} onError={handleEventError} />

@@ -149,7 +149,7 @@
 <Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="gap-x-1 px-3" size="lg" variant="outline">
+            <Button {...props} class="gap-x-1 px-3" size="xl" variant="outline">
                 <Circle class="mr-2 size-4" /> Filter
             </Button>
         {/snippet}

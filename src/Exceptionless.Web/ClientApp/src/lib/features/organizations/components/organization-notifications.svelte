@@ -22,10 +22,19 @@
         ignoreFree?: boolean;
         isChatEnabled: boolean;
         openChat: () => void;
+        premiumFeatureName?: string;
         requiresPremium?: boolean;
     }
 
-    let { ignoreConfigureProjects = false, ignoreFree = false, isChatEnabled, openChat, requiresPremium = false, ...restProps }: Props = $props();
+    let {
+        ignoreConfigureProjects = false,
+        ignoreFree = false,
+        isChatEnabled,
+        openChat,
+        premiumFeatureName,
+        requiresPremium = false,
+        ...restProps
+    }: Props = $props();
 
     const meQuery = getMeQuery();
     const isGlobalAdmin = $derived(!!meQuery.data?.roles?.includes('global'));
@@ -105,7 +114,7 @@
     {:else if needsProjectConfiguration}
         <ProjectConfigurationNotification projects={projectsNeedingConfig} {...restProps} />
     {:else if requiresPremiumUpgrade}
-        <PremiumUpgradeNotification name={organization.name} organizationId={organization.id} {...restProps} />
+        <PremiumUpgradeNotification name={organization.name} organizationId={organization.id} {premiumFeatureName} {...restProps} />
     {:else if isFreePlan}
         <FreePlanNotification name={organization.name} organizationId={organization.id} {...restProps} />
     {:else if hasNoProjects}

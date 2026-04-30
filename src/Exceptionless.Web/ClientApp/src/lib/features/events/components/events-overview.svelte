@@ -11,17 +11,20 @@
     import { getEventQuery } from '$features/events/api.svelte';
     import * as EventsFacetedFilter from '$features/events/components/filters';
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
+    import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { getProjectQuery } from '$features/projects/api.svelte';
     import StackCard from '$features/stacks/components/stack-card.svelte';
 
     import type { PersistentEvent } from '../models/index';
 
+    import { getSessionId } from '../utils';
     import Environment from './views/environment.svelte';
     import Error from './views/error.svelte';
     import ExtendedData from './views/extended-data.svelte';
     import Overview from './views/overview.svelte';
     import PromotedExtendedData from './views/promoted-extended-data.svelte';
     import Request from './views/request.svelte';
+    import SessionEvents from './views/session-events.svelte';
     import TraceLog from './views/trace-log.svelte';
 
     interface Props {
@@ -37,7 +40,7 @@
             return [];
         }
 
-        const tabs = ['Overview'];
+        const tabs: TabType[] = ['Overview'];
         if (hasErrorOrSimpleError(event)) {
             tabs.push('Exception');
         }
@@ -52,6 +55,10 @@
 
         if (event.data?.['@trace']) {
             tabs.push('Trace Log');
+        }
+
+        if (getSessionId(event)) {
+            tabs.push('Session Events');
         }
 
         if (!project) {
@@ -91,6 +98,16 @@
             }
         }
     });
+
+    const organizationQuery = getOrganizationQuery({
+        route: {
+            get id() {
+                return eventQuery.data?.organization_id;
+            }
+        }
+    });
+
+    const hasPremiumFeatures = $derived(!organizationQuery.isSuccess || !!organizationQuery.data?.has_premium_features);
 
     type TabType = 'Environment' | 'Exception' | 'Extended Data' | 'Overview' | 'Request' | 'Trace Log' | string;
 
@@ -168,6 +185,8 @@
                     <Request {filterChanged} event={eventQuery.data}></Request>
                 {:else if tab === 'Trace Log'}
                     <TraceLog logs={eventQuery.data.data?.['@trace']}></TraceLog>
+                {:else if tab === 'Session Events'}
+                    <SessionEvents event={eventQuery.data} {hasPremiumFeatures}></SessionEvents>
                 {:else if tab === 'Extended Data'}
                     <ExtendedData event={eventQuery.data} project={projectQuery.data} promoted={onPromoted}></ExtendedData>
                 {:else}
