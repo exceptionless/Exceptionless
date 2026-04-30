@@ -34,10 +34,10 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
 
     /// <summary>
     /// The stack type (ie. error, log message, feature usage). Check <see cref="KnownTypes">Stack.KnownTypes</see> for standard stack types.
+    /// Nullable: the old validator allowed null (only rejected empty or >100 chars when non-null).
     /// </summary>
-    [Required]
     [StringLength(100, MinimumLength = 1)]
-    public string Type { get; set; } = null!;
+    public string? Type { get; set; }
 
     /// <summary>
     /// The stack status (ie. open, fixed, regressed,

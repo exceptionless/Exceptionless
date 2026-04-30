@@ -324,7 +324,7 @@ public sealed class EventValidatorTests : TestWithServices
         var (isValid, errors) = await _validator.ValidateAsync(ev);
 
         // Assert
-        _logger.LogInformation(date + " " + isValid + " " + String.Join(" ", errors.SelectMany(e => e.Value)));
+        _logger.LogInformation("Date {Date} isValid={IsValid} errors={Errors}", date, isValid, errors.SelectMany(e => e.Value));
         Assert.True(isValid);
     }
 
@@ -354,7 +354,7 @@ public sealed class EventValidatorTests : TestWithServices
         var (isValid, errors) = await _validator.ValidateAsync(ev);
 
         // Assert
-        _logger.LogInformation(date + " " + isValid + " " + String.Join(" ", errors.SelectMany(e => e.Value)));
+        _logger.LogInformation("Date {Date} isValid={IsValid} errors={Errors}", date, isValid, errors.SelectMany(e => e.Value));
         Assert.False(isValid);
     }
 

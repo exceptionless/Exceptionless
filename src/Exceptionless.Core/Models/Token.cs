@@ -47,7 +47,10 @@ public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, IVa
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (String.IsNullOrEmpty(OrganizationId) && !String.IsNullOrEmpty(ProjectId))
+        // OrgId is required for all non-user-scoped tokens.
+        // Mirrors old FluentValidation: NotEmpty().When(!IsNullOrEmpty(ProjectId) || IsNullOrEmpty(UserId))
+        // i.e. the only case that doesn't need OrgId is a pure user-scope token (UserId set, no ProjectId).
+        if (String.IsNullOrEmpty(OrganizationId) && (!String.IsNullOrEmpty(ProjectId) || String.IsNullOrEmpty(UserId)))
         {
             yield return new ValidationResult("Please specify a valid organization id.", [nameof(OrganizationId)]);
         }
