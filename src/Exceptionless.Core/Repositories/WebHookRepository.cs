@@ -1,7 +1,7 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
-using FluentValidation;
+using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
@@ -11,7 +11,7 @@ namespace Exceptionless.Core.Repositories;
 
 public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository
 {
-    public WebHookRepository(ExceptionlessElasticConfiguration configuration, IValidator<WebHook> validator,
+    public WebHookRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator,
         AppOptions options)
         : base(configuration.WebHooks, validator, options)
     {

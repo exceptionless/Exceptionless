@@ -1,8 +1,8 @@
 ﻿using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Validation;
 using Exceptionless.DateTimeExtensions;
-using FluentValidation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Nest;
@@ -13,7 +13,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 {
     private readonly TimeProvider _timeProvider;
 
-    public EventRepository(ExceptionlessElasticConfiguration configuration, AppOptions options, IValidator<PersistentEvent> validator)
+    public EventRepository(ExceptionlessElasticConfiguration configuration, AppOptions options, MiniValidationValidator validator)
         : base(configuration.Events, validator, options)
     {
         _timeProvider = configuration.TimeProvider;

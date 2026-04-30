@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Runtime.Serialization;
@@ -10,7 +10,7 @@ using Newtonsoft.Json.Converters;
 namespace Exceptionless.Core.Models;
 
 [DebuggerDisplay("Id={Id} Type={Type} Status={Status} IsDeleted={IsDeleted} Title={Title} TotalOccurrences={TotalOccurrences}")]
-public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISupportSoftDeletes
+public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISupportSoftDeletes, IValidatableObject
 {
     /// <summary>
     /// Unique id that identifies a stack.
@@ -21,19 +21,22 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     /// <summary>
     /// The organization that the stack belongs to.
     /// </summary>
+    [Required]
     [ObjectId]
     public string OrganizationId { get; set; } = null!;
 
     /// <summary>
     /// The project that the stack belongs to.
     /// </summary>
+    [Required]
     [ObjectId]
     public string ProjectId { get; set; } = null!;
 
     /// <summary>
     /// The stack type (ie. error, log message, feature usage). Check <see cref="KnownTypes">Stack.KnownTypes</see> for standard stack types.
     /// </summary>
-    [StringLength(100)]
+    [Required]
+    [StringLength(100, MinimumLength = 1)]
     public string Type { get; set; } = null!;
 
     /// <summary>
@@ -49,11 +52,13 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     /// <summary>
     /// The signature used for stacking future occurrences.
     /// </summary>
+    [Required]
     public string SignatureHash { get; set; } = null!;
 
     /// <summary>
     /// The collection of information that went into creating the signature hash for the stack.
     /// </summary>
+    [Required]
     public SettingsDictionary SignatureInfo { get; set; } = new();
 
     /// <summary>
@@ -127,6 +132,25 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
         public const string NotFound = "404";
         public const string Session = "session";
         public const string SessionEnd = "sessionend";
+    }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        // NOTE: We need to write a migration to cleanup all old stacks of 50 or more tags so there never is an error while saving.
+        //if (Tags.Count > 50)
+        //    yield return new ValidationResult("Tags can't include more than 50 tags.", [nameof(Tags)]);
+
+        foreach (string? tag in Tags)
+        {
+            if (String.IsNullOrEmpty(tag))
+            {
+                yield return new ValidationResult("Tags can't be empty.", [nameof(Tags)]);
+            }
+            else if (tag.Length > 255)
+            {
+                yield return new ValidationResult("A tag cannot be longer than 255 characters.", [nameof(Tags)]);
+            }
+        }
     }
 }
 

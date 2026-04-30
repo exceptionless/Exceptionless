@@ -1,5 +1,5 @@
 using Exceptionless.Core.Models;
-using FluentValidation;
+using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Models;
@@ -9,7 +9,7 @@ namespace Exceptionless.Core.Repositories;
 
 public abstract class RepositoryOwnedByOrganization<T> : RepositoryBase<T>, IRepositoryOwnedByOrganization<T> where T : class, IOwnedByOrganization, IIdentity, new()
 {
-    public RepositoryOwnedByOrganization(IIndex index, IValidator<T> validator, AppOptions options) : base(index, validator, options)
+    public RepositoryOwnedByOrganization(IIndex index, MiniValidationValidator validator, AppOptions options) : base(index, validator, options)
     {
         AddRequiredField(o => o.OrganizationId);
     }

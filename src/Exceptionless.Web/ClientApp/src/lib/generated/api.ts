@@ -367,11 +367,11 @@ export interface UpdateProject {
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
 export interface UpdateSavedView {
   name?: null | string;
+  is_default?: null | boolean;
   filter?: null | string;
   time?: null | string;
   filter_definitions?: null | string;
   columns?: null | Record<string, boolean>;
-  is_default?: null | boolean;
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */

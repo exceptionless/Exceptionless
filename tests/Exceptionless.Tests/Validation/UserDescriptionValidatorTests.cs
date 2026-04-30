@@ -6,11 +6,11 @@ namespace Exceptionless.Tests.Validation;
 
 public sealed class UserDescriptionValidatorTests : TestWithServices
 {
-    private readonly UserDescriptionValidator _validator;
+    private readonly MiniValidationValidator _validator;
 
     public UserDescriptionValidatorTests(ITestOutputHelper output) : base(output)
     {
-        _validator = new UserDescriptionValidator();
+        _validator = GetService<MiniValidationValidator>();
     }
 
     private UserDescription CreateValidUserDescription()
@@ -26,100 +26,128 @@ public sealed class UserDescriptionValidatorTests : TestWithServices
     [InlineData("valid@localhost.com")]
     [InlineData("test.user@localhost.co.uk")]
     [InlineData("user+tag@localhost.com")]
-    public void Validate_WhenEmailAddressIsValid_ReturnsSuccess(string email)
+    public async Task Validate_WhenEmailAddressIsValid_ReturnsSuccess(string email)
     {
         // Arrange
         var userDescription = CreateValidUserDescription();
         userDescription.EmailAddress = email;
 
         // Act
-        var result = _validator.Validate(userDescription);
+        var (isValid, _) = await _validator.ValidateAsync(userDescription);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
     [InlineData("invalid-email")]
     [InlineData("@nodomain.com")]
-    public void Validate_WhenEmailAddressIsInvalid_ReturnsError(string email)
+    public async Task Validate_WhenEmailAddressIsInvalid_ReturnsError(string email)
     {
         // Arrange
         var userDescription = CreateValidUserDescription();
         userDescription.EmailAddress = email;
 
         // Act
-        var result = _validator.Validate(userDescription);
+        var (isValid, errors) = await _validator.ValidateAsync(userDescription);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(UserDescription.EmailAddress)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(UserDescription.EmailAddress)));
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData(null)]
-    public void Validate_WhenEmailAddressIsEmpty_ReturnsSuccess(string? email)
+    [Fact]
+    public async Task Validate_WhenEmailAddressIsNull_ReturnsSuccess()
     {
         // Arrange
         var userDescription = CreateValidUserDescription();
-        userDescription.EmailAddress = email;
+        userDescription.EmailAddress = null;
 
         // Act
-        var result = _validator.Validate(userDescription);
+        var (isValid, _) = await _validator.ValidateAsync(userDescription);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
+    }
+
+    [Fact]
+    public async Task Validate_WhenEmailAddressIsEmpty_ReturnsFailure()
+    {
+        // Arrange
+        var userDescription = CreateValidUserDescription();
+        userDescription.EmailAddress = "";
+
+        // Act
+        var (isValid, errors) = await _validator.ValidateAsync(userDescription);
+
+        // Assert
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(UserDescription.EmailAddress)));
     }
 
     [Theory]
     [InlineData("Valid description")]
     [InlineData("a")]
-    public void Validate_WhenDescriptionIsValid_ReturnsSuccess(string description)
+    public async Task Validate_WhenDescriptionIsValid_ReturnsSuccess(string description)
     {
         // Arrange
         var userDescription = CreateValidUserDescription();
         userDescription.Description = description;
 
         // Act
-        var result = _validator.Validate(userDescription);
+        var (isValid, _) = await _validator.ValidateAsync(userDescription);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenDescriptionIsEmpty_ReturnsError(string? description)
+    public async Task Validate_WhenDescriptionIsEmpty_ReturnsSuccess(string? description)
     {
         // Arrange
         var userDescription = CreateValidUserDescription();
         userDescription.Description = description;
 
         // Act
-        var result = _validator.Validate(userDescription);
+        var (isValid, _) = await _validator.ValidateAsync(userDescription);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(UserDescription.Description)));
+        Assert.True(isValid);
     }
 
     [Fact]
-    public void Validate_WhenUserDescriptionIsValid_ReturnsSuccess()
+    public async Task Validate_WhenUserDescriptionIsValid_ReturnsSuccess()
     {
         // Arrange
         var userDescription = CreateValidUserDescription();
 
         // Act
-        var result = _validator.Validate(userDescription);
+        var (isValid, _) = await _validator.ValidateAsync(userDescription);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Fact]
-    public void Validate_WhenOnlyDescriptionIsSet_ReturnsSuccess()
+    public async Task Validate_WhenOnlyEmailAddressIsSet_ReturnsSuccess()
+    {
+        // Arrange
+        var userDescription = new UserDescription
+        {
+            EmailAddress = "test@localhost.com"
+        };
+
+        // Act
+        var (isValid, _) = await _validator.ValidateAsync(userDescription);
+
+        // Assert
+        Assert.True(isValid);
+    }
+
+    [Fact]
+    public async Task Validate_WhenOnlyDescriptionIsSet_ReturnsSuccess()
     {
         // Arrange
         var userDescription = new UserDescription
@@ -128,10 +156,44 @@ public sealed class UserDescriptionValidatorTests : TestWithServices
         };
 
         // Act
-        var result = _validator.Validate(userDescription);
+        var (isValid, _) = await _validator.ValidateAsync(userDescription);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
+    }
+
+    [Fact]
+    public async Task Validate_WhenBothEmailAddressAndDescriptionAreNull_ReturnsError()
+    {
+        // Arrange
+        // Mirrors client-side SetUserDescription which returns early when both are null/whitespace.
+        // A UserDescription stored in Event.Data with neither field set is meaningless.
+        var userDescription = new UserDescription();
+
+        // Act
+        var (isValid, errors) = await _validator.ValidateAsync(userDescription);
+
+        // Assert
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(UserDescription.EmailAddress)));
+    }
+
+    [Fact]
+    public async Task Validate_WhenBothEmailAddressAndDescriptionAreWhitespace_ReturnsError()
+    {
+        // Arrange
+        var userDescription = new UserDescription
+        {
+            EmailAddress = "   ",
+            Description = "   "
+        };
+
+        // Act
+        var (isValid, errors) = await _validator.ValidateAsync(userDescription);
+
+        // Assert
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(UserDescription.EmailAddress)));
     }
 
     [Fact]
@@ -141,9 +203,9 @@ public sealed class UserDescriptionValidatorTests : TestWithServices
         var userDescription = CreateValidUserDescription();
 
         // Act
-        var result = await _validator.ValidateAsync(userDescription, TestCancellationToken);
+        var (isValid, _) = await _validator.ValidateAsync(userDescription);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 }

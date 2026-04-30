@@ -2,7 +2,7 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
-using FluentValidation;
+using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
@@ -14,7 +14,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
 {
     private readonly TimeProvider _timeProvider;
 
-    public ProjectRepository(ExceptionlessElasticConfiguration configuration, IValidator<Project> validator, AppOptions options)
+    public ProjectRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
         : base(configuration.Projects, validator, options)
     {
         _timeProvider = configuration.TimeProvider;

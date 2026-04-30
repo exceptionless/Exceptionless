@@ -1,5 +1,6 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Nest;
@@ -8,8 +9,8 @@ namespace Exceptionless.Core.Repositories;
 
 public class SavedViewRepository : RepositoryOwnedByOrganization<SavedView>, ISavedViewRepository
 {
-    public SavedViewRepository(ExceptionlessElasticConfiguration configuration, AppOptions options)
-        : base(configuration.SavedViews, null!, options)
+    public SavedViewRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
+        : base(configuration.SavedViews, validator, options)
     {
     }
 

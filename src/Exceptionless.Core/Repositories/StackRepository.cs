@@ -1,7 +1,7 @@
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
-using FluentValidation;
+using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
@@ -16,7 +16,7 @@ public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, I
     private readonly TimeProvider _timeProvider;
     private const string STACKING_VERSION = "v2";
 
-    public StackRepository(ExceptionlessElasticConfiguration configuration, IValidator<Stack> validator, AppOptions options)
+    public StackRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
         : base(configuration.Stacks, validator, options)
     {
         _timeProvider = configuration.TimeProvider;
