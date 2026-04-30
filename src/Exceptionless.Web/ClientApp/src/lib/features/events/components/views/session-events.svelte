@@ -4,13 +4,14 @@
     import Duration from '$comp/formatters/duration.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
     import Live from '$comp/live.svelte';
+    import { H3 } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
+    import { getSessionEventsQuery } from '$features/events/api.svelte';
     import Summary from '$features/events/components/summary/summary.svelte';
     import { getSessionStartDuration } from '$features/events/utils';
     import { getSessionId } from '$features/events/utils/index';
-    import { getSessionEventsQuery } from '$features/sessions/api.svelte';
     import InfoIcon from '@lucide/svelte/icons/info';
 
     interface Props {
@@ -87,7 +88,7 @@
         </Table.Root>
     {/if}
 
-    <h3 class="mb-2 text-lg font-semibold">Session Events</h3>
+    <H3 class="mb-2">Session Events</H3>
 
     {#if sessionEventsQuery.isPending}
         <div class="space-y-2">

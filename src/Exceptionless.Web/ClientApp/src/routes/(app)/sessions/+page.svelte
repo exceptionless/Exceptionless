@@ -14,6 +14,7 @@
     import * as Sheet from '$comp/ui/sheet';
     import { Switch } from '$comp/ui/switch';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
+    import { getOrganizationSessionsCountQuery } from '$features/events/api.svelte';
     import EventsOverview from '$features/events/components/events-overview.svelte';
     import { DateFilter, ProjectFilter, TypeFilter } from '$features/events/components/filters';
     import {
@@ -31,7 +32,6 @@
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { premiumPage } from '$features/organizations/premium-page.svelte';
-    import { getOrganizationSessionsCountQuery } from '$features/sessions/api.svelte';
     import { getSessionColumns } from '$features/sessions/components/session-table-columns';
     import SessionsDashboardChart from '$features/sessions/components/sessions-dashboard-chart.svelte';
     import SessionsStatsDashboard from '$features/sessions/components/sessions-stats-dashboard.svelte';
@@ -57,11 +57,8 @@
         return resolve('/(app)/event/[eventId]', { eventId: row.id });
     }
 
-    // Register this page as requiring premium features
-    premiumPage.set('Sessions');
-    $effect(() => {
-        return () => premiumPage.reset();
-    });
+    // Register this page as requiring premium features (layout auto-resets on navigation)
+    premiumPage.current = 'Sessions';
 
     // Organization query to check premium features
     const organizationQuery = getOrganizationQuery({
@@ -392,7 +389,9 @@
             >
         </Sheet.Header>
         <div class="px-4">
-            <EventsOverview filterChanged={onFilterChanged} id={selectedEventId || ''} handleError={() => (selectedEventId = null)} />
+            {#if selectedEventId}
+                <EventsOverview filterChanged={onFilterChanged} id={selectedEventId} handleError={() => (selectedEventId = null)} />
+            {/if}
         </div>
     </Sheet.Content>
 </Sheet.Root>

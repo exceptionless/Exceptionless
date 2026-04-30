@@ -3,7 +3,7 @@
     import type { SavedView } from '$features/saved-views/models';
     import type { Snippet } from 'svelte';
 
-    import { goto } from '$app/navigation';
+    import { beforeNavigate, goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { useSidebar } from '$comp/ui/sidebar';
@@ -50,6 +50,11 @@
     let requiresPremium = $derived(premiumPage.requiresPremium || filterUsesPremiumFeatures(page.url.searchParams.get('filter')));
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
+
+    // Auto-reset premium page state on navigation so pages don't need cleanup
+    beforeNavigate(() => {
+        premiumPage.current = undefined;
+    });
 
     function openCommandPalette(): void {
         isCommandOpen = true;
@@ -194,12 +199,12 @@
 
     const impersonatingOrganizationId = $derived.by(() => {
         // Only consider impersonation if user data is loaded and user has organizations
-        const organizationIds = meQuery.data?.organization_ids;
-        if (!organizationIds || organizationIds.length === 0 || !organization.current) {
+        const userOrganizationIds = meQuery.data?.organization_ids;
+        if (!userOrganizationIds || userOrganizationIds.length === 0 || !organization.current) {
             return undefined;
         }
 
-        const isUserOrganization = organizationIds.includes(organization.current);
+        const isUserOrganization = userOrganizationIds.includes(organization.current);
         return isUserOrganization ? undefined : organization.current;
     });
 
@@ -386,7 +391,7 @@
                 <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
 
                 {#if showOrganizationNotifications.current}
-                    <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} premiumFeatureName={premiumPage.featureName} class="mb-4" />
+                    <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} premiumFeatureName={premiumPage.current} class="mb-4" />
                 {/if}
 
                 <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>

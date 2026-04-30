@@ -94,7 +94,7 @@ export function getSessionSummaryDuration(data: EventSessionSummaryData | undefi
         return eventDate ? new Date(eventDate) : undefined;
     }
 
-    if (data.Value) {
+    if (data.Value != null) {
         return parseFloat(data.Value) * 1000;
     }
 

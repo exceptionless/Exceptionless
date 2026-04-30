@@ -1,25 +1,22 @@
 /**
  * Reactive state for pages to declare themselves as requiring premium features.
- * Pages set this on mount; the layout reads it to show the premium notification.
+ * Pages set `premiumPage.current` on mount; the layout reads it to show the premium notification.
+ * Follows the same getter/setter pattern as CachedPersistedState.
  */
 class PremiumPageState {
-    get featureName() {
-        return this._featureName;
+    get current(): string | undefined {
+        return this.#value;
+    }
+
+    set current(featureName: string | undefined) {
+        this.#value = featureName;
     }
 
     get requiresPremium() {
-        return this._featureName !== undefined;
+        return this.#value !== undefined;
     }
 
-    private _featureName = $state<string | undefined>(undefined);
-
-    reset() {
-        this._featureName = undefined;
-    }
-
-    set(featureName: string) {
-        this._featureName = featureName;
-    }
+    #value = $state<string | undefined>(undefined);
 }
 
 export const premiumPage = new PremiumPageState();

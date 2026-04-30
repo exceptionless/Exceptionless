@@ -17,7 +17,7 @@
 
 <div class="flex items-center gap-1.5">
     <Live live={isActive} liveTitle="Online" notLiveTitle="Ended" />
-    {#if isActive || durationValue}
+    {#if isActive || durationValue !== undefined}
         <Duration value={durationValue} />
     {/if}
 </div>

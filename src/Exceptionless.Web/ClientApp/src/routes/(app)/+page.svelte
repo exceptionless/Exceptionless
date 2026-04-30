@@ -351,7 +351,9 @@
             >
         </Sheet.Header>
         <div class="px-4">
-            <EventsOverview filterChanged={onFilterChanged} id={selectedEventId || ''} handleError={handleEventError} />
+            {#if selectedEventId}
+                <EventsOverview filterChanged={onFilterChanged} id={selectedEventId} handleError={handleEventError} />
+            {/if}
         </div>
     </Sheet.Content>
 </Sheet.Root>
