@@ -70,6 +70,10 @@ public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWith
             yield return new ValidationResult("ReferenceId must contain between 8 and 100 alphanumeric or '-' characters.", [nameof(ReferenceId)]);
         }
 
+        // NOTE: We need to write a migration to cleanup all old events of 50 or more tags so there never is an error while saving.
+        //if (ev.Tags.Count > 50)
+        //    yield return new ValidationResult("Tags can't include more than 50 tags.", nameof(Tags));
+
         if (Tags is not null)
         {
             foreach (string? tag in Tags)
