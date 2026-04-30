@@ -11,7 +11,6 @@ using Exceptionless.Web.Security;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
 using Exceptionless.Web.Utility.OpenApi;
-using FluentValidation;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Repositories.Exceptions;
 using Joonasw.AspNetCore.SecurityHeaders;
@@ -175,7 +174,6 @@ public class Startup
             StatusCodeSelector = ex => ex switch
             {
                 UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
-                ValidationException => StatusCodes.Status422UnprocessableEntity,
                 MiniValidatorException => StatusCodes.Status422UnprocessableEntity,
                 ApplicationException applicationException when applicationException.Message.Contains("version_conflict") => StatusCodes.Status409Conflict,
                 VersionConflictDocumentException => StatusCodes.Status409Conflict,

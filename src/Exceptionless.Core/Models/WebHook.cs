@@ -1,22 +1,27 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using Exceptionless.Core.Attributes;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
 
-public class WebHook : IOwnedByOrganizationAndProjectWithIdentity, IHaveCreatedDate
+public class WebHook : IOwnedByOrganizationAndProjectWithIdentity, IHaveCreatedDate, IValidatableObject
 {
     [ObjectId]
     public string Id { get; set; } = null!;
 
+    [Required]
     [ObjectId]
     public string OrganizationId { get; set; } = null!;
 
     [ObjectId]
     public string ProjectId { get; set; } = null!;
 
+    [Required]
     [Url]
     public string Url { get; set; } = null!;
+
+    [Required]
+    [Length(1, 6)]
     public string[] EventTypes { get; set; } = null!;
 
     public bool IsEnabled { get; set; } = true;
@@ -24,6 +29,7 @@ public class WebHook : IOwnedByOrganizationAndProjectWithIdentity, IHaveCreatedD
     /// <summary>
     /// The schema version that should be used.
     /// </summary>
+    [Required]
     public string Version { get; set; } = null!;
 
     public DateTime CreatedUtc { get; set; }
@@ -52,5 +58,17 @@ public class WebHook : IOwnedByOrganizationAndProjectWithIdentity, IHaveCreatedD
         public const string CriticalEvent = "CriticalEvent";
         public const string StackRegression = "StackRegression";
         public const string StackPromoted = "StackPromoted";
+    }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (EventTypes is null)
+            yield break;
+
+        foreach (string eventType in EventTypes)
+        {
+            if (!AllKnownEventTypes.Contains(eventType))
+                yield return new ValidationResult($"'{eventType}' is not a valid event type.", [nameof(EventTypes)]);
+        }
     }
 }

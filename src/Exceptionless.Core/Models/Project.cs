@@ -1,11 +1,12 @@
-﻿using System.Diagnostics;
+using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using Exceptionless.Core.Attributes;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
 
 [DebuggerDisplay("Id: {Id}, Name: {Name}, NextSummaryEndOfDayTicks: {NextSummaryEndOfDayTicks}")]
-public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISupportSoftDeletes
+public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISupportSoftDeletes, IValidatableObject
 {
     public Project()
     {
@@ -24,9 +25,11 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
     [ObjectId]
     public string Id { get; set; } = null!;
 
+    [Required]
     [ObjectId]
     public string OrganizationId { get; set; } = null!;
 
+    [Required]
     public string Name { get; set; } = null!;
 
     /// <summary>
@@ -78,5 +81,14 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
     public static class KnownDataKeys
     {
         public const string SlackToken = "-@slack";
+    }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (NextSummaryEndOfDayTicks is 0)
+        {
+            yield return new ValidationResult("Please specify a valid next summary end of day ticks.",
+                [nameof(NextSummaryEndOfDayTicks)]);
+        }
     }
 }

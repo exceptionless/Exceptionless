@@ -3,7 +3,7 @@ using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Models.Data;
 
-public class UserDescription : IData
+public class UserDescription : IData, IValidatableObject
 {
     public UserDescription()
     {
@@ -21,12 +21,22 @@ public class UserDescription : IData
 
     [EmailAddress]
     public string? EmailAddress { get; set; }
+
     public string? Description { get; set; }
 
     /// <summary>
     /// Extended data entries for this user description.
     /// </summary>
+    [MiniValidation.SkipRecursion]
     public DataDictionary? Data { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        // Mirrors client-side guard: SetUserDescription returns early when both are empty.
+        // A UserDescription object with neither field set is meaningless.
+        if (String.IsNullOrWhiteSpace(EmailAddress) && String.IsNullOrWhiteSpace(Description))
+            yield return new ValidationResult("Please specify an email address or description.", [nameof(EmailAddress), nameof(Description)]);
+    }
 
     protected bool Equals(UserDescription other)
     {

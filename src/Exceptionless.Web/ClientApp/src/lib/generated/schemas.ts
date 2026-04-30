@@ -410,6 +410,7 @@ export type UpdateProjectFormData = Infer<typeof UpdateProjectSchema>;
 
 export const UpdateSavedViewSchema = object({
   name: string().min(1, "Name is required").nullable().optional(),
+  is_default: boolean().nullable().optional(),
   filter: string().min(1, "Filter is required").nullable().optional(),
   time: string().min(1, "Time is required").nullable().optional(),
   filter_definitions: string()
@@ -417,7 +418,6 @@ export const UpdateSavedViewSchema = object({
     .nullable()
     .optional(),
   columns: record(string(), boolean()).nullable().optional(),
-  is_default: boolean().nullable().optional(),
 });
 export type UpdateSavedViewFormData = Infer<typeof UpdateSavedViewSchema>;
 
