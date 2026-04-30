@@ -126,7 +126,7 @@ public sealed class TokenValidatorTests : TestWithServices
     [Fact]
     public async Task Validate_WhenOrganizationIdIsNullAndUserIdIsNull_ReturnsError()
     {
-        // Arrange — no org, no user, no project: every non-user-scoped token requires an org.
+        // Arrange — no org, no user, no project: every non-user-scoped token requires an organization.
         // This matches the old FluentValidation rule: NotEmpty().When(!IsNullOrEmpty(ProjectId) || IsNullOrEmpty(UserId))
         var token = CreateValidToken();
         token.OrganizationId = null!;

@@ -283,7 +283,8 @@ export const PersistentEventSchema = object({
   type: string()
     .min(1, "Type is required")
     .max(100, "Type must be at most 100 characters")
-    .nullable(),
+    .nullable()
+    .optional(),
   source: string()
     .min(1, "Source is required")
     .max(2000, "Source must be at most 2000 characters")
@@ -482,7 +483,7 @@ export type UserFormData = Infer<typeof UserSchema>;
 
 export const UserDescriptionSchema = object({
   email_address: email().nullable().optional(),
-  description: string().nullable().optional(),
+  description: string().min(1, "Description is required").nullable().optional(),
   data: record(string(), unknown()).nullable().optional(),
 });
 export type UserDescriptionFormData = Infer<typeof UserDescriptionSchema>;
