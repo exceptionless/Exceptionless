@@ -131,6 +131,22 @@ public sealed class UserDescriptionValidatorTests : TestWithServices
     }
 
     [Fact]
+    public async Task Validate_WhenOnlyEmailAddressIsSet_ReturnsSuccess()
+    {
+        // Arrange
+        var userDescription = new UserDescription
+        {
+            EmailAddress = "test@localhost.com"
+        };
+
+        // Act
+        var (isValid, _) = await _validator.ValidateAsync(userDescription);
+
+        // Assert
+        Assert.True(isValid);
+    }
+
+    [Fact]
     public async Task Validate_WhenOnlyDescriptionIsSet_ReturnsSuccess()
     {
         // Arrange
@@ -144,6 +160,40 @@ public sealed class UserDescriptionValidatorTests : TestWithServices
 
         // Assert
         Assert.True(isValid);
+    }
+
+    [Fact]
+    public async Task Validate_WhenBothEmailAddressAndDescriptionAreNull_ReturnsError()
+    {
+        // Arrange
+        // Mirrors client-side SetUserDescription which returns early when both are null/whitespace.
+        // A UserDescription stored in Event.Data with neither field set is meaningless.
+        var userDescription = new UserDescription();
+
+        // Act
+        var (isValid, errors) = await _validator.ValidateAsync(userDescription);
+
+        // Assert
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(UserDescription.EmailAddress)));
+    }
+
+    [Fact]
+    public async Task Validate_WhenBothEmailAddressAndDescriptionAreWhitespace_ReturnsError()
+    {
+        // Arrange
+        var userDescription = new UserDescription
+        {
+            EmailAddress = "   ",
+            Description = "   "
+        };
+
+        // Act
+        var (isValid, errors) = await _validator.ValidateAsync(userDescription);
+
+        // Assert
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(UserDescription.EmailAddress)));
     }
 
     [Fact]
