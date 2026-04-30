@@ -5,7 +5,8 @@
 	import { getChartContext, Tooltip as TooltipPrimitive } from "layerchart";
 	import type { Snippet } from "svelte";
 
-	function defaultFormatter(value: unknown, _payload: TooltipPayload[]) {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	function defaultFormatter(value: any, _payload: TooltipPayload[]) {
 		return `${value}`;
 	}
 
@@ -31,8 +32,8 @@
 		labelKey?: string;
 		hideIndicator?: boolean;
 		labelClassName?: string;
-		labelFormatter?:
-			((value: unknown, payload: TooltipPayload[]) => string | number | Snippet) | null;
+		labelFormatter?: // eslint-disable-next-line @typescript-eslint/no-explicit-any
+			((value: any, payload: TooltipPayload[]) => string | number | Snippet) | null;
 		formatter?: Snippet<
 			[
 				{
@@ -48,33 +49,46 @@
 
 	const chart = useChart();
 	const chartCtx = getChartContext();
-	const tooltipSeries = $derived(chartCtx.tooltip.series);
+
+	// Filter to series with defined values (important for item-based charts like Pie/Arc
+	// where only the hovered item has a value)
+	const visibleSeries = $derived(
+		chartCtx.tooltip.series.filter((s: TooltipPayload) => s.value !== undefined)
+	);
 
 	const formattedLabel = $derived.by(() => {
-		if (hideLabel || !tooltipSeries?.length) return null;
+		if (hideLabel || !visibleSeries?.length) return null;
 
-		const [item] = tooltipSeries;
-		const key = labelKey ?? item?.label ?? item?.key ?? "value";
-
-		const itemConfig = item ? getPayloadConfigFromPayload(chart.config, item, key) : undefined;
-
-		// Use the x-axis value from the tooltip data when available (e.g. the hovered date),
-		// falling back to config labels for non-time-series charts.
+		const [item] = visibleSeries;
+		if (!item) return null;
 		const tooltipData = chartCtx.tooltip.data;
-		const xValue = tooltipData != null ? chartCtx.x(tooltipData) : undefined;
 
-		const value = xValue !== undefined
-			? xValue
-			: !labelKey && typeof label === "string"
-				? (chart.config[label as keyof typeof chart.config]?.label ?? label)
-				: (itemConfig?.label ?? item?.label);
+		// Get the x-axis label value from the raw tooltip data (e.g. a Date or month string)
+		const dataLabel = tooltipData != null ? chartCtx.x(tooltipData) : undefined;
+
+		const key = labelKey ?? item?.label ?? item?.key ?? "value";
+		const itemConfig = getPayloadConfigFromPayload(
+			chart.config,
+			item,
+			key,
+			tooltipData as Record<string, unknown> | null
+		);
+
+		let value: unknown;
+		if (!labelKey && typeof label === "string") {
+			value = chart.config[label as keyof typeof chart.config]?.label ?? label;
+		} else if (labelKey) {
+			value = itemConfig?.label ?? dataLabel;
+		} else {
+			value = dataLabel;
+		}
 
 		if (value === undefined) return null;
 		if (!labelFormatter) return value;
-		return labelFormatter(value, tooltipSeries);
+		return labelFormatter(value, visibleSeries);
 	});
 
-	const nestLabel = $derived(tooltipSeries.length === 1 && indicator !== "dot");
+	const nestLabel = $derived(visibleSeries.length === 1 && indicator !== "dot");
 </script>
 
 {#snippet TooltipLabel()}
@@ -91,8 +105,9 @@
 
 <TooltipPrimitive.Root variant="none">
 	<div
+		bind:this={ref}
 		class={cn(
-			"border-border/50 bg-background grid min-w-36 items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl",
+			"border-border/50 bg-background grid min-w-[9rem] items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl",
 			className
 		)}
 		{...restProps}
@@ -101,10 +116,15 @@
 			{@render TooltipLabel()}
 		{/if}
 		<div class="grid gap-1.5">
-			{#each tooltipSeries as item, i (item.key + i)}
+			{#each visibleSeries as item, i (item.key + i)}
 				{@const key = `${nameKey || item.key || item.label || "value"}`}
-				{@const itemConfig = getPayloadConfigFromPayload(chart.config, item, key)}
-				{@const indicatorColor = color || item.color}
+				{@const itemConfig = getPayloadConfigFromPayload(
+					chart.config,
+					item,
+					key,
+					chartCtx.tooltip.data
+				)}
+				{@const indicatorColor = color || item.config?.color || item.color}
 				<div
 					class={cn(
 						"[&>svg]:text-muted-foreground flex w-full flex-wrap items-stretch gap-2 [&>svg]:size-2.5",
@@ -117,7 +137,7 @@
 							name: item.label,
 							item,
 							index: i,
-							payload: tooltipSeries,
+							payload: visibleSeries,
 						})}
 					{:else}
 						{#if itemConfig?.icon}
