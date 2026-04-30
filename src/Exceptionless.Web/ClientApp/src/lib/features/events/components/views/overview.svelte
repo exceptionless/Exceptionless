@@ -2,9 +2,6 @@
     import type { IFilter } from '$comp/faceted-filter';
 
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
-    import Duration from '$comp/formatters/duration.svelte';
-    import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import Live from '$comp/live.svelte';
     import { A, H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Table from '$comp/ui/table';
@@ -25,6 +22,7 @@
     import type { PersistentEvent } from '../../models/index';
 
     import LogLevel from '../log-level.svelte';
+    import SessionEventDuration from '../session-event-duration.svelte';
     import SimpleStackTrace from '../simple-stack-trace/simple-stack-trace.svelte';
     import StackTrace from '../stack-trace/stack-trace.svelte';
 
@@ -66,22 +64,6 @@
     let requestUrl = $derived(getRequestInfoUrl(event));
     let requestUrlPath = $derived(getRequestInfoPath(event));
     let version = $derived(event.data?.['@version']);
-
-    function getSessionStartDuration(event: PersistentEvent): Date | number | string | undefined {
-        if (event.data?.sessionend) {
-            if (event.value) {
-                return event.value * 1000;
-            }
-
-            if (event.date) {
-                return new Date(event.data.sessionend).getTime() - new Date(event.date).getTime();
-            }
-
-            throw new Error('Completed session start event has no value or date');
-        }
-
-        return event.date;
-    }
 </script>
 
 <Table.Root>
@@ -91,11 +73,7 @@
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Duration</Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell>
-                    <Live live={!event.data?.sessionend} liveTitle="Online" notLiveTitle="Ended" />
-                    <Duration value={getSessionStartDuration(event)}></Duration>
-                    {#if event.data?.sessionend}
-                        (ended <TimeAgo value={event.data.sessionend}></TimeAgo>)
-                    {/if}
+                    <SessionEventDuration {event} />
                 </Table.Cell>
             </Table.Row>
         {/if}
