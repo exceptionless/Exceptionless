@@ -5,8 +5,12 @@ updates:
   directory: "/"
   schedule:
     interval: weekly
+  cooldown:
+    default-days: 7
 
 - package-ecosystem: "npm"
   directory: "/src/Exceptionless.Web/ClientApp"
   schedule:
     interval: "weekly"
+  cooldown:
+    default-days: 7
