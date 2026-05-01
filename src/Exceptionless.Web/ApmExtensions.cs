@@ -14,7 +14,7 @@ public static partial class ApmExtensions
         var attributes = new Dictionary<string, object>()
         {
             { "service.namespace", config.ServiceNamespace },
-            { "deployment.environment", config.DeploymentEnvironment }
+            { "deployment.environment.name", config.DeploymentEnvironment }
         };
 
         if (!String.IsNullOrEmpty(config.ServiceVersion))
