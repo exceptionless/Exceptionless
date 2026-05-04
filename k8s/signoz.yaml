@@ -26,3 +26,16 @@ presets:
         static_configs:
           - targets:
               - es-exporter-prometheus-elasticsearch-exporter.ex-prod:9108
+otelAgent:
+  config:
+    exporters:
+      otlp/elastic:
+        endpoint: http://apm.elastic-system.svc:8200
+        tls:
+          insecure: true
+    service:
+      pipelines:
+        traces:
+          exporters: [otlp, otlp/elastic]
+        metrics:
+          exporters: [otlp, otlp/elastic]
