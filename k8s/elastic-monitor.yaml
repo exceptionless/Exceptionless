@@ -10,6 +10,8 @@ spec:
     - name: main
       count: 1
       config:
+        # Auto-delete legacy monitoring data after 7 days
+        xpack.monitoring.history.duration: 7d
       # if not setting max_map_count in an init container, then use this setting
       #node.store.allow_mmap: false
       podTemplate:
@@ -43,6 +45,181 @@ spec:
               requests:
                 storage: 500Gi
             storageClassName: managed-csi-premium
+
+---
+# Job to configure ILM retention policies and reset elastic password after ES is ready.
+# Requires a pre-existing secret: elastic-monitor-password (create once manually):
+#   kubectl create secret generic elastic-monitor-password -n elastic-system --from-literal=password=YOUR_PASSWORD
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: elastic-monitor-configure-ilm
+  namespace: elastic-system
+spec:
+  # Run daily to ensure policies stay applied (Fleet can override on upgrades)
+  schedule: "30 3 * * *"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: configure-ilm
+              image: curlimages/curl:latest
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  ES_URL="https://elastic-monitor-es-http.elastic-system.svc:9200"
+                  RETENTION_DAYS=7
+
+                  echo "=== Configuring elastic-monitor ==="
+
+                  # Wait for ES to be ready (use ECK-generated password first)
+                  for i in $(seq 1 30); do
+                    if [ "$(curl -sk -o /dev/null -w '%{http_code}' -u "elastic:${ECK_PASSWORD}" "$ES_URL/_cluster/health")" = "200" ]; then
+                      AUTH="elastic:${ECK_PASSWORD}"
+                      echo "ES ready (ECK password)"
+                      break
+                    elif [ "$(curl -sk -o /dev/null -w '%{http_code}' -u "elastic:${STATIC_PASSWORD}" "$ES_URL/_cluster/health")" = "200" ]; then
+                      AUTH="elastic:${STATIC_PASSWORD}"
+                      echo "ES ready (static password)"
+                      break
+                    fi
+                    echo "Waiting for ES... ($i/30)"
+                    sleep 10
+                  done
+
+                  if [ -z "$AUTH" ]; then
+                    echo "ERROR: Could not connect to ES"
+                    exit 1
+                  fi
+
+                  # Ensure monitor-admin user exists with superuser role and static password
+                  echo "Creating/updating monitor-admin user..."
+                  UPSERT_RESP=$(curl -sk -w "\n%{http_code}" -u "$AUTH" -X POST "$ES_URL/_security/user/monitor-admin" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"password\": \"${STATIC_PASSWORD}\", \"roles\": [\"superuser\"], \"full_name\": \"Monitor Admin\"}")
+                  UPSERT_BODY=$(echo "$UPSERT_RESP" | sed '$d')
+                  UPSERT_CODE=$(echo "$UPSERT_RESP" | tail -1)
+                  if [ "$UPSERT_CODE" = "200" ]; then
+                    AUTH="monitor-admin:${STATIC_PASSWORD}"
+                    echo "monitor-admin user ready"
+                  else
+                    echo "WARNING: Failed to upsert monitor-admin (HTTP $UPSERT_CODE): $UPSERT_BODY"
+                  fi
+
+                  # Determine working auth
+                  if [ "$(curl -sk -o /dev/null -w '%{http_code}' -u "monitor-admin:${STATIC_PASSWORD}" "$ES_URL/_cluster/health")" = "200" ]; then
+                    AUTH="monitor-admin:${STATIC_PASSWORD}"
+                    echo "Using monitor-admin"
+                  elif [ "$(curl -sk -o /dev/null -w '%{http_code}' -u "elastic:${ECK_PASSWORD}" "$ES_URL/_cluster/health")" = "200" ]; then
+                    AUTH="elastic:${ECK_PASSWORD}"
+                    echo "Using ECK password"
+                  else
+                    echo "ERROR: No working auth"
+                    exit 1
+                  fi
+
+                  # 1. Create/update ILM policy with rollover + delete
+                  echo "Creating ILM policy: monitor-cleanup-${RETENTION_DAYS}d"
+                  curl -sk -u "$AUTH" -X PUT "$ES_URL/_ilm/policy/monitor-cleanup-${RETENTION_DAYS}d" \
+                    -H "Content-Type: application/json" -d '{
+                    "policy": {
+                      "phases": {
+                        "hot": {
+                          "actions": {
+                            "rollover": {
+                              "max_age": "1d",
+                              "max_primary_shard_size": "50gb"
+                            }
+                          }
+                        },
+                        "delete": {
+                          "min_age": "'${RETENTION_DAYS}d'",
+                          "actions": {
+                            "delete": {}
+                          }
+                        }
+                      }
+                    }
+                  }'
+                  echo ""
+
+                  # 2. Update built-in ILM policies that Fleet/monitoring use
+                  for POLICY in logs metrics synthetics .monitoring-8-ilm-policy; do
+                    echo "Updating built-in ILM policy: $POLICY"
+                    curl -sk -u "$AUTH" -X PUT "$ES_URL/_ilm/policy/$POLICY" \
+                      -H "Content-Type: application/json" -d '{
+                      "policy": {
+                        "phases": {
+                          "hot": {
+                            "actions": {
+                              "rollover": {
+                                "max_age": "1d",
+                                "max_primary_shard_size": "50gb"
+                              }
+                            }
+                          },
+                          "delete": {
+                            "min_age": "'${RETENTION_DAYS}d'",
+                            "actions": {
+                              "delete": {}
+                            }
+                          }
+                        }
+                      }
+                    }'
+                    echo ""
+                  done
+
+                  # 3. Apply policy to APM/OTel index templates via @custom component templates
+                  for TPL in traces-apm logs-apm metrics-apm traces-apm.rum; do
+                    echo "Updating component template: ${TPL}@custom"
+                    curl -sk -u "$AUTH" -X PUT "$ES_URL/_component_template/${TPL}@custom" \
+                      -H "Content-Type: application/json" -d '{
+                      "template": {
+                        "settings": {
+                          "index.lifecycle.name": "monitor-cleanup-'${RETENTION_DAYS}'d"
+                        }
+                      }
+                    }'
+                    echo ""
+                  done
+
+                  # 4. Set replicas=0 on all indices (single node)
+                  echo "Setting replicas=0"
+                  curl -sk -u "$AUTH" -X PUT "$ES_URL/_settings" \
+                    -H "Content-Type: application/json" -d '{"index.number_of_replicas": 0}'
+                  echo ""
+
+                  # 5. Apply policy to existing indices missing lifecycle
+                  echo "Applying policy to existing indices..."
+                  curl -sk -u "$AUTH" "$ES_URL/_cat/indices?h=index&format=json" | \
+                    grep -o '"index":"[^"]*"' | awk -F'"' '{print $4}' | \
+                    grep -v "^\.kibana\|^\.security\|^\.fleet\|^\.geoip\|^\.apm-custom\|^\.internal" | \
+                    while read idx; do
+                      curl -sk -u "$AUTH" -X PUT "$ES_URL/$idx/_settings" \
+                        -H "Content-Type: application/json" \
+                        -d '{"index.lifecycle.name": "monitor-cleanup-'${RETENTION_DAYS}'d"}' 2>/dev/null
+                    done
+                  echo ""
+
+                  echo "=== Configuration complete ==="
+              env:
+                - name: ECK_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: elastic-monitor-es-elastic-user
+                      key: elastic
+                      optional: true
+                - name: STATIC_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: elastic-monitor-password
+                      key: password
 
 ---
 apiVersion: kibana.k8s.elastic.co/v1

@@ -108,7 +108,11 @@ kubectl apply -f ex-prod-redis.yaml -n ex-prod
 kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml
 
 # upgrade elastic monitor
+# First time setup: create static password secret (survives delete/recreate)
+#   kubectl create secret generic elastic-monitor-password -n elastic-system --from-literal=password=$(openssl rand -base64 18)
 kubectl apply --namespace elastic-system -f elastic-monitor.yaml
+# After apply, trigger ILM config immediately (otherwise waits until 3:30am):
+#   kubectl create job --from=cronjob/elastic-monitor-configure-ilm elastic-monitor-configure-ilm-init -n elastic-system
 
 # upgrade exceptionless app to a new docker image tag
 $VERSION = "8.0.0"
