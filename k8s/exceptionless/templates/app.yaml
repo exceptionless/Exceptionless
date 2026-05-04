@@ -140,23 +140,39 @@ spec:
     component: {{ template "exceptionless.fullname" . }}-app
 
 ---
+{{- if .Values.ingress.enabled }}
+---
+apiVersion: alb.networking.azure.io/v1
+kind: IngressExtension
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-app-http-to-https
+spec:
+  rules:
+  {{- range .Values.app.domains }}
+    - host: {{ . }}
+      requestRedirect:
+        statusCode: 302
+        scheme: https
+  {{- end }}
+
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ template "exceptionless.fullname" . }}-app-ingress
+  name: {{ template "exceptionless.fullname" . }}-app-ingress-agc
   annotations:
-    kubernetes.io/ingress.class: nginx
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,Keep-Alive,User-Agent,If-Modified-Since,Cache-Control,Content-Type,Authorization,ETag,Link,v,X-Requested-With,X-Exceptionless-Client,X-Result-Count,X-RateLimit-Limit,X-RateLimit-Remaining,X-Exceptionless-ConfigVersion"
-    nginx.ingress.kubernetes.io/enable-cors: "true"
+    alb.networking.azure.io/alb-name: {{ .Values.ingress.albName }}
+    alb.networking.azure.io/alb-namespace: {{ .Values.ingress.albNamespace }}
+    alb.networking.azure.io/alb-frontend: {{ template "exceptionless.fullname" . }}-fe
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer }}
 spec:
+  ingressClassName: azure-alb-external
   tls:
   - hosts:
     {{- range .Values.app.domains }}
     - {{ . }}
     {{- end }}
-    secretName: {{ template "exceptionless.fullname" . }}-app-tls
+    secretName: {{ template "exceptionless.fullname" . }}-app-agc-tls
   rules:
   {{- range .Values.app.domains }}
   - host: {{ . }}
@@ -170,3 +186,30 @@ spec:
             port:
               number: 80
   {{- end }}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-app-ingress-agc-http
+  annotations:
+    alb.networking.azure.io/alb-name: {{ .Values.ingress.albName }}
+    alb.networking.azure.io/alb-namespace: {{ .Values.ingress.albNamespace }}
+    alb.networking.azure.io/alb-frontend: {{ template "exceptionless.fullname" . }}-fe
+    alb.networking.azure.io/alb-ingress-extension: {{ template "exceptionless.fullname" . }}-app-http-to-https
+spec:
+  ingressClassName: azure-alb-external
+  rules:
+  {{- range .Values.app.domains }}
+  - host: {{ . }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ template "exceptionless.fullname" $ }}-app
+            port:
+              number: 80
+  {{- end }}
+{{- end }}

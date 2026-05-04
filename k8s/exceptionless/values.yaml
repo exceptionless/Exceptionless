@@ -22,6 +22,12 @@ jobs:
 config: {}
 #  key: value
 
+ingress:
+  enabled: false
+  clusterIssuer: cert-manager-webhook-dnsimple-production
+  albName: public-alb
+  albNamespace: kube-system
+
 service:
   type: ClusterIP
 
@@ -29,7 +35,7 @@ elasticsearch:
   connectionString:
   image:
     repository: exceptionless/elasticsearch
-    tag: 8.19.14
+    tag: 8.19.15
     pullPolicy: IfNotPresent
 
 redis:

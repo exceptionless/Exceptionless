@@ -63,3 +63,12 @@ helm upgrade `
 
 helm upgrade --set "redis.connectionString=$REDIS_CONNECTIONSTRING" --reuse-values ex-dev --namespace ex-dev .\exceptionless
 helm upgrade --reuse-values ex-dev --namespace ex-dev .\exceptionless --dry-run | code-insiders -
+
+# migrate ingress from nginx to agc
+# step 1: enable AGC alongside NGINX (both serve the same backend, DNS determines traffic)
+helm upgrade -f ex-dev-values.yaml --reuse-values ex-dev --namespace ex-dev .\exceptionless
+# step 2: wait for certs + address, then flip DNS CNAME to AGC frontend
+kubectl get ingress -n ex-dev
+kubectl get certificate -n ex-dev
+# step 3: after DNS propagates and all traffic is on AGC, disable NGINX
+helm upgrade --set "ingress.nginx.enabled=false" --reuse-values ex-dev --namespace ex-dev .\exceptionless

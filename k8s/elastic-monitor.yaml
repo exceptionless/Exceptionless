@@ -4,7 +4,7 @@ metadata:
   name: elastic-monitor
   namespace: elastic-system
 spec:
-  version: 8.19.14
+  version: 8.19.15
   podDisruptionBudget: {}
   nodeSets:
     - name: main
@@ -51,7 +51,7 @@ metadata:
   name: kibana-monitor
   namespace: elastic-system
 spec:
-  version: 8.19.14
+  version: 8.19.15
   count: 1
   elasticsearchRef:
     name: elastic-monitor
@@ -110,22 +110,60 @@ spec:
                     value: 0.0.0.0:8200
 
 ---
+apiVersion: alb.networking.azure.io/v1
+kind: IngressExtension
+metadata:
+  name: elastic-monitor-http-to-https
+  namespace: elastic-system
+spec:
+  rules:
+    - host: kibana.exceptionless.io
+      requestRedirect:
+        statusCode: 302
+        scheme: https
+
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: elastic-monitor
   namespace: elastic-system
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-    nginx.ingress.kubernetes.io/proxy-ssl-verify: "off"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    alb.networking.azure.io/alb-name: public-alb
+    alb.networking.azure.io/alb-namespace: kube-system
+    alb.networking.azure.io/alb-frontend: elastic-monitor-fe
+    cert-manager.io/cluster-issuer: cert-manager-webhook-dnsimple-production
 spec:
-  ingressClassName: nginx
+  ingressClassName: azure-alb-external
   tls:
     - hosts:
         - kibana.exceptionless.io
       secretName: elastic-monitor-kibana-tls
+  rules:
+    - host: kibana.exceptionless.io
+      http:
+        paths:
+          - path: "/"
+            pathType: Prefix
+            backend:
+              service:
+                name: kibana-monitor-kb-http
+                port:
+                  name: https
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: elastic-monitor-http
+  namespace: elastic-system
+  annotations:
+    alb.networking.azure.io/alb-name: public-alb
+    alb.networking.azure.io/alb-namespace: kube-system
+    alb.networking.azure.io/alb-frontend: elastic-monitor-fe
+    alb.networking.azure.io/alb-ingress-extension: elastic-monitor-http-to-https
+spec:
+  ingressClassName: azure-alb-external
   rules:
     - host: kibana.exceptionless.io
       http:
@@ -145,7 +183,7 @@ metadata:
   name: fleet-server
   namespace: elastic-system
 spec:
-  version: 8.19.14
+  version: 8.19.15
   kibanaRef:
     name: kibana-monitor
   elasticsearchRefs:
@@ -169,7 +207,7 @@ metadata:
   name: elastic-agent
   namespace: elastic-system
 spec:
-  version: 8.19.14
+  version: 8.19.15
   kibanaRef:
     name: kibana-monitor
   fleetServerRef:

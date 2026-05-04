@@ -141,7 +141,6 @@ helm upgrade `
     --reuse-values ex-prod --namespace ex-prod .\exceptionless
 
 # NOTE any commas in helm values need to be escaped with a backslash ie server,password=pass need to be server\,password=pass
-# redis cluster connection string example: ex-prod-redis-cluster-leader-headless.ex-prod:6379\,password=mypass\,abortConnect=false
 helm upgrade --set "redis.connectionString=$REDIS_CONNECTIONSTRING" --reuse-values ex-prod --namespace ex-prod .\exceptionless
 
 # stop the entire app

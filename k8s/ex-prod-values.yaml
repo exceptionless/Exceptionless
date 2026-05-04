@@ -38,3 +38,9 @@ config:
   EX_OTEL_TRACES_SAMPLER: "parentbased_traceidratio"
   EX_OTEL_TRACES_SAMPLER_ARG: "0.1"
   EX_OTEL_LOG_LEVEL: "warn"
+
+ingress:
+  enabled: true
+  clusterIssuer: cert-manager-webhook-dnsimple-production
+  albName: public-alb
+  albNamespace: kube-system
