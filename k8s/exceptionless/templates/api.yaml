@@ -149,7 +149,7 @@ spec:
   {{- range .Values.api.domains }}
     - host: {{ . }}
       requestRedirect:
-        statusCode: 302
+        statusCode: 301
         scheme: https
   {{- end }}
 
