@@ -300,7 +300,7 @@ spec:
   rules:
     - host: kibana.exceptionless.io
       requestRedirect:
-        statusCode: 302
+        statusCode: 301
         scheme: https
 
 ---
