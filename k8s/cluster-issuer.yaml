@@ -9,9 +9,12 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-prod
     solvers:
-    - http01:
-        ingress:
-          class: nginx
+    - dns01:
+        webhook:
+          groupName: acme.dnsimple.com
+          solverName: dnsimple
+          config:
+            accessToken: ""
 
 ---
 apiVersion: cert-manager.io/v1

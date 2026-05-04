@@ -57,11 +57,6 @@ kubectl run --namespace ex-prod ex-prod-client --rm --tty -i --restart='Never' `
     --env ELASTIC_PASSWORD=$ELASTIC_PASSWORD `
     --image exceptionless/api-ci:$API_TAG -- bash
 
-# upgrade nginx ingress to latest
-# https://github.com/kubernetes/ingress-nginx/releases
-helm repo update
-helm upgrade --reset-values --namespace ingress-nginx -f nginx-values.yaml ingress-nginx ingress-nginx/ingress-nginx --dry-run
-
 # upgrade cert-manager
 # https://github.com/jetstack/cert-manager/releases
 helm repo update

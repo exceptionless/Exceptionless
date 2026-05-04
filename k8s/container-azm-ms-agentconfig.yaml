@@ -19,7 +19,7 @@ data:
           # kube-system log collection is disabled by default in the absence of 'log_collection_settings.stdout' setting. If you want to enable kube-system, remove it from the following setting.
           # If you want to continue to disable kube-system log collection keep this namespace in the following setting and add any other namespace you want to disable log collection to the array.
           # In the absense of this configmap, default value for exclude_namespaces = ["kube-system"]
-          exclude_namespaces = ["kube-system","ingress-nginx"]
+          exclude_namespaces = ["kube-system"]
 
        [log_collection_settings.stderr]
           # Default value for enabled is true
