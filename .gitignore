@@ -80,3 +80,5 @@ tmpclaude*
 dogfood-output/
 debug-storybook.log
 
+
+.devcontainer/devcontainer-lock.json

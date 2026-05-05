@@ -13,13 +13,19 @@
     "customizations": {
         "vscode": {
             "extensions": [
-                "microsoft-aspire.aspire-vscode",
-                "ms-dotnettools.csharp",
-                "ms-dotnettools.csdevkit",
-                "ms-azuretools.vscode-containers",
-                "tintoy.msbuild-project-tools",
+                // ms-dotnettools.csdevkit and microsoft-aspire.aspire-vscode are already
+                // declared by the aspire feature and don't need to be listed here.
+                "bradlc.vscode-tailwindcss",
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "humao.rest-client",
+                "ms-kubernetes-tools.vscode-kubernetes-tools",
+                "ms-playwright.playwright",
+                "selemondev.vscode-shadcn-svelte",
                 "streetsidesoftware.code-spell-checker",
-                "humao.rest-client"
+                "svelte.svelte-vscode",
+                "tintoy.msbuild-project-tools",
+                "vitest.explorer"
             ]
         }
     },
@@ -57,7 +63,9 @@
         "storage": "32gb"
     },
     "postCreateCommand": "bash .devcontainer/postCreateCommand.sh",
+    "postStartCommand": "dotnet dev-certs https --trust",
     "features": {
+        "ghcr.io/microsoft/aspire-devcontainer-feature/aspire:2": {},
         "ghcr.io/devcontainers/features/powershell:1": {
             "version": "latest"
         },
