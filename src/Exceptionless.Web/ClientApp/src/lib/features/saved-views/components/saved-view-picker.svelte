@@ -17,6 +17,7 @@
     import Plus from '@lucide/svelte/icons/plus';
     import Save from '@lucide/svelte/icons/save';
     import Star from '@lucide/svelte/icons/star';
+    import StarOff from '@lucide/svelte/icons/star-off';
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import Undo2 from '@lucide/svelte/icons/undo-2';
     import { tick } from 'svelte';
@@ -265,9 +266,10 @@
             return;
         }
 
+        const willBeDefault = !activeView.is_default;
         try {
-            await updateMutation.mutateAsync({ is_default: true });
-            toast.success('Set as default.');
+            await updateMutation.mutateAsync({ is_default: willBeDefault });
+            toast.success(willBeDefault ? 'Set as default for everyone.' : 'Default removed.');
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to update default setting.'));
         }
@@ -311,7 +313,14 @@
             <DropdownMenu.Separator />
         {/if}
 
-        {#if savedViews.length > 0}
+        {#if savedViews.length === 0}
+            <DropdownMenu.Group>
+                <DropdownMenu.Item disabled class="text-muted-foreground justify-center text-xs italic">
+                    No saved views yet
+                </DropdownMenu.Item>
+            </DropdownMenu.Group>
+            <DropdownMenu.Separator />
+        {:else}
             <DropdownMenu.Group>
                 <DropdownMenu.GroupHeading>Saved Views</DropdownMenu.GroupHeading>
                 {#each sortedViews as savedView (savedView.id)}
@@ -391,10 +400,15 @@
                     <Pencil class="mr-2 size-4" />
                     Rename "{activeView.name}"
                 </DropdownMenu.Item>
-                {#if !activeView.user_id && !activeView.is_default}
+                {#if !activeView.user_id}
                     <DropdownMenu.Item disabled={saving} onclick={handleToggleDefault}>
-                        <Star class="mr-2 size-4" />
-                        Set as default for everyone
+                        {#if activeView.is_default}
+                            <StarOff class="mr-2 size-4" />
+                            Remove as default
+                        {:else}
+                            <Star class="mr-2 size-4" />
+                            Set as default for everyone
+                        {/if}
                     </DropdownMenu.Item>
                 {/if}
                 <DropdownMenu.Item onclick={onClearSavedView}>Clear Saved View</DropdownMenu.Item>
