@@ -10,23 +10,32 @@ import type { NewSavedView, SavedView, UpdateSavedView } from './models';
 export async function invalidateSavedViewQueries(queryClient: QueryClient, message: WebSocketMessageValue<'SavedViewChanged'>) {
     const { change_type, id, organization_id } = message;
 
+    console.debug('[SavedViewChanged] WebSocket message received', { change_type, id, organization_id });
+
     // For removals, evict from cache in-place (no refetch needed).
     if (change_type === ChangeType.Removed && id && organization_id) {
         const cached = queryClient.getQueryData<SavedView[]>(queryKeys.organization(organization_id));
         const savedView = cached?.find((v) => v.id === id);
         if (savedView) {
+            console.debug('[SavedViewChanged] Evicting removed view from cache', { id });
             removeSavedViewFromCaches(queryClient, savedView, organization_id);
             return;
         }
     }
 
     // For Added/Saved, mutations already updated the cache optimistically via
-    // syncSavedViewCaches. Invalidate so the next fetch picks up ES-confirmed data.
-    if (organization_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.organization(organization_id) });
-    } else {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
-    }
+    // syncSavedViewCaches. Delay the invalidation by 1500ms so Elasticsearch has
+    // time to refresh before the refetch, preventing stale data from overwriting
+    // the optimistic update (e.g. a rename appearing to revert after the WS message).
+    console.debug('[SavedViewChanged] Scheduling delayed invalidation for Added/Saved', { change_type });
+    setTimeout(async () => {
+        console.debug('[SavedViewChanged] Running delayed invalidation', { organization_id });
+        if (organization_id) {
+            await queryClient.invalidateQueries({ queryKey: queryKeys.organization(organization_id) });
+        } else {
+            await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        }
+    }, 1500);
 }
 
 export const queryKeys = {
