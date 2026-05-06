@@ -12,7 +12,7 @@
     import { getInvoiceQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import Currency from '$features/shared/components/formatters/currency.svelte';
-    import File from '@lucide/svelte/icons/file';
+    import Receipt from '@lucide/svelte/icons/receipt';
 
     const invoiceId = $derived(page.params.id || '');
 
@@ -99,7 +99,7 @@
         <div class="bg-card rounded-lg border">
             <div class="bg-muted/50 border-b p-4">
                 <div class="flex items-center gap-2">
-                    <File class="size-4" />
+                    <Receipt class="size-4" />
                     <H4 class="mb-0">{invoiceQuery.data.paid ? 'Receipt' : 'Invoice'}</H4>
                 </div>
             </div>
