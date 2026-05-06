@@ -1,5 +1,5 @@
 {
-  "appHost": {
-    "path": "src/Exceptionless.AppHost/Exceptionless.AppHost.csproj"
-  }
+    "appHost": {
+        "path": "src/Exceptionless.AppHost/Exceptionless.AppHost.csproj"
+    }
 }
