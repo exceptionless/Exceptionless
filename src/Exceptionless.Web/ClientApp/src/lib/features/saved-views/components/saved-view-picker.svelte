@@ -237,7 +237,14 @@
             await removeMutation.mutateAsync(target);
 
             if (activeSavedView?.id === target.id) {
-                onClearSavedView();
+                // Navigate to remaining default view, or fall back to clearing the state
+                const remainingViews = savedViews.filter((v) => v.id !== target.id);
+                const newDefault = remainingViews.find((v) => v.is_default);
+                if (newDefault) {
+                    onLoadView(newDefault.id);
+                } else {
+                    onClearSavedView();
+                }
             }
 
             toast.success(`View "${target.name}" deleted.`);
@@ -390,15 +397,12 @@
                         Set as default for everyone
                     </DropdownMenu.Item>
                 {/if}
+                <DropdownMenu.Item onclick={onClearSavedView}>Clear Saved View</DropdownMenu.Item>
                 <DropdownMenu.Separator />
                 <DropdownMenu.Item class="text-destructive" onclick={() => openDeleteDialog(activeView)}>
                     <Trash2 class="mr-2 size-4" />
                     Delete "{activeView.name}"
                 </DropdownMenu.Item>
-                {#if !isModified}
-                    <DropdownMenu.Separator />
-                    <DropdownMenu.Item onclick={onClearSavedView}>Clear Saved View</DropdownMenu.Item>
-                {/if}
             {/if}
         </DropdownMenu.Group>
     </DropdownMenu.Content>
