@@ -1,6 +1,6 @@
 @url = http://localhost:7110
 @apiUrl = {url}/api/v2
-@email = test@localhost
+@email = admin@exceptionless.test
 @password = tester
 @organizationId = 537650f3b77efe23a47914f3
 

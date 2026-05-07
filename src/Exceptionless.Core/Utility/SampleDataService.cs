@@ -23,7 +23,7 @@ public class SampleDataService
     private readonly IUserRepository _userRepository;
     private readonly ILogger<SampleDataService> _logger;
 
-    public const string TEST_USER_EMAIL = "test@localhost";
+    public const string TEST_USER_EMAIL = "admin@exceptionless.test";
     public const string TEST_USER_PASSWORD = "tester";
     public const string TEST_ORG_ID = "537650f3b77efe23a47914f3";
     public const string TEST_PROJECT_ID = "537650f3b77efe23a47914f4";

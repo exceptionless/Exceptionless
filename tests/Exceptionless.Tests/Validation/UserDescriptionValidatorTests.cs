@@ -17,7 +17,7 @@ public sealed class UserDescriptionValidatorTests : TestWithServices
     {
         return new UserDescription
         {
-            EmailAddress = "test@localhost.com",
+            EmailAddress = "admin@exceptionless.test",
             Description = "This is a test description"
         };
     }
@@ -136,7 +136,7 @@ public sealed class UserDescriptionValidatorTests : TestWithServices
         // Arrange
         var userDescription = new UserDescription
         {
-            EmailAddress = "test@localhost.com"
+            EmailAddress = "admin@exceptionless.test"
         };
 
         // Act

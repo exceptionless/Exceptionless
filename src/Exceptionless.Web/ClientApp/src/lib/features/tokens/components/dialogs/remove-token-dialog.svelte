@@ -21,8 +21,8 @@
     <AlertDialog.Content>
         <AlertDialog.Header>
             <AlertDialog.Title>Delete API Key</AlertDialog.Title>
-            <AlertDialog.Description class="break-all">
-                Are you sure you want to delete "{id}" {#if notes}({notes}){/if}?
+            <AlertDialog.Description class="wrap-break-word">
+                Are you sure you want to delete "<span class="break-all">{id}</span>" {#if notes}(<span class="break-all">{notes}</span>){/if}?
             </AlertDialog.Description>
         </AlertDialog.Header>
         <AlertDialog.Footer>

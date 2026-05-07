@@ -1,7 +1,9 @@
 <script lang="ts">
     import * as AlertDialog from '$comp/ui/alert-dialog';
+    import { Muted } from '$comp/typography';
     import { ChangePlanDialog, isStripeEnabled } from '$features/billing';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
+    import { toast } from 'svelte-sonner';
 
     import { upgradeRequiredDialog } from '../upgrade-required.svelte';
 
@@ -15,12 +17,16 @@
         }
     });
 
-    function onUpgrade() {
-        upgradeRequiredDialog.open = false;
+    const canOpenBilling = $derived(isStripeEnabled() && !!upgradeRequiredDialog.organizationId);
 
-        if (isStripeEnabled() && upgradeRequiredDialog.organizationId) {
-            showChangePlan = true;
+    function onUpgrade() {
+        if (!canOpenBilling) {
+            toast.error('Billing is not configured in this environment. Contact your administrator.');
+            return;
         }
+
+        upgradeRequiredDialog.open = false;
+        showChangePlan = true;
     }
 
     async function onChangePlanClose(success: boolean) {
@@ -50,10 +56,13 @@
         <AlertDialog.Header>
             <AlertDialog.Title>Upgrade Plan</AlertDialog.Title>
             <AlertDialog.Description>{upgradeRequiredDialog.message}</AlertDialog.Description>
+            {#if !canOpenBilling}
+                <Muted>Billing checkout is unavailable in this environment.</Muted>
+            {/if}
         </AlertDialog.Header>
         <AlertDialog.Footer>
             <AlertDialog.Cancel onclick={onCancel}>Cancel</AlertDialog.Cancel>
-            <AlertDialog.Action onclick={onUpgrade}>Upgrade Plan</AlertDialog.Action>
+            <AlertDialog.Action onclick={onUpgrade} disabled={!canOpenBilling}>Upgrade Plan</AlertDialog.Action>
         </AlertDialog.Footer>
     </AlertDialog.Content>
 </AlertDialog.Root>
