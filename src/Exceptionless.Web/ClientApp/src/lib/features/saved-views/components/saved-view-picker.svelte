@@ -315,9 +315,7 @@
 
         {#if savedViews.length === 0}
             <DropdownMenu.Group>
-                <DropdownMenu.Item disabled class="text-muted-foreground justify-center text-xs italic">
-                    No saved views yet
-                </DropdownMenu.Item>
+                <DropdownMenu.Item disabled class="text-muted-foreground justify-center text-xs italic">No saved views yet</DropdownMenu.Item>
             </DropdownMenu.Group>
             <DropdownMenu.Separator />
         {:else}

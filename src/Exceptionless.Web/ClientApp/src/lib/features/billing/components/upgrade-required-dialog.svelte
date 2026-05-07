@@ -1,6 +1,6 @@
 <script lang="ts">
-    import * as AlertDialog from '$comp/ui/alert-dialog';
     import { Muted } from '$comp/typography';
+    import * as AlertDialog from '$comp/ui/alert-dialog';
     import { ChangePlanDialog, isStripeEnabled } from '$features/billing';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { toast } from 'svelte-sonner';
