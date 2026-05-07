@@ -38,7 +38,7 @@ public class EmailOptions
 
         options.EnableDailySummary = config.GetValue(nameof(options.EnableDailySummary), appOptions.AppMode == AppMode.Production);
         options.AllowedOutboundAddresses = config.GetValueList(nameof(options.AllowedOutboundAddresses)).Select(v => v.ToLowerInvariant()).ToList();
-        options.TestEmailAddress = config.GetValue(nameof(options.TestEmailAddress), appOptions.AppMode == AppMode.Development ? "test@localhost" : null);
+        options.TestEmailAddress = config.GetValue(nameof(options.TestEmailAddress), appOptions.AppMode == AppMode.Development ? "admin@exceptionless.test" : null);
 
         string? emailConnectionString = config.GetConnectionString("Email");
         if (!String.IsNullOrEmpty(emailConnectionString))

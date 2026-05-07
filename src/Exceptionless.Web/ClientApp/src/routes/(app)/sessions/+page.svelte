@@ -66,7 +66,7 @@
         }
     });
 
-    const hasPremiumFeatures = $derived(!organizationQuery.isSuccess || !!organizationQuery.data?.has_premium_features);
+    const hasPremiumFeatures = $derived(organizationQuery.isSuccess && !!organizationQuery.data?.has_premium_features);
 
     // View Active toggle state
     let viewActive = $state(false);

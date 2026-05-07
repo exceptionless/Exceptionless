@@ -17,6 +17,7 @@
     import Plus from '@lucide/svelte/icons/plus';
     import Save from '@lucide/svelte/icons/save';
     import Star from '@lucide/svelte/icons/star';
+    import StarOff from '@lucide/svelte/icons/star-off';
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import Undo2 from '@lucide/svelte/icons/undo-2';
     import { tick } from 'svelte';
@@ -237,7 +238,14 @@
             await removeMutation.mutateAsync(target);
 
             if (activeSavedView?.id === target.id) {
-                onClearSavedView();
+                // Navigate to remaining default view, or fall back to clearing the state
+                const remainingViews = savedViews.filter((v) => v.id !== target.id);
+                const newDefault = remainingViews.find((v) => v.is_default);
+                if (newDefault) {
+                    onLoadView(newDefault.id);
+                } else {
+                    onClearSavedView();
+                }
             }
 
             toast.success(`View "${target.name}" deleted.`);
@@ -258,9 +266,10 @@
             return;
         }
 
+        const willBeDefault = !activeView.is_default;
         try {
-            await updateMutation.mutateAsync({ is_default: true });
-            toast.success('Set as default.');
+            await updateMutation.mutateAsync({ is_default: willBeDefault });
+            toast.success(willBeDefault ? 'Set as default for everyone.' : 'Default removed.');
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to update default setting.'));
         }
@@ -304,7 +313,14 @@
             <DropdownMenu.Separator />
         {/if}
 
-        {#if savedViews.length > 0}
+        {#if savedViews.length === 0}
+            <DropdownMenu.Group>
+                <DropdownMenu.Item disabled class="text-muted-foreground justify-center text-xs italic">
+                    No saved views yet
+                </DropdownMenu.Item>
+            </DropdownMenu.Group>
+            <DropdownMenu.Separator />
+        {:else}
             <DropdownMenu.Group>
                 <DropdownMenu.GroupHeading>Saved Views</DropdownMenu.GroupHeading>
                 {#each sortedViews as savedView (savedView.id)}
@@ -384,21 +400,23 @@
                     <Pencil class="mr-2 size-4" />
                     Rename "{activeView.name}"
                 </DropdownMenu.Item>
-                {#if !activeView.user_id && !activeView.is_default}
+                {#if !activeView.user_id}
                     <DropdownMenu.Item disabled={saving} onclick={handleToggleDefault}>
-                        <Star class="mr-2 size-4" />
-                        Set as default for everyone
+                        {#if activeView.is_default}
+                            <StarOff class="mr-2 size-4" />
+                            Remove as default
+                        {:else}
+                            <Star class="mr-2 size-4" />
+                            Set as default for everyone
+                        {/if}
                     </DropdownMenu.Item>
                 {/if}
+                <DropdownMenu.Item onclick={onClearSavedView}>Clear Saved View</DropdownMenu.Item>
                 <DropdownMenu.Separator />
                 <DropdownMenu.Item class="text-destructive" onclick={() => openDeleteDialog(activeView)}>
                     <Trash2 class="mr-2 size-4" />
                     Delete "{activeView.name}"
                 </DropdownMenu.Item>
-                {#if !isModified}
-                    <DropdownMenu.Separator />
-                    <DropdownMenu.Item onclick={onClearSavedView}>Clear Saved View</DropdownMenu.Item>
-                {/if}
             {/if}
         </DropdownMenu.Group>
     </DropdownMenu.Content>

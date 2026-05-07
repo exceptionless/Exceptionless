@@ -1,9 +1,9 @@
 <script lang="ts">
     import type { NotificationProps } from '$comp/notification';
 
-    import { resolve } from '$app/paths';
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
     import { A } from '$comp/typography';
+    import { showUpgradeDialog } from '$features/billing/upgrade-required.svelte';
 
     interface Props extends NotificationProps {
         name: string;
@@ -16,7 +16,7 @@
 <Notification variant="success" {...restProps}>
     <NotificationTitle>{name} is currently on a free plan.</NotificationTitle>
     <NotificationDescription>
-        <A href={`${resolve('/(app)/organization/[organizationId]/billing', { organizationId })}?changePlan=true`}>Upgrade now</A>
+        <A onclick={() => showUpgradeDialog(organizationId, 'Upgrade to enable premium features and extra storage.')}>Upgrade now</A>
         to enable premium features and extra storage!
     </NotificationDescription>
 </Notification>
