@@ -41,7 +41,7 @@ Start here:
 After startup:
 
 1. Open `https://localhost:7121/` if a browser does not open automatically.
-2. In `Development` mode, a global administrator user `test@localhost` with password `tester` is created automatically.
+2. In `Development` mode, a global administrator user `admin@exceptionless.test` with password `tester` is created automatically.
 
 Notes:
 

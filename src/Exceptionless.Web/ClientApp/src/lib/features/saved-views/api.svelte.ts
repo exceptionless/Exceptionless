@@ -10,7 +10,7 @@ import type { NewSavedView, SavedView, UpdateSavedView } from './models';
 export async function invalidateSavedViewQueries(queryClient: QueryClient, message: WebSocketMessageValue<'SavedViewChanged'>) {
     const { change_type, id, organization_id } = message;
 
-    // For removals, evict from cache in-place (no refetch needed).
+    // Removals: evict from cache immediately without a refetch.
     if (change_type === ChangeType.Removed && id && organization_id) {
         const cached = queryClient.getQueryData<SavedView[]>(queryKeys.organization(organization_id));
         const savedView = cached?.find((v) => v.id === id);
@@ -20,8 +20,9 @@ export async function invalidateSavedViewQueries(queryClient: QueryClient, messa
         }
     }
 
-    // For Added/Saved, mutations already updated the cache optimistically via
-    // syncSavedViewCaches. Invalidate so the next fetch picks up ES-confirmed data.
+    // Added/Saved: mutations already wrote optimistic updates via syncSavedViewCaches so the
+    // UI is immediately correct. The WS event arriving signals ES has committed the change,
+    // so we invalidate now to pull the authoritative ES data into the cache.
     if (organization_id) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.organization(organization_id) });
     } else {

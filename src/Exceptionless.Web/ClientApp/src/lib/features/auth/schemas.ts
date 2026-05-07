@@ -1,17 +1,9 @@
-import { dev } from '$app/environment';
 import { ChangePasswordModelSchema, LoginSchema as GeneratedLoginSchema, ResetPasswordModelSchema } from '$generated/schemas';
 import { email, type infer as Infer, object, string } from 'zod';
 
 export { type SignupFormData, SignupSchema } from '$generated/schemas';
 
-// In dev mode, allow addresses like test@localhost (no TLD required)
-export const LoginSchema = dev
-    ? GeneratedLoginSchema.extend({
-          email: string()
-              .min(1, 'Email is required')
-              .regex(/^[^\s@]+@[^\s@]+$/, 'Please enter a valid email address')
-      })
-    : GeneratedLoginSchema;
+export const LoginSchema = GeneratedLoginSchema;
 export type LoginFormData = Infer<typeof GeneratedLoginSchema>;
 
 export const ChangePasswordSchema = ChangePasswordModelSchema.extend({
