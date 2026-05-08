@@ -143,7 +143,7 @@ app.UseExceptionless();`,
     --request POST \\
     --header "Authorization: Bearer ${apiKey}" \\
     --header "Content-Type: application/json" \\
-    --data-binary "[{'type':'log','message':'Hello World!'}]"`,
+    --data-binary '[{"type":"log","message":"Hello World!"}]'`,
 
         browserJs: `import { Exceptionless } from "@exceptionless/browser";
 
