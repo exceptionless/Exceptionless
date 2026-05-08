@@ -92,12 +92,22 @@ if (!servicesOnly)
         .WaitFor(elastic)
         .WaitFor(cache)
         .WaitFor(mail)
-        .WithUrlForEndpoint("http", u => { u.DisplayText = "Jobs"; u.DisplayLocation = UrlDisplayLocation.DetailsOnly; })
-        .WithUrlForEndpoint("https", u => { u.DisplayText = "Jobs"; u.DisplayLocation = UrlDisplayLocation.DetailsOnly; })
+        .WithUrlForEndpoint("http", u =>
+        {
+            u.DisplayText = "Jobs";
+            u.DisplayLocation = UrlDisplayLocation.DetailsOnly;
+        })
+        .WithUrlForEndpoint("https", u =>
+        {
+            u.DisplayText = "Jobs";
+            u.DisplayLocation = UrlDisplayLocation.DetailsOnly;
+        })
         .WithHttpHealthCheck("/health")
         .WithParentRelationship(api);
 
+#pragma warning disable ASPIREBROWSERLOGS001
     var oldApp = builder.AddJavaScriptApp("OldApp", "../../src/Exceptionless.Web/ClientApp.angular", "serve")
+        .WithBrowserLogs()
         .WithReference(api)
         .RemoveJavaScriptDebuggingAnnotation()
         .WithEnvironment("ASPNETCORE_URLS", "http://localhost:7120")
@@ -109,10 +119,17 @@ if (!servicesOnly)
             e.UriScheme = "https";
         })
         .WithHttpsDeveloperCertificate()
-        .WithUrlForEndpoint("https", u => { u.DisplayText = "Open App (Old)"; u.DisplayOrder = 100; })
+        .WithUrlForEndpoint("https", u =>
+        {
+            u.DisplayText = "Open App (Old)";
+            u.DisplayOrder = 100;
+        })
         .WithParentRelationship(api);
+#pragma warning restore ASPIREBROWSERLOGS001
 
+#pragma warning disable ASPIREBROWSERLOGS001
     builder.AddViteApp("App", "../Exceptionless.Web/ClientApp")
+        .WithBrowserLogs()
         .WithReference(api)
         .WithReference(oldApp)
         .RemoveJavaScriptDebuggingAnnotation()
@@ -129,9 +146,10 @@ if (!servicesOnly)
         {
             u.DisplayText = "Open App";
             u.DisplayOrder = 100;
-            u.Url = $"{u.Url?.TrimEnd('/')}/next/";
+            u.Url = $"{u.Url.TrimEnd('/')}/next/";
         })
         .WithParentRelationship(api);
+#pragma warning restore ASPIREBROWSERLOGS001
 }
 
 await builder.Build().RunAsync();
