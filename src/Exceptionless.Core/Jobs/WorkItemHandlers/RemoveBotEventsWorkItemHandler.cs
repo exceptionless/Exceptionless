@@ -21,7 +21,7 @@ public class RemoveBotEventsWorkItemHandler : WorkItemHandlerBase
     {
         var wi = (RemoveBotEventsWorkItem)workItem;
         string cacheKey = $"{nameof(RemoveBotEventsWorkItem)}:{wi.OrganizationId}:{wi.ProjectId}";
-        return _lockProvider.AcquireAsync(cacheKey, TimeSpan.FromMinutes(15), cancellationToken);
+        return _lockProvider.TryAcquireAsync(cacheKey, TimeSpan.FromMinutes(15), cancellationToken);
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
