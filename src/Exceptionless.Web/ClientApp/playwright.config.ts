@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const isCi = !!process.env.CI;
-const appUrl = process.env.E2E_APP_URL || 'https://web-ex.dev.localhost:7131';
+const appUrl = process.env.E2E_URL || 'https://web-ex.dev.localhost:7131';
 
 export default defineConfig({
     expect: {

@@ -30,7 +30,7 @@ Local defaults target `https://web-ex.dev.localhost:7131` for the app and derive
 
 | Name           | Description                                                               |
 | -------------- | ------------------------------------------------------------------------- |
-| `E2E_APP_URL`  | Base URL for the app origin. API requests use this origin plus `/api/v2`. |
+| `E2E_URL`      | Base URL for the app origin. API requests use this origin plus `/api/v2`. |
 | `E2E_EMAIL`    | Test account email address.                                               |
 | `E2E_PASSWORD` | Test account password.                                                    |
 | `E2E_RUN_ID`   | Optional identifier included in generated org, project, and event names.  |
@@ -51,4 +51,4 @@ Production E2E tests must use a dedicated service account stored in GitHub secre
 
 ## SvelteKit Integration
 
-SvelteKit's current `sv add playwright` template adds `@playwright/test`, a `test:e2e` script, a `playwright.config.ts`, and test files that match `*.e2e.{ts,js}`. The template normally starts a built preview server with `npm run build && npm run preview`, but these tests intentionally use the Aspire AppHost instead because the Exceptionless UI depends on the API, Elasticsearch, Redis, and the job worker. CI installs Aspire CLI 13.3, starts AppHost with `aspire run --detach`, waits for `Api`, `Jobs`, and `App` with `aspire wait`, stops with `aspire stop`, and all E2E runs point Playwright and API setup at a single `E2E_APP_URL` origin.
+SvelteKit's current `sv add playwright` template adds `@playwright/test`, a `test:e2e` script, a `playwright.config.ts`, and test files that match `*.e2e.{ts,js}`. The template normally starts a built preview server with `npm run build && npm run preview`, but these tests intentionally use the Aspire AppHost instead because the Exceptionless UI depends on the API, Elasticsearch, Redis, and the job worker. CI installs Aspire CLI 13.3, starts AppHost with `aspire run --detach`, waits for `Api`, `Jobs`, and `App` with `aspire wait`, stops with `aspire stop`, and all E2E runs point Playwright and API setup at a single `E2E_URL` origin.
