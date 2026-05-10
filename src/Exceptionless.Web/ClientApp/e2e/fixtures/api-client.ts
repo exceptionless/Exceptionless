@@ -21,6 +21,12 @@ export interface E2EProject {
     organization_id?: string;
 }
 
+export interface E2EStack {
+    id: string;
+    status?: string;
+    title?: string;
+}
+
 export interface E2EToken {
     id: string;
     notes?: string;
@@ -66,6 +72,15 @@ export class E2EApiClient {
         });
 
         await expectStatus(response, [202, 404], 'delete organization');
+        return response.status();
+    }
+
+    async deleteProject(token: string, projectId: string): Promise<number> {
+        const response = await this.request.delete(this.url(`projects/${projectId}`), {
+            headers: this.authHeaders(token)
+        });
+
+        await expectStatus(response, [202, 404], 'delete project');
         return response.status();
     }
 
@@ -117,7 +132,20 @@ export class E2EApiClient {
         return toToken(await readJson(response));
     }
 
+    async getStack(token: string, stackId: string): Promise<E2EStack> {
+        const response = await this.request.get(this.url(`stacks/${stackId}`), {
+            headers: this.authHeaders(token)
+        });
+
+        await expectStatus(response, [200], 'get stack');
+        return toStack(await readJson(response));
+    }
+
     async login(): Promise<string> {
+        if (!this.environment.email || !this.environment.password) {
+            throw new Error('E2E_EMAIL and E2E_PASSWORD are required when using API login.');
+        }
+
         const response = await this.request.post(this.url('auth/login'), {
             data: {
                 email: this.environment.email,
@@ -192,7 +220,8 @@ async function expectStatus(response: APIResponse, expectedStatuses: number[], o
         return;
     }
 
-    throw new Error(`${operation} failed with status ${response.status()} ${response.statusText()}`);
+    const body = await response.text();
+    throw new Error(`${operation} failed with status ${response.status()} ${response.statusText()}${body ? `: ${body}` : ''}`);
 }
 
 function getOptionalString(value: Record<string, unknown>, key: string): string | undefined {
@@ -277,6 +306,16 @@ function toRecord(value: unknown, context: string): Record<string, unknown> {
     }
 
     return value;
+}
+
+function toStack(value: unknown): E2EStack {
+    const record = toRecord(value, 'stack response');
+
+    return {
+        id: getRequiredString(record, 'id', 'stack response'),
+        status: getOptionalString(record, 'status'),
+        title: getOptionalString(record, 'title')
+    };
 }
 
 function toToken(value: unknown): E2EToken {

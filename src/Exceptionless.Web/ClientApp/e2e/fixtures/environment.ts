@@ -1,37 +1,25 @@
 const DEFAULT_APP_URL = 'https://web-ex.dev.localhost:7131';
-const DEFAULT_EMAIL = 'admin@exceptionless.test';
-const DEFAULT_PASSWORD = 'tester';
 
 export interface E2EEnvironment {
     apiUrl: string;
     appUrl: string;
-    email: string;
+    email?: string;
     isProduction: boolean;
-    password: string;
+    password?: string;
     runId: string;
 }
 
 export function getE2EEnvironment(): E2EEnvironment {
     const isProduction = getOptionalEnv('E2E_ENV') === 'production';
     const appUrl = getOptionalEnv('E2E_URL') ?? DEFAULT_APP_URL;
-    const email = getOptionalEnv('E2E_EMAIL') ?? (isProduction ? undefined : DEFAULT_EMAIL);
-    const password = getOptionalEnv('E2E_PASSWORD') ?? (isProduction ? undefined : DEFAULT_PASSWORD);
+    const email = getOptionalEnv('E2E_EMAIL');
+    const password = getOptionalEnv('E2E_PASSWORD');
     const runId = getOptionalEnv('E2E_RUN_ID') ?? getDefaultRunId();
 
-    const missing = [
-        ['E2E_URL', appUrl],
-        ['E2E_EMAIL', email],
-        ['E2E_PASSWORD', password]
-    ]
-        .filter(([, value]) => !value)
-        .map(([name]) => name);
+    const missing = [['E2E_URL', appUrl]].filter(([, value]) => !value).map(([name]) => name);
 
     if (isProduction && missing.length > 0) {
         throw new Error(`Production E2E tests require these environment variables: ${missing.join(', ')}`);
-    }
-
-    if (!email || !password) {
-        throw new Error('E2E test credentials are required. Set E2E_EMAIL and E2E_PASSWORD.');
     }
 
     const normalizedAppUrl = normalizeUrl(appUrl);

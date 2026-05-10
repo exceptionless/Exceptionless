@@ -227,8 +227,6 @@ jobs:
         working-directory: src/Exceptionless.Web/ClientApp
         env:
           E2E_URL: https://web-ex.dev.localhost:7131
-          E2E_EMAIL: admin@exceptionless.test
-          E2E_PASSWORD: tester
           E2E_RUN_ID: ci-${{ github.run_id }}-${{ github.run_attempt }}
         run: npm run test:e2e:ci
 

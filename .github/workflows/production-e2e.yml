@@ -38,9 +38,6 @@ jobs:
       - name: Run Production E2E Tests
         env:
           E2E_URL: https://be.exceptionless.io
-          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
-          E2E_ENV: production
-          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
           E2E_RUN_ID: production-${{ github.run_id }}-${{ github.run_attempt }}
         run: npm run test:e2e:prod
 
