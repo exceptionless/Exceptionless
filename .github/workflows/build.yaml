@@ -174,11 +174,7 @@ jobs:
       - name: Install Aspire CLI
         run: |
           export PATH="$HOME/.dotnet/tools:$PATH"
-          if dotnet tool list --global | grep -Eiq '^aspire\.cli[[:space:]]'; then
-            dotnet tool update --global Aspire.Cli --version 13.3.0
-          else
-            dotnet tool install --global Aspire.Cli --version 13.3.0
-          fi
+          dotnet tool install --global Aspire.Cli --version 13.3.0
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
           aspire --version
 
