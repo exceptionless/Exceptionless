@@ -1,0 +1,69 @@
+name: Production E2E Tests
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-e2e
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: src/Exceptionless.Web/ClientApp
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install Npm Packages
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: Run Production E2E Tests
+        env:
+          E2E_APP_URL: ${{ vars[format('{0}_{1}_{2}', 'E2E', 'PRODUCTION', 'APP_URL')] }}
+          E2E_EMAIL: ${{ secrets[format('{0}_{1}_{2}', 'E2E', 'PRODUCTION', 'EMAIL')] }}
+          E2E_ENV: production
+          E2E_PASSWORD: ${{ secrets[format('{0}_{1}_{2}', 'E2E', 'PRODUCTION', 'PASSWORD')] }}
+          E2E_RUN_ID: production-${{ github.run_id }}-${{ github.run_attempt }}
+        run: npm run test:e2e:prod
+
+      - name: Write Summary
+        if: ${{ always() }}
+        run: |
+          echo "### Production E2E Tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Run ID: production-${{ github.run_id }}-${{ github.run_attempt }}" >> $GITHUB_STEP_SUMMARY
+          echo "- App URL configured: ${{ vars[format('{0}_{1}_{2}', 'E2E', 'PRODUCTION', 'APP_URL')] != '' }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Playwright Report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: production-playwright-report
+          path: src/Exceptionless.Web/ClientApp/playwright-report/
+          retention-days: 14
+
+      - name: Upload Playwright Test Results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: production-playwright-test-results
+          path: src/Exceptionless.Web/ClientApp/test-results/
+          retention-days: 14

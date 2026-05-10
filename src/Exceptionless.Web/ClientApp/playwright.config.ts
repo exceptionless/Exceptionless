@@ -1,10 +1,39 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
+
+const isCi = !!process.env.CI;
+const appUrl = process.env.E2E_APP_URL || 'https://web-ex.dev.localhost:7131';
 
 export default defineConfig({
-    testDir: 'e2e',
+    expect: {
+        timeout: 10_000
+    },
 
-    webServer: {
-        command: 'npm run build && npm run preview',
-        port: 4173
-    }
+    outputDir: 'test-results',
+
+    projects: [
+        {
+            name: 'chromium',
+            use: {
+                ...devices['Desktop Chrome']
+            }
+        }
+    ],
+
+    reporter: [['list'], ['html', { open: 'never' }], ['junit', { outputFile: 'test-results/e2e-junit-results.xml' }]],
+
+    retries: isCi ? 2 : 0,
+
+    testMatch: '**/*.e2e.{ts,js}',
+
+    timeout: 120_000,
+
+    use: {
+        baseURL: appUrl,
+        ignoreHTTPSErrors: true,
+        screenshot: 'only-on-failure',
+        trace: 'on-first-retry',
+        video: 'retain-on-failure'
+    },
+
+    workers: isCi ? 1 : undefined
 });
