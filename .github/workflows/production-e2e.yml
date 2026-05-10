@@ -37,10 +37,10 @@ jobs:
 
       - name: Run Production E2E Tests
         env:
-          E2E_APP_URL: ${{ vars[format('{0}_{1}_{2}', 'E2E', 'PRODUCTION', 'APP_URL')] }}
-          E2E_EMAIL: ${{ secrets[format('{0}_{1}_{2}', 'E2E', 'PRODUCTION', 'EMAIL')] }}
+          E2E_APP_URL: ${{ vars.E2E_APP_URL }}
+          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_ENV: production
-          E2E_PASSWORD: ${{ secrets[format('{0}_{1}_{2}', 'E2E', 'PRODUCTION', 'PASSWORD')] }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
           E2E_RUN_ID: production-${{ github.run_id }}-${{ github.run_attempt }}
         run: npm run test:e2e:prod
 
@@ -50,7 +50,7 @@ jobs:
           echo "### Production E2E Tests" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- Run ID: production-${{ github.run_id }}-${{ github.run_attempt }}" >> $GITHUB_STEP_SUMMARY
-          echo "- App URL configured: ${{ vars[format('{0}_{1}_{2}', 'E2E', 'PRODUCTION', 'APP_URL')] != '' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- App URL configured: ${{ vars.E2E_APP_URL != '' }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Playwright Report
         if: ${{ !cancelled() }}
