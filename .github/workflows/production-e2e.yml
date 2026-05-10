@@ -37,7 +37,7 @@ jobs:
 
       - name: Run Production E2E Tests
         env:
-          E2E_URL: ${{ vars.E2E_URL }}
+          E2E_URL: https://be.exceptionless.io
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_ENV: production
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
@@ -50,7 +50,7 @@ jobs:
           echo "### Production E2E Tests" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- Run ID: production-${{ github.run_id }}-${{ github.run_attempt }}" >> $GITHUB_STEP_SUMMARY
-          echo "- E2E URL configured: ${{ vars.E2E_URL != '' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E URL: https://be.exceptionless.io" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Playwright Report
         if: ${{ !cancelled() }}
