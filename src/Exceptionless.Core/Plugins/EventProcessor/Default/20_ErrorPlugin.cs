@@ -50,6 +50,12 @@ public sealed class ErrorPlugin : EventProcessorPluginBase
             targetInfo.AddItemIfNotEmpty("Message", stackingTarget.Error.Message);
 
         error.SetTargetInfo(targetInfo);
+
+        // Write the mutated error back to Event.Data so pipeline changes (e.g., @target)
+        // persist. GetValue<T>() deserializes a disconnected copy; without this write-back,
+        // SetTargetInfo mutations are lost when the event is later serialized for storage.
+        context.Event.Data![Event.KnownDataKeys.Error] = error;
+
         foreach (string key in signature.SignatureInfo.Keys)
             context.StackSignatureData.Add(key, signature.SignatureInfo[key]);
 

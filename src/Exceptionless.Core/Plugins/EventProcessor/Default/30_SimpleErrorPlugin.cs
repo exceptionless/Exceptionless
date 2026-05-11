@@ -39,6 +39,10 @@ public sealed class SimpleErrorPlugin : EventProcessorPluginBase
             context.StackSignatureData.Add("StackTrace", error.StackTrace.ToSHA1());
 
         error.SetTargetInfo(new SettingsDictionary(context.StackSignatureData));
+
+        // Write the mutated error back so @target persists (see ErrorPlugin for rationale).
+        context.Event.Data![Event.KnownDataKeys.SimpleError] = error;
+
         return Task.CompletedTask;
     }
 }

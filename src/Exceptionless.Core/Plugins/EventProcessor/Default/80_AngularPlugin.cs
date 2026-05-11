@@ -43,6 +43,9 @@ public sealed class AngularPlugin : EventProcessorPluginBase
             context.StackSignatureData.Add("Source", "unhandledRejection");
 
             error.SetTargetInfo(new SettingsDictionary(context.StackSignatureData));
+
+            // Write the mutated error back so @target persists (see ErrorPlugin for rationale).
+            context.Event.Data![Event.KnownDataKeys.Error] = error;
         }
 
         return Task.CompletedTask;
