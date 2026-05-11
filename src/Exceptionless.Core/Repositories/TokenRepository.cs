@@ -2,7 +2,7 @@
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
-using FluentValidation;
+using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Token = Exceptionless.Core.Models.Token;
@@ -12,7 +12,7 @@ namespace Exceptionless.Core.Repositories;
 
 public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, ITokenRepository
 {
-    public TokenRepository(ExceptionlessElasticConfiguration configuration, IValidator<Token> validator, AppOptions options)
+    public TokenRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
         : base(configuration.Tokens, validator, options)
     {
         DefaultConsistency = Consistency.Immediate;

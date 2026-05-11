@@ -1,7 +1,7 @@
 # Additonal http collections can be found in the tests/http folder.
 
 @apiUrl = http://localhost:7110/api/v2
-@email = test@localhost
+@email = admin@exceptionless.test
 @password = tester
 
 ### create an account

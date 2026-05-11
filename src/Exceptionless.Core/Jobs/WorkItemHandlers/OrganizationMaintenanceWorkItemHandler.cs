@@ -26,7 +26,7 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase
 
     public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = default)
     {
-        return _lockProvider.AcquireAsync(nameof(OrganizationMaintenanceWorkItemHandler), TimeSpan.FromMinutes(15), cancellationToken);
+        return _lockProvider.TryAcquireAsync(nameof(OrganizationMaintenanceWorkItemHandler), TimeSpan.FromMinutes(15), cancellationToken);
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)

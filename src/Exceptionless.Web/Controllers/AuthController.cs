@@ -719,6 +719,11 @@ public class AuthController : ExceptionlessApiController
 
     private async Task<User> FromExternalLoginAsync(UserInfo userInfo)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Id);
+        ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.ProviderName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Email);
+
+
         var existingUser = await _userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id);
         using var _ = _logger.BeginScope(new ExceptionlessState().Tag("External Login").Property("User Info", userInfo).Property("ExistingUser", existingUser).SetHttpContext(HttpContext));
 
@@ -769,7 +774,7 @@ public class AuthController : ExceptionlessApiController
             if (!_authOptions.EnableAccountCreation)
                 throw new ApplicationException("Account Creation is currently disabled.");
 
-            user = new User { FullName = userInfo.GetFullName(), EmailAddress = userInfo.Email };
+            user = new User { FullName = userInfo.GetFullName()!, EmailAddress = userInfo.Email };
             user.Roles.Add(AuthorizationRoles.Client);
             user.Roles.Add(AuthorizationRoles.User);
             await AddGlobalAdminRoleIfFirstUserAsync(user);

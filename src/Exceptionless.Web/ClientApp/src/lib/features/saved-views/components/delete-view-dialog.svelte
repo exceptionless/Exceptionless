@@ -17,13 +17,13 @@
         <AlertDialog.Content>
             <AlertDialog.Header>
                 <AlertDialog.Title>Delete Saved View</AlertDialog.Title>
-                <AlertDialog.Description>
-                    Are you sure you want to delete "{viewToDelete.name}"? This action cannot be undone.
+                <AlertDialog.Description class="wrap-break-word">
+                    Are you sure you want to delete "<span class="break-all">{viewToDelete.name}</span>"? This action cannot be undone.
                 </AlertDialog.Description>
             </AlertDialog.Header>
             <AlertDialog.Footer>
                 <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-                <AlertDialog.Action onclick={onDelete}>Delete</AlertDialog.Action>
+                <AlertDialog.Action variant="destructive" onclick={onDelete}>Delete</AlertDialog.Action>
             </AlertDialog.Footer>
         </AlertDialog.Content>
     </AlertDialog.Root>

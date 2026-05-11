@@ -1,12 +1,14 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using Exceptionless.Core.Attributes;
+using Exceptionless.Core.Billing;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
 
 [DebuggerDisplay("{Id}, {Name}, {PlanName}")]
-public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates, ISupportSoftDeletes
+public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates, ISupportSoftDeletes, IValidatableObject
 {
     public Organization()
     {
@@ -26,6 +28,7 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     /// <summary>
     /// Name of the organization.
     /// </summary>
+    [Required]
     public string Name { get; set; } = null!;
 
     /// <summary>
@@ -36,6 +39,7 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     /// <summary>
     /// Billing plan id that the organization belongs to.
     /// </summary>
+    [Required]
     public string PlanId { get; set; } = null!;
 
     /// <summary>
@@ -172,6 +176,96 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     public bool IsDeleted { get; set; }
 
     string IOwnedByOrganization.OrganizationId { get { return Id; } set { Id = value; } }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        var plans = validationContext.GetService(typeof(BillingPlans)) as BillingPlans;
+        if (plans is not null && PlanId == plans.FreePlan.Id && HasPremiumFeatures)
+        {
+            yield return new ValidationResult("Premium features cannot be enabled on the free plan.",
+                [nameof(HasPremiumFeatures)]);
+        }
+
+        if (BillingPrice > 0)
+        {
+            if (String.IsNullOrEmpty(StripeCustomerId))
+            {
+                yield return new ValidationResult("The stripe customer should be set on paid plans.",
+                    [nameof(StripeCustomerId)]);
+            }
+
+            if (String.IsNullOrEmpty(CardLast4))
+            {
+                yield return new ValidationResult("The card last four should be set on paid plans.",
+                    [nameof(CardLast4)]);
+            }
+
+            if (SubscribeDate is null || SubscribeDate == DateTime.MinValue)
+            {
+                yield return new ValidationResult("The subscribe date should be set on paid plans.",
+                    [nameof(SubscribeDate)]);
+            }
+
+            if (BillingChangeDate == DateTime.MinValue)
+            {
+                yield return new ValidationResult("The billing change date should be set on paid plans.",
+                    [nameof(BillingChangeDate)]);
+            }
+
+            if (String.IsNullOrEmpty(BillingChangedByUserId) || BillingChangedByUserId.Length != 24)
+            {
+                yield return new ValidationResult("The billing changed by user id should be set on paid plans.",
+                    [nameof(BillingChangedByUserId)]);
+            }
+        }
+
+        if (IsSuspended)
+        {
+            if (SuspensionCode is null)
+            {
+                yield return new ValidationResult("Please specify a valid suspension code.",
+                    [nameof(SuspensionCode)]);
+            }
+
+            if (SuspensionDate is null || SuspensionDate == DateTime.MinValue)
+            {
+                yield return new ValidationResult("Please specify a valid suspension date.",
+                    [nameof(SuspensionDate)]);
+            }
+
+            if (String.IsNullOrEmpty(SuspendedByUserId))
+            {
+                yield return new ValidationResult("Please specify a user id of user that suspended this organization.",
+                    [nameof(SuspendedByUserId)]);
+            }
+
+            if (SuspensionCode is Models.SuspensionCode.Other && String.IsNullOrEmpty(SuspensionNotes))
+            {
+                yield return new ValidationResult("Please specify a suspension note.",
+                    [nameof(SuspensionNotes)]);
+            }
+        }
+        else
+        {
+            if (SuspensionCode is not null)
+            {
+                yield return new ValidationResult("The suspension code cannot be set while an organization is not suspended.",
+                    [nameof(SuspensionCode)]);
+            }
+
+            if (SuspensionDate is not null)
+            {
+                yield return new ValidationResult("The suspension date cannot be set while an organization is not suspended.",
+                    [nameof(SuspensionDate)]);
+            }
+
+            if (SuspendedByUserId is not null)
+            {
+                yield return new ValidationResult("The suspended by user id cannot be set while an organization is not suspended.",
+                    [nameof(SuspendedByUserId)]);
+            }
+        }
+    }
 }
 
 public enum BillingStatus

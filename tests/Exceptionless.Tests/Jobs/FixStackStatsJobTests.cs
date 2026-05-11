@@ -51,6 +51,12 @@ public class FixStackStatsJobTests : IntegrationTestsBase
         var first = new DateTimeOffset(2026, 2, 11, 0, 0, 0, TimeSpan.Zero);
         var middle = new DateTimeOffset(2026, 2, 15, 12, 0, 0, TimeSpan.Zero);
         var last = new DateTimeOffset(2026, 2, 20, 0, 0, 0, TimeSpan.Zero);
+
+        // Advance time so the latest event date isn't rejected as future by PersistentEvent.Validate().
+        // Previously this wasn't needed because the FluentValidation PersistentEventValidator was dead
+        // code — RepositoryBase always used MiniValidationValidator, and PersistentEvent didn't implement
+        // IValidatableObject, so the future-date check was silently never enforced.
+        TimeProvider.SetUtcNow(last.UtcDateTime);
         await _eventRepository.AddAsync(
             [
                 _eventData.GenerateEvent(organizationId: TestConstants.OrganizationId,

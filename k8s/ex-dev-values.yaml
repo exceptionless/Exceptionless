@@ -11,6 +11,7 @@ api:
     repository: exceptionless/api-ci
   defaultDomain: dev-collector.exceptionless.io
   domains:
+    - dev-api.exceptionless.io
     - dev-collector.exceptionless.io
 jobs:
   image:
@@ -23,3 +24,9 @@ config:
 
 otel:
   enabled: false
+
+ingress:
+  enabled: true
+  clusterIssuer: cert-manager-webhook-dnsimple-production
+  albName: public-alb
+  albNamespace: kube-system

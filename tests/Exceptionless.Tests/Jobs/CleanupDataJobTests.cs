@@ -49,7 +49,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         organization.IsSuspended = true;
         organization.SuspensionDate = DateTime.UtcNow;
-        organization.SuspendedByUserId = "1";
+        organization.SuspendedByUserId = TestConstants.UserId;
         organization.SuspensionCode = Core.Models.SuspensionCode.Billing;
         organization.SuspensionNotes = "blah";
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());

@@ -57,11 +57,6 @@ kubectl run --namespace ex-prod ex-prod-client --rm --tty -i --restart='Never' `
     --env ELASTIC_PASSWORD=$ELASTIC_PASSWORD `
     --image exceptionless/api-ci:$API_TAG -- bash
 
-# upgrade nginx ingress to latest
-# https://github.com/kubernetes/ingress-nginx/releases
-helm repo update
-helm upgrade --reset-values --namespace ingress-nginx -f nginx-values.yaml ingress-nginx ingress-nginx/ingress-nginx --dry-run
-
 # upgrade cert-manager
 # https://github.com/jetstack/cert-manager/releases
 helm repo update
@@ -113,7 +108,11 @@ kubectl apply -f ex-prod-redis.yaml -n ex-prod
 kubectl apply --namespace ex-prod -f ex-prod-elasticsearch.yaml
 
 # upgrade elastic monitor
+# First time setup: create static password secret (survives delete/recreate)
+#   kubectl create secret generic elastic-monitor-password -n elastic-system --from-literal=password=$(openssl rand -base64 18)
 kubectl apply --namespace elastic-system -f elastic-monitor.yaml
+# After apply, trigger ILM config immediately (otherwise waits until 3:30am):
+#   kubectl create job --from=cronjob/elastic-monitor-configure-ilm elastic-monitor-configure-ilm-init -n elastic-system
 
 # upgrade exceptionless app to a new docker image tag
 $VERSION = "8.0.0"
@@ -141,7 +140,6 @@ helm upgrade `
     --reuse-values ex-prod --namespace ex-prod .\exceptionless
 
 # NOTE any commas in helm values need to be escaped with a backslash ie server,password=pass need to be server\,password=pass
-# redis cluster connection string example: ex-prod-redis-cluster-leader-headless.ex-prod:6379\,password=mypass\,abortConnect=false
 helm upgrade --set "redis.connectionString=$REDIS_CONNECTIONSTRING" --reuse-values ex-prod --namespace ex-prod .\exceptionless
 
 # stop the entire app

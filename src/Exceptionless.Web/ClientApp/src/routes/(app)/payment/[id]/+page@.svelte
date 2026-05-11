@@ -12,7 +12,7 @@
     import { getInvoiceQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import Currency from '$features/shared/components/formatters/currency.svelte';
-    import File from '@lucide/svelte/icons/file';
+    import Receipt from '@lucide/svelte/icons/receipt';
 
     const invoiceId = $derived(page.params.id || '');
 
@@ -61,9 +61,10 @@
                 <div class="flex flex-col items-start space-y-4">
                     <Logo class="mx-0 h-16" />
                     <address class="text-muted-foreground text-sm not-italic">
-                        <strong class="text-foreground">Exceptionless</strong><br />
-                        5250 Hwy 78, Suite 750-324<br />
-                        Sachse, TX 75048<br />
+                        <strong class="text-foreground">CodeSmith Tools, LLC</strong><br />
+                        5473 Blair Rd Ste 100<br />
+                        PMB 66994<br />
+                        Dallas, TX 75231-4227<br />
                     </address>
                 </div>
             </div>
@@ -99,7 +100,7 @@
         <div class="bg-card rounded-lg border">
             <div class="bg-muted/50 border-b p-4">
                 <div class="flex items-center gap-2">
-                    <File class="size-4" />
+                    <Receipt class="size-4" />
                     <H4 class="mb-0">{invoiceQuery.data.paid ? 'Receipt' : 'Invoice'}</H4>
                 </div>
             </div>

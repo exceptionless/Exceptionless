@@ -152,7 +152,11 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return;
         }
 
-        if (savedViewsListQuery.isLoading) {
+        // Don't lock out the auto-restore while the feature flag is still resolving
+        // or the views list hasn't loaded yet. Without this guard the effect fires
+        // while the query is disabled (isLoading=false but data=undefined) and marks
+        // hasAutoRestored=true before any view data is available.
+        if (!isEnabled || savedViewsListQuery.isLoading) {
             return;
         }
 
