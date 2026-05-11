@@ -18,6 +18,7 @@ public class InnerErrorSerializerTests : TestWithServices
     [Fact]
     public void RoundTrip_WithAllProperties_PreservesValues()
     {
+        // Arrange
         var error = new InnerError
         {
             Message = "Object reference not set to an instance of an object.",
@@ -42,9 +43,11 @@ public class InnerErrorSerializerTests : TestWithServices
             }
         };
 
+        // Act
         string? json = _serializer.SerializeToString(error);
         var result = _serializer.Deserialize<InnerError>(json);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("Object reference not set to an instance of an object.", result.Message);
         Assert.Equal("System.NullReferenceException", result.Type);
@@ -59,6 +62,7 @@ public class InnerErrorSerializerTests : TestWithServices
     [Fact]
     public void RoundTrip_WithNestedInnerErrors_PreservesDepth()
     {
+        // Arrange
         var error = new InnerError
         {
             Message = "Outer error",
@@ -76,9 +80,11 @@ public class InnerErrorSerializerTests : TestWithServices
             }
         };
 
+        // Act
         string? json = _serializer.SerializeToString(error);
         var result = _serializer.Deserialize<InnerError>(json);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("Outer error", result.Message);
         Assert.NotNull(result.Inner);
@@ -92,11 +98,14 @@ public class InnerErrorSerializerTests : TestWithServices
     [Fact]
     public void Deserialize_SnakeCaseJson_ParsesCorrectly()
     {
+        // Arrange
         /* language=json */
         const string json = """{"message":"File not found","type":"System.IO.FileNotFoundException","code":"IO_404","target_method":{"name":"ReadFile","declaring_type":"FileService","declaring_namespace":"MyApp.IO"},"stack_trace":[{"declaring_namespace":"MyApp.IO","declaring_type":"FileService","name":"ReadFile","line":42}]}""";
 
+        // Act
         var result = _serializer.Deserialize<InnerError>(json);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("File not found", result.Message);
         Assert.Equal("System.IO.FileNotFoundException", result.Type);
@@ -110,6 +119,7 @@ public class InnerErrorSerializerTests : TestWithServices
     [Fact]
     public void DataDictionary_GetValue_InnerError_FromDictionary()
     {
+        // Arrange
         var dict = new DataDictionary
         {
             ["@error"] = new InnerError
@@ -120,8 +130,10 @@ public class InnerErrorSerializerTests : TestWithServices
             }
         };
 
+        // Act
         var result = dict.GetValue<InnerError>("@error", _serializer);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("Test error", result.Message);
         Assert.NotNull(result.Inner);

@@ -96,11 +96,6 @@ public class Event : IData, IJsonOnDeserialized
         foreach (var kvp in ExtensionData)
         {
             // Don't overwrite values already in Data (e.g., from explicit "data" JSON property).
-            // This preserves the old DataObjectConverter collision-handling behavior.
-            // NOTE: ConvertJsonElement uses int-first numeric inference (same as API path).
-            // The ES path's preferInt64 flag only applies to the streaming converter's instance
-            // methods, not this static helper. This is acceptable because extension data values
-            // are re-deserialized into typed models via GetValue<T>() before use.
             Data.TryAdd(kvp.Key, ObjectToInferredTypesConverter.ConvertJsonElement(kvp.Value));
         }
         ExtensionData = null;

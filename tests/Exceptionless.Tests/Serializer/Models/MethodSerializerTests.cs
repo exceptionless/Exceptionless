@@ -18,6 +18,7 @@ public class MethodSerializerTests : TestWithServices
     [Fact]
     public void RoundTrip_WithAllProperties_PreservesValues()
     {
+        // Arrange
         var method = new Method
         {
             IsSignatureTarget = true,
@@ -33,9 +34,11 @@ public class MethodSerializerTests : TestWithServices
             ]
         };
 
+        // Act
         string? json = _serializer.SerializeToString(method);
         var result = _serializer.Deserialize<Method>(json);
 
+        // Assert
         Assert.NotNull(result);
         Assert.True(result.IsSignatureTarget);
         Assert.Equal("Exceptionless.Core", result.DeclaringNamespace);
@@ -54,11 +57,14 @@ public class MethodSerializerTests : TestWithServices
     [Fact]
     public void Deserialize_SnakeCaseJson_ParsesCorrectly()
     {
+        // Arrange
         /* language=json */
         const string json = """{"is_signature_target":true,"declaring_namespace":"System","declaring_type":"String","name":"Format","module_id":1,"generic_arguments":["T"],"parameters":[{"name":"format","type":"String","type_namespace":"System"}]}""";
 
+        // Act
         var result = _serializer.Deserialize<Method>(json);
 
+        // Assert
         Assert.NotNull(result);
         Assert.True(result.IsSignatureTarget);
         Assert.Equal("System", result.DeclaringNamespace);
@@ -72,11 +78,14 @@ public class MethodSerializerTests : TestWithServices
     [Fact]
     public void RoundTrip_WithMinimalProperties_PreservesValues()
     {
+        // Arrange
         var method = new Method { Name = "Main" };
 
+        // Act
         string? json = _serializer.SerializeToString(method);
         var result = _serializer.Deserialize<Method>(json);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("Main", result.Name);
         Assert.Null(result.DeclaringNamespace);
@@ -86,6 +95,7 @@ public class MethodSerializerTests : TestWithServices
     [Fact]
     public void DataDictionary_GetValue_Method_FromDictionary()
     {
+        // Arrange
         var dict = new DataDictionary
         {
             ["target_method"] = new Method
@@ -96,8 +106,10 @@ public class MethodSerializerTests : TestWithServices
             }
         };
 
+        // Act
         var result = dict.GetValue<Method>("target_method", _serializer);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("HandleRequest", result.Name);
         Assert.Equal("Controller", result.DeclaringType);

@@ -1,7 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Serialization;
 using Foundatio.Serializer;
 
 namespace Exceptionless.Core.Extensions;
@@ -9,43 +8,18 @@ namespace Exceptionless.Core.Extensions;
 public static class DataDictionaryExtensions
 {
     /// <summary>
-    /// Fallback options for deserializing legacy PascalCase JSON without a naming policy.
-    /// Without a naming policy, C# property names match JSON keys directly (case-insensitively),
-    /// which handles PascalCase data that the snake_case primary serializer cannot match.
+    /// Fallback options for deserializing JSON without a naming policy (case-insensitive matching).
     /// </summary>
-    /// <remarks>
-    /// Includes ObjectToInferredTypesConverter so that object-typed properties (like DataDictionary
-    /// values) are inferred to native .NET types instead of remaining as JsonElement. This matches
-    /// the behavior of the primary serializer and ensures consistent type handling regardless of
-    /// which deserialization path wins the fallback comparison.
-    /// </remarks>
     private static readonly JsonSerializerOptions CaseInsensitiveFallbackOptions = new()
     {
-        PropertyNameCaseInsensitive = true,
-        Converters = { new ObjectToInferredTypesConverter() }
+        PropertyNameCaseInsensitive = true
     };
 
     /// <summary>
     /// Attempts deserialization using the primary serializer (snake_case naming policy),
-    /// then falls back to a case-insensitive deserializer (for legacy PascalCase data).
+    /// then falls back to a case-insensitive deserializer as a safety net.
     /// Picks whichever result populated more properties (measured by serialized output length).
     /// </summary>
-    /// <remarks>
-    /// <para><b>Why this works:</b> The database contains a mix of snake_case (current format written by STJ)
-    /// and PascalCase (legacy format written by Newtonsoft.Json). The two naming conventions are
-    /// structurally incompatible with each other's deserialization strategy:</para>
-    /// <list type="bullet">
-    ///   <item><description>snake_case keys (e.g., "machine_name") only match the primary serializer's naming policy</description></item>
-    ///   <item><description>PascalCase keys (e.g., "MachineName") only match the fallback's case-insensitive no-policy mode</description></item>
-    /// </list>
-    /// <para>Because underscores make the two conventions differ even under case-insensitive comparison,
-    /// only one strategy populates properties for any given document. The other produces mostly-null
-    /// output, which serializes to a shorter string. Thus length reliably identifies the correct result.</para>
-    /// <para><b>Edge case:</b> If a single JSON object contains a mix of BOTH naming conventions
-    /// (e.g., "machine_name" AND "ProcessorCount"), each strategy populates a different subset.
-    /// Length picks whichever subset has more total data. This scenario is not expected in practice
-    /// because documents are written by a single serializer.</para>
-    /// </remarks>
     private static T? TryDeserializeWithFallback<T>(string json, ITextSerializer serializer)
     {
         var primary = serializer.Deserialize<T>(json);
@@ -145,10 +119,6 @@ public static class DataDictionaryExtensions
         }
 
         // Dictionary<string, object?> from ObjectToInferredTypesConverter.
-        // Dictionary keys preserve the original JSON casing, which may be snake_case (current format)
-        // or PascalCase (legacy data). The primary serializer (snake_case naming policy) handles
-        // snake_case keys; the fallback (no naming policy, case-insensitive) handles PascalCase.
-        // We try both and pick the one that populated more properties (longer serialized output).
         if (data is Dictionary<string, object?> dictionary)
         {
             try
@@ -182,14 +152,12 @@ public static class DataDictionaryExtensions
             }
         }
 
-        // JSON string - deserialize via ITextSerializer with PascalCase fallback.
-        // Legacy data may be stored as raw JSON strings in either snake_case (current) or
-        // PascalCase (Newtonsoft era). Use the same fallback strategy as Dictionary/JsonElement paths.
+        // JSON string - deserialize via ITextSerializer.
         if (data is string json && json.IsJson())
         {
             try
             {
-                return TryDeserializeWithFallback<T>(json, serializer);
+                return serializer.Deserialize<T>(json);
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException or ArgumentException)
             {

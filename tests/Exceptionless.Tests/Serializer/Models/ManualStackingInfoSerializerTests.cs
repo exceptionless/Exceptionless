@@ -18,6 +18,7 @@ public class ManualStackingInfoSerializerTests : TestWithServices
     [Fact]
     public void RoundTrip_WithAllProperties_PreservesValues()
     {
+        // Arrange
         var info = new ManualStackingInfo
         {
             Title = "Payment Processing Error",
@@ -29,9 +30,11 @@ public class ManualStackingInfoSerializerTests : TestWithServices
             }
         };
 
+        // Act
         string? json = _serializer.SerializeToString(info);
         var result = _serializer.Deserialize<ManualStackingInfo>(json);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("Payment Processing Error", result.Title);
         Assert.NotNull(result.SignatureData);
@@ -43,11 +46,14 @@ public class ManualStackingInfoSerializerTests : TestWithServices
     [Fact]
     public void Deserialize_SnakeCaseJson_ParsesCorrectly()
     {
+        // Arrange
         /* language=json */
         const string json = """{"title":"Custom Stack","signature_data":{"key":"value"}}""";
 
+        // Act
         var result = _serializer.Deserialize<ManualStackingInfo>(json);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("Custom Stack", result.Title);
         Assert.NotNull(result.SignatureData);
@@ -57,6 +63,7 @@ public class ManualStackingInfoSerializerTests : TestWithServices
     [Fact]
     public void RoundTrip_WithSpecialCharacters_PreservesValues()
     {
+        // Arrange
         var info = new ManualStackingInfo
         {
             Title = "Error: \"Connection refused\" at /api/v2/events",
@@ -67,9 +74,11 @@ public class ManualStackingInfoSerializerTests : TestWithServices
             }
         };
 
+        // Act
         string? json = _serializer.SerializeToString(info);
         var result = _serializer.Deserialize<ManualStackingInfo>(json);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Contains("Connection refused", result.Title);
         Assert.Equal("/api/v2/events?filter=type:error", result.SignatureData!["path"]);
@@ -78,11 +87,14 @@ public class ManualStackingInfoSerializerTests : TestWithServices
     [Fact]
     public void RoundTrip_WithMinimalProperties_PreservesValues()
     {
+        // Arrange
         var info = new ManualStackingInfo { Title = "Simple Stack" };
 
+        // Act
         string? json = _serializer.SerializeToString(info);
         var result = _serializer.Deserialize<ManualStackingInfo>(json);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("Simple Stack", result.Title);
     }
@@ -90,6 +102,7 @@ public class ManualStackingInfoSerializerTests : TestWithServices
     [Fact]
     public void DataDictionary_GetValue_ManualStackingInfo_FromDictionary()
     {
+        // Arrange
         var dict = new DataDictionary
         {
             ["@stack"] = new ManualStackingInfo
@@ -99,8 +112,10 @@ public class ManualStackingInfoSerializerTests : TestWithServices
             }
         };
 
+        // Act
         var result = dict.GetValue<ManualStackingInfo>("@stack", _serializer);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("Custom", result.Title);
         Assert.NotNull(result.SignatureData);

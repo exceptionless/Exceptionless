@@ -18,6 +18,7 @@ public class UserDescriptionSerializerTests : TestWithServices
     [Fact]
     public void RoundTrip_WithAllProperties_PreservesValues()
     {
+        // Arrange
         var desc = new UserDescription
         {
             EmailAddress = "user@example.com",
@@ -29,9 +30,11 @@ public class UserDescriptionSerializerTests : TestWithServices
             }
         };
 
+        // Act
         string? json = _serializer.SerializeToString(desc);
         var result = _serializer.Deserialize<UserDescription>(json);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("user@example.com", result.EmailAddress);
         Assert.Equal("The app crashed when I clicked the submit button.", result.Description);
@@ -42,11 +45,14 @@ public class UserDescriptionSerializerTests : TestWithServices
     [Fact]
     public void Deserialize_SnakeCaseJson_ParsesCorrectly()
     {
+        // Arrange
         /* language=json */
         const string json = """{"email_address":"test+tags@example.org","description":"Steps: 1. Open page 2. Click button 3. See error","data":{"screenshot":"base64data"}}""";
 
+        // Act
         var result = _serializer.Deserialize<UserDescription>(json);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("test+tags@example.org", result.EmailAddress);
         Assert.Contains("Steps:", result.Description);
@@ -56,11 +62,14 @@ public class UserDescriptionSerializerTests : TestWithServices
     [Fact]
     public void RoundTrip_WithMinimalProperties_PreservesValues()
     {
+        // Arrange
         var desc = new UserDescription { Description = "It broke" };
 
+        // Act
         string? json = _serializer.SerializeToString(desc);
         var result = _serializer.Deserialize<UserDescription>(json);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("It broke", result.Description);
         Assert.Null(result.EmailAddress);
@@ -69,6 +78,7 @@ public class UserDescriptionSerializerTests : TestWithServices
     [Fact]
     public void DataDictionary_GetValue_UserDescription_FromDictionary()
     {
+        // Arrange
         var dict = new DataDictionary
         {
             ["@user_description"] = new UserDescription
@@ -78,8 +88,10 @@ public class UserDescriptionSerializerTests : TestWithServices
             }
         };
 
+        // Act
         var result = dict.GetValue<UserDescription>("@user_description", _serializer);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("feedback@test.com", result.EmailAddress);
         Assert.Equal("Needs improvement", result.Description);
