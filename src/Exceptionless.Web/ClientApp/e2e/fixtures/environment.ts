@@ -1,4 +1,6 @@
 const DEFAULT_APP_URL = 'https://web-ex.dev.localhost:7131';
+const DEFAULT_EMAIL = 'admin@exceptionless.test';
+const DEFAULT_PASSWORD = 'tester';
 
 export interface E2EEnvironment {
     apiUrl: string;
@@ -12,8 +14,8 @@ export interface E2EEnvironment {
 export function getE2EEnvironment(): E2EEnvironment {
     const isProduction = getOptionalEnv('E2E_ENV') === 'production';
     const appUrl = getOptionalEnv('E2E_URL') ?? DEFAULT_APP_URL;
-    const email = getOptionalEnv('E2E_EMAIL');
-    const password = getOptionalEnv('E2E_PASSWORD');
+    const email = getOptionalEnv('E2E_EMAIL') ?? (isProduction ? undefined : DEFAULT_EMAIL);
+    const password = getOptionalEnv('E2E_PASSWORD') ?? (isProduction ? undefined : DEFAULT_PASSWORD);
     const runId = getOptionalEnv('E2E_RUN_ID') ?? getDefaultRunId();
 
     const missing = [['E2E_URL', appUrl]].filter(([, value]) => !value).map(([name]) => name);

@@ -176,6 +176,21 @@ export class E2EApiClient {
         throw new Error(`Timed out waiting for E2E event with reference id ${referenceId}`);
     }
 
+    async signup(name: string, email: string, password: string): Promise<string> {
+        const response = await this.request.post(this.url('auth/signup'), {
+            data: {
+                email,
+                name,
+                password
+            }
+        });
+
+        await expectStatus(response, [200], 'signup');
+        const result = toTokenResult(await readJson(response));
+
+        return result.token;
+    }
+
     async submitEvent(projectId: string, projectToken: string, event: Record<string, unknown>): Promise<void> {
         const response = await this.request.post(this.url(`projects/${projectId}/events?access_token=${encodeURIComponent(projectToken)}`), {
             data: event
