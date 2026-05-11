@@ -73,4 +73,25 @@ public sealed class TokenRepositoryTests : IntegrationTestsBase
         Assert.Equal(0, (await _repository.GetByTypeAndUserIdAsync(TokenType.Authentication, TestConstants.UserId)).Total);
         Assert.Equal(1, (await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId)).Total);
     }
+
+    [Fact]
+    public async Task GetByTypeAndProjectId_FieldOr_MatchesProjectIdOrDefaultProjectId()
+    {
+        var utcNow = DateTime.UtcNow;
+        await _repository.AddAsync(new List<Token>
+        {
+            new() { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, Type = TokenType.Access, CreatedUtc = utcNow, UpdatedUtc = utcNow, Id = StringExtensions.GetNewToken() },
+            new() { OrganizationId = TestConstants.OrganizationId, DefaultProjectId = TestConstants.ProjectId, Type = TokenType.Access, CreatedUtc = utcNow, UpdatedUtc = utcNow, Id = StringExtensions.GetNewToken() },
+            new() { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, Type = TokenType.Authentication, CreatedUtc = utcNow, UpdatedUtc = utcNow, Id = StringExtensions.GetNewToken() },
+            new() { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectIdWithNoRoles, Type = TokenType.Access, CreatedUtc = utcNow, UpdatedUtc = utcNow, Id = StringExtensions.GetNewToken() },
+        }, o => o.ImmediateConsistency());
+
+        // Should match both ProjectId and DefaultProjectId tokens of type Access
+        var results = await _repository.GetByTypeAndProjectIdAsync(TokenType.Access, TestConstants.ProjectId, o => o.PageLimit(10));
+        Assert.Equal(2, results.Total);
+
+        // Authentication type for same project should only return 1
+        results = await _repository.GetByTypeAndProjectIdAsync(TokenType.Authentication, TestConstants.ProjectId, o => o.PageLimit(10));
+        Assert.Single(results.Documents);
+    }
 }

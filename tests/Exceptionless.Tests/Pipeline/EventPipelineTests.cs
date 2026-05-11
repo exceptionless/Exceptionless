@@ -1290,7 +1290,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task ErrorPlugin_SetsTargetInfo_AfterPipelineProcessing()
     {
-        // Arrange - Create an error event with a stack trace
+        // Arrange - Create an error event with multiple stack frames
         var ev = GenerateEvent(type: Event.KnownTypes.Error);
         ev.Data = new DataDictionary
         {
@@ -1305,6 +1305,12 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                         DeclaringNamespace = "TestApp.Services",
                         DeclaringType = "TestService",
                         Name = "DoWork"
+                    },
+                    new Exceptionless.Core.Models.Data.StackFrame
+                    {
+                        DeclaringNamespace = "TestApp.Controllers",
+                        DeclaringType = "HomeController",
+                        Name = "Index"
                     }
                 ]
             }
@@ -1329,6 +1335,12 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal("System.InvalidOperationException", targetInfo["ExceptionType"]);
         Assert.True(targetInfo.ContainsKey("Method"), "@target should contain Method");
         Assert.Contains("TestService.DoWork", targetInfo["Method"]);
+
+        // Assert - is_signature_target should be set on stack frames (FINDING-3b)
+        Assert.NotNull(error.StackTrace);
+        Assert.Equal(2, error.StackTrace.Count);
+        Assert.True(error.StackTrace[0].IsSignatureTarget, "First frame should be signature target");
+        Assert.False(error.StackTrace[1].IsSignatureTarget, "Second frame should not be signature target");
     }
 
     [Fact]
