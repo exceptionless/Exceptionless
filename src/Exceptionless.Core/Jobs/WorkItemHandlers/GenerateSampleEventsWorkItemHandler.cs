@@ -36,9 +36,9 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
     public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = default)
     {
         var generateSampleEventsWorkItem = (GenerateSampleEventsWorkItem)workItem;
-        string cacheKey = String.IsNullOrEmpty(generateSampleEventsWorkItem.ProjectId)
-            ? nameof(GenerateSampleEventsWorkItemHandler)
-            : $"{nameof(GenerateSampleEventsWorkItemHandler)}:{generateSampleEventsWorkItem.ProjectId}";
+        string cacheKey = IsProjectScoped(generateSampleEventsWorkItem)
+            ? $"{nameof(GenerateSampleEventsWorkItemHandler)}:{generateSampleEventsWorkItem.ProjectId}"
+            : nameof(GenerateSampleEventsWorkItemHandler);
 
         return _lockProvider.TryAcquireAsync(cacheKey, TimeSpan.FromMinutes(30), cancellationToken);
     }
@@ -48,16 +48,16 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
         var workItem = context.GetData<GenerateSampleEventsWorkItem>()!;
         int eventCount = Math.Clamp(workItem.EventCount, 1, 10000);
         int daysBack = Math.Clamp(workItem.DaysBack, 1, 365);
+        int acceptedDaysBack = Math.Min(daysBack, 3);
 
-        Log.LogInformation("Generating {EventCount} sample events over {DaysBack} days", eventCount, daysBack);
-        await context.ReportProgressAsync(0, $"Generating {eventCount} sample events");
+        Log.LogInformation("Generating {EventCount} sample events over {DaysBack} days", eventCount, acceptedDaysBack);
+        await context.ReportProgressAsync(0, $"Generating {eventCount} sample events over {acceptedDaysBack} days");
 
         var generator = new RandomEventGenerator(_timeProvider);
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-        int acceptedDaysBack = Math.Min(daysBack, 3);
         var minDate = utcNow.AddDays(-acceptedDaysBack);
 
-        if (!String.IsNullOrEmpty(workItem.OrganizationId) || !String.IsNullOrEmpty(workItem.ProjectId))
+        if (IsProjectScoped(workItem))
         {
             await GenerateProjectSampleEventsAsync(context, generator, workItem, eventCount, minDate, utcNow);
             return;
@@ -152,5 +152,10 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
 
         await context.ReportProgressAsync(100, $"Generated {totalProcessed} sample events for project {project.Id}");
         Log.LogInformation("Generated {TotalEvents} sample events for project {ProjectId}", totalProcessed, project.Id);
+    }
+
+    private static bool IsProjectScoped(GenerateSampleEventsWorkItem workItem)
+    {
+        return !String.IsNullOrEmpty(workItem.OrganizationId) && !String.IsNullOrEmpty(workItem.ProjectId);
     }
 }
