@@ -6,7 +6,6 @@ using Exceptionless.Core.Validation;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using ElasticInfer = Elastic.Clients.Elasticsearch.Infer;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -34,18 +33,12 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 
     public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, CommandOptionsDescriptor<PersistentEvent>? options = null)
     {
-        Query filter = new BoolQuery
-        {
-            Must = [
-                new TermQuery { Field = ElasticInfer.Field<PersistentEvent>(e => e.Type), Value = Event.KnownTypes.Session },
-                new BoolQuery { MustNot = [new ExistsQuery { Field = $"idx.{Event.KnownDataKeys.SessionEnd}-d" }] }
-            ]
-        };
-
-        var query = new RepositoryQuery<PersistentEvent>().ElasticFilter(filter);
+        var query = new RepositoryQuery<PersistentEvent>()
+            .FieldEquals(e => e.Type, Event.KnownTypes.Session)
+            .ElasticFilter(new BoolQuery { MustNot = [new ExistsQuery { Field = $"idx.{Event.KnownDataKeys.SessionEnd}-d" }] });
 
         if (createdBeforeUtc.Ticks > 0)
-            query = query.DateRange(null, createdBeforeUtc, (PersistentEvent e) => e.Date);
+            query = query.DateRange(null, createdBeforeUtc, (PersistentEvent e) => e.Date); // No lower bound, upper bound is exclusive
 
         return FindAsync(q => query.SortDescending(e => e.Date), options);
     }
@@ -74,9 +67,9 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         if (utcStart.HasValue && utcEnd.HasValue)
             query = query.DateRange(utcStart, utcEnd, InferField(e => e.Date)).Index(utcStart, utcEnd);
         else if (utcEnd.HasValue)
-            query = query.ElasticFilter(new DateRangeQuery { Field = ElasticInfer.Field<PersistentEvent>(e => e.Date), Lt = utcEnd.Value.ToString("O") });
+            query = query.DateRange(null, utcEnd, (PersistentEvent e) => e.Date);
         else if (utcStart.HasValue)
-            query = query.ElasticFilter(new DateRangeQuery { Field = ElasticInfer.Field<PersistentEvent>(e => e.Date), Gt = utcStart.Value.ToString("O") });
+            query = query.DateRange(utcStart, null, (PersistentEvent e) => e.Date);
 
         if (!String.IsNullOrEmpty(clientIpAddress))
             query = query.FieldEquals(EventIndex.Alias.IpAddress, clientIpAddress);
@@ -123,7 +116,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
             .Include(e => e.Id, e => e.Date)
             .AppFilter(systemFilter)
             .Stack(ev.StackId)
-            .ElasticFilter(new BoolQuery { MustNot = [new TermQuery { Field = "_id", Value = ev.Id }] })
+            .FilterExpression($"NOT _id:{ev.Id}")
             .EnforceEventStackFilter(false), o => o.PageLimit(10));
 
         if (results.Total == 0)
@@ -163,7 +156,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
             .Include(e => e.Id, e => e.Date)
             .AppFilter(systemFilter)
             .Stack(ev.StackId)
-            .ElasticFilter(new BoolQuery { MustNot = [new TermQuery { Field = "_id", Value = ev.Id }] })
+            .FilterExpression($"NOT _id:{ev.Id}")
             .EnforceEventStackFilter(false), o => o.PageLimit(10));
 
         if (results.Total == 0)

@@ -1,4 +1,3 @@
-using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
@@ -19,7 +18,7 @@ public class SavedViewRepository : RepositoryOwnedByOrganization<SavedView>, ISa
         return FindAsync(q => q
             .Organization(organizationId)
             .FieldEquals(e => e.ViewType, viewType)
-            .SortAscending((Field)"name.keyword"), options);
+            .SortAscending(e => e.Name), options);
     }
 
     public Task<FindResults<SavedView>> GetByViewForUserAsync(string organizationId, string viewType, string userId, CommandOptionsDescriptor<SavedView>? options = null)
@@ -27,7 +26,7 @@ public class SavedViewRepository : RepositoryOwnedByOrganization<SavedView>, ISa
         return FindAsync(q => q
             .Organization(organizationId)
             .FieldEquals(e => e.ViewType, viewType)
-            .SortAscending((Field)"name.keyword")
+            .SortAscending(e => e.Name)
             .FieldOr(g => g
                 .FieldEmpty(e => e.UserId!)
                 .FieldEquals(e => e.UserId!, userId)), options);
@@ -37,7 +36,7 @@ public class SavedViewRepository : RepositoryOwnedByOrganization<SavedView>, ISa
     {
         return FindAsync(q => q
             .Organization(organizationId)
-            .SortAscending((Field)"name.keyword")
+            .SortAscending(e => e.Name)
             .FieldOr(g => g
                 .FieldEmpty(e => e.UserId!)
                 .FieldEquals(e => e.UserId!, userId)), options);

@@ -1,12 +1,10 @@
-﻿using Elastic.Clients.Elasticsearch.QueryDsl;
-using Exceptionless.Core.Messaging.Models;
+﻿using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Token = Exceptionless.Core.Models.Token;
-using ElasticInfer = Elastic.Clients.Elasticsearch.Infer;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -33,28 +31,21 @@ public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, I
 
     public Task<FindResults<Token>> GetByTypeAndProjectIdAsync(TokenType type, string projectId, CommandOptionsDescriptor<Token>? options = null)
     {
-        Query filter = new BoolQuery
-        {
-            Should = [
-                new TermQuery { Field = ElasticInfer.Field<Token>(t => t.ProjectId), Value = projectId },
-                new TermQuery { Field = ElasticInfer.Field<Token>(t => t.DefaultProjectId), Value = projectId }
-            ],
-            MinimumShouldMatch = 1
-        };
-        return FindAsync(q => q.ElasticFilter(filter).FieldEquals(t => t.Type, (int)type).Sort(f => f.CreatedUtc), options);
+        return FindAsync(q => q
+            .FieldOr(g => g
+                .FieldEquals(t => t.ProjectId, projectId)
+                .FieldEquals(t => t.DefaultProjectId, projectId))
+            .FieldEquals(t => t.Type, (int)type)
+            .Sort(f => f.CreatedUtc), options);
     }
 
     public override Task<FindResults<Token>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<Token>? options = null)
     {
-        Query filter = new BoolQuery
-        {
-            Should = [
-                new TermQuery { Field = ElasticInfer.Field<Token>(t => t.ProjectId), Value = projectId },
-                new TermQuery { Field = ElasticInfer.Field<Token>(t => t.DefaultProjectId), Value = projectId }
-            ],
-            MinimumShouldMatch = 1
-        };
-        return FindAsync(q => q.ElasticFilter(filter).Sort(f => f.CreatedUtc), options);
+        return FindAsync(q => q
+            .FieldOr(g => g
+                .FieldEquals(t => t.ProjectId, projectId)
+                .FieldEquals(t => t.DefaultProjectId, projectId))
+            .Sort(f => f.CreatedUtc), options);
     }
 
     public Task<long> RemoveAllByUserIdAsync(string userId, CommandOptionsDescriptor<Token>? options = null)

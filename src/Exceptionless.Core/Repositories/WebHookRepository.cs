@@ -1,12 +1,10 @@
-﻿using Elastic.Clients.Elasticsearch.QueryDsl;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
-using ElasticInfer = Elastic.Clients.Elasticsearch.Infer;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -28,21 +26,10 @@ public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<
         ArgumentException.ThrowIfNullOrEmpty(organizationId);
         ArgumentException.ThrowIfNullOrEmpty(projectId);
 
-        Query filter = new BoolQuery
-        {
-            Should = [
-                new BoolQuery
-                {
-                    Must = [
-                        new TermQuery { Field = ElasticInfer.Field<WebHook>(w => w.OrganizationId), Value = organizationId },
-                        new BoolQuery { MustNot = [new ExistsQuery { Field = ElasticInfer.Field<WebHook>(w => w.ProjectId) }] }
-                    ]
-                },
-                new TermQuery { Field = ElasticInfer.Field<WebHook>(w => w.ProjectId), Value = projectId }
-            ],
-            MinimumShouldMatch = 1
-        };
-        return FindAsync(q => q.ElasticFilter(filter).Sort(f => f.CreatedUtc), o => o.Cache(PagedCacheKey(organizationId, projectId)));
+        // Match org-level webhooks (organization matches, no project) OR project-specific webhooks
+        return FindAsync(q => q
+            .FilterExpression($"(organization_id:{organizationId} AND NOT _exists_:project_id) OR project_id:{projectId}")
+            .Sort(f => f.CreatedUtc), o => o.Cache(PagedCacheKey(organizationId, projectId)));
     }
 
     public override Task<FindResults<WebHook>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<WebHook>? options = null)
