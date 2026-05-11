@@ -682,7 +682,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (project is null)
             return NotFound();
 
-        var token = project.GetSlackToken(_serializer);
+        var token = project.GetSlackToken(_serializer, _logger);
         using var _ = _logger.BeginScope(new ExceptionlessState().Property("Token", token).Tag("Slack").Identity(CurrentUser.EmailAddress).Property("User", CurrentUser).SetHttpContext(HttpContext));
 
         if (token is not null)

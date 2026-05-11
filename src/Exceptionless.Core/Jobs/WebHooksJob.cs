@@ -176,7 +176,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
                 return webHook?.IsEnabled ?? false;
             case WebHookType.Slack:
                 var project = await _projectRepository.GetByIdAsync(body.ProjectId, o => o.Cache());
-                var token = project?.GetSlackToken(_serializer);
+                var token = project?.GetSlackToken(_serializer, _logger);
                 return token is not null;
         }
 
@@ -192,7 +192,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
                 break;
             case WebHookType.Slack:
                 var project = await _projectRepository.GetByIdAsync(body.ProjectId);
-                var token = project?.GetSlackToken(_serializer);
+                var token = project?.GetSlackToken(_serializer, _logger);
                 if (token is null)
                     return;
 

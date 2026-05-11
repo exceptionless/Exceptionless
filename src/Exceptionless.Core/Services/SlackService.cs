@@ -117,7 +117,7 @@ public class SlackService
 
     public async Task<bool> SendEventNoticeAsync(PersistentEvent ev, Project project, bool isNew, bool isRegression)
     {
-        var token = project.GetSlackToken(_serializer);
+        var token = project.GetSlackToken(_serializer, _logger);
         if (token?.IncomingWebhook?.Url is null)
             return false;
 
