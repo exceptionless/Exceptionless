@@ -96,7 +96,9 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
                     // ES-specific overrides (legacy data compatibility)
                     options.RespectNullableAnnotations = false;
 
-                    // Remove JsonStringEnumConverter added by Foundatio: Exceptionless stores enums as integers in ES
+                    // Remove JsonStringEnumConverter added by Foundatio: most enums store as integers in ES.
+                    // Exception: StackStatus has a type-level [JsonConverter(typeof(JsonStringEnumConverter))]
+                    // which takes precedence and stores as string (mapped as Keyword in StackIndex).
                     for (int i = options.Converters.Count - 1; i >= 0; i--)
                     {
                         if (options.Converters[i] is System.Text.Json.Serialization.JsonStringEnumConverter)

@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 
@@ -6,12 +7,14 @@ namespace Exceptionless.Core.Plugins.EventUpgrader;
 
 public class EventUpgraderContext : ExtensibleObject
 {
+    private static readonly JsonDocumentOptions s_parseOptions = new() { MaxDepth = 64 };
+
     public EventUpgraderContext(string json, Version? version = null, bool isMigration = false)
     {
         var jsonType = json.GetJsonType();
         if (jsonType == JsonType.Object)
         {
-            var doc = JsonNode.Parse(json) as JsonObject;
+            var doc = JsonNode.Parse(json, documentOptions: s_parseOptions) as JsonObject;
             if (doc is not null)
                 Documents = new JsonArray(doc);
             else
@@ -19,7 +22,7 @@ public class EventUpgraderContext : ExtensibleObject
         }
         else if (jsonType == JsonType.Array)
         {
-            var docs = JsonNode.Parse(json) as JsonArray;
+            var docs = JsonNode.Parse(json, documentOptions: s_parseOptions) as JsonArray;
             if (docs is not null)
                 Documents = docs;
             else
