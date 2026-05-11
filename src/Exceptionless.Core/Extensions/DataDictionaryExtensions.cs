@@ -8,46 +8,6 @@ namespace Exceptionless.Core.Extensions;
 public static class DataDictionaryExtensions
 {
     /// <summary>
-    /// Fallback options for deserializing JSON without a naming policy (case-insensitive matching).
-    /// </summary>
-    private static readonly JsonSerializerOptions CaseInsensitiveFallbackOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
-
-    /// <summary>
-    /// Attempts deserialization using the primary serializer (snake_case naming policy),
-    /// then falls back to a case-insensitive deserializer and picks the better result.
-    ///
-    /// This is needed because client SDKs may submit JSON with PascalCase/camelCase keys
-    /// (e.g., "HttpMethod" instead of "http_method"). The ObjectToInferredTypesConverter
-    /// preserves original key casing in dictionaries, so the snake_case naming policy
-    /// cannot match multi-word PascalCase keys. The case-insensitive fallback handles
-    /// these by matching CLR property names directly.
-    ///
-    /// Both results are serialized with the same serializer for fair comparison. Since null
-    /// properties are omitted, the result with more populated properties produces longer
-    /// output — a reliable proxy for "better deserialized" when comparing the same type.
-    /// </summary>
-    private static T? TryDeserializeWithFallback<T>(string json, ITextSerializer serializer)
-    {
-        var primary = serializer.Deserialize<T>(json);
-
-        if (primary is null)
-            return JsonSerializer.Deserialize<T>(json, CaseInsensitiveFallbackOptions);
-
-        var fallback = JsonSerializer.Deserialize<T>(json, CaseInsensitiveFallbackOptions);
-        if (fallback is not null)
-        {
-            string primaryJson = serializer.SerializeToString(primary) ?? String.Empty;
-            string fallbackJson = serializer.SerializeToString(fallback) ?? String.Empty;
-            return fallbackJson.Length > primaryJson.Length ? fallback : primary;
-        }
-
-        return primary;
-    }
-
-    /// <summary>
     /// Retrieves a typed value from the <see cref="DataDictionary"/>, deserializing if necessary.
     /// </summary>
     /// <typeparam name="T">The target type to deserialize to.</typeparam>
@@ -105,7 +65,7 @@ public static class DataDictionaryExtensions
                 }
 
                 string elementJson = jsonElement.GetRawText();
-                return TryDeserializeWithFallback<T>(elementJson, serializer);
+                return serializer.Deserialize<T>(elementJson);
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
             {
@@ -119,7 +79,7 @@ public static class DataDictionaryExtensions
             try
             {
                 string jsonString = jsonNode.ToJsonString();
-                return TryDeserializeWithFallback<T>(jsonString, serializer);
+                return serializer.Deserialize<T>(jsonString);
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
             {
@@ -134,9 +94,7 @@ public static class DataDictionaryExtensions
             {
                 string? dictJson = serializer.SerializeToString(dictionary);
                 if (dictJson is not null)
-                {
-                    return TryDeserializeWithFallback<T>(dictJson, serializer);
-                }
+                    return serializer.Deserialize<T>(dictJson);
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
             {
@@ -151,9 +109,7 @@ public static class DataDictionaryExtensions
             {
                 string? listJson = serializer.SerializeToString(list);
                 if (listJson is not null)
-                {
-                    return TryDeserializeWithFallback<T>(listJson, serializer);
-                }
+                    return serializer.Deserialize<T>(listJson);
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
             {

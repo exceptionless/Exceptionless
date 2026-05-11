@@ -526,37 +526,6 @@ public class SerializerTests : TestWithServices
     }
 
     [Fact]
-    public void GetValue_PascalCaseDataKeys_DeserializesViaFallback()
-    {
-        // Arrange — legacy JSON uses PascalCase property names for known data types.
-        // The serializer uses snake_case naming policy, so multi-word properties (HttpMethod, StackTrace)
-        // don't match. The CaseInsensitiveOptions fallback in GetValue<T> handles this.
-        /* language=json */
-        const string json = """{"message":"Legacy error","type":"error","@error":{"Message":"Legacy fail","Type":"System.InvalidOperationException","Data":{"Key1":"Val1"},"StackTrace":[]},"@request":{"HttpMethod":"POST","Path":"/legacy/endpoint","Host":"example.com","Port":443}}""";
-
-        // Act
-        var ev = _serializer.Deserialize<Event>(json);
-
-        // Assert
-        Assert.NotNull(ev);
-        Assert.NotNull(ev.Data);
-
-        var error = ev.Data.GetValue<Error>(Event.KnownDataKeys.Error, _serializer);
-        Assert.NotNull(error);
-        Assert.Equal("Legacy fail", error.Message);
-        Assert.Equal("System.InvalidOperationException", error.Type);
-        Assert.NotNull(error.Data);
-        Assert.Equal("Val1", error.Data["Key1"]);
-
-        var request = ev.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo, _serializer);
-        Assert.NotNull(request);
-        Assert.Equal("POST", request.HttpMethod);
-        Assert.Equal("/legacy/endpoint", request.Path);
-        Assert.Equal("example.com", request.Host);
-        Assert.Equal(443, request.Port);
-    }
-
-    [Fact]
     public void GetValue_ConflictingAtPrefixedDataKeys_PreservesAllKeys()
     {
         // Arrange — multiple @ prefixed keys at root level all land in Data via JsonExtensionData.
