@@ -3,6 +3,7 @@ using System.Text.Json;
 using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Serializer;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Extensions;
 
@@ -55,7 +56,7 @@ public static class ProjectExtensions
     /// The GetValue path uses TryDeserializeWithFallback which handles both
     /// snake_case (current) and PascalCase (legacy Newtonsoft) formats.
     /// </remarks>
-    public static SlackToken? GetSlackToken(this Project project, ITextSerializer serializer)
+    public static SlackToken? GetSlackToken(this Project project, ITextSerializer serializer, ILogger? logger = null)
     {
         if (project.Data is null || !project.Data.ContainsKey(Project.KnownDataKeys.SlackToken))
             return null;
@@ -69,7 +70,7 @@ public static class ProjectExtensions
             // Data may be stored in a truly incompatible format (e.g., corrupted or from a
             // very old version). TryDeserializeWithFallback handles PascalCase/snake_case
             // differences, so reaching here indicates genuinely unparseable data.
-            System.Diagnostics.Debug.WriteLine($"Failed to deserialize SlackToken for project {project.Id}: {ex.Message}");
+            logger?.LogWarning(ex, "Failed to deserialize SlackToken for project {ProjectId}", project.Id);
         }
 
         return null;
