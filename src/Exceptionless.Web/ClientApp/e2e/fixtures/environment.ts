@@ -13,12 +13,13 @@ export interface E2EEnvironment {
 
 export function getE2EEnvironment(): E2EEnvironment {
     const isProduction = getOptionalEnv('E2E_ENV') === 'production';
-    const appUrl = getOptionalEnv('E2E_URL') ?? DEFAULT_APP_URL;
+    const rawAppUrl = getOptionalEnv('E2E_URL');
+    const appUrl = rawAppUrl ?? DEFAULT_APP_URL;
     const email = getOptionalEnv('E2E_EMAIL') ?? (isProduction ? undefined : DEFAULT_EMAIL);
     const password = getOptionalEnv('E2E_PASSWORD') ?? (isProduction ? undefined : DEFAULT_PASSWORD);
     const runId = getOptionalEnv('E2E_RUN_ID') ?? getDefaultRunId();
 
-    const missing = [['E2E_URL', appUrl]].filter(([, value]) => !value).map(([name]) => name);
+    const missing = [['E2E_URL', rawAppUrl]].filter(([, value]) => !value).map(([name]) => name);
 
     if (isProduction && missing.length > 0) {
         throw new Error(`Production E2E tests require these environment variables: ${missing.join(', ')}`);

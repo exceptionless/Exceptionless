@@ -23,6 +23,8 @@ export default defineConfig({
 
     retries: isCi ? 2 : 0,
 
+    testDir: 'e2e',
+
     testMatch: '**/*.e2e.{ts,js}',
 
     timeout: 120_000,
