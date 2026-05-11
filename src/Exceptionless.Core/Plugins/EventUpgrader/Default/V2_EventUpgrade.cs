@@ -10,8 +10,11 @@ namespace Exceptionless.Core.Plugins.EventUpgrader;
 [Priority(2000)]
 public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
 {
-    public V2EventUpgrade(AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    private readonly JsonSerializerOptions _jsonOptions;
+
+    public V2EventUpgrade(AppOptions options, ILoggerFactory loggerFactory, JsonSerializerOptions jsonOptions) : base(options, loggerFactory)
     {
+        _jsonOptions = jsonOptions;
     }
 
     public void Upgrade(EventUpgraderContext ctx)
@@ -118,11 +121,11 @@ public class V2EventUpgrade : PluginBase, IEventUpgraderPlugin
             string? emailAddress = doc.GetPropertyStringValueAndRemove("UserEmail");
             string? userDescription = doc.GetPropertyStringValueAndRemove("UserDescription");
             if (!String.IsNullOrWhiteSpace(emailAddress) && !String.IsNullOrWhiteSpace(userDescription))
-                doc.Add("@user_description", JsonSerializer.SerializeToNode(new UserDescription(emailAddress, userDescription)));
+                doc.Add("@user_description", JsonSerializer.SerializeToNode(new UserDescription(emailAddress, userDescription), _jsonOptions));
 
             string? identity = doc.GetPropertyStringValueAndRemove("UserName");
             if (!String.IsNullOrWhiteSpace(identity))
-                doc.Add("@user", JsonSerializer.SerializeToNode(new UserInfo(identity)));
+                doc.Add("@user", JsonSerializer.SerializeToNode(new UserInfo(identity), _jsonOptions));
 
             doc.RemoveAllIfNullOrEmpty("Data", "GenericArguments", "Parameters");
         }
