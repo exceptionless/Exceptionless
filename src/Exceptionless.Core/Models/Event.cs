@@ -81,6 +81,12 @@ public class Event : IData, IJsonOnDeserialized
     /// This handles the case where known data keys like "@error", "@request", "@environment"
     /// appear at the JSON root level instead of nested under "data".
     /// </summary>
+    /// <remarks>
+    /// Uses TryAdd semantics: if a key already exists in Data (from an explicit "data" property
+    /// in the JSON), the extension data value is NOT merged — the explicit value takes precedence.
+    /// This matches the old Newtonsoft DataObjectConverter behavior where duplicate keys were
+    /// preserved under modified names rather than overwritten.
+    /// </remarks>
     void IJsonOnDeserialized.OnDeserialized()
     {
         if (ExtensionData is null || ExtensionData.Count == 0)
@@ -89,8 +95,9 @@ public class Event : IData, IJsonOnDeserialized
         Data ??= new DataDictionary();
         foreach (var kvp in ExtensionData)
         {
-            // Delegate to ObjectToInferredTypesConverter to avoid duplicating conversion logic
-            Data[kvp.Key] = ObjectToInferredTypesConverter.ConvertJsonElement(kvp.Value);
+            // Don't overwrite values already in Data (e.g., from explicit "data" JSON property).
+            // This preserves the old DataObjectConverter collision-handling behavior.
+            Data.TryAdd(kvp.Key, ObjectToInferredTypesConverter.ConvertJsonElement(kvp.Value));
         }
         ExtensionData = null;
     }
