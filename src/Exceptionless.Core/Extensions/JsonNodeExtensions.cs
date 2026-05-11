@@ -300,15 +300,24 @@ public static class JsonNodeExtensions
     /// </summary>
     /// <param name="node">The JSON node to format.</param>
     /// <param name="options">Serializer options from DI. Uses WriteIndented=true and IndentSize=2.</param>
+    /// <remarks>
+    /// This method does NOT mutate the input node. It creates a deep clone before normalizing
+    /// dates so the original node tree remains unchanged for downstream processing.
+    /// </remarks>
     public static string ToFormattedString(this JsonNode? node, JsonSerializerOptions options)
     {
         if (node is null)
             return "null";
 
-        // Normalize the node to match existing date format before serialization
-        NormalizeDates(node);
+        // Deep clone to avoid mutating the original node tree.
+        // The caller may reuse the node after formatting (e.g., EventUpgraderTests
+        // calls ToFormattedString on the same document twice).
+        var clone = node.DeepClone();
 
-        return node.ToJsonString(options);
+        // Normalize the clone to match existing date format before serialization
+        NormalizeDates(clone);
+
+        return clone.ToJsonString(options);
     }
 
     /// <summary>
