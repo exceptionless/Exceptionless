@@ -1,6 +1,4 @@
-﻿using Elastic.Clients.Elasticsearch;
-using Elastic.Clients.Elasticsearch.QueryDsl;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
@@ -8,7 +6,6 @@ using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
-using ElasticInfer = Elastic.Clients.Elasticsearch.Infer;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -61,7 +58,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
         if (organizationIds.Count == 0)
             return Task.FromResult(new FindResults<Project>());
 
-        return FindAsync(q => q.Organization(organizationIds).SortAscending((Field)"name.keyword"), options);
+        return FindAsync(q => q.Organization(organizationIds).SortAscending(p => p.Name), options);
     }
 
     public Task<FindResults<Project>> GetByFilterAsync(AppFilter systemFilter, string? userFilter, string? sort, CommandOptionsDescriptor<Project>? options = null)
@@ -70,7 +67,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
             .AppFilter(systemFilter)
             .FilterExpression(userFilter);
 
-        query = !String.IsNullOrEmpty(sort) ? query.SortExpression(sort) : query.SortAscending((Field)"name.keyword");
+        query = !String.IsNullOrEmpty(sort) ? query.SortExpression(sort) : query.SortAscending(p => p.Name);
         return FindAsync(q => query, options);
     }
 
@@ -78,7 +75,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
     {
         long threshold = _timeProvider.GetUtcNow().UtcDateTime.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight);
         return FindAsync(q => q
-            .ElasticFilter(new NumberRangeQuery { Field = ElasticInfer.Field<Project>(p => p.NextSummaryEndOfDayTicks), Lt = threshold })
+            .FilterExpression($"next_summary_end_of_day_ticks:<{threshold}")
             .SortAscending(p => p.OrganizationId), o => o.SearchAfterPaging().PageLimit(limit));
     }
 

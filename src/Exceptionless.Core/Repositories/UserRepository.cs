@@ -1,4 +1,3 @@
-using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
@@ -24,7 +23,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
             return null;
 
         emailAddress = emailAddress.Trim().ToLowerInvariant();
-        var hit = await FindOneAsync(q => q.FieldEquals((Field)"email_address.keyword", emailAddress), o => o.Cache(EmailCacheKey(emailAddress)));
+        var hit = await FindOneAsync(q => q.FieldEquals(u => u.EmailAddress, emailAddress), o => o.Cache(EmailCacheKey(emailAddress)));
         return hit?.Document;
     }
 
@@ -65,7 +64,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         if (commandOptions.ShouldUseCache())
             throw new Exception("Caching of paged queries is not allowed");
 
-        return FindAsync(q => q.FieldEquals(u => u.OrganizationIds, organizationId).SortAscending((Field)"email_address.keyword"), o => commandOptions);
+        return FindAsync(q => q.FieldEquals(u => u.OrganizationIds, organizationId).SortAscending(u => u.EmailAddress), o => commandOptions);
     }
 
     protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<User>> findHits, ICommandOptions options, bool isDirtyRead)

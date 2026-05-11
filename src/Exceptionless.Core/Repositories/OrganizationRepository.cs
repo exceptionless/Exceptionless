@@ -1,5 +1,3 @@
-using Elastic.Clients.Elasticsearch;
-using Elastic.Clients.Elasticsearch.QueryDsl;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -8,7 +6,6 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using ElasticInfer = Elastic.Clients.Elasticsearch.Infer;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -52,19 +49,14 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         var query = new RepositoryQuery<Organization>();
 
         if (!String.IsNullOrWhiteSpace(criteria))
-            query.ElasticFilter(new BoolQuery
-            {
-                Should = [
-                    new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.Id), Value = criteria },
-                    new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.Name), Value = criteria }
-                ],
-                MinimumShouldMatch = 1
-            });
+            query.FieldOr(g => g
+                .FieldEquals(o => o.Id, criteria)
+                .FieldEquals(o => o.Name, criteria));
 
         if (paid.HasValue)
         {
             if (paid.Value)
-                query.ElasticFilter(new BoolQuery { MustNot = [new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.PlanId), Value = _plans.FreePlan.Id }] });
+                query.FilterExpression($"NOT plan_id:{_plans.FreePlan.Id}");
             else
                 query.FieldEquals(o => o.PlanId, _plans.FreePlan.Id);
         }
@@ -72,30 +64,9 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         if (suspended.HasValue)
         {
             if (suspended.Value)
-                query.ElasticFilter(new BoolQuery
-                {
-                    Should = [
-                        new BoolQuery { MustNot = [
-                            new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Active },
-                            new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Trialing },
-                            new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Canceled }
-                        ] },
-                        new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.IsSuspended), Value = true }
-                    ],
-                    MinimumShouldMatch = 1
-                });
+                query.FilterExpression($"(NOT billing_status:{(int)BillingStatus.Active} AND NOT billing_status:{(int)BillingStatus.Trialing} AND NOT billing_status:{(int)BillingStatus.Canceled}) OR is_suspended:true");
             else
-                query.ElasticFilter(new BoolQuery
-                {
-                    Must = [
-                        new BoolQuery { Should = [
-                            new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Active },
-                            new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Trialing },
-                            new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.BillingStatus), Value = (int)BillingStatus.Canceled }
-                        ], MinimumShouldMatch = 1 },
-                        new TermQuery { Field = ElasticInfer.Field<Organization>(o => o.IsSuspended), Value = false }
-                    ]
-                });
+                query.FilterExpression($"(billing_status:{(int)BillingStatus.Active} OR billing_status:{(int)BillingStatus.Trialing} OR billing_status:{(int)BillingStatus.Canceled}) AND is_suspended:false");
         }
 
         switch (sortBy)
@@ -110,7 +81,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
             //    query.WithSortDescending((Organization o) => o.TotalEventCount);
             //    break;
             default:
-                query.SortAscending((Field)"name.keyword");
+                query.SortAscending((Organization o) => o.Name);
                 break;
         }
 
