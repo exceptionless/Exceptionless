@@ -93,7 +93,7 @@ public class MethodSerializerTests : TestWithServices
     }
 
     [Fact]
-    public void DataDictionary_GetValue_Method_FromDictionary()
+    public void GetValue_MethodInDictionary_DeserializesCorrectly()
     {
         // Arrange
         var dict = new DataDictionary

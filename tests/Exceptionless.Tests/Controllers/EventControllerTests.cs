@@ -1880,11 +1880,13 @@ public class EventControllerTests : IntegrationTestsBase
                 var obj = new JsonObject();
                 foreach (var prop in element.EnumerateObject().OrderBy(p => p.Name, StringComparer.Ordinal))
                     obj[prop.Name] = SortElement(prop.Value);
+
                 return obj;
             case JsonValueKind.Array:
                 var arr = new JsonArray();
                 foreach (var item in element.EnumerateArray())
                     arr.Add(SortElement(item));
+
                 return arr;
             default:
                 return JsonNode.Parse(element.GetRawText());
