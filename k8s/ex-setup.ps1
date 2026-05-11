@@ -13,7 +13,6 @@ winget install Helm.Helm
 helm repo add "stable" "https://charts.helm.sh/stable" --force-update
 helm repo add jetstack https://charts.jetstack.io
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm repo add signoz https://charts.signoz.io
 helm repo update
 
@@ -106,15 +105,6 @@ helm install --namespace elastic-system kube-state-metrics prometheus-community/
 
 # install elastic monitor
 kubectl apply --namespace elastic-system -f elastic-monitor.yaml
-
-# install nginx ingress
-helm install --namespace ingress-nginx -f nginx-values.yaml ingress-nginx ingress-nginx/ingress-nginx
-
-# wait for external ip to be assigned
-kubectl get service -l app.kubernetes.io/name=ingress-nginx --namespace ingress-nginx
-$IP = $(kubectl get service -l app.kubernetes.io/name=ingress-nginx --namespace ingress-nginx -o=jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
-$PUBLICIPID = $(az network public-ip list --query "[?ipAddress!=null]|[?contains(ipAddress, '$IP')].[id]" --output tsv)
-az network public-ip update --ids $PUBLICIPID --dns-name $CLUSTER
 
 # install cert-manager
 # https://github.com/jetstack/cert-manager/releases

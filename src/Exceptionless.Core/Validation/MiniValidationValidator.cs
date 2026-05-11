@@ -13,28 +13,26 @@ public class MiniValidationValidator(IServiceProvider serviceProvider)
     public async Task ValidateAndThrowAsync<T>(T instance)
     {
         (bool isValid, var errors) = await ValidateAsync(instance);
-        if (isValid)
-            return;
-
-        throw new MiniValidatorException("Please correct the specified errors and try again", errors);
+        if (!isValid)
+            throw new MiniValidatorException(errors);
     }
 }
 
-public class MiniValidatorException(string message, IDictionary<string, string[]> errors) : Exception(message)
+public class MiniValidatorException : Exception
 {
-    public IDictionary<string, string[]> Errors { get; } = errors;
+    public IDictionary<string, string[]> Errors { get; }
 
-    public string FormattedErrorMessages()
+    public MiniValidatorException(IDictionary<string, string[]> errors)
+        : base(FormatMessage(errors))
     {
-        var errorMessages = new StringBuilder();
-        errorMessages.AppendLine(Message);
-        foreach (var error in Errors)
-        {
-            errorMessages.Append("- ").Append(error.Key).Append(": ");
-            errorMessages.AppendJoin(", ", error.Value);
-            errorMessages.AppendLine();
-        }
+        Errors = errors;
+    }
 
-        return errorMessages.ToString();
+    private static string FormatMessage(IDictionary<string, string[]> errors)
+    {
+        var sb = new StringBuilder("Please correct the specified errors and try again");
+        foreach (var error in errors)
+            sb.AppendLine().Append("- ").Append(error.Key).Append(": ").AppendJoin(", ", error.Value);
+        return sb.ToString();
     }
 }

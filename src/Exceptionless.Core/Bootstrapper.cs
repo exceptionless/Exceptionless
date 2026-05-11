@@ -24,7 +24,6 @@ using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
-using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Extensions.Hosting.Jobs;
 using Foundatio.Extensions.Hosting.Startup;
@@ -144,7 +143,6 @@ public class Bootstrapper
         services.AddSingleton<StackQueryValidator>();
 
         services.AddSingleton<MiniValidationValidator>();
-        services.AddSingleton(typeof(IValidator<>), typeof(Bootstrapper).Assembly);
         services.AddSingleton(typeof(IPipelineAction<EventContext>), typeof(Bootstrapper).Assembly);
         services.AddSingleton(typeof(IPlugin), typeof(Bootstrapper).Assembly);
         services.AddSingleton(typeof(IJob), typeof(Bootstrapper).Assembly);

@@ -36,9 +36,6 @@ kubectl run --namespace ex-dev ex-dev-client --rm --tty -i --restart='Never' `
     --env ELASTIC_PASSWORD=$ELASTIC_PASSWORD `
     --image exceptionless/api-ci:$API_TAG -- bash
 
-# upgrade nginx ingress and cert-manager
-# look in ex-prod-tasks.ps1
-
 # upgrade elasticsearch
 kubectl apply -f ex-dev-elasticsearch.yaml
 

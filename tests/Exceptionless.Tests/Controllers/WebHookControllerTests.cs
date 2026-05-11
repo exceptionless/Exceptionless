@@ -125,7 +125,7 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
 
         Assert.NotNull(problemDetails);
         Assert.Single(problemDetails.Errors);
-        Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "event_types[0]"));
+        Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "event_types"));
     }
 
     [Fact]

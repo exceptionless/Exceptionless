@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Serialization;
+using MiniValidation;
 
 namespace Exceptionless.Core.Models;
 
@@ -12,14 +13,16 @@ public class Event : IData, IJsonOnDeserialized
 {
     /// <summary>
     /// The event type (ie. error, log message, feature usage). Check <see cref="KnownTypes">Event.KnownTypes</see> for standard event types.
+    /// Nullable in transit; the pipeline infers a default before save. Validated as required on repository save.
     /// </summary>
-    [StringLength(100)]
+    [Required]
+    [StringLength(100, MinimumLength = 1)]
     public string? Type { get; set; }
 
     /// <summary>
     /// The event source (ie. machine name, log name, feature name).
     /// </summary>
-    [StringLength(2000)]
+    [StringLength(2000, MinimumLength = 1)]
     public string? Source { get; set; }
 
     /// <summary>
@@ -35,7 +38,7 @@ public class Event : IData, IJsonOnDeserialized
     /// <summary>
     /// The event message.
     /// </summary>
-    [StringLength(2000)]
+    [StringLength(2000, MinimumLength = 1)]
     public string? Message { get; set; }
 
     /// <summary>
@@ -56,6 +59,7 @@ public class Event : IData, IJsonOnDeserialized
     /// <summary>
     /// Optional data entries that contain additional information about this event.
     /// </summary>
+    [SkipRecursion]
     public DataDictionary? Data { get; set; } = new();
 
     /// <summary>

@@ -53,8 +53,7 @@ curl "{{::vm.serverUrl}}/api/v2/events" \
     --request POST \
     --header "Authorization: Bearer {{::vm.apiKey}}" \
     --header "Content-Type: application/json" \
-    --data-binary "[{'type':'log','message':'Hello World!'}]"</pre
-                            >
+    --data-binary '[{"type":"log","message":"Hello World!"}]'</pre>
                             <pre class="command-line-code" ng-if="!vm.isBashShell()">
 $body = @{
  "type"="log"
@@ -68,7 +67,6 @@ $header = @{
 
 Invoke-RestMethod -Uri "{{::vm.serverUrl}}/api/v2/events" -Method "Post" -Body $body -Headers $header
 </pre
-                            >
                         </li>
                         <li
                             style="margin-top: 15px"

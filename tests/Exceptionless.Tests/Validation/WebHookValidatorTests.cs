@@ -7,11 +7,11 @@ namespace Exceptionless.Tests.Validation;
 public sealed class WebHookValidatorTests : TestWithServices
 {
     private const string ValidObjectId = "123456789012345678901234";
-    private readonly WebHookValidator _validator;
+    private readonly MiniValidationValidator _validator;
 
     public WebHookValidatorTests(ITestOutputHelper output) : base(output)
     {
-        _validator = new WebHookValidator();
+        _validator = GetService<MiniValidationValidator>();
     }
 
     private WebHook CreateValidWebHook()
@@ -28,17 +28,17 @@ public sealed class WebHookValidatorTests : TestWithServices
     }
 
     [Fact]
-    public void Validate_WhenOrganizationIdIsValidObjectId_ReturnsSuccess()
+    public async Task Validate_WhenOrganizationIdIsValidObjectId_ReturnsSuccess()
     {
         // Arrange
         var webHook = CreateValidWebHook();
         webHook.OrganizationId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(webHook);
+        var (isValid, _) = await _validator.ValidateAsync(webHook);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
@@ -46,22 +46,22 @@ public sealed class WebHookValidatorTests : TestWithServices
     [InlineData("invalid-id")]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenOrganizationIdIsInvalid_ReturnsError(string? organizationId)
+    public async Task Validate_WhenOrganizationIdIsInvalid_ReturnsError(string? organizationId)
     {
         // Arrange
         var webHook = CreateValidWebHook();
         webHook.OrganizationId = organizationId!;
 
         // Act
-        var result = _validator.Validate(webHook);
+        var (isValid, errors) = await _validator.ValidateAsync(webHook);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(WebHook.OrganizationId)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(WebHook.OrganizationId)));
     }
 
     [Fact]
-    public void Validate_WhenProjectIdIsEmptyAndOrganizationIdIsEmpty_ReturnsError()
+    public async Task Validate_WhenProjectIdIsEmptyAndOrganizationIdIsEmpty_ReturnsError()
     {
         // Arrange
         var webHook = CreateValidWebHook();
@@ -69,15 +69,15 @@ public sealed class WebHookValidatorTests : TestWithServices
         webHook.ProjectId = "";
 
         // Act
-        var result = _validator.Validate(webHook);
+        var (isValid, errors) = await _validator.ValidateAsync(webHook);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(WebHook.ProjectId)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(WebHook.ProjectId)));
     }
 
     [Fact]
-    public void Validate_WhenProjectIdIsValidButOrganizationIdIsEmpty_ReturnsError()
+    public async Task Validate_WhenProjectIdIsValidButOrganizationIdIsEmpty_ReturnsError()
     {
         // Arrange
         var webHook = CreateValidWebHook();
@@ -85,72 +85,72 @@ public sealed class WebHookValidatorTests : TestWithServices
         webHook.ProjectId = ValidObjectId;
 
         // Act
-        var result = _validator.Validate(webHook);
+        var (isValid, _) = await _validator.ValidateAsync(webHook);
 
         // Assert
-        Assert.False(result.IsValid);
+        Assert.False(isValid);
     }
 
     [Theory]
     [InlineData("http://localhost:8080/hook")]
-    public void Validate_WhenUrlIsValid_ReturnsSuccess(string url)
+    public async Task Validate_WhenUrlIsValid_ReturnsSuccess(string url)
     {
         // Arrange
         var webHook = CreateValidWebHook();
         webHook.Url = url;
 
         // Act
-        var result = _validator.Validate(webHook);
+        var (isValid, _) = await _validator.ValidateAsync(webHook);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenUrlIsEmpty_ReturnsError(string? url)
+    public async Task Validate_WhenUrlIsEmpty_ReturnsError(string? url)
     {
         // Arrange
         var webHook = CreateValidWebHook();
         webHook.Url = url!;
 
         // Act
-        var result = _validator.Validate(webHook);
+        var (isValid, errors) = await _validator.ValidateAsync(webHook);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(WebHook.Url)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(WebHook.Url)));
     }
 
     [Fact]
-    public void Validate_WhenEventTypesIsEmpty_ReturnsError()
+    public async Task Validate_WhenEventTypesIsEmpty_ReturnsError()
     {
         // Arrange
         var webHook = CreateValidWebHook();
         webHook.EventTypes = [];
 
         // Act
-        var result = _validator.Validate(webHook);
+        var (isValid, errors) = await _validator.ValidateAsync(webHook);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(WebHook.EventTypes)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(WebHook.EventTypes)));
     }
 
     [Fact]
-    public void Validate_WhenEventTypesIsNull_ReturnsError()
+    public async Task Validate_WhenEventTypesIsNull_ReturnsError()
     {
         // Arrange
         var webHook = CreateValidWebHook();
         webHook.EventTypes = null!;
 
         // Act
-        var result = _validator.Validate(webHook);
+        var (isValid, errors) = await _validator.ValidateAsync(webHook);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(WebHook.EventTypes)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(WebHook.EventTypes)));
     }
 
     [Theory]
@@ -160,38 +160,38 @@ public sealed class WebHookValidatorTests : TestWithServices
     [InlineData(WebHook.KnownEventTypes.CriticalEvent)]
     [InlineData(WebHook.KnownEventTypes.StackRegression)]
     [InlineData(WebHook.KnownEventTypes.StackPromoted)]
-    public void Validate_WhenEventTypeIsKnown_ReturnsSuccess(string eventType)
+    public async Task Validate_WhenEventTypeIsKnown_ReturnsSuccess(string eventType)
     {
         // Arrange
         var webHook = CreateValidWebHook();
         webHook.EventTypes = [eventType];
 
         // Act
-        var result = _validator.Validate(webHook);
+        var (isValid, _) = await _validator.ValidateAsync(webHook);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
     [InlineData("unknown_event_type")]
     [InlineData("invalid")]
-    public void Validate_WhenEventTypeIsUnknown_ReturnsError(string eventType)
+    public async Task Validate_WhenEventTypeIsUnknown_ReturnsError(string eventType)
     {
         // Arrange
         var webHook = CreateValidWebHook();
         webHook.EventTypes = [eventType];
 
         // Act
-        var result = _validator.Validate(webHook);
+        var (isValid, errors) = await _validator.ValidateAsync(webHook);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.PropertyName.StartsWith("EventTypes"));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => k.StartsWith("EventTypes"));
     }
 
     [Fact]
-    public void Validate_WhenMultipleKnownEventTypes_ReturnsSuccess()
+    public async Task Validate_WhenMultipleKnownEventTypes_ReturnsSuccess()
     {
         // Arrange
         var webHook = CreateValidWebHook();
@@ -203,14 +203,14 @@ public sealed class WebHookValidatorTests : TestWithServices
         ];
 
         // Act
-        var result = _validator.Validate(webHook);
+        var (isValid, _) = await _validator.ValidateAsync(webHook);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Fact]
-    public void Validate_WhenMultipleEventTypesWithOneInvalid_ReturnsError()
+    public async Task Validate_WhenMultipleEventTypesWithOneInvalid_ReturnsError()
     {
         // Arrange
         var webHook = CreateValidWebHook();
@@ -221,56 +221,56 @@ public sealed class WebHookValidatorTests : TestWithServices
         ];
 
         // Act
-        var result = _validator.Validate(webHook);
+        var (isValid, _) = await _validator.ValidateAsync(webHook);
 
         // Assert
-        Assert.False(result.IsValid);
+        Assert.False(isValid);
     }
 
     [Theory]
     [InlineData("v1")]
     [InlineData("v2")]
-    public void Validate_WhenVersionIsValid_ReturnsSuccess(string version)
+    public async Task Validate_WhenVersionIsValid_ReturnsSuccess(string version)
     {
         // Arrange
         var webHook = CreateValidWebHook();
         webHook.Version = version;
 
         // Act
-        var result = _validator.Validate(webHook);
+        var (isValid, _) = await _validator.ValidateAsync(webHook);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_WhenVersionIsEmpty_ReturnsError(string? version)
+    public async Task Validate_WhenVersionIsEmpty_ReturnsError(string? version)
     {
         // Arrange
         var webHook = CreateValidWebHook();
         webHook.Version = version!;
 
         // Act
-        var result = _validator.Validate(webHook);
+        var (isValid, errors) = await _validator.ValidateAsync(webHook);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => String.Equals(e.PropertyName, nameof(WebHook.Version)));
+        Assert.False(isValid);
+        Assert.Contains(errors.Keys, k => String.Equals(k, nameof(WebHook.Version)));
     }
 
     [Fact]
-    public void Validate_WhenWebHookIsValid_ReturnsSuccess()
+    public async Task Validate_WhenWebHookIsValid_ReturnsSuccess()
     {
         // Arrange
         var webHook = CreateValidWebHook();
 
         // Act
-        var result = _validator.Validate(webHook);
+        var (isValid, _) = await _validator.ValidateAsync(webHook);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 
     [Fact]
@@ -280,9 +280,9 @@ public sealed class WebHookValidatorTests : TestWithServices
         var webHook = CreateValidWebHook();
 
         // Act
-        var result = await _validator.ValidateAsync(webHook, TestCancellationToken);
+        var (isValid, _) = await _validator.ValidateAsync(webHook);
 
         // Assert
-        Assert.True(result.IsValid);
+        Assert.True(isValid);
     }
 }

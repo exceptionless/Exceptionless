@@ -35,7 +35,7 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
 
     public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = default)
     {
-        return _lockProvider.AcquireAsync(nameof(GenerateSampleEventsWorkItemHandler), TimeSpan.FromMinutes(30), cancellationToken);
+        return _lockProvider.TryAcquireAsync(nameof(GenerateSampleEventsWorkItemHandler), TimeSpan.FromMinutes(30), cancellationToken);
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
