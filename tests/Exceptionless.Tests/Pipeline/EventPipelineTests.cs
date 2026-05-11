@@ -1287,6 +1287,84 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         }
     }
 
+    [Fact]
+    public async Task ErrorPlugin_SetsTargetInfo_AfterPipelineProcessing()
+    {
+        // Arrange - Create an error event with a stack trace
+        var ev = GenerateEvent(type: Event.KnownTypes.Error);
+        ev.Data = new DataDictionary
+        {
+            [Event.KnownDataKeys.Error] = new Error
+            {
+                Type = "System.InvalidOperationException",
+                Message = "Test error for target info",
+                StackTrace =
+                [
+                    new Exceptionless.Core.Models.Data.StackFrame
+                    {
+                        DeclaringNamespace = "TestApp.Services",
+                        DeclaringType = "TestService",
+                        Name = "DoWork"
+                    }
+                ]
+            }
+        };
+
+        // Act - Run through the pipeline
+        var context = await _pipeline.RunAsync(ev, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
+        Assert.False(context.HasError, context.ErrorMessage);
+
+        // Fetch from ES to verify serialized form
+        await RefreshDataAsync();
+        var stored = await _eventRepository.GetByIdAsync(ev.Id);
+        Assert.NotNull(stored);
+
+        // Assert - @target should have computed strings, not raw Method object
+        var error = stored.GetError(_serializer);
+        Assert.NotNull(error);
+
+        var targetInfo = error.Data?.GetValue<SettingsDictionary>(Error.KnownDataKeys.TargetInfo, _serializer);
+        Assert.NotNull(targetInfo);
+        Assert.True(targetInfo.ContainsKey("ExceptionType"), "@target should contain ExceptionType");
+        Assert.Equal("System.InvalidOperationException", targetInfo["ExceptionType"]);
+        Assert.True(targetInfo.ContainsKey("Method"), "@target should contain Method");
+        Assert.Contains("TestService.DoWork", targetInfo["Method"]);
+    }
+
+    [Fact]
+    public async Task SimpleErrorPlugin_SetsTargetInfo_AfterPipelineProcessing()
+    {
+        // Arrange - Create a simple error event with type and stack trace string
+        var ev = GenerateEvent(type: Event.KnownTypes.Error);
+        ev.Data = new DataDictionary
+        {
+            [Event.KnownDataKeys.SimpleError] = new SimpleError
+            {
+                Type = "System.ArgumentNullException",
+                Message = "Value cannot be null",
+                StackTrace = "at TestApp.Services.UserService.GetUser(String userId)"
+            }
+        };
+
+        // Act - Run through the pipeline
+        var context = await _pipeline.RunAsync(ev, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
+        Assert.False(context.HasError, context.ErrorMessage);
+
+        // Fetch from ES to verify serialized form
+        await RefreshDataAsync();
+        var stored = await _eventRepository.GetByIdAsync(ev.Id);
+        Assert.NotNull(stored);
+
+        // Assert - @target should exist with ExceptionType from SimpleErrorPlugin
+        var error = stored.GetSimpleError(_serializer);
+        Assert.NotNull(error);
+
+        var targetInfo = error.Data?.GetValue<SettingsDictionary>(Error.KnownDataKeys.TargetInfo, _serializer);
+        Assert.NotNull(targetInfo);
+        Assert.True(targetInfo.ContainsKey("ExceptionType"), "@target should contain ExceptionType");
+        Assert.Equal("System.ArgumentNullException", targetInfo["ExceptionType"]);
+    }
+
     private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string? userIdentity = null, string? type = null, string? sessionId = null)
     {
         occurrenceDate ??= DateTimeOffset.Now;

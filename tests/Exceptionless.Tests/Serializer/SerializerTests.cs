@@ -17,7 +17,7 @@ public class SerializerTests : TestWithServices
     }
 
     [Fact]
-    public void CanDeserializeEventWithData()
+    public void Deserialize_EventWithData_PreservesDataValues()
     {
         // Arrange
         /* language=json */
@@ -83,7 +83,7 @@ public class SerializerTests : TestWithServices
     }
 
     [Fact]
-    public void CanRoundTripEventWithKnownDataTypes()
+    public void RoundTrip_EventWithKnownDataTypes_PreservesTypedData()
     {
         // Arrange - Event with known data types (error, request info)
         var originalError = new Error

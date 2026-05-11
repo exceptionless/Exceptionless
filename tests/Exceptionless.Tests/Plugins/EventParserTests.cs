@@ -57,7 +57,7 @@ public sealed class EventParserTests : TestWithServices
 
         var events = _parser.ParseEvents(json, 2, "exceptionless/2.0.0.0");
         Assert.Single(events);
-        var ev = events.First();
+        var ev = events.Single();
 
         // Verify structural equivalence: parse → serialize should produce
         // content equivalent to the original file (ignoring nulls and empty collections

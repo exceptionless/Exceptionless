@@ -117,7 +117,7 @@ public class InnerErrorSerializerTests : TestWithServices
     }
 
     [Fact]
-    public void DataDictionary_GetValue_InnerError_FromDictionary()
+    public void GetValue_InnerErrorInDictionary_DeserializesCorrectly()
     {
         // Arrange
         var dict = new DataDictionary

@@ -156,6 +156,11 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
             if (!_factory.IndexesHaveBeenConfigured)
             {
                 await _configuration.DeleteIndexesAsync();
+                // Clean up stale unversioned daily event indices (e.g., {scope}-events-2026.05.13)
+                // that predate the versioned naming ({scope}-events-v1-2026.05.13). DailyIndex.DeleteAsync()
+                // only deletes {Name}-v* patterns, so old unversioned indices block alias creation
+                // when their name collides with the new versioned index's alias.
+                await _configuration.Client.Indices.DeleteAsync($"{_factory.AppScope}-events-*");
                 await _configuration.ConfigureIndexesAsync();
                 _factory.IndexesHaveBeenConfigured = true;
             }
