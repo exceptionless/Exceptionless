@@ -590,4 +590,50 @@ public class SerializerTests : TestWithServices
         Assert.Equal("SERVER01", env.MachineName);
         Assert.Equal(4, env.ProcessorCount);
     }
+
+    [Fact]
+    public void OnDeserialized_DataAndRootLevelCollision_ExplicitDataWins()
+    {
+        // Arrange — when both root-level "@error" AND "data.@error" exist in the same JSON,
+        // the explicit "data" entry should take precedence (matching old DataObjectConverter
+        // behavior where the first-seen key won the canonical name).
+        /* language=json */
+        const string json = """{"@error":{"message":"RootError","type":"System.InvalidOperationException","stack_trace":[]},"data":{"@error":{"message":"DataError","type":"System.ArgumentException","stack_trace":[]}}}""";
+
+        // Act
+        var ev = _serializer.Deserialize<Event>(json);
+
+        // Assert — explicit Data entry should NOT be overwritten by root-level extension data
+        Assert.NotNull(ev);
+        Assert.NotNull(ev.Data);
+        Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.Error));
+
+        var error = ev.Data.GetValue<Error>(Event.KnownDataKeys.Error, _serializer);
+        Assert.NotNull(error);
+        Assert.Equal("DataError", error.Message);
+        Assert.Equal("System.ArgumentException", error.Type);
+    }
+
+    [Fact]
+    public void OnDeserialized_RootLevelOnly_CapturedInData()
+    {
+        // Arrange — root-level known data keys without explicit "data" property
+        // should be captured in Data dictionary (the common client SDK submission format).
+        /* language=json */
+        const string json = """{"type":"error","message":"Something broke","@error":{"message":"Boom","type":"System.Exception","stack_trace":[]}}""";
+
+        // Act
+        var ev = _serializer.Deserialize<Event>(json);
+
+        // Assert
+        Assert.NotNull(ev);
+        Assert.Equal("error", ev.Type);
+        Assert.Equal("Something broke", ev.Message);
+        Assert.NotNull(ev.Data);
+        Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.Error));
+
+        var error = ev.Data.GetValue<Error>(Event.KnownDataKeys.Error, _serializer);
+        Assert.NotNull(error);
+        Assert.Equal("Boom", error.Message);
+    }
 }
