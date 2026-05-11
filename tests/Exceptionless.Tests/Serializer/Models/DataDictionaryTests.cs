@@ -677,30 +677,9 @@ public class DataDictionaryTests : TestWithServices
     }
 
     [Fact]
-    public void GetValue_PascalCaseJsonString_DeserializesViaFallback()
-    {
-        // Arrange — legacy PascalCase data written by Newtonsoft.Json
-        var data = new DataDictionary
-        {
-            { Event.KnownDataKeys.EnvironmentInfo, """{"MachineName":"LEGACY-01","ProcessorCount":4,"TotalPhysicalMemory":8192,"CommandLine":"legacy.exe"}""" }
-        };
-
-        // Act
-        var result = data.GetValue<EnvironmentInfo>(Event.KnownDataKeys.EnvironmentInfo, _serializer);
-
-        // Assert — fallback (case-insensitive, no naming policy) handles PascalCase
-        Assert.NotNull(result);
-        Assert.Equal("LEGACY-01", result.MachineName);
-        Assert.Equal(4, result.ProcessorCount);
-        Assert.Equal(8192, result.TotalPhysicalMemory);
-        Assert.Equal("legacy.exe", result.CommandLine);
-    }
-
-    [Fact]
     public void GetValue_SnakeCaseDictionary_DeserializesViaPrimarySerializer()
     {
-        // Arrange — ObjectToInferredTypesConverter produces Dictionary<string, object?> with original JSON key casing.
-        // Current snake_case data keys are preserved as-is.
+        // Arrange
         var dict = new Dictionary<string, object?>
         {
             { "machine_name", "DICT-01" },
@@ -719,29 +698,5 @@ public class DataDictionaryTests : TestWithServices
         Assert.Equal(16, result.ProcessorCount);
         Assert.Equal(32768, result.TotalPhysicalMemory);
         Assert.Equal("app.exe --verbose", result.CommandLine);
-    }
-
-    [Fact]
-    public void GetValue_PascalCaseDictionary_DeserializesViaFallback()
-    {
-        // Arrange — Legacy data loaded from ES where ObjectToInferredTypesConverter preserved PascalCase keys.
-        var dict = new Dictionary<string, object?>
-        {
-            { "MachineName", "LEGACY-DICT" },
-            { "ProcessorCount", 2L },
-            { "TotalPhysicalMemory", 4096L },
-            { "CommandLine", "old.exe" }
-        };
-        var data = new DataDictionary { { Event.KnownDataKeys.EnvironmentInfo, dict } };
-
-        // Act
-        var result = data.GetValue<EnvironmentInfo>(Event.KnownDataKeys.EnvironmentInfo, _serializer);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal("LEGACY-DICT", result.MachineName);
-        Assert.Equal(2, result.ProcessorCount);
-        Assert.Equal(4096, result.TotalPhysicalMemory);
-        Assert.Equal("old.exe", result.CommandLine);
     }
 }

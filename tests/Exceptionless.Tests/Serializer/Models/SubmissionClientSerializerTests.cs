@@ -16,6 +16,7 @@ public class SubmissionClientSerializerTests : TestWithServices
     [Fact]
     public void RoundTrip_WithAllProperties_PreservesValues()
     {
+        // Arrange
         var client = new SubmissionClient
         {
             IpAddress = "192.168.1.100",
@@ -23,9 +24,11 @@ public class SubmissionClientSerializerTests : TestWithServices
             Version = "2.1.3"
         };
 
+        // Act
         string? json = _serializer.SerializeToString(client);
         var result = _serializer.Deserialize<SubmissionClient>(json);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("192.168.1.100", result.IpAddress);
         Assert.Equal("exceptionless/1.0.0", result.UserAgent);
@@ -35,6 +38,7 @@ public class SubmissionClientSerializerTests : TestWithServices
     [Fact]
     public void RoundTrip_WithIPv6Address_PreservesValues()
     {
+        // Arrange
         var client = new SubmissionClient
         {
             IpAddress = "::ffff:192.168.1.1",
@@ -42,9 +46,11 @@ public class SubmissionClientSerializerTests : TestWithServices
             Version = "3.0.0"
         };
 
+        // Act
         string? json = _serializer.SerializeToString(client);
         var result = _serializer.Deserialize<SubmissionClient>(json);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("::ffff:192.168.1.1", result.IpAddress);
     }
@@ -52,11 +58,14 @@ public class SubmissionClientSerializerTests : TestWithServices
     [Fact]
     public void Deserialize_SnakeCaseJson_ParsesCorrectly()
     {
+        // Arrange
         /* language=json */
         const string json = """{"ip_address":"10.0.0.1","user_agent":"Mozilla/5.0","version":"1.0.0"}""";
 
+        // Act
         var result = _serializer.Deserialize<SubmissionClient>(json);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("10.0.0.1", result.IpAddress);
         Assert.Equal("Mozilla/5.0", result.UserAgent);
@@ -66,11 +75,14 @@ public class SubmissionClientSerializerTests : TestWithServices
     [Fact]
     public void RoundTrip_WithMinimalProperties_PreservesValues()
     {
+        // Arrange
         var client = new SubmissionClient { IpAddress = "127.0.0.1" };
 
+        // Act
         string? json = _serializer.SerializeToString(client);
         var result = _serializer.Deserialize<SubmissionClient>(json);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("127.0.0.1", result.IpAddress);
         Assert.Null(result.UserAgent);
