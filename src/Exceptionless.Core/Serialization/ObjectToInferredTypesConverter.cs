@@ -41,6 +41,12 @@ namespace Exceptionless.Core.Serialization;
 /// </code>
 /// </example>
 /// <seealso href="https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/converters-how-to#deserialize-inferred-types-to-object-properties"/>
+/// <remarks>
+/// This converter is app-specific and NOT interchangeable with Foundatio.Repositories'
+/// ObjectToInferredTypesConverter. Key differences: preferInt64 mode for ES compatibility,
+/// aggressive DateTimeOffset detection from strings, int→long→decimal number inference,
+/// and the static ConvertJsonElement helper used by Event.MergeExtensionData.
+/// </remarks>
 public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
 {
     private readonly bool _preferInt64;

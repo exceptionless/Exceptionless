@@ -18,10 +18,10 @@ public static class JsonNodeExtensions
             return true;
 
         if (target is JsonObject obj)
-            return obj.Count == 0;
+            return obj.Count is 0;
 
         if (target is JsonArray arr)
-            return arr.Count == 0;
+            return arr.Count is 0;
 
         if (target is JsonValue val)
         {
@@ -385,10 +385,10 @@ public static class JsonNodeExtensions
     /// </summary>
     private static bool IsIso8601DateWithZ(string value)
     {
-        // Check for pattern like "2013-09-11T14:49:54.218Z" or "2014-03-03T11:10:56Z"
-        return value.Length >= 20 &&
+        // Validate structural markers for ISO 8601 dates like "2013-09-11T14:49:54.218Z"
+        return value.EndsWith('Z') &&
+               value.Length >= 20 &&
                value.Length <= 28 &&
-               value.EndsWith("Z") &&
                value[4] == '-' &&
                value[7] == '-' &&
                value[10] == 'T' &&
