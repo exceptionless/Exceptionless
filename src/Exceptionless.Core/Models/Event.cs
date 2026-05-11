@@ -89,7 +89,7 @@ public class Event : IData, IJsonOnDeserialized
     /// </remarks>
     void IJsonOnDeserialized.OnDeserialized()
     {
-        if (ExtensionData is null || ExtensionData.Count == 0)
+        if (ExtensionData is null or { Count: 0 })
             return;
 
         Data ??= new DataDictionary();

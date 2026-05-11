@@ -1,6 +1,7 @@
 using Elastic.Clients.Elasticsearch.IndexManagement;
 using Elastic.Clients.Elasticsearch.Mapping;
 using Exceptionless.Core.Configuration;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories.Queries;
@@ -103,7 +104,7 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
             .NumberOfShards(_configuration.Options.NumberOfShards)
             .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
             .AddOtherSetting("index.mapping.total_fields.limit", _configuration.Options.FieldsLimit.ToString())
-            .AddOtherSetting("index.mapping.ignore_malformed", "true")
+            .AddOtherSetting("index.mapping.ignore_malformed", "true") // ES requires lowercase; Boolean.TrueString is "True"
             .Priority(1));
     }
 
@@ -112,7 +113,7 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
         const string pipeline = "events-pipeline";
         var response = await Configuration.Client.Ingest.PutPipelineAsync(pipeline, d => d
             .Processors(p => p.Script(s => s
-                .Source(FLATTEN_ERRORS_SCRIPT.Replace("\r", String.Empty).Replace("\n", String.Empty).Replace("  ", " ")))));
+                .Source(FLATTEN_ERRORS_SCRIPT.TrimScript()))));
 
         var logger = Configuration.LoggerFactory.CreateLogger<EventIndex>();
         logger.LogRequest(response);

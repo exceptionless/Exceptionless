@@ -29,8 +29,8 @@ public static class JsonSerializerOptionsExtensions
         options.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
         options.PropertyNameCaseInsensitive = true;
 
-        // XSS-safe encoder: escapes <, >, &, ' while allowing Unicode characters
-        // This protects against script injection when JSON is embedded in HTML/JavaScript
+        // XSS-safe encoder: escapes <, >, &, ' to prevent script injection when JSON is
+        // embedded in HTML pages or delivered via WebSocket messages.
         options.Encoder = JavaScriptEncoder.Create(new TextEncoderSettings(UnicodeRanges.All));
 
         options.Converters.Add(new ObjectToInferredTypesConverter());
@@ -42,7 +42,9 @@ public static class JsonSerializerOptionsExtensions
         // If you see "cannot be null" errors, fix the model's nullability annotation or the data.
         options.RespectNullableAnnotations = true;
 
-        // Skip empty collections during serialization to match Newtonsoft behavior
+        // TypeInfoResolver + EmptyCollectionModifier omits empty lists/dicts from serialized
+        // output (e.g. tags:[], references:[] are omitted). This applies to all API responses
+        // and Elasticsearch documents, matching previous Newtonsoft behavior.
         options.TypeInfoResolver = new DefaultJsonTypeInfoResolver
         {
             Modifiers = { EmptyCollectionModifier.SkipEmptyCollections }

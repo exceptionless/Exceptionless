@@ -17,8 +17,17 @@ public static class DataDictionaryExtensions
 
     /// <summary>
     /// Attempts deserialization using the primary serializer (snake_case naming policy),
-    /// then falls back to a case-insensitive deserializer as a safety net.
-    /// Picks whichever result populated more properties (measured by serialized output length).
+    /// then falls back to a case-insensitive deserializer and picks the better result.
+    ///
+    /// This is needed because client SDKs may submit JSON with PascalCase/camelCase keys
+    /// (e.g., "HttpMethod" instead of "http_method"). The ObjectToInferredTypesConverter
+    /// preserves original key casing in dictionaries, so the snake_case naming policy
+    /// cannot match multi-word PascalCase keys. The case-insensitive fallback handles
+    /// these by matching CLR property names directly.
+    ///
+    /// Both results are serialized with the same serializer for fair comparison. Since null
+    /// properties are omitted, the result with more populated properties produces longer
+    /// output — a reliable proxy for "better deserialized" when comparing the same type.
     /// </summary>
     private static T? TryDeserializeWithFallback<T>(string json, ITextSerializer serializer)
     {
@@ -30,10 +39,8 @@ public static class DataDictionaryExtensions
         var fallback = JsonSerializer.Deserialize<T>(json, CaseInsensitiveFallbackOptions);
         if (fallback is not null)
         {
-            // Serialize both results with the SAME serializer for fair comparison.
-            // The result with more populated (non-null) properties produces longer output.
-            string primaryJson = serializer.SerializeToString(primary) ?? "";
-            string fallbackJson = serializer.SerializeToString(fallback) ?? "";
+            string primaryJson = serializer.SerializeToString(primary) ?? String.Empty;
+            string fallbackJson = serializer.SerializeToString(fallback) ?? String.Empty;
             return fallbackJson.Length > primaryJson.Length ? fallback : primary;
         }
 
@@ -82,6 +89,8 @@ public static class DataDictionaryExtensions
                 // Fast-path for string type
                 if (typeof(T) == typeof(string))
                 {
+                    // Use lowercase "true"/"false" (JSON convention), not Boolean.TrueString/FalseString
+                    // which produce "True"/"False" (PascalCase) and would break JSON consumers.
                     object? s = jsonElement.ValueKind switch
                     {
                         JsonValueKind.String => jsonElement.GetString(),
@@ -187,5 +196,4 @@ public static class DataDictionaryExtensions
         foreach (string key in removeKeys)
             extendedData.Remove(key);
     }
-
 }
