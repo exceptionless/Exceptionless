@@ -143,13 +143,10 @@ export class ExceptionlessE2EJourney {
     async signUpAndCreateOrganization(): Promise<void> {
         await this.page.goto('/next/signup');
 
-        const email = this.e2eApi.environment.email ?? this.email;
-        const password = this.e2eApi.environment.password ?? PASSWORD;
-
         await this.page.getByLabel('Name').fill(this.userName);
-        await this.page.getByLabel('Email').fill(email);
+        await this.page.getByLabel('Email').fill(this.email);
         await waitForEmailValidation(this.page);
-        await this.page.getByLabel('Password').fill(password);
+        await this.page.getByLabel('Password').fill(PASSWORD);
         await this.page.getByRole('button', { name: 'Create My Account' }).click();
 
         this.userToken = await getUserToken(this.page);
