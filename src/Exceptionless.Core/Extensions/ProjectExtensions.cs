@@ -50,6 +50,11 @@ public static class ProjectExtensions
     /// <summary>
     /// Gets the slack token from extended data.
     /// </summary>
+    /// <remarks>
+    /// Returns null if the token data is stored in an unrecognizable format.
+    /// The GetValue path uses TryDeserializeWithFallback which handles both
+    /// snake_case (current) and PascalCase (legacy Newtonsoft) formats.
+    /// </remarks>
     public static SlackToken? GetSlackToken(this Project project, ITextSerializer serializer)
     {
         if (project.Data is null || !project.Data.ContainsKey(Project.KnownDataKeys.SlackToken))
@@ -59,9 +64,12 @@ public static class ProjectExtensions
         {
             return project.Data.GetValue<SlackToken>(Project.KnownDataKeys.SlackToken, serializer);
         }
-        catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException or KeyNotFoundException)
         {
-            // Ignored — data may be stored in an incompatible format
+            // Data may be stored in a truly incompatible format (e.g., corrupted or from a
+            // very old version). TryDeserializeWithFallback handles PascalCase/snake_case
+            // differences, so reaching here indicates genuinely unparseable data.
+            System.Diagnostics.Debug.WriteLine($"Failed to deserialize SlackToken for project {project.Id}: {ex.Message}");
         }
 
         return null;

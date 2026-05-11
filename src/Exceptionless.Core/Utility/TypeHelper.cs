@@ -56,6 +56,11 @@ public static class TypeHelper
         if (a is JsonElement jsonA && b is JsonElement jsonB)
             return JsonElement.DeepEquals(jsonA, jsonB);
 
+        // Handle Dictionary<string, object?> from ObjectToInferredTypesConverter.
+        // Dictionary.Equals uses reference equality, so we serialize and compare.
+        if (a is Dictionary<string, object?> dictA && b is Dictionary<string, object?> dictB)
+            return JsonSerializer.Serialize(dictA) == JsonSerializer.Serialize(dictB);
+
         if (a != b && !a.Equals(b))
             return false;
 
