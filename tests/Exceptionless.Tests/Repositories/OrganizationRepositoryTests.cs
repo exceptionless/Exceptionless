@@ -61,4 +61,61 @@ public sealed class OrganizationRepositoryTests : IntegrationTestsBase
         await _repository.RemoveAllAsync(o => o.ImmediateConsistency());
         Assert.Equal(0, _cache.Count);
     }
+
+    [Fact]
+    public async Task GetByCriteria_SearchById_ReturnsMatchingOrganization()
+    {
+        var organization = new Organization { Name = "Criteria Test Org", PlanId = _plans.FreePlan.Id };
+        await _repository.AddAsync(organization, o => o.ImmediateConsistency());
+
+        var results = await _repository.GetByCriteriaAsync(organization.Id,
+            o => o.PageLimit(10), OrganizationSortBy.Newest);
+
+        Assert.Single(results.Documents);
+        Assert.Equal(organization.Id, results.Documents.First().Id);
+    }
+
+    [Fact]
+    public async Task GetByCriteria_SearchByName_ReturnsMatchingOrganization()
+    {
+        var organization = new Organization { Name = "Unique Search Name", PlanId = _plans.FreePlan.Id };
+        await _repository.AddAsync(organization, o => o.ImmediateConsistency());
+
+        var results = await _repository.GetByCriteriaAsync("Unique Search Name",
+            o => o.PageLimit(10), OrganizationSortBy.Newest);
+
+        Assert.Single(results.Documents);
+        Assert.Equal("Unique Search Name", results.Documents.First().Name);
+    }
+
+    [Fact]
+    public async Task GetByCriteria_PaidFilter_ExcludesFreeOrganizations()
+    {
+        var freeOrg = new Organization { Name = "Free Org", PlanId = _plans.FreePlan.Id };
+        var paidOrg = new Organization { Name = "Paid Org", PlanId = _plans.SmallPlan.Id };
+        await _repository.AddAsync([freeOrg, paidOrg], o => o.ImmediateConsistency());
+
+        var paidResults = await _repository.GetByCriteriaAsync(null,
+            o => o.PageLimit(10), OrganizationSortBy.Newest, paid: true);
+        Assert.All(paidResults.Documents, d => Assert.NotEqual(_plans.FreePlan.Id, d.PlanId));
+
+        var freeResults = await _repository.GetByCriteriaAsync(null,
+            o => o.PageLimit(10), OrganizationSortBy.Newest, paid: false);
+        Assert.All(freeResults.Documents, d => Assert.Equal(_plans.FreePlan.Id, d.PlanId));
+    }
+
+    [Fact]
+    public async Task GetByCriteria_SortByName_ReturnsSortedResults()
+    {
+        var orgC = new Organization { Name = "Charlie Org", PlanId = _plans.FreePlan.Id };
+        var orgA = new Organization { Name = "Alpha Org", PlanId = _plans.FreePlan.Id };
+        var orgB = new Organization { Name = "Bravo Org", PlanId = _plans.FreePlan.Id };
+        await _repository.AddAsync([orgC, orgA, orgB], o => o.ImmediateConsistency());
+
+        var results = await _repository.GetByCriteriaAsync(null,
+            o => o.PageLimit(10), OrganizationSortBy.Alphabetical);
+
+        var names = results.Documents.Select(d => d.Name).ToList();
+        Assert.Equal(names.OrderBy(n => n), names);
+    }
 }

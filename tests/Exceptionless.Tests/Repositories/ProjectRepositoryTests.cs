@@ -154,4 +154,26 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
         var actualCacheToken = actual.GetSlackToken(_serializer);
         Assert.Equal(token.AccessToken, actualCacheToken?.AccessToken);
     }
+
+    [Fact]
+    public async Task GetByNextSummaryNotificationOffset_FilterExpression_FiltersCorrectly()
+    {
+        // Create projects with specific NextSummaryEndOfDayTicks values
+        var pastProject = _projectData.GenerateProject(generateId: true,
+            organizationId: TestConstants.OrganizationId, name: "Past Project",
+            nextSummaryEndOfDayTicks: DateTime.UtcNow.AddDays(-2).Ticks);
+
+        var futureProject = _projectData.GenerateProject(generateId: true,
+            organizationId: TestConstants.OrganizationId, name: "Future Project",
+            nextSummaryEndOfDayTicks: DateTime.UtcNow.AddDays(2).Ticks);
+
+        await _repository.AddAsync([pastProject, futureProject], o => o.ImmediateConsistency());
+
+        // With hourToSendNotificationsAfterUtcMidnight=0, threshold is current time
+        // pastProject should be returned (ticks < threshold), futureProject should not
+        var results = await _repository.GetByNextSummaryNotificationOffsetAsync(0, limit: 50);
+
+        Assert.Contains(results.Documents, p => p.Id == pastProject.Id);
+        Assert.DoesNotContain(results.Documents, p => p.Id == futureProject.Id);
+    }
 }
