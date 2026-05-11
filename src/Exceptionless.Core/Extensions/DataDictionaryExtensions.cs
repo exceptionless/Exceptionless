@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Serialization;
 using Foundatio.Serializer;
 
 namespace Exceptionless.Core.Extensions;
@@ -12,9 +13,16 @@ public static class DataDictionaryExtensions
     /// Without a naming policy, C# property names match JSON keys directly (case-insensitively),
     /// which handles PascalCase data that the snake_case primary serializer cannot match.
     /// </summary>
+    /// <remarks>
+    /// Includes ObjectToInferredTypesConverter so that object-typed properties (like DataDictionary
+    /// values) are inferred to native .NET types instead of remaining as JsonElement. This matches
+    /// the behavior of the primary serializer and ensures consistent type handling regardless of
+    /// which deserialization path wins the fallback comparison.
+    /// </remarks>
     private static readonly JsonSerializerOptions CaseInsensitiveFallbackOptions = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        Converters = { new ObjectToInferredTypesConverter() }
     };
 
     /// <summary>
