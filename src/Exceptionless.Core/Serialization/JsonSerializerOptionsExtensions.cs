@@ -12,28 +12,21 @@ namespace Exceptionless.Core.Serialization;
 public static class JsonSerializerOptionsExtensions
 {
     /// <summary>
-    /// Configures <see cref="JsonSerializerOptions"/> with Exceptionless conventions for WRITING:
+    /// Configures <see cref="JsonSerializerOptions"/> with Exceptionless conventions:
     /// snake_case property naming, null value handling, and dynamic object support.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <strong>IMPORTANT:</strong> These options include a <see cref="JsonNamingPolicy"/> that applies
-    /// to BOTH serialization and deserialization. The options use PropertyNameCaseInsensitive
-    /// to support matching both PascalCase and snake_case JSON property names.
-    /// </para>
-    /// <para>
-    /// STJ's <see cref="JsonSerializerOptions.PropertyNamingPolicy"/> transforms C# property names
-    /// before matching against JSON property names. For example, with our snake_case policy,
-    /// <c>MachineName</c> becomes <c>machine_name</c>, which won't match a JSON property named
-    /// <c>"MachineName"</c> even with <see cref="JsonSerializerOptions.PropertyNameCaseInsensitive"/> enabled.
-    /// </para>
+    /// Uses <see cref="JsonNamingPolicy.SnakeCaseLower"/> for property naming. Properties that
+    /// have legacy field names requiring the old letter-by-letter convention (e.g.
+    /// <c>OSName</c> → <c>o_s_name</c> instead of <c>os_name</c>) use
+    /// <see cref="System.Text.Json.Serialization.JsonPropertyNameAttribute"/> overrides.
     /// </remarks>
     /// <param name="options">The options to configure.</param>
     /// <returns>The configured options for chaining.</returns>
     public static JsonSerializerOptions ConfigureExceptionlessDefaults(this JsonSerializerOptions options)
     {
         options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-        options.PropertyNamingPolicy = LowerCaseUnderscoreNamingPolicy.Instance;
+        options.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
         options.PropertyNameCaseInsensitive = true;
 
         // XSS-safe encoder: escapes <, >, &, ' while allowing Unicode characters

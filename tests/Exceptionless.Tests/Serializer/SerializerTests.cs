@@ -172,7 +172,7 @@ public class SerializerTests : TestWithServices
     {
         // Arrange — with IncludeFields=true, ValueTuple fields are serialized.
         // Compile-time names (OrganizationId, etc.) are erased at runtime; fields are always Item1/Item2/Item3.
-        // LowerCaseUnderscoreNamingPolicy converts Item1 → item1, Item2 → item2, Item3 → item3.
+        // SnakeCaseLower converts Item1 → item1, Item2 → item2, Item3 → item3.
         var tuple = (OrganizationId: "org1", ProjectId: "proj1", StackId: "stack1");
 
         // Act
@@ -389,15 +389,15 @@ public class SerializerTests : TestWithServices
     public void SerializeToString_BillingStatusEnum_RoundtripAsInteger()
     {
         // Arrange — BillingStatus.PastDue serializes as integer 2 to match ES index mappings
-        var org = new Organization
+        var organization = new Organization
         {
-            Id = "org1",
+            Id = "550000000000000000000001",
             Name = "Test",
             BillingStatus = BillingStatus.PastDue
         };
 
         // Act
-        string json = _serializer.SerializeToString(org);
+        string json = _serializer.SerializeToString(organization);
         var deserialized = _serializer.Deserialize<Organization>(json);
 
         // Assert
