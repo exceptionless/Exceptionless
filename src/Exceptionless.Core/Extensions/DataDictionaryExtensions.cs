@@ -20,8 +20,24 @@ public static class DataDictionaryExtensions
     /// <summary>
     /// Attempts deserialization using the primary serializer (snake_case naming policy),
     /// then falls back to a case-insensitive deserializer (for legacy PascalCase data).
-    /// Returns whichever result populated more properties (longer serialized output).
+    /// Picks whichever result populated more properties (measured by serialized output length).
     /// </summary>
+    /// <remarks>
+    /// <para><b>Why this works:</b> The database contains a mix of snake_case (current format written by STJ)
+    /// and PascalCase (legacy format written by Newtonsoft.Json). The two naming conventions are
+    /// structurally incompatible with each other's deserialization strategy:</para>
+    /// <list type="bullet">
+    ///   <item><description>snake_case keys (e.g., "machine_name") only match the primary serializer's naming policy</description></item>
+    ///   <item><description>PascalCase keys (e.g., "MachineName") only match the fallback's case-insensitive no-policy mode</description></item>
+    /// </list>
+    /// <para>Because underscores make the two conventions differ even under case-insensitive comparison,
+    /// only one strategy populates properties for any given document. The other produces mostly-null
+    /// output, which serializes to a shorter string. Thus length reliably identifies the correct result.</para>
+    /// <para><b>Edge case:</b> If a single JSON object contains a mix of BOTH naming conventions
+    /// (e.g., "machine_name" AND "ProcessorCount"), each strategy populates a different subset.
+    /// Length picks whichever subset has more total data. This scenario is not expected in practice
+    /// because documents are written by a single serializer.</para>
+    /// </remarks>
     private static T? TryDeserializeWithFallback<T>(string json, ITextSerializer serializer)
     {
         var primary = serializer.Deserialize<T>(json);
@@ -32,6 +48,8 @@ public static class DataDictionaryExtensions
         var fallback = JsonSerializer.Deserialize<T>(json, CaseInsensitiveFallbackOptions);
         if (fallback is not null)
         {
+            // Serialize both results with the SAME serializer for fair comparison.
+            // The result with more populated (non-null) properties produces longer output.
             string primaryJson = serializer.SerializeToString(primary) ?? "";
             string fallbackJson = serializer.SerializeToString(fallback) ?? "";
             return fallbackJson.Length > primaryJson.Length ? fallback : primary;
@@ -156,14 +174,14 @@ public static class DataDictionaryExtensions
             }
         }
 
-        // JSON string - deserialize via ITextSerializer
+        // JSON string - deserialize via ITextSerializer with PascalCase fallback.
+        // Legacy data may be stored as raw JSON strings in either snake_case (current) or
+        // PascalCase (Newtonsoft era). Use the same fallback strategy as Dictionary/JsonElement paths.
         if (data is string json && json.IsJson())
         {
             try
             {
-                var result = serializer.Deserialize<T>(json);
-                if (result is not null)
-                    return result;
+                return TryDeserializeWithFallback<T>(json, serializer);
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException or ArgumentException)
             {
