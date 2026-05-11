@@ -2,6 +2,11 @@ import type { APIRequestContext, APIResponse } from '@playwright/test';
 
 import type { E2EEnvironment } from './environment';
 
+export interface E2ECurrentUser {
+    email_address?: string;
+    id: string;
+}
+
 export interface E2EEvent {
     id: string;
     message?: string;
@@ -66,6 +71,15 @@ export class E2EApiClient {
         return toProject(await readJson(response));
     }
 
+    async deleteCurrentUser(token: string): Promise<number> {
+        const response = await this.request.delete(this.url('users/me'), {
+            headers: this.authHeaders(token)
+        });
+
+        await expectStatus(response, [202, 404], 'delete current user');
+        return response.status();
+    }
+
     async deleteOrganization(token: string, organizationId: string): Promise<number> {
         const response = await this.request.delete(this.url(`organizations/${organizationId}`), {
             headers: this.authHeaders(token)
@@ -89,6 +103,20 @@ export class E2EApiClient {
 
         await expectStatus(response, [200], 'get about');
         return toRecord(await readJson(response), 'about response');
+    }
+
+    async getCurrentUser(token: string): Promise<E2ECurrentUser | undefined> {
+        const response = await this.request.get(this.url('users/me'), {
+            headers: this.authHeaders(token)
+        });
+
+        await expectStatus(response, [200, 401, 404], 'get current user');
+
+        if (response.status() !== 200) {
+            return undefined;
+        }
+
+        return toCurrentUser(await readJson(response));
     }
 
     async getEvent(token: string, eventId: string): Promise<E2EEvent> {
@@ -227,6 +255,26 @@ export class E2EApiClient {
         await expectStatus(response, [202], 'submit event');
     }
 
+    async waitForCurrentUserDeleted(token: string, timeoutMs = 30_000): Promise<void> {
+        const deadline = Date.now() + timeoutMs;
+        let lastError: Error | undefined;
+
+        while (Date.now() < deadline) {
+            try {
+                const user = await this.getCurrentUser(token);
+                if (!user) {
+                    return;
+                }
+            } catch (error) {
+                lastError = error instanceof Error ? error : new Error(String(error));
+            }
+
+            await delay(1_000);
+        }
+
+        throw new Error(`Timed out waiting for generated E2E user to be inaccessible after deletion${lastError ? `: ${lastError.message}` : ''}`);
+    }
+
     async waitForOrganizationDeleted(token: string, organizationId: string, timeoutMs = 30_000): Promise<void> {
         const deadline = Date.now() + timeoutMs;
         let lastError: Error | undefined;
@@ -321,6 +369,15 @@ async function readJson(response: APIResponse): Promise<unknown> {
     }
 
     return JSON.parse(text) as unknown;
+}
+
+function toCurrentUser(value: unknown): E2ECurrentUser {
+    const record = toRecord(value, 'current user response');
+
+    return {
+        email_address: getOptionalString(record, 'email_address'),
+        id: getRequiredString(record, 'id', 'current user response')
+    };
 }
 
 function toEvent(value: unknown): E2EEvent {

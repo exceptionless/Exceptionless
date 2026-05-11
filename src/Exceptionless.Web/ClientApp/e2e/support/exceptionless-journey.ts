@@ -70,6 +70,8 @@ export class ExceptionlessE2EJourney {
 
         await this.e2eApi.deleteOrganization(this.userToken, this.organizationId);
         await this.e2eApi.waitForOrganizationDeleted(this.userToken, this.organizationId);
+        await this.e2eApi.deleteCurrentUser(this.userToken);
+        await this.e2eApi.waitForCurrentUserDeleted(this.userToken);
     }
 
     async createFirstProjectAndVerifyConfigureToken(): Promise<void> {

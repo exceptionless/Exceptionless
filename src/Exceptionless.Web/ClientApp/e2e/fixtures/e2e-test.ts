@@ -42,9 +42,16 @@ export const test = base.extend<E2EFixtures>({
         let organizationId: string | undefined;
         let projectId: string | undefined;
         let userToken: string | undefined;
+        let createdUser = false;
 
         try {
-            userToken = e2eApi.environment.email && e2eApi.environment.password ? await e2eApi.login() : await e2eApi.signup(userName, email, PASSWORD);
+            if (e2eApi.environment.email && e2eApi.environment.password) {
+                userToken = await e2eApi.login();
+            } else {
+                userToken = await e2eApi.signup(userName, email, PASSWORD);
+                createdUser = true;
+            }
+
             const organization = await e2eApi.createOrganization(userToken, organizationName);
             organizationId = organization.id;
             const project = await e2eApi.createProject(userToken, organization.id, projectName);
@@ -81,6 +88,11 @@ export const test = base.extend<E2EFixtures>({
             if (userToken && organizationId) {
                 await e2eApi.deleteOrganization(userToken, organizationId);
                 await e2eApi.waitForOrganizationDeleted(userToken, organizationId);
+            }
+
+            if (userToken && createdUser) {
+                await e2eApi.deleteCurrentUser(userToken);
+                await e2eApi.waitForCurrentUserDeleted(userToken);
             }
         }
     }
