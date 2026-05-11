@@ -1,5 +1,5 @@
 import type { ClientConfiguration, NewProject, NotificationSettings, UpdateProject, ViewProject } from '$features/projects/models';
-import type { StringValueFromBody } from '$features/shared/models';
+import type { StringValueFromBody, WorkInProgressResult } from '$features/shared/models';
 import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
@@ -30,6 +30,7 @@ export const queryKeys = {
     deleteProject: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'delete'] as const,
     deletePromotedTab: (id: string | undefined) => [...queryKeys.id(id), 'demote-tab'] as const,
     deleteSlack: (id: string | undefined) => [...queryKeys.id(id), 'delete-slack'] as const,
+    generateSampleData: (id: string | undefined) => [...queryKeys.id(id), 'sample-data'] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
     integrationNotificationSettings: (id: string | undefined, integration: string) => [...queryKeys.id(id), integration, 'notification-settings'] as const,
@@ -75,6 +76,12 @@ export interface DeletePromotedTabRequest {
 export interface DeleteSlackRequest {
     route: {
         id: string;
+    };
+}
+
+export interface GenerateSampleDataRequest {
+    route: {
+        id: string | undefined;
     };
 }
 
@@ -273,6 +280,21 @@ export function deleteSlack(request: DeleteSlackRequest) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
         }
+    }));
+}
+
+export function generateSampleData(request: GenerateSampleDataRequest) {
+    return createMutation<WorkInProgressResult, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            const response = await client.postJSON<WorkInProgressResult>(`projects/${request.route.id}/sample-data`, undefined, {
+                expectedStatusCodes: [202]
+            });
+
+            return response.data!;
+        },
+        mutationKey: queryKeys.generateSampleData(request.route.id)
     }));
 }
 
@@ -508,13 +530,15 @@ export function putProjectIntegrationNotificationSettings(request: PutProjectInt
 }
 
 export function resetData(request: ResetDataRequest) {
-    return createMutation<void, ProblemDetails, void>(() => ({
+    return createMutation<WorkInProgressResult, ProblemDetails, void>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async () => {
             const client = useFetchClient();
-            await client.post(`projects/${request.route.id}/reset-data`, undefined, {
+            const response = await client.postJSON<WorkInProgressResult>(`projects/${request.route.id}/reset-data`, undefined, {
                 expectedStatusCodes: [202]
             });
+
+            return response.data!;
         },
         mutationKey: queryKeys.resetData(request.route.id)
     }));

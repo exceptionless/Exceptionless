@@ -84,7 +84,15 @@ Content-Type: application/json
 DELETE {{apiUrl}}/tokens/{{projectApiKey}}
 Authorization: Bearer {{token}}
 
+### Generate Sample Data
+POST {{apiUrl}}/projects/{{projectId}}/sample-data
+Authorization: Bearer {{token}}
+
 ### Reset Data
+POST {{apiUrl}}/projects/{{projectId}}/reset-data
+Authorization: Bearer {{token}}
+
+### Reset Data Legacy GET
 GET {{apiUrl}}/projects/{{projectId}}/reset-data
 Authorization: Bearer {{token}}
 

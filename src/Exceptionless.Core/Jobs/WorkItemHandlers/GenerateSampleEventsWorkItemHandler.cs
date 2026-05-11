@@ -35,7 +35,12 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
 
     public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = default)
     {
-        return _lockProvider.TryAcquireAsync(nameof(GenerateSampleEventsWorkItemHandler), TimeSpan.FromMinutes(30), cancellationToken);
+        var generateSampleEventsWorkItem = (GenerateSampleEventsWorkItem)workItem;
+        string cacheKey = String.IsNullOrEmpty(generateSampleEventsWorkItem.ProjectId)
+            ? nameof(GenerateSampleEventsWorkItemHandler)
+            : $"{nameof(GenerateSampleEventsWorkItemHandler)}:{generateSampleEventsWorkItem.ProjectId}";
+
+        return _lockProvider.TryAcquireAsync(cacheKey, TimeSpan.FromMinutes(30), cancellationToken);
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
@@ -49,7 +54,14 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
 
         var generator = new RandomEventGenerator(_timeProvider);
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-        var minDate = utcNow.AddDays(-daysBack);
+        int acceptedDaysBack = Math.Min(daysBack, 3);
+        var minDate = utcNow.AddDays(-acceptedDaysBack);
+
+        if (!String.IsNullOrEmpty(workItem.OrganizationId) || !String.IsNullOrEmpty(workItem.ProjectId))
+        {
+            await GenerateProjectSampleEventsAsync(context, generator, workItem, eventCount, minDate, utcNow);
+            return;
+        }
 
         var projectResults = await _projectRepository.GetByOrganizationIdAsync(SampleDataService.TEST_ORG_ID);
         var projectList = projectResults.Documents.ToList();
@@ -69,7 +81,7 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
         int eventsPerProject = eventCount / projectList.Count;
         int remainder = eventCount % projectList.Count;
         int totalProcessed = 0;
-        const int batchSize = 50;
+        const int batchSize = 100;
 
         for (int p = 0; p < projectList.Count; p++)
         {
@@ -97,5 +109,48 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
 
         await context.ReportProgressAsync(100, $"Generated {totalProcessed} sample events across {projectList.Count} projects");
         Log.LogInformation("Generated {TotalEvents} sample events across {ProjectCount} projects", totalProcessed, projectList.Count);
+    }
+
+    private async Task GenerateProjectSampleEventsAsync(WorkItemContext context, RandomEventGenerator generator, GenerateSampleEventsWorkItem workItem, int eventCount, DateTime minDate, DateTime utcNow)
+    {
+        if (String.IsNullOrEmpty(workItem.OrganizationId) || String.IsNullOrEmpty(workItem.ProjectId))
+        {
+            Log.LogWarning("Unable to generate project sample events because organization id or project id was not specified");
+            return;
+        }
+
+        var organization = await _organizationRepository.GetByIdAsync(workItem.OrganizationId);
+        if (organization is null)
+        {
+            Log.LogWarning("Organization {OrganizationId} not found when generating sample events", workItem.OrganizationId);
+            return;
+        }
+
+        var project = await _projectRepository.GetByIdAsync(workItem.ProjectId);
+        if (project is null || project.OrganizationId != organization.Id)
+        {
+            Log.LogWarning("Project {ProjectId} not found in organization {OrganizationId} when generating sample events", workItem.ProjectId, workItem.OrganizationId);
+            return;
+        }
+
+        int totalProcessed = 0;
+        const int batchSize = 100;
+        var events = generator.Generate(organization.Id, project.Id, eventCount, minDate, utcNow);
+
+        for (int i = 0; i < events.Count; i += batchSize)
+        {
+            if (context.CancellationToken.IsCancellationRequested)
+                break;
+
+            var batch = events.Skip(i).Take(batchSize).ToList();
+            await _eventPipeline.RunAsync(batch, organization, project);
+            totalProcessed += batch.Count;
+
+            int percentage = (int)Math.Min(99, totalProcessed * 100.0 / eventCount);
+            await context.ReportProgressAsync(percentage, $"Processed {totalProcessed}/{eventCount} events");
+        }
+
+        await context.ReportProgressAsync(100, $"Generated {totalProcessed} sample events for project {project.Id}");
+        Log.LogInformation("Generated {TotalEvents} sample events for project {ProjectId}", totalProcessed, project.Id);
     }
 }
