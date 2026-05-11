@@ -114,6 +114,20 @@ export class E2EApiClient {
         return toEventArray(await readJson(response));
     }
 
+    async getOrganization(token: string, organizationId: string): Promise<E2EOrganization | undefined> {
+        const response = await this.request.get(this.url(`organizations/${organizationId}`), {
+            headers: this.authHeaders(token)
+        });
+
+        await expectStatus(response, [200, 404], 'get organization');
+
+        if (response.status() === 404) {
+            return undefined;
+        }
+
+        return toOrganization(await readJson(response));
+    }
+
     async getOrganizations(token: string): Promise<E2EOrganization[]> {
         const response = await this.request.get(this.url('organizations'), {
             headers: this.authHeaders(token)
@@ -121,6 +135,20 @@ export class E2EApiClient {
 
         await expectStatus(response, [200], 'get organizations');
         return toOrganizationArray(await readJson(response));
+    }
+
+    async getProject(token: string, projectId: string): Promise<E2EProject | undefined> {
+        const response = await this.request.get(this.url(`projects/${projectId}`), {
+            headers: this.authHeaders(token)
+        });
+
+        await expectStatus(response, [200, 404], 'get project');
+
+        if (response.status() === 404) {
+            return undefined;
+        }
+
+        return toProject(await readJson(response));
     }
 
     async getProjectDefaultToken(token: string, projectId: string): Promise<E2EToken> {
@@ -201,17 +229,44 @@ export class E2EApiClient {
 
     async waitForOrganizationDeleted(token: string, organizationId: string, timeoutMs = 30_000): Promise<void> {
         const deadline = Date.now() + timeoutMs;
+        let lastError: Error | undefined;
 
         while (Date.now() < deadline) {
-            const organizations = await this.getOrganizations(token);
-            if (!organizations.some((organization) => organization.id === organizationId)) {
-                return;
+            try {
+                const organization = await this.getOrganization(token, organizationId);
+                if (!organization) {
+                    return;
+                }
+            } catch (error) {
+                lastError = error instanceof Error ? error : new Error(String(error));
             }
 
             await delay(1_000);
         }
 
-        throw new Error(`Timed out waiting for E2E organization ${organizationId} to disappear from the organization list`);
+        throw new Error(
+            `Timed out waiting for E2E organization ${organizationId} to be inaccessible after deletion${lastError ? `: ${lastError.message}` : ''}`
+        );
+    }
+
+    async waitForProjectDeleted(token: string, projectId: string, timeoutMs = 30_000): Promise<void> {
+        const deadline = Date.now() + timeoutMs;
+        let lastError: Error | undefined;
+
+        while (Date.now() < deadline) {
+            try {
+                const project = await this.getProject(token, projectId);
+                if (!project) {
+                    return;
+                }
+            } catch (error) {
+                lastError = error instanceof Error ? error : new Error(String(error));
+            }
+
+            await delay(1_000);
+        }
+
+        throw new Error(`Timed out waiting for E2E project ${projectId} to be inaccessible after deletion${lastError ? `: ${lastError.message}` : ''}`);
     }
 
     private authHeaders(token: string): Record<string, string> {

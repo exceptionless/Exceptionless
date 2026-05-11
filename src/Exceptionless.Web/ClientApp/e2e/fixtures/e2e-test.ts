@@ -5,6 +5,8 @@ import { getE2EEnvironment } from './environment';
 
 const PASSWORD = 'tester';
 
+export const E2E_ORGANIZATION_NAME_PREFIX = 'E2E Playwright Org';
+
 export interface E2EScenario {
     email: string;
     message: string;
@@ -33,7 +35,7 @@ export const test = base.extend<E2EFixtures>({
         const run = createRunName(e2eApi.environment.runId, testInfo);
         const userName = `Playwright User ${run}`;
         const email = `playwright-${run}@exceptionless.test`.toLowerCase();
-        const organizationName = `Playwright Org ${run}`;
+        const organizationName = `${E2E_ORGANIZATION_NAME_PREFIX} ${run}`;
         const projectName = `Playwright Project ${run}`;
         const referenceId = `pw-e2e-${run}`;
         const message = `Playwright onboarding event ${run}`;
@@ -73,10 +75,12 @@ export const test = base.extend<E2EFixtures>({
         } finally {
             if (userToken && projectId) {
                 await e2eApi.deleteProject(userToken, projectId);
+                await e2eApi.waitForProjectDeleted(userToken, projectId);
             }
 
             if (userToken && organizationId) {
                 await e2eApi.deleteOrganization(userToken, organizationId);
+                await e2eApi.waitForOrganizationDeleted(userToken, organizationId);
             }
         }
     }

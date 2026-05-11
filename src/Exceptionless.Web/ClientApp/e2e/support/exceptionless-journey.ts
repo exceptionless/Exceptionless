@@ -3,7 +3,7 @@ import { expect, type Page, type TestInfo } from '@playwright/test';
 import type { E2EApiClient } from '../fixtures/api-client';
 import type { E2EScenario } from '../fixtures/e2e-test';
 
-import { createRunName } from '../fixtures/e2e-test';
+import { createRunName, E2E_ORGANIZATION_NAME_PREFIX } from '../fixtures/e2e-test';
 
 const FIXED_VERSION = '1.0.0';
 const PASSWORD = 'tester';
@@ -48,7 +48,7 @@ export class ExceptionlessE2EJourney {
         this.run = createRunName(e2eApi.environment.runId, testInfo);
         this.userName = `Playwright User ${this.run}`;
         this.email = `playwright-${this.run}@exceptionless.test`.toLowerCase();
-        this.organizationName = `Playwright Org ${this.run}`;
+        this.organizationName = `${E2E_ORGANIZATION_NAME_PREFIX} ${this.run}`;
         this.projectName = `Playwright Project ${this.run}`;
         this.referenceId = `pw-e2e-${this.run}`;
         this.message = `Playwright onboarding event ${this.run}`;
@@ -65,6 +65,7 @@ export class ExceptionlessE2EJourney {
 
         if (this.projectId) {
             await this.e2eApi.deleteProject(this.userToken, this.projectId);
+            await this.e2eApi.waitForProjectDeleted(this.userToken, this.projectId);
         }
 
         await this.e2eApi.deleteOrganization(this.userToken, this.organizationId);
