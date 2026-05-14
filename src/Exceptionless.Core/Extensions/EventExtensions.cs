@@ -2,6 +2,7 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Serializer;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless;
 
@@ -12,7 +13,7 @@ public static class EventExtensions
         return ev.Data is not null && ev.Data.ContainsKey(Event.KnownDataKeys.Error);
     }
 
-    public static Error? GetError(this Event ev, ITextSerializer serializer)
+    public static Error? GetError(this Event ev, ITextSerializer serializer, ILogger? logger = null)
     {
         if (!ev.HasError())
             return null;
@@ -21,9 +22,9 @@ public static class EventExtensions
         {
             return ev.Data!.GetValue<Error>(Event.KnownDataKeys.Error, serializer);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Ignored
+            logger?.LogWarning(ex, "Failed to deserialize {DataKey} for event type {EventType}", Event.KnownDataKeys.Error, ev.Type);
         }
 
         return null;
@@ -34,7 +35,7 @@ public static class EventExtensions
         return ev.Data is not null && ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError);
     }
 
-    public static SimpleError? GetSimpleError(this Event ev, ITextSerializer serializer)
+    public static SimpleError? GetSimpleError(this Event ev, ITextSerializer serializer, ILogger? logger = null)
     {
         if (!ev.HasSimpleError())
             return null;
@@ -43,15 +44,15 @@ public static class EventExtensions
         {
             return ev.Data!.GetValue<SimpleError>(Event.KnownDataKeys.SimpleError, serializer);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Ignored
+            logger?.LogWarning(ex, "Failed to deserialize {DataKey} for event type {EventType}", Event.KnownDataKeys.SimpleError, ev.Type);
         }
 
         return null;
     }
 
-    public static RequestInfo? GetRequestInfo(this Event ev, ITextSerializer serializer)
+    public static RequestInfo? GetRequestInfo(this Event ev, ITextSerializer serializer, ILogger? logger = null)
     {
         if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.RequestInfo))
             return null;
@@ -60,15 +61,15 @@ public static class EventExtensions
         {
             return ev.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo, serializer);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Ignored
+            logger?.LogWarning(ex, "Failed to deserialize {DataKey} for event type {EventType}", Event.KnownDataKeys.RequestInfo, ev.Type);
         }
 
         return null;
     }
 
-    public static EnvironmentInfo? GetEnvironmentInfo(this Event ev, ITextSerializer serializer)
+    public static EnvironmentInfo? GetEnvironmentInfo(this Event ev, ITextSerializer serializer, ILogger? logger = null)
     {
         if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.EnvironmentInfo))
             return null;
@@ -77,9 +78,9 @@ public static class EventExtensions
         {
             return ev.Data.GetValue<EnvironmentInfo>(Event.KnownDataKeys.EnvironmentInfo, serializer);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Ignored
+            logger?.LogWarning(ex, "Failed to deserialize {DataKey} for event type {EventType}", Event.KnownDataKeys.EnvironmentInfo, ev.Type);
         }
 
         return null;
@@ -181,7 +182,7 @@ public static class EventExtensions
     /// <summary>
     /// Gets the user info object from extended data.
     /// </summary>
-    public static UserInfo? GetUserIdentity(this Event ev, ITextSerializer serializer)
+    public static UserInfo? GetUserIdentity(this Event ev, ITextSerializer serializer, ILogger? logger = null)
     {
         if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.UserInfo))
             return null;
@@ -190,9 +191,9 @@ public static class EventExtensions
         {
             return ev.Data.GetValue<UserInfo>(Event.KnownDataKeys.UserInfo, serializer);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Ignored
+            logger?.LogWarning(ex, "Failed to deserialize {DataKey} for event type {EventType}", Event.KnownDataKeys.UserInfo, ev.Type);
         }
 
         return null;
@@ -217,7 +218,7 @@ public static class EventExtensions
             ev.Data[Event.KnownDataKeys.Version] = version.Trim();
     }
 
-    public static SubmissionClient? GetSubmissionClient(this Event ev, ITextSerializer serializer)
+    public static SubmissionClient? GetSubmissionClient(this Event ev, ITextSerializer serializer, ILogger? logger = null)
     {
         if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.SubmissionClient))
             return null;
@@ -226,9 +227,9 @@ public static class EventExtensions
         {
             return ev.Data.GetValue<SubmissionClient>(Event.KnownDataKeys.SubmissionClient, serializer);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Ignored
+            logger?.LogWarning(ex, "Failed to deserialize {DataKey} for event type {EventType}", Event.KnownDataKeys.SubmissionClient, ev.Type);
         }
 
         return null;
@@ -239,7 +240,7 @@ public static class EventExtensions
         return ev.Data != null && ev.Data.ContainsKey(Event.KnownDataKeys.Location);
     }
 
-    public static Location? GetLocation(this Event ev, ITextSerializer serializer)
+    public static Location? GetLocation(this Event ev, ITextSerializer serializer, ILogger? logger = null)
     {
         if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.Location))
             return null;
@@ -248,9 +249,9 @@ public static class EventExtensions
         {
             return ev.Data.GetValue<Location>(Event.KnownDataKeys.Location, serializer);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Ignored
+            logger?.LogWarning(ex, "Failed to deserialize {DataKey} for event type {EventType}", Event.KnownDataKeys.Location, ev.Type);
         }
 
         return null;
@@ -299,7 +300,7 @@ public static class EventExtensions
     /// <summary>
     /// Gets the stacking info from extended data.
     /// </summary>
-    public static ManualStackingInfo? GetManualStackingInfo(this Event ev, ITextSerializer serializer)
+    public static ManualStackingInfo? GetManualStackingInfo(this Event ev, ITextSerializer serializer, ILogger? logger = null)
     {
         if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.ManualStackingInfo))
             return null;
@@ -308,9 +309,9 @@ public static class EventExtensions
         {
             return ev.Data.GetValue<ManualStackingInfo>(Event.KnownDataKeys.ManualStackingInfo, serializer);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Ignored
+            logger?.LogWarning(ex, "Failed to deserialize {DataKey} for event type {EventType}", Event.KnownDataKeys.ManualStackingInfo, ev.Type);
         }
 
         return null;
@@ -421,7 +422,7 @@ public static class EventExtensions
     /// <summary>
     /// Gets the user description from extended data.
     /// </summary>
-    public static UserDescription? GetUserDescription(this Event ev, ITextSerializer serializer)
+    public static UserDescription? GetUserDescription(this Event ev, ITextSerializer serializer, ILogger? logger = null)
     {
         if (ev.Data is null || !ev.Data.ContainsKey(Event.KnownDataKeys.UserDescription))
             return null;
@@ -430,9 +431,9 @@ public static class EventExtensions
         {
             return ev.Data.GetValue<UserDescription>(Event.KnownDataKeys.UserDescription, serializer);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Ignored
+            logger?.LogWarning(ex, "Failed to deserialize {DataKey} for event type {EventType}", Event.KnownDataKeys.UserDescription, ev.Type);
         }
 
         return null;

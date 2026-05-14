@@ -22,7 +22,7 @@ public sealed class SlackPlugin : WebHookDataPluginBase
         if (String.IsNullOrEmpty(ctx.WebHook.Url) || !ctx.WebHook.Url.EndsWith("/slack"))
             return Task.FromResult<object?>(null);
 
-        var error = ctx.Event?.GetError(_serializer);
+        var error = ctx.Event?.GetError(_serializer, _logger);
         if (error is null)
         {
             ctx.IsCancelled = true;

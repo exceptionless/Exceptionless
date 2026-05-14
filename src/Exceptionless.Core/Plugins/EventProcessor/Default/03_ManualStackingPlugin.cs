@@ -17,7 +17,7 @@ public sealed class ManualStackingPlugin : EventProcessorPluginBase
 
     public override Task EventProcessingAsync(EventContext context)
     {
-        var msi = context.Event.GetManualStackingInfo(_serializer);
+        var msi = context.Event.GetManualStackingInfo(_serializer, _logger);
         if (msi?.SignatureData is not null)
         {
             foreach (var kvp in msi.SignatureData)

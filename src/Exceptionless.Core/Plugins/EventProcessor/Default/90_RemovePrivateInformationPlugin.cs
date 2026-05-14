@@ -21,7 +21,7 @@ public sealed class RemovePrivateInformationPlugin : EventProcessorPluginBase
 
         context.Event.RemoveUserIdentity();
 
-        var description = context.Event.GetUserDescription(_serializer);
+        var description = context.Event.GetUserDescription(_serializer, _logger);
         if (description is not null)
         {
             description.EmailAddress = null;
