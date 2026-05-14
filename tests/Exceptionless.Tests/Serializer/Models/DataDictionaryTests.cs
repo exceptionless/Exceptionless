@@ -699,4 +699,195 @@ public class DataDictionaryTests : TestWithServices
         Assert.Equal(32768, result.TotalPhysicalMemory);
         Assert.Equal("app.exe --verbose", result.CommandLine);
     }
+
+    // --- Legacy PascalCase bridge (V1 client / pre-STJ data) ---------------------------------
+    // STJ's PropertyNameCaseInsensitive + SnakeCaseLower naming policy only handles case
+    // differences ("Message" ↔ "message"). It cannot structurally match multi-word PascalCase
+    // ("ClientIpAddress") against snake_case ("client_ip_address"). GetValue<T> normalizes
+    // typed-property keys recursively to bridge the two formats while preserving
+    // user-provided dictionary keys (Error.Data, QueryString, etc.) exactly as submitted.
+
+    [Fact]
+    public void GetValue_PascalCaseDictionaryWithRequestInfo_MapsMultiWordKeys()
+    {
+        // Arrange — simulates legacy V1 submission stored before STJ migration.
+        var dict = new Dictionary<string, object?>
+        {
+            ["HttpMethod"] = "GET",
+            ["ClientIpAddress"] = "10.0.0.1",
+            ["IsSecure"] = true,
+            ["UserAgent"] = "Test/1.0",
+            ["Path"] = "/api/test"
+        };
+        var data = new DataDictionary { { "@request", dict } };
+
+        // Act
+        var result = data.GetValue<RequestInfo>("@request", _serializer);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("GET", result.HttpMethod);
+        Assert.Equal("10.0.0.1", result.ClientIpAddress);
+        Assert.True(result.IsSecure);
+        Assert.Equal("Test/1.0", result.UserAgent);
+        Assert.Equal("/api/test", result.Path);
+    }
+
+    [Fact]
+    public void GetValue_PascalCaseDictionaryWithEnvironmentInfo_MapsMultiWordKeys()
+    {
+        // Arrange
+        var dict = new Dictionary<string, object?>
+        {
+            ["MachineName"] = "LEGACY-MACHINE",
+            ["ProcessorCount"] = 4,
+            ["TotalPhysicalMemory"] = 8000000000L,
+            ["OSName"] = "Windows",
+            ["OSVersion"] = "10.0",
+            ["CommandLine"] = "app.exe"
+        };
+        var data = new DataDictionary { { "@environment", dict } };
+
+        // Act
+        var result = data.GetValue<EnvironmentInfo>("@environment", _serializer);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("LEGACY-MACHINE", result.MachineName);
+        Assert.Equal(4, result.ProcessorCount);
+        Assert.Equal(8000000000L, result.TotalPhysicalMemory);
+        Assert.Equal("app.exe", result.CommandLine);
+    }
+
+    [Fact]
+    public void GetValue_PascalCaseDictionaryWithErrorAndStackFrames_RecursesIntoTypedCollections()
+    {
+        // Arrange — nested typed model (StackFrame inside Error.StackTrace) with multi-word props.
+        var dict = new Dictionary<string, object?>
+        {
+            ["Message"] = "Boom",
+            ["Type"] = "System.Exception",
+            ["TargetMethod"] = new Dictionary<string, object?>
+            {
+                ["Name"] = "DoWork",
+                ["DeclaringNamespace"] = "MyApp",
+                ["DeclaringType"] = "Worker"
+            },
+            ["StackTrace"] = new List<object?>
+            {
+                new Dictionary<string, object?>
+                {
+                    ["Name"] = "DoWork",
+                    ["DeclaringNamespace"] = "MyApp",
+                    ["DeclaringType"] = "Worker",
+                    ["LineNumber"] = 42
+                }
+            }
+        };
+        var data = new DataDictionary { { "@error", dict } };
+
+        // Act
+        var result = data.GetValue<Error>("@error", _serializer);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("Boom", result.Message);
+        Assert.NotNull(result.TargetMethod);
+        Assert.Equal("DoWork", result.TargetMethod.Name);
+        Assert.Equal("MyApp", result.TargetMethod.DeclaringNamespace);
+        Assert.Equal("Worker", result.TargetMethod.DeclaringType);
+        Assert.NotNull(result.StackTrace);
+        Assert.Single(result.StackTrace);
+        Assert.Equal(42, result.StackTrace[0].LineNumber);
+    }
+
+    [Fact]
+    public void GetValue_PascalCaseDictionaryWithError_PreservesUserDataKeysExactly()
+    {
+        // Arrange — Error.Data is a free-form Dictionary<string, object> for user-provided data.
+        // The PascalCase keys "SomeProp" and "AnotherKey" MUST survive extraction unchanged.
+        var dict = new Dictionary<string, object?>
+        {
+            ["Message"] = "x",
+            ["Type"] = "T",
+            ["Data"] = new Dictionary<string, object?>
+            {
+                ["SomeProp"] = "SomeVal",
+                ["AnotherKey"] = "AnotherVal",
+                ["MixedCASE_key"] = "preserved"
+            }
+        };
+        var data = new DataDictionary { { "@error", dict } };
+
+        // Act
+        var result = data.GetValue<Error>("@error", _serializer);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotNull(result.Data);
+        Assert.Equal("SomeVal", result.Data["SomeProp"]);
+        Assert.Equal("AnotherVal", result.Data["AnotherKey"]);
+        Assert.Equal("preserved", result.Data["MixedCASE_key"]);
+    }
+
+    [Fact]
+    public void GetValue_PascalCaseDictionaryWithRequestInfo_PreservesQueryStringAndCookieKeys()
+    {
+        // Arrange — QueryString and Cookies are Dictionary<string, string>; keys are
+        // user-supplied (URL params, cookie names) and MUST never be transformed.
+        var dict = new Dictionary<string, object?>
+        {
+            ["HttpMethod"] = "GET",
+            ["QueryString"] = new Dictionary<string, object?>
+            {
+                ["UserId"] = "42",
+                ["category|root|13546"] = "outlet",
+                ["MixedCASE"] = "kept"
+            },
+            ["Cookies"] = new Dictionary<string, object?>
+            {
+                ["SessionId"] = "abc123",
+                ["XSRF-TOKEN"] = "xyz"
+            }
+        };
+        var data = new DataDictionary { { "@request", dict } };
+
+        // Act
+        var result = data.GetValue<RequestInfo>("@request", _serializer);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("GET", result.HttpMethod);
+        Assert.NotNull(result.QueryString);
+        Assert.Equal("42", result.QueryString["UserId"]);
+        Assert.Equal("outlet", result.QueryString["category|root|13546"]);
+        Assert.Equal("kept", result.QueryString["MixedCASE"]);
+        Assert.NotNull(result.Cookies);
+        Assert.Equal("abc123", result.Cookies["SessionId"]);
+        Assert.Equal("xyz", result.Cookies["XSRF-TOKEN"]);
+    }
+
+    [Fact]
+    public void GetValue_MixedCaseDictionaryWithRequestInfo_HandlesBothFormatsTogether()
+    {
+        // Arrange — some keys snake_case, some PascalCase (mixed legacy + new data).
+        var dict = new Dictionary<string, object?>
+        {
+            ["http_method"] = "POST",
+            ["ClientIpAddress"] = "10.0.0.1",
+            ["is_secure"] = true,
+            ["UserAgent"] = "Mixed/1.0"
+        };
+        var data = new DataDictionary { { "@request", dict } };
+
+        // Act
+        var result = data.GetValue<RequestInfo>("@request", _serializer);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("POST", result.HttpMethod);
+        Assert.Equal("10.0.0.1", result.ClientIpAddress);
+        Assert.True(result.IsSecure);
+        Assert.Equal("Mixed/1.0", result.UserAgent);
+    }
 }
