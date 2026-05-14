@@ -56,7 +56,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         if (paid.HasValue)
         {
             if (paid.Value)
-                query.FilterExpression($"NOT plan_id:{_plans.FreePlan.Id}");
+                query.FieldNotEquals(o => o.PlanId, _plans.FreePlan.Id);
             else
                 query.FieldEquals(o => o.PlanId, _plans.FreePlan.Id);
         }
@@ -64,9 +64,19 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         if (suspended.HasValue)
         {
             if (suspended.Value)
-                query.FilterExpression($"(NOT billing_status:{(int)BillingStatus.Active} AND NOT billing_status:{(int)BillingStatus.Trialing} AND NOT billing_status:{(int)BillingStatus.Canceled}) OR is_suspended:true");
+                query.FieldOr(g => g
+                    .FieldNot(n => n
+                        .FieldEquals(o => o.BillingStatus, (int)BillingStatus.Active)
+                        .FieldEquals(o => o.BillingStatus, (int)BillingStatus.Trialing)
+                        .FieldEquals(o => o.BillingStatus, (int)BillingStatus.Canceled))
+                    .FieldEquals(o => o.IsSuspended, true));
             else
-                query.FilterExpression($"(billing_status:{(int)BillingStatus.Active} OR billing_status:{(int)BillingStatus.Trialing} OR billing_status:{(int)BillingStatus.Canceled}) AND is_suspended:false");
+                query.FieldAnd(g => g
+                    .FieldOr(o => o
+                        .FieldEquals(o => o.BillingStatus, (int)BillingStatus.Active)
+                        .FieldEquals(o => o.BillingStatus, (int)BillingStatus.Trialing)
+                        .FieldEquals(o => o.BillingStatus, (int)BillingStatus.Canceled))
+                    .FieldEquals(o => o.IsSuspended, false));
         }
 
         switch (sortBy)

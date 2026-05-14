@@ -129,6 +129,7 @@
     }
   },
   "@user": {
-    "identity": "Example\\Example"
+    "Identity": "Example\\Example",
+    "Name": null
   }
 }

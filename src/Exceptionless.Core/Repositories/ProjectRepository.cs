@@ -75,7 +75,7 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
     {
         long threshold = _timeProvider.GetUtcNow().UtcDateTime.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight);
         return FindAsync(q => q
-            .FilterExpression($"next_summary_end_of_day_ticks:<{threshold}")
+            .FieldLessThan(p => p.NextSummaryEndOfDayTicks, threshold)
             .SortAscending(p => p.OrganizationId), o => o.SearchAfterPaging().PageLimit(limit));
     }
 
