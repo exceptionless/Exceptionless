@@ -124,8 +124,7 @@ public class SerializerTests : TestWithServices
         Assert.Equal(originalError.Message, error.Message);
         Assert.Equal(originalError.Type, error.Type);
         Assert.NotNull(error.Data);
-        // DictionaryKeyPolicy normalizes keys to snake_case during GetValue<T> deserialization
-        Assert.Equal("SomeVal", error.Data["some_prop"]);
+        Assert.Equal("SomeVal", error.Data["SomeProp"]);
 
         // Verify request info round-tripped
         var request = roundTripped.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo, _serializer);
@@ -518,8 +517,7 @@ public class SerializerTests : TestWithServices
         Assert.Equal("Something went wrong", error.Message);
         Assert.Equal("System.Exception", error.Type);
         Assert.NotNull(error.Data);
-        // DictionaryKeyPolicy normalizes keys to snake_case during GetValue<T> deserialization
-        Assert.Equal("SomeVal", error.Data["some_prop"]);
+        Assert.Equal("SomeVal", error.Data["SomeProp"]);
 
         var request = ev.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo, _serializer);
         Assert.NotNull(request);
@@ -606,5 +604,65 @@ public class SerializerTests : TestWithServices
         var error = ev.Data.GetValue<Error>(Event.KnownDataKeys.Error, _serializer);
         Assert.NotNull(error);
         Assert.Equal("Boom", error.Message);
+    }
+
+    [Fact]
+    public void Deserialize_SnakeCaseProperties_MatchesPascalCaseModel()
+    {
+        // CRITICAL: PropertyNameCaseInsensitive MUST be true or the frontend breaks.
+        // The frontend sends snake_case JSON (last_occurrence, stack_trace, etc.).
+        // Without case-insensitive matching, all API requests from the UI would fail.
+        //
+        // This test verifies that snake_case JSON properties correctly map to PascalCase
+        // C# properties. If this test fails, the frontend is broken.
+
+        // Arrange — snake_case JSON matching Event model properties
+        /* language=json */
+        const string json = """
+        {
+            "type": "error",
+            "message": "Test message",
+            "reference_id": "abc123",
+            "tags": ["frontend", "critical"],
+            "geo": "40.7128,-74.0060",
+            "value": 123.45
+        }
+        """;
+
+        // Act
+        var ev = _serializer.Deserialize<Event>(json);
+
+        // Assert — all snake_case properties mapped to PascalCase C# properties
+        Assert.NotNull(ev);
+        Assert.Equal("error", ev.Type);
+        Assert.Equal("Test message", ev.Message);
+        Assert.Equal("abc123", ev.ReferenceId);
+        Assert.Equal("40.7128,-74.0060", ev.Geo);
+        Assert.Equal(123.45m, ev.Value);
+        Assert.NotNull(ev.Tags);
+        Assert.Equal(2, ev.Tags.Count);
+        Assert.Contains("frontend", ev.Tags);
+        Assert.Contains("critical", ev.Tags);
+    }
+
+    [Fact]
+    public void Deserialize_MixedCaseProperties_AllMatchCorrectly()
+    {
+        // Verifies PropertyNameCaseInsensitive handles snake_case (from ES/frontend)
+        // and case variations of the policy name. PascalCase/camelCase multi-word keys
+        // do NOT match because "ReferenceId" != "reference_id" even case-insensitively.
+
+        // Arrange — snake_case and case-variant of policy name
+        /* language=json */
+        const string snakeCase = """{"reference_id":"snake"}""";
+        const string upperSnake = """{"REFERENCE_ID":"upper"}""";
+
+        // Act
+        var ev1 = _serializer.Deserialize<Event>(snakeCase);
+        var ev2 = _serializer.Deserialize<Event>(upperSnake);
+
+        // Assert — snake_case and its case variants match the SnakeCaseLower policy
+        Assert.Equal("snake", ev1?.ReferenceId);
+        Assert.Equal("upper", ev2?.ReferenceId);
     }
 }

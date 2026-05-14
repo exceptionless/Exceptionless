@@ -1,4 +1,4 @@
-# System.Text.Json Serialization Architecture
+# Serialization Architecture
 
 This document describes the complete serialization architecture after the Newtonsoft.Json → System.Text.Json (STJ) migration. It covers every serialization path, data transformation, naming convention, and compatibility consideration.
 
@@ -7,7 +7,7 @@ This document describes the complete serialization architecture after the Newton
 1. [Serializer Configuration](#serializer-configuration)
 2. [Serialization Paths](#serialization-paths)
 3. [Data Flow: Event Lifecycle](#data-flow-event-lifecycle)
-4. [GetValue\<T\> Dictionary Extraction](#getvaluet-dictionary-extraction)
+4. [GetValue\<T\> Dictionary Extraction](#getvaluet-dictionary-extraction)  
 5. [ObjectToInferredTypesConverter](#objecttoinferredtypesconverter)
 6. [Event Upgrade Pipeline](#event-upgrade-pipeline)
 7. [Model Annotations & Naming](#model-annotations--naming)
@@ -204,65 +204,33 @@ Data["@error"] → Dictionary<string, object?> (in-memory)
     = Error object with all properties populated
 ```
 
-### Dual-Path Key Normalization
+### Serialization Options
 
-The method uses two serialization option sets for the **dictionary→JSON serialize step**:
+The method uses a single serialization options set for the **dictionary→JSON serialize step**:
 
-**For typed targets** (Error, RequestInfo, EnvironmentInfo, etc.):
 ```csharp
 s_dictSerializeOptions = {
     PropertyNamingPolicy = SnakeCaseLower,
-    DictionaryKeyPolicy = SnakeCaseLower,  // ← KEY: normalizes all nested keys
     DefaultIgnoreCondition = WhenWritingNull
 };
 ```
 
-**For dictionary targets** (SettingsDictionary, DataDictionary):
-```csharp
-s_dictPreserveKeysOptions = {
-    DefaultIgnoreCondition = WhenWritingNull
-    // No DictionaryKeyPolicy — preserves original keys
-};
-```
+**Key design decisions:**
+- `PropertyNamingPolicy = SnakeCaseLower` converts C# property names to snake_case when serializing typed objects nested within dictionaries
+- **No `DictionaryKeyPolicy`** — user-provided dictionary keys (e.g., `Error.Data`, `QueryString`) are preserved exactly as-is
+- `PropertyNameCaseInsensitive = true` on the main deserializer handles matching snake_case keys back to PascalCase C# properties
 
-### Why DictionaryKeyPolicy is Needed
+### Why No DictionaryKeyPolicy
 
-When STJ deserializes from ES, ObjectToInferredTypesConverter reads object properties as-is from JSON. Since ES stores properties as snake_case, the in-memory dictionary has snake_case keys:
+`DictionaryKeyPolicy` applies recursively to ALL dictionary keys at ALL nesting levels, which would corrupt user-provided data:
 
 ```
-ES JSON: {"stack_trace": [...], "message": "..."}
-In-memory: Dictionary { "stack_trace" → [...], "message" → "..." }
+// User submits Error.Data with key "SomeProp"
+// With DictionaryKeyPolicy: "SomeProp" → "some_prop" — DATA CORRUPTION
+// Without DictionaryKeyPolicy: "SomeProp" preserved as-is ✓
 ```
 
-When serializing this dictionary back to JSON for typed deserialization:
-- **Without DictionaryKeyPolicy:** Keys stay as `"stack_trace"` → STJ with `PropertyNameCaseInsensitive` matches `StackTrace` property ✓
-- **With DictionaryKeyPolicy:** Keys normalized to `"stack_trace"` → same result ✓
-
-The DictionaryKeyPolicy is needed for the case where PascalCase keys exist in-memory (e.g., from pipeline processing that writes objects directly to Data without going through ES):
-
-```csharp
-event.Data["@error"] = new Error { StackTrace = [...] };
-// In-memory: the Error is the actual object, GetValue returns it directly via `data is T`
-// But if someone does:
-event.Data["@error"] = someDictionary; // keys might be "StackTrace", "Message"
-// DictionaryKeyPolicy normalizes "StackTrace" → "stack_trace" for property matching
-```
-
-### Impact on Nested Dictionary Keys
-
-`DictionaryKeyPolicy` applies recursively to ALL dictionary keys at ALL nesting levels. This means:
-
-```
-Error.Data["@target"] = { "ExceptionType": "...", "Method": "..." }
-  ↓ After GetValue<Error> with DictionaryKeyPolicy
-Error.Data["@target"] = { "exception_type": "...", "method": "..." }
-```
-
-**This is safe because:**
-1. No production C# code reads `Error.Data["@target"]` via `GetValue` then accesses by key name
-2. `Stack.SignatureInfo` is a typed property (not accessed via GetValue)
-3. API responses serialize directly from ES (no GetValue in the response path)
-4. The frontend reads `@target` from the raw API JSON (keys preserved as stored in ES)
+In production, ES stores typed property names as snake_case (from `PropertyNamingPolicy`). When `GetValue<T>` deserializes from this data, `PropertyNameCaseInsensitive` handles the snake_case→PascalCase property matching. Dictionary keys don't need normalization because they're user data, not C# property names.
 
 ---
 
@@ -436,7 +404,7 @@ Stripe.net v51.1.0
 
 These packages will remain until:
 - Foundatio.Repositories removes its Foundatio.JsonNet dependency (tracked upstream)
-- Stripe.net migrates to STJ (their roadmap)
+- Stripe.net drops its Newtonsoft.Json dependency. As of v51.1.0 (latest stable), Stripe.net still depends on Newtonsoft.Json directly across all target frameworks (net6.0, net8.0, net9.0). While Stripe added STJ support, they have not yet removed the Newtonsoft dependency.
 
 Neither impacts our runtime serialization.
 
@@ -488,4 +456,4 @@ Every code path that calls `GetValue<T>()`, mutates the result, and needs to per
 
 2. **EventRepository `ElasticFilter`** — One remaining raw ES query for `MustNot ExistsQuery` on dynamic index field (`idx.{SessionEnd}-d`). No typed Foundatio alternative exists for dynamic template fields.
 
-3. **DictionaryKeyPolicy normalizes nested keys** — When using `GetValue<Error>()`, all nested dictionary keys (including `Error.Data` sub-dictionaries) are normalized to snake_case. This doesn't affect production since no C# code accesses those nested keys by name via GetValue after the pipeline.
+3. **GetValue\<T\> preserves dictionary keys** — `GetValue<T>()` uses `PropertyNamingPolicy = SnakeCaseLower` (for typed property names) but no `DictionaryKeyPolicy`, so user-provided dictionary keys in `Error.Data`, `QueryString`, etc. are preserved exactly as submitted.
