@@ -21,7 +21,7 @@ public sealed class SimpleErrorPlugin : EventProcessorPluginBase
         if (!context.Event.IsError())
             return Task.CompletedTask;
 
-        var error = context.Event.GetSimpleError(_serializer);
+        var error = context.Event.GetSimpleError(_serializer, _logger);
         if (error is null)
             return Task.CompletedTask;
 

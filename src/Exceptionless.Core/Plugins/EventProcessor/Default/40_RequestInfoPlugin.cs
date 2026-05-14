@@ -39,13 +39,13 @@ public sealed class RequestInfoPlugin : EventProcessorPluginBase
         var exclusions = DefaultExclusions.Union(project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions)).ToList();
         foreach (var context in contexts)
         {
-            var request = context.Event.GetRequestInfo(_serializer);
+            var request = context.Event.GetRequestInfo(_serializer, _logger);
             if (request is null)
                 continue;
 
             if (context.IncludePrivateInformation)
             {
-                var submissionClient = context.Event.GetSubmissionClient(_serializer);
+                var submissionClient = context.Event.GetSubmissionClient(_serializer, _logger);
                 AddClientIpAddress(request, submissionClient);
             }
             else

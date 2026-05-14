@@ -22,13 +22,13 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase
         if (!String.Equals(ctx.WebHook.Version, Models.WebHook.KnownVersions.Version1))
             return Task.FromResult<object?>(null);
 
-        var error = ctx.Event?.GetError(_serializer);
+        var error = ctx.Event?.GetError(_serializer, _logger);
         if (error is null)
             return Task.FromResult<object?>(null);
 
         var ev = ctx.Event!;
-        var requestInfo = ev.GetRequestInfo(_serializer);
-        var environmentInfo = ev.GetEnvironmentInfo(_serializer);
+        var requestInfo = ev.GetRequestInfo(_serializer, _logger);
+        var environmentInfo = ev.GetEnvironmentInfo(_serializer, _logger);
 
         return Task.FromResult<object?>(new VersionOneWebHookEvent(_options.BaseURL)
         {

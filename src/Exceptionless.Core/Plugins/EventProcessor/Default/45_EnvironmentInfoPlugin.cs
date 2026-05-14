@@ -18,13 +18,13 @@ public sealed class EnvironmentInfoPlugin : EventProcessorPluginBase
 
     public override Task EventProcessingAsync(EventContext context)
     {
-        var environment = context.Event.GetEnvironmentInfo(_serializer);
+        var environment = context.Event.GetEnvironmentInfo(_serializer, _logger);
         if (environment is null)
             return Task.CompletedTask;
 
         if (context.IncludePrivateInformation)
         {
-            var submissionClient = context.Event.GetSubmissionClient(_serializer);
+            var submissionClient = context.Event.GetSubmissionClient(_serializer, _logger);
             AddClientIpAddress(environment, submissionClient);
         }
         else
