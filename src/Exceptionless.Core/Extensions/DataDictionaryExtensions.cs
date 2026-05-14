@@ -8,23 +8,14 @@ namespace Exceptionless.Core.Extensions;
 public static class DataDictionaryExtensions
 {
     /// <summary>
-    /// Options used when re-serializing dictionaries for typed object deserialization.
-    /// DictionaryKeyPolicy normalizes ALL keys (including nested) from PascalCase to snake_case
-    /// so they match C# property names during deserialization with SnakeCaseLower naming.
+    /// Options used when re-serializing in-memory dictionaries to JSON for typed deserialization.
+    /// PropertyNamingPolicy converts typed property names (HttpMethod → http_method) so the
+    /// deserializer's SnakeCaseLower policy can match them. No DictionaryKeyPolicy — dictionary
+    /// keys (including user-provided keys in Error.Data, SettingsDictionary, etc.) are preserved as-is.
     /// </summary>
     private static readonly JsonSerializerOptions s_dictSerializeOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-        DictionaryKeyPolicy = JsonNamingPolicy.SnakeCaseLower,
-        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-    };
-
-    /// <summary>
-    /// Options used when re-serializing dictionaries for dictionary-to-dictionary deserialization.
-    /// No DictionaryKeyPolicy — preserves user-provided keys as-is.
-    /// </summary>
-    private static readonly JsonSerializerOptions s_dictPreserveKeysOptions = new()
-    {
         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
     };
     /// <summary>
@@ -108,17 +99,14 @@ public static class DataDictionaryExtensions
         }
 
         // Dictionary<string, object?> from ObjectToInferredTypesConverter.
-        // When T is a typed object (Error, RequestInfo, etc.): use DictionaryKeyPolicy to
-        // recursively normalize all keys from PascalCase to snake_case, matching what the
-        // SnakeCaseLower naming policy expects during deserialization.
-        // When T is a dictionary type (SettingsDictionary, DataDictionary): serialize without
-        // normalization to preserve user-provided keys.
+        // Serialize with PropertyNamingPolicy (converts typed property names to snake_case)
+        // but WITHOUT DictionaryKeyPolicy (preserves user-provided keys in Error.Data, etc.).
+        // The deserializer then matches snake_case property names via its SnakeCaseLower policy.
         if (data is Dictionary<string, object?> dictionary)
         {
             try
             {
-                var options = IsDictionaryType(typeof(T)) ? s_dictPreserveKeysOptions : s_dictSerializeOptions;
-                string dictJson = JsonSerializer.Serialize(dictionary, options);
+                string dictJson = JsonSerializer.Serialize(dictionary, s_dictSerializeOptions);
                 return serializer.Deserialize<T>(dictJson);
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
@@ -176,19 +164,5 @@ public static class DataDictionaryExtensions
         string[] removeKeys = [.. extendedData.Keys.Where(k => k.StartsWith('-'))];
         foreach (string key in removeKeys)
             extendedData.Remove(key);
-    }
-
-    private static bool IsDictionaryType(Type type)
-    {
-        if (typeof(System.Collections.IDictionary).IsAssignableFrom(type))
-            return true;
-
-        foreach (var iface in type.GetInterfaces())
-        {
-            if (iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IDictionary<,>))
-                return true;
-        }
-
-        return false;
     }
 }
