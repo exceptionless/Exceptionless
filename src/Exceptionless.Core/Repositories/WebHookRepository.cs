@@ -28,7 +28,11 @@ public sealed class WebHookRepository : RepositoryOwnedByOrganizationAndProject<
 
         // Match org-level webhooks (organization matches, no project) OR project-specific webhooks
         return FindAsync(q => q
-            .FilterExpression($"(organization_id:{organizationId} AND NOT _exists_:project_id) OR project_id:{projectId}")
+            .FieldOr(g => g
+                .FieldAnd(a => a
+                    .FieldEquals(w => w.OrganizationId, organizationId)
+                    .FieldEmpty(w => w.ProjectId))
+                .FieldEquals(w => w.ProjectId, projectId))
             .Sort(f => f.CreatedUtc), o => o.Cache(PagedCacheKey(organizationId, projectId)));
     }
 

@@ -116,7 +116,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
             .Include(e => e.Id, e => e.Date)
             .AppFilter(systemFilter)
             .Stack(ev.StackId)
-            .FilterExpression($"NOT _id:{ev.Id}")
+            .ExcludedId(ev.Id)
             .EnforceEventStackFilter(false), o => o.PageLimit(10));
 
         if (results.Total == 0)
@@ -156,7 +156,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
             .Include(e => e.Id, e => e.Date)
             .AppFilter(systemFilter)
             .Stack(ev.StackId)
-            .FilterExpression($"NOT _id:{ev.Id}")
+            .ExcludedId(ev.Id)
             .EnforceEventStackFilter(false), o => o.PageLimit(10));
 
         if (results.Total == 0)
