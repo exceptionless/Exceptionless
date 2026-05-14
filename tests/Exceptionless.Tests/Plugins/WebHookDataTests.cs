@@ -73,9 +73,7 @@ public sealed class WebHookDataTests : TestWithServices
 
     private WebHookDataContext GetWebHookDataContext(string version)
     {
-        // Use snake_case fixture — matches production ES format (all data stored as snake_case).
-        // The original 1477.expected.json has PascalCase keys for the upgrader test.
-        string json = File.ReadAllText(Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", "1477.snake-case.json")));
+        string json = File.ReadAllText(Path.GetFullPath(Path.Combine("..", "..", "..", "ErrorData", "1477.expected.json")));
 
         var hook = new WebHook
         {

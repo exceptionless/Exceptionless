@@ -1331,10 +1331,12 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         var targetInfo = error.Data?.GetValue<SettingsDictionary>(Error.KnownDataKeys.TargetInfo, _serializer);
         Assert.NotNull(targetInfo);
-        Assert.True(targetInfo.ContainsKey("ExceptionType"), "@target should contain ExceptionType");
-        Assert.Equal("System.InvalidOperationException", targetInfo["ExceptionType"]);
-        Assert.True(targetInfo.ContainsKey("Method"), "@target should contain Method");
-        Assert.Contains("TestService.DoWork", targetInfo["Method"]);
+        // Keys are snake_case because GetValue<Error> uses DictionaryKeyPolicy to normalize
+        // all dictionary keys (including nested ones) for typed property matching.
+        Assert.True(targetInfo.ContainsKey("exception_type"), "@target should contain exception_type");
+        Assert.Equal("System.InvalidOperationException", targetInfo["exception_type"]);
+        Assert.True(targetInfo.ContainsKey("method"), "@target should contain method");
+        Assert.Contains("TestService.DoWork", targetInfo["method"]);
 
         // Assert - is_signature_target should be set on stack frames (FINDING-3b)
         Assert.NotNull(error.StackTrace);
@@ -1373,8 +1375,10 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         var targetInfo = error.Data?.GetValue<SettingsDictionary>(Error.KnownDataKeys.TargetInfo, _serializer);
         Assert.NotNull(targetInfo);
-        Assert.True(targetInfo.ContainsKey("ExceptionType"), "@target should contain ExceptionType");
-        Assert.Equal("System.ArgumentNullException", targetInfo["ExceptionType"]);
+        // Keys are snake_case because GetValue<Error> uses DictionaryKeyPolicy to normalize
+        // all dictionary keys (including nested ones) for typed property matching.
+        Assert.True(targetInfo.ContainsKey("exception_type"), "@target should contain exception_type");
+        Assert.Equal("System.ArgumentNullException", targetInfo["exception_type"]);
     }
 
     private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string? userIdentity = null, string? type = null, string? sessionId = null)

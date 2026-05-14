@@ -124,7 +124,8 @@ public class SerializerTests : TestWithServices
         Assert.Equal(originalError.Message, error.Message);
         Assert.Equal(originalError.Type, error.Type);
         Assert.NotNull(error.Data);
-        Assert.Equal("SomeVal", error.Data["SomeProp"]);
+        // DictionaryKeyPolicy normalizes keys to snake_case during GetValue<T> deserialization
+        Assert.Equal("SomeVal", error.Data["some_prop"]);
 
         // Verify request info round-tripped
         var request = roundTripped.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo, _serializer);
@@ -517,7 +518,8 @@ public class SerializerTests : TestWithServices
         Assert.Equal("Something went wrong", error.Message);
         Assert.Equal("System.Exception", error.Type);
         Assert.NotNull(error.Data);
-        Assert.Equal("SomeVal", error.Data["SomeProp"]);
+        // DictionaryKeyPolicy normalizes keys to snake_case during GetValue<T> deserialization
+        Assert.Equal("SomeVal", error.Data["some_prop"]);
 
         var request = ev.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo, _serializer);
         Assert.NotNull(request);
