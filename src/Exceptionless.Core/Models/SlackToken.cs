@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using Foundatio.Serializer;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Models;
 
@@ -35,12 +36,12 @@ public record SlackMessage
 
     public class SlackAttachment
     {
-        public SlackAttachment(PersistentEvent ev, ITextSerializer serializer)
+        public SlackAttachment(PersistentEvent ev, ITextSerializer serializer, ILogger logger)
         {
             TimeStamp = ev.Date.ToUnixTimeSeconds();
 
-            var ud = ev.GetUserDescription(serializer);
-            var ui = ev.GetUserIdentity(serializer);
+            var ud = ev.GetUserDescription(serializer, logger);
+            var ui = ev.GetUserIdentity(serializer, logger);
             Text = ud?.Description;
 
             string? displayName = null;

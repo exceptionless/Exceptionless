@@ -37,7 +37,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
                 { "Type", ev.Type }
             };
 
-        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_serializer));
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_serializer, _logger));
 
         return new SummaryData { Id = ev.Id, TemplateKey = "event-summary", Data = data };
     }
@@ -68,7 +68,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
         if (!String.IsNullOrEmpty(ev.Source))
             data.Add("Source", ev.Source.Truncate(60));
 
-        var requestInfo = ev.GetRequestInfo(_serializer);
+        var requestInfo = ev.GetRequestInfo(_serializer, _logger);
         if (requestInfo is not null)
             data.Add("Url", requestInfo.GetFullPath(true, true, true));
 
@@ -90,7 +90,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
         if (isCritical)
             notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
 
-        var attachment = new SlackMessage.SlackAttachment(ev, _serializer);
+        var attachment = new SlackMessage.SlackAttachment(ev, _serializer, _logger);
         if (!String.IsNullOrEmpty(ev.Message))
             attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Message", Value = ev.Message.Truncate(60) });
 

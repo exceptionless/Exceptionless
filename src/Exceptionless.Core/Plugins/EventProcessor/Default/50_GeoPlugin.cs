@@ -35,7 +35,7 @@ public sealed class GeoPlugin : EventProcessorPluginBase
             // The geo coordinates are all the same, set the location from the result of any of the ip addresses.
             if (!String.IsNullOrEmpty(group.Key))
             {
-                var ips = group.SelectMany(c => c.Event.GetIpAddresses(_serializer)).Union(new[] { group.First().EventPostInfo?.IpAddress }).Distinct().ToList();
+                var ips = group.SelectMany(c => c.Event.GetIpAddresses(_serializer, _logger)).Union(new[] { group.First().EventPostInfo?.IpAddress }).Distinct().ToList();
                 if (ips.Count > 0)
                     tasks.Add(UpdateGeoInformationAsync(group, ips));
                 continue;
@@ -44,7 +44,7 @@ public sealed class GeoPlugin : EventProcessorPluginBase
             // Each event in the group could be a different user;
             foreach (var context in group)
             {
-                var ips = context.Event.GetIpAddresses(_serializer).Union(new[] { context.EventPostInfo?.IpAddress }).ToList();
+                var ips = context.Event.GetIpAddresses(_serializer, _logger).Union(new[] { context.EventPostInfo?.IpAddress }).ToList();
                 if (ips.Count > 0)
                     tasks.Add(UpdateGeoInformationAsync(context, ips));
             }

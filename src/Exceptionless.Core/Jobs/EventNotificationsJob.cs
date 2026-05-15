@@ -117,7 +117,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
                     _logger.LogTrace("Settings: new error={ReportNewErrors} critical error={ReportCriticalErrors} regression={ReportEventRegressions} new={ReportNewEvents} critical={ReportCriticalEvents}", settings.ReportNewErrors, settings.ReportCriticalErrors, settings.ReportEventRegressions, settings.ReportNewEvents, settings.ReportCriticalEvents);
                     _logger.LogTrace("Should process: new error={ShouldReportNewError} critical error={ShouldReportCriticalError} regression={ShouldReportRegression} new={ShouldReportNewEvent} critical={ShouldReportCriticalEvent}", shouldReportNewError, shouldReportCriticalError, shouldReportRegression, shouldReportNewEvent, shouldReportCriticalEvent);
                 }
-                var request = ev.GetRequestInfo(_serializer);
+                var request = ev.GetRequestInfo(_serializer, _logger);
                 // check for known bots if the user has elected to not report them
                 if (shouldReport && !String.IsNullOrEmpty(request?.UserAgent))
                 {

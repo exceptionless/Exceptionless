@@ -1,6 +1,7 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Serializer;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Extensions;
 
@@ -59,9 +60,9 @@ public static class ErrorExtensions
         };
     }
 
-    public static StackingTarget? GetStackingTarget(this Event ev, ITextSerializer serializer)
+    public static StackingTarget? GetStackingTarget(this Event ev, ITextSerializer serializer, ILogger logger)
     {
-        var error = ev.GetError(serializer);
+        var error = ev.GetError(serializer, logger);
         return error?.GetStackingTarget();
     }
 

@@ -21,7 +21,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         if (!ShouldHandle(ev))
             return null;
 
-        var error = ev.GetError(_serializer);
+        var error = ev.GetError(_serializer, _logger);
         return error?.Message;
     }
 
@@ -59,12 +59,12 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         if (!ShouldHandle(ev))
             return null;
 
-        var stackingTarget = ev.GetStackingTarget(_serializer);
+        var stackingTarget = ev.GetStackingTarget(_serializer, _logger);
         if (stackingTarget?.Error is null)
             return null;
 
         var data = new Dictionary<string, object?> { { "Message", ev.Message } };
-        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_serializer));
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_serializer, _logger));
 
         if (!String.IsNullOrEmpty(stackingTarget.Error.Type))
         {
@@ -78,7 +78,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
             data.Add("MethodFullName", stackingTarget.Method.GetFullName());
         }
 
-        var requestInfo = ev.GetRequestInfo(_serializer);
+        var requestInfo = ev.GetRequestInfo(_serializer, _logger);
         if (!String.IsNullOrEmpty(requestInfo?.Path))
             data.Add("Path", requestInfo.Path);
 
@@ -90,7 +90,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         if (!ShouldHandle(ev))
             return null;
 
-        var error = ev.GetError(_serializer);
+        var error = ev.GetError(_serializer, _logger);
         var stackingTarget = error?.GetStackingTarget();
         if (stackingTarget?.Error is null)
             return null;
@@ -117,7 +117,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         if (stackingTarget.Method?.Name is not null)
             data.Add("Method", stackingTarget.Method.Name.Truncate(60));
 
-        var requestInfo = ev.GetRequestInfo(_serializer);
+        var requestInfo = ev.GetRequestInfo(_serializer, _logger);
         if (requestInfo is not null)
             data.Add("Url", requestInfo.GetFullPath(true, true, true));
 
@@ -129,7 +129,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         if (!ShouldHandle(ev))
             return null;
 
-        var error = ev.GetError(_serializer);
+        var error = ev.GetError(_serializer, _logger);
         var stackingTarget = error?.GetStackingTarget();
         if (stackingTarget?.Error is null)
             return null;
@@ -148,7 +148,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         if (isCritical)
             notificationType = String.Concat("critical ", notificationType);
 
-        var attachment = new SlackMessage.SlackAttachment(ev, _serializer)
+        var attachment = new SlackMessage.SlackAttachment(ev, _serializer, _logger)
         {
             Color = "#BB423F",
             Fields =

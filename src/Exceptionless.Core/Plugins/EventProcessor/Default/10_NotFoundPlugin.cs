@@ -24,7 +24,7 @@ public sealed class NotFoundPlugin : EventProcessorPluginBase
         context.Event.Data.Remove(Event.KnownDataKeys.EnvironmentInfo);
         context.Event.Data.Remove(Event.KnownDataKeys.TraceLog);
 
-        var req = context.Event.GetRequestInfo(_serializer);
+        var req = context.Event.GetRequestInfo(_serializer, _logger);
         if (req is null)
             return Task.CompletedTask;
 

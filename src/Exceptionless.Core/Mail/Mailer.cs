@@ -59,7 +59,7 @@ public class Mailer : IMailer
             };
 
         AddDefaultFields(ev, result.Data);
-        AddUserInfo(ev, messageData, _serializer);
+        AddUserInfo(ev, messageData);
 
         const string template = "event-notice";
         await QueueMessageAsync(new MailMessage
@@ -71,10 +71,10 @@ public class Mailer : IMailer
         return true;
     }
 
-    private static void AddUserInfo(PersistentEvent ev, Dictionary<string, object?> data, ITextSerializer serializer)
+    private void AddUserInfo(PersistentEvent ev, Dictionary<string, object?> data)
     {
-        var ud = ev.GetUserDescription(serializer);
-        var ui = ev.GetUserIdentity(serializer);
+        var ud = ev.GetUserDescription(_serializer, _logger);
+        var ui = ev.GetUserIdentity(_serializer, _logger);
         if (!String.IsNullOrEmpty(ud?.Description))
             data["UserDescription"] = ud.Description;
 

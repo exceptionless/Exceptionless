@@ -2,6 +2,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Serializer;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless;
 
@@ -178,7 +179,7 @@ public static class PersistentEventExtensions
         return true;
     }
 
-    public static PersistentEvent ToSessionStartEvent(this PersistentEvent source, ITextSerializer serializer, DateTime? lastActivityUtc = null, bool? isSessionEnd = null, bool hasPremiumFeatures = true, bool includePrivateInformation = true)
+    public static PersistentEvent ToSessionStartEvent(this PersistentEvent source, ITextSerializer serializer, ILogger logger, DateTime? lastActivityUtc = null, bool? isSessionEnd = null, bool hasPremiumFeatures = true, bool includePrivateInformation = true)
     {
         var startEvent = new PersistentEvent
         {
@@ -194,11 +195,11 @@ public static class PersistentEventExtensions
         if (sessionId is not null)
             startEvent.SetSessionId(sessionId);
         if (includePrivateInformation)
-            startEvent.SetUserIdentity(source.GetUserIdentity(serializer));
-        startEvent.SetLocation(source.GetLocation(serializer));
+            startEvent.SetUserIdentity(source.GetUserIdentity(serializer, logger));
+        startEvent.SetLocation(source.GetLocation(serializer, logger));
         startEvent.SetVersion(source.GetVersion());
 
-        var ei = source.GetEnvironmentInfo(serializer);
+        var ei = source.GetEnvironmentInfo(serializer, logger);
         if (ei is not null)
         {
             startEvent.SetEnvironmentInfo(new EnvironmentInfo
@@ -219,7 +220,7 @@ public static class PersistentEventExtensions
             });
         }
 
-        var ri = source.GetRequestInfo(serializer);
+        var ri = source.GetRequestInfo(serializer, logger);
         if (ri is not null)
         {
             startEvent.AddRequestInfo(new RequestInfo
@@ -245,19 +246,19 @@ public static class PersistentEventExtensions
         return startEvent;
     }
 
-    public static IEnumerable<string> GetIpAddresses(this PersistentEvent ev, ITextSerializer serializer)
+    public static IEnumerable<string> GetIpAddresses(this PersistentEvent ev, ITextSerializer serializer, ILogger logger)
     {
         if (!String.IsNullOrEmpty(ev.Geo) && (ev.Geo.Contains('.') || ev.Geo.Contains(':')))
             yield return ev.Geo.Trim();
 
-        var ri = ev.GetRequestInfo(serializer);
+        var ri = ev.GetRequestInfo(serializer, logger);
         if (!String.IsNullOrEmpty(ri?.ClientIpAddress))
         {
             foreach (string ip in ri.ClientIpAddress.Split(_commaSeparator, StringSplitOptions.RemoveEmptyEntries))
                 yield return ip.Trim();
         }
 
-        var ei = ev.GetEnvironmentInfo(serializer);
+        var ei = ev.GetEnvironmentInfo(serializer, logger);
         if (!String.IsNullOrEmpty(ei?.IpAddress))
         {
             foreach (string ip in ei.IpAddress.Split(_commaSeparator, StringSplitOptions.RemoveEmptyEntries))
