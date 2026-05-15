@@ -79,7 +79,7 @@ public sealed class GeoTests : TestWithServices
         await plugin.EventBatchProcessingAsync(new List<EventContext> { new(ev, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject()) });
 
         Assert.Equal(GREEN_BAY_COORDINATES, ev.Geo);
-        Assert.Null(ev.GetLocation(_serializer));
+        Assert.Null(ev.GetLocation(_serializer, _logger));
     }
 
     [Theory]
@@ -99,7 +99,7 @@ public sealed class GeoTests : TestWithServices
         await plugin.EventBatchProcessingAsync(new List<EventContext> { new(ev, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject()) });
 
         Assert.Null(ev.Geo);
-        Assert.Null(ev.GetLocation(_serializer));
+        Assert.Null(ev.GetLocation(_serializer, _logger));
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public sealed class GeoTests : TestWithServices
         Assert.NotNull(ev.Geo);
         Assert.NotEqual(GREEN_BAY_IP, ev.Geo);
 
-        var location = ev.GetLocation(_serializer);
+        var location = ev.GetLocation(_serializer, _logger);
         Assert.Equal("US", location?.Country);
         Assert.Equal("WI", location?.Level1);
         Assert.Equal("Green Bay", location?.Locality);
@@ -136,7 +136,7 @@ public sealed class GeoTests : TestWithServices
 
         Assert.NotNull(ev.Geo);
 
-        var location = ev.GetLocation(_serializer);
+        var location = ev.GetLocation(_serializer, _logger);
         Assert.Equal("US", location?.Country);
         Assert.Equal("WI", location?.Level1);
         Assert.Equal("Green Bay", location?.Locality);
@@ -156,7 +156,7 @@ public sealed class GeoTests : TestWithServices
 
         Assert.NotNull(ev.Geo);
 
-        var location = ev.GetLocation(_serializer);
+        var location = ev.GetLocation(_serializer, _logger);
         Assert.Equal("US", location?.Country);
         Assert.Equal("WI", location?.Level1);
         Assert.Equal("Green Bay", location?.Locality);
@@ -182,7 +182,7 @@ public sealed class GeoTests : TestWithServices
         {
             AssertCoordinatesAreEqual(GREEN_BAY_COORDINATES, context.Event.Geo);
 
-            var location = context.Event.GetLocation(_serializer);
+            var location = context.Event.GetLocation(_serializer, _logger);
             Assert.Equal("US", location?.Country);
             Assert.Equal("WI", location?.Level1);
             Assert.Equal("Green Bay", location?.Locality);
@@ -208,13 +208,13 @@ public sealed class GeoTests : TestWithServices
             });
 
         AssertCoordinatesAreEqual(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
-        var location = greenBayEvent.GetLocation(_serializer);
+        var location = greenBayEvent.GetLocation(_serializer, _logger);
         Assert.Equal("US", location?.Country);
         Assert.Equal("WI", location?.Level1);
         Assert.Equal("Green Bay", location?.Locality);
 
         AssertCoordinatesAreEqual(IRVING_COORDINATES, irvingEvent.Geo);
-        location = irvingEvent.GetLocation(_serializer);
+        location = irvingEvent.GetLocation(_serializer, _logger);
         Assert.Equal("US", location?.Country);
         Assert.Equal("TX", location?.Level1);
         Assert.Equal("Irving", location?.Locality);
@@ -256,13 +256,13 @@ public sealed class GeoTests : TestWithServices
             });
 
         AssertCoordinatesAreEqual(GREEN_BAY_COORDINATES, greenBayEvent.Geo);
-        var location = greenBayEvent.GetLocation(_serializer);
+        var location = greenBayEvent.GetLocation(_serializer, _logger);
         Assert.Equal("US", location?.Country);
         Assert.Equal("WI", location?.Level1);
         Assert.Equal("Green Bay", location?.Locality);
 
         AssertCoordinatesAreEqual(IRVING_COORDINATES, irvingEvent.Geo);
-        location = irvingEvent.GetLocation(_serializer);
+        location = irvingEvent.GetLocation(_serializer, _logger);
         Assert.Equal("US", location?.Country);
         Assert.Equal("TX", location?.Level1);
         Assert.Equal("Irving", location?.Locality);

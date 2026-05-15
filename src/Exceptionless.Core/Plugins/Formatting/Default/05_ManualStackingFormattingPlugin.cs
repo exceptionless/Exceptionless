@@ -12,7 +12,7 @@ public sealed class ManualStackingFormattingPlugin : FormattingPluginBase
 
     public override string? GetStackTitle(PersistentEvent ev)
     {
-        var msi = ev.GetManualStackingInfo(_serializer);
+        var msi = ev.GetManualStackingInfo(_serializer, _logger);
         return !String.IsNullOrWhiteSpace(msi?.Title) ? msi.Title : null;
     }
 }

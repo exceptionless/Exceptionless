@@ -38,7 +38,7 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
             return;
 
         // Throttle errors by client ip address to no more than X every 5 minutes.
-        var clientIpAddressGroups = contexts.GroupBy(c => c.Event.GetRequestInfo(_serializer)?.ClientIpAddress);
+        var clientIpAddressGroups = contexts.GroupBy(c => c.Event.GetRequestInfo(_serializer, _logger)?.ClientIpAddress);
         foreach (var clientIpAddressGroup in clientIpAddressGroups)
         {
             if (String.IsNullOrEmpty(clientIpAddressGroup.Key) || clientIpAddressGroup.Key.IsPrivateNetwork())

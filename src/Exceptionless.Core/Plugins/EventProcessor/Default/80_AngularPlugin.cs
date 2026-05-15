@@ -21,7 +21,7 @@ public sealed class AngularPlugin : EventProcessorPluginBase
         if (!context.Event.IsError())
             return Task.CompletedTask;
 
-        var error = context.Event.GetError(_serializer);
+        var error = context.Event.GetError(_serializer, _logger);
         if (error is null)
             return Task.CompletedTask;
 

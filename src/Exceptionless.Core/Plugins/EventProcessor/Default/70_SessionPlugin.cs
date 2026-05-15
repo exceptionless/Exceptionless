@@ -32,7 +32,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
 
     public override Task EventBatchProcessingAsync(ICollection<EventContext> contexts)
     {
-        var autoSessionEvents = contexts.Where(c => !String.IsNullOrWhiteSpace(c.Event.GetUserIdentity(_serializer)?.Identity) && String.IsNullOrEmpty(c.Event.GetSessionId())).ToList();
+        var autoSessionEvents = contexts.Where(c => !String.IsNullOrWhiteSpace(c.Event.GetUserIdentity(_serializer, _logger)?.Identity) && String.IsNullOrEmpty(c.Event.GetSessionId())).ToList();
         var manualSessionsEvents = contexts.Where(c => !String.IsNullOrEmpty(c.Event.GetSessionId())).ToList();
 
         return Task.WhenAll(
@@ -125,7 +125,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
     {
         var identityGroups = contexts
             .OrderBy(c => c.Event.Date)
-            .GroupBy(c => c.Event.GetUserIdentity(_serializer)?.Identity);
+            .GroupBy(c => c.Event.GetUserIdentity(_serializer, _logger)?.Identity);
 
         foreach (var identityGroup in identityGroups)
         {
@@ -286,7 +286,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
 
     private async Task<PersistentEvent> CreateSessionStartEventAsync(EventContext startContext, DateTime? lastActivityUtc, bool? isSessionEnd)
     {
-        var startEvent = startContext.Event.ToSessionStartEvent(_serializer, lastActivityUtc, isSessionEnd, startContext.Organization.HasPremiumFeatures, startContext.IncludePrivateInformation);
+        var startEvent = startContext.Event.ToSessionStartEvent(_serializer, _logger, lastActivityUtc, isSessionEnd, startContext.Organization.HasPremiumFeatures, startContext.IncludePrivateInformation);
         var startEventContexts = new List<EventContext> {
                 new(startEvent, startContext.Organization, startContext.Project)
             };

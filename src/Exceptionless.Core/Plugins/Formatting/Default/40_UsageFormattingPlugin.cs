@@ -38,7 +38,7 @@ public sealed class UsageFormattingPlugin : FormattingPluginBase
             return null;
 
         var data = new Dictionary<string, object?> { { "Source", ev.Source } };
-        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_serializer));
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_serializer, _logger));
 
         return new SummaryData { Id = ev.Id, TemplateKey = "event-feature-summary", Data = data };
     }
@@ -61,7 +61,7 @@ public sealed class UsageFormattingPlugin : FormattingPluginBase
         if (!ShouldHandle(ev))
             return null;
 
-        var attachment = new SlackMessage.SlackAttachment(ev, _serializer)
+        var attachment = new SlackMessage.SlackAttachment(ev, _serializer, _logger)
         {
             Fields =
             [

@@ -1222,7 +1222,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
             // inject random session start events.
             if (currentBatchCount % 10 == 0)
-                events.Insert(0, events[0].ToSessionStartEvent(_serializer));
+                events.Insert(0, events[0].ToSessionStartEvent(_serializer, _logger));
 
             await storage.SaveObjectAsync(Path.Combine(dataDirectory, $"{currentBatchCount++}.json"), events, TestCancellationToken);
         }

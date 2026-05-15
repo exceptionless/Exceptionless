@@ -41,7 +41,7 @@ public sealed class SessionFormattingPlugin : FormattingPluginBase
             return null;
 
         var data = new Dictionary<string, object?> { { "SessionId", ev.GetSessionId() }, { "Type", ev.Type } };
-        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_serializer));
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_serializer, _logger));
 
         if (ev.IsSessionStart())
         {

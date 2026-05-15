@@ -130,7 +130,7 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
                 allHeartbeatKeys.Add(sessionIdKey);
             }
 
-            var user = session.GetUserIdentity(_serializer);
+            var user = session.GetUserIdentity(_serializer, _logger);
             if (!String.IsNullOrWhiteSpace(user?.Identity))
             {
                 userIdentityKey = $"Project:{session.ProjectId}:heartbeat:{user.Identity.ToSHA1()}";

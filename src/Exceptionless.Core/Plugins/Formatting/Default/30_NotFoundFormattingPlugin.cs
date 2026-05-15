@@ -38,9 +38,9 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
             return null;
 
         var data = new Dictionary<string, object?> { { "Source", ev.Source } };
-        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_serializer));
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_serializer, _logger));
 
-        var ips = ev.GetIpAddresses(_serializer).ToList();
+        var ips = ev.GetIpAddresses(_serializer, _logger).ToList();
         if (ips.Count > 0)
             data.Add("IpAddress", ips);
 
@@ -62,7 +62,7 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
             notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
 
         string subject = String.Concat(notificationType, ": ", ev.Source).Truncate(120);
-        var requestInfo = ev.GetRequestInfo(_serializer);
+        var requestInfo = ev.GetRequestInfo(_serializer, _logger);
         var data = new Dictionary<string, object?> {
                 { "Url", requestInfo?.GetFullPath(true, true, true) ?? ev.Source?.Truncate(60) }
             };
@@ -84,8 +84,8 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
         if (isCritical)
             notificationType = String.Concat("critical ", notificationType);
 
-        var requestInfo = ev.GetRequestInfo(_serializer);
-        var attachment = new SlackMessage.SlackAttachment(ev, _serializer)
+        var requestInfo = ev.GetRequestInfo(_serializer, _logger);
+        var attachment = new SlackMessage.SlackAttachment(ev, _serializer, _logger)
         {
             Color = "#BB423F",
             Fields =

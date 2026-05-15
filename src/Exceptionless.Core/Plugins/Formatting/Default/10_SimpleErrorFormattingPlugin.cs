@@ -39,7 +39,7 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
         if (!ShouldHandle(ev))
             return null;
 
-        var error = ev.GetSimpleError(_serializer);
+        var error = ev.GetSimpleError(_serializer, _logger);
         return error?.Message;
     }
 
@@ -48,12 +48,12 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
         if (!ShouldHandle(ev))
             return null;
 
-        var error = ev.GetSimpleError(_serializer);
+        var error = ev.GetSimpleError(_serializer, _logger);
         if (error is null)
             return null;
 
         var data = new Dictionary<string, object?> { { "Message", ev.Message } };
-        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_serializer));
+        AddUserIdentitySummaryData(data, ev.GetUserIdentity(_serializer, _logger));
 
         if (!String.IsNullOrEmpty(error.Type))
         {
@@ -61,7 +61,7 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
             data.Add("TypeFullName", error.Type);
         }
 
-        var requestInfo = ev.GetRequestInfo(_serializer);
+        var requestInfo = ev.GetRequestInfo(_serializer, _logger);
         if (!String.IsNullOrEmpty(requestInfo?.Path))
             data.Add("Path", requestInfo.Path);
 
@@ -73,7 +73,7 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
         if (!ShouldHandle(ev))
             return null;
 
-        var error = ev.GetSimpleError(_serializer);
+        var error = ev.GetSimpleError(_serializer, _logger);
         if (error is null)
             return null;
 
@@ -96,7 +96,7 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
         if (!String.IsNullOrEmpty(errorTypeName))
             data.Add("Type", errorTypeName);
 
-        var requestInfo = ev.GetRequestInfo(_serializer);
+        var requestInfo = ev.GetRequestInfo(_serializer, _logger);
         if (requestInfo is not null)
             data.Add("Url", requestInfo.GetFullPath(true, true, true));
 
@@ -108,7 +108,7 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
         if (!ShouldHandle(ev))
             return null;
 
-        var error = ev.GetSimpleError(_serializer);
+        var error = ev.GetSimpleError(_serializer, _logger);
         if (error is null)
             return null;
 
@@ -126,7 +126,7 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
         if (isCritical)
             notificationType = String.Concat("critical ", notificationType);
 
-        var attachment = new SlackMessage.SlackAttachment(ev, _serializer)
+        var attachment = new SlackMessage.SlackAttachment(ev, _serializer, _logger)
         {
             Color = "#BB423F",
             Fields =
