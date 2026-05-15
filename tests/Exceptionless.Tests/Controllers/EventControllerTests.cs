@@ -99,11 +99,11 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("test", ev.Message);
         Assert.Equal("TestReferenceId", ev.ReferenceId);
 
-        var identity = ev.GetUserIdentity(serializer);
+        var identity = ev.GetUserIdentity(serializer, _logger);
         Assert.NotNull(identity);
         Assert.Equal("Test user", identity.Identity);
         Assert.Null(identity.Name);
-        Assert.Null(ev.GetUserDescription(serializer));
+        Assert.Null(ev.GetUserDescription(serializer, _logger));
 
         // post description
         await _eventUserDescriptionQueue.DeleteQueueAsync();
@@ -129,13 +129,13 @@ public class EventControllerTests : IntegrationTestsBase
 
         ev = await _eventRepository.GetByIdAsync(ev.Id);
         Assert.NotNull(ev);
-        identity = ev.GetUserIdentity(serializer);
+        identity = ev.GetUserIdentity(serializer, _logger);
         Assert.NotNull(identity);
         Assert.Equal("Test user", identity.Identity);
         Assert.Null(identity.Name);
         Assert.Null(identity.Name);
 
-        var description = ev.GetUserDescription(serializer);
+        var description = ev.GetUserDescription(serializer, _logger);
         Assert.NotNull(description);
         Assert.Equal("Test Description", description.Description);
         Assert.Equal(TestConstants.UserEmail, description.EmailAddress);
@@ -257,7 +257,7 @@ public class EventControllerTests : IntegrationTestsBase
         var ev = events.Documents.Single(e => String.Equals(e.Type, Event.KnownTypes.Log));
         Assert.Equal("test", ev.Message);
 
-        var userInfo = ev.GetUserIdentity(serializer);
+        var userInfo = ev.GetUserIdentity(serializer, _logger);
         Assert.NotNull(userInfo);
         Assert.Equal("Test user", userInfo.Identity);
         Assert.Null(userInfo.Name);
@@ -1748,7 +1748,7 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("Error with mixed data", ev.Message);
 
         // Verify known data is properly deserialized
-        var userInfo = ev.GetUserIdentity(serializer);
+        var userInfo = ev.GetUserIdentity(serializer, _logger);
         Assert.NotNull(userInfo);
         Assert.Equal("user@example.com", userInfo.Identity);
         Assert.Equal("Test User", userInfo.Name);

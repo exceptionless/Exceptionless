@@ -224,19 +224,19 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         var results = await _eventRepository.GetAllAsync(o => o.PageLimit(15));
         Assert.Equal(9, results.Total);
         Assert.Equal(2, results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct().Count());
-        Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd() && e.GetUserIdentity(_serializer)?.Identity == "blake@exceptionless.io"));
-        Assert.Single(results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId()) && e.GetUserIdentity(_serializer)?.Identity == "eric@exceptionless.io").Select(e => e.GetSessionId()).Distinct());
+        Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd() && e.GetUserIdentity(_serializer, _logger)?.Identity == "blake@exceptionless.io"));
+        Assert.Single(results.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId()) && e.GetUserIdentity(_serializer, _logger)?.Identity == "eric@exceptionless.io").Select(e => e.GetSessionId()).Distinct());
         Assert.Equal(1, results.Documents.Count(e => String.IsNullOrEmpty(e.GetSessionId())));
         Assert.Equal(1, results.Documents.Count(e => e.IsSessionEnd()));
 
         var sessionStarts = results.Documents.Where(e => e.IsSessionStart()).ToList();
         Assert.Equal(2, sessionStarts.Count);
 
-        var firstUserSessionStartEvents = sessionStarts.Single(e => e.GetUserIdentity(_serializer)?.Identity == "blake@exceptionless.io");
+        var firstUserSessionStartEvents = sessionStarts.Single(e => e.GetUserIdentity(_serializer, _logger)?.Identity == "blake@exceptionless.io");
         Assert.Equal((decimal)(lastEventDate - firstEventDate).TotalSeconds, firstUserSessionStartEvents.Value);
         Assert.True(firstUserSessionStartEvents.HasSessionEndTime());
 
-        var secondUserSessionStartEvents = sessionStarts.Single(e => e.GetUserIdentity(_serializer)?.Identity == "eric@exceptionless.io");
+        var secondUserSessionStartEvents = sessionStarts.Single(e => e.GetUserIdentity(_serializer, _logger)?.Identity == "eric@exceptionless.io");
         Assert.Equal((decimal)(lastEventDate - firstEventDate).TotalSeconds, secondUserSessionStartEvents.Value);
         Assert.False(secondUserSessionStartEvents.HasSessionEndTime());
     }
@@ -903,10 +903,10 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         var context = contexts.Single();
         Assert.False(context.HasError);
 
-        var requestInfo = context.Event.GetRequestInfo(_serializer);
-        var environmentInfo = context.Event.GetEnvironmentInfo(_serializer);
-        var userInfo = context.Event.GetUserIdentity(_serializer);
-        var userDescription = context.Event.GetUserDescription(_serializer);
+        var requestInfo = context.Event.GetRequestInfo(_serializer, _logger);
+        var environmentInfo = context.Event.GetEnvironmentInfo(_serializer, _logger);
+        var userInfo = context.Event.GetUserIdentity(_serializer, _logger);
+        var userDescription = context.Event.GetUserDescription(_serializer, _logger);
 
         Assert.Equal("/test", requestInfo?.Path);
         Assert.Equal("Windows", environmentInfo?.OSName);
@@ -1177,7 +1177,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     ev.Data.Remove(key);
 
                 ev.Data.Remove(Event.KnownDataKeys.UserDescription);
-                var identity = ev.GetUserIdentity(_serializer);
+                var identity = ev.GetUserIdentity(_serializer, _logger);
                 if (identity?.Identity is not null)
                 {
                     if (!mappedUsers.ContainsKey(identity.Identity))
@@ -1186,7 +1186,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     ev.SetUserIdentity(mappedUsers[identity.Identity]);
                 }
 
-                var request = ev.GetRequestInfo(_serializer);
+                var request = ev.GetRequestInfo(_serializer, _logger);
                 if (request is not null)
                 {
                     request.Cookies?.Clear();
@@ -1206,7 +1206,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     }
                 }
 
-                InnerError? error = ev.GetError(_serializer);
+                InnerError? error = ev.GetError(_serializer, _logger);
                 while (error is not null)
                 {
                     error.Message = RandomData.GetSentence();
@@ -1216,7 +1216,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
                     error = error.Inner;
                 }
 
-                var environment = ev.GetEnvironmentInfo(_serializer);
+                var environment = ev.GetEnvironmentInfo(_serializer, _logger);
                 environment?.Data?.Clear();
             }
 
@@ -1326,7 +1326,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.NotNull(stored);
 
         // Assert - @target should have computed strings, not raw Method object
-        var error = stored.GetError(_serializer);
+        var error = stored.GetError(_serializer, _logger);
         Assert.NotNull(error);
 
         var targetInfo = error.Data?.GetValue<SettingsDictionary>(Error.KnownDataKeys.TargetInfo, _serializer);
@@ -1368,7 +1368,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.NotNull(stored);
 
         // Assert - @target should exist with ExceptionType from SimpleErrorPlugin
-        var error = stored.GetSimpleError(_serializer);
+        var error = stored.GetSimpleError(_serializer, _logger);
         Assert.NotNull(error);
 
         var targetInfo = error.Data?.GetValue<SettingsDictionary>(Error.KnownDataKeys.TargetInfo, _serializer);
