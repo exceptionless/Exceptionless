@@ -234,7 +234,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
         events.ForEach(e =>
         {
-            var ri = e.GetRequestInfo(_serializer);
+            var ri = e.GetRequestInfo(_serializer, _logger);
             Assert.NotNull(ri);
             Assert.Equal(_clientIpAddress, ri.ClientIpAddress);
         });
