@@ -131,7 +131,11 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
             if (_preferInt64)
                 return reader.GetDouble();
 
-            return reader.GetDecimal();
+            // decimal has limited range (~±7.9×10²⁸); fall back to double for values like 1e100
+            if (reader.TryGetDecimal(out decimal d))
+                return d;
+
+            return reader.GetDouble();
         }
 
         // No decimal point - this is an integer
