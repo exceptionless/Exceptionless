@@ -229,7 +229,7 @@ public static class DataDictionaryExtensions
             return;
         }
 
-        // Typed model: rename keys to their snake_case form when they match a property
+        // Typed model: rename keys to their serialized form when they match a property
         // (case-insensitively, after snake-casing). Recurse into typed property values.
         Dictionary<string, PropertyInfo> properties = GetPropertyMap(targetType);
         var renames = new List<(string oldKey, string newKey)>();
@@ -240,9 +240,13 @@ public static class DataDictionaryExtensions
             string snakeKey = JsonNamingPolicy.SnakeCaseLower.ConvertName(kvp.Key);
             if (!properties.TryGetValue(snakeKey, out PropertyInfo? prop))
                 continue;
-            if (!string.Equals(kvp.Key, snakeKey, StringComparison.Ordinal))
-                renames.Add((kvp.Key, snakeKey));
-            recurses.Add((snakeKey, prop.PropertyType));
+            // Use the [JsonPropertyName] attribute value if present; otherwise the snake_case form.
+            // This ensures "OSName" → "o_s_name" (from attribute) not "os_name" (from SnakeCaseLower).
+            string serializedName = prop.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name
+                ?? JsonNamingPolicy.SnakeCaseLower.ConvertName(prop.Name);
+            if (!string.Equals(kvp.Key, serializedName, StringComparison.Ordinal))
+                renames.Add((kvp.Key, serializedName));
+            recurses.Add((serializedName, prop.PropertyType));
         }
 
         foreach ((string oldKey, string newKey) in renames)
@@ -270,9 +274,16 @@ public static class DataDictionaryExtensions
                     continue;
                 if (prop.GetCustomAttribute<JsonIgnoreAttribute>() is { Condition: JsonIgnoreCondition.Always })
                     continue;
-                string name = prop.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name ?? prop.Name;
-                string snakeName = JsonNamingPolicy.SnakeCaseLower.ConvertName(name);
-                map[snakeName] = prop;
+                string? attrName = prop.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name;
+                string propSnakeName = JsonNamingPolicy.SnakeCaseLower.ConvertName(prop.Name);
+                // Always map the SnakeCaseLower form of the C# name (e.g., "OSName" → "os_name")
+                map[propSnakeName] = prop;
+                // Also map the explicit [JsonPropertyName] form if different (e.g., "o_s_name")
+                if (attrName is not null)
+                {
+                    string attrSnakeName = JsonNamingPolicy.SnakeCaseLower.ConvertName(attrName);
+                    map.TryAdd(attrSnakeName, prop);
+                }
             }
             return map;
         });
