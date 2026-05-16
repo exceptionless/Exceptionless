@@ -131,6 +131,22 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
     }
 
     [Fact]
+    public void Read_ScientificNotationOutsideDecimalRange_ReturnsDouble()
+    {
+        // Arrange
+        /* language=json */
+        const string json = """{"value": 1e100}""";
+
+        // Act
+        var result = _serializer.Deserialize<Dictionary<string, object?>>(json);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.IsType<double>(result["value"]);
+        Assert.Equal(1e100d, (double)result["value"]!);
+    }
+
+    [Fact]
     public void Read_PlainString_ReturnsString()
     {
         // Arrange
