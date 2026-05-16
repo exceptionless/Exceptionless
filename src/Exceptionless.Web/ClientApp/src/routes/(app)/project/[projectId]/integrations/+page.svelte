@@ -3,10 +3,10 @@
     import type { NewWebhook, Webhook } from '$features/webhooks/models';
 
     import { page } from '$app/state';
+    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import SlackIcon from '$comp/icons/SlackIcon.svelte';
-    import { H3, H4, Muted } from '$comp/typography';
+    import { H4, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
-    import { Separator } from '$comp/ui/separator';
     import { env } from '$env/dynamic/public';
     import { slackOAuthLogin } from '$features/auth/index.svelte';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing';
@@ -177,12 +177,6 @@
 </script>
 
 <div class="space-y-6">
-    <div>
-        <H3>Integrations</H3>
-        <Muted>Create and manage API keys for authenticating your applications with Exceptionless.</Muted>
-    </div>
-    <Separator />
-
     <section class="space-y-2">
         <H4>Zapier</H4>
         <Muted
@@ -212,19 +206,21 @@
     {/if}
 
     <section class="space-y-2">
-        <div class="flex items-start justify-between">
-            <div>
-                <H4>Webhooks</H4>
-                <Muted>The following web hooks will be called for this project.</Muted>
-            </div>
-
-            <Button size="icon" onclick={() => (showAddWebhookDialog = true)} title="Add Webhook" class="shrink-0">
-                <Plus class="size-4" aria-hidden="true" />
-                <span class="sr-only">Add Webhook</span>
-            </Button>
+        <div>
+            <H4>Webhooks</H4>
+            <Muted>The following web hooks will be called for this project</Muted>
         </div>
 
-        <WebhooksDataTable bind:limit={webhooksQueryParameters.limit!} isLoading={webhooksQuery.isLoading} {table} />
+        <WebhooksDataTable bind:limit={webhooksQueryParameters.limit!} isLoading={webhooksQuery.isLoading} {table}>
+            {#snippet toolbarChildren()}
+                <div class="flex-1"></div>
+                <DataTableViewOptions size="icon-lg" {table} />
+                <Button size="icon-lg" onclick={() => (showAddWebhookDialog = true)} title="Add Webhook">
+                    <Plus class="size-4" aria-hidden="true" />
+                    <span class="sr-only">Add Webhook</span>
+                </Button>
+            {/snippet}
+        </WebhooksDataTable>
     </section>
 </div>
 

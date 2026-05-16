@@ -1,8 +1,7 @@
 <script lang="ts">
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
-    import { H3, Muted } from '$comp/typography';
-    import { Separator } from '$comp/ui/separator';
+    import { Muted } from '$comp/typography';
     import { Skeleton } from '$comp/ui/skeleton';
     import { Switch } from '$comp/ui/switch';
     import { getOrganizationQuery, removeOrganizationFeature, setOrganizationFeature } from '$features/organizations/api.svelte';
@@ -74,11 +73,7 @@
     <ErrorMessage message="You do not have permission to manage features." />
 {:else}
     <div class="space-y-6">
-        <div>
-            <H3>Features</H3>
-            <Muted>Enable or disable features for this organization.</Muted>
-        </div>
-        <Separator />
+        <Muted>Enable or disable features for this organization</Muted>
 
         <div class="space-y-3">
             {#if organizationQuery.isLoading}
