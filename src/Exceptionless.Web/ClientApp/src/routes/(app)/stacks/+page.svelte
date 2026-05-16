@@ -6,6 +6,7 @@
     import type { Stack } from '$features/stacks/models';
     import { organization } from '$features/organizations/context.svelte';
     import StackStatusBadge from '$features/stacks/components/stack-status-badge.svelte';
+    import StacksBulkActionsButton from '$features/stacks/components/stacks-bulk-actions-button.svelte';
     import { queryParamsState } from 'kit-query-params';
     import { watch } from 'runed';
 
@@ -196,12 +197,7 @@
                 {selectedIds.length} stack{selectedIds.length === 1 ? '' : 's'} selected
             </span>
             <div class="flex gap-2">
-                <button
-                    class="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                    title="Bulk actions toolbar (coming soon)"
-                >
-                    Actions
-                </button>
+                <StacksBulkActionsButton {selectedIds} onActionsComplete={() => (selectedIds = [])} />
                 <button
                     class="px-3 py-2 text-sm border border-blue-300 rounded hover:bg-blue-100 transition-colors"
                     onclick={() => selectedIds = []}
