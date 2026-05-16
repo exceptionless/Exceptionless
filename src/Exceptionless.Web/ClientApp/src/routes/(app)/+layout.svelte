@@ -231,8 +231,10 @@
     });
     const intercomOrganization = $derived(shouldFetchIntercomOrganization ? currentOrganizationQuery.data : undefined);
 
-    // Simple organization selection - pick first available if none selected
+    // Keep selected organization synchronized with current memberships.
     $effect(() => {
+        void page.url.pathname;
+
         if (!organizationsQuery.isSuccess) {
             return;
         }
@@ -243,14 +245,17 @@
 
             // Redirect non-admins to add organization page
             if (!isGlobalAdmin && !organizationsQuery.isLoading) {
-                goto(resolve(`/(app)/organization/add`));
+                const addOrganizationPath = resolve('/(app)/organization/add');
+                if (page.url.pathname !== addOrganizationPath) {
+                    goto(addOrganizationPath);
+                }
             }
 
             return;
         }
 
-        // Select first organization if none selected
-        if (!organization.current) {
+        const hasSelectedOrganization = !!organization.current && organizations.some((organizationItem) => organizationItem.id === organization.current);
+        if (!hasSelectedOrganization) {
             organization.current = organizations[0]!.id;
         }
     });
