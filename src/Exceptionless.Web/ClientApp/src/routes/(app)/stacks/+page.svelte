@@ -1,4 +1,6 @@
 <script lang="ts">
+    import type { Stack } from '$features/stacks/models';
+
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
     import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
@@ -20,9 +22,8 @@
     import { organization } from '$features/organizations/context.svelte';
     import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
-    import StacksDataTable from '$features/stacks/components/table/stacks-data-table.svelte';
     import { getColumns } from '$features/stacks/components/table/options.svelte';
-    import type { Stack } from '$features/stacks/models';
+    import StacksDataTable from '$features/stacks/components/table/stacks-data-table.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, useFetchClientStatus } from '$shared/api/api.svelte';
     import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';

@@ -10,7 +10,7 @@
 
 {#if tags && tags.length > 0}
     <div class="flex flex-wrap gap-1">
-        {#each tags.slice(0, 3) as tag}
+        {#each tags.slice(0, 3) as tag (tag)}
             <Badge variant="outline" class="text-xs">{tag}</Badge>
         {/each}
         {#if tags.length > 3}
