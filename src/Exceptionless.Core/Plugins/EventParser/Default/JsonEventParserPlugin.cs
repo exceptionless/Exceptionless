@@ -1,19 +1,19 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Plugins.EventParser;
 
 [Priority(0)]
 public class JsonEventParserPlugin : PluginBase, IEventParserPlugin
 {
-    private readonly JsonSerializerSettings _settings;
+    private readonly JsonSerializerOptions _jsonOptions;
 
-    public JsonEventParserPlugin(AppOptions options, JsonSerializerSettings settings, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    public JsonEventParserPlugin(AppOptions options, JsonSerializerOptions jsonOptions, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
-        _settings = settings;
+        _jsonOptions = jsonOptions;
     }
 
     public List<PersistentEvent>? ParseEvents(string input, int apiVersion, string? userAgent)
@@ -26,15 +26,30 @@ public class JsonEventParserPlugin : PluginBase, IEventParserPlugin
         {
             case JsonType.Object:
             {
-                if (input.TryFromJson(out PersistentEvent? ev, _settings) && ev is not null)
-                    events.Add(ev);
+                try
+                {
+                    var ev = JsonSerializer.Deserialize<PersistentEvent>(input, _jsonOptions);
+                    if (ev is not null)
+                        events.Add(ev);
+                }
+                catch (JsonException)
+                {
+                    // Invalid JSON - ignore
+                }
                 break;
             }
             case JsonType.Array:
             {
-                if (input.TryFromJson(out PersistentEvent[]? parsedEvents, _settings) && parsedEvents is { Length: > 0 })
-                    events.AddRange(parsedEvents);
-
+                try
+                {
+                    var parsedEvents = JsonSerializer.Deserialize<PersistentEvent[]>(input, _jsonOptions);
+                    if (parsedEvents is { Length: > 0 })
+                        events.AddRange(parsedEvents);
+                }
+                catch (JsonException)
+                {
+                    // Invalid JSON - ignore
+                }
                 break;
             }
         }

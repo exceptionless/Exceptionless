@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Security.Claims;
+using System.Text.Json;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -58,7 +59,7 @@ public class Startup
         services.AddControllers(o =>
         {
             o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
-            o.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider(LowerCaseUnderscoreNamingPolicy.Instance));
+            o.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider(JsonNamingPolicy.SnakeCaseLower));
             o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
         })
         .AddJsonOptions(o =>

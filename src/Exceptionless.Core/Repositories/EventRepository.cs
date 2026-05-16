@@ -1,11 +1,11 @@
-﻿using Exceptionless.Core.Models;
+﻿using Elastic.Clients.Elasticsearch.QueryDsl;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Validation;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Nest;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -33,11 +33,14 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 
     public Task<FindResults<PersistentEvent>> GetOpenSessionsAsync(DateTime createdBeforeUtc, CommandOptionsDescriptor<PersistentEvent>? options = null)
     {
-        var filter = Query<PersistentEvent>.Term(e => e.Type, Event.KnownTypes.Session) && !Query<PersistentEvent>.Exists(f => f.Field(e => e.Idx![Event.KnownDataKeys.SessionEnd + "-d"]));
-        if (createdBeforeUtc.Ticks > 0)
-            filter &= Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThanOrEquals(createdBeforeUtc));
+        var query = new RepositoryQuery<PersistentEvent>()
+            .FieldEquals(e => e.Type, Event.KnownTypes.Session)
+            .ElasticFilter(new BoolQuery { MustNot = [new ExistsQuery { Field = $"idx.{Event.KnownDataKeys.SessionEnd}-d" }] });
 
-        return FindAsync(q => q.ElasticFilter(filter).SortDescending(e => e.Date), options);
+        if (createdBeforeUtc.Ticks > 0)
+            query = query.DateRange(null, createdBeforeUtc, (PersistentEvent e) => e.Date); // No lower bound, upper bound is exclusive
+
+        return FindAsync(q => query.SortDescending(e => e.Date), options);
     }
 
     /// <summary>
@@ -64,9 +67,9 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         if (utcStart.HasValue && utcEnd.HasValue)
             query = query.DateRange(utcStart, utcEnd, InferField(e => e.Date)).Index(utcStart, utcEnd);
         else if (utcEnd.HasValue)
-            query = query.ElasticFilter(Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).LessThan(utcEnd)));
+            query = query.DateRange(null, utcEnd, (PersistentEvent e) => e.Date);
         else if (utcStart.HasValue)
-            query = query.ElasticFilter(Query<PersistentEvent>.DateRange(r => r.Field(e => e.Date).GreaterThan(utcStart)));
+            query = query.DateRange(utcStart, null, (PersistentEvent e) => e.Date);
 
         if (!String.IsNullOrEmpty(clientIpAddress))
             query = query.FieldEquals(EventIndex.Alias.IpAddress, clientIpAddress);
@@ -76,8 +79,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 
     public Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId)
     {
-        var filter = Query<PersistentEvent>.Term(e => e.ReferenceId, referenceId);
-        return FindAsync(q => q.Project(projectId).ElasticFilter(filter).SortDescending(e => e.Date), o => o.PageLimit(10));
+        return FindAsync(q => q.Project(projectId).FieldEquals(e => e.ReferenceId, referenceId).SortDescending(e => e.Date), o => o.PageLimit(10));
     }
 
     public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter? systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)
@@ -113,8 +115,8 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
             .SortDescending(e => e.Date)
             .Include(e => e.Id, e => e.Date)
             .AppFilter(systemFilter)
-            .ElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
-            .FilterExpression(String.Concat(EventIndex.Alias.StackId, ":", ev.StackId))
+            .Stack(ev.StackId)
+            .ExcludedId(ev.Id)
             .EnforceEventStackFilter(false), o => o.PageLimit(10));
 
         if (results.Total == 0)
@@ -153,8 +155,8 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
             .SortAscending(e => e.Date)
             .Include(e => e.Id, e => e.Date)
             .AppFilter(systemFilter)
-            .ElasticFilter(!Query<PersistentEvent>.Ids(ids => ids.Values(ev.Id)))
-            .FilterExpression(String.Concat(EventIndex.Alias.StackId, ":", ev.StackId))
+            .Stack(ev.StackId)
+            .ExcludedId(ev.Id)
             .EnforceEventStackFilter(false), o => o.PageLimit(10));
 
         if (results.Total == 0)

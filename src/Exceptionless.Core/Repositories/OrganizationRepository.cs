@@ -6,7 +6,6 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Nest;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -33,8 +32,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
     {
         ArgumentException.ThrowIfNullOrEmpty(token);
 
-        var filter = Query<Organization>.Term(f => f.Field(o => o.Invites.First().Token).Value(token));
-        var hit = await FindOneAsync(q => q.ElasticFilter(filter));
+        var hit = await FindOneAsync(q => q.FieldEquals(o => o.Invites.First().Token, token));
         return hit?.Document;
     }
 
@@ -42,41 +40,45 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
     {
         ArgumentException.ThrowIfNullOrEmpty(customerId);
 
-        var filter = Query<Organization>.Term(f => f.Field(o => o.StripeCustomerId).Value(customerId));
-        var hit = await FindOneAsync(q => q.ElasticFilter(filter));
+        var hit = await FindOneAsync(q => q.FieldEquals(o => o.StripeCustomerId, customerId));
         return hit?.Document;
     }
 
     public Task<FindResults<Organization>> GetByCriteriaAsync(string? criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null)
     {
-        var filter = Query<Organization>.MatchAll();
+        var query = new RepositoryQuery<Organization>();
+
         if (!String.IsNullOrWhiteSpace(criteria))
-            filter &= (Query<Organization>.Term(o => o.Id, criteria) || Query<Organization>.Term(o => o.Name, criteria));
+            query.FieldOr(g => g
+                .FieldEquals(o => o.Id, criteria)
+                .FieldEquals(o => o.Name, criteria));
 
         if (paid.HasValue)
         {
             if (paid.Value)
-                filter &= !Query<Organization>.Term(o => o.PlanId, _plans.FreePlan.Id);
+                query.FieldNotEquals(o => o.PlanId, _plans.FreePlan.Id);
             else
-                filter &= Query<Organization>.Term(o => o.PlanId, _plans.FreePlan.Id);
+                query.FieldEquals(o => o.PlanId, _plans.FreePlan.Id);
         }
 
         if (suspended.HasValue)
         {
             if (suspended.Value)
-                filter &= (!Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) &&
-                        !Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) &&
-                        !Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Canceled)
-                    ) || Query<Organization>.Term(o => o.IsSuspended, true);
+                query.FieldOr(g => g
+                    .FieldNot(n => n
+                        .FieldEquals(o => o.BillingStatus, (int)BillingStatus.Active)
+                        .FieldEquals(o => o.BillingStatus, (int)BillingStatus.Trialing)
+                        .FieldEquals(o => o.BillingStatus, (int)BillingStatus.Canceled))
+                    .FieldEquals(o => o.IsSuspended, true));
             else
-                filter &= (
-                        Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) &&
-                        Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) &&
-                        Query<Organization>.Term(o => o.BillingStatus, BillingStatus.Canceled)
-                    ) || Query<Organization>.Term(o => o.IsSuspended, false);
+                query.FieldAnd(g => g
+                    .FieldOr(o => o
+                        .FieldEquals(o => o.BillingStatus, (int)BillingStatus.Active)
+                        .FieldEquals(o => o.BillingStatus, (int)BillingStatus.Trialing)
+                        .FieldEquals(o => o.BillingStatus, (int)BillingStatus.Canceled))
+                    .FieldEquals(o => o.IsSuspended, false));
         }
 
-        var query = new RepositoryQuery<Organization>().ElasticFilter(filter);
         switch (sortBy)
         {
             case OrganizationSortBy.Newest:
@@ -89,7 +91,7 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
             //    query.WithSortDescending((Organization o) => o.TotalEventCount);
             //    break;
             default:
-                query.SortAscending(o => o.Name.Suffix("keyword"));
+                query.SortAscending((Organization o) => o.Name);
                 break;
         }
 

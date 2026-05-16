@@ -1,12 +1,15 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Serialization;
 using MiniValidation;
 
 namespace Exceptionless.Core.Models;
 
 [DebuggerDisplay("Type: {Type}, Date: {Date}, Message: {Message}, Value: {Value}, Count: {Count}")]
-public class Event : IData
+public class Event : IData, IJsonOnDeserialized
 {
     /// <summary>
     /// The event type (ie. error, log message, feature usage). Check <see cref="KnownTypes">Event.KnownTypes</see> for standard event types.
@@ -60,9 +63,43 @@ public class Event : IData
     public DataDictionary? Data { get; set; } = new();
 
     /// <summary>
+    /// Captures unknown JSON properties during deserialization.
+    /// These are merged into <see cref="Data"/> after deserialization.
+    /// Known data keys like "@error", "@request", "@environment" may appear at root level.
+    /// </summary>
+    [JsonExtensionData]
+    [JsonInclude]
+    internal Dictionary<string, JsonElement>? ExtensionData { get; set; }
+
+    /// <summary>
     /// An optional identifier to be used for referencing this event instance at a later time.
     /// </summary>
     public string? ReferenceId { get; set; }
+
+    /// <summary>
+    /// Called after JSON deserialization to merge extension data into the Data dictionary.
+    /// This handles the case where known data keys like "@error", "@request", "@environment"
+    /// appear at the JSON root level instead of nested under "data".
+    /// </summary>
+    /// <remarks>
+    /// Uses TryAdd semantics: if a key already exists in Data (from an explicit "data" property
+    /// in the JSON), the extension data value is NOT merged — the explicit value takes precedence.
+    /// This matches the old Newtonsoft DataObjectConverter behavior where duplicate keys were
+    /// preserved under modified names rather than overwritten.
+    /// </remarks>
+    void IJsonOnDeserialized.OnDeserialized()
+    {
+        if (ExtensionData is null or { Count: 0 })
+            return;
+
+        Data ??= new DataDictionary();
+        foreach (var kvp in ExtensionData)
+        {
+            // Don't overwrite values already in Data (e.g., from explicit "data" JSON property).
+            Data.TryAdd(kvp.Key, ObjectToInferredTypesConverter.ConvertJsonElement(kvp.Value));
+        }
+        ExtensionData = null;
+    }
 
     protected bool Equals(Event other)
     {

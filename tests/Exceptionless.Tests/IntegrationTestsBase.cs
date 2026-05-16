@@ -1,4 +1,6 @@
 using System.Text.Json;
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
@@ -23,7 +25,6 @@ using Foundatio.Storage;
 using Foundatio.Utility;
 using Foundatio.Xunit;
 using Microsoft.AspNetCore.TestHost;
-using Nest;
 using Xunit;
 using HttpMethod = System.Net.Http.HttpMethod;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;

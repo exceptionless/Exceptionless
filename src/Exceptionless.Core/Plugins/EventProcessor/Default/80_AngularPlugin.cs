@@ -1,7 +1,7 @@
-﻿using System.Text.Json;
-using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventProcessor;
@@ -9,11 +9,11 @@ namespace Exceptionless.Core.Plugins.EventProcessor;
 [Priority(80)]
 public sealed class AngularPlugin : EventProcessorPluginBase
 {
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly ITextSerializer _serializer;
 
-    public AngularPlugin(JsonSerializerOptions jsonOptions, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    public AngularPlugin(ITextSerializer serializer, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
-        _jsonOptions = jsonOptions;
+        _serializer = serializer;
     }
 
     public override Task EventProcessingAsync(EventContext context)
@@ -21,7 +21,7 @@ public sealed class AngularPlugin : EventProcessorPluginBase
         if (!context.Event.IsError())
             return Task.CompletedTask;
 
-        var error = context.Event.GetError(_jsonOptions);
+        var error = context.Event.GetError(_serializer, _logger);
         if (error is null)
             return Task.CompletedTask;
 
@@ -43,6 +43,9 @@ public sealed class AngularPlugin : EventProcessorPluginBase
             context.StackSignatureData.Add("Source", "unhandledRejection");
 
             error.SetTargetInfo(new SettingsDictionary(context.StackSignatureData));
+
+            // Write the mutated error back so @target persists (see ErrorPlugin for rationale).
+            context.Event.Data![Event.KnownDataKeys.Error] = error;
         }
 
         return Task.CompletedTask;

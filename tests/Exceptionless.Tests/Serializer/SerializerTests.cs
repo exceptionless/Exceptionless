@@ -2,11 +2,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Services;
-using Exceptionless.Serializer;
-using Foundatio.Repositories.Extensions;
 using Foundatio.Serializer;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Exceptionless.Tests.Serializer;
@@ -21,36 +17,54 @@ public class SerializerTests : TestWithServices
     }
 
     [Fact]
+    public void Deserialize_EventWithData_PreservesDataValues()
+    {
+        // Arrange
+        /* language=json */
+        const string json = """{"message":"Hello","data":{"Blah":"SomeVal"}}""";
+
+        // Act
+        var ev = _serializer.Deserialize<Event>(json);
+
+        // Assert
+        Assert.NotNull(ev);
+        Assert.NotNull(ev.Data);
+        Assert.Single(ev.Data);
+        Assert.Equal("Hello", ev.Message);
+        Assert.Equal("SomeVal", ev.Data["Blah"]);
+    }
+
+    [Fact]
     public void CanDeserializeEventWithUnknownNamesAndProperties()
     {
-        const string json = @"{""tags"":[""One"",""Two""],""reference_id"":""12"",""Message"":""Hello"",""SomeString"":""Hi"",""SomeBool"":false,""SomeNum"":1,""UnknownProp"":{""Blah"":""SomeVal""},""Some"":{""Blah"":""SomeVal""},""@error"":{""Message"":""SomeVal"",""SomeProp"":""SomeVal""},""Some2"":""{\""Blah\"":\""SomeVal\""}"",""UnknownSerializedProp"":""{\""Blah\"":\""SomeVal\""}""}";
-        var settings = new JsonSerializerSettings();
-        var knownDataTypes = new Dictionary<string, Type>
-        {
-            { "Some", typeof(SomeModel) },
-            { "Some2", typeof(SomeModel) },
-            { Event.KnownDataKeys.Error, typeof(Error) }
-        };
-        settings.Converters.Add(new DataObjectConverter<Event>(_logger, knownDataTypes));
-        settings.Converters.Add(new DataObjectConverter<Error>(_logger));
+        // Arrange - unknown root properties go through [JsonExtensionData] → ObjectToInferredTypesConverter.
+        // The converter recursively converts all JSON values to native .NET types:
+        // strings, bools, int/long, nested objects → Dictionary<string, object?>, arrays → List<object?>.
+        /* language=json */
+        const string json = """{"tags":["One","Two"],"reference_id":"12","message":"Hello","SomeString":"Hi","SomeBool":false,"SomeNum":1,"UnknownProp":{"Blah":"SomeVal"},"UnknownSerializedProp":"{\"Blah\":\"SomeVal\"}"}""";
 
-        var ev = json.FromJson<Event>(settings);
-        Assert.NotNull(ev?.Data);
+        // Act
+        var ev = _serializer.Deserialize<Event>(json);
 
-        Assert.Equal(8, ev.Data.Count);
-        Assert.Equal("Hi", ev.Data.GetString("SomeString"));
-        Assert.False(ev.Data!.GetBoolean("SomeBool"));
-        Assert.Equal(1L, ev.Data["SomeNum"]);
-        Assert.Equal(typeof(JObject), ev.Data["UnknownProp"]?.GetType());
-        Assert.Equal(typeof(JObject), ev.Data["UnknownSerializedProp"]?.GetType());
-        Assert.Equal("SomeVal", (string)((dynamic)ev.Data["UnknownProp"]!)?.Blah!);
-        Assert.Equal(typeof(SomeModel), ev.Data["Some"]?.GetType());
-        Assert.Equal(typeof(SomeModel), ev.Data["Some2"]?.GetType());
-        Assert.Equal("SomeVal", (ev.Data["Some"] as SomeModel)?.Blah);
-        Assert.Equal(typeof(Error), ev.Data[Event.KnownDataKeys.Error]?.GetType());
-        Assert.Equal("SomeVal", ((Error)ev.Data[Event.KnownDataKeys.Error]!)?.Message);
-        Assert.Single(((Error)ev.Data[Event.KnownDataKeys.Error]!)?.Data!);
-        Assert.Equal("SomeVal", ((Error)ev.Data[Event.KnownDataKeys.Error]!)?.Data?["SomeProp"]);
+        // Assert — verify all properties captured correctly
+        Assert.NotNull(ev);
+        Assert.NotNull(ev.Data);
+        Assert.Equal(5, ev.Data.Count);
+
+        // Primitive types are converted by ObjectToInferredTypesConverter
+        Assert.Equal("Hi", ev.Data["SomeString"]);
+        Assert.Equal(false, ev.Data["SomeBool"]);
+        Assert.Equal(1, ev.Data["SomeNum"]);
+
+        // Unknown nested objects are recursively converted to Dictionary<string, object?>
+        Assert.IsType<Dictionary<string, object?>>(ev.Data["UnknownProp"]);
+        var unknownProp = (Dictionary<string, object?>)ev.Data["UnknownProp"]!;
+        Assert.Equal("SomeVal", unknownProp["Blah"]);
+
+        // Serialized JSON strings stay as strings
+        Assert.IsType<string>(ev.Data["UnknownSerializedProp"]);
+
+
         Assert.Equal("Hello", ev.Message);
         Assert.NotNull(ev.Tags);
         Assert.Equal(2, ev.Tags.Count);
@@ -58,55 +72,65 @@ public class SerializerTests : TestWithServices
         Assert.Contains("Two", ev.Tags);
         Assert.Equal("12", ev.ReferenceId);
 
-        const string expectedjson = @"{""Tags"":[""One"",""Two""],""Message"":""Hello"",""Data"":{""SomeString"":""Hi"",""SomeBool"":false,""SomeNum"":1,""UnknownProp"":{""Blah"":""SomeVal""},""Some"":{""Blah"":""SomeVal""},""@error"":{""Modules"":[],""Message"":""SomeVal"",""Data"":{""SomeProp"":""SomeVal""},""StackTrace"":[]},""Some2"":{""Blah"":""SomeVal""},""UnknownSerializedProp"":{""Blah"":""SomeVal""}},""ReferenceId"":""12""}";
-        string newjson = ev.ToJson(Formatting.None, new JsonSerializerSettings { DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore });
-        Assert.Equal(expectedjson, newjson);
+        // Verify round-trip preserves data
+        string roundTrippedJson = _serializer.SerializeToString(ev);
+        var roundTripped = _serializer.Deserialize<Event>(roundTrippedJson);
+        Assert.NotNull(roundTripped);
+        Assert.Equal(ev.Message, roundTripped.Message);
+        Assert.Equal(ev.ReferenceId, roundTripped.ReferenceId);
+        Assert.Equal(ev.Tags, roundTripped.Tags);
+        Assert.Equal(ev.Data.Count, roundTripped.Data?.Count);
     }
 
     [Fact]
-    public void CanDeserializeEventWithInvalidKnownDataTypes()
+    public void RoundTrip_EventWithKnownDataTypes_PreservesTypedData()
     {
-        const string json = @"{""Message"":""Hello"",""Some"":""{\""Blah\"":\""SomeVal\""}"",""@Some"":""{\""Blah\"":\""SomeVal\""}""}";
-        const string jsonWithInvalidDataType = @"{""Message"":""Hello"",""@Some"":""Testing"",""@string"":""Testing""}";
+        // Arrange - Event with known data types (error, request info)
+        var originalError = new Error
+        {
+            Message = "Something went wrong",
+            Type = "System.Exception",
+            Data = new DataDictionary { { "SomeProp", "SomeVal" } }
+        };
+        var originalRequest = new RequestInfo { HttpMethod = "GET", Path = "/api/test" };
 
-        var settings = new JsonSerializerSettings();
-        var knownDataTypes = new Dictionary<string, Type> {
-                { "Some", typeof(SomeModel) },
-                { "@Some", typeof(SomeModel) },
-                { "_@Some", typeof(SomeModel) },
-                { "@string", typeof(string) }
-            };
-        settings.Converters.Add(new DataObjectConverter<Event>(_logger, knownDataTypes));
+        var ev = new Event
+        {
+            Message = "Test error",
+            Type = Event.KnownTypes.Error,
+            Data = new DataDictionary
+            {
+                { Event.KnownDataKeys.Error, originalError },
+                { Event.KnownDataKeys.RequestInfo, originalRequest }
+            }
+        };
 
-        var ev = json.FromJson<Event>(settings);
-        Assert.NotNull(ev?.Data);
-        Assert.Equal(2, ev.Data.Count);
-        Assert.True(ev.Data.ContainsKey("Some"));
-        Assert.Equal("SomeVal", (ev.Data["Some"] as SomeModel)?.Blah);
-        Assert.True(ev.Data.ContainsKey("@Some"));
-        Assert.Equal("SomeVal", (ev.Data["@Some"] as SomeModel)?.Blah);
+        // Act
+        string json = _serializer.SerializeToString(ev);
+        var roundTripped = _serializer.Deserialize<Event>(json);
 
-        ev = jsonWithInvalidDataType.FromJson<Event>(settings);
-        Assert.NotNull(ev?.Data);
-        Assert.Equal(2, ev.Data.Count);
-        Assert.True(ev.Data.ContainsKey("_@Some1"));
-        Assert.Equal("Testing", ev.Data["_@Some1"] as string);
-        Assert.True(ev.Data.ContainsKey("@string"));
-        Assert.Equal("Testing", ev.Data["@string"] as string);
-    }
+        // Assert
+        Assert.NotNull(roundTripped);
+        Assert.Equal(ev.Message, roundTripped.Message);
+        Assert.Equal(ev.Type, roundTripped.Type);
+        Assert.NotNull(roundTripped.Data);
+        Assert.Equal(2, roundTripped.Data.Count);
+        Assert.True(roundTripped.Data.ContainsKey(Event.KnownDataKeys.Error));
+        Assert.True(roundTripped.Data.ContainsKey(Event.KnownDataKeys.RequestInfo));
 
-    [Fact]
-    public void CanDeserializeEventWithData()
-    {
-        const string json = @"{""Message"":""Hello"",""Data"":{""Blah"":""SomeVal""}}";
-        var settings = new JsonSerializerSettings();
-        settings.Converters.Add(new DataObjectConverter<Event>(_logger));
+        // Verify error data round-tripped with values intact
+        var error = roundTripped.Data.GetValue<Error>(Event.KnownDataKeys.Error, _serializer);
+        Assert.NotNull(error);
+        Assert.Equal(originalError.Message, error.Message);
+        Assert.Equal(originalError.Type, error.Type);
+        Assert.NotNull(error.Data);
+        Assert.Equal("SomeVal", error.Data["SomeProp"]);
 
-        var ev = json.FromJson<Event>(settings);
-        Assert.NotNull(ev?.Data);
-        Assert.Single(ev.Data);
-        Assert.Equal("Hello", ev.Message);
-        Assert.Equal("SomeVal", ev.Data["Blah"]);
+        // Verify request info round-tripped
+        var request = roundTripped.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo, _serializer);
+        Assert.NotNull(request);
+        Assert.Equal(originalRequest.HttpMethod, request.HttpMethod);
+        Assert.Equal(originalRequest.Path, request.Path);
     }
 
     [Fact]
@@ -132,6 +156,7 @@ public class SerializerTests : TestWithServices
     [Fact]
     public void CanDeserializeProject()
     {
+        /* language=json */
         string json = "{\"last_event_date_utc\":\"2020-10-18T20:54:04.3457274+01:00\", \"created_utc\":\"0001-01-01T00:00:00\",\"updated_utc\":\"2020-09-21T04:41:32.7458321Z\"}";
 
         var model = _serializer.Deserialize<Project>(json);
@@ -147,7 +172,7 @@ public class SerializerTests : TestWithServices
     {
         // Arrange — with IncludeFields=true, ValueTuple fields are serialized.
         // Compile-time names (OrganizationId, etc.) are erased at runtime; fields are always Item1/Item2/Item3.
-        // LowerCaseUnderscoreNamingPolicy converts Item1 → item1, Item2 → item2, Item3 → item3.
+        // SnakeCaseLower converts Item1 → item1, Item2 → item2, Item3 → item3.
         var tuple = (OrganizationId: "org1", ProjectId: "proj1", StackId: "stack1");
 
         // Act
@@ -333,9 +358,311 @@ public class SerializerTests : TestWithServices
         public string Name { get; set; } = "";
         public int Count { get; set; }
     }
-}
 
-public record SomeModel
-{
-    public required string Blah { get; set; }
+    [Fact]
+    public void SerializeToString_EnumValues_RoundtripAsIntegers()
+    {
+        // Arrange
+        var token = new Token
+        {
+            Id = "test",
+            OrganizationId = "org1",
+            ProjectId = "proj1",
+            Type = TokenType.Access,
+            CreatedBy = "user1",
+            CreatedUtc = DateTime.UtcNow,
+            UpdatedUtc = DateTime.UtcNow
+        };
+
+        // Act
+        string json = _serializer.SerializeToString(token);
+        var deserialized = _serializer.Deserialize<Token>(json);
+
+        // Assert — enums serialize as integers to match ES index mappings
+        Assert.Contains("\"type\":1", json);
+        Assert.DoesNotContain("\"type\":\"access\"", json);
+        Assert.NotNull(deserialized);
+        Assert.Equal(TokenType.Access, deserialized.Type);
+    }
+
+    [Fact]
+    public void SerializeToString_BillingStatusEnum_RoundtripAsInteger()
+    {
+        // Arrange — BillingStatus.PastDue serializes as integer 2 to match ES index mappings
+        var organization = new Organization
+        {
+            Id = "550000000000000000000001",
+            Name = "Test",
+            BillingStatus = BillingStatus.PastDue
+        };
+
+        // Act
+        string json = _serializer.SerializeToString(organization);
+        var deserialized = _serializer.Deserialize<Organization>(json);
+
+        // Assert
+        Assert.Contains("\"billing_status\":2", json);
+        Assert.NotNull(deserialized);
+        Assert.Equal(BillingStatus.PastDue, deserialized.BillingStatus);
+    }
+
+    [Fact]
+    public void Deserialize_EnumFromIntegerValue_DeserializesCorrectly()
+    {
+        // Arrange — backward compatibility: integer enum values should still deserialize
+        /* language=json */
+        const string json = """{"id":"test","organization_id":"org1","project_id":"proj1","type":1,"created_by":"user1","created_utc":"2026-01-01T00:00:00","updated_utc":"2026-01-01T00:00:00"}""";
+
+        // Act
+        var token = _serializer.Deserialize<Token>(json);
+
+        // Assert
+        Assert.NotNull(token);
+        Assert.Equal(TokenType.Access, token.Type);
+    }
+
+    [Fact]
+    public void SerializeToString_MixedTypeArrayInDataDictionary_RoundtripsCorrectly()
+    {
+        // Arrange — DataDictionary with a mixed-type list
+        var ev = new Event
+        {
+            Message = "Test",
+            Data = new DataDictionary
+            {
+                ["mixed"] = new List<object?> { 1, "hello", true, null, 1.5 }
+            }
+        };
+
+        // Act
+        string json = _serializer.SerializeToString(ev);
+        var deserialized = _serializer.Deserialize<Event>(json);
+
+        // Assert
+        Assert.NotNull(deserialized?.Data);
+        Assert.True(deserialized!.Data!.TryGetValue("mixed", out var mixedValue));
+        var list = Assert.IsAssignableFrom<IEnumerable<object?>>(mixedValue);
+        var items = list.ToList();
+        Assert.Equal(5, items.Count);
+    }
+
+    [Fact]
+    public void SerializeToString_NestedDictionaryInDataDictionary_RoundtripsCorrectly()
+    {
+        // Arrange — 3 levels deep nested dictionary
+        var ev = new Event
+        {
+            Message = "Test",
+            Data = new DataDictionary
+            {
+                ["outer"] = new Dictionary<string, object?>
+                {
+                    ["inner"] = new Dictionary<string, object?>
+                    {
+                        ["deep"] = 42
+                    }
+                }
+            }
+        };
+
+        // Act
+        string json = _serializer.SerializeToString(ev);
+        var deserialized = _serializer.Deserialize<Event>(json);
+
+        // Assert
+        Assert.NotNull(deserialized?.Data);
+        Assert.True(deserialized!.Data!.TryGetValue("outer", out var outerValue));
+        var outer = Assert.IsType<Dictionary<string, object?>>(outerValue);
+        var inner = Assert.IsType<Dictionary<string, object?>>(outer["inner"]);
+        Assert.Equal(42, inner["deep"]);
+    }
+
+    [Fact]
+    public void SerializeToString_EmptyTagsList_OmittedFromJson()
+    {
+        // Arrange — event with empty tags should not include "tags" in JSON
+        var ev = new Event
+        {
+            Message = "Test",
+            Tags = new TagSet()
+        };
+
+        // Act
+        string json = _serializer.SerializeToString(ev);
+
+        // Assert — empty collections are suppressed by EmptyCollectionModifier
+        Assert.DoesNotContain("\"tags\"", json);
+    }
+
+    [Fact]
+    public void GetValue_KnownDataKeysFromJsonExtensionData_DeserializesToTypedObjects()
+    {
+        // Arrange — @error and @request at root level go through [JsonExtensionData] → Data dictionary.
+        // ObjectToInferredTypesConverter converts nested objects to Dictionary<string, object?>.
+        // GetValue<T> must re-serialize and deserialize those dictionaries back to typed models.
+        /* language=json */
+        const string json = """{"message":"Test error","type":"error","@error":{"message":"Something went wrong","type":"System.Exception","data":{"SomeProp":"SomeVal"},"stack_trace":[]},"@request":{"http_method":"GET","path":"/api/test"}}""";
+
+        // Act
+        var ev = _serializer.Deserialize<Event>(json);
+
+        // Assert
+        Assert.NotNull(ev);
+        Assert.NotNull(ev.Data);
+        Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.Error));
+        Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.RequestInfo));
+
+        var error = ev.Data.GetValue<Error>(Event.KnownDataKeys.Error, _serializer);
+        Assert.NotNull(error);
+        Assert.Equal("Something went wrong", error.Message);
+        Assert.Equal("System.Exception", error.Type);
+        Assert.NotNull(error.Data);
+        Assert.Equal("SomeVal", error.Data["SomeProp"]);
+
+        var request = ev.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo, _serializer);
+        Assert.NotNull(request);
+        Assert.Equal("GET", request.HttpMethod);
+        Assert.Equal("/api/test", request.Path);
+    }
+
+    [Fact]
+    public void GetValue_ConflictingAtPrefixedDataKeys_PreservesAllKeys()
+    {
+        // Arrange — multiple @ prefixed keys at root level all land in Data via JsonExtensionData.
+        // Verify they coexist and can each be retrieved as the correct typed object.
+        /* language=json */
+        const string json = """{"message":"Multi-data","@error":{"message":"Err","type":"System.Exception","stack_trace":[]},"@request":{"http_method":"GET","path":"/"},"@user":{"identity":"user@test.com","name":"Test User"},"@environment":{"machine_name":"SERVER01","processor_count":4}}""";
+
+        // Act
+        var ev = _serializer.Deserialize<Event>(json);
+
+        // Assert
+        Assert.NotNull(ev);
+        Assert.NotNull(ev.Data);
+        Assert.Equal(4, ev.Data.Count);
+        Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.Error));
+        Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.RequestInfo));
+        Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.UserInfo));
+        Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.EnvironmentInfo));
+
+        var error = ev.Data.GetValue<Error>(Event.KnownDataKeys.Error, _serializer);
+        Assert.NotNull(error);
+        Assert.Equal("Err", error.Message);
+
+        var user = ev.Data.GetValue<UserInfo>(Event.KnownDataKeys.UserInfo, _serializer);
+        Assert.NotNull(user);
+        Assert.Equal("user@test.com", user.Identity);
+        Assert.Equal("Test User", user.Name);
+
+        var env = ev.Data.GetValue<EnvironmentInfo>(Event.KnownDataKeys.EnvironmentInfo, _serializer);
+        Assert.NotNull(env);
+        Assert.Equal("SERVER01", env.MachineName);
+        Assert.Equal(4, env.ProcessorCount);
+    }
+
+    [Fact]
+    public void OnDeserialized_DataAndRootLevelCollision_ExplicitDataWins()
+    {
+        // Arrange — when both root-level "@error" AND "data.@error" exist in the same JSON,
+        // the explicit "data" entry should take precedence (matching old DataObjectConverter
+        // behavior where the first-seen key won the canonical name).
+        /* language=json */
+        const string json = """{"@error":{"message":"RootError","type":"System.InvalidOperationException","stack_trace":[]},"data":{"@error":{"message":"DataError","type":"System.ArgumentException","stack_trace":[]}}}""";
+
+        // Act
+        var ev = _serializer.Deserialize<Event>(json);
+
+        // Assert — explicit Data entry should NOT be overwritten by root-level extension data
+        Assert.NotNull(ev);
+        Assert.NotNull(ev.Data);
+        Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.Error));
+
+        var error = ev.Data.GetValue<Error>(Event.KnownDataKeys.Error, _serializer);
+        Assert.NotNull(error);
+        Assert.Equal("DataError", error.Message);
+        Assert.Equal("System.ArgumentException", error.Type);
+    }
+
+    [Fact]
+    public void OnDeserialized_RootLevelOnly_CapturedInData()
+    {
+        // Arrange — root-level known data keys without explicit "data" property
+        // should be captured in Data dictionary (the common client SDK submission format).
+        /* language=json */
+        const string json = """{"type":"error","message":"Something broke","@error":{"message":"Boom","type":"System.Exception","stack_trace":[]}}""";
+
+        // Act
+        var ev = _serializer.Deserialize<Event>(json);
+
+        // Assert
+        Assert.NotNull(ev);
+        Assert.Equal("error", ev.Type);
+        Assert.Equal("Something broke", ev.Message);
+        Assert.NotNull(ev.Data);
+        Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.Error));
+
+        var error = ev.Data.GetValue<Error>(Event.KnownDataKeys.Error, _serializer);
+        Assert.NotNull(error);
+        Assert.Equal("Boom", error.Message);
+    }
+
+    [Fact]
+    public void Deserialize_SnakeCaseProperties_MatchesPascalCaseModel()
+    {
+        // CRITICAL: PropertyNameCaseInsensitive MUST be true or the frontend breaks.
+        // The frontend sends snake_case JSON (last_occurrence, stack_trace, etc.).
+        // Without case-insensitive matching, all API requests from the UI would fail.
+        //
+        // This test verifies that snake_case JSON properties correctly map to PascalCase
+        // C# properties. If this test fails, the frontend is broken.
+
+        // Arrange — snake_case JSON matching Event model properties
+        /* language=json */
+        const string json = """
+        {
+            "type": "error",
+            "message": "Test message",
+            "reference_id": "abc123",
+            "tags": ["frontend", "critical"],
+            "geo": "40.7128,-74.0060",
+            "value": 123.45
+        }
+        """;
+
+        // Act
+        var ev = _serializer.Deserialize<Event>(json);
+
+        // Assert — all snake_case properties mapped to PascalCase C# properties
+        Assert.NotNull(ev);
+        Assert.Equal("error", ev.Type);
+        Assert.Equal("Test message", ev.Message);
+        Assert.Equal("abc123", ev.ReferenceId);
+        Assert.Equal("40.7128,-74.0060", ev.Geo);
+        Assert.Equal(123.45m, ev.Value);
+        Assert.NotNull(ev.Tags);
+        Assert.Equal(2, ev.Tags.Count);
+        Assert.Contains("frontend", ev.Tags);
+        Assert.Contains("critical", ev.Tags);
+    }
+
+    [Fact]
+    public void Deserialize_MixedCaseProperties_AllMatchCorrectly()
+    {
+        // Verifies PropertyNameCaseInsensitive handles snake_case (from ES/frontend)
+        // and case variations of the policy name. PascalCase/camelCase multi-word keys
+        // do NOT match because "ReferenceId" != "reference_id" even case-insensitively.
+
+        // Arrange — snake_case and case-variant of policy name
+        /* language=json */
+        const string snakeCase = """{"reference_id":"snake"}""";
+        const string upperSnake = """{"REFERENCE_ID":"upper"}""";
+
+        // Act
+        var ev1 = _serializer.Deserialize<Event>(snakeCase);
+        var ev2 = _serializer.Deserialize<Event>(upperSnake);
+
+        // Assert — snake_case and its case variants match the SnakeCaseLower policy
+        Assert.Equal("snake", ev1?.ReferenceId);
+        Assert.Equal("upper", ev2?.ReferenceId);
+    }
 }

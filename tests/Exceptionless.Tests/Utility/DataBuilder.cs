@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+﻿using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
@@ -9,6 +9,7 @@ using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Utility;
 using Foundatio.Serializer;
 using Foundatio.Utility;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Tests.Utility;
 
@@ -36,9 +37,9 @@ public class DataBuilder
 public class EventDataBuilder
 {
     private readonly FormattingPluginManager _formattingPluginManager;
-    private readonly ISerializer _serializer;
+    private readonly ITextSerializer _serializer;
     private readonly TimeProvider _timeProvider;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly ILogger _logger;
     private readonly ICollection<Action<Stack>> _stackMutations;
     private int _additionalEventsToCreate = 0;
     private readonly PersistentEvent _event = new();
@@ -46,13 +47,13 @@ public class EventDataBuilder
     private EventDataBuilder? _stackEventBuilder;
     private bool _isFirstOccurrenceSet = false;
 
-    public EventDataBuilder(FormattingPluginManager formattingPluginManager, ISerializer serializer, JsonSerializerOptions jsonOptions, TimeProvider timeProvider)
+    public EventDataBuilder(FormattingPluginManager formattingPluginManager, ITextSerializer serializer, TimeProvider timeProvider, ILogger<EventDataBuilder> logger)
     {
         _stackMutations = new List<Action<Stack>>();
         _formattingPluginManager = formattingPluginManager;
         _serializer = serializer;
-        _jsonOptions = jsonOptions;
         _timeProvider = timeProvider;
+        _logger = logger;
     }
 
     public EventDataBuilder Mutate(Action<PersistentEvent> mutation)
@@ -536,7 +537,7 @@ public class EventDataBuilder
         if (_stack.FirstOccurrence < _event.Date)
             _event.IsFirstOccurrence = false;
 
-        var msi = _event.GetManualStackingInfo(_jsonOptions);
+        var msi = _event.GetManualStackingInfo(_serializer, _logger);
         if (msi is not null)
         {
             _stack.Title = msi.Title!;

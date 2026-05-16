@@ -59,6 +59,7 @@ Available in `.claude/agents/`. Use `@agent-name` to invoke:
 - Prefer additive documentation updates — don't replace strategic docs wholesale, extend them
 - **Backwards compatibility:** Never break existing public APIs, WebSocket message formats, config keys, or exported library interfaces without explicit user approval. Call out any breaking change as a BLOCKER in reviews.
 - **API test files:** Update `tests/http/*.http` files whenever endpoints change (new, modified, or removed).
+- **Abbreviations:** Never abbreviate `Organization` as `org` in code (variable names, parameters, method names, or comments). Always spell out `organization`.
 - **PR descriptions:** When creating a PR, fill out any existing PR template. Provide concise context: what changed, why, new APIs/features/behaviors, and any breaking changes. No essays — just enough for reviewers to understand the value and impact.
 - **App URL for QA:** `http://localhost:7110` — probe `/api/v2/about` for health check.
 - **Never test against production:** Always dogfood, QA test, and run API smoke tests against `localhost` only. Never use production URLs (e.g., `be.exceptionless.io`) in scripts, tests, or browser automation. Start the app locally via `aspire run` or the AppHost before testing.

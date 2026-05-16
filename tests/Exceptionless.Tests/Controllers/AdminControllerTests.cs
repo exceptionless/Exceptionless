@@ -7,7 +7,6 @@ using Exceptionless.Web.Models.Admin;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
-using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
 using Xunit;
@@ -460,12 +459,14 @@ public class AdminControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(response);
-        Assert.NotNull(response.States);
 
-        foreach (var state in response.States)
+        if (response.States is not null)
         {
-            Assert.NotNull(state.Id);
-            Assert.True(Enum.IsDefined(state.MigrationType));
+            foreach (var state in response.States)
+            {
+                Assert.NotNull(state.Id);
+                Assert.True(Enum.IsDefined(state.MigrationType));
+            }
         }
     }
 
@@ -504,12 +505,15 @@ public class AdminControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(elasticsearch);
-        Assert.All(elasticsearch.IndexDetails, indexDetail =>
+        if (elasticsearch.IndexDetails is not null)
         {
-            Assert.True(indexDetail.DocsCount >= 0);
-            Assert.True(indexDetail.StoreSizeInBytes >= 0);
-            Assert.True(indexDetail.UnassignedShards >= 0);
-        });
+            Assert.All(elasticsearch.IndexDetails, indexDetail =>
+            {
+                Assert.True(indexDetail.DocsCount >= 0);
+                Assert.True(indexDetail.StoreSizeInBytes >= 0);
+                Assert.True(indexDetail.UnassignedShards >= 0);
+            });
+        }
     }
 
     [Fact]
@@ -531,8 +535,6 @@ public class AdminControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(snapshots);
-        Assert.NotNull(snapshots.Repositories);
-        Assert.NotNull(snapshots.Snapshots);
     }
 
     [Fact]

@@ -1,6 +1,8 @@
+using Elastic.Clients.Elasticsearch.IndexManagement;
+using Elastic.Clients.Elasticsearch.Mapping;
+using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
-using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration;
 
@@ -15,28 +17,29 @@ public sealed class SavedViewIndex : VersionedIndex<Models.SavedView>
         _configuration = configuration;
     }
 
-    public override TypeMappingDescriptor<Models.SavedView> ConfigureIndexMapping(TypeMappingDescriptor<Models.SavedView> map)
+    public override void ConfigureIndexMapping(TypeMappingDescriptor<Models.SavedView> map)
     {
-        return map
-            .Dynamic(false)
+        map
+            .Dynamic(DynamicMapping.False)
             .Properties(p => p
                 .SetupDefaults()
-                .Keyword(f => f.Name(e => e.OrganizationId))
-                .Keyword(f => f.Name(e => e.UserId))
-                .Keyword(f => f.Name(e => e.CreatedByUserId))
-                .Keyword(f => f.Name(e => e.UpdatedByUserId))
-                .Text(f => f.Name(e => e.Name).Analyzer(KEYWORD_LOWERCASE_ANALYZER).AddKeywordField())
-                .Keyword(f => f.Name(e => e.ViewType))
-                .Boolean(f => f.Name(e => e.IsDefault))
-                .Number(f => f.Name(e => e.Version).Type(NumberType.Integer)));
+                .Keyword(e => e.OrganizationId)
+                .Keyword(e => e.UserId)
+                .Keyword(e => e.CreatedByUserId)
+                .Keyword(e => e.UpdatedByUserId)
+                .Text(e => e.Name, t => t.Analyzer(KEYWORD_LOWERCASE_ANALYZER).AddKeywordField())
+                .Keyword(e => e.ViewType)
+                .Boolean(e => e.IsDefault)
+                .IntegerNumber(e => e.Version));
     }
 
-    public override CreateIndexDescriptor ConfigureIndex(CreateIndexDescriptor idx)
+    public override void ConfigureIndex(CreateIndexRequestDescriptor idx)
     {
-        return base.ConfigureIndex(idx.Settings(s => s
-            .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filters("lowercase").Tokenizer("keyword"))))
+        base.ConfigureIndex(idx);
+        idx.Settings(s => s
+            .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filter("lowercase").Tokenizer("keyword"))))
             .NumberOfShards(_configuration.Options.NumberOfShards)
             .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
-            .Priority(5)));
+            .Priority(5));
     }
 }
