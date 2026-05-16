@@ -21,15 +21,6 @@ export const queryKeys = {
     deleteStack: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'delete'] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
-    list: (params: GetStacksParams | undefined) => [
-        ...queryKeys.type,
-        'list',
-        params?.filter,
-        params?.sort,
-        params?.time,
-        params?.page,
-        params?.limit
-    ] as const,
     postAddLink: (id: string | undefined) => [...queryKeys.id(id), 'add-link'] as const,
     postChangeStatus: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'change-status'] as const,
     postMarkCritical: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'mark-critical'] as const,
@@ -50,14 +41,6 @@ export interface GetStackRequest {
     route: {
         id: string | undefined;
     };
-}
-
-export interface GetStacksParams {
-    filter?: string;
-    sort?: string;
-    time?: string;
-    page?: number;
-    limit?: number;
 }
 
 export interface PostAddLinkRequest {
@@ -152,27 +135,6 @@ export function getStackQuery(request: GetStackRequest) {
             return response.data!;
         },
         queryKey: queryKeys.id(request.route.id)
-    }));
-}
-
-export function getStacksQuery(params: GetStacksParams | undefined) {
-    return createQuery<Stack[], ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const queryParams = new URLSearchParams();
-            if (params?.filter) queryParams.append('filter', params.filter);
-            if (params?.sort) queryParams.append('sort', params.sort);
-            if (params?.time) queryParams.append('time', params.time);
-            if (params?.page) queryParams.append('page', params.page.toString());
-            if (params?.limit) queryParams.append('limit', params.limit.toString());
-
-            const url = queryParams.toString() ? `stacks?${queryParams.toString()}` : 'stacks';
-            const response = await client.getJSON<Stack[]>(url, { signal });
-
-            return response.data!;
-        },
-        queryKey: queryKeys.list(params)
     }));
 }
 

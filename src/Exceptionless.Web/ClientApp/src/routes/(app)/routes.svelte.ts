@@ -34,15 +34,15 @@ export function routes(): NavigationItem[] {
         },
         {
             group: 'Dashboards',
-            href: resolve('/(app)/stacks'),
-            icon: Stacks,
-            title: 'Stacks'
-        },
-        {
-            group: 'Dashboards',
             href: resolve('/(app)/stream'),
             icon: EventStream,
             title: 'Event Stream'
+        },
+        {
+            group: 'Reports',
+            href: resolve('/(app)/stacks'),
+            icon: Stacks,
+            title: 'Stacks'
         },
         {
             group: 'Reports',

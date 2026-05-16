@@ -1,221 +1,232 @@
 <script lang="ts">
-    import DelayedRender from '$comp/delayed-render.svelte';
+    import { page } from '$app/state';
+    import * as DataTable from '$comp/data-table';
+    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
+    import * as FacetedFilter from '$comp/faceted-filter';
     import RefreshButton from '$comp/refresh-button.svelte';
     import { H3 } from '$comp/typography';
-    import { getStacksQuery, type GetStacksParams } from '$features/stacks/api.svelte';
-    import type { Stack } from '$features/stacks/models';
+    import { DateFilter, ProjectFilter, StatusFilter } from '$features/events/components/filters';
+    import {
+        applyTimeFilter,
+        buildFilterCacheKey,
+        filterCacheVersionNumber,
+        filterChanged,
+        filterRemoved,
+        getFiltersFromCache,
+        toFilter,
+        updateFilterCache
+    } from '$features/events/components/filters/helpers.svelte';
+    import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import { organization } from '$features/organizations/context.svelte';
-    import StackStatusBadge from '$features/stacks/components/stack-status-badge.svelte';
-    import StacksBulkActionsButton from '$features/stacks/components/stacks-bulk-actions-button.svelte';
+    import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
+    import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
+    import StacksDataTable from '$features/stacks/components/table/stacks-data-table.svelte';
+    import { getColumns } from '$features/stacks/components/table/options.svelte';
+    import type { Stack } from '$features/stacks/models';
+    import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+    import { DEFAULT_LIMIT, useFetchClientStatus } from '$shared/api/api.svelte';
+    import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
+    import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
-    import { watch } from 'runed';
+    import { useEventListener, watch } from 'runed';
+    import { throttle } from 'throttle-debounce';
 
-    // Configuration
-    const DEFAULT_TIME_RANGE = '[now-30d TO now]';
     const DEFAULT_PARAMS = {
-        filter: 'status:open',
-        limit: 25,
-        sort: '-last_occurrence',
-        time: DEFAULT_TIME_RANGE
+        filter: '',
+        limit: DEFAULT_LIMIT,
+        time: undefined as string | undefined
     };
 
-    // Query params
+    const DEFAULT_FILTERS = [new DateFilter('date', undefined), new ProjectFilter([]), new StatusFilter([])];
+
+    function filterCacheKey(filter: null | string): string {
+        return buildFilterCacheKey(organization.current, page.url.pathname, filter);
+    }
+
+    updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
     const queryParams = queryParamsState({
         default: DEFAULT_PARAMS,
         pushHistory: true,
         schema: {
             filter: 'string',
             limit: 'number',
-            sort: 'string',
             time: 'string'
         }
     });
 
-    // Reset on org change
+    // Reset on organization change
     watch(
         () => organization.current,
         () => {
+            updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
             Object.assign(queryParams, DEFAULT_PARAMS);
-            selectedIds = [];
+            reset();
         },
         { lazy: true }
     );
 
-    // Query stacks
-    let params: GetStacksParams = $derived({
-        filter: queryParams.filter,
-        sort: queryParams.sort,
-        time: queryParams.time,
-        limit: queryParams.limit
+    let filters = $state(applyTimeFilter(getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter), queryParams.time));
+    watch(
+        [() => queryParams.filter, () => queryParams.time, () => filterCacheVersionNumber()],
+        ([filter, time]) => {
+            filters = applyTimeFilter(getFiltersFromCache(filterCacheKey(filter), filter), time);
+        },
+        { lazy: true }
+    );
+
+    $effect(() => {
+        queryParams.limit ??= DEFAULT_LIMIT;
     });
 
-    const stacksQuery = getStacksQuery(params);
-    const stacks = $derived($stacksQuery.data || []);
-
-    // Row selection state
-    let selectedIds = $state<string[]>([]);
-
-    // Actions
-    function handleRefresh() {
-        $stacksQuery.refetch();
+    function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
+        updateFilters(filterChanged(filters ?? [], addedOrUpdated));
     }
 
-    function handleFilterChange(newFilter: string) {
-        queryParams.filter = newFilter;
+    function onFilterRemoved(removed?: FacetedFilter.IFilter): void {
+        updateFilters(filterRemoved(filters ?? [], removed));
     }
 
-    function toggleRowSelection(stackId: string) {
-        if (selectedIds.includes(stackId)) {
-            selectedIds = selectedIds.filter(id => id !== stackId);
-        } else {
-            selectedIds = [...selectedIds, stackId];
+    function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
+        const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
+
+        updateFilterCache(filterCacheKey(filter), updatedFilters);
+        queryParams.time = (updatedFilters.find((f) => f.type === 'date') as DateFilter)?.value as string;
+        queryParams.filter = filter;
+    }
+
+    interface StacksQueryParameters {
+        filter?: string;
+        limit?: number;
+        page?: number;
+        time?: string;
+    }
+
+    const stacksQueryParameters: StacksQueryParameters = $state({
+        get filter() {
+            return queryParams.filter!;
+        },
+        set filter(value) {
+            queryParams.filter = value;
+        },
+        get limit() {
+            return queryParams.limit!;
+        },
+        set limit(value) {
+            queryParams.limit = value;
+        },
+        page: undefined,
+        get time() {
+            return queryParams.time!;
+        },
+        set time(value) {
+            queryParams.time = value;
         }
+    });
+
+    const client = useFetchClient();
+    const clientStatus = useFetchClientStatus(client);
+    let clientResponse = $state<FetchClientResponse<Stack[]>>();
+
+    const table = createTable(
+        getSharedTableOptions<Stack>({
+            columnPersistenceKey: 'stacks-column-visibility',
+            get columns() {
+                return getColumns();
+            },
+            paginationStrategy: 'offset',
+            get queryData() {
+                return clientResponse?.data ?? [];
+            },
+            get queryMeta() {
+                return clientResponse?.meta;
+            },
+            get queryParameters() {
+                return stacksQueryParameters;
+            }
+        })
+    );
+
+    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.store.state.pagination.pageIndex === 0);
+
+    function reset() {
+        table.resetRowSelection();
+        table.setPageIndex(0);
     }
 
-    function toggleAllSelection() {
-        if (selectedIds.length === stacks.length) {
-            selectedIds = [];
-        } else {
-            selectedIds = stacks.map(s => s.id);
+    async function handleRefresh() {
+        if (!canRefresh) {
+            reset();
         }
+
+        await loadData();
     }
+
+    async function loadData() {
+        if (!organization.current) {
+            return;
+        }
+
+        clientResponse = await client.getJSON<Stack[]>(`organizations/${organization.current}/stacks`, {
+            params: stacksQueryParameters as Record<string, unknown>
+        });
+    }
+
+    const throttledLoadData = throttle(5000, loadData);
+
+    async function onStackChanged(message: WebSocketMessageValue<'StackChanged'>) {
+        if (message.id && message.change_type === ChangeType.Removed) {
+            removeTableSelection(table, message.id);
+
+            if (removeTableData(table, (doc: Stack) => doc.id === message.id)) {
+                if (isTableEmpty(table)) {
+                    await throttledLoadData();
+                    return;
+                }
+            }
+        }
+
+        // Refresh data on any other stack change
+        await throttledLoadData();
+    }
+
+    useEventListener(document, 'StackChanged', async (event) => await onStackChanged((event as CustomEvent).detail));
+
+    $effect(() => {
+        loadData();
+    });
 </script>
 
-<div class="container mx-auto py-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
-        <H3>Stacks</H3>
-        <RefreshButton isLoading={$stacksQuery.isPending} onClick={handleRefresh} />
-    </div>
-
-    <!-- Filter Input -->
-    <div class="mb-4 flex gap-2">
-        <input
-            type="text"
-            placeholder="Filter (e.g., status:open type:error tags:production)"
-            class="flex-1 px-3 py-2 border border-gray-300 rounded text-sm"
-            value={queryParams.filter}
-            onchange={(e) => handleFilterChange(e.currentTarget.value)}
-        />
-        <select
-            class="px-3 py-2 border border-gray-300 rounded text-sm"
-            value={queryParams.limit}
-            onchange={(e) => queryParams.limit = parseInt(e.currentTarget.value)}
-        >
-            <option value={10}>10 per page</option>
-            <option value={25}>25 per page</option>
-            <option value={50}>50 per page</option>
-            <option value={100}>100 per page</option>
-        </select>
-    </div>
-
-    <!-- Table Container -->
-    <div class="border rounded bg-white overflow-hidden">
-        {#if $stacksQuery.isPending}
-            <DelayedRender>
-                <div class="p-8 text-center text-gray-500">
-                    <div class="animate-spin inline-block w-6 h-6 border-4 border-gray-300 border-t-blue-600 rounded-full mb-2"></div>
-                    <p>Loading stacks...</p>
-                </div>
-            </DelayedRender>
-        {:else if stacks.length === 0}
-            <div class="p-8 text-center text-gray-500">
-                <p>No stacks found matching your filter.</p>
-            </div>
-        {:else}
-            <!-- Table Header -->
-            <div class="border-b bg-gray-50">
-                <div class="flex items-center p-4 gap-3 text-sm font-medium text-gray-700">
-                    <input
-                        type="checkbox"
-                        checked={selectedIds.length === stacks.length && stacks.length > 0}
-                        onchange={toggleAllSelection}
-                        class="w-4 h-4 cursor-pointer"
-                    />
-                    <div class="flex-1 grid grid-cols-5 gap-4">
-                        <div>Title</div>
-                        <div>Tags</div>
-                        <div class="text-right">Events</div>
-                        <div>Last Occurrence</div>
-                        <div>Status</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Table Rows -->
-            <div class="divide-y">
-                {#each stacks as stack (stack.id)}
-                    <div
-                        class="flex items-center p-4 gap-3 hover:bg-gray-50 cursor-pointer transition-colors"
-                        onclick={() => toggleRowSelection(stack.id)}
-                        role="button"
-                        tabindex="0"
-                        onkeydown={(e) => {
-                            if (e.key === 'Enter') toggleRowSelection(stack.id);
-                        }}
-                    >
-                        <input
-                            type="checkbox"
-                            checked={selectedIds.includes(stack.id)}
-                            class="w-4 h-4 cursor-pointer"
-                            onclick={(e) => {
-                                e.stopPropagation();
-                                toggleRowSelection(stack.id);
-                            }}
-                        />
-                        <div class="flex-1 grid grid-cols-5 gap-4 text-sm items-center">
-                            <div class="font-medium truncate" title={stack.title}>
-                                {stack.title || 'Untitled'}
-                            </div>
-                            <div class="text-gray-600 truncate text-xs">
-                                {(stack.tags || []).join(', ') || '-'}
-                            </div>
-                            <div class="text-gray-600 text-right">
-                                {(stack.totalOccurrences || 0).toLocaleString()}
-                            </div>
-                            <div class="text-gray-600">
-                                {#if stack.lastOccurrence}
-                                    {new Date(stack.lastOccurrence).toLocaleDateString()}
-                                {:else}
-                                    -
-                                {/if}
-                            </div>
-                            <div>
-                                <StackStatusBadge status={stack.status} />
-                            </div>
-                        </div>
-                    </div>
-                {/each}
-            </div>
-        {/if}
-    </div>
-
-    <!-- Bulk Actions -->
-    {#if selectedIds.length > 0}
-        <div class="mt-4 p-4 bg-blue-50 rounded border border-blue-200 flex items-center justify-between">
-            <span class="text-sm font-medium text-blue-900">
-                {selectedIds.length} stack{selectedIds.length === 1 ? '' : 's'} selected
-            </span>
-            <div class="flex gap-2">
-                <StacksBulkActionsButton {selectedIds} onActionsComplete={() => (selectedIds = [])} />
-                <button
-                    class="px-3 py-2 text-sm border border-blue-300 rounded hover:bg-blue-100 transition-colors"
-                    onclick={() => selectedIds = []}
-                >
-                    Clear
-                </button>
-            </div>
+<div class="flex flex-col">
+    <div class="mb-4 flex flex-wrap items-start gap-2">
+        <H3 class="my-0 shrink-0">Stacks</H3>
+        <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
+            <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
+                <OrganizationDefaultsFacetedFilterBuilder />
+            </FacetedFilter.Root>
         </div>
-    {/if}
-
-    <!-- Info -->
-    <div class="mt-4 text-sm text-gray-600">
-        Showing {stacks.length} stack{stacks.length === 1 ? '' : 's'}
+        <div class="ml-auto flex shrink-0 items-start gap-2">
+            <RefreshButton
+                onRefresh={handleRefresh}
+                isRefreshing={clientStatus.isLoading}
+                size="icon-lg"
+                title={canRefresh ? 'Refresh results' : 'Return to the first page to refresh results'}
+            />
+            <DataTableViewOptions size="icon-lg" {table} />
+        </div>
     </div>
-</div>
 
-<style lang="postcss">
-    :global(.container) {
-        @apply max-w-full;
-    }
-</style>
+    <StacksDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} {table}>
+        {#snippet footerChildren()}
+            <div class="h-9 min-w-35">
+                <TableStacksBulkActionsDropdownMenu {table} />
+            </div>
+
+            <DataTable.Selection {table} />
+            <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
+            <div class="flex items-center space-x-6 lg:space-x-8">
+                <DataTable.PageCount {table} />
+                <DataTable.Pagination {table} />
+            </div>
+        {/snippet}
+    </StacksDataTable>
+</div>
