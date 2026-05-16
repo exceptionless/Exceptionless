@@ -89,21 +89,21 @@ DELETE {{apiUrl}}/stacks/{{stackId}}
 Authorization: Bearer {{token}}
 
 ### Bulk Change Status (multiple stack IDs)
-POST {{apiUrl}}/stacks/change-status?ids={{stackId}}&status=open
+POST {{apiUrl}}/stacks/{{stackId}},{{stackId}}/change-status?status=open
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 ### Bulk Mark Fixed (multiple stack IDs)
-POST {{apiUrl}}/stacks/mark-fixed?ids={{stackId}}
+POST {{apiUrl}}/stacks/{{stackId}},{{stackId}}/mark-fixed
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 ### Bulk Mark Snoozed (multiple stack IDs)
-POST {{apiUrl}}/stacks/mark-snoozed?ids={{stackId}}&snoozeUntilUtc=12-31-2030
+POST {{apiUrl}}/stacks/{{stackId}},{{stackId}}/mark-snoozed?snoozeUntilUtc=12-31-2030
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 ### Bulk Delete (multiple stack IDs)
-DELETE {{apiUrl}}/stacks?ids={{stackId}}
+DELETE {{apiUrl}}/stacks/{{stackId}},{{stackId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json

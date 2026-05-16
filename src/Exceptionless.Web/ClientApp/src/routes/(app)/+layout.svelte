@@ -255,7 +255,7 @@
         }
 
         const hasSelectedOrganization = !!organization.current && organizations.some((organizationItem) => organizationItem.id === organization.current);
-        if (!hasSelectedOrganization) {
+        if (!hasSelectedOrganization && !impersonatingOrganizationId) {
             organization.current = organizations[0]!.id;
         }
     });

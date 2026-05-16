@@ -184,9 +184,10 @@
                     return;
                 }
             }
+
+            return;
         }
 
-        // Refresh data on any other stack change
         await throttledLoadData();
     }
 
