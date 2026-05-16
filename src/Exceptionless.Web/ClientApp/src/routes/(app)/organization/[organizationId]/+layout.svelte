@@ -34,7 +34,7 @@
             return;
         }
 
-        if (organizationQuery.isSuccess && organizationId !== organization.current) {
+        if (organizationQuery.isSuccess && organization.current && organizationId !== organization.current) {
             goto(page.url.pathname.replace(`/organization/${organizationId}`, `/organization/${organization.current}`));
             return;
         }

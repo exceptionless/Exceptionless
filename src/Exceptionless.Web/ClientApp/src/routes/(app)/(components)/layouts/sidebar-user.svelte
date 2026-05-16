@@ -48,6 +48,7 @@
 
     let { gravatar, intercomUnreadCount = 0, isChatEnabled, isImpersonating = false, isLoading, openChat, organizations = [], user }: Props = $props();
     const sidebar = useSidebar();
+    const currentOrganizationId = $derived(organizations.find((organizationItem) => organizationItem.id === organization.current)?.id);
     let openImpersonateDialog = $state(false);
 
     function getUnreadCountLabel(unreadCount: number): string {
@@ -165,12 +166,12 @@
                             <A variant="ghost" href={resolve('/(app)/account/notifications')} class="w-full" onclick={onMenuClick}>Notifications</A>
                             <DropdownMenu.Shortcut>⇧⌘gn</DropdownMenu.Shortcut>
                         </DropdownMenu.Item>
-                        {#if organization.current}
+                        {#if currentOrganizationId}
                             <DropdownMenu.Item>
                                 <Settings />
                                 <A
                                     variant="ghost"
-                                    href={resolve('/(app)/organization/[organizationId]/manage', { organizationId: organization.current })}
+                                    href={resolve('/(app)/organization/[organizationId]/manage', { organizationId: currentOrganizationId })}
                                     class="flex w-full items-center gap-2"
                                     onclick={onMenuClick}
                                 >
@@ -182,7 +183,7 @@
                                 <CreditCard />
                                 <A
                                     variant="ghost"
-                                    href={resolve('/(app)/organization/[organizationId]/billing', { organizationId: organization.current })}
+                                    href={resolve('/(app)/organization/[organizationId]/billing', { organizationId: currentOrganizationId })}
                                     class="flex w-full items-center gap-2"
                                     onclick={onMenuClick}
                                 >
