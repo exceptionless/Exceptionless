@@ -2,7 +2,7 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { A, H3, Muted } from '$comp/typography';
+    import { A, H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import OrganizationAdminActionsDropdownMenu from '$features/organizations/components/organization-admin-actions-dropdown-menu.svelte';

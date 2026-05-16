@@ -5,8 +5,8 @@
 
     import DateTime from '$comp/formatters/date-time.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import { Skeleton } from '$comp/ui/skeleton';
     import { Button } from '$comp/ui/button';
+    import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import * as Tabs from '$comp/ui/tabs';
     import { getEventQuery } from '$features/events/api.svelte';
@@ -152,13 +152,21 @@
         });
     }
 
-    async function refreshTabScrollState(): Promise<void> {
+    async function refreshTabScrollState(currentTabs: TabType[]): Promise<void> {
         await tick();
+        if (currentTabs !== tabs) {
+            return;
+        }
+
         updateTabScrollState();
     }
 
-    async function scrollActiveTabIntoView(): Promise<void> {
+    async function scrollActiveTabIntoView(currentTab: TabType): Promise<void> {
         await tick();
+        if (currentTab !== activeTab) {
+            return;
+        }
+
         tabsListElement?.querySelector('[data-state="active"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
         updateTabScrollState();
     }
@@ -182,13 +190,11 @@
     });
 
     $effect(() => {
-        tabs;
-        void refreshTabScrollState();
+        void refreshTabScrollState(tabs);
     });
 
     $effect(() => {
-        activeTab;
-        void scrollActiveTabIntoView();
+        void scrollActiveTabIntoView(activeTab);
     });
 
     onMount(() => {
@@ -252,13 +258,13 @@
 
             <Tabs.List
                 bind:ref={tabsListElement}
-                class="h-8 min-w-0 flex-1 justify-normal divide-x divide-border overflow-x-auto overflow-y-hidden rounded-lg border bg-background p-0 shadow-xs [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                class="divide-border bg-background h-8 min-w-0 flex-1 justify-normal divide-x overflow-x-auto overflow-y-hidden rounded-lg border p-0 shadow-xs [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 onscroll={updateTabScrollState}
             >
                 {#each tabs as tab (tab)}
                     <Tabs.Trigger
                         class={[
-                            'flex-none rounded-none border-0 px-4 shadow-none first:rounded-l-lg data-[state=active]:bg-muted data-[state=active]:shadow-none',
+                            'data-[state=active]:bg-muted flex-none rounded-none border-0 px-4 shadow-none first:rounded-l-lg data-[state=active]:shadow-none',
                             shouldRoundLastTab && 'last:rounded-r-lg'
                         ]}
                         value={tab}
