@@ -7,6 +7,7 @@ import Issues from '@lucide/svelte/icons/bug';
 import EventStream from '@lucide/svelte/icons/calendar-arrow-down';
 import Events from '@lucide/svelte/icons/calendar-days';
 import Support from '@lucide/svelte/icons/circle-help';
+import Stacks from '@lucide/svelte/icons/layers';
 import Sessions from '@lucide/svelte/icons/timer';
 
 import type { NavigationItem } from '../routes.svelte';
@@ -30,6 +31,12 @@ export function routes(): NavigationItem[] {
             href: resolve('/(app)/issues'),
             icon: Issues,
             title: 'Issues'
+        },
+        {
+            group: 'Dashboards',
+            href: resolve('/(app)/stacks'),
+            icon: Stacks,
+            title: 'Stacks'
         },
         {
             group: 'Dashboards',
