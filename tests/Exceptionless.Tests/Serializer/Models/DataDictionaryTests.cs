@@ -756,6 +756,8 @@ public class DataDictionaryTests : TestWithServices
         Assert.Equal("LEGACY-MACHINE", result.MachineName);
         Assert.Equal(4, result.ProcessorCount);
         Assert.Equal(8000000000L, result.TotalPhysicalMemory);
+        Assert.Equal("Windows", result.OSName);
+        Assert.Equal("10.0", result.OSVersion);
         Assert.Equal("app.exe", result.CommandLine);
     }
 
