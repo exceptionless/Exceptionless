@@ -6,10 +6,12 @@ import { Checkbox } from '$comp/ui/checkbox';
 import { nameof } from '$lib/utils';
 import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
+import StackSeverityCell from './stack-severity-cell.svelte';
 import StackStatusCell from './stack-status-cell.svelte';
 import StackTagsCell from './stack-tags-cell.svelte';
+import StackTypeBadge from './stack-type-badge.svelte';
 
-export function getColumns(): ColumnDef<StockFeatures, Stack, unknown>[] {
+export function getColumns(onTagClick?: (tag: string) => void): ColumnDef<StockFeatures, Stack, unknown>[] {
     return [
         {
             cell: (props) =>
@@ -43,7 +45,6 @@ export function getColumns(): ColumnDef<StockFeatures, Stack, unknown>[] {
         {
             accessorKey: nameof<Stack>('status'),
             cell: (prop) => renderComponent(StackStatusCell, { value: prop.getValue<string>() }),
-            enableSorting: false,
             header: 'Status',
             id: 'status',
             meta: {
@@ -51,9 +52,26 @@ export function getColumns(): ColumnDef<StockFeatures, Stack, unknown>[] {
             }
         },
         {
+            accessorKey: nameof<Stack>('type'),
+            cell: (prop) => renderComponent(StackTypeBadge, { value: prop.getValue<string>() }),
+            header: 'Type',
+            id: 'type',
+            meta: {
+                class: 'w-24'
+            }
+        },
+        {
+            accessorKey: nameof<Stack>('occurrences_are_critical'),
+            cell: (prop) => renderComponent(StackSeverityCell, { isCritical: prop.getValue<boolean>() }),
+            header: 'Critical',
+            id: 'critical',
+            meta: {
+                class: 'w-24'
+            }
+        },
+        {
             accessorKey: nameof<Stack>('tags'),
-            cell: (prop) => renderComponent(StackTagsCell, { tags: prop.getValue<string[]>() }),
-            enableSorting: false,
+            cell: (prop) => renderComponent(StackTagsCell, { onTagClick, tags: prop.getValue<string[]>() }),
             header: 'Tags',
             id: 'tags',
             meta: {
@@ -85,6 +103,14 @@ export function getColumns(): ColumnDef<StockFeatures, Stack, unknown>[] {
             id: 'last',
             meta: {
                 class: 'w-36'
+            }
+        },
+        {
+            accessorKey: nameof<Stack>('fixed_in_version'),
+            header: 'Fixed In',
+            id: 'fixed_in_version',
+            meta: {
+                class: 'w-28'
             }
         }
     ];

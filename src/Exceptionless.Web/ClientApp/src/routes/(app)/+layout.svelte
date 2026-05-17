@@ -1,5 +1,4 @@
 <script lang="ts">
-    import type { ViewOrganization } from '$features/organizations/models';
     import type { SavedView } from '$features/saved-views/models';
     import type { Snippet } from 'svelte';
 
@@ -262,13 +261,10 @@
 
     const isImpersonating = $derived(!!impersonatedOrganization);
 
-    const currentOrganization = $derived(organizations.find((organizationItem: ViewOrganization) => organizationItem.id === organization.current));
-    const hasSavedViewsFeature = $derived(currentOrganization?.features?.includes('feature-saved-views') ?? false);
-
     const savedViewsQuery = getSavedViewsQuery({
         route: {
             get organizationId() {
-                return hasSavedViewsFeature ? organization.current : undefined;
+                return organization.current;
             }
         }
     });
@@ -276,6 +272,7 @@
     const viewToHref: Record<string, string> = {
         events: resolve('/(app)'),
         issues: resolve('/(app)/issues'),
+        stacks: resolve('/(app)/stacks'),
         stream: resolve('/(app)/stream')
     };
 
@@ -303,7 +300,7 @@
         }
 
         return allRoutes.map((route) => {
-            if (route.group !== 'Dashboards') {
+            if (route.group !== 'Dashboards' && route.group !== 'Reports') {
                 return route;
             }
 

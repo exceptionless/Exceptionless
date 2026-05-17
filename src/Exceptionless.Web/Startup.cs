@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Net.Http.Headers;
 using Scalar.AspNetCore;
 using Serilog;
@@ -283,6 +284,16 @@ public class Startup
         });
 
         app.UseStaticFiles();
+        string nextBuildPath = Path.Combine(app.ApplicationServices.GetRequiredService<IWebHostEnvironment>().ContentRootPath, "ClientApp", "build");
+        if (Directory.Exists(nextBuildPath))
+        {
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(nextBuildPath),
+                RequestPath = "/next"
+            });
+        }
+
         app.UseDefaultFiles();
         app.UseFileServer();
         app.UseRouting();
@@ -329,9 +340,11 @@ public class Startup
     private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)
     {
         var app = endpoints.CreateApplicationBuilder();
+        var webHostEnvironment = endpoints.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
         var apiPathSegment = new PathString("/api");
         var docsPathSegment = new PathString("/docs");
         var nextPathSegment = new PathString("/next");
+        var normalizedFilePath = filePath.StartsWith('/') ? filePath : $"/{filePath}";
         app.Use(next => context =>
         {
             bool isApiRequest = context.Request.Path.StartsWithSegments(apiPathSegment);
@@ -339,15 +352,25 @@ public class Startup
             bool isNextRequest = context.Request.Path.StartsWithSegments(nextPathSegment);
 
             if (!isApiRequest && !isDocsRequest && !isNextRequest)
-                context.Request.Path = "/" + filePath;
+                context.Request.Path = normalizedFilePath;
             else if (!isApiRequest && !isDocsRequest)
-                context.Request.Path = "/next/" + filePath;
+                context.Request.Path = nextPathSegment.Add(new PathString(normalizedFilePath));
 
             // Set endpoint to null so the static files middleware will handle the request.
             context.SetEndpoint(null);
 
             return next(context);
         });
+
+        string nextBuildPath = Path.Combine(webHostEnvironment.ContentRootPath, "ClientApp", "build");
+        if (Directory.Exists(nextBuildPath))
+        {
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(nextBuildPath),
+                RequestPath = "/next"
+            });
+        }
 
         app.UseStaticFiles();
         return app.Build();

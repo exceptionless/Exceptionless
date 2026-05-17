@@ -7,7 +7,9 @@
     import * as Collapsible from '$comp/ui/collapsible';
     import * as Sidebar from '$comp/ui/sidebar';
     import { useSidebar } from '$comp/ui/sidebar';
+    import { getProjectQuery } from '$features/projects/api.svelte';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
+    import Folder from '@lucide/svelte/icons/folder';
     import Settings from '@lucide/svelte/icons/settings-2';
     import Wrench from '@lucide/svelte/icons/wrench';
 
@@ -32,7 +34,19 @@
     const reportRoutes = $derived(routes.filter((route) => route.group === 'Reports'));
 
     const settingsRoutes = $derived(routes.filter((route) => route.group === 'Settings'));
-    const settingsIsActive = $derived(settingsRoutes.some((route) => route.href === page.url.pathname));
+    const projectSettingsRoutes = $derived(routes.filter((route) => route.group === 'Project Settings'));
+    const settingsIsActive = $derived(
+        settingsRoutes.some((route) => route.href === page.url.pathname) || projectSettingsRoutes.some((route) => route.href === page.url.pathname)
+    );
+    const currentProjectId = $derived(page.params.projectId);
+    const currentProjectQuery = getProjectQuery({
+        route: {
+            get id() {
+                return currentProjectId;
+            }
+        }
+    });
+    const currentProjectName = $derived(currentProjectQuery.data?.name ?? currentProjectId ?? 'Project');
 
     const systemRoutes = $derived(routes.filter((route) => route.group === 'System'));
     const systemBasePath = resolve('/(app)/system');
@@ -177,6 +191,31 @@
                                             </Sidebar.MenuSubButton>
                                         </Sidebar.MenuSubItem>
                                     {/each}
+
+                                    {#if projectSettingsRoutes.length > 0}
+                                        <Sidebar.MenuSubItem>
+                                            <div class="text-muted-foreground flex items-center gap-2 px-2 py-1 text-xs font-medium">
+                                                <Folder class="size-3.5" />
+                                                <span>Projects</span>
+                                            </div>
+                                        </Sidebar.MenuSubItem>
+                                        <Sidebar.MenuSubItem>
+                                            <div class="text-muted-foreground truncate px-2 py-1 pl-7 text-xs font-medium" title={currentProjectName}>
+                                                {currentProjectName}
+                                            </div>
+                                        </Sidebar.MenuSubItem>
+                                        {#each projectSettingsRoutes as subItem (subItem.href)}
+                                            <Sidebar.MenuSubItem>
+                                                <Sidebar.MenuSubButton isActive={subItem.href === page.url.pathname}>
+                                                    {#snippet child({ props })}
+                                                        <A variant="ghost" href={subItem.href} title={subItem.title} onclick={onMenuClick} class="pl-7" {...props}>
+                                                            <span>{subItem.title}</span>
+                                                        </A>
+                                                    {/snippet}
+                                                </Sidebar.MenuSubButton>
+                                            </Sidebar.MenuSubItem>
+                                        {/each}
+                                    {/if}
                                 </Sidebar.MenuSub>
                             </Collapsible.Content>
                         </Sidebar.MenuItem>

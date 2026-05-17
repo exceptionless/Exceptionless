@@ -5,15 +5,18 @@
 
     import DateTime from '$comp/formatters/date-time.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
+    import { Button } from '$comp/ui/button';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import * as Tabs from '$comp/ui/tabs';
-    import { getEventQuery } from '$features/events/api.svelte';
+    import { getEventQuery, getStackEventsQuery } from '$features/events/api.svelte';
     import * as EventsFacetedFilter from '$features/events/components/filters';
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { getProjectQuery } from '$features/projects/api.svelte';
     import StackCard from '$features/stacks/components/stack-card.svelte';
+    import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+    import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
     import type { PersistentEvent } from '../models/index';
 
@@ -31,9 +34,11 @@
         filterChanged: (filter: IFilter) => void;
         handleError: (problem: ProblemDetails) => void;
         id: string;
+        onEventChange?: (eventId: string) => void;
+        showStackPager?: boolean;
     }
 
-    let { filterChanged, handleError, id }: Props = $props();
+    let { filterChanged, handleError, id, onEventChange, showStackPager = false }: Props = $props();
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -91,6 +96,30 @@
         }
     });
 
+    const stackEventsQuery = getStackEventsQuery({
+        params: {
+            limit: 100,
+            sort: '-date'
+        },
+        route: {
+            get stackId() {
+                return eventQuery.data?.stack_id;
+            }
+        }
+    });
+
+    const currentEventIndex = $derived(stackEventsQuery.data?.findIndex((event) => event.id === id) ?? -1);
+    const previousEvent = $derived(currentEventIndex > 0 ? stackEventsQuery.data?.[currentEventIndex - 1] : null);
+    const nextEvent = $derived(currentEventIndex >= 0 ? (stackEventsQuery.data?.[currentEventIndex + 1] ?? null) : null);
+
+    function changeEvent(eventId: string | undefined): void {
+        if (!eventId) {
+            return;
+        }
+
+        onEventChange?.(eventId);
+    }
+
     const projectQuery = getProjectQuery({
         route: {
             get id() {
@@ -134,6 +163,17 @@
 </script>
 
 <StackCard {filterChanged} id={eventQuery.data?.stack_id}></StackCard>
+
+{#if showStackPager && eventQuery.data?.stack_id}
+    <div class="mt-3 flex items-center justify-end gap-2">
+        <Button type="button" variant="outline" size="sm" onclick={() => changeEvent(previousEvent?.id)} disabled={!previousEvent}
+            ><ChevronLeft class="size-4" /> Previous Event</Button
+        >
+        <Button type="button" variant="outline" size="sm" onclick={() => changeEvent(nextEvent?.id)} disabled={!nextEvent}
+            >Next Event <ChevronRight class="size-4" /></Button
+        >
+    </div>
+{/if}
 
 <Table.Root class="mt-4">
     <Table.Body>

@@ -41,49 +41,31 @@
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
+    import { toast } from 'svelte-sonner';
     import { throttle } from 'throttle-debounce';
 
     import { redirectToEventsWithFilter } from '../redirect-to-events.svelte';
 
-    // TODO: Update this page to use StackSummaryModel instead of EventSummaryModel.
     let selectedStackId = $state<string>();
+    let lastNoEventsStackId = $state<string>();
 
     function handleStackError(problem: ProblemDetails) {
         showBillingDialogOnUpgradeProblem(problem, organization.current);
         selectedStackId = undefined;
     }
 
-    function rowClick(row: EventSummaryModel<SummaryTemplateKeys>) {
+    function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
         selectedStackId = row.id;
     }
 
-    // Load the latest event for the stack and display it in the sidebar.
-    const eventsQuery = getStackEventsQuery({
-        params: {
-            limit: 1
-        },
-        route: {
-            get stackId() {
-                return selectedStackId;
-            }
-        }
-    });
-    const eventId = $derived(eventsQuery?.data?.[0]?.id);
-
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
-        const stackFilter = `stack:${row.id}`;
-        return `${resolve('/(app)')}?filter=${encodeURIComponent(stackFilter)}`;
+        return resolve('/(app)/issues/[stackId]', { stackId: row.id });
     }
 
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
-    const DEFAULT_FILTERS = [
-        new DateFilter('date', DEFAULT_TIME_RANGE),
-        new ProjectFilter([]),
-        new TypeFilter(['404', 'error']),
-        new StatusFilter([StackStatus.Open, StackStatus.Regressed])
-    ];
+    const DEFAULT_FILTERS = [new DateFilter('date', DEFAULT_TIME_RANGE), new ProjectFilter([]), new TypeFilter(['404', 'error']), new StatusFilter([StackStatus.Open, StackStatus.Regressed, StackStatus.Ignored, StackStatus.Discarded])];
     const DEFAULT_PARAMS = {
-        filter: '(type:404 OR type:error) (status:open OR status:regressed)',
+        filter: '(type:404 OR type:error) (status:open OR status:regressed OR status:ignored OR status:discarded)',
         limit: DEFAULT_LIMIT,
         saved: undefined as string | undefined,
         time: DEFAULT_TIME_RANGE
@@ -122,6 +104,8 @@
             //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
             Object.assign(queryParams, DEFAULT_PARAMS);
             reset();
+            selectedStackId = undefined;
+            lastNoEventsStackId = undefined;
         },
         { lazy: true }
     );
@@ -190,6 +174,32 @@
     const client = useFetchClient();
     const clientStatus = useFetchClientStatus(client);
     let clientResponse = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
+    const stackEventsQuery = getStackEventsQuery({
+        params: {
+            limit: 1
+        },
+        route: {
+            get stackId() {
+                return selectedStackId;
+            }
+        }
+    });
+    const eventId = $derived(stackEventsQuery.data?.[0]?.id);
+
+    $effect(() => {
+        const stackId = selectedStackId;
+        if (!stackId || !stackEventsQuery.isSuccess || stackEventsQuery.data?.length) {
+            return;
+        }
+
+        if (lastNoEventsStackId === stackId) {
+            return;
+        }
+
+        lastNoEventsStackId = stackId;
+        selectedStackId = undefined;
+        toast.info('This issue has no events to display in the sidebar.');
+    });
 
     const table = createTable(
         getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
@@ -316,20 +326,18 @@
             </FacetedFilter.Root>
         </div>
         <div class="ml-auto flex shrink-0 items-start gap-2">
-            {#if savedViewsState.isEnabled}
-                <SavedViewPicker
-                    activeSavedView={savedViewsState.activeSavedView}
-                    columnVisibility={table.store.state.columnVisibility}
-                    filters={filters ?? []}
-                    isModified={savedViewsState.isModified}
-                    onLoadView={savedViewsState.handleLoadView}
-                    onResetToSaved={savedViewsState.handleResetToSaved}
-                    onClearSavedView={savedViewsState.handleClearSavedView}
-                    savedViews={savedViewsState.savedViews}
-                    time={queryParams.time ?? undefined}
-                    view={VIEW}
-                />
-            {/if}
+            <SavedViewPicker
+                activeSavedView={savedViewsState.activeSavedView}
+                columnVisibility={table.store.state.columnVisibility}
+                filters={filters ?? []}
+                isModified={savedViewsState.isModified}
+                onLoadView={savedViewsState.handleLoadView}
+                onResetToSaved={savedViewsState.handleResetToSaved}
+                onClearSavedView={savedViewsState.handleClearSavedView}
+                savedViews={savedViewsState.savedViews}
+                time={queryParams.time ?? undefined}
+                view={VIEW}
+            />
             <RefreshButton
                 onRefresh={handleRefresh}
                 isRefreshing={clientStatus.isLoading}
@@ -343,7 +351,7 @@
     <div class="flex flex-col gap-y-4">
         <EventsDashboardChart data={chartData()} isLoading={clientStatus.isLoading || chartDataQuery.isLoading} {onRangeSelect} />
 
-        <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} {rowClick} {rowHref} {table}>
+        <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {rowHref} {table}>
             {#snippet footerChildren()}
                 <div class="h-9 min-w-35">
                     <TableStacksBulkActionsDropdownMenu {table} />

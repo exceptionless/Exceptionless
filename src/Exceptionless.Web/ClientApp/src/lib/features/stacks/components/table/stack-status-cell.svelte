@@ -17,9 +17,9 @@
     };
 
     const statusVariants: Record<string, 'default' | 'destructive' | 'outline' | 'secondary'> = {
-        discarded: 'outline',
+        discarded: 'destructive',
         fixed: 'secondary',
-        ignored: 'outline',
+        ignored: 'destructive',
         open: 'default',
         regressed: 'destructive',
         snoozed: 'secondary'

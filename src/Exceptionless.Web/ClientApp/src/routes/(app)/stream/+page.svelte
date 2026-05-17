@@ -275,19 +275,17 @@
             </FacetedFilter.Root>
         </div>
         <div class="ml-auto flex shrink-0 items-start gap-2">
-            {#if savedViewsState.isEnabled}
-                <SavedViewPicker
-                    activeSavedView={savedViewsState.activeSavedView}
-                    columnVisibility={table.store.state.columnVisibility}
-                    filters={filters ?? []}
-                    isModified={savedViewsState.isModified}
-                    onLoadView={savedViewsState.handleLoadView}
-                    onResetToSaved={savedViewsState.handleResetToSaved}
-                    onClearSavedView={savedViewsState.handleClearSavedView}
-                    savedViews={savedViewsState.savedViews}
-                    view={VIEW}
-                />
-            {/if}
+            <SavedViewPicker
+                activeSavedView={savedViewsState.activeSavedView}
+                columnVisibility={table.store.state.columnVisibility}
+                filters={filters ?? []}
+                isModified={savedViewsState.isModified}
+                onLoadView={savedViewsState.handleLoadView}
+                onResetToSaved={savedViewsState.handleResetToSaved}
+                onClearSavedView={savedViewsState.handleClearSavedView}
+                savedViews={savedViewsState.savedViews}
+                view={VIEW}
+            />
             <DataTableViewOptions size="icon-lg" {table} />
             <StreamingIndicatorButton onToggle={handleToggle} {paused} size="icon-lg" />
         </div>

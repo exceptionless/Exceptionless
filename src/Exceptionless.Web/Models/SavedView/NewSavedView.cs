@@ -9,7 +9,7 @@ namespace Exceptionless.Web.Models;
 public record NewSavedView : IOwnedByOrganization, IValidatableObject
 {
     /// <summary>The set of valid dashboard view type identifiers.</summary>
-    public static readonly string[] ValidViewTypes = ["events", "issues", "stream"];
+    public static readonly string[] ValidViewTypes = ["events", "issues", "stacks", "stream"];
 
     /// <summary>Valid column IDs per view, matching the TanStack Table column definitions.</summary>
     public static readonly IReadOnlyDictionary<string, IReadOnlySet<string>> ValidColumnIds =
@@ -17,6 +17,7 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
         {
             ["events"] = new HashSet<string> { "user", "date" },
             ["issues"] = new HashSet<string> { "status", "users", "events", "first", "last" },
+            ["stacks"] = new HashSet<string> { "critical", "events", "first", "fixed_in_version", "last", "status", "tags", "type" },
             ["stream"] = new HashSet<string> { "user", "date" }
         };
 

@@ -7,7 +7,6 @@
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import OrganizationAdminActionsDropdownMenu from '$features/organizations/components/organization-admin-actions-dropdown-menu.svelte';
     import { organization } from '$features/organizations/context.svelte';
-    import * as SplitLayout from '$features/shared/components/layouts/split-layout';
     import GlobalUser from '$features/users/components/global-user.svelte';
     import { toast } from 'svelte-sonner';
 
@@ -61,12 +60,7 @@
         {/if}
     </div>
     <Separator class="mx-6 my-6 w-auto" />
-    <SplitLayout.Root>
-        <SplitLayout.Sidebar>
-            <SidebarNav routes={filteredRoutes} />
-        </SplitLayout.Sidebar>
-        <SplitLayout.Content>
-            {@render children()}
-        </SplitLayout.Content>
-    </SplitLayout.Root>
+    <SidebarNav class="overflow-x-auto pb-2 lg:flex-row lg:space-y-0 lg:space-x-2" routes={filteredRoutes} />
+    <Separator class="mx-6 my-6 w-auto" />
+    {@render children()}
 </div>

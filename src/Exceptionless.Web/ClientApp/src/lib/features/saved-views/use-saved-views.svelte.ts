@@ -2,15 +2,12 @@ import type { IFilter } from '$comp/faceted-filter';
 import type { ColumnVisibilityState } from '@tanstack/svelte-table';
 
 import { deserializeFilters } from '$features/events/components/filters/helpers.svelte';
-import { getOrganizationQuery } from '$features/organizations/api.svelte';
 import { organization } from '$features/organizations/context.svelte';
 import { untrack } from 'svelte';
 
 import type { SavedView } from './models';
 
 import { getSavedViewsByViewQuery } from './api.svelte';
-
-const SAVED_VIEWS_FEATURE = 'feature-saved-views';
 
 export interface SavedViewQueryParams {
     filter: null | string;
@@ -33,6 +30,7 @@ export interface UseSavedViewsReturn {
     handleLoadView: (id: string) => void;
     handleResetToSaved: () => void;
     isEnabled: boolean;
+    isLoading: boolean;
     isModified: boolean;
     savedViews: SavedView[];
 }
@@ -48,16 +46,7 @@ export function supportsTimeQueryParam(queryParams: SavedViewQueryParams): query
 }
 
 export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsReturn {
-    const organizationQuery = getOrganizationQuery({
-        route: {
-            get id() {
-                return organization.current;
-            }
-        }
-    });
-
-    // Feature flag gate: only enable saved views if the organization has the feature
-    const isEnabled = $derived(organizationQuery.data?.features?.includes(SAVED_VIEWS_FEATURE) ?? false);
+    const isEnabled = $derived(!!organization.current);
 
     // Some routes, such as stream, do not declare a time query parameter.
     const supportsTime = supportsTimeQueryParam(options.queryParams);
@@ -65,7 +54,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     const savedViewsListQuery = getSavedViewsByViewQuery({
         route: {
             get organizationId() {
-                return isEnabled ? organization.current : undefined;
+                return organization.current;
             },
             get view() {
                 return options.view;
@@ -242,6 +231,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         handleResetToSaved,
         get isEnabled() {
             return isEnabled;
+        },
+        get isLoading() {
+            return savedViewsListQuery.isLoading;
         },
         get isModified() {
             return isModified;

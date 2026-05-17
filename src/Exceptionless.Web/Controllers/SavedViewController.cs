@@ -18,18 +18,14 @@ namespace Exceptionless.App.Controllers.API;
 public class SavedViewController : RepositoryApiController<ISavedViewRepository, SavedView, ViewSavedView, NewSavedView, UpdateSavedView>
 {
     private const int MaxViewsPerOrganization = 100;
-    private readonly IOrganizationRepository _organizationRepository;
 
     public SavedViewController(
         ISavedViewRepository repository,
-        IOrganizationRepository organizationRepository,
         ApiMapper mapper,
         IAppQueryValidator validator,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory) : base(repository, mapper, validator, timeProvider, loggerFactory)
-    {
-        _organizationRepository = organizationRepository;
-    }
+    { }
 
     protected override SavedView MapToModel(NewSavedView newModel) => _mapper.MapToSavedView(newModel);
     protected override ViewSavedView MapToViewModel(SavedView model) => _mapper.MapToViewSavedView(model);
@@ -63,7 +59,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     /// Get by organization and view
     /// </summary>
     /// <param name="organizationId">The identifier of the organization.</param>
-    /// <param name="viewType">The dashboard view type (events, issues, stream).</param>
+    /// <param name="viewType">The dashboard view type (events, issues, stacks, stream).</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <response code="404">The organization could not be found.</response>
@@ -179,9 +175,6 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         if (String.IsNullOrEmpty(value.OrganizationId) || !IsInOrganization(value.OrganizationId))
             return PermissionResult.Deny;
 
-        if (!await IsFeatureEnabledAsync(value.OrganizationId))
-            return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "The saved views feature is not enabled for this organization.");
-
         var count = await _repository.CountByOrganizationIdAsync(value.OrganizationId);
         if (count >= MaxViewsPerOrganization)
             return PermissionResult.DenyWithMessage($"Organization is limited to {MaxViewsPerOrganization} saved views.");
@@ -193,9 +186,6 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     {
         if (original.UserId is not null && original.UserId != CurrentUser.Id && !User.IsInRole(AuthorizationRoles.GlobalAdmin))
             return PermissionResult.DenyWithNotFound(original.Id);
-
-        if (!await IsFeatureEnabledAsync(original.OrganizationId))
-            return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "The saved views feature is not enabled for this organization.");
 
         // Private views cannot be set as the default
         if (original.UserId is not null
@@ -307,15 +297,6 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         if (value.UserId is not null && value.UserId != CurrentUser.Id && !User.IsInRole(AuthorizationRoles.GlobalAdmin))
             return PermissionResult.DenyWithNotFound(value.Id);
 
-        if (!await IsFeatureEnabledAsync(value.OrganizationId))
-            return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "The saved views feature is not enabled for this organization.");
-
         return await base.CanDeleteAsync(value);
-    }
-
-    private async Task<bool> IsFeatureEnabledAsync(string organizationId)
-    {
-        var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
-        return organization?.Features?.Contains(OrganizationFeatures.SavedViews) ?? false;
     }
 }

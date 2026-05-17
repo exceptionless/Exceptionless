@@ -9,24 +9,16 @@
     import RefreshButton from '$comp/refresh-button.svelte';
     import { H3 } from '$comp/typography';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
-    import { getStackEventsQuery } from '$features/events/api.svelte';
-    import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
-    import { ProjectFilter, StatusFilter, StringFilter, TagFilter } from '$features/events/components/filters';
+    import { StatusFilter, StringFilter, TagFilter } from '$features/events/components/filters';
     import {
         buildFilterCacheKey,
         filterCacheVersionNumber,
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
-        serializeFilters,
         toFilter,
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import { getOrganizationProjectsQuery } from '$features/projects/api.svelte';
-    import { postSavedView } from '$features/saved-views/api.svelte';
-    import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
-    import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import { getSharedTableOptions, removeTableSelection } from '$features/shared/table.svelte';
     import StackFacetedFilterBuilder from '$features/stacks/components/filters/stack-faceted-filter-builder.svelte';
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
@@ -36,26 +28,25 @@
     import { describeStackFilter, isStackFilterSupported, splitSupportedStackFilters } from '$features/stacks/stack-filter-support';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+    import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
     import { toast } from 'svelte-sonner';
-    import { SvelteSet } from 'svelte/reactivity';
     import { throttle } from 'throttle-debounce';
 
+    const projectId = $derived(page.params.projectId);
     const DEFAULT_PARAMS = {
-        filter: '',
+        filter: '(status:ignored OR status:discarded)',
         limit: DEFAULT_LIMIT,
         page: 1,
-        saved: undefined as string | undefined,
         sort: '-last'
     };
 
-    const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([])];
+    const DEFAULT_FILTERS = [new StatusFilter([StackStatus.Ignored, StackStatus.Discarded])];
 
     function filterCacheKey(filter: null | string): string {
-        return buildFilterCacheKey(organization.current, page.url.pathname, filter);
+        return buildFilterCacheKey(projectId, page.url.pathname, filter);
     }
 
     updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
@@ -66,39 +57,16 @@
             filter: 'string',
             limit: 'number',
             page: 'number',
-            saved: 'string',
             sort: 'string'
         }
     });
 
-    const VIEW = 'stacks';
-    const savedViewsState = useSavedViews({
-        filterCacheKey,
-        getColumnVisibility: () => table.store.state.columnVisibility,
-        queryParams,
-        setColumnVisibility: (value) => table.setColumnVisibility(value),
-        updateFilterCache,
-        view: VIEW
-    });
-
-    const organizationProjectsQuery = getOrganizationProjectsQuery({
-        route: {
-            get organizationId() {
-                return organization.current;
-            }
-        }
-    });
-    let defaultProjectScopedOrganizationId = $state<string>();
-
-    // Reset on organization change.
     watch(
-        () => organization.current,
+        () => projectId,
         () => {
             updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
             Object.assign(queryParams, DEFAULT_PARAMS);
             reset();
-            selectedStackId = undefined;
-            lastNoEventsStackId = undefined;
         },
         { lazy: true }
     );
@@ -159,85 +127,9 @@
         queryParams.sort ??= '-last';
     });
 
-    $effect(() => {
-        const organizationId = organization.current;
-        if (!organizationId || defaultProjectScopedOrganizationId === organizationId || queryParams.saved || queryParams.filter) {
-            return;
-        }
-
-        const projectId = organizationProjectsQuery.data?.data?.[0]?.id;
-        if (!projectId) {
-            return;
-        }
-
-        const scopedFilter = `project:${projectId}`;
-        updateFilterCache(filterCacheKey(scopedFilter), [new ProjectFilter([projectId]), new StatusFilter([])]);
-        queryParams.filter = scopedFilter;
-        defaultProjectScopedOrganizationId = organizationId;
-    });
-
-    const seedSavedViews = postSavedView({
-        route: {
-            get organizationId() {
-                return organization.current;
-            }
-        }
-    });
-    const seededOrganizations = new SvelteSet<string>();
-    const seedingOrganizations = new SvelteSet<string>();
-
-    $effect(() => {
-        const organizationId = organization.current;
-        if (
-            !organizationId ||
-            seededOrganizations.has(organizationId) ||
-            seedingOrganizations.has(organizationId) ||
-            savedViewsState.isLoading ||
-            seedSavedViews.isPending
-        ) {
-            return;
-        }
-
-        if (savedViewsState.savedViews.length > 0) {
-            seededOrganizations.add(organizationId);
-            return;
-        }
-
-        seedingOrganizations.add(organizationId);
-        const defaultViews = [
-            { name: 'Snoozed - Follow Up', status: StackStatus.Snoozed },
-            { name: 'Ignored - Review Later', status: StackStatus.Ignored },
-            { name: 'Discarded - Recovery Queue', status: StackStatus.Discarded }
-        ];
-
-        void (async () => {
-            let hasFailure = false;
-            for (const defaultView of defaultViews) {
-                const savedFilters = [new ProjectFilter([]), new StatusFilter([defaultView.status])];
-                try {
-                    await seedSavedViews.mutateAsync({
-                        filter: `status:${defaultView.status}`,
-                        filter_definitions: serializeFilters(savedFilters),
-                        name: defaultView.name,
-                        organization_id: organizationId,
-                        view_type: VIEW
-                    });
-                } catch (error) {
-                    console.error('Failed to seed default stack saved view.', error);
-                    hasFailure = true;
-                }
-            }
-
-            seedingOrganizations.delete(organizationId);
-            if (!hasFailure) {
-                seededOrganizations.add(organizationId);
-            }
-        })();
-    });
-
     function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
         if (!isStackFilterSupported(addedOrUpdated)) {
-            toast.error(`"${describeStackFilter(addedOrUpdated)}" is not supported in stacks view.`);
+            toast.error(`"${describeStackFilter(addedOrUpdated)}" is not supported in issue management.`);
             return;
         }
 
@@ -302,70 +194,28 @@
     const client = useFetchClient();
     const clientStatus = useFetchClientStatus(client);
     let clientResponse = $state<FetchClientResponse<Stack[]>>();
-    let selectedStackId = $state<string>();
-    let lastNoEventsStackId = $state<string>();
-    let rowSelectionVersion = 0;
-
-    function handleStackError(problem: ProblemDetails) {
-        showBillingDialogOnUpgradeProblem(problem, organization.current);
-        selectedStackId = undefined;
-    }
-
-    function rowClick(row: Stack) {
-        rowSelectionVersion += 1;
-        const selectionVersion = rowSelectionVersion;
-
-        if (selectedStackId === row.id) {
-            selectedStackId = undefined;
-            queueMicrotask(() => {
-                if (rowSelectionVersion === selectionVersion) {
-                    selectedStackId = row.id;
-                }
-            });
-            return;
-        }
-
-        selectedStackId = row.id;
-    }
 
     function rowHref(row: Stack): string {
-        const stackFilter = `stack:${row.id}`;
-        return `${resolve('/(app)')}?filter=${encodeURIComponent(stackFilter)}`;
+        return resolve('/(app)/project/[projectId]/issues/[stackId]', { projectId: projectId ?? '', stackId: row.id });
     }
-
-    const stackEventsQuery = getStackEventsQuery({
-        params: {
-            limit: 1
-        },
-        route: {
-            get stackId() {
-                return selectedStackId;
-            }
-        }
-    });
-
-    const eventId = $derived(stackEventsQuery.data?.[0]?.id);
-
-    $effect(() => {
-        const stackId = selectedStackId;
-        if (!stackId || !stackEventsQuery.isSuccess || stackEventsQuery.data?.length) {
-            return;
-        }
-
-        if (lastNoEventsStackId === stackId) {
-            return;
-        }
-
-        lastNoEventsStackId = stackId;
-        selectedStackId = undefined;
-        toast.info('This stack has no events to display in the sidebar.');
-    });
 
     const table = createTable(
         getSharedTableOptions<Stack>({
-            columnPersistenceKey: 'stacks-column-visibility',
+            columnPersistenceKey: 'project-issues-v2-column-visibility',
             get columns() {
                 return getColumns(handleTagClick);
+            },
+            defaultColumnVisibility: {
+                critical: false,
+                events: true,
+                first: false,
+                fixed_in_version: false,
+                last: true,
+                select: true,
+                status: false,
+                tags: false,
+                title: true,
+                type: true
             },
             paginationStrategy: 'offset',
             get queryData() {
@@ -396,11 +246,11 @@
     }
 
     async function loadData(filter = queryParams.filter, limit = queryParams.limit, pageNumber = queryParams.page, sort = queryParams.sort) {
-        if (!organization.current) {
+        if (!projectId) {
             return;
         }
 
-        clientResponse = await client.getJSON<Stack[]>(`organizations/${organization.current}/stacks`, {
+        clientResponse = await client.getJSON<Stack[]>(`projects/${projectId}/stacks`, {
             params: {
                 filter,
                 limit,
@@ -408,6 +258,8 @@
                 sort
             }
         });
+
+        showBillingDialogOnUpgradeProblem(clientResponse.problem, undefined);
     }
 
     const throttledLoadData = throttle(5000, loadData);
@@ -415,10 +267,6 @@
     async function onStackChanged(message: WebSocketMessageValue<'StackChanged'>) {
         if (message.id && message.change_type === ChangeType.Removed) {
             removeTableSelection(table, message.id);
-            if (selectedStackId === message.id) {
-                selectedStackId = undefined;
-            }
-
             await loadData();
             return;
         }
@@ -435,24 +283,13 @@
 
 <div class="flex flex-col">
     <div class="mb-4 flex flex-wrap items-start gap-2">
-        <H3 class="my-0 shrink-0">Stacks</H3>
+        <H3 class="my-0 shrink-0">Issue Management</H3>
         <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
-                <StackFacetedFilterBuilder />
+                <StackFacetedFilterBuilder includeProject={false} />
             </FacetedFilter.Root>
         </div>
         <div class="ml-auto flex shrink-0 items-start gap-2">
-            <SavedViewPicker
-                activeSavedView={savedViewsState.activeSavedView}
-                columnVisibility={table.store.state.columnVisibility}
-                filters={filters ?? []}
-                isModified={savedViewsState.isModified}
-                onLoadView={savedViewsState.handleLoadView}
-                onResetToSaved={savedViewsState.handleResetToSaved}
-                onClearSavedView={savedViewsState.handleClearSavedView}
-                savedViews={savedViewsState.savedViews}
-                view={VIEW}
-            />
             <RefreshButton
                 onRefresh={handleRefresh}
                 isRefreshing={clientStatus.isLoading}
@@ -463,7 +300,7 @@
         </div>
     </div>
 
-    <StacksDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} {rowClick} {rowHref} {table}>
+    <StacksDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} {rowHref} {table}>
         {#snippet footerChildren()}
             <div class="h-9 min-w-35">
                 <TableStacksBulkActionsDropdownMenu {table} />
@@ -478,5 +315,3 @@
         {/snippet}
     </StacksDataTable>
 </div>
-
-<EventDetailSheet eventId={eventId ?? null} filterChanged={onFilterChanged} onClose={() => (selectedStackId = undefined)} onError={handleStackError} />

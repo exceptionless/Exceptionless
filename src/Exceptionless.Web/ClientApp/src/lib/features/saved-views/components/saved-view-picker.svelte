@@ -80,6 +80,8 @@
     let isSaveDialogOpen = $state(false);
     let isRenameDialogOpen = $state(false);
     let isDeleteDialogOpen = $state(false);
+    let saveDialogFormError = $state<string>();
+    let saveDialogNameError = $state<string>();
     let viewToDelete = $state<null | SavedView>(null);
 
     const organizationId = $derived(organization.current);
@@ -147,6 +149,8 @@
 
     async function openSaveDialog() {
         await tick();
+        saveDialogFormError = undefined;
+        saveDialogNameError = undefined;
         isSaveDialogOpen = true;
     }
 
@@ -170,6 +174,9 @@
             return;
         }
 
+        saveDialogFormError = undefined;
+        saveDialogNameError = undefined;
+
         const filterDefinitions = serializeFilters(filters);
         const body: NewSavedView = {
             columns: columnVisibility,
@@ -189,7 +196,15 @@
             onLoadView(result.id);
             toast.success(`Saved view "${result.name}" created.`);
         } catch (error) {
-            toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
+            const problem = error as ProblemDetails;
+            if (problem?.status === 422) {
+                saveDialogNameError = problem.errors?.name?.[0];
+                saveDialogFormError = problem.errors?.general?.[0] ?? problem.title ?? 'Unable to save view.';
+                return;
+            }
+
+            saveDialogFormError = getErrorMessage(error, 'Failed to save view. Please try again.');
+            toast.error(saveDialogFormError);
         }
     }
 
@@ -421,7 +436,20 @@
 </DropdownMenu.Root>
 
 {#if isSaveDialogOpen}
-    <SaveViewDialog bind:open={isSaveDialogOpen} {duplicateView} {saving} onSave={handleSave} onClose={() => (isSaveDialogOpen = false)} {onLoadView} />
+    <SaveViewDialog
+        bind:open={isSaveDialogOpen}
+        {duplicateView}
+        formError={saveDialogFormError}
+        nameError={saveDialogNameError}
+        {saving}
+        onSave={handleSave}
+        onClose={() => {
+            saveDialogFormError = undefined;
+            saveDialogNameError = undefined;
+            isSaveDialogOpen = false;
+        }}
+        {onLoadView}
+    />
 {/if}
 
 {#if isRenameDialogOpen && activeView}
