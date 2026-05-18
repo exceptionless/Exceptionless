@@ -243,6 +243,7 @@ function processFilterRules(filters: IFilter[]): IFilter[] {
                     } else if (filter.value !== undefined) {
                         existingFilter.value = filter.value;
                     }
+
                     existingFilter.hidden = filter.hidden;
                 } else {
                     throw new Error('Unable to merge filters');

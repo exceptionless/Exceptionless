@@ -39,15 +39,15 @@ export interface UseSavedViewsReturn {
     savedViews: SavedView[];
 }
 
-export function setTimeQueryParam(queryParams: SavedViewQueryParams, value: null | string): void {
-    if (supportsTimeQueryParam(queryParams)) {
-        queryParams.time = value;
-    }
-}
-
 export function setSortQueryParam(queryParams: SavedViewQueryParams, value: null | string): void {
     if (supportsSortQueryParam(queryParams)) {
         queryParams.sort = value;
+    }
+}
+
+export function setTimeQueryParam(queryParams: SavedViewQueryParams, value: null | string): void {
+    if (supportsTimeQueryParam(queryParams)) {
+        queryParams.time = value;
     }
 }
 
