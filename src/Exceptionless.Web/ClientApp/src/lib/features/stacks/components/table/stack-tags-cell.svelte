@@ -2,6 +2,7 @@
     import { Muted } from '$comp/typography';
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
+    import { Kbd } from '$comp/ui/kbd';
     import * as Tooltip from '$comp/ui/tooltip';
     import { toast } from 'svelte-sonner';
 
@@ -41,7 +42,7 @@
         event.preventDefault();
         event.stopPropagation();
 
-        if (event.altKey) {
+        if (event.altKey || event.metaKey) {
             try {
                 await navigator.clipboard.writeText(tag);
                 toast.success(`Copied tag "${tag}" to clipboard.`);
@@ -56,29 +57,42 @@
     }
 </script>
 
+{#snippet tagButton(tag: string)}
+    <Tooltip.Root>
+        <Tooltip.Trigger>
+            {#snippet child({ props })}
+                <Button {...props} type="button" size="sm" variant="ghost" class="h-auto cursor-pointer p-0" onclick={(event) => handleTagClick(event, tag)}>
+                    <Badge variant="outline" class={`text-xs ${getTagColorClass(tag)}`}>{tag}</Badge>
+                </Button>
+            {/snippet}
+        </Tooltip.Trigger>
+        <Tooltip.Content>
+            Click to filter. <Kbd>⌥</Kbd> click to copy.
+        </Tooltip.Content>
+    </Tooltip.Root>
+{/snippet}
+
 {#if tags && tags.length > 0}
     <div class="flex flex-wrap gap-1">
         {#each tags.slice(0, 3) as tag (tag)}
-            <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                class="h-auto cursor-pointer p-0"
-                onclick={(event) => handleTagClick(event, tag)}
-                title="Click to filter by tag. Alt+Click to copy."
-            >
-                <Badge variant="outline" class={`text-xs ${getTagColorClass(tag)}`}>{tag}</Badge>
-            </Button>
+            {@render tagButton(tag)}
         {/each}
         {#if tags.length > 3}
             <Tooltip.Root>
                 <Tooltip.Trigger>
                     {#snippet child({ props })}
-                        <Badge {...props} variant="outline" class="text-xs">+{tags.length - 3}</Badge>
+                        <Badge {...props} variant="outline" class="cursor-default text-xs">+{tags.length - 3}</Badge>
                     {/snippet}
                 </Tooltip.Trigger>
                 <Tooltip.Content class="max-w-xs">
-                    <Muted>{tags.slice(3).join(', ')}</Muted>
+                    <div class="flex flex-wrap gap-1">
+                        {#each tags.slice(3) as tag (tag)}
+                            <Button type="button" size="sm" variant="ghost" class="h-auto cursor-pointer p-0" onclick={(event) => handleTagClick(event, tag)}>
+                                <Badge variant="outline" class={`text-xs ${getTagColorClass(tag)}`}>{tag}</Badge>
+                            </Button>
+                        {/each}
+                    </div>
+                    <Muted class="mt-1 text-xs">Click to filter. <Kbd>⌥</Kbd> click to copy.</Muted>
                 </Tooltip.Content>
             </Tooltip.Root>
         {/if}
