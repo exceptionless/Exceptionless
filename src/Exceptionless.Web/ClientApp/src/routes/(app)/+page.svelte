@@ -73,6 +73,10 @@
         return buildFilterCacheKey(organization.current, page.url.pathname, filter);
     }
 
+    function getQueryTime(): null | string {
+        return page.url.searchParams.has('time') && page.url.searchParams.get('time') === '' ? null : queryParams.time;
+    }
+
     updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
     const queryParams = queryParamsState({
         default: DEFAULT_PARAMS,
@@ -107,11 +111,11 @@
         { lazy: true }
     );
 
-    let filters = $state(applyTimeFilter(getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter), queryParams.time));
+    let filters = $state(applyTimeFilter(getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter), getQueryTime()));
     watch(
-        [() => queryParams.filter, () => queryParams.time, () => filterCacheVersionNumber()],
-        ([filter, time]) => {
-            filters = applyTimeFilter(getFiltersFromCache(filterCacheKey(filter), filter), time);
+        [() => queryParams.filter, () => queryParams.time, () => page.url.search, () => filterCacheVersionNumber()],
+        ([filter]) => {
+            filters = applyTimeFilter(getFiltersFromCache(filterCacheKey(filter), filter), getQueryTime());
         },
         { lazy: true }
     );
@@ -154,10 +158,10 @@
         mode: 'summary',
         offset: DEFAULT_OFFSET,
         get time() {
-            return queryParams.time!;
+            return getQueryTime() ?? undefined;
         },
         set time(value) {
-            queryParams.time = value;
+            queryParams.time = value ?? null;
         }
     });
 
@@ -251,7 +255,7 @@
     });
 
     const chartData = $derived(() => {
-        const timeRange = parseDateMathRange(queryParams.time || undefined);
+        const timeRange = parseDateMathRange(getQueryTime() || undefined);
         const buildZeroFilledSeries = () =>
             fillDateSeries(timeRange.start, timeRange.end, (date: Date) => ({
                 date,

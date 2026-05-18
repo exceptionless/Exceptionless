@@ -5610,8 +5610,76 @@
         }
       }
     },
+    "/api/v2/projects/{id}/sample-data": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Generate sample project data",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the project.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkInProgressResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found."
+          }
+        }
+      }
+    },
     "/api/v2/projects/{id}/reset-data": {
       "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Reset project data",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the project.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkInProgressResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found."
+          }
+        }
+      },
+      "post": {
         "tags": [
           "Project"
         ],

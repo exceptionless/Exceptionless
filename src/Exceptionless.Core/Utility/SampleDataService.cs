@@ -286,4 +286,18 @@ public class SampleDataService
         });
         _logger.LogInformation("Enqueued sample event generation: {EventCount} events over {DaysBack} days", eventCount, daysBack);
     }
+
+    public async Task<string> EnqueueSampleEventsAsync(string organizationId, string projectId, int eventCount = 100, int daysBack = 7)
+    {
+        string workItemId = await _workItemQueue.EnqueueAsync(new GenerateSampleEventsWorkItem
+        {
+            OrganizationId = organizationId,
+            ProjectId = projectId,
+            EventCount = eventCount,
+            DaysBack = daysBack
+        });
+
+        _logger.LogInformation("Enqueued sample event generation for project {ProjectId}: {EventCount} events over {DaysBack} days", projectId, eventCount, daysBack);
+        return workItemId;
+    }
 }
