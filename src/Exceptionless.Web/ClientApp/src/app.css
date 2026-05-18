@@ -7,7 +7,7 @@
     --background: hsl(0 0% 100%);
     --foreground: hsl(221 39% 11%);
 
-    --muted: hsl(210 20% 98%);
+    --muted: hsl(240 4.8% 95.9%);
     --muted-foreground: hsl(240 3.8% 46.1%);
 
     --popover: hsl(0 0% 100%);
@@ -22,7 +22,7 @@
     --primary: hsl(96 64% 46%);
     --primary-foreground: hsl(0 0% 10%);
 
-    --secondary: hsl(210 20% 98%);
+    --secondary: hsl(240 4.8% 95.9%);
     --secondary-foreground: hsl(240 5.9% 10%);
 
     --accent: hsl(220 14.29% 95.88%);
@@ -149,6 +149,14 @@
 @layer base {
     * {
         @apply border-border;
+    }
+
+    html {
+        overflow-y: scroll;
+    }
+
+    html:has([data-slot='sheet-content']) {
+        overflow-y: hidden;
     }
 
     body {

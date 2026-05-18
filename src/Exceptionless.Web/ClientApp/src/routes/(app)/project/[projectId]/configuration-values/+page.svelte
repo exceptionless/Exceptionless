@@ -2,9 +2,9 @@
     import type { ClientConfigurationSetting } from '$features/projects/models';
 
     import { page } from '$app/state';
-    import { A, H3, Muted } from '$comp/typography';
+    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
+    import { A, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
-    import { Separator } from '$comp/ui/separator';
     import { getProjectConfig, postProjectConfig } from '$features/projects/api.svelte';
     import AddProjectConfigDialog from '$features/projects/components/dialogs/add-project-config-dialog.svelte';
     import { getTableOptions } from '$features/projects/components/table/config-options.svelte';
@@ -74,23 +74,21 @@
 </script>
 
 <div class="space-y-6">
-    <div class="flex items-start justify-between">
-        <div>
-            <H3>Configuration Values</H3>
-            <Muted
-                >The <A href="https://exceptionless.com/docs/project-settings/#client-configuration" target="_blank">configuration value</A> will be sent to the Exceptionless
-                clients in real time. This allows you to change how your app works without redeploying your app.</Muted
-            >
-        </div>
+    <Muted
+        >The <A href="https://exceptionless.com/docs/project-settings/#client-configuration" target="_blank">configuration value</A> will be sent to the Exceptionless
+        clients in real time. This allows you to change how your app works without redeploying your app.</Muted
+    >
 
-        <Button size="icon" onclick={() => (showAddProjectConfigDialog = true)} title="Add Configuration Value" class="shrink-0">
-            <Plus class="size-4" aria-hidden="true" />
-            <span class="sr-only">Add Configuration Value</span>
-        </Button>
-    </div>
-    <Separator />
-
-    <ProjectsConfigDataTable bind:limit={queryParams.limit!} isLoading={projectConfigQuery.isLoading} {table} />
+    <ProjectsConfigDataTable bind:limit={queryParams.limit!} isLoading={projectConfigQuery.isLoading} {table}>
+        {#snippet toolbarChildren()}
+            <div class="flex-1"></div>
+            <DataTableViewOptions size="icon-lg" {table} />
+            <Button size="icon-lg" onclick={() => (showAddProjectConfigDialog = true)} title="Add Configuration Value">
+                <Plus class="size-4" aria-hidden="true" />
+                <span class="sr-only">Add Configuration Value</span>
+            </Button>
+        {/snippet}
+    </ProjectsConfigDataTable>
 </div>
 
 {#if showAddProjectConfigDialog}

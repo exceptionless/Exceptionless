@@ -3,10 +3,9 @@
     import type { TableMemoryPagingParameters } from '$features/shared/table.svelte';
 
     import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
-    import { H3, Muted } from '$comp/typography';
+    import { Muted } from '$comp/typography';
     import * as Card from '$comp/ui/card';
     import { Input } from '$comp/ui/input';
-    import { Separator } from '$comp/ui/separator';
     import { Skeleton } from '$comp/ui/skeleton';
     import { Switch } from '$comp/ui/switch';
     import { getMigrationsQuery } from '$features/admin/api.svelte';
@@ -63,11 +62,7 @@
 </script>
 
 <div class="space-y-6">
-    <div>
-        <H3>Migrations</H3>
-        <Muted>Database migration history — versioned schema changes applied to Elasticsearch.</Muted>
-    </div>
-    <Separator />
+    <Muted>Database migration history — versioned schema changes applied to Elasticsearch</Muted>
 
     {#if migrationsQuery.isError}
         <Card.Root>
