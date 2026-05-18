@@ -449,9 +449,13 @@ export function postPromotedTab(request: PostPromotedTabRequest) {
     return createMutation<boolean, ProblemDetails, PostPromotedTabParams>(() => ({
         mutationFn: async (params: PostPromotedTabParams) => {
             const client = useFetchClient();
-            const response = await client.post(`projects/${request.route.id}/promotedtabs`, undefined, {
-                params: { ...params }
-            });
+            const response = await client.postJSON(
+                `projects/${request.route.id}/promotedtabs`,
+                {},
+                {
+                    params: { ...params }
+                }
+            );
 
             return response.ok;
         },

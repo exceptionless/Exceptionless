@@ -2,10 +2,9 @@
     import { resolve } from '$app/paths';
     import ErrorMessage from '$comp/error-message.svelte';
     import DateTime from '$comp/formatters/date-time.svelte';
-    import { A, H4 } from '$comp/typography';
+    import { A } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { Separator } from '$comp/ui/separator';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import { env } from '$env/dynamic/public';
@@ -64,11 +63,6 @@
 </script>
 
 <div class="space-y-6">
-    <div>
-        <H4>Billing</H4>
-    </div>
-    <Separator />
-
     {#if organizationQuery.isLoading}
         <div class="space-y-4">
             <Skeleton class="h-12 w-3/4" />
