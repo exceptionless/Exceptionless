@@ -182,6 +182,19 @@ Invoke-RestMethod -Uri "{{::vm.serverUrl}}/api/v2/events" -Method "Post" -Body $
                 </div>
                 <footer class="panel-footer">
                     <div class="pull-right">
+                        <button
+                            type="button"
+                            class="btn btn-primary m-r-xs"
+                            ng-click="vm.generateSampleData()"
+                            ng-disabled="vm.isGeneratingSampleData"
+                        >
+                            <i
+                                class="fa fa-fw"
+                                ng-class="vm.isGeneratingSampleData ? 'fa-spinner fa-spin' : 'fa-database'"
+                            ></i>
+                            <span ng-if="!vm.isGeneratingSampleData">{{::'Generate Sample Data' | translate}}</span>
+                            <span ng-if="vm.isGeneratingSampleData">{{::'Generating Sample Data...' | translate}}</span>
+                        </button>
                         <a
                             ui-sref="app.project-frequent({ projectId: vm.project.id })"
                             class="btn btn-default"

@@ -35,7 +35,12 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
 
     public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = default)
     {
-        return _lockProvider.TryAcquireAsync(nameof(GenerateSampleEventsWorkItemHandler), TimeSpan.FromMinutes(30), cancellationToken);
+        var generateSampleEventsWorkItem = (GenerateSampleEventsWorkItem)workItem;
+        string cacheKey = IsProjectScoped(generateSampleEventsWorkItem)
+            ? $"{nameof(GenerateSampleEventsWorkItemHandler)}:{generateSampleEventsWorkItem.ProjectId}"
+            : nameof(GenerateSampleEventsWorkItemHandler);
+
+        return _lockProvider.TryAcquireAsync(cacheKey, TimeSpan.FromMinutes(30), cancellationToken);
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
@@ -43,13 +48,20 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
         var workItem = context.GetData<GenerateSampleEventsWorkItem>()!;
         int eventCount = Math.Clamp(workItem.EventCount, 1, 10000);
         int daysBack = Math.Clamp(workItem.DaysBack, 1, 365);
+        int acceptedDaysBack = Math.Min(daysBack, 3);
 
-        Log.LogInformation("Generating {EventCount} sample events over {DaysBack} days", eventCount, daysBack);
-        await context.ReportProgressAsync(0, $"Generating {eventCount} sample events");
+        Log.LogInformation("Generating {EventCount} sample events over {DaysBack} days", eventCount, acceptedDaysBack);
+        await context.ReportProgressAsync(0, $"Generating {eventCount} sample events over {acceptedDaysBack} days");
 
         var generator = new RandomEventGenerator(_timeProvider);
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-        var minDate = utcNow.AddDays(-daysBack);
+        var minDate = utcNow.AddDays(-acceptedDaysBack);
+
+        if (IsProjectScoped(workItem))
+        {
+            await GenerateProjectSampleEventsAsync(context, generator, workItem, eventCount, minDate, utcNow);
+            return;
+        }
 
         var projectResults = await _projectRepository.GetByOrganizationIdAsync(SampleDataService.TEST_ORG_ID);
         var projectList = projectResults.Documents.ToList();
@@ -69,7 +81,7 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
         int eventsPerProject = eventCount / projectList.Count;
         int remainder = eventCount % projectList.Count;
         int totalProcessed = 0;
-        const int batchSize = 50;
+        const int batchSize = 100;
 
         for (int p = 0; p < projectList.Count; p++)
         {
@@ -81,14 +93,13 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
 
             var events = generator.Generate(organization.Id, project.Id, projectEventCount, minDate, utcNow);
 
-            for (int i = 0; i < events.Count; i += batchSize)
+            foreach (var batch in events.Chunk(batchSize))
             {
                 if (context.CancellationToken.IsCancellationRequested)
                     break;
 
-                var batch = events.Skip(i).Take(batchSize).ToList();
                 await _eventPipeline.RunAsync(batch, organization, project);
-                totalProcessed += batch.Count;
+                totalProcessed += batch.Length;
 
                 int percentage = (int)Math.Min(99, totalProcessed * 100.0 / eventCount);
                 await context.ReportProgressAsync(percentage, $"Processed {totalProcessed}/{eventCount} events");
@@ -97,5 +108,52 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
 
         await context.ReportProgressAsync(100, $"Generated {totalProcessed} sample events across {projectList.Count} projects");
         Log.LogInformation("Generated {TotalEvents} sample events across {ProjectCount} projects", totalProcessed, projectList.Count);
+    }
+
+    private async Task GenerateProjectSampleEventsAsync(WorkItemContext context, RandomEventGenerator generator, GenerateSampleEventsWorkItem workItem, int eventCount, DateTime minDate, DateTime utcNow)
+    {
+        if (String.IsNullOrEmpty(workItem.OrganizationId) || String.IsNullOrEmpty(workItem.ProjectId))
+        {
+            Log.LogWarning("Unable to generate project sample events because organization id or project id was not specified");
+            return;
+        }
+
+        var organization = await _organizationRepository.GetByIdAsync(workItem.OrganizationId);
+        if (organization is null)
+        {
+            Log.LogWarning("Organization {OrganizationId} not found when generating sample events", workItem.OrganizationId);
+            return;
+        }
+
+        var project = await _projectRepository.GetByIdAsync(workItem.ProjectId);
+        if (project is null || !String.Equals(project.OrganizationId, organization.Id))
+        {
+            Log.LogWarning("Project {ProjectId} not found in organization {OrganizationId} when generating sample events", workItem.ProjectId, workItem.OrganizationId);
+            return;
+        }
+
+        int totalProcessed = 0;
+        const int batchSize = 100;
+        var events = generator.Generate(organization.Id, project.Id, eventCount, minDate, utcNow);
+
+        foreach (var batch in events.Chunk(batchSize))
+        {
+            if (context.CancellationToken.IsCancellationRequested)
+                break;
+
+            await _eventPipeline.RunAsync(batch, organization, project);
+            totalProcessed += batch.Length;
+
+            int percentage = (int)Math.Min(99, totalProcessed * 100.0 / eventCount);
+            await context.ReportProgressAsync(percentage, $"Processed {totalProcessed}/{eventCount} events");
+        }
+
+        await context.ReportProgressAsync(100, $"Generated {totalProcessed} sample events for project {project.Id}");
+        Log.LogInformation("Generated {TotalEvents} sample events for project {ProjectId}", totalProcessed, project.Id);
+    }
+
+    private static bool IsProjectScoped(GenerateSampleEventsWorkItem workItem)
+    {
+        return !String.IsNullOrEmpty(workItem.OrganizationId) && !String.IsNullOrEmpty(workItem.ProjectId);
     }
 }
