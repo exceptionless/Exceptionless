@@ -49,6 +49,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             Name = "Production Errors",
             Filter = "status:open",
             Time = "[now-7D TO now]",
+            Sort = "-date",
             ViewType = "events",
             FilterDefinitions = """[{"type":"keyword","value":"status:open"}]"""
         };
@@ -70,6 +71,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         Assert.Equal("Production Errors", result.Name);
         Assert.Equal("status:open", result.Filter);
         Assert.Equal("[now-7D TO now]", result.Time);
+        Assert.Equal("-date", result.Sort);
         Assert.Equal("events", result.ViewType);
         Assert.NotNull(result.FilterDefinitions);
         Assert.Equal(1, result.Version);
@@ -82,6 +84,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         var savedView = await _savedViewRepository.GetByIdAsync(result.Id);
         Assert.NotNull(savedView);
         Assert.Equal("Production Errors", savedView.Name);
+        Assert.Equal("-date", savedView.Sort);
     }
 
     [Fact]
@@ -416,6 +419,27 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(updated);
         Assert.Equal("[now-30D TO now]", updated.Time);
+    }
+
+    [Fact]
+    public async Task PatchAsync_UpdateSort_UpdatesSortString()
+    {
+        // Arrange
+        var created = await CreateSavedViewAsync("Sort Update Test", "status:open", "events");
+        Assert.NotNull(created);
+
+        // Act
+        var updated = await SendRequestAsAsync<ViewSavedView>(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", created.Id)
+            .Content(new UpdateSavedView { Sort = "-date" })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updated);
+        Assert.Equal("-date", updated.Sort);
     }
 
     [Fact]
@@ -1538,6 +1562,23 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
             .Content(new UpdateSavedView { Filter = new string('x', 2001) })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Fact]
+    public async Task PatchAsync_SortExceedsMaxLength_ReturnsUnprocessableEntity()
+    {
+        // Arrange
+        var created = await CreateSavedViewAsync("MaxLen Sort", "status:open", "events");
+        Assert.NotNull(created);
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", created.Id)
+            .Content(new UpdateSavedView { Sort = new string('x', 101) })
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }

@@ -91,7 +91,9 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     const [allData, setAllData] = createTableState<TData[]>([]);
     const [data, setData] = createTableState<TData[]>([]);
     const [meta, setMeta] = createTableState<QueryMeta | undefined>(undefined);
-    const [sorting, setSorting] = createTableState<ColumnSort[]>([]);
+    const [sorting, setSorting] = createTableState<ColumnSort[]>(
+        parseSortString('sort' in configuration.queryParameters ? configuration.queryParameters.sort : undefined)
+    );
     const [rowSelection, setRowSelection] = createTableState<RowSelectionState>({});
 
     const onPaginationChange = (updaterOrValue: Updater<PaginationState>) => {
@@ -126,7 +128,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         setSorting(updaterOrValue);
         const newSorting = sorting();
 
-        const sort = newSorting.length > 0 ? newSorting.map((sort) => `${sort.desc ? '-' : ''}${sort.id}`).join(',') : undefined;
+        const sort = serializeSortState(newSorting);
         if (isCursorPaging) {
             const parameters = configuration.queryParameters as TableCursorPagingParameters;
             parameters.after = undefined;
@@ -192,6 +194,12 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     // NOTE: Two different effects are used here to avoid circular dependency issues with in memory paging.
     $effect(() => setDataImpl(configuration.queryData ?? []));
     $effect(() => setMetaImpl(configuration.queryMeta));
+    $effect(() => {
+        const sort = 'sort' in configuration.queryParameters ? configuration.queryParameters.sort : undefined;
+        if (sort !== serializeSortState(sorting())) {
+            setSorting(parseSortString(sort));
+        }
+    });
 
     const configureOptions = configuration.configureOptions ?? ((options) => options);
     return configureOptions({
@@ -322,4 +330,24 @@ function createTableState<T>(initialValue: T): [() => T, (updater: Updater<T>) =
             }
         }
     ];
+}
+
+function parseSortString(sort: string | undefined): ColumnSort[] {
+    if (!sort) {
+        return [];
+    }
+
+    return sort
+        .split(',')
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0)
+        .map((value) => ({
+            desc: value.startsWith('-'),
+            id: value.startsWith('-') ? value.slice(1) : value
+        }))
+        .filter((value) => value.id.length > 0);
+}
+
+function serializeSortState(sorting: ColumnSort[]): string | undefined {
+    return sorting.length > 0 ? sorting.map((sort) => `${sort.desc ? '-' : ''}${sort.id}`).join(',') : undefined;
 }

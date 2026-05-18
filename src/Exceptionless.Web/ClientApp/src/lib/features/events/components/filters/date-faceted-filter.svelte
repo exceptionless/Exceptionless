@@ -12,7 +12,7 @@
 
     import { DateFilter } from './models.svelte';
 
-    let { filter, filterChanged, open = $bindable(false), title = 'Date Range' }: FacetedFilterProps<DateFilter> = $props();
+    let { filter, filterChanged, filterRemoved, open = $bindable(false), title = 'Date Range' }: FacetedFilterProps<DateFilter> = $props();
 
     let dateRangePickerRef: DateRangePickerType | undefined = $state();
     let shouldApply = $state(true);
@@ -36,6 +36,25 @@
             shouldApply = false;
         }
     }
+
+    function onClearFilter() {
+        shouldApply = false;
+        filter.value = undefined;
+        filterChanged(filter);
+        open = false;
+    }
+
+    function onRemoveFilter() {
+        shouldApply = false;
+        filterRemoved(filter);
+        open = false;
+    }
+
+    function toggleHidden() {
+        shouldApply = false;
+        filter.hidden = !filter.hidden;
+        filterChanged(filter);
+    }
 </script>
 
 <Popover.Root bind:open {onOpenChange}>
@@ -55,5 +74,6 @@
         <div class="flex flex-col">
             <DateRangePicker bind:this={dateRangePickerRef} {quickRanges} value={filter.value} onselect={handleSelect} />
         </div>
+        <FacetedFilter.Actions clear={onClearFilter} hidden={filter.hidden} remove={onRemoveFilter} showClear={filter.value !== undefined} {toggleHidden} />
     </Popover.Content>
 </Popover.Root>

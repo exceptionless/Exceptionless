@@ -15,16 +15,18 @@
 
     interface Props {
         changed: (value?: string) => void;
+        hidden?: boolean;
         loading?: boolean;
         noOptionsText?: string;
         open: boolean;
         options: Option[];
         remove: () => void;
         title: string;
+        toggleHidden?: () => void;
         value?: string;
     }
 
-    let { changed, loading = false, noOptionsText = 'No results found.', open = $bindable(), options, remove, title, value }: Props = $props();
+    let { changed, hidden = false, loading = false, noOptionsText = 'No results found.', open = $bindable(), options, remove, title, toggleHidden, value }: Props = $props();
 
     // eslint-disable-next-line svelte/prefer-writable-derived
     let updatedValue = $state<string | undefined>();
@@ -90,7 +92,7 @@
 <Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="gap-x-1 px-3" size="xl" variant="outline" aria-describedby={`${title}-help`}>
+            <Button {...props} class="gap-x-1 px-3" size="lg" variant="outline" aria-describedby={`${title}-help`}>
                 {title}
                 <Separator class="mx-2" orientation="vertical" />
                 {#if loading}
@@ -133,6 +135,6 @@
             </Command.List>
         </Command.Root>
         <div id={`${title}-help`} class="sr-only">Arrow keys navigate. Space or Enter toggles selection. Escape cancels without saving.</div>
-        <FacetedFilter.Actions clear={onClearFilter} {remove} showClear={!!updatedValue?.trim()} />
+        <FacetedFilter.Actions clear={onClearFilter} {hidden} {remove} showClear={!!updatedValue?.trim()} {toggleHidden} />
     </Popover.Content>
 </Popover.Root>

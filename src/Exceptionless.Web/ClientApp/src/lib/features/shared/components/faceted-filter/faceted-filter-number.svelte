@@ -7,13 +7,15 @@
 
     interface Props {
         changed: (value?: number) => void;
+        hidden?: boolean;
         open: boolean;
         remove: () => void;
         title: string;
+        toggleHidden?: () => void;
         value?: number;
     }
 
-    let { changed, open = $bindable(), remove, title, value }: Props = $props();
+    let { changed, hidden = false, open = $bindable(), remove, title, toggleHidden, value }: Props = $props();
 
     // eslint-disable-next-line svelte/prefer-writable-derived
     let updatedValue = $state<number | undefined>();
@@ -64,7 +66,7 @@
 <Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="gap-x-1 px-3" size="xl" variant="outline" aria-describedby={`${title}-help`}>
+            <Button {...props} class="gap-x-1 px-3" size="lg" variant="outline" aria-describedby={`${title}-help`}>
                 {title}
                 <Separator class="mx-2" orientation="vertical" />
                 {#if value !== undefined && !isNaN(value)}
@@ -88,6 +90,6 @@
             />
         </div>
         <div id={`${title}-help`} class="sr-only">Type a number. Enter applies, Escape cancels.</div>
-        <FacetedFilter.Actions clear={onClearFilter} {remove} showClear={updatedValue !== undefined} />
+        <FacetedFilter.Actions clear={onClearFilter} {hidden} {remove} showClear={updatedValue !== undefined} {toggleHidden} />
     </Popover.Content>
 </Popover.Root>

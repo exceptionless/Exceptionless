@@ -15,12 +15,14 @@ const SAVED_VIEWS_FEATURE = 'feature-saved-views';
 export interface SavedViewQueryParams {
     filter: null | string;
     saved: null | string | undefined;
+    sort?: null | string;
     time?: null | string;
 }
 
 export interface UseSavedViewsOptions {
     filterCacheKey: (filter: null | string) => string;
     getColumnVisibility?: () => ColumnVisibilityState;
+    getFilterDefinitions?: () => string;
     queryParams: SavedViewQueryParams;
     setColumnVisibility?: (visibility: ColumnVisibilityState) => void;
     updateFilterCache: (key: string, filters: IFilter[]) => void;
@@ -43,6 +45,16 @@ export function setTimeQueryParam(queryParams: SavedViewQueryParams, value: null
     }
 }
 
+export function setSortQueryParam(queryParams: SavedViewQueryParams, value: null | string): void {
+    if (supportsSortQueryParam(queryParams)) {
+        queryParams.sort = value;
+    }
+}
+
+export function supportsSortQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { sort: null | string | undefined } {
+    return Object.prototype.hasOwnProperty.call(queryParams, 'sort');
+}
+
 export function supportsTimeQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { time: null | string | undefined } {
     return Object.prototype.hasOwnProperty.call(queryParams, 'time');
 }
@@ -59,7 +71,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     // Feature flag gate: only enable saved views if the organization has the feature
     const isEnabled = $derived(organizationQuery.data?.features?.includes(SAVED_VIEWS_FEATURE) ?? false);
 
-    // Some routes, such as stream, do not declare a time query parameter.
+    // Some routes, such as stream, do not declare every saved-view query parameter.
+    const supportsSort = supportsSortQueryParam(options.queryParams);
     const supportsTime = supportsTimeQueryParam(options.queryParams);
 
     const savedViewsListQuery = getSavedViewsByViewQuery({
@@ -106,6 +119,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
                 options.queryParams.saved = null;
             });
             options.queryParams.filter = null;
+            setSortQueryParam(options.queryParams, null);
             setTimeQueryParam(options.queryParams, null);
             hasAutoRestored = false;
             return;
@@ -128,6 +142,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         options.queryParams.filter = view.filter ?? null;
+        setSortQueryParam(options.queryParams, view.sort ?? null);
         setTimeQueryParam(options.queryParams, view.time ?? null);
 
         if (view.columns && options.setColumnVisibility) {
@@ -163,7 +178,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         hasAutoRestored = true;
 
         const search = window.location.search;
-        const hasExplicitParams = /[?&]saved(?:[=&]|$)/.test(search) || /[?&]filter(?:[=&]|$)/.test(search) || /[?&]time(?:[=&]|$)/.test(search);
+        const hasExplicitParams =
+            /[?&]saved(?:[=&]|$)/.test(search) || /[?&]filter(?:[=&]|$)/.test(search) || /[?&]sort(?:[=&]|$)/.test(search) || /[?&]time(?:[=&]|$)/.test(search);
         if (hasExplicitParams) {
             return;
         }
@@ -188,6 +204,14 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         if (supportsTime && (options.queryParams.time ?? null) !== (view.time ?? null)) {
+            return true;
+        }
+
+        if (supportsSort && (options.queryParams.sort ?? null) !== (view.sort ?? null)) {
+            return true;
+        }
+
+        if (options.getFilterDefinitions && !filterDefinitionsEqual(options.getFilterDefinitions(), view.filter_definitions)) {
             return true;
         }
 
@@ -218,6 +242,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         options.queryParams.filter = view.filter ?? null;
+        setSortQueryParam(options.queryParams, view.sort ?? null);
         setTimeQueryParam(options.queryParams, view.time ?? null);
         if (view.columns && options.setColumnVisibility) {
             options.setColumnVisibility(view.columns);
@@ -227,6 +252,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     function handleClearSavedView() {
         options.queryParams.saved = null;
         options.queryParams.filter = null;
+        setSortQueryParam(options.queryParams, null);
         setTimeQueryParam(options.queryParams, null);
         if (options.setColumnVisibility) {
             options.setColumnVisibility({});
@@ -264,4 +290,25 @@ function columnsEqual(a: ColumnVisibilityState | undefined, b: null | Record<str
         const bEntry = bEntries[i];
         return bEntry !== undefined && bEntry[0] === k && bEntry[1] === v;
     });
+}
+
+function filterDefinitionsEqual(a: null | string | undefined, b: null | string | undefined): boolean {
+    return normalizeFilterDefinitions(a) === normalizeFilterDefinitions(b);
+}
+
+function normalizeFilterDefinitions(value: null | string | undefined): string {
+    if (!value) {
+        return '[]';
+    }
+
+    try {
+        const parsed = JSON.parse(value);
+        if (!Array.isArray(parsed) || parsed.length === 0) {
+            return '[]';
+        }
+
+        return JSON.stringify(parsed);
+    } catch {
+        return value;
+    }
 }

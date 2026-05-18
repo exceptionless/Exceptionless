@@ -6,6 +6,7 @@ import type { StackStatus } from '$features/stacks/models';
 import { quoteIfSpecialCharacters } from './helpers.svelte';
 
 export class BooleanFilter implements IFilter {
+    public hidden = $state(false);
     public id: string = crypto.randomUUID();
     public term = $state<string>();
     public type: string = 'boolean';
@@ -23,6 +24,7 @@ export class BooleanFilter implements IFilter {
 
     public clone(): IFilter {
         const filter = new BooleanFilter(this.term, this.value);
+        filter.hidden = this.hidden;
         filter.id = this.id;
         return filter;
     }
@@ -41,6 +43,7 @@ export class BooleanFilter implements IFilter {
 }
 
 export class DateFilter implements IFilter {
+    public hidden = $state(false);
     public id: string = crypto.randomUUID();
     public term = $state<string>();
     public type: string = 'date';
@@ -58,6 +61,7 @@ export class DateFilter implements IFilter {
 
     public clone(): IFilter {
         const filter = new DateFilter(this.term, this.value);
+        filter.hidden = this.hidden;
         filter.id = this.id;
         return filter;
     }
@@ -77,6 +81,7 @@ export class DateFilter implements IFilter {
 }
 
 export class KeywordFilter implements IFilter {
+    public hidden = $state(false);
     public id: string = crypto.randomUUID();
     public type: string = 'keyword';
 
@@ -92,6 +97,7 @@ export class KeywordFilter implements IFilter {
 
     public clone(): IFilter {
         const filter = new KeywordFilter(this.value);
+        filter.hidden = this.hidden;
         filter.id = this.id;
         return filter;
     }
@@ -106,6 +112,7 @@ export class KeywordFilter implements IFilter {
 }
 
 export class LevelFilter implements IFilter {
+    public hidden = $state(false);
     public id: string = crypto.randomUUID();
     public type: string = 'level';
 
@@ -121,6 +128,7 @@ export class LevelFilter implements IFilter {
 
     public clone(): IFilter {
         const filter = new LevelFilter(this.value);
+        filter.hidden = this.hidden;
         filter.id = this.id;
         return filter;
     }
@@ -139,6 +147,7 @@ export class LevelFilter implements IFilter {
 }
 
 export class NumberFilter implements IFilter {
+    public hidden = $state(false);
     public id: string = crypto.randomUUID();
     public term = $state<string>();
     public type: string = 'number';
@@ -156,6 +165,7 @@ export class NumberFilter implements IFilter {
 
     public clone(): IFilter {
         const filter = new NumberFilter(this.term, this.value);
+        filter.hidden = this.hidden;
         filter.id = this.id;
         return filter;
     }
@@ -174,6 +184,7 @@ export class NumberFilter implements IFilter {
 }
 
 export class ProjectFilter implements IFilter {
+    public hidden = $state(false);
     public id: string = crypto.randomUUID();
     public type: string = 'project';
 
@@ -189,6 +200,7 @@ export class ProjectFilter implements IFilter {
 
     public clone(): IFilter {
         const filter = new ProjectFilter(this.value);
+        filter.hidden = this.hidden;
         filter.id = this.id;
         return filter;
     }
@@ -207,6 +219,7 @@ export class ProjectFilter implements IFilter {
 }
 
 export class ReferenceFilter implements IFilter {
+    public hidden = $state(false);
     public id: string = crypto.randomUUID();
     public type: string = 'reference';
 
@@ -222,6 +235,7 @@ export class ReferenceFilter implements IFilter {
 
     public clone(): IFilter {
         const filter = new ReferenceFilter(this.value);
+        filter.hidden = this.hidden;
         filter.id = this.id;
         return filter;
     }
@@ -236,6 +250,7 @@ export class ReferenceFilter implements IFilter {
 }
 
 export class SessionFilter implements IFilter {
+    public hidden = $state(false);
     public id: string = crypto.randomUUID();
     public type: string = 'session';
 
@@ -251,6 +266,7 @@ export class SessionFilter implements IFilter {
 
     public clone(): IFilter {
         const filter = new SessionFilter(this.value);
+        filter.hidden = this.hidden;
         filter.id = this.id;
         return filter;
     }
@@ -266,6 +282,7 @@ export class SessionFilter implements IFilter {
 }
 
 export class StatusFilter implements IFilter {
+    public hidden = $state(false);
     public id: string = crypto.randomUUID();
     public type: string = 'status';
 
@@ -281,6 +298,7 @@ export class StatusFilter implements IFilter {
 
     public clone(): IFilter {
         const filter = new StatusFilter(this.value);
+        filter.hidden = this.hidden;
         filter.id = this.id;
         return filter;
     }
@@ -299,6 +317,7 @@ export class StatusFilter implements IFilter {
 }
 
 export class StringFilter implements IFilter {
+    public hidden = $state(false);
     public id: string = crypto.randomUUID();
     public term = $state<string>();
     public type: string = 'string';
@@ -316,6 +335,7 @@ export class StringFilter implements IFilter {
 
     public clone(): IFilter {
         const filter = new StringFilter(this.term, this.value);
+        filter.hidden = this.hidden;
         filter.id = this.id;
         return filter;
     }
@@ -334,6 +354,7 @@ export class StringFilter implements IFilter {
 }
 
 export class TagFilter implements IFilter {
+    public hidden = $state(false);
     public id: string = crypto.randomUUID();
     public type: string = 'tag';
 
@@ -349,6 +370,7 @@ export class TagFilter implements IFilter {
 
     public clone(): IFilter {
         const filter = new TagFilter(this.value);
+        filter.hidden = this.hidden;
         filter.id = this.id;
         return filter;
     }
@@ -367,6 +389,7 @@ export class TagFilter implements IFilter {
 }
 
 export class TypeFilter implements IFilter {
+    public hidden = $state(false);
     public id: string = crypto.randomUUID();
     public type: string = 'type';
 
@@ -382,6 +405,7 @@ export class TypeFilter implements IFilter {
 
     public clone(): IFilter {
         const filter = new TypeFilter(this.value);
+        filter.hidden = this.hidden;
         filter.id = this.id;
         return filter;
     }
@@ -400,6 +424,7 @@ export class TypeFilter implements IFilter {
 }
 
 export class VersionFilter implements IFilter {
+    public hidden = $state(false);
     public id: string = crypto.randomUUID();
     public term = $state<string>();
     public type: string = 'version';
@@ -417,6 +442,7 @@ export class VersionFilter implements IFilter {
 
     public clone(): IFilter {
         const filter = new VersionFilter(this.term, this.value);
+        filter.hidden = this.hidden;
         filter.id = this.id;
         return filter;
     }

@@ -10,6 +10,11 @@
 
     let { filter, filterChanged, filterRemoved, open = $bindable(false), title = 'Tag', ...props }: FacetedFilterProps<TagFilter> = $props();
 
+    function toggleHidden() {
+        filter.hidden = !filter.hidden;
+        filterChanged(filter);
+    }
+
     // Store the organizationId to prevent loading when switching organizations.
     const organizationId = organization.current;
 
@@ -59,7 +64,9 @@
         filter.value = [];
         filterRemoved(filter);
     }}
+    hidden={filter.hidden}
     {title}
+    {toggleHidden}
     values={filter.value}
     {...props}
 ></FacetedFilter.MultiSelect>

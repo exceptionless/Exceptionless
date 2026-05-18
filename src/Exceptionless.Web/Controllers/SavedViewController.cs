@@ -219,6 +219,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         var lengthResult = ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Name), 100)
             ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Filter), 2000)
             ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Time), 100)
+            ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Sort), 100)
             ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.FilterDefinitions), 10000);
         if (lengthResult is not null)
             return lengthResult;

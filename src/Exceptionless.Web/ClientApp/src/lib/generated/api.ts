@@ -136,6 +136,7 @@ export interface NewSavedView {
   name: string;
   filter?: null | string;
   time?: null | string;
+  sort?: null | string;
   view_type: string;
   filter_definitions?: null | string;
   columns?: null | Record<string, boolean>;
@@ -370,6 +371,7 @@ export interface UpdateSavedView {
   is_default?: null | boolean;
   filter?: null | string;
   time?: null | string;
+  sort?: null | string;
   filter_definitions?: null | string;
   columns?: null | Record<string, boolean>;
 }
@@ -566,6 +568,7 @@ export interface ViewSavedView {
   is_default: boolean;
   name: string;
   time?: null | string;
+  sort?: null | string;
   /** @format int32 */
   version: number;
   view_type: string;

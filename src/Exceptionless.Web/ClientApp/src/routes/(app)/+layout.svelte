@@ -284,6 +284,10 @@
             queryEntries.push(['time', savedView.time]);
         }
 
+        if (savedView.sort) {
+            queryEntries.push(['sort', savedView.sort]);
+        }
+
         const queryParams = new URLSearchParams(queryEntries);
         return `${baseHref}?${queryParams.toString()}`;
     }
