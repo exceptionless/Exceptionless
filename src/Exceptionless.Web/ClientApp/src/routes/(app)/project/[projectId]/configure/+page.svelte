@@ -5,12 +5,16 @@
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
     import { A, CodeBlock, Muted, P } from '$comp/typography';
+    import { Button } from '$comp/ui/button';
     import * as Select from '$comp/ui/select';
+    import { Spinner } from '$comp/ui/spinner';
     import { env } from '$env/dynamic/public';
     import { getIntercom } from '$features/intercom';
     import { openSupportChat } from '$features/intercom/chat';
+    import { generateSampleData } from '$features/projects/api.svelte';
     import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
     import EnableTokenDialog from '$features/tokens/components/dialogs/enable-token-dialog.svelte';
+    import Database from '@lucide/svelte/icons/database';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener } from 'runed';
     import { toast } from 'svelte-sonner';
@@ -42,6 +46,14 @@
         }
     });
 
+    const generateSampleDataMutation = generateSampleData({
+        route: {
+            get id() {
+                return projectId;
+            }
+        }
+    });
+
     async function enableToken() {
         toast.dismiss(toastId);
 
@@ -50,6 +62,18 @@
             toastId = toast.success(`Successfully enabled API key`);
         } catch (error) {
             toastId = toast.error('Failed to enable API key. Please try again.');
+            throw error;
+        }
+    }
+
+    async function generateProjectSampleData() {
+        toast.dismiss(toastId);
+
+        try {
+            await generateSampleDataMutation.mutateAsync();
+            toastId = toast.success('Sample data generation has been queued. Events will appear shortly.');
+        } catch (error) {
+            toastId = toast.error('Failed to generate sample data. Please try again.');
             throw error;
         }
     }
@@ -590,6 +614,17 @@ public partial class App : Application {
             </NotificationDescription>
         </Notification>
     {/if}
+
+    <div class="border-border flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end">
+        <Button variant="success" onclick={generateProjectSampleData} disabled={generateSampleDataMutation.isPending}>
+            {#if generateSampleDataMutation.isPending}
+                <Spinner /> Generating...
+            {:else}
+                <Database class="mr-2 size-4" aria-hidden="true" /> Generate Sample Data
+            {/if}
+        </Button>
+        <Button variant="secondary" href={`${resolve('/(app)/issues')}?filter=project:${projectId}`}>Go To Most Frequent</Button>
+    </div>
 
     {#if isTokenDisabled}
         <EnableTokenDialog open={openEnableTokenDialog} id={defaultTokenQuery.data?.id || ''} notes={defaultTokenQuery.data?.notes} enable={enableToken} />

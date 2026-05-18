@@ -168,6 +168,32 @@
                     $state.go("app.project-frequent", { projectId: vm._projectId });
                 }
 
+                function generateSampleData() {
+                    if (vm.isGeneratingSampleData) {
+                        return;
+                    }
+
+                    function onSuccess() {
+                        notificationService.success(
+                            translateService.T("Sample data generation has been queued. Events will appear shortly.")
+                        );
+                    }
+
+                    function onFailure() {
+                        notificationService.error(
+                            translateService.T("An error occurred while generating sample data for your project.")
+                        );
+                    }
+
+                    vm.isGeneratingSampleData = true;
+                    return projectService
+                        .generateSampleData(vm._projectId)
+                        .then(onSuccess, onFailure)
+                        .finally(function () {
+                            vm.isGeneratingSampleData = false;
+                        });
+                }
+
                 this.$onInit = function $onInit() {
                     vm._projectId = $stateParams.id;
                     vm._canRedirect = $stateParams.redirect === "true";
@@ -177,9 +203,11 @@
                     vm.copyCommandLineCode = copyCommandLineCode;
                     vm.copied = copied;
                     vm.currentProjectType = {};
+                    vm.generateSampleData = generateSampleData;
                     vm.isBashShell = isBashShell;
                     vm.isCommandLine = isCommandLine;
                     vm.isDotNet = isDotNet;
+                    vm.isGeneratingSampleData = false;
                     vm.isJavaScript = isJavaScript;
                     vm.isNode = isNode;
                     vm.navigateToDashboard = navigateToDashboard;
