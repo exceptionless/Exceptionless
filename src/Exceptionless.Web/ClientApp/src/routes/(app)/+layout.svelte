@@ -292,7 +292,32 @@
 
     const filteredRoutes = $derived.by(() => {
         const context: NavigationItemContext = { authenticated: isAuthenticated, impersonating: isImpersonating, user: meQuery.data };
-        const allRoutes = routes().filter((route) => (route.show ? route.show(context) : true));
+        const allRoutes = routes()
+            .filter((route) => (route.show ? route.show(context) : true))
+            .map((route) => {
+                if (route.group !== 'Dashboards') {
+                    return route;
+                }
+
+                if (route.href === resolve('/(app)') && page.params.eventId) {
+                    return {
+                        ...route,
+                        children: [...(route.children ?? []), { href: resolve('/(app)/event/[eventId]', { eventId: page.params.eventId }), title: 'Details' }]
+                    };
+                }
+
+                if (route.href === resolve('/(app)/issues') && page.params.stackId) {
+                    return {
+                        ...route,
+                        children: [
+                            ...(route.children ?? []),
+                            { href: resolve('/(app)/issues/[stackId]', { stackId: page.params.stackId }), title: 'Details' }
+                        ]
+                    };
+                }
+
+                return route;
+            });
 
         const savedViews = savedViewsQuery.data ?? [];
         if (savedViews.length === 0) {
@@ -319,7 +344,7 @@
 
             // Only show submenu if there are non-default views
             if (nonDefaultViews.length === 0) {
-                return { ...route, defaultViewId: defaultView?.id, view: viewKey };
+                return { ...route, children: route.children, defaultViewId: defaultView?.id, view: viewKey };
             }
 
             // Show all views sorted: default first, then alphabetically by name
@@ -335,11 +360,14 @@
                 return a.name.localeCompare(b.name);
             });
 
-            const children = sortedViews.map((savedView) => ({
-                href: buildSavedViewHref(route.href, savedView),
-                isDefault: savedView.is_default,
-                title: savedView.name
-            }));
+            const children = [
+                ...sortedViews.map((savedView) => ({
+                    href: buildSavedViewHref(route.href, savedView),
+                    isDefault: savedView.is_default,
+                    title: savedView.name
+                })),
+                ...(route.children ?? [])
+            ];
 
             return {
                 ...route,

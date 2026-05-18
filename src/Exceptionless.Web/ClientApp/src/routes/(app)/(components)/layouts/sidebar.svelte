@@ -10,6 +10,7 @@
     import { getProjectQuery } from '$features/projects/api.svelte';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
     import Settings from '@lucide/svelte/icons/settings-2';
+    import User from '@lucide/svelte/icons/user';
     import Wrench from '@lucide/svelte/icons/wrench';
 
     import type { NavigationItem } from '../../../routes.svelte';
@@ -24,6 +25,17 @@
 
     function isRouteActive(href: string): boolean {
         return page.url.pathname === href || page.url.pathname.startsWith(`${href}/`);
+    }
+
+    function isChildItemActive(childItem: { href: string; isDefault?: boolean }, routeHref: string): boolean {
+        const childUrl = new URL(childItem.href, page.url.origin);
+        const hasSavedViewParam = childUrl.searchParams.has('saved');
+
+        if (hasSavedViewParam || childItem.isDefault !== undefined) {
+            return isSavedItemActive(childItem, routeHref);
+        }
+
+        return isRouteActive(childUrl.pathname);
     }
 
     type Props = ComponentProps<typeof Sidebar.Root> & {
@@ -52,6 +64,8 @@
     const systemRoutes = $derived(routes.filter((route) => route.group === 'System'));
     const systemBasePath = resolve('/(app)/system');
     const systemIsActive = $derived(page.url.pathname === systemBasePath || page.url.pathname.startsWith(systemBasePath + '/'));
+    const accountRoutes = $derived(routes.filter((route) => route.group === 'My Account'));
+    const accountIsActive = $derived(accountRoutes.some((route) => isRouteActive(String(route.href))));
 
     const sidebar = useSidebar();
 
@@ -74,7 +88,7 @@
                 {#each dashboardRoutes as route (route.href)}
                     {@const Icon = route.icon}
                     {#if route.children?.length}
-                        {@const isChildActive = route.href === page.url.pathname || route.children.some((c) => isSavedItemActive(c, route.href))}
+                        {@const isChildActive = route.href === page.url.pathname || route.children.some((childItem) => isChildItemActive(childItem, route.href))}
                         <Collapsible.Root open={isChildActive} class="group/collapsible">
                             {#snippet child({ props: collapsibleProps })}
                                 <Sidebar.MenuItem {...collapsibleProps}>
@@ -104,7 +118,7 @@
                                         <Sidebar.MenuSub>
                                             {#each route.children as savedItem (savedItem.href)}
                                                 <Sidebar.MenuSubItem>
-                                                    <Sidebar.MenuSubButton isActive={isSavedItemActive(savedItem, route.href)}>
+                                                    <Sidebar.MenuSubButton isActive={isChildItemActive(savedItem, route.href)}>
                                                         {#snippet child({ props: subProps })}
                                                             <A
                                                                 variant="ghost"
@@ -235,6 +249,47 @@
                 </Collapsible.Root>
             </Sidebar.Menu>
         </Sidebar.Group>
+
+        {#if accountRoutes.length > 0}
+            <Sidebar.Group>
+                <Sidebar.Menu>
+                    <Collapsible.Root open={accountIsActive} class="group/collapsible">
+                        {#snippet child({ props })}
+                            <Sidebar.MenuItem {...props}>
+                                <Collapsible.Trigger>
+                                    {#snippet child({ props })}
+                                        <Sidebar.MenuButton {...props}>
+                                            <User />
+                                            <span>Account</span>
+                                            <ChevronRight class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                        </Sidebar.MenuButton>
+                                    {/snippet}
+                                </Collapsible.Trigger>
+                                <Collapsible.Content>
+                                    <Sidebar.MenuSub>
+                                        {#each accountRoutes as subItem (subItem.href)}
+                                            <Sidebar.MenuSubItem>
+                                                <Sidebar.MenuSubButton isActive={isRouteActive(String(subItem.href))}>
+                                                    {#snippet child({ props })}
+                                                        <A variant="ghost" href={subItem.href} title={subItem.title} onclick={onMenuClick} {...props}>
+                                                            {#if subItem.icon}
+                                                                {@const Icon = subItem.icon}
+                                                                <Icon />
+                                                            {/if}
+                                                            <span>{subItem.title}</span>
+                                                        </A>
+                                                    {/snippet}
+                                                </Sidebar.MenuSubButton>
+                                            </Sidebar.MenuSubItem>
+                                        {/each}
+                                    </Sidebar.MenuSub>
+                                </Collapsible.Content>
+                            </Sidebar.MenuItem>
+                        {/snippet}
+                    </Collapsible.Root>
+                </Sidebar.Menu>
+            </Sidebar.Group>
+        {/if}
 
         {#if systemRoutes.length > 0}
             <Sidebar.Group>
