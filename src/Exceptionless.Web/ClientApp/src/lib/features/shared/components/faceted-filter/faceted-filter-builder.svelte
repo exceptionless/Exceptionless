@@ -26,6 +26,7 @@
     let open = $state(false);
     let lastOpenFilterId = $state<string>();
     let search = $state('');
+    let showHiddenFilters = $state(false);
 
     // Clear the builder context because multiple builders will be loaded during page navigation.
     builderContext.clear();
@@ -51,6 +52,10 @@
             })
             .filter((f): f is FacetedFilter<IFilter> => !!f);
     });
+
+    const hiddenFilterCount = $derived(filters.filter((filter) => filter.hidden).length);
+    const hasFilters = $derived(filters.length > 0);
+    const visibleFacets = $derived(facets.filter((facet) => !facet.filter.hidden || showHiddenFilters));
 
     const sortedBuilders = $derived(
         [...builderContext.entries()].sort((facetA, facetB) => {
@@ -96,6 +101,11 @@
     }
 
     function onClose() {
+        open = false;
+    }
+
+    function toggleHiddenFilters() {
+        showHiddenFilters = !showHiddenFilters;
         open = false;
     }
 
@@ -146,15 +156,48 @@
     }
 </script>
 
+{#if children}
+    {@render children()}
+{/if}
+
+{#each visibleFacets as facet (facet.filter.id)}
+    {@const Facet = facet.component}
+    <div class:opacity-70={facet.filter.hidden}>
+        <Facet
+            filter={facet.filter}
+            {filterChanged}
+            {filterRemoved}
+            bind:open={
+                () => facet.open,
+                (isOpen) => {
+                    lastOpenFilterId = isOpen ? facet.filter.id : undefined;
+                    facet.open = isOpen;
+                }
+            }
+            title={facet.title}
+        />
+    </div>
+{/each}
+
 <Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="gap-x-1 px-3" size="xl" variant="outline">
-                <Circle class="mr-2 size-4" /> Filter
+            <Button
+                {...props}
+                class={[!hasFilters && 'gap-x-1 px-3']}
+                size={hasFilters ? 'icon-lg' : 'lg'}
+                variant="outline"
+                title="Add and manage filters"
+                aria-label="Add and manage filters"
+            >
+                <Circle class={[hasFilters ? 'size-4' : 'mr-2 size-4']} aria-hidden="true" />
+                {#if !hasFilters}
+                    Filter
+                {/if}
             </Button>
         {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="w-[260px] p-0" side="bottom" trapFocus={false}>
+    <Popover.Content align="start" class="w-65 p-0" side="bottom" trapFocus={false}>
         <Command.Root filter={filterCommand}>
             <Command.Input placeholder="Search..." bind:value={search} />
             <Command.List>
@@ -176,6 +219,11 @@
         </Command.Root>
         <div class="flex flex-col">
             <Separator />
+            {#if hiddenFilterCount > 0}
+                <Button class="justify-center text-center" variant="ghost" onclick={toggleHiddenFilters}>
+                    {showHiddenFilters ? 'Hide hidden filters' : `Show hidden filters (${hiddenFilterCount})`}
+                </Button>
+            {/if}
             {#if filters.some((f) => f.type !== 'date')}
                 <Button class="justify-center text-center" variant="ghost" onclick={onRemoveAll}>Clear filters</Button>
             {/if}
@@ -183,24 +231,3 @@
         </div>
     </Popover.Content>
 </Popover.Root>
-
-{#if children}
-    {@render children()}
-{/if}
-
-{#each facets as facet (facet.filter.id)}
-    {@const Facet = facet.component}
-    <Facet
-        filter={facet.filter}
-        {filterChanged}
-        {filterRemoved}
-        bind:open={
-            () => facet.open,
-            (isOpen) => {
-                lastOpenFilterId = isOpen ? facet.filter.id : undefined;
-                facet.open = isOpen;
-            }
-        }
-        title={facet.title}
-    />
-{/each}

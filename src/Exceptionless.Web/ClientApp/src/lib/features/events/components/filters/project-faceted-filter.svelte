@@ -9,6 +9,11 @@
 
     let { filter, filterChanged, filterRemoved, open = $bindable(false), title = 'Project', ...props }: FacetedFilterProps<ProjectFilter> = $props();
 
+    function toggleHidden() {
+        filter.hidden = !filter.hidden;
+        filterChanged(filter);
+    }
+
     // Create query with conditional enabled - only fetch when dropdown is open and organization is available.
     // The organizationId getter ensures reactive updates when the organization changes.
     const projectsQuery = getOrganizationProjectsQuery({
@@ -54,7 +59,9 @@
         filter.value = [];
         filterRemoved(filter);
     }}
+    hidden={filter.hidden}
     {title}
+    {toggleHidden}
     values={filter.value}
     {...props}
 ></FacetedFilter.MultiSelect>

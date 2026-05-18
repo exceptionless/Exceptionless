@@ -11,6 +11,8 @@ public class UpdateSavedView : IValidatableObject
     public string? Filter { get; set; }
     [MaxLength(100)]
     public string? Time { get; set; }
+    [MaxLength(100)]
+    public string? Sort { get; set; }
     [MaxLength(10000)]
     public string? FilterDefinitions { get; set; }
     [MaxLength(50)]

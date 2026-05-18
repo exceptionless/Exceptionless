@@ -7,13 +7,15 @@
 
     interface Props {
         changed: (value?: string) => void;
+        hidden?: boolean;
         open: boolean;
         remove: () => void;
         title: string;
+        toggleHidden?: () => void;
         value?: string;
     }
 
-    let { changed, open = $bindable(), remove, title, value }: Props = $props();
+    let { changed, hidden = false, open = $bindable(), remove, title, toggleHidden, value }: Props = $props();
 
     // eslint-disable-next-line svelte/prefer-writable-derived
     let updatedValue = $state<string | undefined>();
@@ -64,7 +66,7 @@
 <Popover.Root bind:open {onOpenChange}>
     <Popover.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="gap-x-1 px-3" size="xl" variant="outline" aria-describedby={`${title}-help`}>
+            <Button {...props} class="gap-x-1 px-3" size="lg" variant="outline" aria-describedby={`${title}-help`}>
                 {title}
                 <Separator class="mx-2" orientation="vertical" />
                 {#if value?.trim()}
@@ -88,6 +90,6 @@
             />
         </div>
         <div id={`${title}-help`} class="sr-only">Type to filter. Enter applies, Escape cancels.</div>
-        <FacetedFilter.Actions clear={onClearFilter} {remove} showClear={!!updatedValue?.trim()} />
+        <FacetedFilter.Actions clear={onClearFilter} {hidden} {remove} showClear={!!updatedValue?.trim()} {toggleHidden} />
     </Popover.Content>
 </Popover.Root>

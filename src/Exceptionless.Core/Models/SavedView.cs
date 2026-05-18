@@ -56,6 +56,10 @@ public record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
     [MaxLength(100)]
     public string? Time { get; set; }
 
+    /// <summary>Sort expression for the dashboard table, e.g. "-date".</summary>
+    [MaxLength(100)]
+    public string? Sort { get; set; }
+
     /// <summary>Schema version for future filter definition migrations.</summary>
     public int Version { get; set; } = 1;
 
