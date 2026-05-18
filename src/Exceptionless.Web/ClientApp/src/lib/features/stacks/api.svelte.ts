@@ -28,12 +28,27 @@ export const queryKeys = {
     postMarkSnoozed: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'mark-snoozed'] as const,
     postPromote: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'promote'] as const,
     postRemoveLink: (id: string | undefined) => [...queryKeys.id(id), 'remove-link'] as const,
+    project: (projectId: string | undefined, params?: GetProjectStacksParams) => [...queryKeys.type, 'project', projectId, { params }] as const,
     type: ['Stack'] as const
 };
 
 export interface DeleteStackRequest {
     route: {
         ids: string[] | undefined;
+    };
+}
+
+export interface GetProjectStacksParams {
+    filter?: string;
+    limit?: number;
+    page?: number;
+    sort?: string;
+}
+
+export interface GetProjectStacksRequest {
+    params?: GetProjectStacksParams;
+    route: {
+        projectId: string | undefined;
     };
 }
 
@@ -120,6 +135,30 @@ export function deleteStack(request: DeleteStackRequest) {
         onSuccess: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
         }
+    }));
+}
+
+export function getProjectStacksQuery(request: GetProjectStacksRequest) {
+    const queryClient = useQueryClient();
+
+    return createQuery<FetchClientResponse<Stack[]>, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.projectId,
+        onSuccess: (data: FetchClientResponse<Stack[]>) => {
+            data.data?.forEach((stack) => {
+                queryClient.setQueryData(queryKeys.id(stack.id!), stack);
+            });
+        },
+        queryClient,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<Stack[]>(`projects/${request.route.projectId}/stacks`, {
+                params: request.params as Record<string, unknown>,
+                signal
+            });
+
+            return response;
+        },
+        queryKey: queryKeys.project(request.route.projectId, request.params)
     }));
 }
 

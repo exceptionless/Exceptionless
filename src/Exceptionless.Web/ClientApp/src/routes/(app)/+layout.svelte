@@ -272,7 +272,6 @@
     const viewToHref: Record<string, string> = {
         events: resolve('/(app)'),
         issues: resolve('/(app)/issues'),
-        stacks: resolve('/(app)/stacks'),
         stream: resolve('/(app)/stream')
     };
 
@@ -309,10 +308,7 @@
                 if (route.href === resolve('/(app)/issues') && page.params.stackId) {
                     return {
                         ...route,
-                        children: [
-                            ...(route.children ?? []),
-                            { href: resolve('/(app)/issues/[stackId]', { stackId: page.params.stackId }), title: 'Details' }
-                        ]
+                        children: [...(route.children ?? []), { href: resolve('/(app)/issues/[stackId]', { stackId: page.params.stackId }), title: 'Details' }]
                     };
                 }
 

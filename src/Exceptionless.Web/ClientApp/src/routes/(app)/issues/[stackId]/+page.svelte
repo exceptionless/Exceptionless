@@ -64,6 +64,6 @@
         <StackCard {filterChanged} id={stackId} />
         <Muted>This issue has no events to display.</Muted>
     {:else if eventId}
-        <EventsOverview {filterChanged} {handleError} id={eventId} showStackPager={true} onEventChange={(nextEventId) => (eventId = nextEventId)} />
+        <EventsOverview {filterChanged} {handleError} id={eventId} />
     {/if}
 </div>

@@ -5,11 +5,12 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
-    import { Muted } from '$comp/typography';
+    import { H3, Muted } from '$comp/typography';
     import { Button, buttonVariants } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
+    import { Separator } from '$comp/ui/separator';
     import { Spinner } from '$comp/ui/spinner';
     import { organization } from '$features/organizations/context.svelte';
     import { deleteProject, getProjectQuery, resetData, updateProject } from '$features/projects/api.svelte';
@@ -112,7 +113,11 @@
 </script>
 
 <div class="space-y-6">
-    <Muted>General project settings</Muted>
+    <div>
+        <H3>General</H3>
+        <Muted>Manage your project name.</Muted>
+    </div>
+    <Separator />
 
     <form
         onsubmit={(e) => {
@@ -152,7 +157,7 @@
 
     <div class="flex w-full items-center justify-between">
         <div class="flex gap-2">
-            <Button variant="secondary" href={resolve('/(app)/project/[projectId]/issues', { projectId })}>
+            <Button variant="secondary" href={`${resolve('/(app)/issues')}?filter=project:${projectId}`}>
                 <Issues class="mr-2 size-4" /> Go To Issues
             </Button>
         </div>
@@ -160,8 +165,7 @@
         <div>
             <DropdownMenu.Root>
                 <DropdownMenu.Trigger class={buttonVariants({ variant: 'destructive' })}>
-                    <X class="mr-2 size-4" />
-                    <span>Delete</span>
+                    <X class="size-4" />
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content align="end" class="w-56">
                     <DropdownMenu.Group>

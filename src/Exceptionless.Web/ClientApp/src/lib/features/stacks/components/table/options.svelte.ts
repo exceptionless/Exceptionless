@@ -1,15 +1,32 @@
+import type { GetProjectStacksParams } from '$features/stacks/api.svelte';
 import type { Stack } from '$features/stacks/models';
+import type { FetchClientResponse, ProblemDetails } from '@exceptionless/fetchclient';
+import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import NumberFormatter from '$comp/formatters/number.svelte';
 import TimeAgo from '$comp/formatters/time-ago.svelte';
 import { Checkbox } from '$comp/ui/checkbox';
+import { getSharedTableOptions } from '$features/shared/table.svelte';
 import { nameof } from '$lib/utils';
-import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
+import { type ColumnDef, type ColumnVisibilityState, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
-import StackSeverityCell from './stack-severity-cell.svelte';
+import StackCriticalCell from './stack-critical-cell.svelte';
 import StackStatusCell from './stack-status-cell.svelte';
 import StackTagsCell from './stack-tags-cell.svelte';
 import StackTypeBadge from './stack-type-badge.svelte';
+
+export const defaultColumnVisibility: ColumnVisibilityState = {
+    critical: false,
+    events: true,
+    first: false,
+    fixed_in_version: false,
+    last: true,
+    select: true,
+    status: false,
+    tags: false,
+    title: true,
+    type: true
+};
 
 export function getColumns(onTagClick?: (tag: string) => void): ColumnDef<StockFeatures, Stack, unknown>[] {
     return [
@@ -62,7 +79,7 @@ export function getColumns(onTagClick?: (tag: string) => void): ColumnDef<StockF
         },
         {
             accessorKey: nameof<Stack>('occurrences_are_critical'),
-            cell: (prop) => renderComponent(StackSeverityCell, { isCritical: prop.getValue<boolean>() }),
+            cell: (prop) => renderComponent(StackCriticalCell, { isCritical: prop.getValue<boolean>() }),
             header: 'Critical',
             id: 'critical',
             meta: {
@@ -114,4 +131,28 @@ export function getColumns(onTagClick?: (tag: string) => void): ColumnDef<StockF
             }
         }
     ];
+}
+
+export function getTableOptions(
+    queryParameters: GetProjectStacksParams,
+    queryResponse: CreateQueryResult<FetchClientResponse<Stack[]>, ProblemDetails>,
+    onTagClick?: (tag: string) => void
+) {
+    return getSharedTableOptions<Stack>({
+        columnPersistenceKey: 'project-issues-v2-column-visibility',
+        get columns() {
+            return getColumns(onTagClick);
+        },
+        defaultColumnVisibility,
+        paginationStrategy: 'offset',
+        get queryData() {
+            return queryResponse.data?.data ?? [];
+        },
+        get queryMeta() {
+            return queryResponse.data?.meta;
+        },
+        get queryParameters() {
+            return queryParameters;
+        }
+    });
 }

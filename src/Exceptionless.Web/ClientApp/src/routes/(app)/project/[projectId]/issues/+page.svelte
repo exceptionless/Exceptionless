@@ -8,7 +8,6 @@
     import * as FacetedFilter from '$comp/faceted-filter';
     import RefreshButton from '$comp/refresh-button.svelte';
     import { Muted } from '$comp/typography';
-    import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
     import { StatusFilter, StringFilter, TagFilter } from '$features/events/components/filters';
     import {
         buildFilterCacheKey,
@@ -19,23 +18,25 @@
         toFilter,
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
-    import { getSharedTableOptions, removeTableSelection } from '$features/shared/table.svelte';
+    import { removeTableSelection } from '$features/shared/table.svelte';
+    import { type GetProjectStacksParams, getProjectStacksQuery } from '$features/stacks/api.svelte';
     import StackFacetedFilterBuilder from '$features/stacks/components/filters/stack-faceted-filter-builder.svelte';
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
-    import { getColumns } from '$features/stacks/components/table/options.svelte';
+    import { getTableOptions } from '$features/stacks/components/table/options.svelte';
     import StacksDataTable from '$features/stacks/components/table/stacks-data-table.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { describeStackFilter, isStackFilterSupported, splitSupportedStackFilters } from '$features/stacks/stack-filter-support';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { DEFAULT_LIMIT, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
+    import { DEFAULT_LIMIT } from '$shared/api/api.svelte';
+    import { useQueryClient } from '@tanstack/svelte-query';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
     import { toast } from 'svelte-sonner';
-    import { throttle } from 'throttle-debounce';
 
     const projectId = $derived(page.params.projectId);
+    const queryClient = useQueryClient();
+
     const DEFAULT_PARAMS = {
         filter: '(status:ignored OR status:discarded)',
         limit: DEFAULT_LIMIT,
@@ -157,14 +158,7 @@
         onFilterChanged(new TagFilter([tag]));
     }
 
-    interface StacksQueryParameters {
-        filter?: string;
-        limit?: number;
-        page?: number;
-        sort?: string;
-    }
-
-    const stacksQueryParameters: StacksQueryParameters = $state({
+    const stacksQueryParameters: GetProjectStacksParams = $state({
         get filter() {
             return queryParams.filter!;
         },
@@ -191,44 +185,22 @@
         }
     });
 
-    const client = useFetchClient();
-    const clientStatus = useFetchClientStatus(client);
-    let clientResponse = $state<FetchClientResponse<Stack[]>>();
+    const stacksQuery = getProjectStacksQuery({
+        get params() {
+            return stacksQueryParameters;
+        },
+        route: {
+            get projectId() {
+                return projectId;
+            }
+        }
+    });
 
     function rowHref(row: Stack): string {
         return resolve('/(app)/project/[projectId]/issues/[stackId]', { projectId: projectId ?? '', stackId: row.id });
     }
 
-    const table = createTable(
-        getSharedTableOptions<Stack>({
-            columnPersistenceKey: 'project-issues-v2-column-visibility',
-            get columns() {
-                return getColumns(handleTagClick);
-            },
-            defaultColumnVisibility: {
-                critical: false,
-                events: true,
-                first: false,
-                fixed_in_version: false,
-                last: true,
-                select: true,
-                status: false,
-                tags: false,
-                title: true,
-                type: true
-            },
-            paginationStrategy: 'offset',
-            get queryData() {
-                return clientResponse?.data ?? [];
-            },
-            get queryMeta() {
-                return clientResponse?.meta;
-            },
-            get queryParameters() {
-                return stacksQueryParameters;
-            }
-        })
-    );
+    const table = createTable(getTableOptions(stacksQueryParameters, stacksQuery, handleTagClick));
 
     const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.store.state.pagination.pageIndex === 0);
 
@@ -242,43 +214,18 @@
             reset();
         }
 
-        await loadData();
+        await stacksQuery.refetch();
     }
-
-    async function loadData(filter = queryParams.filter, limit = queryParams.limit, pageNumber = queryParams.page, sort = queryParams.sort) {
-        if (!projectId) {
-            return;
-        }
-
-        clientResponse = await client.getJSON<Stack[]>(`projects/${projectId}/stacks`, {
-            params: {
-                filter,
-                limit,
-                page: pageNumber,
-                sort
-            }
-        });
-
-        showBillingDialogOnUpgradeProblem(clientResponse.problem, undefined);
-    }
-
-    const throttledLoadData = throttle(5000, loadData);
 
     async function onStackChanged(message: WebSocketMessageValue<'StackChanged'>) {
         if (message.id && message.change_type === ChangeType.Removed) {
             removeTableSelection(table, message.id);
-            await loadData();
-            return;
         }
 
-        await throttledLoadData();
+        await queryClient.invalidateQueries({ queryKey: ['Stack', 'project', projectId] });
     }
 
     useEventListener(document, 'StackChanged', async (event) => await onStackChanged((event as CustomEvent).detail));
-
-    $effect(() => {
-        loadData(queryParams.filter, queryParams.limit, queryParams.page, queryParams.sort);
-    });
 </script>
 
 <div class="flex flex-col">
@@ -292,7 +239,7 @@
         <div class="ml-auto flex shrink-0 items-start gap-2">
             <RefreshButton
                 onRefresh={handleRefresh}
-                isRefreshing={clientStatus.isLoading}
+                isRefreshing={stacksQuery.isLoading}
                 size="icon-lg"
                 title={canRefresh ? 'Refresh results' : 'Return to the first page to refresh results'}
             />
@@ -300,7 +247,7 @@
         </div>
     </div>
 
-    <StacksDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} {rowHref} {table}>
+    <StacksDataTable bind:limit={queryParams.limit!} isLoading={stacksQuery.isLoading} {rowHref} {table}>
         {#snippet footerChildren()}
             <div class="h-9 min-w-35">
                 <TableStacksBulkActionsDropdownMenu {table} />

@@ -186,57 +186,6 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task PostAsync_WithStacksViewType_ReturnsCreated()
-    {
-        var newView = new NewSavedView
-        {
-            OrganizationId = SampleDataService.TEST_ORG_ID,
-            Name = "Stacks - Snoozed",
-            Filter = "status:snoozed",
-            ViewType = "stacks"
-        };
-
-        var result = await SendRequestAsAsync<ViewSavedView>(r => r
-            .Post()
-            .AsTestOrganizationUser()
-            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newView)
-            .StatusCodeShouldBeCreated()
-        );
-
-        Assert.NotNull(result);
-        Assert.Equal("stacks", result.ViewType);
-    }
-
-    [Fact]
-    public async Task PostAsync_WithStacksColumns_ReturnsCreated()
-    {
-        var newView = new NewSavedView
-        {
-            OrganizationId = SampleDataService.TEST_ORG_ID,
-            Name = "Stacks - Custom Columns",
-            ViewType = "stacks",
-            Columns = new Dictionary<string, bool>
-            {
-                ["critical"] = true,
-                ["fixed_in_version"] = false,
-                ["type"] = true
-            }
-        };
-
-        var result = await SendRequestAsAsync<ViewSavedView>(r => r
-            .Post()
-            .AsGlobalAdminUser()
-            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newView)
-            .StatusCodeShouldBeCreated()
-        );
-
-        Assert.NotNull(result);
-        Assert.Equal("stacks", result.ViewType);
-    }
-
-    [Fact]
     public Task PostAsync_WithEmptyName_ReturnsUnprocessableEntity()
     {
         var newView = new NewSavedView
@@ -660,7 +609,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task PostAsync_WhenFeatureDisabled_ReturnsCreated()
+    public async Task PostAsync_WhenFeatureDisabled_ReturnsUnprocessableEntity()
     {
         // Arrange — disable the saved views feature
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
@@ -681,12 +630,12 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
             .Content(newView)
-            .StatusCodeShouldBeCreated()
+            .StatusCodeShouldBeUnprocessableEntity()
         );
     }
 
     [Fact]
-    public async Task PatchAsync_WhenFeatureDisabled_ReturnsOk()
+    public async Task PatchAsync_WhenFeatureDisabled_ReturnsUnprocessableEntity()
     {
         // Arrange — create a view directly (bypassing feature check), then disable feature
         var savedView = await _savedViewRepository.AddAsync(new SavedView
@@ -711,12 +660,12 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", savedView.Id)
             .Content(new UpdateSavedView { Name = "Updated Name" })
-            .StatusCodeShouldBeOk()
+            .StatusCodeShouldBeUnprocessableEntity()
         );
     }
 
     [Fact]
-    public async Task DeleteAsync_WhenFeatureDisabled_ReturnsAccepted()
+    public async Task DeleteAsync_WhenFeatureDisabled_ReturnsUnprocessableEntity()
     {
         // Arrange — create a view directly, then disable feature
         var savedView = await _savedViewRepository.AddAsync(new SavedView
@@ -740,7 +689,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .Delete()
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", savedView.Id)
-            .StatusCodeShouldBeAccepted()
+            .StatusCodeShouldBeUnprocessableEntity()
         );
     }
 

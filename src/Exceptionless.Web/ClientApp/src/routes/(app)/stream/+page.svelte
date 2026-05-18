@@ -56,7 +56,6 @@
         return resolve('/(app)/event/[eventId]', { eventId: row.id });
     }
 
-
     const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
     const DEFAULT_PARAMS = {
         filter: '(status:open OR status:regressed)',

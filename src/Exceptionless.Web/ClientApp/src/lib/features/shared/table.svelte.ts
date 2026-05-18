@@ -175,9 +175,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
                 ? (configuration.queryParameters as TableOffsetPagingParameters).page
                 : (configuration.queryParameters as TableMemoryPagingParameters).page) ?? 1;
         const total = isMemoryPaging ? allData().length : (meta?.total as number | undefined);
-        const totalPages = total != null
-            ? Math.ceil(total / limit)
-            : (meta?.links?.next ? currentPage + 1 : currentPage);
+        const totalPages = total != null ? Math.ceil(total / limit) : meta?.links?.next ? currentPage + 1 : currentPage;
         setPageCount(totalPages);
 
         // // Only adjust pagination for offset pagination here
