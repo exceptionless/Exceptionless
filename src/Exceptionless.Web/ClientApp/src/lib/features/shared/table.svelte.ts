@@ -92,7 +92,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     const [data, setData] = createTableState<TData[]>([]);
     const [meta, setMeta] = createTableState<QueryMeta | undefined>(undefined);
     const [sorting, setSorting] = createTableState<ColumnSort[]>(
-        parseSortString('sort' in configuration.queryParameters ? configuration.queryParameters.sort : undefined)
+        parseSortString(hasSortQueryParameter(configuration.queryParameters) ? configuration.queryParameters.sort : undefined)
     );
     const [rowSelection, setRowSelection] = createTableState<RowSelectionState>({});
 
@@ -128,16 +128,19 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         setSorting(updaterOrValue);
         const newSorting = sorting();
 
-        const sort = serializeSortState(newSorting);
         if (isCursorPaging) {
             const parameters = configuration.queryParameters as TableCursorPagingParameters;
             parameters.after = undefined;
             parameters.before = undefined;
-            parameters.sort = sort;
+            if (hasSortQueryParameter(parameters)) {
+                parameters.sort = serializeSortState(newSorting);
+            }
         } else if (isOffsetPaging) {
             const parameters = configuration.queryParameters as TableOffsetPagingParameters;
             parameters.page = 1;
-            parameters.sort = sort;
+            if (hasSortQueryParameter(parameters)) {
+                parameters.sort = serializeSortState(newSorting);
+            }
         } else if (isMemoryPaging) {
             (configuration.queryParameters as TableMemoryPagingParameters).page = 1;
         }
@@ -195,9 +198,13 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     $effect(() => setDataImpl(configuration.queryData ?? []));
     $effect(() => setMetaImpl(configuration.queryMeta));
     $effect(() => {
-        const sort = 'sort' in configuration.queryParameters ? configuration.queryParameters.sort : undefined;
-        if (sort !== serializeSortState(sorting())) {
-            setSorting(parseSortString(sort));
+        if (!hasSortQueryParameter(configuration.queryParameters)) {
+            return;
+        }
+
+        const parsedSort = parseSortString(configuration.queryParameters.sort);
+        if (serializeSortState(parsedSort) !== serializeSortState(sorting())) {
+            setSorting(parsedSort);
         }
     });
 
@@ -330,6 +337,10 @@ function createTableState<T>(initialValue: T): [() => T, (updater: Updater<T>) =
             }
         }
     ];
+}
+
+function hasSortQueryParameter(parameters: TablePagingParameters): parameters is TableCursorPagingParameters | TableOffsetPagingParameters {
+    return Object.prototype.hasOwnProperty.call(parameters, 'sort');
 }
 
 function parseSortString(sort: string | undefined): ColumnSort[] {

@@ -86,7 +86,6 @@
         filter: '(type:404 OR type:error) (status:open OR status:regressed)',
         limit: DEFAULT_LIMIT,
         saved: undefined as string | undefined,
-        sort: undefined as string | undefined,
         time: DEFAULT_TIME_RANGE
     };
 
@@ -102,7 +101,6 @@
             filter: 'string',
             limit: 'number',
             saved: 'string',
-            sort: 'string',
             time: 'string'
         }
     });
@@ -164,7 +162,7 @@
         const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
-        queryParams.time = (updatedFilters.find((f) => f.type === 'date') as DateFilter)?.value as string;
+        queryParams.time = ((updatedFilters.find((f) => f.type === 'date') as DateFilter | undefined)?.value as string | undefined) ?? null;
         queryParams.filter = filter;
     }
 
@@ -183,12 +181,6 @@
         },
         mode: 'stack_frequent',
         offset: DEFAULT_OFFSET,
-        get sort() {
-            return queryParams.sort ?? undefined;
-        },
-        set sort(value) {
-            queryParams.sort = value ?? null;
-        },
         get time() {
             return queryParams.time!;
         },
@@ -334,8 +326,8 @@
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}
                     onClearSavedView={savedViewsState.handleClearSavedView}
+                    onResetToSaved={savedViewsState.handleResetToSaved}
                     savedViews={savedViewsState.savedViews}
-                    sort={queryParams.sort ?? undefined}
                     {table}
                     time={queryParams.time ?? undefined}
                     view={VIEW}

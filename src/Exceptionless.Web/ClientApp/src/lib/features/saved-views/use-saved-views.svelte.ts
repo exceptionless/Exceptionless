@@ -211,7 +211,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return true;
         }
 
-        if (options.getFilterDefinitions && !filterDefinitionsEqual(options.getFilterDefinitions(), view.filter_definitions)) {
+        if (options.getFilterDefinitions && view.filter_definitions && !filterDefinitionsEqual(options.getFilterDefinitions(), view.filter_definitions)) {
             return true;
         }
 

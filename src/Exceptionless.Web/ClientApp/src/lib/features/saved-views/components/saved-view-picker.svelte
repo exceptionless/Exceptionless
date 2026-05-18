@@ -14,10 +14,15 @@
     import { toFilter } from '$features/events/components/filters/helpers.svelte';
     import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import Pencil from '@lucide/svelte/icons/pencil';
     import Plus from '@lucide/svelte/icons/plus';
     import Save from '@lucide/svelte/icons/save';
     import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
+    import Star from '@lucide/svelte/icons/star';
+    import StarOff from '@lucide/svelte/icons/star-off';
     import Trash2 from '@lucide/svelte/icons/trash-2';
+    import Undo2 from '@lucide/svelte/icons/undo-2';
+    import X from '@lucide/svelte/icons/x';
     import { tick } from 'svelte';
     import { toast } from 'svelte-sonner';
 
@@ -25,6 +30,7 @@
 
     import { deleteSavedView, patchSavedView, postSavedView } from '../api.svelte';
     import DeleteViewDialog from './delete-view-dialog.svelte';
+    import RenameViewDialog from './rename-view-dialog.svelte';
     import SaveViewDialog from './save-view-dialog.svelte';
 
     function getErrorMessage(error: unknown, fallback: string): string {
@@ -44,6 +50,7 @@
         isModified: boolean;
         onClearSavedView: () => void;
         onLoadView: (id: string) => void;
+        onResetToSaved: () => void;
         savedViews: SavedView[];
         sort?: string;
         table: Table<StockFeatures, TData>;
@@ -51,9 +58,11 @@
         view: string;
     }
 
-    let { activeSavedView, columnVisibility, filters, isModified, onClearSavedView, onLoadView, savedViews, sort, table, time, view }: Props = $props();
+    let { activeSavedView, columnVisibility, filters, isModified, onClearSavedView, onLoadView, onResetToSaved, savedViews, sort, table, time, view }: Props =
+        $props();
 
     let isSaveDialogOpen = $state(false);
+    let isRenameDialogOpen = $state(false);
     let isDeleteDialogOpen = $state(false);
     let viewToDelete = $state<null | SavedView>(null);
 
@@ -116,6 +125,11 @@
         isSaveDialogOpen = true;
     }
 
+    async function openRenameDialog() {
+        await tick();
+        isRenameDialogOpen = true;
+    }
+
     async function openDeleteDialog(savedView: SavedView) {
         viewToDelete = savedView;
         await tick();
@@ -148,6 +162,34 @@
             toast.success(`Saved view "${result.name}" created.`);
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
+        }
+    }
+
+    async function handleRename(name: string) {
+        if (!activeView || !organizationId) {
+            return;
+        }
+
+        try {
+            const result = await updateMutation.mutateAsync({ name });
+            isRenameDialogOpen = false;
+            toast.success(`View renamed to "${result.name}".`);
+        } catch (error) {
+            toast.error(getErrorMessage(error, 'Failed to rename view. Please try again.'));
+        }
+    }
+
+    async function handleToggleDefault() {
+        if (!activeView || !organizationId) {
+            return;
+        }
+
+        const willBeDefault = !activeView.is_default;
+        try {
+            await updateMutation.mutateAsync({ is_default: willBeDefault });
+            toast.success(willBeDefault ? 'Set as default for everyone.' : 'Default removed.');
+        } catch (error) {
+            toast.error(getErrorMessage(error, 'Failed to update default setting.'));
         }
     }
 
@@ -218,6 +260,29 @@
                 Save As...
             </DropdownMenu.Item>
             {#if activeView}
+                <DropdownMenu.Item disabled={saving} onclick={openRenameDialog}>
+                    <Pencil class="mr-2 size-4" aria-hidden="true" />
+                    Rename
+                </DropdownMenu.Item>
+                {#if !activeView.user_id}
+                    <DropdownMenu.Item disabled={saving} onclick={handleToggleDefault}>
+                        {#if activeView.is_default}
+                            <StarOff class="mr-2 size-4" aria-hidden="true" />
+                            Remove as default
+                        {:else}
+                            <Star class="mr-2 size-4" aria-hidden="true" />
+                            Set as default for everyone
+                        {/if}
+                    </DropdownMenu.Item>
+                {/if}
+                <DropdownMenu.Item disabled={!isModified} onclick={onResetToSaved}>
+                    <Undo2 class="mr-2 size-4" aria-hidden="true" />
+                    Reset to saved
+                </DropdownMenu.Item>
+                <DropdownMenu.Item onclick={onClearSavedView}>
+                    <X class="mr-2 size-4" aria-hidden="true" />
+                    Clear Saved View
+                </DropdownMenu.Item>
                 <DropdownMenu.Separator />
                 <DropdownMenu.Item class="text-destructive" onclick={() => openDeleteDialog(activeView)}>
                     <Trash2 class="mr-2 size-4" aria-hidden="true" />
@@ -241,6 +306,10 @@
 
 {#if isSaveDialogOpen}
     <SaveViewDialog bind:open={isSaveDialogOpen} {duplicateView} {saving} onSave={handleSave} onClose={() => (isSaveDialogOpen = false)} {onLoadView} />
+{/if}
+
+{#if isRenameDialogOpen && activeView}
+    <RenameViewDialog bind:open={isRenameDialogOpen} name={activeView.name} {saving} onRename={handleRename} onClose={() => (isRenameDialogOpen = false)} />
 {/if}
 
 {#if isDeleteDialogOpen}

@@ -285,6 +285,7 @@
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}
                     onClearSavedView={savedViewsState.handleClearSavedView}
+                    onResetToSaved={savedViewsState.handleResetToSaved}
                     savedViews={savedViewsState.savedViews}
                     {table}
                     view={VIEW}

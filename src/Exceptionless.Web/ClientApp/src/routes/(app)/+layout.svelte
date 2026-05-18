@@ -284,7 +284,7 @@
             queryEntries.push(['time', savedView.time]);
         }
 
-        if (savedView.sort) {
+        if (savedView.sort && savedView.view_type !== 'issues') {
             queryEntries.push(['sort', savedView.sort]);
         }
 
