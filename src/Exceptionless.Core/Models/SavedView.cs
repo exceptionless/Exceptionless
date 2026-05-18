@@ -59,9 +59,9 @@ public record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
     /// <summary>Schema version for future filter definition migrations.</summary>
     public int Version { get; set; } = 1;
 
-    /// <summary>Dashboard page identifier: "events", "issues", "stacks", or "stream".</summary>
+    /// <summary>Dashboard page identifier: "events", "issues", or "stream".</summary>
     [Required]
-    [RegularExpression("^(events|issues|stacks|stream)$")]
+    [RegularExpression("^(events|issues|stream)$")]
     public string ViewType { get; set; } = null!;
 
     // Timestamps
