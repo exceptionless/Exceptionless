@@ -24,13 +24,7 @@
 
     const organization = $derived(organizationQuery.data);
 
-    const KNOWN_FEATURES: { description: string; id: string; name: string }[] = [
-        {
-            description: 'Allows users to save and reuse filter combinations across dashboard pages.',
-            id: 'feature-saved-views',
-            name: 'Saved Views'
-        }
-    ];
+    const KNOWN_FEATURES: { description: string; id: string; name: string }[] = [];
 
     function hasFeature(featureId: string) {
         return organization?.features?.includes(featureId) ?? false;

@@ -806,7 +806,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// Enable a feature flag
     /// </summary>
     /// <param name="id">The identifier of the organization.</param>
-    /// <param name="feature">The feature flag identifier (e.g., "feature-saved-views").</param>
+    /// <param name="feature">The feature flag identifier.</param>
     /// <response code="200">The feature flag was enabled.</response>
     /// <response code="404">The organization was not found.</response>
     [HttpPost]
@@ -833,7 +833,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// Disable a feature flag
     /// </summary>
     /// <param name="id">The identifier of the organization.</param>
-    /// <param name="feature">The feature flag identifier (e.g., "feature-saved-views").</param>
+    /// <param name="feature">The feature flag identifier.</param>
     /// <response code="200">The feature flag was disabled.</response>
     /// <response code="404">The organization was not found.</response>
     [HttpDelete]

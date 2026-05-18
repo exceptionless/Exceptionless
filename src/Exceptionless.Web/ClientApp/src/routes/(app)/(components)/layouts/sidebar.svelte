@@ -341,6 +341,7 @@
                                             </A>
                                         </DropdownMenu.Item>
                                     {/each}
+                                    <DropdownMenu.Separator />
                                 {/if}
                             {/each}
                         </DropdownMenu.Content>
@@ -410,6 +411,9 @@
                                                         </Sidebar.MenuSubButton>
                                                     </Sidebar.MenuSubItem>
                                                 {/each}
+                                                <Sidebar.MenuSubItem>
+                                                    <div class="border-border mx-2 my-1 w-auto border-t"></div>
+                                                </Sidebar.MenuSubItem>
                                             {/if}
                                         {/each}
                                     </Sidebar.MenuSub>
