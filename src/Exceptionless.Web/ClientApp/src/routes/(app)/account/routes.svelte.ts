@@ -16,7 +16,7 @@ export function routes(): NavigationItem[] {
             group: 'My Account',
             href: resolve('/(app)/account/manage'),
             icon: Account,
-            title: 'Account'
+            title: 'General'
         },
         {
             group: 'My Account',

@@ -42,6 +42,7 @@ export const queryKeys = {
     sessionEvents: (id: string | undefined, params?: GetSessionEventsRequest['params']) => [...queryKeys.type, 'sessions', 'session', id, params] as const,
     sessions: (id: string | undefined) => [...queryKeys.type, 'sessions', 'organizations', id] as const,
     sessionsCount: (id: string | undefined, params?: GetOrganizationSessionsCountRequest['params']) => [...queryKeys.sessions(id), 'count', params] as const,
+    stackEvents: (id: string | undefined, params?: GetStackEventsRequest['params']) => [...queryKeys.stacks(id), 'events', params] as const,
     stacks: (id: string | undefined) => [...queryKeys.type, 'stacks', id] as const,
     stacksCount: (id: string | undefined, params?: GetStackCountRequest['params']) => [...queryKeys.stacks(id), 'count', params] as const,
     type: ['PersistentEvent'] as const
@@ -342,6 +343,6 @@ export function getStackEventsQuery(request: GetStackEventsRequest) {
 
             return response.data!;
         },
-        queryKey: queryKeys.stacks(request.route.stackId)
+        queryKey: queryKeys.stackEvents(request.route.stackId, request.params)
     }));
 }

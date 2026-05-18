@@ -12,12 +12,11 @@
     }
 
     let { table }: Props = $props();
-    let page = $state(1);
+    const page = $derived(table.store.state.pagination.pageIndex + 1);
 
     const pageCount = $derived(Math.max(1, table.getPageCount() || 1));
 
     function handlePageChange(nextPage: number) {
-        page = nextPage;
         table.setPageIndex(nextPage - 1);
     }
 </script>

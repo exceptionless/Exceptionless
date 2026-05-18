@@ -3,17 +3,23 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { A, H3 } from '$comp/typography';
+    import { accessToken } from '$features/auth/index.svelte';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import OrganizationAdminActionsDropdownMenu from '$features/organizations/components/organization-admin-actions-dropdown-menu.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import { getMeQuery } from '$features/users/api.svelte';
     import GlobalUser from '$features/users/components/global-user.svelte';
     import { toast } from 'svelte-sonner';
+
+    import type { NavigationItemContext } from '../../../routes.svelte';
 
     import { routes } from './routes.svelte';
 
     let { children } = $props();
 
     const organizationId = $derived(page.params.organizationId || '');
+    const meQuery = getMeQuery();
+    const isAuthenticated = $derived(accessToken.current !== null);
     const organizationQuery = getOrganizationQuery({
         route: {
             get id() {
@@ -22,7 +28,10 @@
         }
     });
 
-    const filteredRoutes = $derived(routes().filter((route) => route.group === 'Organization Settings'));
+    const filteredRoutes = $derived.by(() => {
+        const context: NavigationItemContext = { authenticated: isAuthenticated, user: meQuery.data };
+        return routes().filter((route) => route.group === 'Organization Settings' && (route.show ? route.show(context) : true));
+    });
     const currentPath = $derived(page.url.pathname);
 
     $effect(() => {
@@ -32,7 +41,7 @@
             return;
         }
 
-        if (organizationQuery.isSuccess && organizationId !== organization.current) {
+        if (organizationQuery.isSuccess && organization.current && organizationId !== organization.current) {
             goto(page.url.pathname.replace(`/organization/${organizationId}`, `/organization/${organization.current}`));
             return;
         }

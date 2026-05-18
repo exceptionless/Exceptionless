@@ -31,6 +31,18 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/stacks?organization={{organizationId}}
 Authorization: Bearer {{token}}
 
+### Get By Organization Id with Filter (e.g., discarded stacks)
+GET {{apiUrl}}/stacks?organization={{organizationId}}&filter=status:discarded
+Authorization: Bearer {{token}}
+
+### Get By Organization Id with Filter (e.g., stacks with specific tag)
+GET {{apiUrl}}/stacks?organization={{organizationId}}&filter=tag:production
+Authorization: Bearer {{token}}
+
+### Get By Organization Id with Filter (e.g., stacks with type and status)
+GET {{apiUrl}}/stacks?organization={{organizationId}}&filter=type:error%20status:open
+Authorization: Bearer {{token}}
+
 ### Get By Id
 GET {{apiUrl}}/stacks/{{stackId}}
 Authorization: Bearer {{token}}
@@ -46,7 +58,7 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 ### Mark Snoozed
-POST {{apiUrl}}/stacks/{{stackId}}/mark-snoozed?snoozeUntilUtc=12-31-2030
+POST {{apiUrl}}/stacks/{{stackId}}/mark-snoozed?snoozeUntilUtc=2030-12-31T00:00:00Z
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -75,3 +87,23 @@ Content-Type: application/json
 ### Delete
 DELETE {{apiUrl}}/stacks/{{stackId}}
 Authorization: Bearer {{token}}
+
+### Bulk Change Status (multiple stack IDs)
+POST {{apiUrl}}/stacks/{{stackId}},{{stackId}}/change-status?status=open
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Bulk Mark Fixed (multiple stack IDs)
+POST {{apiUrl}}/stacks/{{stackId}},{{stackId}}/mark-fixed
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Bulk Mark Snoozed (multiple stack IDs)
+POST {{apiUrl}}/stacks/{{stackId}},{{stackId}}/mark-snoozed?snoozeUntilUtc=2030-12-31T00:00:00Z
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Bulk Delete (multiple stack IDs)
+DELETE {{apiUrl}}/stacks/{{stackId}},{{stackId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json

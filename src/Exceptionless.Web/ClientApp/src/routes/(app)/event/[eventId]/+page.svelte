@@ -39,5 +39,5 @@
 
 <div class="flex flex-col gap-4">
     <H3>Event Details</H3>
-    <EventsOverview {filterChanged} id={page.params.eventId || ''} {handleError}></EventsOverview>
+    <EventsOverview {filterChanged} id={page.params.eventId || ''} {handleError} />
 </div>
