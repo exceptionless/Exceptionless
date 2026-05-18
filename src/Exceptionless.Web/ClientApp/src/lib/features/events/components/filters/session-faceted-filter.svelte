@@ -6,6 +6,11 @@
     import { SessionFilter } from './models.svelte';
 
     let { filter, filterChanged, filterRemoved, title = 'Session', ...props }: FacetedFilterProps<SessionFilter> = $props();
+
+    function toggleHidden() {
+        filter.hidden = !filter.hidden;
+        filterChanged(filter);
+    }
 </script>
 
 <FacetedFilter.String
@@ -17,7 +22,9 @@
         filter.value = undefined;
         filterRemoved(filter);
     }}
+    hidden={filter.hidden}
     {title}
+    {toggleHidden}
     value={filter.value}
     {...props}
 ></FacetedFilter.String>

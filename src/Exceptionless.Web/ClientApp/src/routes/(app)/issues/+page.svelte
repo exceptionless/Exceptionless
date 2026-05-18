@@ -4,7 +4,6 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
-    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
     import RefreshButton from '$comp/refresh-button.svelte';
     import { H3 } from '$comp/typography';
@@ -20,6 +19,7 @@
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
+        serializeFilters,
         toFilter,
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
@@ -109,11 +109,13 @@
     const savedViewsState = useSavedViews({
         filterCacheKey,
         getColumnVisibility: () => table.store.state.columnVisibility,
+        getFilterDefinitions: () => serializeFilters(filters ?? []),
         queryParams,
         setColumnVisibility: (v) => table.setColumnVisibility(v),
         updateFilterCache,
         view: VIEW
     });
+    const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Issues');
 
     watch(
         () => organization.current,
@@ -160,7 +162,7 @@
         const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
-        queryParams.time = (updatedFilters.find((f) => f.type === 'date') as DateFilter)?.value as string;
+        queryParams.time = ((updatedFilters.find((f) => f.type === 'date') as DateFilter | undefined)?.value as string | undefined) ?? null;
         queryParams.filter = filter;
     }
 
@@ -309,7 +311,7 @@
 
 <div class="flex flex-col">
     <div class="mb-4 flex flex-wrap items-start gap-2">
-        <H3 class="my-0 shrink-0">Issues</H3>
+        <H3 class="my-0 shrink-0">{pageTitle}</H3>
         <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <OrganizationDefaultsFacetedFilterBuilder />
@@ -323,9 +325,10 @@
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}
-                    onResetToSaved={savedViewsState.handleResetToSaved}
                     onClearSavedView={savedViewsState.handleClearSavedView}
+                    onResetToSaved={savedViewsState.handleResetToSaved}
                     savedViews={savedViewsState.savedViews}
+                    {table}
                     time={queryParams.time ?? undefined}
                     view={VIEW}
                 />
@@ -336,7 +339,6 @@
                 size="icon-lg"
                 title={canRefresh ? 'Refresh results' : 'Return to the first page to refresh results'}
             />
-            <DataTableViewOptions size="icon-lg" {table} />
         </div>
     </div>
 

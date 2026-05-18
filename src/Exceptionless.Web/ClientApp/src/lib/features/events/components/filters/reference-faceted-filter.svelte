@@ -6,6 +6,11 @@
     import { ReferenceFilter } from './models.svelte';
 
     let { filter, filterChanged, filterRemoved, title = 'Reference', ...props }: FacetedFilterProps<ReferenceFilter> = $props();
+
+    function toggleHidden() {
+        filter.hidden = !filter.hidden;
+        filterChanged(filter);
+    }
 </script>
 
 <FacetedFilter.String
@@ -17,7 +22,9 @@
         filter.value = undefined;
         filterRemoved(filter);
     }}
+    hidden={filter.hidden}
     {title}
+    {toggleHidden}
     value={filter.value}
     {...props}
 ></FacetedFilter.String>

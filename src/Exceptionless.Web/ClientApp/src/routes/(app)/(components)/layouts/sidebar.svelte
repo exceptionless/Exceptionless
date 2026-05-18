@@ -21,6 +21,14 @@
         return isOnRoute && (savedItem.isDefault ? !activeSavedParam || activeSavedParam === savedId : activeSavedParam === savedId);
     }
 
+    function isPathActive(href: string): boolean {
+        return page.url.pathname === href || page.url.pathname.startsWith(href + '/');
+    }
+
+    function isSettingsGroup(group: string): boolean {
+        return group === 'Settings' || group.endsWith(' Settings');
+    }
+
     type Props = ComponentProps<typeof Sidebar.Root> & {
         footer?: Snippet;
         header?: Snippet;
@@ -32,7 +40,7 @@
     const reportRoutes = $derived(routes.filter((route) => route.group === 'Reports'));
 
     const settingsRoutes = $derived(routes.filter((route) => route.group === 'Settings'));
-    const settingsIsActive = $derived(settingsRoutes.some((route) => route.href === page.url.pathname));
+    const settingsIsActive = $derived(routes.some((route) => isSettingsGroup(route.group) && isPathActive(route.href)));
 
     const systemRoutes = $derived(routes.filter((route) => route.group === 'System'));
     const systemBasePath = resolve('/(app)/system');

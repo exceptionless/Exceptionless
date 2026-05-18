@@ -7884,6 +7884,13 @@
               "string"
             ]
           },
+          "sort": {
+            "maxLength": 100,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "view_type": {
             "type": "string"
           },
@@ -8544,6 +8551,12 @@
             ]
           },
           "time": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sort": {
             "type": [
               "null",
               "string"
@@ -9236,6 +9249,12 @@
             "type": "string"
           },
           "time": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sort": {
             "type": [
               "null",
               "string"

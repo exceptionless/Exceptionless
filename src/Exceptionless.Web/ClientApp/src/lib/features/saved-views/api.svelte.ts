@@ -7,24 +7,42 @@ import { createMutation, createQuery, type QueryClient, useQueryClient } from '@
 
 import type { NewSavedView, SavedView, UpdateSavedView } from './models';
 
+export const SAVED_VIEW_REFRESH_DELAY_MS = 1500;
+
 export async function invalidateSavedViewQueries(queryClient: QueryClient, message: WebSocketMessageValue<'SavedViewChanged'>) {
     const { change_type, id, organization_id } = message;
 
     // Removals: evict from cache immediately without a refetch.
-    if (change_type === ChangeType.Removed && id && organization_id) {
-        const cached = queryClient.getQueryData<SavedView[]>(queryKeys.organization(organization_id));
-        const savedView = cached?.find((v) => v.id === id);
-        if (savedView) {
-            removeSavedViewFromCaches(queryClient, savedView, organization_id);
-            return;
+    if (change_type === ChangeType.Removed) {
+        if (id && organization_id) {
+            const cached = queryClient.getQueryData<SavedView[]>(queryKeys.organization(organization_id));
+            const savedView = cached?.find((v) => v.id === id);
+            if (savedView) {
+                removeSavedViewFromCaches(queryClient, savedView, organization_id);
+                return;
+            }
         }
+
+        await invalidateSavedViewCache(queryClient, organization_id);
+        return;
     }
 
-    // Added/Saved: mutations already wrote optimistic updates via syncSavedViewCaches so the
-    // UI is immediately correct. The WS event arriving signals ES has committed the change,
-    // so we invalidate now to pull the authoritative ES data into the cache.
-    if (organization_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.organization(organization_id) });
+    // Added/Saved websocket events can arrive before Elasticsearch refresh exposes the
+    // saved view to list queries. Mutations already seed the cache, so keep that optimistic
+    // item visible and refetch after the refresh window.
+    if (change_type === ChangeType.Added || change_type === ChangeType.Saved) {
+        setTimeout(() => {
+            void invalidateSavedViewCache(queryClient, organization_id);
+        }, SAVED_VIEW_REFRESH_DELAY_MS);
+        return;
+    }
+
+    await invalidateSavedViewCache(queryClient, organization_id);
+}
+
+async function invalidateSavedViewCache(queryClient: QueryClient, organizationId: string | undefined) {
+    if (organizationId) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.organization(organizationId) });
     } else {
         await queryClient.invalidateQueries({ queryKey: queryKeys.type });
     }
@@ -107,7 +125,7 @@ export function postSavedView(request: { route: { organizationId: string | undef
             return response.data!;
         },
         onSuccess: (savedView: SavedView) => {
-            syncSavedViewCaches(queryClient, savedView);
+            syncSavedViewCaches(queryClient, savedView, request.route.organizationId);
         }
     }));
 }
