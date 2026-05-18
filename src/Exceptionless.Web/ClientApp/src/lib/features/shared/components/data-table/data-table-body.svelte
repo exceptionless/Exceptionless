@@ -57,6 +57,13 @@
             return;
         }
 
+        const target = event.target as HTMLElement | null;
+
+        // Don't intercept clicks on interactive elements (links, buttons)
+        if (target?.closest('a, button')) {
+            return;
+        }
+
         // For regular clicks with href, prevent default navigation
         if (rowHref) {
             event.preventDefault();
@@ -86,7 +93,20 @@
                 {@render children()}
             {/if}
             {#each table.getRowModel().rows as row (row.id)}
-                <Table.Row>
+                <Table.Row
+                    tabindex={rowClick ? 0 : undefined}
+                    onkeydown={rowClick
+                        ? (event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault();
+                                  const firstCell = row.getVisibleCells()[0];
+                                  if (firstCell) {
+                                      rowClick(firstCell.row.original);
+                                  }
+                              }
+                          }
+                        : undefined}
+                >
                     {#each row.getVisibleCells() as cell (cell.id)}
                         {#if rowHref && cell.row.original}
                             {@const href = rowHref(cell.row.original)}

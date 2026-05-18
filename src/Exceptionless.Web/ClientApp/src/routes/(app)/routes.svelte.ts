@@ -38,7 +38,7 @@ export function routes(): NavigationItem[] {
             title: 'Event Stream'
         },
         {
-            group: 'Reports',
+            group: 'Dashboards',
             href: resolve('/(app)/sessions'),
             icon: Sessions,
             title: 'Sessions'

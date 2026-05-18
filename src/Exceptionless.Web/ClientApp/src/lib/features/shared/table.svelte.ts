@@ -175,9 +175,12 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     const setMetaImpl = (meta: QueryMeta | undefined) => {
         setMeta(meta);
         const limit = configuration.queryParameters.limit ?? DEFAULT_LIMIT;
-
-        const total = isMemoryPaging ? allData().length : ((meta?.total as number) ?? 0);
-        const totalPages = Math.ceil(total / limit);
+        const currentPage =
+            (configuration.paginationStrategy === 'offset'
+                ? (configuration.queryParameters as TableOffsetPagingParameters).page
+                : (configuration.queryParameters as TableMemoryPagingParameters).page) ?? 1;
+        const total = isMemoryPaging ? allData().length : (meta?.total as number | undefined);
+        const totalPages = total != null ? Math.ceil(total / limit) : meta?.links?.next ? currentPage + 1 : currentPage;
         setPageCount(totalPages);
 
         // // Only adjust pagination for offset pagination here

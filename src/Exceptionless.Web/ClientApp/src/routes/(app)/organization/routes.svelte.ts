@@ -1,5 +1,5 @@
 import { resolve } from '$app/paths';
-import Settings from '@lucide/svelte/icons/settings';
+import Building2 from '@lucide/svelte/icons/building-2';
 
 import type { NavigationItem } from '../../routes.svelte';
 
@@ -10,7 +10,7 @@ export function routes(): NavigationItem[] {
         {
             group: 'Settings',
             href: resolve('/(app)/organization/list'),
-            icon: Settings,
+            icon: Building2,
             show: (context) => !context.impersonating,
             title: 'Organizations'
         },

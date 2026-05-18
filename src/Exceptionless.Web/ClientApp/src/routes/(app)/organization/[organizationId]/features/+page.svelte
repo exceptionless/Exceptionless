@@ -1,7 +1,8 @@
 <script lang="ts">
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
-    import { Muted } from '$comp/typography';
+    import { H3, Muted } from '$comp/typography';
+    import { Separator } from '$comp/ui/separator';
     import { Skeleton } from '$comp/ui/skeleton';
     import { Switch } from '$comp/ui/switch';
     import { getOrganizationQuery, removeOrganizationFeature, setOrganizationFeature } from '$features/organizations/api.svelte';
@@ -23,13 +24,7 @@
 
     const organization = $derived(organizationQuery.data);
 
-    const KNOWN_FEATURES: { description: string; id: string; name: string }[] = [
-        {
-            description: 'Allows users to save and reuse filter combinations across dashboard pages.',
-            id: 'feature-saved-views',
-            name: 'Saved Views'
-        }
-    ];
+    const KNOWN_FEATURES: { description: string; id: string; name: string }[] = [];
 
     function hasFeature(featureId: string) {
         return organization?.features?.includes(featureId) ?? false;
@@ -73,7 +68,11 @@
     <ErrorMessage message="You do not have permission to manage features." />
 {:else}
     <div class="space-y-6">
-        <Muted>Enable or disable features for this organization</Muted>
+        <div>
+            <H3>Features</H3>
+            <Muted>Enable or disable features for this organization.</Muted>
+        </div>
+        <Separator />
 
         <div class="space-y-3">
             {#if organizationQuery.isLoading}

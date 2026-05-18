@@ -3,7 +3,6 @@
     import { Separator } from '$comp/ui/separator';
     import { accessToken } from '$features/auth/index.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
-    import * as SplitLayout from '$features/shared/components/layouts/split-layout';
     import { getMeQuery } from '$features/users/api.svelte';
 
     import type { NavigationItemContext } from '../../routes.svelte';
@@ -26,13 +25,10 @@
 <H3>Settings</H3>
 <Muted>Manage your account settings and set e-mail preferences.</Muted>
 
-<Separator class="mx-6 my-6 w-auto" />
+<Separator class="m-6 w-auto" />
 
-<SplitLayout.Root>
-    <SplitLayout.Sidebar>
-        <SidebarNav routes={filteredRoutes} />
-    </SplitLayout.Sidebar>
-    <SplitLayout.Content>
-        {@render children()}
-    </SplitLayout.Content>
-</SplitLayout.Root>
+<SidebarNav class="overflow-x-auto pb-2 lg:flex-row lg:space-y-0 lg:space-x-2" routes={filteredRoutes} />
+
+<Separator class="m-6 w-auto" />
+
+{@render children()}

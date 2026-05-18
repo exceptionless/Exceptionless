@@ -57,6 +57,18 @@ export function routes(): NavigationItem[] {
         },
         {
             group: 'Settings',
+            href: resolve('/(app)/organization/[organizationId]/manage', { organizationId }),
+            icon: Settings,
+            title: 'General'
+        },
+        {
+            group: 'Settings',
+            href: resolve('/(app)/organization/[organizationId]/usage', { organizationId }),
+            icon: Usage,
+            title: 'Usage'
+        },
+        {
+            group: 'Settings',
             href: resolve('/(app)/organization/[organizationId]/projects', { organizationId }),
             icon: Folder,
             title: 'Projects'
@@ -66,6 +78,19 @@ export function routes(): NavigationItem[] {
             href: resolve('/(app)/organization/[organizationId]/users', { organizationId }),
             icon: Users,
             title: 'Users'
+        },
+        {
+            group: 'Settings',
+            href: resolve('/(app)/organization/[organizationId]/billing', { organizationId }),
+            icon: Billing,
+            title: 'Billing'
+        },
+        {
+            group: 'Settings',
+            href: resolve('/(app)/organization/[organizationId]/features', { organizationId }),
+            icon: Zap,
+            show: (ctx) => !!ctx.user?.roles?.includes('global'),
+            title: 'Features'
         }
     ];
 }
