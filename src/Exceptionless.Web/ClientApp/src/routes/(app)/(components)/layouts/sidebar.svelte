@@ -177,7 +177,12 @@
                             </Collapsible.Trigger>
                             <Collapsible.Content>
                                 <Sidebar.MenuSub>
-                                    {#each settingsRoutes as subItem (subItem.href)}
+                                    {#each settingsRoutes as subItem, index (subItem.href)}
+                                        {#if index > 0 && settingsRoutes[index - 1]?.title === 'Organizations'}
+                                            <Sidebar.MenuSubItem>
+                                                <div class="border-border mx-2 my-1 w-auto border-t"></div>
+                                            </Sidebar.MenuSubItem>
+                                        {/if}
                                         <Sidebar.MenuSubItem>
                                             <Sidebar.MenuSubButton isActive={isRouteActive(String(subItem.href))}>
                                                 {#snippet child({ props })}
