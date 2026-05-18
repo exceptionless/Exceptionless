@@ -192,24 +192,23 @@
                                             </Sidebar.MenuSubButton>
                                         </Sidebar.MenuSubItem>
                                         {#if subItem.title === 'Projects' && projectSettingsRoutes.length > 0}
-                                            <Sidebar.MenuSubItem>
+                                            <Sidebar.MenuSubItem class="relative ml-4 before:bg-border before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px">
                                                 <div
-                                                    class="text-muted-foreground relative truncate px-2 py-1 pl-12 text-xs font-medium before:bg-border before:absolute before:top-0 before:bottom-0 before:left-7 before:w-px"
+                                                    class="text-muted-foreground truncate px-2 py-1 pl-6 text-xs font-medium"
                                                     title={currentProjectName}
                                                 >
                                                     {currentProjectName}
                                                 </div>
                                             </Sidebar.MenuSubItem>
                                             {#each projectSettingsRoutes as projectSubItem (projectSubItem.href)}
-                                                <Sidebar.MenuSubItem>
-                                                    <Sidebar.MenuSubButton isActive={isRouteActive(String(projectSubItem.href))}>
+                                                <Sidebar.MenuSubItem class="relative ml-4 before:bg-border before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px">
+                                                    <Sidebar.MenuSubButton class="pl-6" isActive={isRouteActive(String(projectSubItem.href))}>
                                                         {#snippet child({ props })}
                                                             <A
                                                                 variant="ghost"
                                                                 href={projectSubItem.href}
                                                                 title={projectSubItem.title}
                                                                 onclick={onMenuClick}
-                                                                class="relative pl-12 before:bg-border before:absolute before:top-0 before:bottom-0 before:left-7 before:w-px"
                                                                 {...props}
                                                             >
                                                                 {#if projectSubItem.icon}
