@@ -26,8 +26,12 @@
         return isOnRoute && (savedItem.isDefault ? !activeSavedParam || activeSavedParam === savedId : activeSavedParam === savedId);
     }
 
-    function isRouteActive(href: string): boolean {
-        return page.url.pathname === href || page.url.pathname.startsWith(`${href}/`);
+    function isPathActive(href: string): boolean {
+        return page.url.pathname === href || page.url.pathname.startsWith(href + '/');
+    }
+
+    function isSettingsGroup(group: string): boolean {
+        return group === 'Settings' || group.endsWith(' Settings');
     }
 
     function isChildItemActive(childItem: { href: string; isDefault?: boolean }, routeHref: string): boolean {
@@ -38,7 +42,7 @@
             return isSavedItemActive(childItem, routeHref);
         }
 
-        return isRouteActive(childUrl.pathname);
+        return isPathActive(childUrl.pathname);
     }
 
     type Props = ComponentProps<typeof Sidebar.Root> & {
@@ -49,13 +53,11 @@
 
     let { footer, header, routes, ...props }: Props = $props();
     const dashboardRoutes = $derived(routes.filter((route) => route.group === 'Dashboards'));
-    const dashboardsIsActive = $derived(dashboardRoutes.some((route) => isRouteActive(String(route.href))));
+    const dashboardsIsActive = $derived(dashboardRoutes.some((route) => isPathActive(String(route.href))));
 
     const settingsRoutes = $derived(routes.filter((route) => route.group === 'Settings'));
     const projectSettingsRoutes = $derived(routes.filter((route) => route.group === 'Project Settings'));
-    const settingsIsActive = $derived(
-        settingsRoutes.some((route) => isRouteActive(String(route.href))) || projectSettingsRoutes.some((route) => isRouteActive(String(route.href)))
-    );
+    const settingsIsActive = $derived(routes.some((route) => isSettingsGroup(route.group) && isPathActive(route.href)));
     const currentProjectId = $derived(page.params.projectId);
     const currentProjectQuery = getProjectQuery({
         route: {
@@ -70,7 +72,7 @@
     const systemBasePath = resolve('/(app)/system');
     const systemIsActive = $derived(page.url.pathname === systemBasePath || page.url.pathname.startsWith(systemBasePath + '/'));
     const accountRoutes = $derived(routes.filter((route) => route.group === 'My Account'));
-    const accountIsActive = $derived(accountRoutes.some((route) => isRouteActive(String(route.href))));
+    const accountIsActive = $derived(accountRoutes.some((route) => isPathActive(String(route.href))));
 
     const sidebar = useSidebar();
     const isIconCollapsed = $derived(sidebar.state === 'collapsed' && !sidebar.isMobile);
@@ -365,7 +367,7 @@
                                                 </Sidebar.MenuSubItem>
                                             {/if}
                                             <Sidebar.MenuSubItem>
-                                                <Sidebar.MenuSubButton isActive={isRouteActive(String(subItem.href))}>
+                                                <Sidebar.MenuSubButton isActive={isPathActive(String(subItem.href))}>
                                                     {#snippet child({ props })}
                                                         <A variant="ghost" href={subItem.href} title={subItem.title} onclick={onMenuClick} {...props}>
                                                             {#if subItem.icon}
@@ -389,7 +391,7 @@
                                                     <Sidebar.MenuSubItem
                                                         class="before:bg-border relative ml-4 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px"
                                                     >
-                                                        <Sidebar.MenuSubButton class="pl-6" isActive={isRouteActive(String(projectSubItem.href))}>
+                                                        <Sidebar.MenuSubButton class="pl-6" isActive={isPathActive(String(projectSubItem.href))}>
                                                             {#snippet child({ props })}
                                                                 <A
                                                                     variant="ghost"
@@ -468,7 +470,7 @@
                                         <Sidebar.MenuSub>
                                             {#each accountRoutes as subItem (subItem.href)}
                                                 <Sidebar.MenuSubItem>
-                                                    <Sidebar.MenuSubButton isActive={isRouteActive(String(subItem.href))}>
+                                                    <Sidebar.MenuSubButton isActive={isPathActive(String(subItem.href))}>
                                                         {#snippet child({ props })}
                                                             <A variant="ghost" href={subItem.href} title={subItem.title} onclick={onMenuClick} {...props}>
                                                                 {#if subItem.icon}

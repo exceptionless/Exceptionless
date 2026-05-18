@@ -10,6 +10,7 @@ export type FacetedFilterProps<TFilter extends IFilter> = {
 
 export interface IFilter {
     clone(): IFilter;
+    hidden: boolean;
     id: string;
     readonly key: string;
     toFilter(): string;

@@ -189,6 +189,11 @@ export const NewSavedViewSchema = object({
     .max(100, "Time must be at most 100 characters")
     .nullable()
     .optional(),
+  sort: string()
+    .min(1, "Sort is required")
+    .max(100, "Sort must be at most 100 characters")
+    .nullable()
+    .optional(),
   view_type: string().min(1, "View type is required"),
   filter_definitions: string()
     .min(1, "Filter definitions is required")
@@ -413,6 +418,7 @@ export const UpdateSavedViewSchema = object({
   is_default: boolean().nullable().optional(),
   filter: string().min(1, "Filter is required").nullable().optional(),
   time: string().min(1, "Time is required").nullable().optional(),
+  sort: string().min(1, "Sort is required").nullable().optional(),
   filter_definitions: string()
     .min(1, "Filter definitions is required")
     .nullable()
@@ -609,6 +615,7 @@ export const ViewSavedViewSchema = object({
   is_default: boolean(),
   name: string().min(1, "Name is required"),
   time: string().min(1, "Time is required").nullable().optional(),
+  sort: string().min(1, "Sort is required").nullable().optional(),
   version: int32(),
   view_type: string().min(1, "View type is required"),
   created_utc: iso.datetime(),

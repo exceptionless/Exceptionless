@@ -6,6 +6,11 @@
     import type { VersionFilter } from './models.svelte';
 
     let { filter, filterChanged, filterRemoved, ...props }: FacetedFilterProps<VersionFilter> = $props();
+
+    function toggleHidden() {
+        filter.hidden = !filter.hidden;
+        filterChanged(filter);
+    }
 </script>
 
 <FacetedFilter.String
@@ -17,6 +22,8 @@
         filter.value = undefined;
         filterRemoved(filter);
     }}
+    hidden={filter.hidden}
+    {toggleHidden}
     value={filter.value}
     {...props}
 ></FacetedFilter.String>

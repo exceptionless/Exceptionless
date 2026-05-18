@@ -26,6 +26,7 @@ public record ViewSavedView : IIdentity, IHaveDates
     public bool IsDefault { get; set; }
     public string Name { get; set; } = null!;
     public string? Time { get; set; }
+    public string? Sort { get; set; }
     public int Version { get; set; }
     public string ViewType { get; set; } = null!;
 

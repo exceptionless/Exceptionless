@@ -24,6 +24,7 @@ public sealed class SavedViewMapperTests
             Name = "Open Issues",
             Filter = "(status:open OR status:regressed)",
             Time = "[now-7d TO now]",
+            Sort = "-last",
             ViewType = "issues",
             FilterDefinitions = "[{\"type\":\"status\",\"values\":[\"open\",\"regressed\"]}]",
             Columns = new Dictionary<string, bool> { ["status"] = true, ["users"] = false },
@@ -38,6 +39,7 @@ public sealed class SavedViewMapperTests
         Assert.Equal("Open Issues", result.Name);
         Assert.Equal("(status:open OR status:regressed)", result.Filter);
         Assert.Equal("[now-7d TO now]", result.Time);
+        Assert.Equal("-last", result.Sort);
         Assert.Equal("issues", result.ViewType);
         Assert.Equal("[{\"type\":\"status\",\"values\":[\"open\",\"regressed\"]}]", result.FilterDefinitions);
         Assert.NotNull(result.Columns);
@@ -108,6 +110,7 @@ public sealed class SavedViewMapperTests
             IsDefault = false,
             Name = "My View",
             Time = "[now-30d TO now]",
+            Sort = "-last",
             Version = 1,
             ViewType = "issues",
             CreatedUtc = now.AddDays(-1),
@@ -130,6 +133,7 @@ public sealed class SavedViewMapperTests
         Assert.False(result.IsDefault);
         Assert.Equal("My View", result.Name);
         Assert.Equal("[now-30d TO now]", result.Time);
+        Assert.Equal("-last", result.Sort);
         Assert.Equal(1, result.Version);
         Assert.Equal("issues", result.ViewType);
         Assert.Equal(now.AddDays(-1), result.CreatedUtc);
@@ -160,6 +164,7 @@ public sealed class SavedViewMapperTests
         Assert.Null(result.FilterDefinitions);
         Assert.Null(result.Columns);
         Assert.Null(result.Time);
+        Assert.Null(result.Sort);
     }
 
     [Fact]

@@ -6,6 +6,11 @@
     import type { BooleanFilter } from './models.svelte';
 
     let { filter, filterChanged, filterRemoved, ...props }: FacetedFilterProps<BooleanFilter> = $props();
+
+    function toggleHidden() {
+        filter.hidden = !filter.hidden;
+        filterChanged(filter);
+    }
 </script>
 
 <FacetedFilter.Boolean
@@ -17,6 +22,8 @@
         filter.value = undefined;
         filterRemoved(filter);
     }}
+    hidden={filter.hidden}
+    {toggleHidden}
     value={filter.value}
     {...props}
 ></FacetedFilter.Boolean>

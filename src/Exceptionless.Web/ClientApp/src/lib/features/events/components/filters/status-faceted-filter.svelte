@@ -8,6 +8,11 @@
     import { StatusFilter } from './models.svelte';
 
     let { filter, filterChanged, filterRemoved, title = 'Status', ...props }: FacetedFilterProps<StatusFilter> = $props();
+
+    function toggleHidden() {
+        filter.hidden = !filter.hidden;
+        filterChanged(filter);
+    }
 </script>
 
 <FacetedFilter.MultiSelect
@@ -20,7 +25,9 @@
         filter.value = [];
         filterRemoved(filter);
     }}
+    hidden={filter.hidden}
     {title}
+    {toggleHidden}
     values={filter.value}
     {...props}
 ></FacetedFilter.MultiSelect>

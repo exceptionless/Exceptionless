@@ -15,11 +15,15 @@ namespace Exceptionless.Tests.Controllers;
 
 public sealed class ProjectControllerTests : IntegrationTestsBase
 {
+    private readonly IEventRepository _eventRepository;
     private readonly IProjectRepository _projectRepository;
+    private readonly IStackRepository _stackRepository;
 
     public ProjectControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
+        _eventRepository = GetService<IEventRepository>();
         _projectRepository = GetService<IProjectRepository>();
+        _stackRepository = GetService<IStackRepository>();
     }
 
     protected override async Task ResetDataAsync()
@@ -62,6 +66,29 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.NotNull(project);
         Assert.Equal("Mapped Test Project", project.Name);
         Assert.True(project.DeleteBotDataEnabled);
+    }
+
+    [Fact]
+    public async Task GenerateSampleDataAsync_ValidProject_QueuesSampleEvents()
+    {
+        var workItems = await SendRequestAsAsync<WorkInProgressResult>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "sample-data")
+            .StatusCodeShouldBeAccepted()
+        );
+
+        Assert.NotNull(workItems);
+        Assert.Single(workItems.Workers);
+
+        var workItemJob = GetService<WorkItemJob>();
+        await workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        long projectEventCount = await _eventRepository.CountAsync(q => q.Project(SampleDataService.TEST_PROJECT_ID));
+        long otherProjectEventCount = await _eventRepository.CountAsync(q => q.Project(SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID));
+        Assert.True(projectEventCount >= 100, $"Expected at least 100 generated events but found {projectEventCount}.");
+        Assert.Equal(0, otherProjectEventCount);
     }
 
     [Fact]
@@ -481,9 +508,10 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.Equal(stacks.Count, project.StackCount);
         Assert.Equal(events.Count, project.EventCount);
 
-        // Reset Project data and ensure soft deleted counts don't show up
+        // Reset Project data and ensure counts are removed immediately after the work item runs.
         var workItems = await SendRequestAsAsync<WorkInProgressResult>(r => r
             .AsTestOrganizationUser()
+            .Post()
             .AppendPaths("projects", project.Id, "reset-data")
             .StatusCodeShouldBeAccepted()
         );
@@ -503,12 +531,31 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
 
         Assert.NotNull(projects);
         project = projects.Single(p => String.Equals(p.Id, SampleDataService.TEST_PROJECT_ID));
-        // Stacks and event counts include soft deleted (performance reasons)
-        Assert.Equal(stacks.Count, project.StackCount);
-        Assert.Equal(events.Count, project.EventCount);
+        Assert.Equal(0, project.StackCount);
+        Assert.Equal(0, project.EventCount);
 
-        var cleanupJob = GetService<CleanupDataJob>();
-        await cleanupJob.RunAsync(TestCancellationToken);
+        long stackCount = await _stackRepository.CountAsync(q => q.Project(project.Id));
+        long eventCount = await _eventRepository.CountAsync(q => q.Project(project.Id));
+        Assert.Equal(0, stackCount);
+        Assert.Equal(0, eventCount);
+
+        var legacyGetWorkItems = await SendRequestAsAsync<WorkInProgressResult>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", project.Id, "reset-data")
+            .StatusCodeShouldBeAccepted()
+        );
+
+        Assert.NotNull(legacyGetWorkItems);
+        Assert.Single(legacyGetWorkItems.Workers);
+
+        var (newStacks, newEvents) = await CreateDataAsync(d =>
+        {
+            d.Event().Message("test after reset");
+        });
+        await RefreshDataAsync();
+
+        Assert.NotEmpty(newStacks);
+        Assert.NotEmpty(newEvents);
 
         projects = await SendRequestAsAsync<List<ViewProject>>(r => r
             .AsTestOrganizationUser()
@@ -519,7 +566,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
 
         Assert.NotNull(projects);
         project = projects.Single(p => String.Equals(p.Id, SampleDataService.TEST_PROJECT_ID));
-        Assert.Equal(0, project.StackCount);
-        Assert.Equal(0, project.EventCount);
+        Assert.Equal(newStacks.Count, project.StackCount);
+        Assert.Equal(newEvents.Count, project.EventCount);
     }
 }

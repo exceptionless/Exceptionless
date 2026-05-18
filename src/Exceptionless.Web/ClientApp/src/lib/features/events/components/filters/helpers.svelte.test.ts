@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { deserializeFilters, quoteIfSpecialCharacters, serializeFilters } from './helpers.svelte';
+import { deserializeFilters, quoteIfSpecialCharacters, serializeFilters, toFilter } from './helpers.svelte';
 import {
     BooleanFilter,
     DateFilter,
@@ -109,6 +109,14 @@ describe('serializeFilters', () => {
         const result = JSON.parse(serializeFilters(filters));
 
         expect(result[0]).toEqual({ type: 'project', value: ['proj1', 'proj2'] });
+    });
+
+    it('serializes hidden filters when hidden is true', () => {
+        const filter = new ProjectFilter(['proj1']);
+        filter.hidden = true;
+        const result = JSON.parse(serializeFilters([filter]));
+
+        expect(result[0]).toEqual({ hidden: true, type: 'project', value: ['proj1'] });
     });
 
     it('serializes a ReferenceFilter with value', () => {
@@ -234,6 +242,14 @@ describe('deserializeFilters', () => {
         expect((filters[0] as ProjectFilter).value).toEqual(['p1', 'p2']);
     });
 
+    it('deserializes hidden filters', () => {
+        const filters = deserializeFilters('[{"type":"project","value":["p1"],"hidden":true}]');
+
+        expect(filters).toHaveLength(1);
+        expect(filters[0]).toBeInstanceOf(ProjectFilter);
+        expect(filters[0]?.hidden).toBe(true);
+    });
+
     it('deserializes a ReferenceFilter', () => {
         const filters = deserializeFilters('[{"type":"reference","value":"ref-123"}]');
 
@@ -301,6 +317,19 @@ describe('deserializeFilters', () => {
 });
 
 describe('round-trip serialization', () => {
+    it('round-trips hidden state without changing filter output', () => {
+        const projectFilter = new ProjectFilter(['proj1']);
+        projectFilter.hidden = true;
+        const originalFilterString = toFilter([projectFilter]);
+
+        const result = deserializeFilters(serializeFilters([projectFilter]));
+
+        expect(result).toHaveLength(1);
+        expect(result[0]).toBeInstanceOf(ProjectFilter);
+        expect(result[0]?.hidden).toBe(true);
+        expect(toFilter(result)).toBe(originalFilterString);
+    });
+
     it('round-trips a BooleanFilter', () => {
         const original = [new BooleanFilter('is_fixed', true)];
         const result = deserializeFilters(serializeFilters(original));

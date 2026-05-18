@@ -285,6 +285,10 @@
             queryEntries.push(['time', savedView.time]);
         }
 
+        if (savedView.sort && savedView.view_type !== 'issues') {
+            queryEntries.push(['sort', savedView.sort]);
+        }
+
         const queryParams = new URLSearchParams(queryEntries);
         return `${baseHref}?${queryParams.toString()}`;
     }
