@@ -58,7 +58,7 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 ### Mark Snoozed
-POST {{apiUrl}}/stacks/{{stackId}}/mark-snoozed?snoozeUntilUtc=12-31-2030
+POST {{apiUrl}}/stacks/{{stackId}}/mark-snoozed?snoozeUntilUtc=2030-12-31T00:00:00Z
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -99,7 +99,7 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 ### Bulk Mark Snoozed (multiple stack IDs)
-POST {{apiUrl}}/stacks/{{stackId}},{{stackId}}/mark-snoozed?snoozeUntilUtc=12-31-2030
+POST {{apiUrl}}/stacks/{{stackId}},{{stackId}}/mark-snoozed?snoozeUntilUtc=2030-12-31T00:00:00Z
 Authorization: Bearer {{token}}
 Content-Type: application/json
 

@@ -72,23 +72,6 @@
         // Call the row click handler, passing the event so consumer can override if needed
         rowClick(cell.row.original, event);
     }
-
-    function onCellKeydown(event: KeyboardEvent, cell: Cell<StockFeatures, TData, unknown>): void {
-        if (cell.column.id === 'select') {
-            return;
-        }
-
-        if (!rowClick) {
-            return;
-        }
-
-        if (event.key !== 'Enter' && event.key !== ' ') {
-            return;
-        }
-
-        event.preventDefault();
-        rowClick(cell.row.original);
-    }
 </script>
 
 <div class="rounded-md border">
@@ -110,7 +93,16 @@
                 {@render children()}
             {/if}
             {#each table.getRowModel().rows as row (row.id)}
-                <Table.Row>
+                <Table.Row
+                    tabindex={rowClick ? 0 : undefined}
+                    onkeydown={rowClick ? (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            const firstCell = row.getVisibleCells()[0];
+                            if (firstCell) rowClick(firstCell.row.original);
+                        }
+                    } : undefined}
+                >
                     {#each row.getVisibleCells() as cell (cell.id)}
                         {#if rowHref && cell.row.original}
                             {@const href = rowHref(cell.row.original)}
@@ -123,8 +115,6 @@
                             <Table.Cell
                                 class={getCellClass(cell)}
                                 onclick={(event) => onCellClick(event, cell)}
-                                onkeydown={(event) => onCellKeydown(event, cell)}
-                                tabindex={cell.column.id === 'select' ? undefined : 0}
                             >
                                 <FlexRender {cell} />
                             </Table.Cell>
