@@ -104,6 +104,7 @@ public static class JsonNodeExtensions
 
     /// <summary>
     /// Renames a property in a JsonObject while preserving property order.
+    /// If newName already exists, the renamed value takes precedence (overwrites).
     /// </summary>
     /// <returns>True if the property was renamed, false if not found.</returns>
     public static bool Rename(this JsonObject target, string currentName, string newName)
@@ -114,7 +115,8 @@ public static class JsonNodeExtensions
         if (!target.TryGetPropertyValue(currentName, out var value))
             return false;
 
-        // To preserve order, we need to rebuild the object
+        // To preserve order, we need to rebuild the object.
+        // If newName already exists as another property, the renamed value takes precedence.
         var properties = target.ToList();
         target.Clear();
 
@@ -122,6 +124,8 @@ public static class JsonNodeExtensions
         {
             if (prop.Key == currentName)
                 target.Add(newName, prop.Value);
+            else if (prop.Key == newName)
+                continue; // skip: the renamed value takes precedence over existing newName
             else
                 target.Add(prop.Key, prop.Value);
         }
@@ -131,6 +135,7 @@ public static class JsonNodeExtensions
 
     /// <summary>
     /// Renames a property or removes it if null or empty, preserving property order.
+    /// If newName already exists, the renamed value takes precedence (overwrites).
     /// </summary>
     /// <returns>True if renamed, false if removed or not found.</returns>
     public static bool RenameOrRemoveIfNullOrEmpty(this JsonObject target, string currentName, string newName)
@@ -145,7 +150,8 @@ public static class JsonNodeExtensions
             return false;
         }
 
-        // To preserve order, we need to rebuild the object
+        // To preserve order, we need to rebuild the object.
+        // If newName already exists as another property, the renamed value takes precedence.
         var properties = target.ToList();
         target.Clear();
 
@@ -153,6 +159,8 @@ public static class JsonNodeExtensions
         {
             if (prop.Key == currentName)
                 target.Add(newName, prop.Value);
+            else if (prop.Key == newName)
+                continue; // skip: the renamed value takes precedence over existing newName
             else
                 target.Add(prop.Key, prop.Value);
         }
