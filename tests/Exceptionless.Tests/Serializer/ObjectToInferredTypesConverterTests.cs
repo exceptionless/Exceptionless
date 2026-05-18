@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Exceptionless.Core.Serialization;
 using Foundatio.Serializer;
 using Xunit;
 
@@ -664,5 +666,49 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
         // Assert - Number exceeding long.MaxValue becomes double
         Assert.NotNull(result2);
         Assert.IsType<decimal>(result2["value"]);
+    }
+
+    [Fact]
+    public void ConvertJsonElement_LargeExponent_ReturnsDouble()
+    {
+        // Arrange: 1e100 exceeds decimal range (~7.9×10²⁸), must not throw OverflowException
+        using var doc = JsonDocument.Parse("1e100");
+        var element = doc.RootElement;
+
+        // Act
+        var result = ObjectToInferredTypesConverter.ConvertJsonElement(element);
+
+        // Assert
+        Assert.IsType<double>(result);
+        Assert.Equal(1e100d, (double)result);
+    }
+
+    [Fact]
+    public void ConvertJsonElement_SmallExponent_ReturnsDecimal()
+    {
+        // Arrange: 1.23e10 fits in decimal
+        using var doc = JsonDocument.Parse("1.23e10");
+        var element = doc.RootElement;
+
+        // Act
+        var result = ObjectToInferredTypesConverter.ConvertJsonElement(element);
+
+        // Assert
+        Assert.IsType<decimal>(result);
+        Assert.Equal(12300000000m, (decimal)result);
+    }
+
+    [Fact]
+    public void ConvertJsonElement_VeryLargeInteger_ReturnsDecimal()
+    {
+        // Arrange: 9223372036854775808 (long.MaxValue + 1) doesn't fit in long
+        using var doc = JsonDocument.Parse("9223372036854775808");
+        var element = doc.RootElement;
+
+        // Act
+        var result = ObjectToInferredTypesConverter.ConvertJsonElement(element);
+
+        // Assert
+        Assert.IsType<decimal>(result);
     }
 }

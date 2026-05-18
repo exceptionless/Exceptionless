@@ -278,8 +278,11 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
         string rawText = element.GetRawText();
         if (rawText.Contains('.') || rawText.Contains('e') || rawText.Contains('E'))
         {
-            // Has decimal point or exponent - return decimal (default mode)
-            return element.GetDecimal();
+            // decimal has limited range (~±7.9×10²⁸); fall back to double for values like 1e100
+            if (element.TryGetDecimal(out decimal d))
+                return d;
+
+            return element.GetDouble();
         }
 
         // No decimal point - integer. Try Int32 first, then Int64, then Decimal
@@ -289,7 +292,11 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
         if (element.TryGetInt64(out long l))
             return l;
 
-        return element.GetDecimal();
+        // Very large integers that don't fit in long (> 9.2×10¹⁸)
+        if (element.TryGetDecimal(out decimal dec))
+            return dec;
+
+        return element.GetDouble();
     }
 
     /// <summary>
