@@ -616,11 +616,7 @@ public partial class App : Application {
     {/if}
 
     <div class="border-border flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end">
-        <Button
-            variant="success"
-            onclick={generateProjectSampleData}
-            disabled={generateSampleDataMutation.isPending}
-        >
+        <Button variant="success" onclick={generateProjectSampleData} disabled={generateSampleDataMutation.isPending}>
             {#if generateSampleDataMutation.isPending}
                 <Spinner /> Generating...
             {:else}
