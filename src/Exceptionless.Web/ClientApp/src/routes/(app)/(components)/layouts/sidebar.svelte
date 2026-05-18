@@ -9,7 +9,6 @@
     import { useSidebar } from '$comp/ui/sidebar';
     import { getProjectQuery } from '$features/projects/api.svelte';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
-    import Folder from '@lucide/svelte/icons/folder';
     import Settings from '@lucide/svelte/icons/settings-2';
     import Wrench from '@lucide/svelte/icons/wrench';
 
@@ -192,39 +191,36 @@
                                                 {/snippet}
                                             </Sidebar.MenuSubButton>
                                         </Sidebar.MenuSubItem>
-                                    {/each}
-
-                                    {#if projectSettingsRoutes.length > 0}
-                                        <Sidebar.MenuSubItem>
-                                            <div class="border-border mt-2 mx-2 w-auto border-t"></div>
-                                        </Sidebar.MenuSubItem>
-                                        <Sidebar.MenuSubItem>
-                                            <div class="text-muted-foreground flex items-center gap-2 px-2 py-1 pt-2 text-xs font-medium">
-                                                <Folder class="size-3.5" />
-                                                <span>Current Project</span>
-                                            </div>
-                                        </Sidebar.MenuSubItem>
-                                        <Sidebar.MenuSubItem>
-                                            <div class="text-muted-foreground truncate px-2 py-1 pl-7 text-xs font-medium" title={currentProjectName}>
-                                                {currentProjectName}
-                                            </div>
-                                        </Sidebar.MenuSubItem>
-                                        {#each projectSettingsRoutes as subItem (subItem.href)}
+                                        {#if subItem.title === 'Projects' && projectSettingsRoutes.length > 0}
                                             <Sidebar.MenuSubItem>
-                                                <Sidebar.MenuSubButton isActive={isRouteActive(String(subItem.href))}>
-                                                    {#snippet child({ props })}
-                                                        <A variant="ghost" href={subItem.href} title={subItem.title} onclick={onMenuClick} class="pl-7" {...props}>
-                                                            {#if subItem.icon}
-                                                                {@const Icon = subItem.icon}
-                                                                <Icon />
-                                                            {/if}
-                                                            <span>{subItem.title}</span>
-                                                        </A>
-                                                    {/snippet}
-                                                </Sidebar.MenuSubButton>
+                                                <div class="text-muted-foreground truncate px-2 py-1 pl-10 text-xs font-medium" title={currentProjectName}>
+                                                    {currentProjectName}
+                                                </div>
                                             </Sidebar.MenuSubItem>
-                                        {/each}
-                                    {/if}
+                                            {#each projectSettingsRoutes as projectSubItem (projectSubItem.href)}
+                                                <Sidebar.MenuSubItem>
+                                                    <Sidebar.MenuSubButton isActive={isRouteActive(String(projectSubItem.href))}>
+                                                        {#snippet child({ props })}
+                                                            <A
+                                                                variant="ghost"
+                                                                href={projectSubItem.href}
+                                                                title={projectSubItem.title}
+                                                                onclick={onMenuClick}
+                                                                class="pl-10"
+                                                                {...props}
+                                                            >
+                                                                {#if projectSubItem.icon}
+                                                                    {@const Icon = projectSubItem.icon}
+                                                                    <Icon />
+                                                                {/if}
+                                                                <span>{projectSubItem.title}</span>
+                                                            </A>
+                                                        {/snippet}
+                                                    </Sidebar.MenuSubButton>
+                                                </Sidebar.MenuSubItem>
+                                            {/each}
+                                        {/if}
+                                    {/each}
                                 </Sidebar.MenuSub>
                             </Collapsible.Content>
                         </Sidebar.MenuItem>
