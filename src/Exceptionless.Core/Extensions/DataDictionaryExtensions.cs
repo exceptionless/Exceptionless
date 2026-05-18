@@ -117,6 +117,10 @@ public static class DataDictionaryExtensions
         {
             try
             {
+                // PERF: Triple-serialization: Dict → JsonNode → string → T. The JsonNode intermediate
+                // is required for NormalizeKeysForType (renames PascalCase keys in-place), but the
+                // final ToJsonString→Deserialize round-trip could be eliminated by deserializing
+                // directly from the node if ITextSerializer exposed JsonSerializerOptions.
                 JsonNode? node = JsonSerializer.SerializeToNode(dictionary, s_dictSerializeOptions);
                 NormalizeKeysForType(node, typeof(T));
                 string dictJson = node?.ToJsonString() ?? "{}";
