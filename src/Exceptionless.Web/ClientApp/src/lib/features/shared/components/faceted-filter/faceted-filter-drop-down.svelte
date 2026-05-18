@@ -26,7 +26,18 @@
         value?: string;
     }
 
-    let { changed, hidden = false, loading = false, noOptionsText = 'No results found.', open = $bindable(), options, remove, title, toggleHidden, value }: Props = $props();
+    let {
+        changed,
+        hidden = false,
+        loading = false,
+        noOptionsText = 'No results found.',
+        open = $bindable(),
+        options,
+        remove,
+        title,
+        toggleHidden,
+        value
+    }: Props = $props();
 
     // eslint-disable-next-line svelte/prefer-writable-derived
     let updatedValue = $state<string | undefined>();

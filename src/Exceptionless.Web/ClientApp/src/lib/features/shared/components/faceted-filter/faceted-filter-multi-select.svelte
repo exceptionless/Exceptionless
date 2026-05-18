@@ -26,7 +26,18 @@
         values: string[];
     }
 
-    let { changed, hidden = false, loading = false, noOptionsText = 'No results found.', open = $bindable(), options, remove, title, toggleHidden, values }: Props = $props();
+    let {
+        changed,
+        hidden = false,
+        loading = false,
+        noOptionsText = 'No results found.',
+        open = $bindable(),
+        options,
+        remove,
+        title,
+        toggleHidden,
+        values
+    }: Props = $props();
 
     // eslint-disable-next-line svelte/prefer-writable-derived
     let updatedValues = $state<string[]>([]);
