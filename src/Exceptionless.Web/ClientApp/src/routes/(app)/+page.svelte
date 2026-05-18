@@ -60,6 +60,7 @@
         return resolve('/(app)/event/[eventId]', { eventId: row.id });
     }
 
+
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
     const DEFAULT_FILTERS = [new DateFilter('date', DEFAULT_TIME_RANGE), new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
     const DEFAULT_PARAMS = {

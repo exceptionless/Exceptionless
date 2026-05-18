@@ -10,13 +10,14 @@
     import EventsOverview from './events-overview.svelte';
 
     interface Props {
+        detailsHref?: string;
         eventId: null | string;
         filterChanged: (filter: IFilter) => void;
         onClose: () => void;
         onError?: (problem: ProblemDetails) => void;
     }
 
-    let { eventId = $bindable(), filterChanged, onClose, onError }: Props = $props();
+    let { detailsHref, eventId = $bindable(), filterChanged, onClose, onError }: Props = $props();
 
     function handleOpenChange() {
         onClose();
@@ -36,7 +37,7 @@
         <Sheet.Header>
             <Sheet.Title
                 >Event Details <Button
-                    href={eventId ? resolve('/(app)/event/[eventId]', { eventId }) : '#'}
+                    href={detailsHref ?? (eventId ? resolve('/(app)/event/[eventId]', { eventId }) : '#')}
                     size="sm"
                     title="Open in new window"
                     variant="ghost"><ExternalLink /></Button

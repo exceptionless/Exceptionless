@@ -23,6 +23,10 @@
         return isOnRoute && (savedItem.isDefault ? !activeSavedParam || activeSavedParam === savedId : activeSavedParam === savedId);
     }
 
+    function isRouteActive(href: string): boolean {
+        return page.url.pathname === href || page.url.pathname.startsWith(`${href}/`);
+    }
+
     type Props = ComponentProps<typeof Sidebar.Root> & {
         footer?: Snippet;
         header?: Snippet;
@@ -35,9 +39,7 @@
 
     const settingsRoutes = $derived(routes.filter((route) => route.group === 'Settings'));
     const projectSettingsRoutes = $derived(routes.filter((route) => route.group === 'Project Settings'));
-    const settingsIsActive = $derived(
-        settingsRoutes.some((route) => route.href === page.url.pathname) || projectSettingsRoutes.some((route) => route.href === page.url.pathname)
-    );
+    const settingsIsActive = $derived(settingsRoutes.some((route) => isRouteActive(String(route.href))) || projectSettingsRoutes.some((route) => isRouteActive(String(route.href))));
     const currentProjectId = $derived(page.params.projectId);
     const currentProjectQuery = getProjectQuery({
         route: {
@@ -178,7 +180,7 @@
                                 <Sidebar.MenuSub>
                                     {#each settingsRoutes as subItem (subItem.href)}
                                         <Sidebar.MenuSubItem>
-                                            <Sidebar.MenuSubButton isActive={subItem.href === page.url.pathname}>
+                                            <Sidebar.MenuSubButton isActive={isRouteActive(String(subItem.href))}>
                                                 {#snippet child({ props })}
                                                     <A variant="ghost" href={subItem.href} title={subItem.title} onclick={onMenuClick} {...props}>
                                                         {#if subItem.icon}
@@ -206,9 +208,13 @@
                                         </Sidebar.MenuSubItem>
                                         {#each projectSettingsRoutes as subItem (subItem.href)}
                                             <Sidebar.MenuSubItem>
-                                                <Sidebar.MenuSubButton isActive={subItem.href === page.url.pathname}>
+                                                <Sidebar.MenuSubButton isActive={isRouteActive(String(subItem.href))}>
                                                     {#snippet child({ props })}
                                                         <A variant="ghost" href={subItem.href} title={subItem.title} onclick={onMenuClick} class="pl-7" {...props}>
+                                                            {#if subItem.icon}
+                                                                {@const Icon = subItem.icon}
+                                                                <Icon />
+                                                            {/if}
                                                             <span>{subItem.title}</span>
                                                         </A>
                                                     {/snippet}

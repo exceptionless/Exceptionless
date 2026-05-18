@@ -62,6 +62,7 @@
         return resolve('/(app)/issues/[stackId]', { stackId: row.id });
     }
 
+
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
     const DEFAULT_FILTERS = [new DateFilter('date', DEFAULT_TIME_RANGE), new ProjectFilter([]), new TypeFilter(['404', 'error']), new StatusFilter([StackStatus.Open, StackStatus.Regressed, StackStatus.Ignored, StackStatus.Discarded])];
     const DEFAULT_PARAMS = {
@@ -185,6 +186,7 @@
         }
     });
     const eventId = $derived(stackEventsQuery.data?.[0]?.id);
+    const issueDetailsHref = $derived(selectedStackId ? resolve('/(app)/issues/[stackId]', { stackId: selectedStackId }) : undefined);
 
     $effect(() => {
         const stackId = selectedStackId;
@@ -368,4 +370,10 @@
     </div>
 </div>
 
-<EventDetailSheet eventId={eventId ?? null} filterChanged={onFilterChanged} onClose={() => (selectedStackId = undefined)} onError={handleStackError} />
+<EventDetailSheet
+    detailsHref={issueDetailsHref}
+    eventId={eventId ?? null}
+    filterChanged={onFilterChanged}
+    onClose={() => (selectedStackId = undefined)}
+    onError={handleStackError}
+/>

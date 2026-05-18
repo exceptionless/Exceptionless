@@ -57,13 +57,34 @@
             return;
         }
 
+        const target = event.target as HTMLElement | null;
+
         // For regular clicks with href, prevent default navigation
         if (rowHref) {
+            event.preventDefault();
+        } else if (target?.closest('a')) {
             event.preventDefault();
         }
 
         // Call the row click handler, passing the event so consumer can override if needed
         rowClick(cell.row.original, event);
+    }
+
+    function onCellKeydown(event: KeyboardEvent, cell: Cell<StockFeatures, TData, unknown>): void {
+        if (cell.column.id === 'select') {
+            return;
+        }
+
+        if (!rowClick) {
+            return;
+        }
+
+        if (event.key !== 'Enter' && event.key !== ' ') {
+            return;
+        }
+
+        event.preventDefault();
+        rowClick(cell.row.original);
     }
 </script>
 
@@ -96,7 +117,7 @@
                                 </Table.Cell>
                             </A>
                         {:else}
-                            <Table.Cell class={getCellClass(cell)} onclick={(event) => onCellClick(event, cell)}>
+                            <Table.Cell class={getCellClass(cell)} onclick={(event) => onCellClick(event, cell)} onkeydown={(event) => onCellKeydown(event, cell)} tabindex={cell.column.id === 'select' ? undefined : 0}>
                                 <FlexRender {cell} />
                             </Table.Cell>
                         {/if}

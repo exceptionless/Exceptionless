@@ -7,7 +7,7 @@
     import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
     import RefreshButton from '$comp/refresh-button.svelte';
-    import { H3 } from '$comp/typography';
+    import { H3, Muted } from '$comp/typography';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
     import { StatusFilter, StringFilter, TagFilter } from '$features/events/components/filters';
     import {
@@ -284,6 +284,7 @@
 <div class="flex flex-col">
     <div class="mb-4 flex flex-wrap items-start gap-2">
         <H3 class="my-0 shrink-0">Issue Management</H3>
+        <Muted class="w-full shrink-0">Defaults to ignored and discarded issues.</Muted>
         <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <StackFacetedFilterBuilder includeProject={false} />
