@@ -117,7 +117,12 @@
                                 </Table.Cell>
                             </A>
                         {:else}
-                            <Table.Cell class={getCellClass(cell)} onclick={(event) => onCellClick(event, cell)} onkeydown={(event) => onCellKeydown(event, cell)} tabindex={cell.column.id === 'select' ? undefined : 0}>
+                            <Table.Cell
+                                class={getCellClass(cell)}
+                                onclick={(event) => onCellClick(event, cell)}
+                                onkeydown={(event) => onCellKeydown(event, cell)}
+                                tabindex={cell.column.id === 'select' ? undefined : 0}
+                            >
                                 <FlexRender {cell} />
                             </Table.Cell>
                         {/if}

@@ -1,6 +1,5 @@
 <script lang="ts">
     import type { ComponentProps, Snippet } from 'svelte';
-    import { onDestroy } from 'svelte';
 
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
@@ -15,6 +14,7 @@
     import Settings from '@lucide/svelte/icons/settings-2';
     import User from '@lucide/svelte/icons/user';
     import Wrench from '@lucide/svelte/icons/wrench';
+    import { onDestroy } from 'svelte';
 
     import type { NavigationItem } from '../../../routes.svelte';
 
@@ -53,7 +53,9 @@
 
     const settingsRoutes = $derived(routes.filter((route) => route.group === 'Settings'));
     const projectSettingsRoutes = $derived(routes.filter((route) => route.group === 'Project Settings'));
-    const settingsIsActive = $derived(settingsRoutes.some((route) => isRouteActive(String(route.href))) || projectSettingsRoutes.some((route) => isRouteActive(String(route.href))));
+    const settingsIsActive = $derived(
+        settingsRoutes.some((route) => isRouteActive(String(route.href))) || projectSettingsRoutes.some((route) => isRouteActive(String(route.href)))
+    );
     const currentProjectId = $derived(page.params.projectId);
     const currentProjectQuery = getProjectQuery({
         route: {
@@ -174,10 +176,7 @@
                             {#each dashboardRoutes as route (route.href)}
                                 {#if route.children?.length}
                                     <DropdownMenu.Sub>
-                                        <DropdownMenu.SubTrigger
-                                            onmouseenter={() => openHoverMenu(menuId)}
-                                            onmouseleave={() => closeHoverMenu(menuId)}
-                                        >
+                                        <DropdownMenu.SubTrigger onmouseenter={() => openHoverMenu(menuId)} onmouseleave={() => closeHoverMenu(menuId)}>
                                             {route.title}
                                         </DropdownMenu.SubTrigger>
                                         <DropdownMenu.SubContent
@@ -228,7 +227,9 @@
                                         {#each dashboardRoutes as route (route.href)}
                                             {@const Icon = route.icon}
                                             {#if route.children?.length}
-                                                {@const isChildActive = route.href === page.url.pathname || route.children.some((childItem) => isChildItemActive(childItem, route.href))}
+                                                {@const isChildActive =
+                                                    route.href === page.url.pathname ||
+                                                    route.children.some((childItem) => isChildItemActive(childItem, route.href))}
                                                 <Collapsible.Root open={isChildActive} class="group/collapsible">
                                                     {#snippet child({ props: collapsibleProps })}
                                                         <Sidebar.MenuSubItem {...collapsibleProps}>
@@ -377,16 +378,17 @@
                                                 </Sidebar.MenuSubButton>
                                             </Sidebar.MenuSubItem>
                                             {#if subItem.title === 'Projects' && projectSettingsRoutes.length > 0}
-                                                <Sidebar.MenuSubItem class="relative ml-4 before:bg-border before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px">
-                                                    <div
-                                                        class="text-muted-foreground truncate px-2 py-1 pl-6 text-xs font-medium"
-                                                        title={currentProjectName}
-                                                    >
+                                                <Sidebar.MenuSubItem
+                                                    class="before:bg-border relative ml-4 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px"
+                                                >
+                                                    <div class="text-muted-foreground truncate px-2 py-1 pl-6 text-xs font-medium" title={currentProjectName}>
                                                         {currentProjectName}
                                                     </div>
                                                 </Sidebar.MenuSubItem>
                                                 {#each projectSettingsRoutes as projectSubItem (projectSubItem.href)}
-                                                    <Sidebar.MenuSubItem class="relative ml-4 before:bg-border before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px">
+                                                    <Sidebar.MenuSubItem
+                                                        class="before:bg-border relative ml-4 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-px"
+                                                    >
                                                         <Sidebar.MenuSubButton class="pl-6" isActive={isRouteActive(String(projectSubItem.href))}>
                                                             {#snippet child({ props })}
                                                                 <A
