@@ -19,6 +19,8 @@
 
     let { detailsHref, eventId = $bindable(), filterChanged, onClose, onError }: Props = $props();
 
+    const resolvedHref = $derived(detailsHref ?? (eventId ? resolve('/(app)/event/[eventId]', { eventId }) : '#'));
+
     function handleOpenChange() {
         onClose();
     }
@@ -35,18 +37,11 @@
 <Sheet.Root onOpenChange={handleOpenChange} open={!!eventId}>
     <Sheet.Content class="w-full overflow-y-scroll sm:max-w-full! md:w-5/6!">
         <Sheet.Header>
-            <Sheet.Title
-                >Event Details <Button
-                    href={detailsHref ?? (eventId ? resolve('/(app)/event/[eventId]', { eventId }) : '#')}
-                    size="sm"
-                    title="Open in new window"
-                    variant="ghost"><ExternalLink /></Button
-                ></Sheet.Title
-            >
+            <Sheet.Title>Event Details <Button href={resolvedHref} size="sm" title="Open in new window" variant="ghost"><ExternalLink /></Button></Sheet.Title>
         </Sheet.Header>
         <div class="px-4">
             {#if eventId}
-                <EventsOverview {filterChanged} id={eventId} {handleError} onSessionFilter={onClose} />
+                <EventsOverview {filterChanged} id={eventId} {handleError} />
             {/if}
         </div>
     </Sheet.Content>

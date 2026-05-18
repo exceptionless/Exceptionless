@@ -25,10 +25,10 @@
 <H3>Settings</H3>
 <Muted>Manage your account settings and set e-mail preferences.</Muted>
 
-<Separator class="mx-6 my-6 w-auto" />
+<Separator class="m-6 w-auto" />
 
 <SidebarNav class="overflow-x-auto pb-2 lg:flex-row lg:space-y-0 lg:space-x-2" routes={filteredRoutes} />
 
-<Separator class="mx-6 my-6 w-auto" />
+<Separator class="m-6 w-auto" />
 
 {@render children()}
