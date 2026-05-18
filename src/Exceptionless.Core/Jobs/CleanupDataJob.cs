@@ -2,6 +2,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
@@ -220,7 +221,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         long removedEvents = await _eventRepository.RemoveAllByStackIdsAsync(stackIds);
         await _stackRepository.RemoveAsync(stacks);
         foreach (var orgGroup in stacks.GroupBy(s => (s.OrganizationId, s.ProjectId)))
-            await _cacheClient.RemoveByPrefixAsync(String.Concat("stack-filter:", orgGroup.Key.OrganizationId, ":", orgGroup.Key.ProjectId));
+            await _cacheClient.RemoveByPrefixAsync(EventStackFilterQueryBuilder.GetScopedCachePrefix(orgGroup.Key.OrganizationId, orgGroup.Key.ProjectId));
 
         _logger.RemoveStacksComplete(stackIds.Length, removedEvents);
     }

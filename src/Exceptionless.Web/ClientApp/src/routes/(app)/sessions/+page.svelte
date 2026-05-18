@@ -131,7 +131,7 @@
         const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
-        queryParams.time = (updatedFilters.find((f) => f.type === 'date') as DateFilter)?.value as string;
+        queryParams.time = ((updatedFilters.find((f) => f.type === 'date') as DateFilter | undefined)?.value as string | undefined) ?? null;
         queryParams.filter = filter;
     }
 

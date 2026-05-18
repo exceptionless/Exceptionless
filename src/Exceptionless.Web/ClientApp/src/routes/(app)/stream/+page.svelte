@@ -5,7 +5,6 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
-    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import DelayedRender from '$comp/delayed-render.svelte';
     import ErrorMessage from '$comp/error-message.svelte';
     import * as FacetedFilter from '$comp/faceted-filter';
@@ -20,6 +19,7 @@
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
+        serializeFilters,
         shouldRefreshPersistentEventChanged,
         toFilter,
         updateFilterCache
@@ -82,11 +82,13 @@
     const savedViewsState = useSavedViews({
         filterCacheKey,
         getColumnVisibility: () => table.store.state.columnVisibility,
+        getFilterDefinitions: () => serializeFilters(filters ?? []),
         queryParams,
         setColumnVisibility: (v) => table.setColumnVisibility(v),
         updateFilterCache,
         view: VIEW
     });
+    const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Event Stream');
 
     watch(
         () => organization.current,
@@ -268,7 +270,7 @@
 
 <DataTable.Root>
     <div class="mb-4 flex flex-wrap items-start gap-2">
-        <H3 class="my-0 shrink-0">Event Stream</H3>
+        <H3 class="my-0 shrink-0">{pageTitle}</H3>
         <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <OrganizationDefaultsFacetedFilterBuilder />
@@ -282,13 +284,13 @@
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}
-                    onResetToSaved={savedViewsState.handleResetToSaved}
                     onClearSavedView={savedViewsState.handleClearSavedView}
+                    onResetToSaved={savedViewsState.handleResetToSaved}
                     savedViews={savedViewsState.savedViews}
+                    {table}
                     view={VIEW}
                 />
             {/if}
-            <DataTableViewOptions size="icon-lg" {table} />
             <StreamingIndicatorButton onToggle={handleToggle} {paused} size="icon-lg" />
         </div>
     </div>

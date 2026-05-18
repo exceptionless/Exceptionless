@@ -1,5 +1,4 @@
 <script lang="ts">
-    import type { ViewOrganization } from '$features/organizations/models';
     import type { SavedView } from '$features/saved-views/models';
     import type { Snippet } from 'svelte';
 
@@ -231,8 +230,10 @@
     });
     const intercomOrganization = $derived(shouldFetchIntercomOrganization ? currentOrganizationQuery.data : undefined);
 
-    // Simple organization selection - pick first available if none selected
+    // Keep selected organization synchronized with current memberships.
     $effect(() => {
+        void page.url.pathname;
+
         if (!organizationsQuery.isSuccess) {
             return;
         }
@@ -243,27 +244,27 @@
 
             // Redirect non-admins to add organization page
             if (!isGlobalAdmin && !organizationsQuery.isLoading) {
-                goto(resolve(`/(app)/organization/add`));
+                const addOrganizationPath = resolve('/(app)/organization/add');
+                if (page.url.pathname !== addOrganizationPath) {
+                    goto(addOrganizationPath);
+                }
             }
 
             return;
         }
 
-        // Select first organization if none selected
-        if (!organization.current) {
+        const hasSelectedOrganization = !!organization.current && organizations.some((organizationItem) => organizationItem.id === organization.current);
+        if (!hasSelectedOrganization && !impersonatingOrganizationId) {
             organization.current = organizations[0]!.id;
         }
     });
 
     const isImpersonating = $derived(!!impersonatedOrganization);
 
-    const currentOrganization = $derived(organizations.find((organizationItem: ViewOrganization) => organizationItem.id === organization.current));
-    const hasSavedViewsFeature = $derived(currentOrganization?.features?.includes('feature-saved-views') ?? false);
-
     const savedViewsQuery = getSavedViewsQuery({
         route: {
             get organizationId() {
-                return hasSavedViewsFeature ? organization.current : undefined;
+                return organization.current;
             }
         }
     });
@@ -284,13 +285,39 @@
             queryEntries.push(['time', savedView.time]);
         }
 
+        if (savedView.sort && savedView.view_type !== 'issues') {
+            queryEntries.push(['sort', savedView.sort]);
+        }
+
         const queryParams = new URLSearchParams(queryEntries);
         return `${baseHref}?${queryParams.toString()}`;
     }
 
     const filteredRoutes = $derived.by(() => {
         const context: NavigationItemContext = { authenticated: isAuthenticated, impersonating: isImpersonating, user: meQuery.data };
-        const allRoutes = routes().filter((route) => (route.show ? route.show(context) : true));
+        const allRoutes = routes()
+            .filter((route) => (route.show ? route.show(context) : true))
+            .map((route) => {
+                if (route.group !== 'Dashboards') {
+                    return route;
+                }
+
+                if (route.href === resolve('/(app)') && page.params.eventId) {
+                    return {
+                        ...route,
+                        children: [...(route.children ?? []), { href: resolve('/(app)/event/[eventId]', { eventId: page.params.eventId }), title: 'Details' }]
+                    };
+                }
+
+                if (route.href === resolve('/(app)/issues') && page.params.stackId) {
+                    return {
+                        ...route,
+                        children: [...(route.children ?? []), { href: resolve('/(app)/issues/[stackId]', { stackId: page.params.stackId }), title: 'Details' }]
+                    };
+                }
+
+                return route;
+            });
 
         const savedViews = savedViewsQuery.data ?? [];
         if (savedViews.length === 0) {
@@ -317,7 +344,7 @@
 
             // Only show submenu if there are non-default views
             if (nonDefaultViews.length === 0) {
-                return { ...route, defaultViewId: defaultView?.id, view: viewKey };
+                return { ...route, children: route.children, defaultViewId: defaultView?.id, view: viewKey };
             }
 
             // Show all views sorted: default first, then alphabetically by name
@@ -333,11 +360,14 @@
                 return a.name.localeCompare(b.name);
             });
 
-            const children = sortedViews.map((savedView) => ({
-                href: buildSavedViewHref(route.href, savedView),
-                isDefault: savedView.is_default,
-                title: savedView.name
-            }));
+            const children = [
+                ...sortedViews.map((savedView) => ({
+                    href: buildSavedViewHref(route.href, savedView),
+                    isDefault: savedView.is_default,
+                    title: savedView.name
+                })),
+                ...(route.children ?? [])
+            ];
 
             return {
                 ...route,

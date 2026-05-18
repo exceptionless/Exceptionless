@@ -6,6 +6,11 @@
     import { KeywordFilter } from './models.svelte';
 
     let { filter, filterChanged, filterRemoved, title = 'Keyword', ...props }: FacetedFilterProps<KeywordFilter> = $props();
+
+    function toggleHidden() {
+        filter.hidden = !filter.hidden;
+        filterChanged(filter);
+    }
 </script>
 
 <FacetedFilter.Keyword
@@ -17,7 +22,9 @@
         filter.value = undefined;
         filterRemoved(filter);
     }}
+    hidden={filter.hidden}
     {title}
+    {toggleHidden}
     value={filter.value}
     {...props}
 ></FacetedFilter.Keyword>

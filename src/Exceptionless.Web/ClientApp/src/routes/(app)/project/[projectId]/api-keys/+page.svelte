@@ -2,9 +2,9 @@
     import type { NewToken, ViewToken } from '$features/tokens/models';
 
     import { page } from '$app/state';
-    import { H3, Muted } from '$comp/typography';
+    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
+    import { Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
-    import { Separator } from '$comp/ui/separator';
     import { organization } from '$features/organizations/context.svelte';
     import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
     import { type GetProjectTokensParams, getProjectTokensQuery, postProjectToken } from '$features/tokens/api.svelte';
@@ -79,17 +79,16 @@
 </script>
 
 <div class="space-y-6">
-    <div class="flex items-start justify-between">
-        <div>
-            <H3>API Keys</H3>
-            <Muted>Create and manage API keys for authenticating your applications with Exceptionless.</Muted>
-        </div>
-        <Button size="icon" onclick={addApiKey} title="Add API Key" class="shrink-0">
-            <Plus class="size-4" aria-hidden="true" />
-            <span class="sr-only">Add API Key</span>
-        </Button>
-    </div>
-    <Separator />
+    <Muted>Create and manage API keys for authenticating your applications with Exceptionless</Muted>
 
-    <TokensDataTable bind:limit={tokensQueryParameters.limit!} isLoading={tokensQuery.isLoading} {table} />
+    <TokensDataTable bind:limit={tokensQueryParameters.limit!} isLoading={tokensQuery.isLoading} {table}>
+        {#snippet toolbarChildren()}
+            <div class="flex-1"></div>
+            <DataTableViewOptions size="icon-lg" {table} />
+            <Button size="icon-lg" onclick={addApiKey} title="Add API Key">
+                <Plus class="size-4" aria-hidden="true" />
+                <span class="sr-only">Add API Key</span>
+            </Button>
+        {/snippet}
+    </TokensDataTable>
 </div>

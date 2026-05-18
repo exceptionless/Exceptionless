@@ -14,14 +14,12 @@ namespace Exceptionless.Tests.Controllers;
 public sealed class SavedViewControllerTests : IntegrationTestsBase
 {
     private readonly ISavedViewRepository _savedViewRepository;
-    private readonly IOrganizationRepository _organizationRepository;
     private readonly IUserRepository _userRepository;
     private readonly OrganizationService _organizationService;
 
     public SavedViewControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _savedViewRepository = GetService<ISavedViewRepository>();
-        _organizationRepository = GetService<IOrganizationRepository>();
         _userRepository = GetService<IUserRepository>();
         _organizationService = GetService<OrganizationService>();
     }
@@ -31,12 +29,6 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         await base.ResetDataAsync();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
-
-        // Enable saved views feature for all tests in this class
-        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
-        Assert.NotNull(organization);
-        organization.Features.Add(OrganizationFeatures.SavedViews);
-        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
     }
 
     [Fact]
@@ -49,6 +41,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             Name = "Production Errors",
             Filter = "status:open",
             Time = "[now-7D TO now]",
+            Sort = "-date",
             ViewType = "events",
             FilterDefinitions = """[{"type":"keyword","value":"status:open"}]"""
         };
@@ -70,6 +63,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         Assert.Equal("Production Errors", result.Name);
         Assert.Equal("status:open", result.Filter);
         Assert.Equal("[now-7D TO now]", result.Time);
+        Assert.Equal("-date", result.Sort);
         Assert.Equal("events", result.ViewType);
         Assert.NotNull(result.FilterDefinitions);
         Assert.Equal(1, result.Version);
@@ -82,6 +76,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         var savedView = await _savedViewRepository.GetByIdAsync(result.Id);
         Assert.NotNull(savedView);
         Assert.Equal("Production Errors", savedView.Name);
+        Assert.Equal("-date", savedView.Sort);
     }
 
     [Fact]
@@ -419,6 +414,27 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PatchAsync_UpdateSort_UpdatesSortString()
+    {
+        // Arrange
+        var created = await CreateSavedViewAsync("Sort Update Test", "status:open", "events");
+        Assert.NotNull(created);
+
+        // Act
+        var updated = await SendRequestAsAsync<ViewSavedView>(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", created.Id)
+            .Content(new UpdateSavedView { Sort = "-date" })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updated);
+        Assert.Equal("-date", updated.Sort);
+    }
+
+    [Fact]
     public Task PatchAsync_NonExistentFilter_ReturnsNotFound()
     {
         return SendRequestAsync(r => r
@@ -608,90 +624,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         );
     }
 
-    [Fact]
-    public async Task PostAsync_WhenFeatureDisabled_ReturnsUnprocessableEntity()
-    {
-        // Arrange — disable the saved views feature
-        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
-        Assert.NotNull(organization);
-        organization.Features.Remove(OrganizationFeatures.SavedViews);
-        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
 
-        var newView = new NewSavedView
-        {
-            OrganizationId = SampleDataService.TEST_ORG_ID,
-            Name = "Blocked View",
-            Filter = "status:open",
-            ViewType = "events"
-        };
-
-        await SendRequestAsync(r => r
-            .Post()
-            .AsTestOrganizationUser()
-            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(newView)
-            .StatusCodeShouldBeUnprocessableEntity()
-        );
-    }
-
-    [Fact]
-    public async Task PatchAsync_WhenFeatureDisabled_ReturnsUnprocessableEntity()
-    {
-        // Arrange — create a view directly (bypassing feature check), then disable feature
-        var savedView = await _savedViewRepository.AddAsync(new SavedView
-        {
-            OrganizationId = SampleDataService.TEST_ORG_ID,
-            Name = "Existing View",
-            Filter = "status:open",
-            ViewType = "events",
-            Version = 1,
-            CreatedByUserId = "537650f3b77efe23a47914f0",
-            CreatedUtc = DateTime.UtcNow,
-            UpdatedUtc = DateTime.UtcNow
-        }, o => o.ImmediateConsistency());
-
-        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
-        Assert.NotNull(organization);
-        organization.Features.Remove(OrganizationFeatures.SavedViews);
-        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
-
-        await SendRequestAsync(r => r
-            .Patch()
-            .AsGlobalAdminUser()
-            .AppendPaths("saved-views", savedView.Id)
-            .Content(new UpdateSavedView { Name = "Updated Name" })
-            .StatusCodeShouldBeUnprocessableEntity()
-        );
-    }
-
-    [Fact]
-    public async Task DeleteAsync_WhenFeatureDisabled_ReturnsUnprocessableEntity()
-    {
-        // Arrange — create a view directly, then disable feature
-        var savedView = await _savedViewRepository.AddAsync(new SavedView
-        {
-            OrganizationId = SampleDataService.TEST_ORG_ID,
-            Name = "View To Delete",
-            Filter = "status:open",
-            ViewType = "events",
-            Version = 1,
-            CreatedByUserId = "537650f3b77efe23a47914f0",
-            CreatedUtc = DateTime.UtcNow,
-            UpdatedUtc = DateTime.UtcNow
-        }, o => o.ImmediateConsistency());
-
-        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
-        Assert.NotNull(organization);
-        organization.Features.Remove(OrganizationFeatures.SavedViews);
-        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
-
-        await SendRequestAsync(r => r
-            .Delete()
-            .AsGlobalAdminUser()
-            .AppendPaths("saved-views", savedView.Id)
-            .StatusCodeShouldBeUnprocessableEntity()
-        );
-    }
 
     [Fact]
     public async Task RemoveUser_DeletesPrivateSavedViews_ButPreservesOrganizationWideViews()
@@ -1538,6 +1471,23 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPaths("saved-views", created.Id)
             .Content(new UpdateSavedView { Filter = new string('x', 2001) })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Fact]
+    public async Task PatchAsync_SortExceedsMaxLength_ReturnsUnprocessableEntity()
+    {
+        // Arrange
+        var created = await CreateSavedViewAsync("MaxLen Sort", "status:open", "events");
+        Assert.NotNull(created);
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", created.Id)
+            .Content(new UpdateSavedView { Sort = new string('x', 101) })
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }

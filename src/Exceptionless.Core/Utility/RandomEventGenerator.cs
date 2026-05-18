@@ -134,13 +134,7 @@ public class RandomEventGenerator
             MachineName = MachineNames.Random()
         };
 
-        for (int i = 0; i < RandomData.GetInt(1, 3); i++)
-        {
-            string key = RandomData.GetWord();
-            while (ev.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
-                key = RandomData.GetWord();
-            ev.Data.Add(key, RandomData.GetString());
-        }
+        AddSampleExtendedData(ev, identity);
 
         int tagCount = RandomData.GetInt(1, 3);
         for (int i = 0; i < tagCount; i++)
@@ -177,14 +171,7 @@ public class RandomEventGenerator
         if (RandomData.GetBool())
             error.Code = RandomData.GetInt(-234523453, 98690899).ToString();
 
-        error.Data = new DataDictionary();
-        for (int i = 0; i < RandomData.GetInt(1, 3); i++)
-        {
-            string key = RandomData.GetWord();
-            while (error.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
-                key = RandomData.GetWord();
-            error.Data.Add(key, RandomData.GetString());
-        }
+        error.Data = GenerateErrorData();
 
         var stack = new StackFrameCollection();
         for (int i = 0; i < RandomData.GetInt(2, 8); i++)
@@ -205,14 +192,7 @@ public class RandomEventGenerator
             Type = ExceptionTypes.Random()
         };
 
-        error.Data = new DataDictionary();
-        for (int i = 0; i < RandomData.GetInt(1, 3); i++)
-        {
-            string key = RandomData.GetWord();
-            while (error.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
-                key = RandomData.GetWord();
-            error.Data.Add(key, RandomData.GetString());
-        }
+        error.Data = GenerateErrorData();
 
         error.StackTrace = RandomData.GetString();
 
@@ -233,6 +213,94 @@ public class RandomEventGenerator
         };
     }
 
+    private static void AddSampleExtendedData(Event ev, string? identity)
+    {
+        var data = ev.Data ??= new DataDictionary();
+
+        data["Customer"] = new DataDictionary
+        {
+            ["id"] = $"cus_{RandomData.GetInt(100000, 999999)}",
+            ["email"] = identity ?? Identities.Random(),
+            ["plan"] = Plans.Random(),
+            ["region"] = Regions.Random(),
+            ["account_age_days"] = RandomData.GetInt(7, 1600)
+        };
+
+        data["Deployment"] = new DataDictionary
+        {
+            ["environment"] = Environments.Random(),
+            ["version"] = RandomData.GetVersion("2.0", "4.0"),
+            ["commit"] = ObjectId.GenerateNewId().ToString()[..7],
+            ["region"] = Regions.Random(),
+            ["instance"] = MachineNames.Random()
+        };
+
+        switch (ev.Type)
+        {
+            case Event.KnownTypes.FeatureUsage:
+                data["Feature Flags"] = new DataDictionary
+                {
+                    ["dashboard_refresh"] = RandomData.GetBool(),
+                    ["billing_portal"] = RandomData.GetBool(),
+                    ["new_events_view"] = RandomData.GetBool(),
+                    ["checkout_variant"] = FeatureVariants.Random()
+                };
+                break;
+            case Event.KnownTypes.Log:
+                data["Background Job"] = new DataDictionary
+                {
+                    ["id"] = $"job_{RandomData.GetInt(100000, 999999)}",
+                    ["name"] = JobNames.Random(),
+                    ["queue"] = Queues.Random(),
+                    ["attempt"] = RandomData.GetInt(1, 4),
+                    ["duration_ms"] = RandomData.GetInt(25, 15000)
+                };
+                break;
+            case Event.KnownTypes.NotFound:
+                data["Route Match"] = new DataDictionary
+                {
+                    ["requested_path"] = ev.Source,
+                    ["referer"] = PageNames.Random(),
+                    ["rule"] = "legacy-route-redirect",
+                    ["locale"] = Locales.Random(),
+                    ["bot"] = RandomData.GetBool(20)
+                };
+                break;
+            default:
+                data["Checkout"] = new DataDictionary
+                {
+                    ["order_id"] = $"ord_{RandomData.GetInt(100000, 999999)}",
+                    ["cart_id"] = $"cart_{RandomData.GetInt(100000, 999999)}",
+                    ["total"] = RandomData.GetInt(2499, 25999) / 100m,
+                    ["currency"] = "USD",
+                    ["item_count"] = RandomData.GetInt(1, 8),
+                    ["payment_provider"] = PaymentProviders.Random()
+                };
+                break;
+        }
+    }
+
+    private static DataDictionary GenerateErrorData()
+    {
+        return new DataDictionary
+        {
+            ["correlation_id"] = ObjectId.GenerateNewId().ToString(),
+            ["tenant"] = new DataDictionary
+            {
+                ["id"] = $"org_{RandomData.GetInt(10000, 99999)}",
+                ["plan"] = Plans.Random(),
+                ["region"] = Regions.Random()
+            },
+            ["operation"] = new DataDictionary
+            {
+                ["name"] = Operations.Random(),
+                ["attempt"] = RandomData.GetInt(1, 4),
+                ["elapsed_ms"] = RandomData.GetInt(20, 30000),
+                ["retryable"] = RandomData.GetBool()
+            }
+        };
+    }
+
     private static readonly List<string> Identities =
     [
         "eric@exceptionless.io",
@@ -240,6 +308,51 @@ public class RandomEventGenerator
         "support@exceptionless.io",
         "dev@exceptionless.io",
         "user42@example.com"
+    ];
+
+    private static readonly List<string> Plans =
+    [
+        "Free", "Team", "Business", "Enterprise"
+    ];
+
+    private static readonly List<string> Regions =
+    [
+        "us-east-1", "us-west-2", "eu-west-1", "ap-southeast-2"
+    ];
+
+    private static readonly List<string> Environments =
+    [
+        "Production", "Staging", "Preview"
+    ];
+
+    private static readonly List<string> FeatureVariants =
+    [
+        "control", "variant-a", "variant-b", "staff-only"
+    ];
+
+    private static readonly List<string> PaymentProviders =
+    [
+        "Stripe", "Braintree", "Adyen", "PayPal"
+    ];
+
+    private static readonly List<string> JobNames =
+    [
+        "ProcessEventBatch", "SendNotificationEmail", "SyncBillingUsage", "RebuildStackSummary"
+    ];
+
+    private static readonly List<string> Queues =
+    [
+        "events", "notifications", "billing", "maintenance"
+    ];
+
+    private static readonly List<string> Locales =
+    [
+        "en-US", "en-GB", "fr-FR", "de-DE"
+    ];
+
+    private static readonly List<string> Operations =
+    [
+        "LoadProjectSettings", "SubmitCheckout", "SearchEvents", "ProcessQueueMessage"
     ];
 
     private static readonly List<string> MachineIpAddresses =

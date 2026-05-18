@@ -91,7 +91,9 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     const [allData, setAllData] = createTableState<TData[]>([]);
     const [data, setData] = createTableState<TData[]>([]);
     const [meta, setMeta] = createTableState<QueryMeta | undefined>(undefined);
-    const [sorting, setSorting] = createTableState<ColumnSort[]>([]);
+    const [sorting, setSorting] = createTableState<ColumnSort[]>(
+        parseSortString(hasSortQueryParameter(configuration.queryParameters) ? configuration.queryParameters.sort : undefined)
+    );
     const [rowSelection, setRowSelection] = createTableState<RowSelectionState>({});
 
     const onPaginationChange = (updaterOrValue: Updater<PaginationState>) => {
@@ -126,16 +128,19 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         setSorting(updaterOrValue);
         const newSorting = sorting();
 
-        const sort = newSorting.length > 0 ? newSorting.map((sort) => `${sort.desc ? '-' : ''}${sort.id}`).join(',') : undefined;
         if (isCursorPaging) {
             const parameters = configuration.queryParameters as TableCursorPagingParameters;
             parameters.after = undefined;
             parameters.before = undefined;
-            parameters.sort = sort;
+            if (hasSortQueryParameter(parameters)) {
+                parameters.sort = serializeSortState(newSorting);
+            }
         } else if (isOffsetPaging) {
             const parameters = configuration.queryParameters as TableOffsetPagingParameters;
             parameters.page = 1;
-            parameters.sort = sort;
+            if (hasSortQueryParameter(parameters)) {
+                parameters.sort = serializeSortState(newSorting);
+            }
         } else if (isMemoryPaging) {
             (configuration.queryParameters as TableMemoryPagingParameters).page = 1;
         }
@@ -170,9 +175,12 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     const setMetaImpl = (meta: QueryMeta | undefined) => {
         setMeta(meta);
         const limit = configuration.queryParameters.limit ?? DEFAULT_LIMIT;
-
-        const total = isMemoryPaging ? allData().length : ((meta?.total as number) ?? 0);
-        const totalPages = Math.ceil(total / limit);
+        const currentPage =
+            (configuration.paginationStrategy === 'offset'
+                ? (configuration.queryParameters as TableOffsetPagingParameters).page
+                : (configuration.queryParameters as TableMemoryPagingParameters).page) ?? 1;
+        const total = isMemoryPaging ? allData().length : (meta?.total as number | undefined);
+        const totalPages = total != null ? Math.ceil(total / limit) : meta?.links?.next ? currentPage + 1 : currentPage;
         setPageCount(totalPages);
 
         // // Only adjust pagination for offset pagination here
@@ -192,6 +200,16 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     // NOTE: Two different effects are used here to avoid circular dependency issues with in memory paging.
     $effect(() => setDataImpl(configuration.queryData ?? []));
     $effect(() => setMetaImpl(configuration.queryMeta));
+    $effect(() => {
+        if (!hasSortQueryParameter(configuration.queryParameters)) {
+            return;
+        }
+
+        const parsedSort = parseSortString(configuration.queryParameters.sort);
+        if (serializeSortState(parsedSort) !== serializeSortState(sorting())) {
+            setSorting(parsedSort);
+        }
+    });
 
     const configureOptions = configuration.configureOptions ?? ((options) => options);
     return configureOptions({
@@ -322,4 +340,28 @@ function createTableState<T>(initialValue: T): [() => T, (updater: Updater<T>) =
             }
         }
     ];
+}
+
+function hasSortQueryParameter(parameters: TablePagingParameters): parameters is TableCursorPagingParameters | TableOffsetPagingParameters {
+    return Object.prototype.hasOwnProperty.call(parameters, 'sort');
+}
+
+function parseSortString(sort: string | undefined): ColumnSort[] {
+    if (!sort) {
+        return [];
+    }
+
+    return sort
+        .split(',')
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0)
+        .map((value) => ({
+            desc: value.startsWith('-'),
+            id: value.startsWith('-') ? value.slice(1) : value
+        }))
+        .filter((value) => value.id.length > 0);
+}
+
+function serializeSortState(sorting: ColumnSort[]): string | undefined {
+    return sorting.length > 0 ? sorting.map((sort) => `${sort.desc ? '-' : ''}${sort.id}`).join(',') : undefined;
 }

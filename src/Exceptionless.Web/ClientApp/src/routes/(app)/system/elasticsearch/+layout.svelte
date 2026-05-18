@@ -1,9 +1,7 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { A, H3, Muted } from '$comp/typography';
-    import { Separator } from '$comp/ui/separator';
-    import Database from '@lucide/svelte/icons/database';
+    import { A, Muted } from '$comp/typography';
 
     let { children } = $props();
 
@@ -17,14 +15,9 @@
 </script>
 
 <div class="space-y-6">
-    <div class="flex items-center gap-3">
-        <Database class="text-muted-foreground size-6" />
-        <div>
-            <H3>Elasticsearch</H3>
-            <Muted>Cluster health, storage metrics, indices, and backup snapshots.</Muted>
-        </div>
+    <div>
+        <Muted>Cluster health, storage metrics, indices, and backup snapshots</Muted>
     </div>
-    <Separator />
 
     <nav class="flex gap-1">
         {#each tabs as tab (tab.href)}

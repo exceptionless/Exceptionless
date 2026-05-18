@@ -1,28 +1,30 @@
-<script lang="ts">
+<script module lang="ts">
+    import type { RowData } from '@tanstack/svelte-table';
+
+    type TData = RowData;
+</script>
+
+<script generics="TData extends RowData" lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
     import type { ProblemDetails } from '@exceptionless/fetchclient';
+    import type { StockFeatures, Table } from '@tanstack/svelte-table';
 
-    import { Muted, P } from '$comp/typography';
-    import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import * as Tooltip from '$comp/ui/tooltip';
     import { toFilter } from '$features/events/components/filters/helpers.svelte';
     import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
     import { organization } from '$features/organizations/context.svelte';
-    import { quickRanges } from '$features/shared/components/date-range-picker/quick-ranges';
-    import Check from '@lucide/svelte/icons/check';
-    import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import Pencil from '@lucide/svelte/icons/pencil';
     import Plus from '@lucide/svelte/icons/plus';
     import Save from '@lucide/svelte/icons/save';
+    import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
     import Star from '@lucide/svelte/icons/star';
     import StarOff from '@lucide/svelte/icons/star-off';
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import Undo2 from '@lucide/svelte/icons/undo-2';
+    import X from '@lucide/svelte/icons/x';
     import { tick } from 'svelte';
     import { toast } from 'svelte-sonner';
-    import { SvelteMap } from 'svelte/reactivity';
 
     import type { NewSavedView, SavedView, UpdateSavedView } from '../models';
 
@@ -30,27 +32,6 @@
     import DeleteViewDialog from './delete-view-dialog.svelte';
     import RenameViewDialog from './rename-view-dialog.svelte';
     import SaveViewDialog from './save-view-dialog.svelte';
-
-    const timeLabels = new SvelteMap<string, string>();
-    for (const section of quickRanges) {
-        for (const option of section.options) {
-            timeLabels.set(option.value, option.label);
-        }
-    }
-
-    function formatViewSummary(savedView: SavedView): string {
-        const parts: string[] = [];
-
-        if (savedView.filter) {
-            parts.push(savedView.filter);
-        }
-
-        if (savedView.time) {
-            parts.push(timeLabels.get(savedView.time) ?? savedView.time);
-        }
-
-        return parts.join(' · ') || 'No filters';
-    }
 
     function getErrorMessage(error: unknown, fallback: string): string {
         const problem = error as ProblemDetails;
@@ -71,11 +52,14 @@
         onLoadView: (id: string) => void;
         onResetToSaved: () => void;
         savedViews: SavedView[];
+        sort?: string;
+        table: Table<StockFeatures, TData>;
         time?: string;
         view: string;
     }
 
-    let { activeSavedView, columnVisibility, filters, isModified, onClearSavedView, onLoadView, onResetToSaved, savedViews, time, view }: Props = $props();
+    let { activeSavedView, columnVisibility, filters, isModified, onClearSavedView, onLoadView, onResetToSaved, savedViews, sort, table, time, view }: Props =
+        $props();
 
     let isSaveDialogOpen = $state(false);
     let isRenameDialogOpen = $state(false);
@@ -110,20 +94,6 @@
 
     const currentFilterString = $derived(toFilter(filters.filter((f) => f.type !== 'date')));
 
-    const sortedViews = $derived.by(() => {
-        return [...savedViews].sort((left, right) => {
-            if (left.is_default && !right.is_default) {
-                return -1;
-            }
-
-            if (!left.is_default && right.is_default) {
-                return 1;
-            }
-
-            return left.name.localeCompare(right.name);
-        });
-    });
-
     // Auto-detect if current filters match an existing saved view for "load existing" hint
     const duplicateView = $derived.by(() => {
         if (activeSavedView || !currentFilterString) {
@@ -135,7 +105,11 @@
                 return false;
             }
 
-            if (savedView.time && (time ?? '') !== savedView.time) {
+            if ((savedView.time ?? '') !== (time ?? '')) {
+                return false;
+            }
+
+            if ((savedView.sort ?? '') !== (sort ?? '')) {
                 return false;
             }
 
@@ -144,6 +118,7 @@
     });
 
     const activeView = $derived(activeSavedView);
+    const hideableColumns = $derived(table.getAllLeafColumns().filter((column) => column.getCanHide()));
 
     async function openSaveDialog() {
         await tick();
@@ -151,10 +126,6 @@
     }
 
     async function openRenameDialog() {
-        if (!activeView) {
-            return;
-        }
-
         await tick();
         isRenameDialogOpen = true;
     }
@@ -179,6 +150,7 @@
             is_private: isPrivate || undefined,
             name,
             organization_id: organizationId,
+            sort: sort || undefined,
             time: time || undefined,
             view_type: view
         };
@@ -193,72 +165,18 @@
         }
     }
 
-    async function handleUpdateFilters() {
-        if (!activeSavedView || !organizationId) {
-            return;
-        }
-
-        const filterDefinitions = serializeFilters(filters);
-        const body: UpdateSavedView = {
-            columns: columnVisibility,
-            filter: currentFilterString || null,
-            filter_definitions: filterDefinitions,
-            time: time || null
-        };
-
-        try {
-            await updateMutation.mutateAsync(body);
-            toast.success(`View "${activeSavedView.name}" updated.`);
-        } catch (error) {
-            toast.error(getErrorMessage(error, 'Failed to update view. Please try again.'));
-        }
-    }
-
-    async function handleRename(newName: string) {
+    async function handleRename(name: string) {
         if (!activeView || !organizationId) {
             return;
         }
 
         try {
-            await updateMutation.mutateAsync({ name: newName });
+            const result = await updateMutation.mutateAsync({ name });
             isRenameDialogOpen = false;
-            toast.success('View renamed.');
+            toast.success(`View renamed to "${result.name}".`);
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to rename view. Please try again.'));
         }
-    }
-
-    async function handleDelete() {
-        if (!viewToDelete || !organizationId) {
-            return;
-        }
-
-        const target = viewToDelete;
-        try {
-            await removeMutation.mutateAsync(target);
-
-            if (activeSavedView?.id === target.id) {
-                // Navigate to remaining default view, or fall back to clearing the state
-                const remainingViews = savedViews.filter((v) => v.id !== target.id);
-                const newDefault = remainingViews.find((v) => v.is_default);
-                if (newDefault) {
-                    onLoadView(newDefault.id);
-                } else {
-                    onClearSavedView();
-                }
-            }
-
-            toast.success(`View "${target.name}" deleted.`);
-        } catch {
-            toast.error('Failed to delete view. Please try again.');
-        } finally {
-            isDeleteDialogOpen = false;
-            viewToDelete = null;
-        }
-    }
-
-    function handleSelect(savedView: SavedView) {
-        onLoadView(savedView.id);
     }
 
     async function handleToggleDefault() {
@@ -274,149 +192,115 @@
             toast.error(getErrorMessage(error, 'Failed to update default setting.'));
         }
     }
+
+    async function handleUpdate() {
+        if (!activeView || !organizationId) {
+            return;
+        }
+
+        const body: UpdateSavedView = {
+            columns: columnVisibility,
+            filter: currentFilterString || null,
+            filter_definitions: serializeFilters(filters),
+            sort: sort || null,
+            time: time || null
+        };
+
+        try {
+            await updateMutation.mutateAsync(body);
+            toast.success(`View "${activeView.name}" saved.`);
+        } catch (error) {
+            toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
+        }
+    }
+
+    async function handleDelete() {
+        if (!viewToDelete || !organizationId) {
+            return;
+        }
+
+        const target = viewToDelete;
+        try {
+            await removeMutation.mutateAsync(target);
+
+            if (activeSavedView?.id === target.id) {
+                onClearSavedView();
+            }
+
+            toast.success(`View "${target.name}" deleted.`);
+        } catch {
+            toast.error('Failed to delete view. Please try again.');
+        } finally {
+            isDeleteDialogOpen = false;
+            viewToDelete = null;
+        }
+    }
 </script>
 
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="gap-x-1.5 px-3" size="lg" variant="outline">
-                <Save class="size-4" />
-                {#if activeView}
-                    <span class="max-w-37.5 truncate">{activeView.name}</span>
-                    {#if isModified}
-                        <Badge variant="secondary" class="px-1.5 py-0 text-[10px]">modified</Badge>
-                    {/if}
-                {:else}
-                    <span>Saved Views</span>
-                {/if}
-                <ChevronDown class="size-3.5 opacity-50" />
+            <Button {...props} class="gap-x-1.5 px-3" size="lg" variant="outline" title="Manage view settings">
+                <SlidersHorizontal class="size-4" aria-hidden="true" />
+                <span>View</span>
             </Button>
         {/snippet}
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="end" class="w-72">
-        {#if activeSavedView && isModified}
-            <DropdownMenu.Group>
-                <DropdownMenu.GroupHeading>Modified View</DropdownMenu.GroupHeading>
-                <DropdownMenu.Item disabled={saving} onclick={handleUpdateFilters}>
-                    <Save class="mr-2 size-4" />
-                    Update "{activeSavedView.name}"
-                </DropdownMenu.Item>
-                <DropdownMenu.Item onclick={openSaveDialog}>
-                    <Plus class="mr-2 size-4" />
-                    Save as new view
-                </DropdownMenu.Item>
-                <DropdownMenu.Item onclick={onResetToSaved}>
-                    <Undo2 class="mr-2 size-4" />
-                    Reset to saved
-                </DropdownMenu.Item>
-            </DropdownMenu.Group>
-            <DropdownMenu.Separator />
-        {/if}
-
-        {#if savedViews.length === 0}
-            <DropdownMenu.Group>
-                <DropdownMenu.Item disabled class="text-muted-foreground justify-center text-xs italic">No saved views yet</DropdownMenu.Item>
-            </DropdownMenu.Group>
-            <DropdownMenu.Separator />
-        {:else}
-            <DropdownMenu.Group>
-                <DropdownMenu.GroupHeading>Saved Views</DropdownMenu.GroupHeading>
-                {#each sortedViews as savedView (savedView.id)}
-                    <DropdownMenu.Item class="flex items-center justify-between" onclick={() => handleSelect(savedView)}>
-                        <span class="flex min-w-0 items-start gap-2">
-                            <span class="flex size-4 shrink-0 items-center justify-center pt-0.5">
-                                {#if activeView?.id === savedView.id}
-                                    <Check class="size-3.5" />
-                                {/if}
-                            </span>
-                            <span class="flex min-w-0 flex-col">
-                                <span class="flex items-center gap-1.5">
-                                    <span class="truncate">{savedView.name}</span>
-                                    {#if savedView.is_default}
-                                        <Badge variant="secondary" class="px-1 py-0 text-[10px]">default</Badge>
-                                    {/if}
-                                    {#if savedView.user_id}
-                                        <Badge variant="outline" class="px-1 py-0 text-[10px]">private</Badge>
-                                    {/if}
-                                </span>
-                                {#if savedView.filter || savedView.time}
-                                    <Tooltip.Root>
-                                        <Tooltip.Trigger>
-                                            {#snippet child({ props: tipProps })}
-                                                <span {...tipProps} class="text-muted-foreground max-w-50 truncate text-left text-[11px]">
-                                                    {formatViewSummary(savedView)}
-                                                </span>
-                                            {/snippet}
-                                        </Tooltip.Trigger>
-                                        <Tooltip.Content class="max-w-xs" side="right">
-                                            {#if savedView.filter}
-                                                <P class="font-mono text-xs">{savedView.filter}</P>
-                                            {/if}
-                                            {#if savedView.time}
-                                                <Muted class="text-xs">{timeLabels.get(savedView.time) ?? savedView.time}</Muted>
-                                            {/if}
-                                        </Tooltip.Content>
-                                    </Tooltip.Root>
-                                {:else}
-                                    <Muted class="text-left text-[11px]">No filters</Muted>
-                                {/if}
-                            </span>
-                        </span>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            class="text-muted-foreground hover:text-destructive -mr-1 size-5 shrink-0"
-                            aria-label="Delete {savedView.name}"
-                            onclick={(e) => {
-                                e.stopPropagation();
-                                openDeleteDialog(savedView);
-                            }}
-                        >
-                            <Trash2 class="size-3" aria-hidden="true" />
-                        </Button>
-                    </DropdownMenu.Item>
-                {/each}
-            </DropdownMenu.Group>
-            <DropdownMenu.Separator />
-        {/if}
-
+    <DropdownMenu.Content align="end" class="w-64">
         <DropdownMenu.Group>
-            {#if duplicateView && !activeSavedView}
-                <DropdownMenu.Item onclick={() => handleSelect(duplicateView)}>
-                    <Check class="mr-2 size-4" />
-                    Load "{duplicateView.name}" (matches current)
-                </DropdownMenu.Item>
-            {/if}
-            {#if !activeView}
-                <DropdownMenu.Item onclick={openSaveDialog}>
-                    <Plus class="mr-2 size-4" />
-                    Save current view
-                </DropdownMenu.Item>
-            {/if}
+            <DropdownMenu.Label>Saved View</DropdownMenu.Label>
             {#if activeView}
-                <DropdownMenu.Item onclick={openRenameDialog}>
-                    <Pencil class="mr-2 size-4" />
-                    Rename "{activeView.name}"
+                <DropdownMenu.Item disabled={saving || !isModified} onclick={handleUpdate}>
+                    <Save class="mr-2 size-4" aria-hidden="true" />
+                    Save
+                </DropdownMenu.Item>
+            {/if}
+            <DropdownMenu.Item disabled={saving} onclick={openSaveDialog}>
+                <Plus class="mr-2 size-4" aria-hidden="true" />
+                Save As...
+            </DropdownMenu.Item>
+            {#if activeView}
+                <DropdownMenu.Item disabled={saving} onclick={openRenameDialog}>
+                    <Pencil class="mr-2 size-4" aria-hidden="true" />
+                    Rename
                 </DropdownMenu.Item>
                 {#if !activeView.user_id}
                     <DropdownMenu.Item disabled={saving} onclick={handleToggleDefault}>
                         {#if activeView.is_default}
-                            <StarOff class="mr-2 size-4" />
+                            <StarOff class="mr-2 size-4" aria-hidden="true" />
                             Remove as default
                         {:else}
-                            <Star class="mr-2 size-4" />
+                            <Star class="mr-2 size-4" aria-hidden="true" />
                             Set as default for everyone
                         {/if}
                     </DropdownMenu.Item>
                 {/if}
-                <DropdownMenu.Item onclick={onClearSavedView}>Clear Saved View</DropdownMenu.Item>
+                <DropdownMenu.Item disabled={!isModified} onclick={onResetToSaved}>
+                    <Undo2 class="mr-2 size-4" aria-hidden="true" />
+                    Reset to saved
+                </DropdownMenu.Item>
+                <DropdownMenu.Item onclick={onClearSavedView}>
+                    <X class="mr-2 size-4" aria-hidden="true" />
+                    Clear Saved View
+                </DropdownMenu.Item>
                 <DropdownMenu.Separator />
                 <DropdownMenu.Item class="text-destructive" onclick={() => openDeleteDialog(activeView)}>
-                    <Trash2 class="mr-2 size-4" />
+                    <Trash2 class="mr-2 size-4" aria-hidden="true" />
                     Delete "{activeView.name}"
                 </DropdownMenu.Item>
             {/if}
         </DropdownMenu.Group>
+        {#if hideableColumns.length > 0}
+            <DropdownMenu.Separator />
+            <DropdownMenu.Group>
+                <DropdownMenu.Label>Columns</DropdownMenu.Label>
+                {#each hideableColumns as column (column.id)}
+                    <DropdownMenu.CheckboxItem checked={column.getIsVisible()} onclick={() => column.toggleVisibility()}>
+                        {column.columnDef.header}
+                    </DropdownMenu.CheckboxItem>
+                {/each}
+            </DropdownMenu.Group>
+        {/if}
     </DropdownMenu.Content>
 </DropdownMenu.Root>
 

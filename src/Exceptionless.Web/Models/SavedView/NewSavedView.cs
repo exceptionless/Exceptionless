@@ -39,6 +39,9 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
     [MaxLength(100)]
     public string? Time { get; set; }
 
+    [MaxLength(100)]
+    public string? Sort { get; set; }
+
     [Required]
     public string ViewType { get; set; } = null!;
 

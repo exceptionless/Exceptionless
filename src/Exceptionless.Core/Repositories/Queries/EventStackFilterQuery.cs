@@ -56,6 +56,8 @@ namespace Exceptionless.Core.Repositories.Queries
 {
     public class EventStackFilterQueryBuilder : IElasticQueryBuilder
     {
+        public const string CacheScope = "stack-filter";
+
         private readonly IStackRepository _stackRepository;
         private readonly ILogger _logger;
         private readonly Field _inferredEventDateField;
@@ -66,11 +68,16 @@ namespace Exceptionless.Core.Repositories.Queries
         public EventStackFilterQueryBuilder(IStackRepository stackRepository, ICacheClient cacheClient, ILoggerFactory loggerFactory)
         {
             _stackRepository = stackRepository;
-            _cacheClient = new ScopedCacheClient(cacheClient, "stack-filter");
+            _cacheClient = new ScopedCacheClient(cacheClient, CacheScope);
             _logger = loggerFactory.CreateLogger<EventStackFilterQueryBuilder>();
             _inferredEventDateField = Infer.Field<PersistentEvent>(f => f.Date);
             _inferredStackLastOccurrenceField = Infer.Field<Stack>(f => f.LastOccurrence);
             _eventStackFilter = new EventStackFilter();
+        }
+
+        public static string GetScopedCachePrefix(string organizationId, string projectId)
+        {
+            return String.Concat(CacheScope, ":", organizationId, ":", projectId);
         }
 
         public async Task BuildAsync<T>(QueryBuilderContext<T> ctx) where T : class, new()

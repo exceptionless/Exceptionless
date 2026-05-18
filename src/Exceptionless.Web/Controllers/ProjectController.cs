@@ -8,6 +8,7 @@ using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Utility;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
@@ -38,6 +39,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     private readonly ITextSerializer _serializer;
     private readonly AppOptions _options;
     private readonly UsageService _usageService;
+    private readonly SampleDataService _sampleDataService;
 
     public ProjectController(
         IOrganizationRepository organizationRepository,
@@ -48,6 +50,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         IQueue<WorkItemData> workItemQueue,
         BillingManager billingManager,
         SlackService slackService,
+        SampleDataService sampleDataService,
         ApiMapper mapper,
         IAppQueryValidator validator,
         ITextSerializer serializer,
@@ -66,6 +69,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         _billingManager = billingManager;
         _slackService = slackService;
         _serializer = serializer;
+        _sampleDataService = sampleDataService;
         _options = options;
         _usageService = usageService;
     }
@@ -320,12 +324,32 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
     }
 
     /// <summary>
+    /// Generate sample project data
+    /// </summary>
+    /// <param name="id">The identifier of the project.</param>
+    /// <response code="202">Accepted</response>
+    /// <response code="404">The project could not be found.</response>
+    [HttpPost("{id:objectid}/sample-data")]
+    [Authorize(Policy = AuthorizationRoles.UserPolicy)]
+    [ProducesResponseType<WorkInProgressResult>(StatusCodes.Status202Accepted)]
+    public async Task<ActionResult<WorkInProgressResult>> GenerateSampleDataAsync(string id)
+    {
+        var project = await GetModelAsync(id);
+        if (project is null)
+            return NotFound();
+
+        string workItemId = await _sampleDataService.EnqueueSampleEventsAsync(project.OrganizationId, project.Id);
+        return WorkInProgress([workItemId]);
+    }
+
+    /// <summary>
     /// Reset project data
     /// </summary>
     /// <param name="id">The identifier of the project.</param>
     /// <response code="202">Accepted</response>
     /// <response code="404">The project could not be found.</response>
     [HttpGet("{id:objectid}/reset-data")]
+    [HttpPost("{id:objectid}/reset-data")]
     [Authorize(Policy = AuthorizationRoles.UserPolicy)]
     [ProducesResponseType<WorkInProgressResult>(StatusCodes.Status202Accepted)]
     public async Task<ActionResult<WorkInProgressResult>> ResetDataAsync(string id)
@@ -334,7 +358,7 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
         if (project is null)
             return NotFound();
 
-        string workItemId = await _workItemQueue.EnqueueAsync(new RemoveStacksWorkItem
+        string workItemId = await _workItemQueue.EnqueueAsync(new ResetProjectDataWorkItem
         {
             OrganizationId = project.OrganizationId,
             ProjectId = project.Id
