@@ -4,10 +4,9 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { H3, Muted } from '$comp/typography';
+    import { Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Input } from '$comp/ui/input';
-    import { Separator } from '$comp/ui/separator';
     import { runMaintenanceJobMutation } from '$features/admin/api.svelte';
     import RunMaintenanceJobDialog from '$features/admin/components/dialogs/run-maintenance-job-dialog.svelte';
     import { maintenanceActions } from '$features/admin/models';
@@ -85,11 +84,7 @@
 </script>
 
 <div class="space-y-4">
-    <div>
-        <H3>Actions</H3>
-        <Muted>Run maintenance jobs and system operations.</Muted>
-    </div>
-    <Separator />
+    <Muted>Run maintenance jobs and system operations</Muted>
 
     <!-- Category nav + search -->
     <div class="flex flex-wrap items-center justify-between gap-3">

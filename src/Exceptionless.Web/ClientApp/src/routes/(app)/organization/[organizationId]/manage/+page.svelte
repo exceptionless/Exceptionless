@@ -3,12 +3,11 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
-    import { H3, Muted } from '$comp/typography';
+    import { Muted } from '$comp/typography';
     import { Button, buttonVariants } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
-    import { Separator } from '$comp/ui/separator';
     import { Spinner } from '$comp/ui/spinner';
     import { deleteOrganization, getOrganizationQuery, patchOrganization } from '$features/organizations/api.svelte';
     import RemoveOrganizationDialog from '$features/organizations/components/dialogs/remove-organization-dialog.svelte';
@@ -92,11 +91,7 @@
 </script>
 
 <div class="space-y-6">
-    <div>
-        <H3>General</H3>
-        <Muted>Manage your organization name.</Muted>
-    </div>
-    <Separator />
+    <Muted>General organization settings</Muted>
 
     <form
         onsubmit={(e) => {
@@ -141,7 +136,8 @@
 
         <DropdownMenu.Root>
             <DropdownMenu.Trigger class={buttonVariants({ variant: 'destructive' })}>
-                <X class="size-4" />
+                <X class="mr-2 size-4" />
+                <span>Delete</span>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="end" class="w-56">
                 <DropdownMenu.Group>
