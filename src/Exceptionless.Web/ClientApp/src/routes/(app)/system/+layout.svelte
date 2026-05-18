@@ -1,14 +1,12 @@
 <script lang="ts">
-    import { H3, Muted } from '$comp/typography';
-    import { Separator } from '$comp/ui/separator';
+    import { page } from '$app/state';
+    import { A, H3, Muted } from '$comp/typography';
     import { accessToken } from '$features/auth/index.svelte';
-    import * as SplitLayout from '$features/shared/components/layouts/split-layout';
     import { getMeQuery } from '$features/users/api.svelte';
     import GlobalUser from '$features/users/components/global-user.svelte';
 
     import type { NavigationItemContext } from '../../routes.svelte';
 
-    import SidebarNav from '../(components)/sidebar-nav.svelte';
     import { routes } from './routes.svelte';
 
     let { children } = $props();
@@ -19,20 +17,30 @@
         const context: NavigationItemContext = { authenticated: isAuthenticated, user: meQuery.data };
         return routes().filter((route) => (route.show ? route.show(context) : true));
     });
+    const currentPath = $derived(page.url.pathname);
 </script>
 
 <GlobalUser>
     <H3>System Administration</H3>
-    <Muted>Manage Exceptionless system maintenance and operations.</Muted>
-    <Separator class="m-6 w-auto" />
-    <SplitLayout.Root>
-        <SplitLayout.Sidebar>
-            <SidebarNav routes={filteredRoutes} />
-        </SplitLayout.Sidebar>
-        <SplitLayout.Content>
-            {@render children()}
-        </SplitLayout.Content>
-    </SplitLayout.Root>
+    <Muted>Manage Exceptionless system maintenance and operations</Muted>
+    <div class="mt-6 space-y-6">
+        <nav class="bg-muted flex w-full flex-row flex-nowrap gap-1 overflow-x-auto rounded-lg p-1">
+            {#each filteredRoutes as route (route.href)}
+                {@const isActive = currentPath === route.href || currentPath.startsWith(route.href + '/')}
+                <A
+                    variant="ghost"
+                    href={route.href}
+                    data-sveltekit-noscroll
+                    class="shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive
+                        ? 'bg-background text-foreground shadow-xs'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
+                >
+                    {route.title}
+                </A>
+            {/each}
+        </nav>
+        {@render children()}
+    </div>
     {#snippet disabled()}
         <div class="text-muted-foreground flex flex-col items-center justify-center gap-2 py-12 text-center">
             <span class="text-lg font-medium">Access Denied</span>

@@ -6,13 +6,14 @@
     import type { NavigationItem } from '../../routes.svelte';
 
     interface Props extends HTMLAttributes<HTMLElement> {
+        orientation?: 'horizontal' | 'responsive';
         routes: NavigationItem[];
     }
 
-    let { routes, ...props }: Props = $props();
+    let { orientation, routes, ...props }: Props = $props();
 </script>
 
-<Navigation.Container {...props}>
+<Navigation.Container {orientation} {...props}>
     {#each routes as route (route.href)}
         <Navigation.Item href={route.href} title={route.title} />
     {/each}

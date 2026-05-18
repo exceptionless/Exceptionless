@@ -4,9 +4,8 @@
     import { page } from '$app/state';
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
-    import { A, CodeBlock, H3, Muted, P } from '$comp/typography';
+    import { A, CodeBlock, Muted, P } from '$comp/typography';
     import * as Select from '$comp/ui/select';
-    import { Separator } from '$comp/ui/separator';
     import { env } from '$env/dynamic/public';
     import { getIntercom } from '$features/intercom';
     import { openSupportChat } from '$features/intercom/chat';
@@ -233,10 +232,7 @@ public partial class App : Application {
 </script>
 
 <div class="space-y-6">
-    <div>
-        <H3>Download & Configure Project</H3>
-        <Muted>The Exceptionless client can be integrated into your project in just a few easy steps.</Muted>
-    </div>
+    <Muted>The Exceptionless client can be integrated into your project in just a few easy steps</Muted>
 
     {#if isTokenDisabled}
         <Notification variant="destructive">
@@ -259,8 +255,6 @@ public partial class App : Application {
             </NotificationDescription>
         </Notification>
     {/if}
-
-    <Separator />
 
     <ol class="my-6 ml-6 list-decimal [&>li]:mt-2">
         <li>

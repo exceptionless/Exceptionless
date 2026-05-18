@@ -17,6 +17,7 @@
     import StackCard from '$features/stacks/components/stack-card.svelte';
     import ChevronLeft from '@lucide/svelte/icons/chevron-left';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
+    import { onMount, tick } from 'svelte';
 
     import type { PersistentEvent } from '../models/index';
 
@@ -35,10 +36,11 @@
         handleError: (problem: ProblemDetails) => void;
         id: string;
         onEventChange?: (eventId: string) => void;
+        onSessionFilter?: () => void;
         showStackPager?: boolean;
     }
 
-    let { filterChanged, handleError, id, onEventChange, showStackPager = false }: Props = $props();
+    let { filterChanged, handleError, id, onEventChange, onSessionFilter, showStackPager = false }: Props = $props();
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -63,7 +65,7 @@
         }
 
         if (getSessionId(event)) {
-            tabs.push('Session Events');
+            tabs.push('Session');
         }
 
         if (!project) {
@@ -141,7 +143,59 @@
     type TabType = 'Environment' | 'Exception' | 'Extended Data' | 'Overview' | 'Request' | 'Trace Log' | string;
 
     let activeTab = $state<TabType>('Overview');
+    let areTabsScrollable = $state(false);
+    let canScrollTabsLeft = $state(false);
+    let canScrollTabsRight = $state(false);
+    let shouldRoundLastTab = $state(false);
+    let tabsListElement = $state<HTMLElement | null>(null);
     let tabs = $derived<TabType[]>(getTabs(eventQuery.data, projectQuery.data));
+
+    function updateTabScrollState(): void {
+        if (!tabsListElement) {
+            areTabsScrollable = false;
+            canScrollTabsLeft = false;
+            canScrollTabsRight = false;
+            shouldRoundLastTab = false;
+            return;
+        }
+
+        const maxScrollLeft = tabsListElement.scrollWidth - tabsListElement.clientWidth;
+        const lastTabElement = tabsListElement.querySelector('[data-slot="tabs-trigger"]:last-child');
+        areTabsScrollable = maxScrollLeft > 1;
+        canScrollTabsLeft = tabsListElement.scrollLeft > 1;
+        canScrollTabsRight = tabsListElement.scrollLeft < maxScrollLeft - 1;
+        shouldRoundLastTab = areTabsScrollable || (lastTabElement?.getBoundingClientRect().right ?? 0) >= tabsListElement.getBoundingClientRect().right - 1;
+    }
+
+    function scrollTabs(direction: -1 | 1): void {
+        if (!tabsListElement) {
+            return;
+        }
+
+        tabsListElement.scrollBy({
+            behavior: 'smooth',
+            left: direction * Math.max(tabsListElement.clientWidth * 0.75, 160)
+        });
+    }
+
+    async function refreshTabScrollState(currentTabs: TabType[]): Promise<void> {
+        await tick();
+        if (currentTabs !== tabs) {
+            return;
+        }
+
+        updateTabScrollState();
+    }
+
+    async function scrollActiveTabIntoView(currentTab: TabType): Promise<void> {
+        await tick();
+        if (currentTab !== activeTab) {
+            return;
+        }
+
+        tabsListElement?.querySelector('[data-state="active"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        updateTabScrollState();
+    }
 
     function onPromoted(title: string): void {
         activeTab = title;
@@ -159,6 +213,23 @@
         if (eventQuery.isError) {
             handleError(eventQuery.error);
         }
+    });
+
+    $effect(() => {
+        void refreshTabScrollState(tabs);
+    });
+
+    $effect(() => {
+        void scrollActiveTabIntoView(activeTab);
+    });
+
+    onMount(() => {
+        updateTabScrollState();
+        window.addEventListener('resize', updateTabScrollState);
+
+        return () => {
+            window.removeEventListener('resize', updateTabScrollState);
+        };
     });
 </script>
 
@@ -207,11 +278,53 @@
 
 {#if eventQuery.isSuccess}
     <Tabs.Root class="mt-4 mb-4" value={activeTab}>
-        <Tabs.List class="w-full justify-normal overflow-scroll">
-            {#each tabs as tab (tab)}
-                <Tabs.Trigger value={tab}>{tab}</Tabs.Trigger>
-            {/each}
-        </Tabs.List>
+        <div class="flex min-w-0 items-center gap-1">
+            {#if areTabsScrollable}
+                <Button
+                    aria-label="Scroll tabs left"
+                    class="flex-none"
+                    disabled={!canScrollTabsLeft}
+                    onclick={() => scrollTabs(-1)}
+                    size="icon-sm"
+                    title="Scroll tabs left"
+                    variant="ghost"
+                >
+                    <ChevronLeft />
+                </Button>
+            {/if}
+
+            <Tabs.List
+                bind:ref={tabsListElement}
+                class="divide-border bg-background h-8 min-w-0 flex-1 justify-normal divide-x overflow-x-auto overflow-y-hidden rounded-lg border p-0 shadow-xs [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                onscroll={updateTabScrollState}
+            >
+                {#each tabs as tab (tab)}
+                    <Tabs.Trigger
+                        class={[
+                            'data-[state=active]:bg-muted flex-none rounded-none border-0 px-4 shadow-none first:rounded-l-lg data-[state=active]:shadow-none',
+                            shouldRoundLastTab && 'last:rounded-r-lg'
+                        ]}
+                        value={tab}
+                    >
+                        {tab}
+                    </Tabs.Trigger>
+                {/each}
+            </Tabs.List>
+
+            {#if areTabsScrollable}
+                <Button
+                    aria-label="Scroll tabs right"
+                    class="flex-none"
+                    disabled={!canScrollTabsRight}
+                    onclick={() => scrollTabs(1)}
+                    size="icon-sm"
+                    title="Scroll tabs right"
+                    variant="ghost"
+                >
+                    <ChevronRight />
+                </Button>
+            {/if}
+        </div>
 
         {#each tabs as tab (tab)}
             <Tabs.Content value={tab}>
@@ -225,8 +338,8 @@
                     <Request {filterChanged} event={eventQuery.data}></Request>
                 {:else if tab === 'Trace Log'}
                     <TraceLog logs={eventQuery.data.data?.['@trace']}></TraceLog>
-                {:else if tab === 'Session Events'}
-                    <SessionEvents event={eventQuery.data} {hasPremiumFeatures}></SessionEvents>
+                {:else if tab === 'Session'}
+                    <SessionEvents event={eventQuery.data} {hasPremiumFeatures} {onSessionFilter}></SessionEvents>
                 {:else if tab === 'Extended Data'}
                     <ExtendedData event={eventQuery.data} project={projectQuery.data} promoted={onPromoted}></ExtendedData>
                 {:else}

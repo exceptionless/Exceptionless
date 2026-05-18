@@ -1,14 +1,21 @@
 <script lang="ts">
     import type { PersistentEvent } from '$features/events/models';
 
+    import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
     import { H3 } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
+    import { Button } from '$comp/ui/button';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import { getSessionEventsQuery } from '$features/events/api.svelte';
+    import { SessionFilter } from '$features/events/components/filters';
+    import { buildFilterCacheKey, toFilter, updateFilterCache } from '$features/events/components/filters/helpers.svelte';
     import Summary from '$features/events/components/summary/summary.svelte';
     import { getSessionId } from '$features/events/utils/index';
+    import { organization } from '$features/organizations/context.svelte';
+    import FilterIcon from '@lucide/svelte/icons/filter';
     import InfoIcon from '@lucide/svelte/icons/info';
 
     import SessionEventDuration from '../session-event-duration.svelte';
@@ -16,13 +23,24 @@
     interface Props {
         event: PersistentEvent;
         hasPremiumFeatures?: boolean;
+        onSessionFilter?: () => void;
         time?: string;
     }
 
-    let { event, hasPremiumFeatures = false, time }: Props = $props();
+    let { event, hasPremiumFeatures = false, onSessionFilter, time }: Props = $props();
 
     const sessionId = $derived(getSessionId(event));
     const isSessionStart = $derived(event.type === 'session');
+    const eventsPath = $derived(resolve('/(app)'));
+    const sessionEventsHref = $derived.by(() => {
+        const filter = getSessionFilter();
+        if (!filter) {
+            return undefined;
+        }
+
+        const query = new URLSearchParams({ filter: filter.toFilter(), time: '' });
+        return `${eventsPath}?${query.toString()}`;
+    });
 
     const userInfo = $derived(event.data?.['@user']);
     const userIdentity = $derived(userInfo?.identity);
@@ -44,6 +62,42 @@
             }
         }
     });
+
+    function getEventHref(eventId: string): string {
+        return resolve('/(app)/event/[eventId]', { eventId });
+    }
+
+    function getSessionFilter(): SessionFilter | undefined {
+        return sessionId ? new SessionFilter(sessionId) : undefined;
+    }
+
+    function prepareSessionEventsFilter(): void {
+        const filter = getSessionFilter();
+        if (!filter) {
+            return;
+        }
+
+        const filterQuery = toFilter([filter]);
+        updateFilterCache(buildFilterCacheKey(organization.current, eventsPath, filterQuery), [filter]);
+    }
+
+    function handleSessionFilterClick(): void {
+        prepareSessionEventsFilter();
+        onSessionFilter?.();
+    }
+
+    async function openSessionEvent(eventId: string): Promise<void> {
+        await goto(getEventHref(eventId));
+    }
+
+    function handleSessionEventKeydown(keyboardEvent: KeyboardEvent, eventId: string): void {
+        if (keyboardEvent.key !== 'Enter' && keyboardEvent.key !== ' ') {
+            return;
+        }
+
+        keyboardEvent.preventDefault();
+        void openSessionEvent(eventId);
+    }
 </script>
 
 {#if !hasPremiumFeatures}
@@ -83,7 +137,20 @@
         </Table.Root>
     {/if}
 
-    <H3 class="mb-2">Session Events</H3>
+    <div class="mb-2 flex items-center justify-between gap-2">
+        <H3>Session Events</H3>
+        <Button
+            disabled={!sessionEventsHref}
+            href={sessionEventsHref}
+            onclick={handleSessionFilterClick}
+            size="sm"
+            title="Open events filtered to this session"
+            variant="outline"
+        >
+            <FilterIcon data-icon="inline-start" />
+            Filter
+        </Button>
+    </div>
 
     {#if sessionEventsQuery.isPending}
         <div class="space-y-2">
@@ -106,7 +173,15 @@
             </Table.Header>
             <Table.Body>
                 {#each sessionEventsQuery.data ?? [] as sessionEvent (sessionEvent.id)}
-                    <Table.Row class="hover:bg-muted/50 cursor-pointer">
+                    <Table.Row
+                        aria-label={`Open event ${sessionEvent.id}`}
+                        class="hover:bg-muted/50 focus-visible:ring-ring/50 focus-visible:outline-ring cursor-pointer focus-visible:ring-[3px] focus-visible:outline-1"
+                        onclick={() => openSessionEvent(sessionEvent.id)}
+                        onkeydown={(keyboardEvent) => handleSessionEventKeydown(keyboardEvent, sessionEvent.id)}
+                        role="link"
+                        tabindex={0}
+                        title="Open event details"
+                    >
                         <Table.Cell>
                             <Summary summary={sessionEvent} showType={true} showStatus={false} />
                         </Table.Cell>

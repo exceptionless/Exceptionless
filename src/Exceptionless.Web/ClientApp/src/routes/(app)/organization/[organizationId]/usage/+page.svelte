@@ -3,10 +3,9 @@
     import ErrorMessage from '$comp/error-message.svelte';
     import Number from '$comp/formatters/number.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import { H4, Muted, Small } from '$comp/typography';
+    import { Muted, Small } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Chart from '$comp/ui/chart/index';
-    import { Separator } from '$comp/ui/separator';
     import { Skeleton } from '$comp/ui/skeleton';
     import { env } from '$env/dynamic/public';
     import { ChangePlanDialog } from '$features/billing';
@@ -73,11 +72,7 @@
 </script>
 
 <div class="space-y-6">
-    <div>
-        <H4>Monthly Usage</H4>
-        <Muted>View your historical usage.</Muted>
-    </div>
-    <Separator />
+    <Muted>View your historical usage</Muted>
 
     {#if organizationQuery.isLoading}
         <div class="space-y-4">
@@ -88,7 +83,7 @@
     {:else if organizationQuery.error}
         <ErrorMessage message="Unable to load usage data." />
     {:else if !hasMonthlyUsage}
-        <Muted>Monthly usage is not available for this organization. Please contact support for more information.</Muted>
+        <Muted>Monthly usage is not available for this organization. Please contact support for more information</Muted>
     {:else}
         <div class="space-y-6">
             <div class="bg-muted/20 rounded-md border p-4">

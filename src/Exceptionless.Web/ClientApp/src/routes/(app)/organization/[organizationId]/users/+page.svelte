@@ -1,9 +1,9 @@
 <script lang="ts">
     import type { ViewUser } from '$features/users/models';
 
-    import { H3, Muted } from '$comp/typography';
+    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
+    import { Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
-    import { Separator } from '$comp/ui/separator';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import { addOrganizationUser } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
@@ -92,19 +92,18 @@
 </script>
 
 <div class="space-y-6">
-    <div class="flex items-start justify-between">
-        <div>
-            <H3>Organization Users</H3>
-            <Muted>Manage users for this organization.</Muted>
-        </div>
-        <Button size="icon" onclick={handleInviteUser} title="Invite User" class="shrink-0">
-            <Plus class="size-4" aria-hidden="true" />
-            <span class="sr-only">Invite User</span>
-        </Button>
-    </div>
-    <Separator />
+    <Muted>Manage users for this organization</Muted>
 
-    <UsersDataTable bind:limit={usersQueryParameters.limit!} isLoading={usersQuery.isLoading} {table} />
+    <UsersDataTable bind:limit={usersQueryParameters.limit!} isLoading={usersQuery.isLoading} {table}>
+        {#snippet toolbarChildren()}
+            <div class="flex-1"></div>
+            <DataTableViewOptions size="icon-lg" {table} />
+            <Button size="icon-lg" onclick={handleInviteUser} title="Invite User">
+                <Plus class="size-4" aria-hidden="true" />
+                <span class="sr-only">Invite User</span>
+            </Button>
+        {/snippet}
+    </UsersDataTable>
 </div>
 
 <InviteUserDialog bind:open={showInviteDialog} {inviteUser} />

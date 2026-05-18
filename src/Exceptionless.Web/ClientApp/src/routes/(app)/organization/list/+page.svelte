@@ -4,6 +4,7 @@
 
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
+    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { type GetOrganizationsParams, getOrganizationsQuery } from '$features/organizations/api.svelte';
@@ -50,12 +51,15 @@
             <H3>My Organizations</H3>
             <Muted>View and manage your organizations. Click on an organization to view its details.</Muted>
         </div>
-        <div class="flex items-center gap-2">
-            <Button size="icon" onclick={addOrganization} title="Add Organization">
+    </div>
+    <OrganizationsDataTable isLoading={organizationsQuery.isLoading} {rowClick} {rowHref} {table}>
+        {#snippet toolbarChildren()}
+            <div class="flex-1"></div>
+            <DataTableViewOptions size="icon-lg" {table} />
+            <Button size="icon-lg" onclick={addOrganization} title="Add Organization">
                 <Plus class="size-4" aria-hidden="true" />
                 <span class="sr-only">Add Organization</span>
             </Button>
-        </div>
-    </div>
-    <OrganizationsDataTable isLoading={organizationsQuery.isLoading} {rowClick} {rowHref} {table} />
+        {/snippet}
+    </OrganizationsDataTable>
 </div>

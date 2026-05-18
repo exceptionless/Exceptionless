@@ -2,10 +2,9 @@
     import type { UpdateProject } from '$features/projects/models';
 
     import { page } from '$app/state';
-    import { A, H3, H4, Large, Muted } from '$comp/typography';
+    import { A, H4, Large, Muted } from '$comp/typography';
     import { Input } from '$comp/ui/input';
     import { Label } from '$comp/ui/label';
-    import { Separator } from '$comp/ui/separator';
     import { Switch } from '$comp/ui/switch';
     import { deleteProjectConfig, getProjectConfig, getProjectQuery, postProjectConfig, updateProject } from '$features/projects/api.svelte';
     import ProjectLogLevel from '$features/projects/components/project-log-level.svelte';
@@ -168,12 +167,6 @@
 </script>
 
 <div class="space-y-6">
-    <div>
-        <H3>Settings</H3>
-        <Muted>Create and manage API keys for authenticating your applications with Exceptionless.</Muted>
-    </div>
-    <Separator />
-
     <section class="space-y-2">
         <H4>Default Log Level</H4>
         <Muted
@@ -226,7 +219,7 @@
 
     <section class="space-y-2">
         <H4>Spam Detection</H4>
-        <Muted>A comma delimited list of user agents that should be ignored.</Muted>
+        <Muted>A comma delimited list of user agents that should be ignored</Muted>
         <Input type="text" placeholder="Example: SpamBot" bind:value={userAgents} onchange={debouncedSaveUserAgents} />
 
         <div class="flex items-center space-x-2 pt-1">

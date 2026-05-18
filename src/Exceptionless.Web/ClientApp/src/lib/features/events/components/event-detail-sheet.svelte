@@ -32,7 +32,7 @@
 </script>
 
 <Sheet.Root onOpenChange={handleOpenChange} open={!!eventId}>
-    <Sheet.Content class="w-full overflow-y-auto sm:max-w-full! md:w-5/6!">
+    <Sheet.Content class="w-full overflow-y-scroll sm:max-w-full! md:w-5/6!">
         <Sheet.Header>
             <Sheet.Title
                 >Event Details <Button
@@ -45,7 +45,7 @@
         </Sheet.Header>
         <div class="px-4">
             {#if eventId}
-                <EventsOverview {filterChanged} id={eventId} {handleError} />
+                <EventsOverview {filterChanged} id={eventId} {handleError} onSessionFilter={onClose} />
             {/if}
         </div>
     </Sheet.Content>

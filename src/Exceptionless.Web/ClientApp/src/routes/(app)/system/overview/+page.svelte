@@ -1,9 +1,8 @@
 <script lang="ts">
     import Number from '$comp/formatters/number.svelte';
-    import { H3, Muted } from '$comp/typography';
+    import { Muted } from '$comp/typography';
     import * as Card from '$comp/ui/card';
     import * as Chart from '$comp/ui/chart/index';
-    import { Separator } from '$comp/ui/separator';
     import { Skeleton } from '$comp/ui/skeleton';
     import { getAdminStatsQuery } from '$features/admin/api.svelte';
     import { dateHistogram, terms } from '$features/shared/api/aggregations';
@@ -158,11 +157,7 @@
 </script>
 
 <div class="space-y-6">
-    <div>
-        <H3>Overview</H3>
-        <Muted>System-wide statistics and usage trends.</Muted>
-    </div>
-    <Separator />
+    <Muted>System-wide statistics and usage trends</Muted>
 
     {#if statsQuery.isError}
         <Card.Root>
