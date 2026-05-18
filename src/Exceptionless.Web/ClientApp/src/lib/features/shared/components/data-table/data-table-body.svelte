@@ -100,7 +100,9 @@
                               if (event.key === 'Enter' || event.key === ' ') {
                                   event.preventDefault();
                                   const firstCell = row.getVisibleCells()[0];
-                                  if (firstCell) rowClick(firstCell.row.original);
+                                  if (firstCell) {
+                                      rowClick(firstCell.row.original);
+                                  }
                               }
                           }
                         : undefined}
