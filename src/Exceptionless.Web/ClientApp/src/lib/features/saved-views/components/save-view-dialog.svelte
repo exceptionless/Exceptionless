@@ -1,5 +1,4 @@
 <script lang="ts">
-    import ErrorMessage from '$comp/error-message.svelte';
     import { Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Dialog from '$comp/ui/dialog';
@@ -11,8 +10,6 @@
 
     interface Props {
         duplicateView?: SavedView;
-        formError?: string;
-        nameError?: string;
         onClose: () => void;
         onLoadView: (id: string) => void;
         onSave: (name: string, isPrivate: boolean, isDefault: boolean) => Promise<void>;
@@ -20,7 +17,7 @@
         saving: boolean;
     }
 
-    let { duplicateView, formError, nameError, onClose, onLoadView, onSave, open = $bindable(), saving }: Props = $props();
+    let { duplicateView, onClose, onLoadView, onSave, open = $bindable(), saving }: Props = $props();
 
     let saveName = $state('');
     let isPrivate = $state(false);
@@ -64,9 +61,6 @@
                 </Muted>
             </div>
         {/if}
-        {#if formError}
-            <ErrorMessage message={formError} />
-        {/if}
         <form
             class="flex flex-col gap-4"
             onsubmit={(e) => {
@@ -77,9 +71,6 @@
             <div class="flex flex-col gap-2">
                 <Label for="view-name">Name</Label>
                 <Input id="view-name" bind:value={saveName} placeholder="e.g., Production Errors" required autofocus />
-                {#if nameError}
-                    <ErrorMessage message={nameError} />
-                {/if}
             </div>
             <div class="flex items-center justify-between">
                 <div>
