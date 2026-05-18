@@ -36,7 +36,7 @@ GET {{apiUrl}}/stacks?organization={{organizationId}}&filter=status:discarded
 Authorization: Bearer {{token}}
 
 ### Get By Organization Id with Filter (e.g., stacks with specific tag)
-GET {{apiUrl}}/stacks?organization={{organizationId}}&filter=tags:production
+GET {{apiUrl}}/stacks?organization={{organizationId}}&filter=tag:production
 Authorization: Bearer {{token}}
 
 ### Get By Organization Id with Filter (e.g., stacks with type and status)

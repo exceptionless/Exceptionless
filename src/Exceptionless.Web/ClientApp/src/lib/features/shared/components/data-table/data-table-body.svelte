@@ -59,10 +59,13 @@
 
         const target = event.target as HTMLElement | null;
 
+        // Don't intercept clicks on interactive elements (links, buttons)
+        if (target?.closest('a, button')) {
+            return;
+        }
+
         // For regular clicks with href, prevent default navigation
         if (rowHref) {
-            event.preventDefault();
-        } else if (target?.closest('a')) {
             event.preventDefault();
         }
 
