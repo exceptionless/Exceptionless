@@ -1696,14 +1696,11 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("log", ev.Type);
         Assert.Equal("Test with extra properties", ev.Message);
 
-        // Note: Extra root properties should be captured if JsonExtensionData is implemented on Event class
-        // If not implemented, this assertion verifies the current behavior
-        if (ev.Data is not null && ev.Data.ContainsKey("custom_field"))
-        {
-            Assert.Equal("custom_value", ev.Data["custom_field"]);
-            Assert.Equal(42L, ev.Data["custom_number"]);
-            Assert.True(ev.Data["custom_flag"] as bool?);
-        }
+        // Extra root properties are captured via [JsonExtensionData] + OnDeserialized merge into Data
+        Assert.NotNull(ev.Data);
+        Assert.Equal("custom_value", ev.Data["custom_field"]);
+        Assert.Equal(42L, ev.Data["custom_number"]);
+        Assert.Equal(true, ev.Data["custom_flag"]);
     }
 
     [Fact]
@@ -1757,12 +1754,10 @@ public class EventControllerTests : IntegrationTestsBase
         string? version = ev.GetVersion();
         Assert.Equal("1.0.0", version);
 
-        // Verify extra properties are captured if JsonExtensionData is implemented
-        if (ev.Data is not null && ev.Data.TryGetValue("extra_field_1", out object? value))
-        {
-            Assert.Equal("value1", value);
-            Assert.Equal(99L, ev.Data["extra_field_2"]);
-        }
+        // Extra root properties are captured via [JsonExtensionData] + OnDeserialized merge into Data
+        Assert.NotNull(ev.Data);
+        Assert.Equal("value1", ev.Data["extra_field_1"]);
+        Assert.Equal(99L, ev.Data["extra_field_2"]);
     }
 
     [Fact]
@@ -1805,9 +1800,25 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.Equal("log", ev.Type);
         Assert.Equal("Test with complex properties", ev.Message);
 
-        // Verify event was processed successfully
-        Assert.NotNull(ev.Id);
-        Assert.NotEqual(DateTimeOffset.MinValue, ev.Date);
+        // Verify complex properties are captured in Data via JsonExtensionData + OnDeserialized
+        Assert.NotNull(ev.Data);
+        Assert.True(ev.Data.ContainsKey("metadata"), "metadata key should be captured in Data");
+        Assert.True(ev.Data.ContainsKey("tags_list"), "tags_list key should be captured in Data");
+
+        // Verify nested object structure is preserved
+        var metadata = ev.Data["metadata"] as Dictionary<string, object?>;
+        Assert.NotNull(metadata);
+        Assert.Equal("value1", metadata["key1"]);
+        Assert.Equal(42L, metadata["key2"]);
+        var nested = metadata["nested"] as Dictionary<string, object?>;
+        Assert.NotNull(nested);
+        Assert.Equal("value", nested["inner"]);
+
+        // Verify array structure is preserved
+        var tagsList = ev.Data["tags_list"] as List<object?>;
+        Assert.NotNull(tagsList);
+        Assert.Equal(3, tagsList.Count);
+        Assert.Equal("tag1", tagsList[0]);
     }
 
     [Fact]
