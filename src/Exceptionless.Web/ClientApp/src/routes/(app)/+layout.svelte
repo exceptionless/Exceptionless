@@ -325,7 +325,7 @@
         }
 
         return allRoutes.map((route) => {
-            if (route.group !== 'Dashboards' && route.group !== 'Reports') {
+            if (route.group !== 'Dashboards') {
                 return route;
             }
 
