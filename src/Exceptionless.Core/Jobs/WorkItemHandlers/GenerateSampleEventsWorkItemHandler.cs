@@ -93,14 +93,13 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
 
             var events = generator.Generate(organization.Id, project.Id, projectEventCount, minDate, utcNow);
 
-            for (int i = 0; i < events.Count; i += batchSize)
+            foreach (var batch in events.Chunk(batchSize))
             {
                 if (context.CancellationToken.IsCancellationRequested)
                     break;
 
-                var batch = events.Skip(i).Take(batchSize).ToList();
                 await _eventPipeline.RunAsync(batch, organization, project);
-                totalProcessed += batch.Count;
+                totalProcessed += batch.Length;
 
                 int percentage = (int)Math.Min(99, totalProcessed * 100.0 / eventCount);
                 await context.ReportProgressAsync(percentage, $"Processed {totalProcessed}/{eventCount} events");
@@ -127,7 +126,7 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
         }
 
         var project = await _projectRepository.GetByIdAsync(workItem.ProjectId);
-        if (project is null || project.OrganizationId != organization.Id)
+        if (project is null || !String.Equals(project.OrganizationId, organization.Id))
         {
             Log.LogWarning("Project {ProjectId} not found in organization {OrganizationId} when generating sample events", workItem.ProjectId, workItem.OrganizationId);
             return;
@@ -137,14 +136,13 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
         const int batchSize = 100;
         var events = generator.Generate(organization.Id, project.Id, eventCount, minDate, utcNow);
 
-        for (int i = 0; i < events.Count; i += batchSize)
+        foreach (var batch in events.Chunk(batchSize))
         {
             if (context.CancellationToken.IsCancellationRequested)
                 break;
 
-            var batch = events.Skip(i).Take(batchSize).ToList();
             await _eventPipeline.RunAsync(batch, organization, project);
-            totalProcessed += batch.Count;
+            totalProcessed += batch.Length;
 
             int percentage = (int)Math.Min(99, totalProcessed * 100.0 / eventCount);
             await context.ReportProgressAsync(percentage, $"Processed {totalProcessed}/{eventCount} events");

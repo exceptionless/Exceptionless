@@ -1,5 +1,6 @@
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
@@ -41,7 +42,7 @@ public class ResetProjectDataWorkItemHandler : WorkItemHandlerBase
             await context.ReportProgressAsync(50, $"Events removed: {removedEvents}");
 
             long removedStacks = await _stackRepository.RemoveAllByProjectIdAsync(workItem.OrganizationId, workItem.ProjectId);
-            await _cacheClient.RemoveByPrefixAsync(String.Concat("stack-filter:", workItem.OrganizationId, ":", workItem.ProjectId));
+            await _cacheClient.RemoveByPrefixAsync(EventStackFilterQueryBuilder.GetScopedCachePrefix(workItem.OrganizationId, workItem.ProjectId));
 
             await context.ReportProgressAsync(100, $"Events removed: {removedEvents}, stacks removed: {removedStacks}");
             Log.LogInformation("Reset project data for project {ProjectId}. Events removed: {RemovedEvents}, stacks removed: {RemovedStacks}", workItem.ProjectId, removedEvents, removedStacks);

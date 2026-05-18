@@ -617,7 +617,7 @@ public partial class App : Application {
 
     <div class="border-border flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end">
         <Button
-            class="bg-green-600 text-white hover:bg-green-700 focus-visible:border-green-700 focus-visible:ring-green-600/20 dark:bg-green-600 dark:hover:bg-green-700"
+            variant="success"
             onclick={generateProjectSampleData}
             disabled={generateSampleDataMutation.isPending}
         >
