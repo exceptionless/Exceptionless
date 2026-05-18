@@ -362,7 +362,7 @@ export class TagFilter implements IFilter {
             return `tag:${this.value[0]}`;
         }
 
-        return `(${this.value.map((val) => `tag:${val}`).join(' AND ')})`;
+        return `(${this.value.map((val) => `tag:${val}`).join(' OR ')})`;
     }
 }
 
