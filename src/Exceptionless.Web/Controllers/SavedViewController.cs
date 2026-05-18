@@ -59,7 +59,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     /// Get by organization and view
     /// </summary>
     /// <param name="organizationId">The identifier of the organization.</param>
-    /// <param name="viewType">The dashboard view type (events, issues, stacks, stream).</param>
+    /// <param name="viewType">The dashboard view type (events, issues, stream).</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <response code="404">The organization could not be found.</response>
