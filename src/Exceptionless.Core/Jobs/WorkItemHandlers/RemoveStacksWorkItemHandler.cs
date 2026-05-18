@@ -1,5 +1,6 @@
 ﻿using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
@@ -35,7 +36,7 @@ public class RemoveStacksWorkItemHandler : WorkItemHandlerBase
             Log.LogInformation("Received remove stacks work item for project: {ProjectId}", wi.ProjectId);
             await context.ReportProgressAsync(0, "Starting soft deleting of stacks...");
             long deleted = await _stackRepository.SoftDeleteByProjectIdAsync(wi.OrganizationId, wi.ProjectId);
-            await _cacheClient.RemoveByPrefixAsync(String.Concat("stack-filter:", wi.OrganizationId, ":", wi.ProjectId));
+            await _cacheClient.RemoveByPrefixAsync(EventStackFilterQueryBuilder.GetScopedCachePrefix(wi.OrganizationId, wi.ProjectId));
             await context.ReportProgressAsync(100, $"Stacks soft deleted: {deleted}");
         }
     }

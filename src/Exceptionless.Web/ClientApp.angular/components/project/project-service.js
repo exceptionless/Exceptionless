@@ -78,6 +78,10 @@
                 return _cachedRestangular.one("users", userId).one("projects", id).one("notifications").get();
             }
 
+            function generateSampleData(id) {
+                return Restangular.one("projects", id).post("sample-data");
+            }
+
             function getIntegrationNotificationSettings(id, integration) {
                 return _cachedRestangular.one("projects", id).one(integration, "notifications").get();
             }
@@ -113,7 +117,7 @@
             }
 
             function resetData(id) {
-                return Restangular.one("projects", id).one("reset-data").get();
+                return Restangular.one("projects", id).post("reset-data");
             }
 
             function update(id, project) {
@@ -145,6 +149,7 @@
                 getByOrganizationId: getByOrganizationId,
                 getConfig: getConfig,
                 getNotificationSettings: getNotificationSettings,
+                generateSampleData: generateSampleData,
                 getIntegrationNotificationSettings: getIntegrationNotificationSettings,
                 isNameAvailable: isNameAvailable,
                 promoteTab: promoteTab,
