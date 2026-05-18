@@ -196,9 +196,12 @@
 
                                     {#if projectSettingsRoutes.length > 0}
                                         <Sidebar.MenuSubItem>
-                                            <div class="text-muted-foreground flex items-center gap-2 px-2 py-1 text-xs font-medium">
+                                            <div class="border-border mt-2 mx-2 w-auto border-t"></div>
+                                        </Sidebar.MenuSubItem>
+                                        <Sidebar.MenuSubItem>
+                                            <div class="text-muted-foreground flex items-center gap-2 px-2 py-1 pt-2 text-xs font-medium">
                                                 <Folder class="size-3.5" />
-                                                <span>Projects</span>
+                                                <span>Current Project</span>
                                             </div>
                                         </Sidebar.MenuSubItem>
                                         <Sidebar.MenuSubItem>
