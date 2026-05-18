@@ -95,13 +95,15 @@
             {#each table.getRowModel().rows as row (row.id)}
                 <Table.Row
                     tabindex={rowClick ? 0 : undefined}
-                    onkeydown={rowClick ? (event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            const firstCell = row.getVisibleCells()[0];
-                            if (firstCell) rowClick(firstCell.row.original);
-                        }
-                    } : undefined}
+                    onkeydown={rowClick
+                        ? (event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault();
+                                  const firstCell = row.getVisibleCells()[0];
+                                  if (firstCell) rowClick(firstCell.row.original);
+                              }
+                          }
+                        : undefined}
                 >
                     {#each row.getVisibleCells() as cell (cell.id)}
                         {#if rowHref && cell.row.original}
@@ -112,10 +114,7 @@
                                 </Table.Cell>
                             </A>
                         {:else}
-                            <Table.Cell
-                                class={getCellClass(cell)}
-                                onclick={(event) => onCellClick(event, cell)}
-                            >
+                            <Table.Cell class={getCellClass(cell)} onclick={(event) => onCellClick(event, cell)}>
                                 <FlexRender {cell} />
                             </Table.Cell>
                         {/if}
