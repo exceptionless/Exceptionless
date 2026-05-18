@@ -139,7 +139,8 @@ public class Startup
 
     private void CustomizeProblemDetails(ProblemDetailsContext ctx)
     {
-        ctx.ProblemDetails.Extensions.Add("instance", $"{ctx.HttpContext.Request.Method} {ctx.HttpContext.Request.Path}");
+        ctx.ProblemDetails.Instance = $"{ctx.HttpContext.Request.Method} {ctx.HttpContext.Request.Path}";
+
         if (ctx.HttpContext.Items.TryGetValue("reference-id", out object? refId) && refId is string referenceId)
         {
             ctx.ProblemDetails.Extensions.Add("reference-id", referenceId);
@@ -152,8 +153,6 @@ public class Startup
 
         if (ctx.ProblemDetails is ValidationProblemDetails validationProblem)
         {
-            // This might be possible to accomplish via serializer.
-            // NOTE: the key could be wrong for things like ExternalAuthInfo where the keys are camel case.
             validationProblem.Errors = validationProblem.Errors
                 .ToDictionary(
                     error => error.Key.ToLowerUnderscoredWords(),
@@ -161,8 +160,12 @@ public class Startup
                 );
         }
 
-        // errors
-        // TODO: Check casing of property names of model state validation errors.
+        // ASP.NET Core's DefaultProblemDetailsFactory adds "traceId" (camelCase) to Extensions.
+        // MVC's SystemTextJsonOutputFormatter writes [JsonExtensionData] keys as-is, but
+        // DefaultProblemDetailsWriter (status code pages) applies PropertyNamingPolicy to keys.
+        // Normalize to snake_case here so both paths produce consistent "trace_id".
+        if (ctx.ProblemDetails.Extensions.Remove("traceId", out object? traceId))
+            ctx.ProblemDetails.Extensions["trace_id"] = traceId;
     }
 
     public void Configure(IApplicationBuilder app)
