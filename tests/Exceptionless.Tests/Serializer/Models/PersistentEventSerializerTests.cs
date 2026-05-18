@@ -349,20 +349,28 @@ public class PersistentEventSerializerTests : TestWithServices
     }
 
     [Fact]
-    public void Deserialize_JsonWithUnknownRootProperties_IgnoresUnknownProperties()
+    public void Deserialize_JsonWithUnknownRootProperties_MergesIntoData()
     {
-        // Arrange
+        // Arrange: unknown root properties are captured via [JsonExtensionData] and
+        // merged into Data dictionary via Event.OnDeserialized().
         /* language=json */
-        const string json = """{"id":"unk-1","organization_id":"org1","project_id":"proj1","type":"log","message":"Test","date":"2024-01-15T12:00:00+00:00","unknown_property":"should_be_ignored","another_unknown":123,"tags":[],"count":1,"data":{},"is_first_occurrence":false,"is_fixed":false,"is_hidden":false}""";
+        const string json = """{"id":"unk-1","organization_id":"org1","project_id":"proj1","type":"log","message":"Test","date":"2024-01-15T12:00:00+00:00","unknown_property":"should_be_captured","another_unknown":123,"tags":[],"count":1,"data":{},"is_first_occurrence":false,"is_fixed":false,"is_hidden":false}""";
 
         // Act
         var ev = _serializer.Deserialize<PersistentEvent>(json);
 
-        // Assert
+        // Assert — known properties are parsed correctly
         Assert.NotNull(ev);
         Assert.Equal("unk-1", ev.Id);
         Assert.Equal("log", ev.Type);
         Assert.Equal("Test", ev.Message);
+
+        // Unknown root properties are merged into Data via OnDeserialized
+        Assert.NotNull(ev.Data);
+        Assert.True(ev.Data.ContainsKey("unknown_property"));
+        Assert.Equal("should_be_captured", ev.Data["unknown_property"]);
+        Assert.True(ev.Data.ContainsKey("another_unknown"));
+        Assert.Equal(123, ev.Data["another_unknown"]);
     }
 
     [Fact]
