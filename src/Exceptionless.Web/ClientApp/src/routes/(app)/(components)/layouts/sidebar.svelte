@@ -193,7 +193,10 @@
                                         </Sidebar.MenuSubItem>
                                         {#if subItem.title === 'Projects' && projectSettingsRoutes.length > 0}
                                             <Sidebar.MenuSubItem>
-                                                <div class="text-muted-foreground truncate px-2 py-1 pl-10 text-xs font-medium" title={currentProjectName}>
+                                                <div
+                                                    class="text-muted-foreground relative truncate px-2 py-1 pl-12 text-xs font-medium before:bg-border before:absolute before:top-0 before:bottom-0 before:left-7 before:w-px"
+                                                    title={currentProjectName}
+                                                >
                                                     {currentProjectName}
                                                 </div>
                                             </Sidebar.MenuSubItem>
@@ -206,7 +209,7 @@
                                                                 href={projectSubItem.href}
                                                                 title={projectSubItem.title}
                                                                 onclick={onMenuClick}
-                                                                class="pl-10"
+                                                                class="relative pl-12 before:bg-border before:absolute before:top-0 before:bottom-0 before:left-7 before:w-px"
                                                                 {...props}
                                                             >
                                                                 {#if projectSubItem.icon}
