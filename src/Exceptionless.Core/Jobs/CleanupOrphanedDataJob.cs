@@ -154,6 +154,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                 continue;
             }
 
+            totalOrphanedEventCount += missingProjectIds.Length;
             _logger.LogInformation("{BatchNumber}/{BatchCount}: Found {OrphanedEventCount} orphaned events from missing projects {MissingProjectIds} out of {ProjectIdCount}", batchNumber, buckets, missingProjectIds.Length, missingProjectIds, projectIds.Length);
             await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r.Query(q => q.Terms(t => t.Field(f => f.ProjectId).Terms(new TermsQueryField(missingProjectIds.Select(id => (FieldValue)id).ToList())))));
         }
@@ -203,6 +204,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                 continue;
             }
 
+            totalOrphanedEventCount += missingOrganizationIds.Length;
             _logger.LogInformation("{BatchNumber}/{BatchCount}: Found {OrphanedEventCount} orphaned events from missing organizations {MissingOrganizationIds} out of {OrganizationIdCount}", batchNumber, buckets, missingOrganizationIds.Length, missingOrganizationIds, organizationIds.Length);
             await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r.Query(q => q.Terms(t => t.Field(f => f.OrganizationId).Terms(new TermsQueryField(missingOrganizationIds.Select(id => (FieldValue)id).ToList())))));
         }
