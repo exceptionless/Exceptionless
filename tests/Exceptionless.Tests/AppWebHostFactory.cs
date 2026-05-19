@@ -23,7 +23,7 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
             instanceId = Interlocked.Increment(ref s_counter);
 
         InstanceId = instanceId;
-        AppScope = instanceId == 0 ? "test" : $"test-{instanceId}";
+        AppScope = $"xtest{instanceId}";
     }
 
     public string AppScope { get; }
