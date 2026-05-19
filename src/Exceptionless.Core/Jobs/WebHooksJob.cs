@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
@@ -36,6 +37,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
     private readonly ICacheClient _cacheClient;
     private readonly ITextSerializer _serializer;
     private readonly JsonSerializerOptions _jsonOptions;
+    private readonly JsonSerializerOptions _webhookJsonOptions;
     private readonly AppOptions _appOptions;
 
     private HttpClient? _client;
@@ -55,6 +57,16 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
         _serializer = serializer;
         _jsonOptions = jsonOptions;
         _appOptions = appOptions;
+
+        // Webhook payloads must include null properties and empty collections to maintain
+        // backwards compatibility with external consumers. The global options use WhenWritingNull
+        // and EmptyCollectionModifier which would omit fields that previously existed
+        // (e.g., DateFixed, ErrorStackDescription, Tags: []).
+        _webhookJsonOptions = new JsonSerializerOptions(jsonOptions)
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.Never,
+            TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver()
+        };
     }
 
     protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<WebHookNotification> context)
@@ -93,7 +105,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
                 {
                     using (var postCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken, timeoutCancellationTokenSource.Token))
                     {
-                        response = await Client.PostAsJsonAsync(body.Url, body.Data, _jsonOptions, postCancellationTokenSource.Token);
+                        response = await Client.PostAsJsonAsync(body.Url, body.Data, _webhookJsonOptions, postCancellationTokenSource.Token);
                         if (!response.IsSuccessStatusCode)
                             successful = false;
                         else if (consecutiveErrors > 0)

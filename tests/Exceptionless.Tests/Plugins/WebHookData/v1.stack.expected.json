@@ -3,9 +3,13 @@
   "Status": "open",
   "Url": "http://localhost:7110/stack/1ecd0826e447a44e78877ab1",
   "Title": "A potentially dangerous Request.Path value was detected from the client (&).",
+  "Description": null,
   "Tags": [
     "Test"
   ],
+  "RequestPath": null,
+  "Type": null,
+  "TargetMethod": null,
   "ProjectId": "537650f3b77efe23a47914f4",
   "ProjectName": "Disintegrating Pistol",
   "OrganizationId": "537650f3b77efe23a47914f3",
@@ -13,6 +17,8 @@
   "TotalOccurrences": 0,
   "FirstOccurrence": "2014-01-17T20:37:02.739Z",
   "LastOccurrence": "2014-01-17T20:37:02.739Z",
+  "DateFixed": null,
+  "FixedInVersion": null,
   "IsRegression": false,
   "IsCritical": false
 }

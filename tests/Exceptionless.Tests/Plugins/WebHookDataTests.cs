@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
@@ -12,7 +14,7 @@ namespace Exceptionless.Tests.Plugins;
 public sealed class WebHookDataTests : TestWithServices
 {
     private readonly ITextSerializer _serializer;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly JsonSerializerOptions _webhookJsonOptions;
     private readonly OrganizationData _organizationData;
     private readonly ProjectData _projectData;
     private readonly StackData _stackData;
@@ -22,12 +24,19 @@ public sealed class WebHookDataTests : TestWithServices
     public WebHookDataTests(ITestOutputHelper output) : base(output)
     {
         _serializer = GetService<ITextSerializer>();
-        _jsonOptions = GetService<JsonSerializerOptions>();
+        var jsonOptions = GetService<JsonSerializerOptions>();
         _organizationData = GetService<OrganizationData>();
         _projectData = GetService<ProjectData>();
         _stackData = GetService<StackData>();
         _webHookData = GetService<WebHookDataPluginManager>();
         _formatter = GetService<FormattingPluginManager>();
+
+        // Use the same webhook-specific options as WebHooksJob: preserve nulls and empty collections
+        _webhookJsonOptions = new JsonSerializerOptions(jsonOptions)
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.Never,
+            TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+        };
     }
 
     [Theory]
@@ -39,7 +48,7 @@ public sealed class WebHookDataTests : TestWithServices
         {
             string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"{version}.event.expected.json"));
             string expectedContent = await File.ReadAllTextAsync(filePath, TestCancellationToken);
-            JsonAssert.AssertJsonEquals(expectedContent, JsonSerializer.Serialize(data, _jsonOptions));
+            JsonAssert.AssertJsonEquals(expectedContent, JsonSerializer.Serialize(data, _webhookJsonOptions));
         }
         else
         {
@@ -56,7 +65,7 @@ public sealed class WebHookDataTests : TestWithServices
         {
             string filePath = Path.GetFullPath(Path.Combine("..", "..", "..", "Plugins", "WebHookData", $"{version}.stack.expected.json"));
             string expectedContent = await File.ReadAllTextAsync(filePath, TestCancellationToken);
-            JsonAssert.AssertJsonEquals(expectedContent, JsonSerializer.Serialize(data, _jsonOptions));
+            JsonAssert.AssertJsonEquals(expectedContent, JsonSerializer.Serialize(data, _webhookJsonOptions));
         }
         else
         {
