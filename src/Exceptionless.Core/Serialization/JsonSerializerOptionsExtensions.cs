@@ -29,8 +29,11 @@ public static class JsonSerializerOptionsExtensions
         options.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
         options.PropertyNameCaseInsensitive = true;
 
-        // XSS-safe encoder: escapes <, >, &, ' to prevent script injection when JSON is
-        // embedded in HTML pages or delivered via WebSocket messages.
+        // Allow non-ASCII Unicode (Chinese, Japanese, emoji, etc.) to pass through
+        // unescaped for readability. Unlike the default encoder, this does NOT escape
+        // '<', '>', '&' — that is intentional: those characters are safe in JSON responses
+        // delivered with Content-Type: application/json, and over-escaping them breaks
+        // user-visible strings. The JSON Content-Type header is the XSS boundary, not the encoder.
         options.Encoder = JavaScriptEncoder.Create(new TextEncoderSettings(UnicodeRanges.All));
 
         options.Converters.Add(new ObjectToInferredTypesConverter());
