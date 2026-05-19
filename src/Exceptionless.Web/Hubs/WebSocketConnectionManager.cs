@@ -129,7 +129,8 @@ public class WebSocketConnectionManager : IDisposable
 
             try
             {
-                await socket.SendAsync(buffer: new ArraySegment<byte>(Encoding.ASCII.GetBytes(serializedMessage), 0, serializedMessage.Length),
+                var bytes = Encoding.UTF8.GetBytes(serializedMessage);
+                await socket.SendAsync(buffer: new ArraySegment<byte>(bytes, 0, bytes.Length),
                     messageType: WebSocketMessageType.Text,
                     endOfMessage: true,
                     cancellationToken: CancellationToken.None);
