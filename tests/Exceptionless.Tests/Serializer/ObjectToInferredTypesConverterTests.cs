@@ -236,9 +236,10 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
     }
 
     [Fact]
-    public void Read_DateOnly_ReturnsDateTimeOffset()
+    public void Read_DateOnly_ReturnsString()
     {
-        // Arrange
+        // Arrange - date-only strings without time component are preserved as strings
+        // to match legacy Newtonsoft behavior (DateParseHandling.None for Data dictionary)
         /* language=json */
         const string json = """{"date": "2024-01-15"}""";
 
@@ -247,7 +248,8 @@ public class ObjectToInferredTypesConverterTests : TestWithServices
 
         // Assert
         Assert.NotNull(result);
-        Assert.IsType<DateTimeOffset>(result["date"]);
+        Assert.IsType<string>(result["date"]);
+        Assert.Equal("2024-01-15", result["date"]);
     }
 
     [Fact]

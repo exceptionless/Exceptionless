@@ -76,10 +76,8 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     {
         ArgumentNullException.ThrowIfNull(name);
 
-        if (!_propertiesThatExist.ContainsKey(name))
+        if (!_propertiesThatExist.TryGetValue(name, out var cacheHit))
             return false;
-
-        var cacheHit = _propertiesThatExist[name];
 
         if (value is null && !IsNullable(cacheHit.MemberType))
             return false;

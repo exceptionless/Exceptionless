@@ -12,6 +12,7 @@ artifacts
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
 coverage/
+audit-output/
 src/Exceptionless.Web/ClientApp/test-results/
 
 # IDE / editor

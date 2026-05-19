@@ -155,18 +155,50 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
             await RefreshDataAsync();
             if (!_factory.IndexesHaveBeenConfigured)
             {
-                await _configuration.DeleteIndexesAsync();
-                await _configuration.ConfigureIndexesAsync();
+                // Retry loop: in-flight background writes from a concurrent or previous test host can
+                // auto-create an unversioned daily-shard index (e.g. xtest5-events-2026.05.04) BETWEEN
+                // the wildcard delete and ConfigureIndexesAsync.  When that happens ES rejects the
+                // versioned index creation with invalid_alias_name_exception.  Re-deleting and retrying
+                // clears the race-created index and succeeds on the next attempt.
+                const int maxAttempts = 3;
+                for (int attempt = 1; attempt <= maxAttempts; attempt++)
+                {
+                    // Aggressively delete ALL indices for this AppScope (including old naming formats)
+                    // to prevent orphaned indices from prior branches/versions causing alias conflicts.
+                    // E.g., unversioned `xtest5-events-2026.05.17` blocks versioned `xtest5-events-v1-2026.05.17`.
+                    await _configuration.Client.Indices.DeleteAsync($"{_factory.AppScope}-*");
+
+                    await _configuration.DeleteIndexesAsync();
+                    try
+                    {
+                        // Pass indexes explicitly to bypass the startup cache marker; without this,
+                        // ConfigureIndexesAsync() hits the "configure-indexes" cache entry set by RunAsync()
+                        // and returns a no-op, leaving all indices deleted but never recreated.
+                        await _configuration.ConfigureIndexesAsync(_configuration.Indexes, beginReindexingOutdated: false);
+                        break; // success — exit the retry loop
+                    }
+                    catch (Exception ex) when (attempt < maxAttempts && ex.ToString().Contains("invalid_alias_name_exception", StringComparison.Ordinal))
+                    {
+                        _logger.LogWarning(ex, "Alias name conflict during index configuration for {AppScope} (attempt {Attempt}/{Max}), retrying after delete...", _factory.AppScope, attempt, maxAttempts);
+                        await Task.Delay(TimeSpan.FromMilliseconds(200 * attempt));
+                    }
+                }
                 _factory.IndexesHaveBeenConfigured = true;
             }
             else
             {
-                string indexes = String.Join(',', _configuration.Indexes.Select(i => i.Name));
-                await _configuration.Client.DeleteByQueryAsync(new DeleteByQueryRequest(indexes)
+                // Use a wildcard pattern to match all indexes in this scope. The new ES client does NOT
+                // split comma-separated strings into multiple index names (unlike the old NEST library),
+                // so the previous approach of joining with commas targeted a single non-existent index
+                // and deleted nothing with IgnoreUnavailable=true.
+                await _configuration.Client.DeleteByQueryAsync(new DeleteByQueryRequest($"{_factory.AppScope}-*")
                 {
                     Query = new MatchAllQuery(),
                     IgnoreUnavailable = true,
-                    Refresh = true
+                    Refresh = true,
+                    // Proceed past version conflicts so a concurrent in-flight write does not abort
+                    // the delete mid-way and leave stale documents that cause op_type=create failures.
+                    Conflicts = Conflicts.Proceed
                 });
             }
 

@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -37,15 +38,26 @@ public class DeltaJsonConverter<TEntityType> : JsonConverter<Delta<TEntityType>>
 
     public DeltaJsonConverter(JsonSerializerOptions options)
     {
-        // Create a copy without the converter to avoid infinite recursion
+        // Create a copy without the factory to avoid infinite recursion if a Delta<T> property
+        // ever appears inside another Delta<T> model.
         _options = new JsonSerializerOptions(options);
+        for (int i = _options.Converters.Count - 1; i >= 0; i--)
+        {
+            if (_options.Converters[i] is DeltaJsonConverterFactory)
+            {
+                _options.Converters.RemoveAt(i);
+                break;
+            }
+        }
 
         // Build a mapping from JSON property names (snake_case) to C# property names (PascalCase)
         _jsonNameToPropertyName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var entityType = typeof(TEntityType);
         foreach (var prop in entityType.GetProperties())
         {
-            var jsonName = options.PropertyNamingPolicy?.ConvertName(prop.Name) ?? prop.Name;
+            // [JsonPropertyName] takes precedence over the naming policy
+            var jsonPropertyNameAttr = prop.GetCustomAttribute<JsonPropertyNameAttribute>();
+            var jsonName = jsonPropertyNameAttr?.Name ?? options.PropertyNamingPolicy?.ConvertName(prop.Name) ?? prop.Name;
             _jsonNameToPropertyName[jsonName] = prop.Name;
         }
     }

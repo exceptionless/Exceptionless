@@ -2,8 +2,10 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
@@ -37,7 +39,8 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
     private readonly ICacheClient _cacheClient;
     private readonly ITextSerializer _serializer;
     private readonly JsonSerializerOptions _jsonOptions;
-    private readonly JsonSerializerOptions _webhookJsonOptions;
+    private readonly JsonSerializerOptions _webhookV1JsonOptions;
+    private readonly JsonSerializerOptions _webhookV2JsonOptions;
     private readonly AppOptions _appOptions;
 
     private HttpClient? _client;
@@ -58,15 +61,17 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
         _jsonOptions = jsonOptions;
         _appOptions = appOptions;
 
-        // Webhook payloads must include null properties and empty collections to maintain
-        // backwards compatibility with external consumers. The global options use WhenWritingNull
-        // and EmptyCollectionModifier which would omit fields that previously existed
-        // (e.g., DateFixed, ErrorStackDescription, Tags: []).
-        _webhookJsonOptions = new JsonSerializerOptions(jsonOptions)
+        // V1 webhook: PascalCase names (via [JsonPropertyName] on model), include nulls and
+        // empty collections. Mirrors old DynamicTypeContractResolver.UseDefaultResolverFor(V1 types).
+        _webhookV1JsonOptions = new JsonSerializerOptions(jsonOptions)
         {
             DefaultIgnoreCondition = JsonIgnoreCondition.Never,
-            TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver()
+            TypeInfoResolver = new DefaultJsonTypeInfoResolver()
         };
+
+        // V2+ webhook: snake_case naming (from jsonOptions), omit nulls and empty collections.
+        // Mirrors old LowerCaseUnderscorePropertyNamesContractResolver behavior.
+        _webhookV2JsonOptions = new JsonSerializerOptions(jsonOptions);
     }
 
     protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<WebHookNotification> context)
@@ -105,7 +110,10 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
                 {
                     using (var postCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken, timeoutCancellationTokenSource.Token))
                     {
-                        response = await Client.PostAsJsonAsync(body.Url, body.Data, _webhookJsonOptions, postCancellationTokenSource.Token);
+                        var options = body.Data is VersionOnePlugin.VersionOneWebHookEvent or VersionOnePlugin.VersionOneWebHookStack
+                            ? _webhookV1JsonOptions
+                            : _webhookV2JsonOptions;
+                        response = await Client.PostAsJsonAsync(body.Url, body.Data, options, postCancellationTokenSource.Token);
                         if (!response.IsSuccessStatusCode)
                             successful = false;
                         else if (consecutiveErrors > 0)

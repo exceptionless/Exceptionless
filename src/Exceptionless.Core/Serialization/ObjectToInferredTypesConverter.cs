@@ -165,14 +165,30 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
     /// <summary>
     /// Reads a JSON string, attempting to parse as <see cref="DateTimeOffset"/> for ISO 8601 dates.
     /// </summary>
+    /// <remarks>
+    /// Only parses strings that contain the ISO 8601 time separator 'T'.
+    /// Date-only strings like "2026-01-15" are preserved as strings to match the legacy
+    /// Newtonsoft behavior (which used DateParseHandling.None for the Data dictionary).
+    /// </remarks>
     private static object? ReadString(ref Utf8JsonReader reader)
     {
-        // Attempt DateTimeOffset parsing for ISO 8601 formatted strings
-        if (reader.TryGetDateTimeOffset(out DateTimeOffset dateTimeOffset))
-            return dateTimeOffset;
+        // Check raw text for a time separator before attempting date parsing.
+        // Date-only strings ("2026-01-15") should stay as strings — they may not represent
+        // dates in user data. Only parse strings that have an explicit time component.
+        ReadOnlySpan<byte> rawValue = reader.HasValueSequence
+            ? reader.ValueSequence.ToArray()
+            : reader.ValueSpan;
 
-        if (reader.TryGetDateTime(out var dt))
-            return dt;
+        bool hasTimeSeparator = rawValue.Contains((byte)'T');
+
+        if (hasTimeSeparator)
+        {
+            if (reader.TryGetDateTimeOffset(out DateTimeOffset dateTimeOffset))
+                return dateTimeOffset;
+
+            if (reader.TryGetDateTime(out var dt))
+                return dt;
+        }
 
         return reader.GetString();
     }
@@ -301,14 +317,21 @@ public sealed class ObjectToInferredTypesConverter : JsonConverter<object?>
 
     /// <summary>
     /// Converts a JsonElement string, attempting DateTimeOffset parsing for ISO 8601 dates.
+    /// Only parses strings with a time separator ('T') — date-only strings stay as strings.
     /// </summary>
     internal static object? ConvertJsonElementString(JsonElement element)
     {
-        if (element.TryGetDateTimeOffset(out DateTimeOffset dateTimeOffset))
-            return dateTimeOffset;
+        string? raw = element.GetRawText();
+        // Only parse as date if the raw value contains a 'T' time separator.
+        // Date-only strings like "2026-01-15" are preserved as-is.
+        if (raw is not null && raw.Contains('T'))
+        {
+            if (element.TryGetDateTimeOffset(out DateTimeOffset dateTimeOffset))
+                return dateTimeOffset;
 
-        if (element.TryGetDateTime(out DateTime dt))
-            return dt;
+            if (element.TryGetDateTime(out DateTime dt))
+                return dt;
+        }
 
         return element.GetString();
     }

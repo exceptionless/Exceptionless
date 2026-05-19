@@ -14,6 +14,7 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 {
     private static int s_counter = -1;
     private static readonly ConcurrentQueue<int> s_pool = new();
+    private static readonly ConcurrentDictionary<int, bool> s_configuredScopes = new();
     private static readonly Lazy<Task<DistributedApplication>> s_sharedApplication = new(StartSharedApplicationAsync, LazyThreadSafetyMode.ExecutionAndPublication);
     private bool _sliceReleased;
 
@@ -28,7 +29,23 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 
     public string AppScope { get; }
     public int InstanceId { get; }
-    public bool IndexesHaveBeenConfigured { get; set; }
+
+    /// <summary>
+    /// Returns true if this scope's ES indices have already been configured in this test process.
+    /// Tracked statically so that reusing the same scope ID across test classes does not re-run
+    /// ConfigureIndexesAsync (which is expensive) — only the first use per scope needs it.
+    /// </summary>
+    public bool IndexesHaveBeenConfigured
+    {
+        get => s_configuredScopes.ContainsKey(InstanceId);
+        set
+        {
+            if (value)
+                s_configuredScopes[InstanceId] = true;
+            else
+                s_configuredScopes.TryRemove(InstanceId, out _);
+        }
+    }
 
     public async ValueTask InitializeAsync()
     {
@@ -103,14 +120,31 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
         return Web.Program.CreateHostBuilder(config, Environments.Development);
     }
 
-    public override ValueTask DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
-        if (!_sliceReleased)
+        // Shut down the host completely before returning the scope ID to the pool.
+        // If the ID is returned first, a new factory can pick it up and start deleting/recreating
+        // xtest{N}-* indices while this host's in-flight background handlers (e.g. message bus
+        // subscribers that write to the same scope) are still running.  That causes ES to
+        // auto-create the unversioned physical index xtest{N}-organizations after the versioned
+        // index was deleted, which then blocks alias creation with invalid_alias_name_exception.
+        try
         {
-            s_pool.Enqueue(InstanceId);
-            _sliceReleased = true;
+            await base.DisposeAsync();
+            // Brief drain period: even after the host stops, in-flight Elasticsearch writes
+            // from background queue processors may not have fully completed.  Waiting here
+            // reduces (but cannot fully eliminate) the window for the unversioned-index race.
+            // IntegrationTestsBase.ResetDataAsync retries on invalid_alias_name_exception
+            // as a second line of defence.
+            await Task.Delay(TimeSpan.FromMilliseconds(250));
         }
-
-        return base.DisposeAsync();
+        finally
+        {
+            if (!_sliceReleased)
+            {
+                s_pool.Enqueue(InstanceId);
+                _sliceReleased = true;
+            }
+        }
     }
 }

@@ -92,6 +92,20 @@ public class Event : IData, IJsonOnDeserialized
         if (ExtensionData is null or { Count: 0 })
             return;
 
+        // STJ with SnakeCaseLower policy only matches case-insensitively against the
+        // policy-transformed name "reference_id". PascalCase "ReferenceId" and camelCase
+        // "referenceId" are entirely different strings (not just different casing) so they
+        // go to ExtensionData. Required for older .NET SDK versions (< 5.x) that submit
+        // events with PascalCase/camelCase property names.
+        if (ReferenceId is null)
+        {
+            if (ExtensionData.Remove("ReferenceId", out var refIdElement) ||
+                ExtensionData.Remove("referenceId", out refIdElement))
+            {
+                ReferenceId = refIdElement.GetString();
+            }
+        }
+
         Data ??= new DataDictionary();
         foreach (var kvp in ExtensionData)
         {

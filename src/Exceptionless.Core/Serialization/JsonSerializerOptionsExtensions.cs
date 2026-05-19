@@ -30,10 +30,10 @@ public static class JsonSerializerOptionsExtensions
         options.PropertyNameCaseInsensitive = true;
 
         // Allow non-ASCII Unicode (Chinese, Japanese, emoji, etc.) to pass through
-        // unescaped for readability. Unlike the default encoder, this does NOT escape
-        // '<', '>', '&' — that is intentional: those characters are safe in JSON responses
-        // delivered with Content-Type: application/json, and over-escaping them breaks
-        // user-visible strings. The JSON Content-Type header is the XSS boundary, not the encoder.
+        // unescaped for readability. HTML-sensitive characters (<, >, &, ') are still
+        // escaped to their \uXXXX forms (e.g., & → \u0026). This is the standard
+        // JavaScriptEncoder behavior with UnicodeRanges.All — only UnsafeRelaxedJsonEscaping
+        // would skip those escapes, which we intentionally avoid.
         options.Encoder = JavaScriptEncoder.Create(new TextEncoderSettings(UnicodeRanges.All));
 
         options.Converters.Add(new ObjectToInferredTypesConverter());
