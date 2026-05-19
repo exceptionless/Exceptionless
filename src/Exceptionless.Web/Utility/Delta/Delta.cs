@@ -22,6 +22,7 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     private HashSet<string> _changedProperties = null!;
     private TEntityType _entity = null!;
     private Type _entityType = null!;
+    private JsonSerializerOptions? _jsonOptions;
 
     /// <summary>
     /// Initializes a new instance of <see cref="Delta{TEntityType}" />.
@@ -56,6 +57,11 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     }
 
     /// <summary>
+    /// Sets the JsonSerializerOptions to use when deserializing JsonElement values.
+    /// </summary>
+    internal JsonSerializerOptions? JsonOptions { set => _jsonOptions = value; }
+
+    /// <summary>
     /// Attempts to set the Property called <paramref name="name" /> to the <paramref name="value" /> specified.
     /// <remarks>
     /// Only properties that exist on <see cref="EntityType" /> can be set.
@@ -84,7 +90,9 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
             {
                 try
                 {
-                    value = JsonSerializer.Deserialize(jsonElement.GetRawText(), cacheHit.MemberType);
+                    value = _jsonOptions is not null
+                        ? JsonSerializer.Deserialize(jsonElement.GetRawText(), cacheHit.MemberType, _jsonOptions)
+                        : JsonSerializer.Deserialize(jsonElement.GetRawText(), cacheHit.MemberType);
                 }
                 catch (Exception)
                 {

@@ -63,6 +63,7 @@ public class DeltaJsonConverter<TEntityType> : JsonConverter<Delta<TEntityType>>
         }
 
         var delta = new Delta<TEntityType>();
+        delta.JsonOptions = _options;
 
         while (reader.Read())
         {
