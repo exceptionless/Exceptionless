@@ -4,7 +4,6 @@ import { apiReferenceHref, documentationHref, githubRepositoryHref, supportIssue
 import Documentation from '@lucide/svelte/icons/book-open';
 import ApiDocumentations from '@lucide/svelte/icons/braces';
 import Issues from '@lucide/svelte/icons/bug';
-import EventStream from '@lucide/svelte/icons/calendar-arrow-down';
 import Events from '@lucide/svelte/icons/calendar-days';
 import Support from '@lucide/svelte/icons/circle-help';
 import Sessions from '@lucide/svelte/icons/timer';
@@ -30,12 +29,6 @@ export function routes(): NavigationItem[] {
             href: resolve('/(app)/issues'),
             icon: Issues,
             title: 'Issues'
-        },
-        {
-            group: 'Dashboards',
-            href: resolve('/(app)/stream'),
-            icon: EventStream,
-            title: 'Event Stream'
         },
         {
             group: 'Dashboards',

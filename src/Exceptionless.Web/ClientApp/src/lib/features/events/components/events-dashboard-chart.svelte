@@ -49,7 +49,7 @@
     ];
 </script>
 
-<div class="bg-card text-card-foreground rounded-lg border shadow-sm {className}">
+<div class="bg-card text-card-foreground rounded-lg border {className}">
     {#if isLoading}
         <Skeleton class="h-16 w-full rounded" />
     {:else}

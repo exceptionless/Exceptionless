@@ -7,6 +7,7 @@
     import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import { H3 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
+    import { Input } from '$comp/ui/input';
     import { type GetOrganizationsParams, getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { getTableOptions } from '$features/organizations/components/table/options.svelte';
     import OrganizationsDataTable from '$features/organizations/components/table/organizations-data-table.svelte';
@@ -14,8 +15,27 @@
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
+    import { queryParamsState } from 'kit-query-params';
+
+    const DEFAULT_PARAMS = {
+        filter: ''
+    };
+
+    const queryParams = queryParamsState({
+        default: DEFAULT_PARAMS,
+        pushHistory: true,
+        schema: {
+            filter: 'string'
+        }
+    });
 
     const organizationsQueryParameters: GetOrganizationsParams & TableMemoryPagingParameters = $state({
+        get filter() {
+            return queryParams.filter!;
+        },
+        set filter(value) {
+            queryParams.filter = value;
+        },
         mode: 'stats'
     });
 
@@ -48,12 +68,12 @@
 <div class="flex flex-col gap-4">
     <div class="flex flex-wrap items-start justify-between gap-4">
         <div class="flex flex-col gap-1">
-            <H3>My Organizations</H3>
+            <H3>Organizations</H3>
         </div>
     </div>
     <OrganizationsDataTable isLoading={organizationsQuery.isLoading} {rowClick} {rowHref} {table}>
         {#snippet toolbarChildren()}
-            <div class="flex-1"></div>
+            <Input type="search" placeholder="Filter organizations..." class="flex-1" bind:value={organizationsQueryParameters.filter} />
             <DataTableViewOptions size="icon-lg" {table} />
             <Button size="icon-lg" onclick={addOrganization} title="Add Organization">
                 <Plus class="size-4" aria-hidden="true" />

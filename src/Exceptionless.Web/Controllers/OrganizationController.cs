@@ -83,11 +83,19 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     /// <summary>
     /// Get all
     /// </summary>
+    /// <param name="filter">A filter that controls what data is returned from the server.</param>
     /// <param name="mode">If no mode is set then a lightweight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.</param>
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyCollection<ViewOrganization>>> GetAllAsync(string? mode = null)
+    public async Task<ActionResult<IReadOnlyCollection<ViewOrganization>>> GetAllAsync(string? filter = null, string? mode = null)
     {
         var organizations = await GetModelsAsync(GetAssociatedOrganizationIds().ToArray());
+        if (organizations.Count == 0)
+            return Ok(EmptyModels);
+
+        var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
+        organizations = String.IsNullOrWhiteSpace(filter)
+            ? organizations
+            : (await _repository.GetByFilterAsync(sf, filter, null, o => o.PageLimit(1000))).Documents;
         var viewOrganizations = MapToViewModels(organizations);
         await AfterResultMapAsync(viewOrganizations);
 

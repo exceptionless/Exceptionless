@@ -230,7 +230,7 @@
 
 <div class="flex flex-col">
     <div class="mb-4 flex flex-wrap items-start gap-2">
-        <Muted class="w-full shrink-0">Manage project issues, including restoring ignored or discarded issues.</Muted>
+        <Muted class="w-full shrink-0">Manage project issues, including restoring ignored or discarded issues</Muted>
         <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <StackFacetedFilterBuilder includeProject={false} />

@@ -1630,6 +1630,7 @@ public class EventControllerTests : IntegrationTestsBase
         await SendRequestAsync(r => r
             .Post()
             .AsTestOrganizationClientUser()
+            .UserAgent("fluentrest/1.0.0")
             .AppendPath("events")
             .Content(eventJson, "application/json")
             .StatusCodeShouldBeAccepted()

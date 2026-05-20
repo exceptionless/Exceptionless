@@ -113,6 +113,7 @@ export interface GetOrganizationRequest {
 export type GetOrganizationsMode = 'stats' | null;
 
 export interface GetOrganizationsParams {
+    filter?: string;
     mode: GetOrganizationsMode;
 }
 
@@ -363,7 +364,7 @@ export function getOrganizationsQuery(request: GetOrganizationsRequest) {
 
             return response;
         },
-        queryKey: [...queryKeys.list(request.params?.mode ?? undefined), { params: request.params }]
+        queryKey: [...queryKeys.list(request.params?.mode ?? undefined), { params: { ...request.params } }]
     }));
 }
 

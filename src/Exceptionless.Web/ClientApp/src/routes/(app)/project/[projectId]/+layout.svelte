@@ -37,20 +37,11 @@
     $effect(() => {
         if (projectQuery.isError) {
             toast.error(`The project "${projectId}" could not be found.`);
-            if (organization.current) {
-                goto(resolve('/(app)/organization/[organizationId]/projects', { organizationId: organization.current }));
-            } else {
-                goto(resolve('/(app)/organization/list'));
-            }
+            goto(resolve('/(app)/project/list'));
         }
 
         if (projectQuery.isSuccess && projectQuery.data.organization_id !== organization.current) {
-            toast.error(`The project "${projectQuery.data.name}" does not belong to the current organization.`);
-            if (organization.current) {
-                goto(resolve('/(app)/organization/[organizationId]/projects', { organizationId: organization.current }));
-            } else {
-                goto(resolve('/(app)/organization/list'));
-            }
+            organization.current = projectQuery.data.organization_id;
         }
     });
 </script>

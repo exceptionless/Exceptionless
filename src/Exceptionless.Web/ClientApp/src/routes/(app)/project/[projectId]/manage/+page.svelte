@@ -5,14 +5,12 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
-    import { H3, Muted } from '$comp/typography';
+    import { Muted } from '$comp/typography';
     import { Button, buttonVariants } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
-    import { Separator } from '$comp/ui/separator';
     import { Spinner } from '$comp/ui/spinner';
-    import { organization } from '$features/organizations/context.svelte';
     import { deleteProject, getProjectQuery, resetData, updateProject } from '$features/projects/api.svelte';
     import RemoveProjectDialog from '$features/projects/components/dialogs/remove-project-dialog.svelte';
     import ResetProjectDataDialog from '$features/projects/components/dialogs/reset-project-data-dialog.svelte';
@@ -60,11 +58,7 @@
         toast.dismiss(toastId);
         toastId = toast.success('Successfully queued the project for deletion.');
 
-        if (organization.current) {
-            await goto(resolve('/(app)/organization/[organizationId]/projects', { organizationId: organization.current }));
-        } else {
-            goto(resolve('/(app)/organization/list'));
-        }
+        await goto(resolve('/(app)/project/list'));
     }
 
     let showResetDialog = $state(false);
@@ -113,11 +107,7 @@
 </script>
 
 <div class="space-y-6">
-    <div>
-        <H3>General</H3>
-        <Muted>Manage your project name.</Muted>
-    </div>
-    <Separator />
+    <Muted>General project settings</Muted>
 
     <form
         onsubmit={(e) => {

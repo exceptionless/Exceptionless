@@ -22,7 +22,7 @@ export const defaultColumnVisibility: ColumnVisibilityState = {
     fixed_in_version: false,
     last: true,
     select: true,
-    status: false,
+    status: true,
     tags: false,
     title: true,
     type: true

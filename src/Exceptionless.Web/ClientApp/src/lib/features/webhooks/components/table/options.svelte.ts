@@ -34,10 +34,10 @@ export function getColumns<TWebhook extends Webhook>(): ColumnDef<StockFeatures,
             cell: (info) => renderComponent(WebhookActionsCell, { webhook: info.row.original }),
             enableHiding: false,
             enableSorting: false,
-            header: 'Actions',
+            header: '',
             id: 'actions',
             meta: {
-                class: 'w-16'
+                class: 'w-12 min-w-12 max-w-12 text-right'
             }
         }
     ];

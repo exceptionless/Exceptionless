@@ -164,6 +164,15 @@
     }
 }
 
+@utility no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
 @keyframes accordion-down {
     from {
         height: 0;

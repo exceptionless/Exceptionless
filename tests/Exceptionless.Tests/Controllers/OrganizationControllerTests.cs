@@ -122,6 +122,39 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetAllAsync_WithFilter_ReturnsMatchingViewOrganizations()
+    {
+        // Act
+        var viewOrgs = await SendRequestAsAsync<List<ViewOrganization>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("organizations")
+            .QueryString("filter", "Acme")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(viewOrgs);
+        var viewOrg = Assert.Single(viewOrgs);
+        Assert.Equal("Acme", viewOrg.Name);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithFilter_ReturnsOnlyAssociatedOrganizations()
+    {
+        // Act
+        var viewOrgs = await SendRequestAsAsync<List<ViewOrganization>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("organizations")
+            .QueryString("filter", "Free")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(viewOrgs);
+        Assert.Empty(viewOrgs);
+    }
+
+    [Fact]
     public async Task PostAsync_NewOrganization_AssignsDefaultPlan()
     {
         // Arrange

@@ -12,6 +12,7 @@
 		title = "Command Palette",
 		description = "Search for a command to run...",
 		showCloseButton = false,
+		preventScroll = false,
 		portalProps,
 		children,
 		class: className,
@@ -23,6 +24,7 @@
 			title?: string;
 			description?: string;
 			showCloseButton?: boolean;
+			preventScroll?: DialogPrimitive.ContentProps["preventScroll"];
 			class?: string;
 		} = $props();
 </script>
@@ -33,7 +35,9 @@
 		<Dialog.Description>{description}</Dialog.Description>
 	</Dialog.Header>
 	<Dialog.Content
-		class={cn("rounded-xl! top-1/3 translate-y-0 overflow-hidden p-0", className)}
+		class={cn("top-1.5 translate-y-0 overflow-hidden p-0 shadow-2xl sm:max-w-5xl", className)}
+		overlayClass="bg-black/15 supports-backdrop-filter:backdrop-blur-none"
+		{preventScroll}
 		{showCloseButton}
 		{portalProps}
 	>

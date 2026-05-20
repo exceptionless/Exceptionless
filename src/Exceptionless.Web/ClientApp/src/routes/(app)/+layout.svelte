@@ -49,6 +49,7 @@
     let requiresPremium = $derived(premiumPage.requiresPremium || filterUsesPremiumFeatures(page.url.searchParams.get('filter')));
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
+    let commandResetKey = $state(0);
 
     // Auto-reset premium page state on navigation so pages don't need cleanup
     beforeNavigate(() => {
@@ -56,6 +57,7 @@
     });
 
     function openCommandPalette(): void {
+        commandResetKey += 1;
         isCommandOpen = true;
     }
 
@@ -157,9 +159,13 @@
         const currentToken = accessToken.current;
 
         function handleKeydown(e: KeyboardEvent) {
-            if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+            if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || isEditableElement(e.target)) {
+                return;
+            }
+
+            if (e.key === '/') {
                 e.preventDefault();
-                isCommandOpen = !isCommandOpen;
+                openCommandPalette();
             }
         }
 
@@ -188,6 +194,14 @@
             ws?.close();
         };
     });
+
+    function isEditableElement(target: EventTarget | null): boolean {
+        if (!(target instanceof HTMLElement)) {
+            return false;
+        }
+
+        return target.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName);
+    }
 
     const meQuery = getMeQuery();
     const gravatar = getGravatarFromCurrentUser(meQuery);
@@ -403,22 +417,13 @@
         {/snippet}
 
         {#snippet footer()}
-            <SidebarUser
-                {isChatEnabled}
-                isLoading={meQuery.isLoading}
-                user={meQuery.data}
-                {gravatar}
-                isImpersonating={!!impersonatedOrganization}
-                {organizations}
-                {openChat}
-                {intercomUnreadCount}
-            />
+            <SidebarUser {isChatEnabled} isLoading={meQuery.isLoading} user={meQuery.data} {gravatar} {organizations} {openChat} {intercomUnreadCount} />
         {/snippet}
     </Sidebar>
     <div class="flex min-h-screen min-w-0 flex-1 pt-16">
         <div class="text-secondary-foreground flex min-h-full min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
             <main class="flex-1 px-4 pt-4">
-                <NavigationCommand bind:open={isCommandOpen} routes={filteredRoutes} />
+                <NavigationCommand bind:open={isCommandOpen} resetKey={commandResetKey} routes={filteredRoutes} />
 
                 {#if showOrganizationNotifications.current}
                     <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} premiumFeatureName={premiumPage.current} class="mb-4" />

@@ -34,10 +34,9 @@
                 </A>
             </div>
             <div class="flex items-center gap-x-2 lg:gap-x-3">
-                <Button onclick={openCommand} size="default" variant="outline">
+                <Button class="w-44 justify-start sm:w-56 md:w-72" onclick={openCommand} size="default" variant="outline">
                     <Search />
-                    Search
-                    <Kbd.Root class="ml-12">⌘K</Kbd.Root>
+                    <span class="text-muted-foreground flex items-center gap-1.5">Type <Kbd.Root>/</Kbd.Root> to search</span>
                 </Button>
 
                 <DarkModeButton></DarkModeButton>

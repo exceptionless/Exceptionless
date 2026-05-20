@@ -1,4 +1,4 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.3.3">
+<Project Sdk="Aspire.AppHost.Sdk/13.3.4">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
@@ -8,10 +8,10 @@
     <NoWarn>$(NoWarn);ASPIRECERTIFICATES001</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.3.3" />
-    <PackageReference Include="Aspire.Hosting.Browsers" Version="13.3.3-preview.1.26264.13" />
-    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.3.3" />
-    <PackageReference Include="Aspire.Hosting.Redis" Version="13.3.3" />
+    <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.3.4" />
+    <PackageReference Include="Aspire.Hosting.Browsers" Version="13.3.4-preview.1.26268.8" />
+    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.3.4" />
+    <PackageReference Include="Aspire.Hosting.Redis" Version="13.3.4" />
     <PackageReference Include="AspNetCore.HealthChecks.Elasticsearch" Version="9.0.0" />
   </ItemGroup>
 

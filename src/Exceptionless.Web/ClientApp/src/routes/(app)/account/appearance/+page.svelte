@@ -1,8 +1,7 @@
 <script lang="ts">
-    import { H3, Muted } from '$comp/typography';
+    import { Muted } from '$comp/typography';
     import { Label } from '$comp/ui/label';
     import * as RadioGroup from '$comp/ui/radio-group';
-    import { Separator } from '$comp/ui/separator';
     import { setMode, userPrefersMode } from 'mode-watcher';
 
     import ThemePreview from './(components)/theme-preview.svelte';
@@ -14,10 +13,8 @@
 
 <div class="space-y-6">
     <div>
-        <H3>Appearance</H3>
-        <Muted>Customize the appearance of the app. Automatically switch between day and night themes.</Muted>
+        <Muted>Customize the appearance of the app. Automatically switch between day and night themes</Muted>
     </div>
-    <Separator />
 
     <form>
         <RadioGroup.Root

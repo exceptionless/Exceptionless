@@ -48,19 +48,20 @@
             return;
         }
 
+        const target = event.target as HTMLElement | null;
+        const interactiveTarget = target?.closest('button, input, select, textarea, [role="button"], [role="menuitem"], [data-row-click-ignore]');
+        if (interactiveTarget) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
+
         if (!rowClick) {
             return;
         }
 
         // If we have an href and modifier keys are pressed, let the browser handle it
         if (rowHref && (event.ctrlKey || event.metaKey || event.shiftKey)) {
-            return;
-        }
-
-        const target = event.target as HTMLElement | null;
-
-        // Don't intercept clicks on interactive elements (links, buttons)
-        if (target?.closest('a, button')) {
             return;
         }
 

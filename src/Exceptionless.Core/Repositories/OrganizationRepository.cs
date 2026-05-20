@@ -3,6 +3,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
@@ -45,6 +46,16 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         var filter = Query<Organization>.Term(f => f.Field(o => o.StripeCustomerId).Value(customerId));
         var hit = await FindOneAsync(q => q.ElasticFilter(filter));
         return hit?.Document;
+    }
+
+    public Task<FindResults<Organization>> GetByFilterAsync(AppFilter systemFilter, string? userFilter, string? sort, CommandOptionsDescriptor<Organization>? options = null)
+    {
+        IRepositoryQuery<Organization> query = new RepositoryQuery<Organization>()
+            .AppFilter(systemFilter)
+            .FilterExpression(userFilter);
+
+        query = !String.IsNullOrEmpty(sort) ? query.SortExpression(sort) : query.SortAscending(o => o.Name.Suffix("keyword"));
+        return FindAsync(q => query, options);
     }
 
     public Task<FindResults<Organization>> GetByCriteriaAsync(string? criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null)

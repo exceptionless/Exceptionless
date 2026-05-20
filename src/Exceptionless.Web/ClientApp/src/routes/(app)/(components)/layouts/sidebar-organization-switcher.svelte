@@ -103,7 +103,7 @@
                 >
                     <DropdownMenu.Label class="text-muted-foreground text-xs">Organizations</DropdownMenu.Label>
                     {#if organizations.length > 0}
-                        {#each organizations as organization, index (organization.name)}
+                        {#each organizations as organization (organization.name)}
                             <DropdownMenu.Item
                                 onSelect={() => onOrganizationSelected(organization)}
                                 data-active={organization.id === currentOrganizationId && !isImpersonating}
@@ -113,7 +113,6 @@
                                     <Avatar.Fallback class="rounded-lg">{getInitials(organization.name)}</Avatar.Fallback>
                                 </Avatar.Root>
                                 {organization.name}
-                                <DropdownMenu.Shortcut>⌘{index + 1}</DropdownMenu.Shortcut>
                             </DropdownMenu.Item>
                         {/each}
                     {:else}
@@ -135,8 +134,7 @@
                                 <div class="bg-background flex size-6 items-center justify-center rounded-md border">
                                     <Settings class="size-4" aria-hidden="true" />
                                 </div>
-                                <span class="text-muted-foreground font-medium">Manage organization</span>
-                                <DropdownMenu.Shortcut>⇧⌘go</DropdownMenu.Shortcut>
+                                <span class="text-muted-foreground font-medium">Manage Organization</span>
                             </A>
                         </DropdownMenu.Item>
                     {/if}
@@ -146,7 +144,6 @@
                                 <Plus class="size-4" aria-hidden="true" />
                             </div>
                             <span class="text-muted-foreground font-medium">Add organization</span>
-                            <DropdownMenu.Shortcut>⇧⌘gn</DropdownMenu.Shortcut>
                         </A>
                     </DropdownMenu.Item>
                     <GlobalUser>

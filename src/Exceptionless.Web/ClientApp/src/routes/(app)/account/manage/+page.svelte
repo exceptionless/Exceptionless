@@ -1,11 +1,10 @@
 <script lang="ts">
     import ErrorMessage from '$comp/error-message.svelte';
-    import { A, H3, Muted, Small } from '$comp/typography';
+    import { A, Muted, Small } from '$comp/typography';
     import * as Avatar from '$comp/ui/avatar';
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import * as InputGroup from '$comp/ui/input-group';
-    import { Separator } from '$comp/ui/separator';
     import { Spinner } from '$comp/ui/spinner';
     import { validateEmailAvailability } from '$features/auth/validators';
     import { getMeQuery, patchUser, postEmailAddress, resendVerificationEmail } from '$features/users/api.svelte';
@@ -108,12 +107,6 @@
 </script>
 
 <div class="space-y-6">
-    <div>
-        <H3>Account</H3>
-        <Muted>Manage your account settings and set e-mail preferences.</Muted>
-    </div>
-    <Separator />
-
     <Avatar.Root class="h-24 w-24" title="Profile Image">
         {#await gravatar.src}
             <Avatar.Fallback>{gravatar.initials}</Avatar.Fallback>
