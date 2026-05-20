@@ -18,11 +18,8 @@
     import Plus from '@lucide/svelte/icons/plus';
     import Save from '@lucide/svelte/icons/save';
     import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
-    import Star from '@lucide/svelte/icons/star';
-    import StarOff from '@lucide/svelte/icons/star-off';
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import Undo2 from '@lucide/svelte/icons/undo-2';
-    import X from '@lucide/svelte/icons/x';
     import { tick } from 'svelte';
     import { toast } from 'svelte-sonner';
 
@@ -179,20 +176,6 @@
         }
     }
 
-    async function handleToggleDefault() {
-        if (!activeView || !organizationId) {
-            return;
-        }
-
-        const willBeDefault = !activeView.is_default;
-        try {
-            await updateMutation.mutateAsync({ is_default: willBeDefault });
-            toast.success(willBeDefault ? 'Set as default for everyone.' : 'Default removed.');
-        } catch (error) {
-            toast.error(getErrorMessage(error, 'Failed to update default setting.'));
-        }
-    }
-
     async function handleUpdate() {
         if (!activeView || !organizationId) {
             return;
@@ -264,24 +247,9 @@
                     <Pencil class="mr-2 size-4" aria-hidden="true" />
                     Rename
                 </DropdownMenu.Item>
-                {#if !activeView.user_id}
-                    <DropdownMenu.Item disabled={saving} onclick={handleToggleDefault}>
-                        {#if activeView.is_default}
-                            <StarOff class="mr-2 size-4" aria-hidden="true" />
-                            Remove as default
-                        {:else}
-                            <Star class="mr-2 size-4" aria-hidden="true" />
-                            Set as default for everyone
-                        {/if}
-                    </DropdownMenu.Item>
-                {/if}
                 <DropdownMenu.Item disabled={!isModified} onclick={onResetToSaved}>
                     <Undo2 class="mr-2 size-4" aria-hidden="true" />
                     Reset to saved
-                </DropdownMenu.Item>
-                <DropdownMenu.Item onclick={onClearSavedView}>
-                    <X class="mr-2 size-4" aria-hidden="true" />
-                    Clear Saved View
                 </DropdownMenu.Item>
                 <DropdownMenu.Separator />
                 <DropdownMenu.Item class="text-destructive" onclick={() => openDeleteDialog(activeView)}>

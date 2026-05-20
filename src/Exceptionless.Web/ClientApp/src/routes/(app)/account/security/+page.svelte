@@ -1,10 +1,8 @@
 <script lang="ts">
     import ErrorMessage from '$comp/error-message.svelte';
-    import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
-    import { Separator } from '$comp/ui/separator';
     import { changePassword } from '$features/auth/index.svelte';
     import { ChangePasswordSchema, ChangePasswordWithCurrentSchema } from '$features/auth/schemas';
     import { getMeQuery } from '$features/users/api.svelte';
@@ -44,12 +42,6 @@
 </script>
 
 <div class="space-y-6">
-    <div>
-        <H3>Change Password</H3>
-        <Muted>{hasLocalAccount ? 'Change your password.' : 'Set a password to enable password-based sign in.'}</Muted>
-    </div>
-    <Separator />
-
     <form
         class="max-w-md space-y-4"
         onsubmit={(e) => {

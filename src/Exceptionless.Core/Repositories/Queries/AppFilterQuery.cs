@@ -160,12 +160,13 @@ namespace Exceptionless.Core.Repositories.Queries
                 return Task.CompletedTask;
             }
 
+            string organizationIdFieldName = typeof(T) == typeof(Organization) ? "id" : _organizationIdFieldName;
             foreach (var organization in allowedOrganizations)
             {
                 if (shouldApplyRetentionFilter)
-                    container |= (Query<T>.Term(_organizationIdFieldName, organization.Id) && GetRetentionFilter<T>(field, organization, _options.MaximumRetentionDays));
+                    container |= (Query<T>.Term(organizationIdFieldName, organization.Id) && GetRetentionFilter<T>(field, organization, _options.MaximumRetentionDays));
                 else
-                    container |= Query<T>.Term(_organizationIdFieldName, organization.Id);
+                    container |= Query<T>.Term(organizationIdFieldName, organization.Id);
             }
 
             ctx.Filter &= container;

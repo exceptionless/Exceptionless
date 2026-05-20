@@ -3,7 +3,7 @@
     import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
     import GoogleIcon from '$comp/icons/GoogleIcon.svelte';
     import MicrosoftIcon from '$comp/icons/MicrosoftIcon.svelte';
-    import { H3, H4, Muted, P } from '$comp/typography';
+    import { H4, Muted, P } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Separator } from '$comp/ui/separator';
     import * as Table from '$comp/ui/table';
@@ -48,8 +48,7 @@
 
 <div class="space-y-6">
     <div>
-        <H3>External Logins</H3>
-        <Muted>Manage your connected social accounts for single sign-on.</Muted>
+        <Muted>Manage your connected social accounts for single sign-on</Muted>
     </div>
     <Separator />
 

@@ -47,10 +47,10 @@ export function getColumns<TUser extends ViewUser>(organizationId: string): Colu
         cell: (info) => renderComponent(UserActionsCell, { organizationId, user: info.row.original }),
         enableHiding: false,
         enableSorting: false,
-        header: 'Actions',
+        header: '',
         id: 'actions',
         meta: {
-            class: 'w-16'
+            class: 'w-12 min-w-12 max-w-12 text-right'
         }
     });
 

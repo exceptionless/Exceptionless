@@ -4277,6 +4277,14 @@
         "summary": "Get all",
         "parameters": [
           {
+            "name": "filter",
+            "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "mode",
             "in": "query",
             "description": "If no mode is set then a lightweight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.",

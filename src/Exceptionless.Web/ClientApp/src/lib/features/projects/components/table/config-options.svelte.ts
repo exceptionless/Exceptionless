@@ -36,10 +36,10 @@ export function getColumns<TClientConfigurationSetting extends ClientConfigurati
             cell: (info) => renderComponent(ProjectConfigActionsCell, { projectId: params.projectId, setting: info.row.original }),
             enableHiding: false,
             enableSorting: false,
-            header: 'Actions',
+            header: '',
             id: 'actions',
             meta: {
-                class: 'w-16'
+                class: 'w-12 min-w-12 max-w-12 text-right'
             }
         }
     ];

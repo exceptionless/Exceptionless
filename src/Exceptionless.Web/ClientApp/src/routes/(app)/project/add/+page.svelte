@@ -57,7 +57,7 @@
 <div class="flex flex-col gap-4">
     <div class="flex flex-col gap-1">
         <H3>Add Project</H3>
-        <Muted>Add a new project to start tracking errors and events.</Muted>
+        <Muted>Add a new project to start tracking errors and events</Muted>
     </div>
     <form
         onsubmit={(e) => {

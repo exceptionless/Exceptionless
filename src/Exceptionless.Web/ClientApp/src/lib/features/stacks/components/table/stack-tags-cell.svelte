@@ -3,6 +3,7 @@
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
     import { Kbd } from '$comp/ui/kbd';
+    import { formatKeyboardShortcut } from '$shared/keyboard-shortcuts';
     import * as Tooltip from '$comp/ui/tooltip';
     import { toast } from 'svelte-sonner';
 
@@ -12,6 +13,7 @@
     }
 
     let { onTagClick, tags }: Props = $props();
+    const copyTagShortcut = $derived(formatKeyboardShortcut(['Alt']));
 
     const tagColorClasses = [
         'border-red-300 bg-red-100 text-red-900 dark:border-red-700 dark:bg-red-950/40 dark:text-red-200',
@@ -67,7 +69,7 @@
             {/snippet}
         </Tooltip.Trigger>
         <Tooltip.Content>
-            Click to filter. <Kbd>⌥</Kbd> click to copy.
+            Click to filter. <Kbd>{copyTagShortcut}</Kbd> click to copy.
         </Tooltip.Content>
     </Tooltip.Root>
 {/snippet}
@@ -92,7 +94,7 @@
                             </Button>
                         {/each}
                     </div>
-                    <Muted class="mt-1 text-xs">Click to filter. <Kbd>⌥</Kbd> click to copy.</Muted>
+                    <Muted class="mt-1 text-xs">Click to filter. <Kbd>{copyTagShortcut}</Kbd> click to copy.</Muted>
                 </Tooltip.Content>
             </Tooltip.Root>
         {/if}

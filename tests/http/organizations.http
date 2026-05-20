@@ -21,6 +21,10 @@ Content-Type: application/json
 GET {{apiUrl}}/organizations
 Authorization: Bearer {{token}}
 
+### Filtered
+GET {{apiUrl}}/organizations?filter=Acme
+Authorization: Bearer {{token}}
+
 ### By Id
 GET {{apiUrl}}/organizations/{{organizationId}}
 Authorization: Bearer {{token}}

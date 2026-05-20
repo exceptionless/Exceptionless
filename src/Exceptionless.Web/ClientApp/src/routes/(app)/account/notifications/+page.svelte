@@ -4,7 +4,6 @@
     import { A, H3, Muted } from '$comp/typography';
     import { Badge } from '$comp/ui/badge';
     import * as Select from '$comp/ui/select';
-    import { Separator } from '$comp/ui/separator';
     import { Skeleton } from '$comp/ui/skeleton';
     import { Switch } from '$comp/ui/switch';
     import { showUpgradeDialog } from '$features/billing/upgrade-required.svelte';
@@ -128,10 +127,8 @@
 
 <div class="space-y-6">
     <div>
-        <H3>Notifications</H3>
-        <Muted>Configure how you receive notifications.</Muted>
+        <Muted>Configure how you receive notifications</Muted>
     </div>
-    <Separator />
 
     {#if meQuery.isSuccess && (!isEmailAddressVerified || !emailNotificationsEnabled)}
         <Alert variant="destructive" class="mb-4">
