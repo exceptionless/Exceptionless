@@ -160,8 +160,12 @@
     });
 
     $effect(() => {
-        tabs.length;
-        void tick().then(updateTabsOverflow);
+        const tabCount = tabs.length;
+        void tick().then(() => {
+            if (tabCount === tabs.length) {
+                updateTabsOverflow();
+            }
+        });
     });
 
     onMount(() => {
@@ -227,7 +231,11 @@
                     <ChevronLeft class="size-4" />
                 </Button>
             {/if}
-            <Tabs.List bind:ref={tabsListRef} class="no-scrollbar w-full justify-normal overflow-x-auto overflow-y-hidden scroll-smooth" onscroll={updateTabsOverflow}>
+            <Tabs.List
+                bind:ref={tabsListRef}
+                class="no-scrollbar w-full justify-normal overflow-x-auto overflow-y-hidden scroll-smooth"
+                onscroll={updateTabsOverflow}
+            >
                 {#each tabs as tab (tab)}
                     <Tabs.Trigger class="flex-none px-3" value={tab}>{tab}</Tabs.Trigger>
                 {/each}

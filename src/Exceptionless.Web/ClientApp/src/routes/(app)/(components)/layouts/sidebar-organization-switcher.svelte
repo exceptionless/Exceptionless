@@ -103,7 +103,7 @@
                 >
                     <DropdownMenu.Label class="text-muted-foreground text-xs">Organizations</DropdownMenu.Label>
                     {#if organizations.length > 0}
-                        {#each organizations as organization, index (organization.name)}
+                        {#each organizations as organization (organization.name)}
                             <DropdownMenu.Item
                                 onSelect={() => onOrganizationSelected(organization)}
                                 data-active={organization.id === currentOrganizationId && !isImpersonating}

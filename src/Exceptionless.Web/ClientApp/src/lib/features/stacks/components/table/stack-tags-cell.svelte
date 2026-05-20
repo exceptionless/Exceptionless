@@ -3,8 +3,8 @@
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
     import { Kbd } from '$comp/ui/kbd';
-    import { formatKeyboardShortcut } from '$shared/keyboard-shortcuts';
     import * as Tooltip from '$comp/ui/tooltip';
+    import { formatKeyboardShortcut } from '$shared/keyboard-shortcuts';
     import { toast } from 'svelte-sonner';
 
     interface Props {

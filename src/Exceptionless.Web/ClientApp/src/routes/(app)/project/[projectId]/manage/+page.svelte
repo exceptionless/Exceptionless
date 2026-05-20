@@ -11,7 +11,6 @@
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import { Spinner } from '$comp/ui/spinner';
-    import { organization } from '$features/organizations/context.svelte';
     import { deleteProject, getProjectQuery, resetData, updateProject } from '$features/projects/api.svelte';
     import RemoveProjectDialog from '$features/projects/components/dialogs/remove-project-dialog.svelte';
     import ResetProjectDataDialog from '$features/projects/components/dialogs/reset-project-data-dialog.svelte';

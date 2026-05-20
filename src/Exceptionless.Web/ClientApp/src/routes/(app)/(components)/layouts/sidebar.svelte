@@ -231,7 +231,9 @@
                                                     >
                                                         <Icon />
                                                         <span>{route.title}</span>
-                                                        <ChevronRight class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                                        <ChevronRight
+                                                            class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                                                        />
                                                     </A>
                                                 {/snippet}
                                             </Sidebar.MenuButton>

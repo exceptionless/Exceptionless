@@ -417,15 +417,7 @@
         {/snippet}
 
         {#snippet footer()}
-            <SidebarUser
-                {isChatEnabled}
-                isLoading={meQuery.isLoading}
-                user={meQuery.data}
-                {gravatar}
-                {organizations}
-                {openChat}
-                {intercomUnreadCount}
-            />
+            <SidebarUser {isChatEnabled} isLoading={meQuery.isLoading} user={meQuery.data} {gravatar} {organizations} {openChat} {intercomUnreadCount} />
         {/snippet}
     </Sidebar>
     <div class="flex min-h-screen min-w-0 flex-1 pt-16">
