@@ -25,16 +25,15 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 10.0.*
-          dotnet-quality: ga
+          dotnet-version: 10.0.300
 
       - name: Install Aspire CLI
         run: |
           export PATH="$HOME/.dotnet/tools:$PATH"
           if dotnet tool list --global | grep -Eiq '^aspire\.cli[[:space:]]'; then
-            dotnet tool update --global Aspire.Cli --version 13.3.3
+            dotnet tool update --global Aspire.Cli --version 13.3.4
           else
-            dotnet tool install --global Aspire.Cli --version 13.3.3
+            dotnet tool install --global Aspire.Cli --version 13.3.4
           fi
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
           aspire --version
