@@ -92,7 +92,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
     // Hydrate filters/columns when a saved view loads, or clear params if the view is no longer found.
     // lastLoadedViewId prevents re-hydration on background refetches (which would stomp user edits).
-    let lastLoadedViewId: string | undefined;
+    let lastLoadedViewId = '';
     $effect(() => {
         const savedId = options.queryParams.saved;
         const isLoading = savedViewsListQuery.isLoading;
