@@ -15,12 +15,12 @@
 
     import type { NavigationItem } from '../../../routes.svelte';
 
-    function isSavedItemActive(savedItem: { href: string; isDefault?: boolean }, routeHref: string): boolean {
+    function isSavedItemActive(savedItem: { href: string }, routeHref: string): boolean {
         const savedId = new URL(savedItem.href, page.url.origin).searchParams.get('saved');
         const activeSavedParam = page.url.searchParams.get('saved');
         const isOnRoute = routeHref === page.url.pathname;
 
-        return isOnRoute && (savedItem.isDefault ? !activeSavedParam || activeSavedParam === savedId : activeSavedParam === savedId);
+        return isOnRoute && activeSavedParam === savedId;
     }
 
     function isPathActive(href: string): boolean {
@@ -31,15 +31,23 @@
         return group === 'Settings' || group.endsWith(' Settings');
     }
 
-    function isChildItemActive(childItem: { href: string; isDefault?: boolean }, routeHref: string): boolean {
+    function isChildItemActive(childItem: { href: string }, routeHref: string): boolean {
         const childUrl = new URL(childItem.href, page.url.origin);
         const hasSavedViewParam = childUrl.searchParams.has('saved');
 
-        if (hasSavedViewParam || childItem.isDefault !== undefined) {
+        if (hasSavedViewParam) {
             return isSavedItemActive(childItem, routeHref);
         }
 
         return isPathActive(childUrl.pathname);
+    }
+
+    function isSavedViewChild(childItem: { href: string }): boolean {
+        return new URL(childItem.href, page.url.origin).searchParams.has('saved');
+    }
+
+    function hasSavedViewChildren(route: NavigationItem): boolean {
+        return route.children?.some((childItem) => isSavedViewChild(childItem)) ?? false;
     }
 
     function isRouteActive(route: NavigationItem): boolean {
@@ -86,6 +94,8 @@
     const isIconCollapsed = $derived(sidebar.state === 'collapsed' && !sidebar.isMobile);
     let hoverMenuId = $state<string | undefined>(undefined);
     let hoverMenuCloseTimeout = $state<ReturnType<typeof setTimeout> | undefined>(undefined);
+    let expandedRouteHrefs = $state<Record<string, boolean>>({});
+    let settingsExpanded = $state<boolean | undefined>(undefined);
 
     function onMenuClick() {
         if (sidebar.isMobile) {
@@ -147,6 +157,51 @@
         onMenuClick();
     }
 
+    function isRouteGroupOpen(route: NavigationItem): boolean {
+        const routeHref = String(route.href);
+
+        return expandedRouteHrefs[routeHref] ?? isRouteActive(route);
+    }
+
+    function setRouteGroupOpen(route: NavigationItem, open: boolean): void {
+        const routeHref = String(route.href);
+        expandedRouteHrefs = {
+            ...expandedRouteHrefs,
+            [routeHref]: open
+        };
+    }
+
+    function isSettingsOpen(): boolean {
+        return settingsExpanded ?? settingsIsActive;
+    }
+
+    $effect(() => {
+        let nextExpandedRouteHrefs = expandedRouteHrefs;
+        let hasExpandedRouteChanges = false;
+
+        for (const route of dashboardRoutes) {
+            const routeHref = String(route.href);
+            if (!route.children?.length || !isRouteActive(route) || nextExpandedRouteHrefs[routeHref] !== undefined) {
+                continue;
+            }
+
+            if (!hasExpandedRouteChanges) {
+                nextExpandedRouteHrefs = { ...nextExpandedRouteHrefs };
+                hasExpandedRouteChanges = true;
+            }
+
+            nextExpandedRouteHrefs[routeHref] = true;
+        }
+
+        if (hasExpandedRouteChanges) {
+            expandedRouteHrefs = nextExpandedRouteHrefs;
+        }
+
+        if (settingsIsActive && settingsExpanded === undefined) {
+            settingsExpanded = true;
+        }
+    });
+
     onDestroy(() => {
         if (hoverMenuCloseTimeout) {
             clearTimeout(hoverMenuCloseTimeout);
@@ -167,6 +222,7 @@
                     {@const Icon = route.icon}
                     {#if isIconCollapsed}
                         {#if route.children?.length}
+                            {@const hasSavedViews = hasSavedViewChildren(route)}
                             {@const menuId = `route:${route.href}`}
                             <DropdownMenu.Root open={isHoverMenuOpen(menuId)} onOpenChange={(open) => onHoverMenuOpenChange(menuId, open)}>
                                 <DropdownMenu.Trigger>
@@ -186,12 +242,14 @@
                                     onmouseenter={() => openHoverMenu(menuId)}
                                     onmouseleave={() => closeHoverMenu(menuId)}
                                 >
-                                    <DropdownMenu.Item>
-                                        <A variant="ghost" href={route.href} class="w-full" onclick={onFlyoutLinkClick}>
-                                            {route.title}
-                                        </A>
-                                    </DropdownMenu.Item>
-                                    <DropdownMenu.Separator />
+                                    {#if !hasSavedViews}
+                                        <DropdownMenu.Item>
+                                            <A variant="ghost" href={route.href} class="w-full" onclick={onFlyoutLinkClick}>
+                                                {route.title}
+                                            </A>
+                                        </DropdownMenu.Item>
+                                        <DropdownMenu.Separator />
+                                    {/if}
                                     {#each route.children as savedItem (savedItem.href)}
                                         <DropdownMenu.Item>
                                             <A variant="ghost" href={savedItem.href} class="w-full" onclick={onFlyoutLinkClick}>
@@ -214,27 +272,38 @@
                             </Sidebar.MenuItem>
                         {/if}
                     {:else if route.children?.length}
-                        <Collapsible.Root open={isRouteActive(route)} class="group/collapsible">
+                        {@const hasSavedViews = hasSavedViewChildren(route)}
+                        <Collapsible.Root open={isRouteGroupOpen(route)} onOpenChange={(open) => setRouteGroupOpen(route, open)} class="group/collapsible">
                             {#snippet child({ props: collapsibleProps })}
                                 <Sidebar.MenuItem {...collapsibleProps}>
                                     <Collapsible.Trigger>
                                         {#snippet child({ props: triggerProps })}
                                             <Sidebar.MenuButton {...triggerProps}>
                                                 {#snippet child({ props: buttonProps })}
-                                                    <A
-                                                        variant="ghost"
-                                                        href={route.href}
-                                                        title={route.title}
-                                                        onclick={onMenuClick}
-                                                        class="flex min-w-0 flex-1 items-center gap-2"
-                                                        {...buttonProps}
-                                                    >
-                                                        <Icon />
-                                                        <span>{route.title}</span>
-                                                        <ChevronRight
-                                                            class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
-                                                        />
-                                                    </A>
+                                                    {#if hasSavedViews}
+                                                        <button type="button" title={route.title} {...buttonProps}>
+                                                            <Icon />
+                                                            <span>{route.title}</span>
+                                                            <ChevronRight
+                                                                class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                                                            />
+                                                        </button>
+                                                    {:else}
+                                                        <A
+                                                            variant="ghost"
+                                                            href={route.href}
+                                                            title={route.title}
+                                                            onclick={onMenuClick}
+                                                            class="flex min-w-0 flex-1 items-center gap-2"
+                                                            {...buttonProps}
+                                                        >
+                                                            <Icon />
+                                                            <span>{route.title}</span>
+                                                            <ChevronRight
+                                                                class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                                                            />
+                                                        </A>
+                                                    {/if}
                                                 {/snippet}
                                             </Sidebar.MenuButton>
                                         {/snippet}
@@ -306,7 +375,7 @@
                         </DropdownMenu.Content>
                     </DropdownMenu.Root>
                 {:else}
-                    <Collapsible.Root open={settingsIsActive} class="group/collapsible">
+                    <Collapsible.Root open={isSettingsOpen()} onOpenChange={(open) => (settingsExpanded = open)} class="group/collapsible">
                         {#snippet child({ props })}
                             <Sidebar.MenuItem {...props}>
                                 <Collapsible.Trigger>

@@ -1,20 +1,23 @@
 <script lang="ts">
-	import { cn, type WithElementRef } from "$lib/utils.js";
-	import type { HTMLAttributes } from "svelte/elements";
+    import { cn, type WithElementRef } from "$lib/utils.js";
+    import type { HTMLAttributes } from "svelte/elements";
 
-	let {
-		ref = $bindable(null),
-		class: className,
-		children,
-		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLSpanElement>> = $props();
+    let {
+        ref = $bindable(null),
+        class: className,
+        children,
+        ...restProps
+    }: WithElementRef<HTMLAttributes<HTMLElement>> = $props();
 </script>
 
-<span
-	bind:this={ref}
-	data-slot="command-shortcut"
-	class={cn("text-muted-foreground group-data-selected/command-item:text-foreground ml-auto text-xs tracking-widest", className)}
-	{...restProps}
+<kbd
+    bind:this={ref}
+    data-slot="command-shortcut"
+    class={cn(
+        "border-border bg-muted text-muted-foreground group-data-selected/command-item:bg-background group-data-selected/command-item:text-foreground ml-auto h-5 w-fit min-w-5 gap-1 rounded-sm border px-1 font-sans text-xs font-medium [&_svg:not([class*='size-'])]:size-3 pointer-events-none inline-flex items-center justify-center select-none",
+        className
+    )}
+    {...restProps}
 >
-	{@render children?.()}
-</span>
+    {@render children?.()}
+</kbd>

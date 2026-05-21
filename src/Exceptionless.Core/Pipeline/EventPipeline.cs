@@ -11,14 +11,20 @@ public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase>
 {
     public EventPipeline(IServiceProvider serviceProvider, AppOptions options, ILoggerFactory loggerFactory) : base(serviceProvider, options, loggerFactory) { }
 
-    public Task<EventContext> RunAsync(PersistentEvent ev, Organization organization, Project project, EventPostInfo? epi = null)
+    public Task<EventContext> RunAsync(PersistentEvent ev, Organization organization, Project project, EventPostInfo? epi = null, bool allowExtendedEventDateRange = false)
     {
-        return RunAsync(new EventContext(ev, organization, project, epi));
+        return RunAsync(new EventContext(ev, organization, project, epi)
+        {
+            AllowExtendedEventDateRange = allowExtendedEventDateRange
+        });
     }
 
-    public Task<ICollection<EventContext>> RunAsync(IEnumerable<PersistentEvent> events, Organization organization, Project project, EventPostInfo? epi = null)
+    public Task<ICollection<EventContext>> RunAsync(IEnumerable<PersistentEvent> events, Organization organization, Project project, EventPostInfo? epi = null, bool allowExtendedEventDateRange = false)
     {
-        return RunAsync(events.Select(ev => new EventContext(ev, organization, project, epi)).ToList());
+        return RunAsync(events.Select(ev => new EventContext(ev, organization, project, epi)
+        {
+            AllowExtendedEventDateRange = allowExtendedEventDateRange
+        }).ToList());
     }
 
     public override async Task<ICollection<EventContext>> RunAsync(ICollection<EventContext> contexts)

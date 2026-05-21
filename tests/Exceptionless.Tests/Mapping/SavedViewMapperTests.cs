@@ -28,7 +28,7 @@ public sealed class SavedViewMapperTests
             ViewType = "issues",
             FilterDefinitions = "[{\"type\":\"status\",\"values\":[\"open\",\"regressed\"]}]",
             Columns = new Dictionary<string, bool> { ["status"] = true, ["users"] = false },
-            IsDefault = true
+            ColumnOrder = ["summary", "status", "users"]
         };
 
         // Act
@@ -45,7 +45,7 @@ public sealed class SavedViewMapperTests
         Assert.NotNull(result.Columns);
         Assert.True(result.Columns["status"]);
         Assert.False(result.Columns["users"]);
-        Assert.True(result.IsDefault);
+        Assert.Equal(["summary", "status", "users"], result.ColumnOrder);
     }
 
     [Fact]
@@ -89,7 +89,7 @@ public sealed class SavedViewMapperTests
         Assert.Null(result.Time);
         Assert.Null(result.FilterDefinitions);
         Assert.Null(result.Columns);
-        Assert.False(result.IsDefault);
+        Assert.Null(result.ColumnOrder);
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public sealed class SavedViewMapperTests
             Filter = "status:open",
             FilterDefinitions = "[{\"type\":\"status\",\"values\":[\"open\"]}]",
             Columns = new Dictionary<string, bool> { ["status"] = true },
-            IsDefault = false,
+            ColumnOrder = ["summary", "status"],
             Name = "My View",
             Time = "[now-30d TO now]",
             Sort = "-last",
@@ -130,7 +130,7 @@ public sealed class SavedViewMapperTests
         Assert.Equal("[{\"type\":\"status\",\"values\":[\"open\"]}]", result.FilterDefinitions);
         Assert.NotNull(result.Columns);
         Assert.True(result.Columns["status"]);
-        Assert.False(result.IsDefault);
+        Assert.Equal(["summary", "status"], result.ColumnOrder);
         Assert.Equal("My View", result.Name);
         Assert.Equal("[now-30d TO now]", result.Time);
         Assert.Equal("-last", result.Sort);
@@ -163,6 +163,7 @@ public sealed class SavedViewMapperTests
         Assert.Null(result.Filter);
         Assert.Null(result.FilterDefinitions);
         Assert.Null(result.Columns);
+        Assert.Null(result.ColumnOrder);
         Assert.Null(result.Time);
         Assert.Null(result.Sort);
     }

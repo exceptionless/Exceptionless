@@ -23,7 +23,7 @@ public record ViewSavedView : IIdentity, IHaveDates
     public string? Filter { get; set; }
     public string? FilterDefinitions { get; set; }
     public Dictionary<string, bool>? Columns { get; set; }
-    public bool IsDefault { get; set; }
+    public List<string>? ColumnOrder { get; set; }
     public string Name { get; set; } = null!;
     public string? Time { get; set; }
     public string? Sort { get; set; }

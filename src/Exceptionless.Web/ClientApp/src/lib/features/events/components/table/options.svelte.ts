@@ -4,15 +4,24 @@ import NumberFormatter from '$comp/formatters/number.svelte';
 import TimeAgo from '$comp/formatters/time-ago.svelte';
 import { Checkbox } from '$comp/ui/checkbox';
 import { nameof } from '$lib/utils';
-import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
+import { type ColumnDef, type ColumnVisibilityState, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
 import type { GetEventsMode } from '../../api.svelte';
 import type { EventSummaryModel, StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '../summary/index';
 
+import LogLevel from '../log-level.svelte';
 import Summary from '../summary/summary.svelte';
 import EventsUserIdentitySummaryCell from './events-user-identity-summary-cell.svelte';
 import StackStatusCell from './stack-status-cell.svelte';
 import StackUsersSummaryCell from './stack-users-summary-cell.svelte';
+
+export const defaultEventColumnVisibility: ColumnVisibilityState = {
+    level: false,
+    message: false,
+    name: false,
+    source: false,
+    type: false
+};
 
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
     mode: GetEventsMode = 'summary'
@@ -43,8 +52,11 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
         },
         {
             cell: (prop) => renderComponent(Summary, { showStatus: false, summary: prop.row.original }),
-            enableHiding: false,
-            header: 'Summary'
+            header: 'Summary',
+            id: 'summary',
+            meta: {
+                class: 'w-full'
+            }
         }
     ];
 
@@ -53,7 +65,6 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
         columns.push(
             {
                 cell: (prop) => renderComponent(EventsUserIdentitySummaryCell, { summary: prop.row.original }),
-                enableSorting: false,
                 header: 'User',
                 id: 'user',
                 meta: {
@@ -67,6 +78,53 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 id: 'date',
                 meta: {
                     class: 'w-36'
+                }
+            },
+            {
+                accessorFn: (row) => getSummaryDataValue(row, 'Message'),
+                cell: (prop) => formatTextColumn(prop.getValue()),
+                enableSorting: false,
+                header: 'Message',
+                id: 'message',
+                meta: {
+                    class: 'w-full'
+                }
+            },
+            {
+                accessorFn: (row) => getSummaryDataValue(row, 'Type'),
+                cell: (prop) => formatTextColumn(prop.getValue()),
+                header: 'Type',
+                id: 'type',
+                meta: {
+                    class: 'w-36'
+                }
+            },
+            {
+                accessorFn: (row) => getSource(row),
+                cell: (prop) => formatTextColumn(prop.getValue()),
+                header: 'Source',
+                id: 'source',
+                meta: {
+                    class: 'w-40'
+                }
+            },
+            {
+                accessorFn: (row) => getSummaryDataValue(row, 'Name'),
+                cell: (prop) => formatTextColumn(prop.getValue()),
+                enableSorting: false,
+                header: 'Name',
+                id: 'name',
+                meta: {
+                    class: 'w-40'
+                }
+            },
+            {
+                accessorFn: (row) => getSummaryDataValue(row, 'Level'),
+                cell: (prop) => renderComponent(LogLevel, { level: prop.getValue<string | undefined>() }),
+                header: 'Level',
+                id: 'level',
+                meta: {
+                    class: 'w-[4.5rem] min-w-[4.5rem] max-w-[4.5rem] px-1 text-center'
                 }
             }
         );
@@ -125,4 +183,17 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
     }
 
     return columns;
+}
+
+function formatTextColumn(value: unknown): string {
+    return typeof value === 'string' && value.length > 0 ? value : '—';
+}
+
+function getSource<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(summary: TSummaryModel): string | undefined {
+    return getSummaryDataValue(summary, 'SourceShortName') ?? getSummaryDataValue(summary, 'Source');
+}
+
+function getSummaryDataValue<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(summary: TSummaryModel, key: string): string | undefined {
+    const value = (summary.data as Record<string, unknown>)[key];
+    return typeof value === 'string' && value.length > 0 ? value : undefined;
 }

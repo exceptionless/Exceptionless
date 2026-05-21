@@ -2,6 +2,7 @@ import type { FetchClientResponse } from '@exceptionless/fetchclient';
 
 import {
     type ColumnDef,
+    type ColumnOrderState,
     type ColumnSort,
     type ColumnVisibilityState,
     createCoreRowModel,
@@ -25,6 +26,7 @@ export interface TableConfiguration<TData extends RowData, TPaginationStrategy e
     columnPersistenceKey: string;
     columns: ColumnDef<StockFeatures, TData, unknown>[];
     configureOptions?: (options: TableOptions<StockFeatures, TData>) => TableOptions<StockFeatures, TData>;
+    defaultColumnOrder?: ColumnOrderState;
     defaultColumnVisibility?: ColumnVisibilityState;
     paginationStrategy: TPaginationStrategy;
     queryData?: TData[];
@@ -70,10 +72,18 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
 
     // Use the persistKey if provided, otherwise default to events-column-visibility
     const visibilityKey = configuration.columnPersistenceKey ? `${configuration.columnPersistenceKey}-column-visibility` : 'events-column-visibility';
-    const [columnVisibility, setColumnVisibility] = createPersistedTableState(
+    const [persistedColumnVisibility, setColumnVisibility] = createPersistedTableState(
         visibilityKey,
         configuration.defaultColumnVisibility ?? <ColumnVisibilityState>{}
     );
+    const columnVisibility = () => ({ ...configuration.defaultColumnVisibility, ...persistedColumnVisibility() });
+
+    const orderKey = configuration.columnPersistenceKey ? `${configuration.columnPersistenceKey}-column-order` : 'events-column-order';
+    const [persistedColumnOrder, setPersistedColumnOrder] = createPersistedTableState(orderKey, configuration.defaultColumnOrder ?? <ColumnOrderState>[]);
+    const columnOrder = () => sanitizeColumnOrder(persistedColumnOrder(), columns());
+    const setColumnOrder = (updaterOrValue: Updater<ColumnOrderState>) => {
+        setPersistedColumnOrder(updaterOrValue instanceof Function ? updaterOrValue(resolveColumnOrder(columnOrder(), columns())) : updaterOrValue);
+    };
 
     // Initialize pagination state from parameters
     const initialPageIndex =
@@ -243,6 +253,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         set meta(value) {
             setMetaImpl(value);
         },
+        onColumnOrderChange: setColumnOrder,
         onColumnVisibilityChange: setColumnVisibility,
         onPaginationChange,
         onRowSelectionChange: setRowSelection,
@@ -251,6 +262,9 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
             return pageCount();
         },
         state: {
+            get columnOrder() {
+                return columnOrder();
+            },
             get columnVisibility() {
                 return columnVisibility();
             },
@@ -342,6 +356,21 @@ function createTableState<T>(initialValue: T): [() => T, (updater: Updater<T>) =
     ];
 }
 
+function getColumnIds<TData extends RowData>(columns: ColumnDef<StockFeatures, TData, unknown>[]): string[] {
+    return columns.flatMap((column) => {
+        const columnDefinition = column as { accessorKey?: number | string; columns?: ColumnDef<StockFeatures, TData, unknown>[]; id?: string };
+        if (columnDefinition.columns) {
+            return getColumnIds(columnDefinition.columns);
+        }
+
+        if (columnDefinition.id) {
+            return [columnDefinition.id];
+        }
+
+        return typeof columnDefinition.accessorKey === 'string' ? [columnDefinition.accessorKey] : [];
+    });
+}
+
 function hasSortQueryParameter(parameters: TablePagingParameters): parameters is TableCursorPagingParameters | TableOffsetPagingParameters {
     return Object.prototype.hasOwnProperty.call(parameters, 'sort');
 }
@@ -360,6 +389,18 @@ function parseSortString(sort: string | undefined): ColumnSort[] {
             id: value.startsWith('-') ? value.slice(1) : value
         }))
         .filter((value) => value.id.length > 0);
+}
+
+function resolveColumnOrder<TData extends RowData>(columnOrder: ColumnOrderState, columns: ColumnDef<StockFeatures, TData, unknown>[]): ColumnOrderState {
+    const defaultColumnOrder = getColumnIds(columns);
+    const explicitColumnOrder = columnOrder.filter((columnId, index) => defaultColumnOrder.includes(columnId) && columnOrder.indexOf(columnId) === index);
+    const nextColumnOrder = [...explicitColumnOrder, ...defaultColumnOrder.filter((columnId) => !explicitColumnOrder.includes(columnId))];
+
+    return defaultColumnOrder.includes('select') ? ['select', ...nextColumnOrder.filter((columnId) => columnId !== 'select')] : nextColumnOrder;
+}
+
+function sanitizeColumnOrder<TData extends RowData>(columnOrder: ColumnOrderState, columns: ColumnDef<StockFeatures, TData, unknown>[]): ColumnOrderState {
+    return columnOrder.length === 0 ? columnOrder : resolveColumnOrder(columnOrder, columns);
 }
 
 function serializeSortState(sorting: ColumnSort[]): string | undefined {

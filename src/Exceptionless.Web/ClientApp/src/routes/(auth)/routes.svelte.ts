@@ -18,7 +18,7 @@ export function routes(): NavigationItem[] {
             href: resolve('/(auth)/logout'),
             icon: LogOut,
             show: (context: NavigationItemContext) => context.authenticated,
-            title: 'Log out'
+            title: 'Log Out'
         }
     ];
 }

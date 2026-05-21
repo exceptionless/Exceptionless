@@ -277,7 +277,7 @@ public class SampleDataService
         _logger.LogDebug("Created Internal Organization {OrganizationName} and Project {ProjectName}", organization.Name, project.Name);
     }
 
-    public async Task EnqueueSampleEventsAsync(int eventCount = 100, int daysBack = 7)
+    public async Task EnqueueSampleEventsAsync(int eventCount = 250, int daysBack = 7)
     {
         await _workItemQueue.EnqueueAsync(new GenerateSampleEventsWorkItem
         {
@@ -287,7 +287,7 @@ public class SampleDataService
         _logger.LogInformation("Enqueued sample event generation: {EventCount} events over {DaysBack} days", eventCount, daysBack);
     }
 
-    public async Task<string> EnqueueSampleEventsAsync(string organizationId, string projectId, int eventCount = 100, int daysBack = 7)
+    public async Task<string> EnqueueSampleEventsAsync(string organizationId, string projectId, int eventCount = 250, int daysBack = 7)
     {
         string workItemId = await _workItemQueue.EnqueueAsync(new GenerateSampleEventsWorkItem
         {

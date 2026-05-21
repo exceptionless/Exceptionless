@@ -44,12 +44,12 @@
     --sidebar-border: var(--border);
     --sidebar-ring: var(--ring);
 
-    --chart-1: #7bb662; /* Total (green, light) */
-    --chart-2: #56b4e9; /* Blocked (blue, light) */
-    --chart-3: #d47a00; /* Discarded – hsl(32 100% 42%) */
-    --chart-4: #ffd64d; /* Too Big  – hsl(46 100% 65%) */
-    --chart-5: #d9d9d9; /* Total in Organization (magenta, light) */
-    --chart-6: #c62828; /* material-red-700: deep red for light mode */
+    --chart-1: #72c928; /* Total / events: classic Exceptionless green */
+    --chart-2: #43a047; /* Secondary series: deeper green */
+    --chart-3: #f0ad4e; /* Discarded / regressed: warm amber */
+    --chart-4: #f7d34a; /* Ignored / too big: golden yellow */
+    --chart-5: #8a8f98; /* Organization total / snoozed: neutral gray */
+    --chart-6: #d9534f; /* Limit / destructive: classic red */
 }
 
 .dark {
@@ -91,12 +91,12 @@
     --sidebar-border: var(--border);
     --sidebar-ring: var(--ring);
 
-    --chart-1: #a4d56f; /* Total (green, dark) */
-    --chart-2: #8fdbff; /* Blocked (blue, dark) */
-    --chart-3: #ff9e3d; /* Discarded – hsl(30 100% 62%) */
-    --chart-4: #ffea70; /* Too Big  – hsl(48 100% 70%) */
-    --chart-5: #5a5a5a; /* Total in Organization (magenta, dark) */
-    --chart-6: #ff5c5c; /* hsl(0 100% 66%): bright red for dark mode */
+    --chart-1: #91dc45; /* Total / events: classic Exceptionless green */
+    --chart-2: #5fc263; /* Secondary series: deeper green */
+    --chart-3: #ffbd63; /* Discarded / regressed: warm amber */
+    --chart-4: #ffe16a; /* Ignored / too big: golden yellow */
+    --chart-5: #a4abb5; /* Organization total / snoozed: neutral gray */
+    --chart-6: #ff746f; /* Limit / destructive: classic red */
 }
 
 @theme inline {
@@ -207,6 +207,10 @@
 }
 
 /* HACK: Need to figure out why this is needed for range selection. */
+[data-slot='chart'] .lc-area-path {
+    fill-opacity: 0.16;
+}
+
 .lc-brush-range {
     @apply bg-primary/10 border-primary border-2;
 }

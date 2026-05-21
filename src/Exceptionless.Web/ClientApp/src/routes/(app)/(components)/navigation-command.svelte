@@ -1,5 +1,9 @@
 <script lang="ts">
     import * as Command from '$comp/ui/command';
+    import { appKeyboardShortcuts, formatKeyboardShortcut, type ShortcutKey } from '$features/shared/keyboard-shortcuts';
+    import Building2 from '@lucide/svelte/icons/building-2';
+    import CircleUserRound from '@lucide/svelte/icons/circle-user-round';
+    import Keyboard from '@lucide/svelte/icons/keyboard';
 
     import type { NavigationItem } from '../../routes.svelte';
 
@@ -9,11 +13,21 @@
         icon: NavigationItem['icon'];
         openInNewTab?: boolean;
         parentTitle?: string;
+        shortcut?: readonly ShortcutKey[];
         title: string;
         value: string;
     };
 
-    let { open = $bindable(), resetKey, routes }: { open: boolean; resetKey: number; routes: NavigationItem[] } = $props();
+    type Props = {
+        open: boolean;
+        openKeyboardShortcuts: () => Promise<void> | void;
+        openOrganizationSwitcher: () => Promise<void> | void;
+        openUserMenu: () => Promise<void> | void;
+        resetKey: number;
+        routes: NavigationItem[];
+    };
+
+    let { open = $bindable(), openKeyboardShortcuts, openOrganizationSwitcher, openUserMenu, resetKey, routes }: Props = $props();
 
     function getCommandGroup(route: NavigationItem): string {
         return route.group === 'Dashboards' ? route.title : route.group;
@@ -21,6 +35,10 @@
 
     function getCommandTitle(route: NavigationItem): string {
         return route.group === 'Dashboards' ? `All ${route.title}` : route.title;
+    }
+
+    function getCommandValue(...parts: Array<string | undefined>): string {
+        return parts.filter(Boolean).join(' ');
     }
 
     const commandRoutes = $derived(
@@ -33,8 +51,9 @@
                     href: route.href,
                     icon: route.icon,
                     openInNewTab: route.openInNewTab,
+                    shortcut: route.shortcut,
                     title,
-                    value: `${route.title} ${title} ${route.href}`
+                    value: getCommandValue(group, route.title, title)
                 }
             ];
 
@@ -46,7 +65,7 @@
                         icon: route.icon,
                         parentTitle: route.group === 'Dashboards' ? undefined : route.title,
                         title: child.title,
-                        value: `${route.title} ${child.title} ${child.href}`
+                        value: getCommandValue(group, route.title, child.title)
                     }))
                 );
             }
@@ -70,6 +89,21 @@
 
     function closeCommandWindow() {
         open = false;
+    }
+
+    async function switchOrganization(): Promise<void> {
+        closeCommandWindow();
+        await openOrganizationSwitcher();
+    }
+
+    async function openCurrentUserMenu(): Promise<void> {
+        closeCommandWindow();
+        await openUserMenu();
+    }
+
+    async function openKeyboardShortcutsDialog(): Promise<void> {
+        closeCommandWindow();
+        await openKeyboardShortcuts();
     }
 </script>
 
@@ -98,9 +132,35 @@
                                     <span class="text-muted-foreground text-xs">{route.parentTitle}</span>
                                 {/if}
                             </div>
+                            {#if route.shortcut}
+                                <Command.Shortcut>{formatKeyboardShortcut(route.shortcut)}</Command.Shortcut>
+                            {/if}
                         </Command.LinkItem>
                     {/each}
                 </Command.Group>
+                {#if group === 'Sessions'}
+                    <Command.Separator />
+                    <Command.Group heading="Organizations">
+                        <Command.Item value="Switch Organization organizations org" onSelect={() => void switchOrganization()}>
+                            <Building2 />
+                            <span>Switch Organization</span>
+                            <Command.Shortcut>{formatKeyboardShortcut(appKeyboardShortcuts.switchOrganization.keys)}</Command.Shortcut>
+                        </Command.Item>
+                    </Command.Group>
+                    <Command.Separator />
+                    <Command.Group heading="User">
+                        <Command.Item value="Open User Menu account profile current user" onSelect={() => void openCurrentUserMenu()}>
+                            <CircleUserRound />
+                            <span>Open User Menu</span>
+                            <Command.Shortcut>{formatKeyboardShortcut(appKeyboardShortcuts.userMenu.keys)}</Command.Shortcut>
+                        </Command.Item>
+                        <Command.Item value="Keyboard Shortcuts help shortcuts" onSelect={() => void openKeyboardShortcutsDialog()}>
+                            <Keyboard />
+                            <span>Keyboard Shortcuts</span>
+                            <Command.Shortcut>{formatKeyboardShortcut(appKeyboardShortcuts.keyboardShortcuts.keys)}</Command.Shortcut>
+                        </Command.Item>
+                    </Command.Group>
+                {/if}
                 {#if index !== Object.keys(groupedRoutes).length - 1}
                     <Command.Separator />
                 {/if}

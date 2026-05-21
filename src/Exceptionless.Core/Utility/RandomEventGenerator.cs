@@ -26,6 +26,7 @@ public class RandomEventGenerator
         // Reserve ~20% of events for sessions
         int sessionCount = Math.Clamp(count / 5, 0, count);
         int regularCount = count - sessionCount;
+        int errorLogCount = Math.Clamp(regularCount / 10, regularCount > 0 ? 1 : 0, regularCount);
 
         for (int i = 0; i < regularCount; i++)
         {
@@ -36,7 +37,7 @@ public class RandomEventGenerator
                 Date = RandomData.GetDateTime(min, max)
             };
 
-            PopulateEvent(ev);
+            PopulateEvent(ev, i < errorLogCount ? "Error" : null);
             events.Add(ev);
         }
 
@@ -88,12 +89,12 @@ public class RandomEventGenerator
         return events;
     }
 
-    private void PopulateEvent(Event ev)
+    private void PopulateEvent(Event ev, string? logLevel = null)
     {
         ev.Data ??= new DataDictionary();
         ev.Tags ??= [];
 
-        ev.Type = EventTypes.Random()!;
+        ev.Type = String.IsNullOrEmpty(logLevel) ? EventTypes.Random()! : Event.KnownTypes.Log;
         switch (ev.Type)
         {
             case Event.KnownTypes.FeatureUsage:
@@ -104,8 +105,8 @@ public class RandomEventGenerator
                 break;
             case Event.KnownTypes.Log:
                 ev.Source = LogSources.Random();
-                ev.Message = LogMessages.Random();
-                string? level = LogLevels.Random();
+                string? level = logLevel ?? LogLevels.Random();
+                ev.Message = GetLogMessage(level);
                 if (!String.IsNullOrEmpty(level))
                     ev.Data[Event.KnownDataKeys.Level] = level;
                 break;
@@ -147,14 +148,21 @@ public class RandomEventGenerator
         if (ev.Type == Event.KnownTypes.Error)
         {
             // Pre-generate a limited set of errors so stacking occurs
-            _randomErrors ??= [.. Enumerable.Range(1, 15).Select(_ => GenerateError())];
-            _randomSimpleErrors ??= [.. Enumerable.Range(1, 10).Select(_ => GenerateSimpleError())];
+            _randomErrors ??= [.. Enumerable.Range(1, 5).Select(_ => GenerateError())];
+            _randomSimpleErrors ??= [.. Enumerable.Range(1, 3).Select(_ => GenerateSimpleError())];
 
             if (RandomData.GetBool())
                 ev.Data[Event.KnownDataKeys.Error] = _randomErrors.Random();
             else
                 ev.Data[Event.KnownDataKeys.SimpleError] = _randomSimpleErrors.Random();
         }
+    }
+
+    private static string? GetLogMessage(string? level)
+    {
+        return String.Equals(level, "Error", StringComparison.OrdinalIgnoreCase)
+            ? ErrorLogMessages.Random()
+            : LogMessages.Random();
     }
 
     private List<Error>? _randomErrors;
@@ -378,6 +386,15 @@ public class RandomEventGenerator
         "Connection pool exhausted, waiting for available connection",
         "Configuration reloaded from source",
         "Health check passed"
+    ];
+
+    private static readonly List<string> ErrorLogMessages =
+    [
+        "Failed to process event batch after retry limit was reached",
+        "Unhandled exception while processing background job",
+        "Unable to publish notification email",
+        "Database command failed while saving project usage",
+        "Elasticsearch request failed while searching events"
     ];
 
     private static readonly List<string> LogLevels =

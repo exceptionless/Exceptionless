@@ -61,7 +61,7 @@ export function getColumns(onTagClick?: (tag: string) => void): ColumnDef<StockF
         },
         {
             accessorKey: nameof<Stack>('status'),
-            cell: (prop) => renderComponent(StackStatusCell, { value: prop.getValue<string>() }),
+            cell: (prop) => renderComponent(StackStatusCell, { value: prop.getValue<Stack['status']>() }),
             header: 'Status',
             id: 'status',
             meta: {

@@ -197,11 +197,11 @@ export const NewSavedViewSchema = object({
   view_type: string().min(1, "View type is required"),
   filter_definitions: string()
     .min(1, "Filter definitions is required")
-    .max(10000, "Filter definitions must be at most 10000 characters")
+    .max(100000, "Filter definitions must be at most 100000 characters")
     .nullable()
     .optional(),
   columns: record(string(), boolean()).nullable().optional(),
-  is_default: boolean().nullable().optional(),
+  column_order: array(string()).nullable().optional(),
   is_private: boolean().nullable().optional(),
 });
 export type NewSavedViewFormData = Infer<typeof NewSavedViewSchema>;
@@ -415,7 +415,6 @@ export type UpdateProjectFormData = Infer<typeof UpdateProjectSchema>;
 
 export const UpdateSavedViewSchema = object({
   name: string().min(1, "Name is required").nullable().optional(),
-  is_default: boolean().nullable().optional(),
   filter: string().min(1, "Filter is required").nullable().optional(),
   time: string().min(1, "Time is required").nullable().optional(),
   sort: string().min(1, "Sort is required").nullable().optional(),
@@ -424,6 +423,7 @@ export const UpdateSavedViewSchema = object({
     .nullable()
     .optional(),
   columns: record(string(), boolean()).nullable().optional(),
+  column_order: array(string()).nullable().optional(),
 });
 export type UpdateSavedViewFormData = Infer<typeof UpdateSavedViewSchema>;
 
@@ -612,7 +612,7 @@ export const ViewSavedViewSchema = object({
     .nullable()
     .optional(),
   columns: record(string(), boolean()).nullable().optional(),
-  is_default: boolean(),
+  column_order: array(string()).nullable().optional(),
   name: string().min(1, "Name is required"),
   time: string().min(1, "Time is required").nullable().optional(),
   sort: string().min(1, "Sort is required").nullable().optional(),

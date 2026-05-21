@@ -7903,7 +7903,7 @@
             "type": "string"
           },
           "filter_definitions": {
-            "maxLength": 10000,
+            "maxLength": 100000,
             "type": [
               "null",
               "string"
@@ -7919,12 +7919,15 @@
               "type": "boolean"
             }
           },
-          "is_default": {
+          "column_order": {
+            "maxItems": 50,
             "type": [
               "null",
-              "boolean"
+              "array"
             ],
-            "description": "If true, this view will be the default for its view type. Defaults to false."
+            "items": {
+              "type": "string"
+            }
           },
           "is_private": {
             "type": [
@@ -8546,12 +8549,6 @@
               "string"
             ]
           },
-          "is_default": {
-            "type": [
-              "null",
-              "boolean"
-            ]
-          },
           "filter": {
             "type": [
               "null",
@@ -8584,6 +8581,12 @@
             "additionalProperties": {
               "type": "boolean"
             }
+          },
+          "column_order": {
+            "type": [
+              "null",
+              "array"
+            ]
           }
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
@@ -9184,7 +9187,6 @@
           "id",
           "organization_id",
           "created_by_user_id",
-          "is_default",
           "name",
           "version",
           "view_type",
@@ -9250,8 +9252,14 @@
               "type": "boolean"
             }
           },
-          "is_default": {
-            "type": "boolean"
+          "column_order": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           },
           "name": {
             "type": "string"

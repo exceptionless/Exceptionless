@@ -47,7 +47,7 @@ Content-Type: application/json
         "user": true,
         "date": true
     },
-    "is_default": false
+    "column_order": ["summary", "user", "date"]
 }
 
 ###
@@ -68,7 +68,7 @@ Content-Type: application/json
         "user": true,
         "date": true
     },
-    "is_default": false,
+    "column_order": ["summary", "date", "user"],
     "is_private": true
 }
 
@@ -84,7 +84,8 @@ Content-Type: application/json
 {
     "name": "Open Events (Last 30d)",
     "time": "[now-30d TO now]",
-    "sort": "date"
+    "sort": "date",
+    "column_order": ["summary", "date", "user"]
 }
 
 ### Delete saved view

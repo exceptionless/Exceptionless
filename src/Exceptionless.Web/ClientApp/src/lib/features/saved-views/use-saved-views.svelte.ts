@@ -1,5 +1,5 @@
 import type { IFilter } from '$comp/faceted-filter';
-import type { ColumnVisibilityState } from '@tanstack/svelte-table';
+import type { ColumnOrderState, ColumnVisibilityState } from '@tanstack/svelte-table';
 
 import { deserializeFilters } from '$features/events/components/filters/helpers.svelte';
 import { organization } from '$features/organizations/context.svelte';
@@ -17,10 +17,13 @@ export interface SavedViewQueryParams {
 }
 
 export interface UseSavedViewsOptions {
+    defaultColumnVisibility?: ColumnVisibilityState;
     filterCacheKey: (filter: null | string) => string;
+    getColumnOrder?: () => ColumnOrderState;
     getColumnVisibility?: () => ColumnVisibilityState;
     getFilterDefinitions?: () => string;
     queryParams: SavedViewQueryParams;
+    setColumnOrder?: (order: ColumnOrderState) => void;
     setColumnVisibility?: (visibility: ColumnVisibilityState) => void;
     updateFilterCache: (key: string, filters: IFilter[]) => void;
     view: string;
@@ -77,11 +80,19 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
     const activeSavedView = $derived(savedViewsListQuery.data?.find((v) => v.id === options.queryParams.saved));
 
+    function applyColumnState(view: Pick<SavedView, 'column_order' | 'columns'> | undefined): void {
+        if (options.setColumnVisibility) {
+            options.setColumnVisibility(view?.columns ?? {});
+        }
+
+        if (options.setColumnOrder) {
+            options.setColumnOrder(view?.column_order ?? []);
+        }
+    }
+
     // Hydrate filters/columns when a saved view loads, or clear params if the view is no longer found.
     // lastLoadedViewId prevents re-hydration on background refetches (which would stomp user edits).
-    let lastLoadedViewId = '';
-    let hasAutoRestored = false;
-    let lastAutoRestoredOrganizationId = '';
+    let lastLoadedViewId: string | undefined;
     $effect(() => {
         const savedId = options.queryParams.saved;
         const isLoading = savedViewsListQuery.isLoading;
@@ -90,6 +101,10 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         if (!savedId || isLoading || !views) {
             if (!savedId) {
+                if (lastLoadedViewId !== '') {
+                    applyColumnState(undefined);
+                }
+
                 lastLoadedViewId = '';
             }
 
@@ -110,7 +125,6 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             options.queryParams.filter = null;
             setSortQueryParam(options.queryParams, null);
             setTimeQueryParam(options.queryParams, null);
-            hasAutoRestored = false;
             return;
         }
 
@@ -133,52 +147,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         options.queryParams.filter = view.filter ?? null;
         setSortQueryParam(options.queryParams, view.sort ?? null);
         setTimeQueryParam(options.queryParams, view.time ?? null);
-
-        if (view.columns && options.setColumnVisibility) {
-            options.setColumnVisibility(view.columns);
-        }
-    });
-
-    // Auto-load default saved view when navigating to page without explicit params
-    $effect(() => {
-        const organizationId = organization.current;
-        const views = savedViewsListQuery.data;
-        if (!organizationId) {
-            return;
-        }
-
-        if (organizationId !== lastAutoRestoredOrganizationId) {
-            hasAutoRestored = false;
-            lastAutoRestoredOrganizationId = organizationId;
-        }
-
-        if (hasAutoRestored) {
-            return;
-        }
-
-        // Don't lock out the auto-restore while the feature flag is still resolving
-        // or the views list hasn't loaded yet. Without this guard the effect fires
-        // while the query is disabled (isLoading=false but data=undefined) and marks
-        // hasAutoRestored=true before any view data is available.
-        if (!isEnabled || savedViewsListQuery.isLoading) {
-            return;
-        }
-
-        hasAutoRestored = true;
-
-        const search = window.location.search;
-        const hasExplicitParams =
-            /[?&]saved(?:[=&]|$)/.test(search) || /[?&]filter(?:[=&]|$)/.test(search) || /[?&]sort(?:[=&]|$)/.test(search) || /[?&]time(?:[=&]|$)/.test(search);
-        if (hasExplicitParams) {
-            return;
-        }
-
-        untrack(() => {
-            const defaultView = views?.find((v) => v.is_default);
-            if (defaultView) {
-                options.queryParams.saved = defaultView.id;
-            }
-        });
+        applyColumnState(view);
     });
 
     // Detect if current filters or columns differ from the active saved view
@@ -204,7 +173,11 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return true;
         }
 
-        if (options.getColumnVisibility && !columnsEqual(options.getColumnVisibility(), view.columns)) {
+        if (options.getColumnVisibility && !columnsEqual(options.getColumnVisibility(), view.columns, options.defaultColumnVisibility)) {
+            return true;
+        }
+
+        if (options.getColumnOrder && !columnOrderEqual(options.getColumnOrder(), view.column_order)) {
             return true;
         }
 
@@ -233,9 +206,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         options.queryParams.filter = view.filter ?? null;
         setSortQueryParam(options.queryParams, view.sort ?? null);
         setTimeQueryParam(options.queryParams, view.time ?? null);
-        if (view.columns && options.setColumnVisibility) {
-            options.setColumnVisibility(view.columns);
-        }
+        applyColumnState(view);
     }
 
     function handleClearSavedView() {
@@ -243,9 +214,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         options.queryParams.filter = null;
         setSortQueryParam(options.queryParams, null);
         setTimeQueryParam(options.queryParams, null);
-        if (options.setColumnVisibility) {
-            options.setColumnVisibility({});
-        }
+        applyColumnState(undefined);
     }
 
     return {
@@ -270,9 +239,26 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     };
 }
 
-function columnsEqual(a: ColumnVisibilityState | undefined, b: null | Record<string, boolean> | undefined): boolean {
-    const aEntries = Object.entries(a ?? {}).sort(([k1], [k2]) => k1.localeCompare(k2));
-    const bEntries = Object.entries(b ?? {}).sort(([k1], [k2]) => k1.localeCompare(k2));
+function columnOrderEqual(a: ColumnOrderState | undefined, b: null | string[] | undefined): boolean {
+    const normalize = (value: null | string[] | undefined) => (value ?? []).filter((columnId) => columnId !== 'select');
+    const aOrder = normalize(a);
+    const bOrder = normalize(b);
+
+    if (aOrder.length !== bOrder.length) {
+        return false;
+    }
+
+    return aOrder.every((columnId, index) => columnId === bOrder[index]);
+}
+
+function columnsEqual(
+    a: ColumnVisibilityState | undefined,
+    b: null | Record<string, boolean> | undefined,
+    defaultColumnVisibility: ColumnVisibilityState = {}
+): boolean {
+    const normalize = (value: ColumnVisibilityState | null | undefined) => ({ ...defaultColumnVisibility, ...(value ?? {}) });
+    const aEntries = Object.entries(normalize(a)).sort(([k1], [k2]) => k1.localeCompare(k2));
+    const bEntries = Object.entries(normalize(b)).sort(([k1], [k2]) => k1.localeCompare(k2));
 
     if (aEntries.length !== bEntries.length) {
         return false;

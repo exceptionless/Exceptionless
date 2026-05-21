@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { SavedView } from './models';
 
-import { invalidateSavedViewQueries, queryKeys, SAVED_VIEW_REFRESH_DELAY_MS, syncSavedViewCaches, upsertSavedViewCache } from './api.svelte';
+import { invalidateSavedViewQueries, queryKeys, SAVED_VIEW_REFRESH_DELAY_MS, syncSavedViewCaches } from './api.svelte';
 import { type SavedViewQueryParams, setSortQueryParam, setTimeQueryParam, supportsSortQueryParam, supportsTimeQueryParam } from './use-saved-views.svelte';
 
 const TEST_ORG_ID = '507f1f77bcf86cd799439011';
@@ -16,13 +16,13 @@ afterEach(() => {
 
 function buildSavedView({ id, name, ...overrides }: Partial<SavedView> & Pick<SavedView, 'id' | 'name'>): SavedView {
     return {
+        column_order: null,
         columns: {},
         created_by_user_id: TEST_USER_ID,
         created_utc: new Date().toISOString(),
         filter: null,
         filter_definitions: null,
         id,
-        is_default: false,
         name,
         organization_id: TEST_ORG_ID,
         sort: null,
@@ -344,21 +344,6 @@ describe('useSavedViews', () => {
             // Assert
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'issues'))).toEqual([updatedView, otherView]);
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([updatedView, otherView]);
-        });
-
-        it('keeps only one default per saved-view type in the cached list', () => {
-            // Arrange
-            const currentDefault = buildSavedView({ id: 'view-1', is_default: true, name: 'Current Default' });
-            const otherIssuesView = buildSavedView({ id: 'view-2', name: 'Other Issues View' });
-            const streamDefault = buildSavedView({ id: 'view-3', is_default: true, name: 'Stream Default', view_type: 'stream' });
-            const newDefault = buildSavedView({ id: 'view-4', is_default: true, name: 'New Default' });
-
-            // Act
-            const updatedViews = upsertSavedViewCache([currentDefault, otherIssuesView, streamDefault], newDefault);
-
-            // Assert
-            expect(updatedViews.filter((view) => view.view_type === 'issues' && view.is_default)).toEqual([newDefault]);
-            expect(updatedViews.filter((view) => view.view_type === 'stream' && view.is_default)).toEqual([streamDefault]);
         });
     });
 

@@ -1,6 +1,7 @@
 import { resolve } from '$app/paths';
 import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
 import { apiReferenceHref, documentationHref, githubRepositoryHref, supportIssuesHref } from '$features/shared/help-links';
+import { appKeyboardShortcuts } from '$features/shared/keyboard-shortcuts';
 import Documentation from '@lucide/svelte/icons/book-open';
 import ApiDocumentations from '@lucide/svelte/icons/braces';
 import Issues from '@lucide/svelte/icons/bug';
@@ -20,15 +21,17 @@ export function routes(): NavigationItem[] {
     const items = [
         {
             group: 'Dashboards',
-            href: resolve('/(app)'),
-            icon: Events,
-            title: 'Events'
+            href: resolve('/(app)/issues'),
+            icon: Issues,
+            shortcut: appKeyboardShortcuts.issues.keys,
+            title: 'Issues'
         },
         {
             group: 'Dashboards',
-            href: resolve('/(app)/issues'),
-            icon: Issues,
-            title: 'Issues'
+            href: resolve('/(app)'),
+            icon: Events,
+            shortcut: appKeyboardShortcuts.allEvents.keys,
+            title: 'Events'
         },
         {
             group: 'Dashboards',

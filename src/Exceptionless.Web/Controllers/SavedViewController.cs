@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -109,12 +110,6 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         if (!IsInOrganization(organizationId))
             return BadRequest();
 
-        if (savedView.IsPrivate is true && savedView.IsDefault is true)
-        {
-            ModelState.AddModelError(nameof(NewSavedView.IsDefault), "Private views cannot be set as the default. Default views are organization-wide.");
-            return ValidationProblem(ModelState);
-        }
-
         savedView.OrganizationId = organizationId;
         if (savedView.IsPrivate is true)
             savedView.UserId = CurrentUser.Id;
@@ -187,15 +182,6 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         if (original.UserId is not null && original.UserId != CurrentUser.Id && !User.IsInRole(AuthorizationRoles.GlobalAdmin))
             return PermissionResult.DenyWithNotFound(original.Id);
 
-        // Private views cannot be set as the default
-        if (original.UserId is not null
-            && changes.GetChangedPropertyNames().Contains(nameof(UpdateSavedView.IsDefault))
-            && changes.TryGetPropertyValue(nameof(UpdateSavedView.IsDefault), out object? isDefaultValue)
-            && isDefaultValue is true)
-        {
-            return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "Private views cannot be set as the default. Default views are organization-wide.");
-        }
-
         // Delta<T> bypasses IValidatableObject — enforce data-annotation and custom validation manually.
         var changedNames = changes.GetChangedPropertyNames();
 
@@ -210,7 +196,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Filter), 2000)
             ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Time), 100)
             ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Sort), 100)
-            ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.FilterDefinitions), 10000);
+            ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.FilterDefinitions), SavedView.MaxFilterDefinitionsLength);
         if (lengthResult is not null)
             return lengthResult;
 
@@ -222,15 +208,12 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "FilterDefinitions must be a valid JSON array.");
         }
 
-        if (changedNames.Contains(nameof(UpdateSavedView.Columns)))
+        if (changedNames.Contains(nameof(UpdateSavedView.Columns)) || changedNames.Contains(nameof(UpdateSavedView.ColumnOrder)))
         {
             var patchedChanges = new UpdateSavedView();
             changes.Patch(patchedChanges);
 
-            if (patchedChanges.Columns is not null && patchedChanges.Columns.Count > 50)
-                return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "Columns cannot exceed 50 items.");
-
-            var validationError = NewSavedView.ValidateColumnKeys(original.ViewType, patchedChanges.Columns).FirstOrDefault();
+            var validationError = ValidateColumns(original.ViewType, patchedChanges);
             if (validationError is not null)
             {
                 return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, validationError.ErrorMessage ?? "Invalid column keys.");
@@ -252,45 +235,32 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         return null;
     }
 
-    protected override async Task<SavedView> AddModelAsync(SavedView value)
+    private static ValidationResult? ValidateColumns(string viewType, UpdateSavedView changes)
+    {
+        if (changes.Columns is not null && changes.Columns.Count > 50)
+            return new ValidationResult("Columns cannot exceed 50 items.", [nameof(UpdateSavedView.Columns)]);
+
+        if (changes.ColumnOrder is not null && changes.ColumnOrder.Count > 50)
+            return new ValidationResult("ColumnOrder cannot exceed 50 items.", [nameof(UpdateSavedView.ColumnOrder)]);
+
+        return NewSavedView.ValidateColumnKeys(viewType, changes.Columns)
+            .Concat(NewSavedView.ValidateColumnOrder(viewType, changes.ColumnOrder))
+            .FirstOrDefault();
+    }
+
+    protected override Task<SavedView> AddModelAsync(SavedView value)
     {
         value.CreatedByUserId = CurrentUser.Id;
         value.Version = 1;
 
-        if (value.IsDefault)
-            await ClearDefaultAsync(value.OrganizationId, value.ViewType);
-
-        return await base.AddModelAsync(value);
+        return base.AddModelAsync(value);
     }
 
-    protected override async Task<SavedView> UpdateModelAsync(SavedView original, Delta<UpdateSavedView> changes)
+    protected override Task<SavedView> UpdateModelAsync(SavedView original, Delta<UpdateSavedView> changes)
     {
         original.UpdatedByUserId = CurrentUser.Id;
 
-        if (changes.GetChangedPropertyNames().Contains(nameof(UpdateSavedView.IsDefault))
-            && changes.TryGetPropertyValue(nameof(UpdateSavedView.IsDefault), out object? isDefaultValue)
-            && isDefaultValue is true)
-        {
-            await ClearDefaultAsync(original.OrganizationId, original.ViewType);
-        }
-
-        return await base.UpdateModelAsync(original, changes);
-    }
-
-    private async Task ClearDefaultAsync(string organizationId, string viewType)
-    {
-        var existing = await _repository.GetByViewAsync(organizationId, viewType, o => o.ImmediateConsistency().PageLimit(MaxViewsPerOrganization));
-        var defaults = existing.Documents.Where(savedView => savedView.IsDefault && savedView.UserId is null).ToList();
-
-        if (defaults.Count > 0)
-        {
-            foreach (var defaultView in defaults)
-            {
-                defaultView.IsDefault = false;
-            }
-
-            await _repository.SaveAsync(defaults, o => o.ImmediateConsistency());
-        }
+        return base.UpdateModelAsync(original, changes);
     }
 
     protected override async Task<PermissionResult> CanDeleteAsync(SavedView value)

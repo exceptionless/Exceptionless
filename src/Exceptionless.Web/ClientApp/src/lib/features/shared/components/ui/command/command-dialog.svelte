@@ -36,7 +36,7 @@
 	</Dialog.Header>
 	<Dialog.Content
 		class={cn("top-1.5 translate-y-0 overflow-hidden p-0 shadow-2xl sm:max-w-5xl", className)}
-		overlayClass="bg-black/15 supports-backdrop-filter:backdrop-blur-none"
+		overlayClass="bg-black/20 supports-backdrop-filter:backdrop-blur-none"
 		{preventScroll}
 		{showCloseButton}
 		{portalProps}

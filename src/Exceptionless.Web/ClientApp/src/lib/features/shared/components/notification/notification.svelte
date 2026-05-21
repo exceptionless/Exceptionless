@@ -15,7 +15,7 @@
                 default: 'border-l-border bg-background text-foreground',
                 destructive: 'border-l-red-500 bg-red-50 text-red-900 dark:bg-red-900/30 dark:text-red-200',
                 impersonation: 'border-l-violet-500 bg-violet-50 text-violet-900 dark:bg-violet-900/30 dark:text-violet-200',
-                information: 'border-l-blue-500 bg-blue-50 text-blue-900 dark:bg-blue-900/30 dark:text-blue-200',
+                information: 'border-l-primary bg-[#dff0d8] text-[#3c763d] dark:bg-[#dff0d8] dark:text-[#3c763d]',
                 success: 'border-l-green-500 bg-green-50 text-green-900 dark:bg-green-900/30 dark:text-green-200',
                 warning: 'border-l-yellow-500 bg-yellow-50 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-200'
             }

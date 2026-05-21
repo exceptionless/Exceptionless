@@ -21,6 +21,7 @@
     import { premiumPage } from '$features/organizations/premium-page.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
     import { getSavedViewsQuery, invalidateSavedViewQueries } from '$features/saved-views/api.svelte';
+    import { appKeyboardShortcuts, isKeyboardShortcut } from '$features/shared/keyboard-shortcuts';
     import { invalidateStackQueries } from '$features/stacks/api.svelte';
     import { invalidateTokenQueries } from '$features/tokens/api.svelte';
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
@@ -30,9 +31,11 @@
     import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
     import { useMiddleware } from '@exceptionless/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
+    import { tick } from 'svelte';
     import { fade } from 'svelte/transition';
 
     import { type NavigationItemContext, routes } from '../routes.svelte';
+    import KeyboardShortcutsDialog from './(components)/keyboard-shortcuts-dialog.svelte';
     import Footer from './(components)/layouts/footer.svelte';
     import Navbar from './(components)/layouts/navbar.svelte';
     import SidebarOrganizationSwitcher from './(components)/layouts/sidebar-organization-switcher.svelte';
@@ -50,6 +53,9 @@
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
     let commandResetKey = $state(0);
+    let isKeyboardShortcutsOpen = $state(false);
+    let isOrganizationSwitcherOpen = $state(false);
+    let isUserMenuOpen = $state(false);
 
     // Auto-reset premium page state on navigation so pages don't need cleanup
     beforeNavigate(() => {
@@ -59,6 +65,30 @@
     function openCommandPalette(): void {
         commandResetKey += 1;
         isCommandOpen = true;
+    }
+
+    async function openOrganizationSwitcher(): Promise<void> {
+        isCommandOpen = false;
+        isKeyboardShortcutsOpen = false;
+        isUserMenuOpen = false;
+        await tick();
+        isOrganizationSwitcherOpen = true;
+    }
+
+    async function openUserMenu(): Promise<void> {
+        isCommandOpen = false;
+        isKeyboardShortcutsOpen = false;
+        isOrganizationSwitcherOpen = false;
+        await tick();
+        isUserMenuOpen = true;
+    }
+
+    async function openKeyboardShortcuts(): Promise<void> {
+        isCommandOpen = false;
+        isOrganizationSwitcherOpen = false;
+        isUserMenuOpen = false;
+        await tick();
+        isKeyboardShortcutsOpen = true;
     }
 
     useMiddleware(async (ctx, next) => {
@@ -154,18 +184,58 @@
         }
     });
 
-    // WebSocket + keyboard shortcut — only depends on token, not navigation
+    // WebSocket + keyboard shortcuts — only depends on token, not navigation
     $effect(() => {
         const currentToken = accessToken.current;
 
         function handleKeydown(e: KeyboardEvent) {
-            if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || isEditableElement(e.target)) {
+            if (
+                e.defaultPrevented ||
+                e.ctrlKey ||
+                e.metaKey ||
+                e.altKey ||
+                isCommandOpen ||
+                isKeyboardShortcutsOpen ||
+                isOrganizationSwitcherOpen ||
+                isUserMenuOpen ||
+                isEditableElement(e.target)
+            ) {
                 return;
             }
 
-            if (e.key === '/') {
+            if (isKeyboardShortcut(e, appKeyboardShortcuts.commandPalette)) {
                 e.preventDefault();
                 openCommandPalette();
+                return;
+            }
+
+            if (isKeyboardShortcut(e, appKeyboardShortcuts.switchOrganization)) {
+                e.preventDefault();
+                void openOrganizationSwitcher();
+                return;
+            }
+
+            if (isKeyboardShortcut(e, appKeyboardShortcuts.userMenu)) {
+                e.preventDefault();
+                void openUserMenu();
+                return;
+            }
+
+            if (isKeyboardShortcut(e, appKeyboardShortcuts.allEvents)) {
+                e.preventDefault();
+                void goto(resolve('/(app)'));
+                return;
+            }
+
+            if (isKeyboardShortcut(e, appKeyboardShortcuts.issues)) {
+                e.preventDefault();
+                void goto(resolve('/(app)/issues'));
+                return;
+            }
+
+            if (isKeyboardShortcut(e, appKeyboardShortcuts.keyboardShortcuts)) {
+                e.preventDefault();
+                void openKeyboardShortcuts();
             }
         }
 
@@ -173,7 +243,7 @@
             return;
         }
 
-        document.addEventListener('keydown', handleKeydown);
+        document.addEventListener('keydown', handleKeydown, { capture: true });
 
         const ws = new WebSocketClient();
         ws.onMessage = onMessage;
@@ -190,7 +260,7 @@
         };
 
         return () => {
-            document.removeEventListener('keydown', handleKeydown);
+            document.removeEventListener('keydown', handleKeydown, { capture: true });
             ws?.close();
         };
     });
@@ -353,31 +423,11 @@
                 return route;
             }
 
-            const defaultView = viewSavedViews.find((savedView: SavedView) => savedView.is_default);
-            const nonDefaultViews = viewSavedViews.filter((savedView: SavedView) => !savedView.is_default);
-
-            // Only show submenu if there are non-default views
-            if (nonDefaultViews.length === 0) {
-                return { ...route, children: route.children, defaultViewId: defaultView?.id, view: viewKey };
-            }
-
-            // Show all views sorted: default first, then alphabetically by name
-            const sortedViews = [...viewSavedViews].sort((a, b) => {
-                if (a.is_default && !b.is_default) {
-                    return -1;
-                }
-
-                if (!a.is_default && b.is_default) {
-                    return 1;
-                }
-
-                return a.name.localeCompare(b.name);
-            });
+            const sortedViews = [...viewSavedViews].sort((a, b) => a.name.localeCompare(b.name));
 
             const children = [
                 ...sortedViews.map((savedView) => ({
                     href: buildSavedViewHref(route.href, savedView),
-                    isDefault: savedView.is_default,
                     title: savedView.name
                 })),
                 ...(route.children ?? [])
@@ -386,7 +436,6 @@
             return {
                 ...route,
                 children,
-                defaultViewId: defaultView?.id,
                 view: viewKey
             };
         });
@@ -412,18 +461,37 @@
                 isLoading={organizationsQuery.isLoading}
                 {organizations}
                 {impersonatedOrganization}
+                bind:open={isOrganizationSwitcherOpen}
                 bind:currentOrganizationId={organization.current}
             />
         {/snippet}
 
         {#snippet footer()}
-            <SidebarUser {isChatEnabled} isLoading={meQuery.isLoading} user={meQuery.data} {gravatar} {organizations} {openChat} {intercomUnreadCount} />
+            <SidebarUser
+                {isChatEnabled}
+                isLoading={meQuery.isLoading}
+                user={meQuery.data}
+                {gravatar}
+                {organizations}
+                {openChat}
+                {openKeyboardShortcuts}
+                {intercomUnreadCount}
+                bind:open={isUserMenuOpen}
+            />
         {/snippet}
     </Sidebar>
     <div class="flex min-h-screen min-w-0 flex-1 pt-16">
         <div class="text-secondary-foreground flex min-h-full min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
             <main class="flex-1 px-4 pt-4">
-                <NavigationCommand bind:open={isCommandOpen} resetKey={commandResetKey} routes={filteredRoutes} />
+                <NavigationCommand
+                    bind:open={isCommandOpen}
+                    {openKeyboardShortcuts}
+                    {openOrganizationSwitcher}
+                    {openUserMenu}
+                    resetKey={commandResetKey}
+                    routes={filteredRoutes}
+                />
+                <KeyboardShortcutsDialog bind:open={isKeyboardShortcutsOpen} />
 
                 {#if showOrganizationNotifications.current}
                     <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} premiumFeatureName={premiumPage.current} class="mb-4" />

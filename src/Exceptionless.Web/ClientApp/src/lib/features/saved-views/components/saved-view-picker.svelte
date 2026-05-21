@@ -14,6 +14,7 @@
     import { toFilter } from '$features/events/components/filters/helpers.svelte';
     import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import GripVertical from '@lucide/svelte/icons/grip-vertical';
     import Pencil from '@lucide/svelte/icons/pencil';
     import Plus from '@lucide/svelte/icons/plus';
     import Save from '@lucide/svelte/icons/save';
@@ -42,6 +43,7 @@
 
     interface Props {
         activeSavedView?: SavedView;
+        columnOrder?: string[];
         columnVisibility?: Record<string, boolean>;
         filters: IFilter[];
         isModified: boolean;
@@ -55,12 +57,26 @@
         view: string;
     }
 
-    let { activeSavedView, columnVisibility, filters, isModified, onClearSavedView, onLoadView, onResetToSaved, savedViews, sort, table, time, view }: Props =
-        $props();
+    let {
+        activeSavedView,
+        columnOrder,
+        columnVisibility,
+        filters,
+        isModified,
+        onClearSavedView,
+        onLoadView,
+        onResetToSaved,
+        savedViews,
+        sort,
+        table,
+        time,
+        view
+    }: Props = $props();
 
     let isSaveDialogOpen = $state(false);
     let isRenameDialogOpen = $state(false);
     let isDeleteDialogOpen = $state(false);
+    let draggedColumnId = $state<null | string>(null);
     let viewToDelete = $state<null | SavedView>(null);
 
     const organizationId = $derived(organization.current);
@@ -116,6 +132,8 @@
 
     const activeView = $derived(activeSavedView);
     const hideableColumns = $derived(table.getAllLeafColumns().filter((column) => column.getCanHide()));
+    const reorderableColumns = $derived(table.getAllLeafColumns().filter((column) => column.id !== 'select'));
+    const visibleHideableColumnCount = $derived(hideableColumns.filter((column) => column.getIsVisible()).length);
 
     async function openSaveDialog() {
         await tick();
@@ -127,23 +145,92 @@
         isRenameDialogOpen = true;
     }
 
+    function canToggleColumn(column: (typeof hideableColumns)[number]): boolean {
+        return !column.getIsVisible() || visibleHideableColumnCount > 1;
+    }
+
+    function toggleColumn(column: (typeof hideableColumns)[number]): void {
+        if (canToggleColumn(column)) {
+            column.toggleVisibility();
+        }
+    }
+
+    function getColumnLabel(column: (typeof reorderableColumns)[number]): string {
+        if (typeof column.columnDef.header === 'string') {
+            return column.columnDef.header;
+        }
+
+        return column.id.replace(/[_-]/g, ' ').replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+    }
+
+    function getSavedColumnOrder(): string[] | undefined {
+        const currentColumnIds = new Set(table.getAllLeafColumns().map((column) => column.id));
+        const savedColumnOrder = (columnOrder ?? []).filter((columnId) => columnId !== 'select' && currentColumnIds.has(columnId));
+
+        return savedColumnOrder.length > 0 ? savedColumnOrder : undefined;
+    }
+
+    function handleColumnDragEnd(): void {
+        draggedColumnId = null;
+    }
+
+    function handleColumnDragOver(event: DragEvent, targetColumnId: string): void {
+        event.preventDefault();
+        if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = 'move';
+        }
+
+        if (draggedColumnId && draggedColumnId !== targetColumnId) {
+            moveColumn(draggedColumnId, targetColumnId);
+        }
+    }
+
+    function handleColumnDragStart(event: DragEvent, columnId: string): void {
+        draggedColumnId = columnId;
+        if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', columnId);
+        }
+    }
+
+    function moveColumn(columnId: string, targetColumnId: string): void {
+        const columnIds = reorderableColumns.map((column) => column.id);
+        const columnIndex = columnIds.indexOf(columnId);
+        const targetIndex = columnIds.indexOf(targetColumnId);
+        if (columnIndex === -1 || targetIndex < 0 || targetIndex >= columnIds.length) {
+            return;
+        }
+
+        const [movedColumnId] = columnIds.splice(columnIndex, 1);
+        if (!movedColumnId) {
+            return;
+        }
+
+        columnIds.splice(targetIndex, 0, movedColumnId);
+
+        const allColumnIds = table.getAllLeafColumns().map((column) => column.id);
+        const extraColumnIds = allColumnIds.filter((id) => id !== 'select' && !columnIds.includes(id));
+        table.setColumnOrder(['select', ...columnIds, ...extraColumnIds]);
+    }
+
     async function openDeleteDialog(savedView: SavedView) {
         viewToDelete = savedView;
         await tick();
         isDeleteDialogOpen = true;
     }
 
-    async function handleSave(name: string, isPrivate: boolean, isDefault: boolean) {
+    async function handleSave(name: string, isPrivate: boolean) {
         if (!organizationId) {
             return;
         }
 
         const filterDefinitions = serializeFilters(filters);
+        const savedColumnOrder = getSavedColumnOrder();
         const body: NewSavedView = {
+            column_order: savedColumnOrder,
             columns: columnVisibility,
             filter: currentFilterString || undefined,
             filter_definitions: filterDefinitions,
-            is_default: isDefault || undefined,
             is_private: isPrivate || undefined,
             name,
             organization_id: organizationId,
@@ -182,6 +269,7 @@
         }
 
         const body: UpdateSavedView = {
+            column_order: getSavedColumnOrder() ?? null,
             columns: columnVisibility,
             filter: currentFilterString || null,
             filter_definitions: serializeFilters(filters),
@@ -223,7 +311,7 @@
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="gap-x-1.5 px-3" size="lg" variant="outline" title="Manage view settings">
+            <Button {...props} class="gap-x-1.5 px-3" size="lg" variant="outline" title="Manage View Settings">
                 <SlidersHorizontal class="size-4" aria-hidden="true" />
                 <span>View</span>
             </Button>
@@ -249,7 +337,7 @@
                 </DropdownMenu.Item>
                 <DropdownMenu.Item disabled={!isModified} onclick={onResetToSaved}>
                     <Undo2 class="mr-2 size-4" aria-hidden="true" />
-                    Reset to saved
+                    Reset to Saved
                 </DropdownMenu.Item>
                 <DropdownMenu.Separator />
                 <DropdownMenu.Item class="text-destructive" onclick={() => openDeleteDialog(activeView)}>
@@ -258,15 +346,49 @@
                 </DropdownMenu.Item>
             {/if}
         </DropdownMenu.Group>
-        {#if hideableColumns.length > 0}
+        {#if reorderableColumns.length > 0}
             <DropdownMenu.Separator />
             <DropdownMenu.Group>
                 <DropdownMenu.Label>Columns</DropdownMenu.Label>
-                {#each hideableColumns as column (column.id)}
-                    <DropdownMenu.CheckboxItem checked={column.getIsVisible()} onclick={() => column.toggleVisibility()}>
-                        {column.columnDef.header}
-                    </DropdownMenu.CheckboxItem>
-                {/each}
+                <div role="list">
+                    {#each reorderableColumns as column (column.id)}
+                        <div
+                            class={[
+                                'group/column flex cursor-grab items-center gap-1 rounded-md py-0.5 pr-1.5 active:cursor-grabbing',
+                                draggedColumnId === column.id && 'bg-accent/70'
+                            ]}
+                            draggable="true"
+                            ondragend={handleColumnDragEnd}
+                            ondragover={(event) => handleColumnDragOver(event, column.id)}
+                            ondragstart={(event) => handleColumnDragStart(event, column.id)}
+                            role="listitem"
+                        >
+                            {#if column.getCanHide()}
+                                <DropdownMenu.CheckboxItem
+                                    checked={column.getIsVisible()}
+                                    class="min-w-0 flex-1"
+                                    disabled={!canToggleColumn(column)}
+                                    onclick={(event) => {
+                                        event.preventDefault();
+                                        toggleColumn(column);
+                                    }}
+                                    onSelect={(event) => event.preventDefault()}
+                                >
+                                    <span class="truncate">{getColumnLabel(column)}</span>
+                                </DropdownMenu.CheckboxItem>
+                            {:else}
+                                <span class="flex min-w-0 flex-1 items-center gap-1.5 px-1.5 py-1 text-sm">
+                                    <span class="mr-2 size-4" aria-hidden="true"></span>
+                                    <span class="truncate">{getColumnLabel(column)}</span>
+                                </span>
+                            {/if}
+                            <GripVertical
+                                class="text-muted-foreground/60 size-4 shrink-0 opacity-0 transition-opacity group-focus-within/column:opacity-100 group-hover/column:opacity-100"
+                                aria-hidden="true"
+                            />
+                        </div>
+                    {/each}
+                </div>
             </DropdownMenu.Group>
         {/if}
     </DropdownMenu.Content>

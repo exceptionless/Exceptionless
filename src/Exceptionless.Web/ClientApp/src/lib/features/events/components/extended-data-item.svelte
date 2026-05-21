@@ -127,12 +127,12 @@
                         <DropdownMenu.GroupHeading>Actions</DropdownMenu.GroupHeading>
                         <DropdownMenu.Separator />
                         {#if canToggle}
-                            <DropdownMenu.Item onclick={onToggleView} title="Toggle between raw and structured view">
+                            <DropdownMenu.Item onclick={onToggleView} title="Toggle Between Raw and Structured View">
                                 <ToggleLeft class="mr-2 size-4" />
                                 Toggle View
                             </DropdownMenu.Item>
                         {/if}
-                        <DropdownMenu.Item onclick={copyToClipboard} title="Copy to clipboard">
+                        <DropdownMenu.Item onclick={copyToClipboard} title="Copy to Clipboard">
                             <Copy class="mr-2 size-4" />
                             Copy to Clipboard
                         </DropdownMenu.Item>
