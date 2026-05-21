@@ -1,29 +1,15 @@
 <script lang="ts">
-    import { Badge } from '$comp/ui/badge';
+    import type { StackStatus } from '$features/stacks/models';
+
+    import { stackStatuses } from '$features/stacks/options';
 
     interface Props {
-        value: string;
+        value: StackStatus;
     }
 
     let { value }: Props = $props();
 
-    const statusLabels: Record<string, string> = {
-        discarded: 'Discarded',
-        fixed: 'Fixed',
-        ignored: 'Ignored',
-        open: 'Open',
-        regressed: 'Regressed',
-        snoozed: 'Snoozed'
-    };
-
-    const statusVariants: Record<string, 'default' | 'destructive' | 'outline' | 'secondary'> = {
-        discarded: 'destructive',
-        fixed: 'secondary',
-        ignored: 'destructive',
-        open: 'default',
-        regressed: 'destructive',
-        snoozed: 'secondary'
-    };
+    const label = $derived(stackStatuses.find((option) => option.value === value)?.label ?? value);
 </script>
 
-<Badge variant={statusVariants[value] ?? 'outline'}>{statusLabels[value] ?? value}</Badge>
+<span>{label}</span>

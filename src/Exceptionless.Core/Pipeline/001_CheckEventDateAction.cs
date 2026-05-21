@@ -24,7 +24,7 @@ public class CheckEventDateAction : EventPipelineActionBase
 
         // Discard events that are being submitted outside of the plan retention limit.
         double eventAgeInDays = _timeProvider.GetUtcNow().UtcDateTime.Subtract(ctx.Event.Date.UtcDateTime).TotalDays;
-        if (eventAgeInDays > 3 || ctx.Organization.RetentionDays > 0 && eventAgeInDays > ctx.Organization.RetentionDays)
+        if ((!ctx.AllowExtendedEventDateRange && eventAgeInDays > 3) || (ctx.Organization.RetentionDays > 0 && eventAgeInDays > ctx.Organization.RetentionDays))
         {
             _logger.LogInformation("Discarding event that occurred more than three days ago or outside of organization retention limit");
 

@@ -16,6 +16,19 @@
     }
 
     let { size = 'icon', table }: Props = $props();
+
+    const hideableColumns = $derived(table.getAllLeafColumns().filter((column) => column.getCanHide()));
+    const visibleHideableColumnCount = $derived(hideableColumns.filter((column) => column.getIsVisible()).length);
+
+    function canToggleColumn(column: (typeof hideableColumns)[number]): boolean {
+        return !column.getIsVisible() || visibleHideableColumnCount > 1;
+    }
+
+    function toggleColumn(column: (typeof hideableColumns)[number]): void {
+        if (canToggleColumn(column)) {
+            column.toggleVisibility();
+        }
+    }
 </script>
 
 <DropdownMenu.Root>
@@ -30,12 +43,10 @@
         <DropdownMenu.Group>
             <DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
             <DropdownMenu.Separator />
-            {#each table.getAllLeafColumns() as column (column.id)}
-                {#if column.getCanHide()}
-                    <DropdownMenu.CheckboxItem checked={column.getIsVisible()} onclick={() => column.toggleVisibility()}>
-                        {column.columnDef.header}
-                    </DropdownMenu.CheckboxItem>
-                {/if}
+            {#each hideableColumns as column (column.id)}
+                <DropdownMenu.CheckboxItem checked={column.getIsVisible()} disabled={!canToggleColumn(column)} onclick={() => toggleColumn(column)}>
+                    {column.columnDef.header}
+                </DropdownMenu.CheckboxItem>
             {/each}
         </DropdownMenu.Group>
     </DropdownMenu.Content>

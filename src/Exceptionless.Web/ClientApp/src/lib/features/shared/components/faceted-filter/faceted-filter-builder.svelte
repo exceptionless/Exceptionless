@@ -2,6 +2,7 @@
     import type { KeywordFilter } from '$features/events/components/filters';
     import type { Snippet } from 'svelte';
 
+    import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
     import * as Command from '$comp/ui/command';
     import * as Popover from '$comp/ui/popover';
@@ -54,6 +55,7 @@
     });
 
     const hiddenFilterCount = $derived(filters.filter((filter) => filter.hidden).length);
+    const hiddenFilterLabel = $derived(`${hiddenFilterCount} Hidden ${hiddenFilterCount === 1 ? 'Filter' : 'Filters'}`);
     const hasFilters = $derived(filters.length > 0);
     const visibleFacets = $derived(facets.filter((facet) => !facet.filter.hidden || showHiddenFilters));
 
@@ -184,13 +186,22 @@
         {#snippet child({ props })}
             <Button
                 {...props}
-                class={[!hasFilters && 'gap-x-1 px-3']}
+                class={['relative', !hasFilters && 'gap-x-1 px-3']}
                 size={hasFilters ? 'icon-lg' : 'lg'}
                 variant="outline"
-                title="Add and manage filters"
-                aria-label="Add and manage filters"
+                title="Add and Manage Filters"
+                aria-label={hiddenFilterCount > 0 ? `Add and Manage Filters. ${hiddenFilterLabel}.` : 'Add and Manage Filters'}
             >
                 <Circle class={[hasFilters ? 'size-4' : 'mr-2 size-4']} aria-hidden="true" />
+                {#if hiddenFilterCount > 0}
+                    <Badge
+                        variant="secondary"
+                        class="absolute -top-1 -right-1 h-4 min-w-4 rounded-full px-1 text-[10px] leading-none shadow-sm"
+                        aria-hidden="true"
+                    >
+                        {hiddenFilterCount}
+                    </Badge>
+                {/if}
                 {#if !hasFilters}
                     Filter
                 {/if}
@@ -211,7 +222,7 @@
                 {#if search}
                     <Command.Group>
                         <Command.Item value={CREATE_KEYWORD_FILTER_COMMAND_ITEM} onSelect={onCreateKeywordFromSearch}>
-                            Create keyword filter: "{search}"
+                            Create Keyword Filter: "{search}"
                         </Command.Item>
                     </Command.Group>
                 {/if}
@@ -221,11 +232,11 @@
             <Separator />
             {#if hiddenFilterCount > 0}
                 <Button class="justify-center text-center" variant="ghost" onclick={toggleHiddenFilters}>
-                    {showHiddenFilters ? 'Hide hidden filters' : `Show hidden filters (${hiddenFilterCount})`}
+                    {showHiddenFilters ? 'Hide Hidden Filters' : `Show ${hiddenFilterLabel}`}
                 </Button>
             {/if}
             {#if filters.some((f) => f.type !== 'date')}
-                <Button class="justify-center text-center" variant="ghost" onclick={onRemoveAll}>Clear filters</Button>
+                <Button class="justify-center text-center" variant="ghost" onclick={onRemoveAll}>Clear Filters</Button>
             {/if}
             <Button class="justify-center text-center" variant="ghost" onclick={onClose}>Close</Button>
         </div>

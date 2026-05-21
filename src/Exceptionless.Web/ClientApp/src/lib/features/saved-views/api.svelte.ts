@@ -144,15 +144,7 @@ export function syncSavedViewCaches(queryClient: QueryClient, savedView: SavedVi
 }
 
 export function upsertSavedViewCache(cachedViews: SavedView[] | undefined, savedView: SavedView): SavedView[] {
-    const views = savedView.is_default
-        ? (cachedViews ?? []).map((view) => {
-              if (view.id === savedView.id || view.view_type !== savedView.view_type || !view.is_default) {
-                  return view;
-              }
-
-              return { ...view, is_default: false };
-          })
-        : (cachedViews ?? []);
+    const views = cachedViews ?? [];
     const savedViewIndex = views.findIndex((view) => view.id === savedView.id);
 
     if (savedViewIndex === -1) {

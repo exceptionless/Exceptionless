@@ -254,7 +254,7 @@ public class Bootstrapper
 
         var dataHelper = container.GetRequiredService<SampleDataService>();
         await dataHelper.CreateDataAsync();
-        await dataHelper.EnqueueSampleEventsAsync(eventCount: 100, daysBack: 7);
+        await dataHelper.EnqueueSampleEventsAsync();
     }
 
     public static void AddHostedJobs(IServiceCollection services, ILoggerFactory loggerFactory)

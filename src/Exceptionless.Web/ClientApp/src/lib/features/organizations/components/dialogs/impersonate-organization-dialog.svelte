@@ -251,7 +251,7 @@
                 </Select.Root>
 
                 {#if hasFilters}
-                    <Button variant="ghost" size="sm" onclick={resetFilters} class="h-8 text-xs">Reset filters</Button>
+                    <Button variant="ghost" size="sm" onclick={resetFilters} class="h-8 text-xs">Reset Filters</Button>
                 {/if}
             </div>
 

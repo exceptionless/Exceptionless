@@ -108,9 +108,11 @@
     const VIEW = 'issues';
     const savedViewsState = useSavedViews({
         filterCacheKey,
+        getColumnOrder: () => table.store.state.columnOrder,
         getColumnVisibility: () => table.store.state.columnVisibility,
         getFilterDefinitions: () => serializeFilters(filters ?? []),
         queryParams,
+        setColumnOrder: (v) => table.setColumnOrder(v),
         setColumnVisibility: (v) => table.setColumnVisibility(v),
         updateFilterCache,
         view: VIEW
@@ -273,7 +275,11 @@
                 return eventsQueryParameters.time;
             }
         },
-        route: { organizationId: organization.current }
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
+        }
     });
 
     const chartData = $derived(() => {
@@ -321,6 +327,7 @@
             {#if savedViewsState.isEnabled}
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
+                    columnOrder={table.store.state.columnOrder}
                     columnVisibility={table.store.state.columnVisibility}
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}

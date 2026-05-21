@@ -439,7 +439,7 @@ public class AdminController : ExceptionlessApiController
     }
 
     [HttpPost("generate-sample-events")]
-    public async Task<IActionResult> GenerateSampleEventsAsync(int eventCount = 100, int daysBack = 7)
+    public async Task<IActionResult> GenerateSampleEventsAsync(int eventCount = 250, int daysBack = 7)
     {
         if (eventCount < 1 || eventCount > 10000)
         {

@@ -10,16 +10,20 @@
 
     let { level }: Props = $props();
 
-    function getLogLevelVariant(level: LogLevel | null): 'default' | 'destructive' | 'outline' | 'secondary' {
+    function getLogLevelVariant(level: LogLevel | null): 'default' | 'destructive' | 'info' | 'outline' | 'secondary' | 'yellow' {
         if (level === 'trace' || level === 'debug') {
             return 'secondary';
         }
 
         if (level === 'info') {
-            return 'default';
+            return 'info';
         }
 
-        if (level === 'warn' || level === 'error') {
+        if (level === 'warn') {
+            return 'yellow';
+        }
+
+        if (level === 'error') {
             return 'destructive';
         }
 

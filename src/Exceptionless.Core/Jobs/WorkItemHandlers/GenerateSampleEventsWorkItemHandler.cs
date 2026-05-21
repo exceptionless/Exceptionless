@@ -48,14 +48,13 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
         var workItem = context.GetData<GenerateSampleEventsWorkItem>()!;
         int eventCount = Math.Clamp(workItem.EventCount, 1, 10000);
         int daysBack = Math.Clamp(workItem.DaysBack, 1, 365);
-        int acceptedDaysBack = Math.Min(daysBack, 3);
 
-        Log.LogInformation("Generating {EventCount} sample events over {DaysBack} days", eventCount, acceptedDaysBack);
-        await context.ReportProgressAsync(0, $"Generating {eventCount} sample events over {acceptedDaysBack} days");
+        Log.LogInformation("Generating {EventCount} sample events over {DaysBack} days", eventCount, daysBack);
+        await context.ReportProgressAsync(0, $"Generating {eventCount} sample events over {daysBack} days");
 
         var generator = new RandomEventGenerator(_timeProvider);
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-        var minDate = utcNow.AddDays(-acceptedDaysBack);
+        var minDate = utcNow.AddDays(-daysBack);
 
         if (IsProjectScoped(workItem))
         {
@@ -98,7 +97,7 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
                 if (context.CancellationToken.IsCancellationRequested)
                     break;
 
-                await _eventPipeline.RunAsync(batch, organization, project);
+                await _eventPipeline.RunAsync(batch, organization, project, allowExtendedEventDateRange: true);
                 totalProcessed += batch.Length;
 
                 int percentage = (int)Math.Min(99, totalProcessed * 100.0 / eventCount);
@@ -141,7 +140,7 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
             if (context.CancellationToken.IsCancellationRequested)
                 break;
 
-            await _eventPipeline.RunAsync(batch, organization, project);
+            await _eventPipeline.RunAsync(batch, organization, project, allowExtendedEventDateRange: true);
             totalProcessed += batch.Length;
 
             int percentage = (int)Math.Min(99, totalProcessed * 100.0 / eventCount);

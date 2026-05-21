@@ -12,7 +12,7 @@
         duplicateView?: SavedView;
         onClose: () => void;
         onLoadView: (id: string) => void;
-        onSave: (name: string, isPrivate: boolean, isDefault: boolean) => Promise<void>;
+        onSave: (name: string, isPrivate: boolean) => Promise<void>;
         open: boolean;
         saving: boolean;
     }
@@ -21,13 +21,11 @@
 
     let saveName = $state('');
     let isPrivate = $state(false);
-    let isDefault = $state(false);
 
     $effect(() => {
         if (open) {
             saveName = '';
             isPrivate = false;
-            isDefault = false;
         }
     });
 
@@ -36,7 +34,7 @@
             return;
         }
 
-        await onSave(saveName.trim(), isPrivate, isDefault);
+        await onSave(saveName.trim(), isPrivate);
     }
 </script>
 
@@ -77,25 +75,8 @@
                     <Label for="view-private" class="text-sm">Private</Label>
                     <Muted>Only visible to you</Muted>
                 </div>
-                <Switch
-                    id="view-private"
-                    bind:checked={isPrivate}
-                    onCheckedChange={(checked) => {
-                        if (checked) {
-                            isDefault = false;
-                        }
-                    }}
-                />
+                <Switch id="view-private" bind:checked={isPrivate} />
             </div>
-            {#if !isPrivate}
-                <div class="flex items-center justify-between">
-                    <div>
-                        <Label for="view-default" class="text-sm">Set as default</Label>
-                        <Muted>Auto-loads for everyone on page visit</Muted>
-                    </div>
-                    <Switch id="view-default" bind:checked={isDefault} />
-                </div>
-            {/if}
             <Dialog.Footer>
                 <Button variant="outline" onclick={onClose}>Cancel</Button>
                 <Button type="submit" disabled={!saveName.trim() || saving}>

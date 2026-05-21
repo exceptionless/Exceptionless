@@ -10,6 +10,8 @@ namespace Exceptionless.Core.Models;
 /// </summary>
 public record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
 {
+    public const int MaxFilterDefinitionsLength = 100_000;
+
     // Identity
     [ObjectId]
     public string Id { get; set; } = null!;
@@ -38,14 +40,14 @@ public record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
     public string? Filter { get; set; }
 
     /// <summary>JSON array of structured filter objects for UI chip hydration.</summary>
-    [MaxLength(10000)]
+    [MaxLength(MaxFilterDefinitionsLength)]
     public string? FilterDefinitions { get; set; }
 
     /// <summary>Column visibility state per dashboard table, keyed by column id.</summary>
     public Dictionary<string, bool>? Columns { get; set; }
 
-    /// <summary>Whether this view loads automatically when navigating to the page.</summary>
-    public bool IsDefault { get; set; }
+    /// <summary>Column display order per dashboard table, excluding utility columns.</summary>
+    public List<string>? ColumnOrder { get; set; }
 
     /// <summary>Display name shown in the sidebar and picker.</summary>
     [Required]

@@ -140,8 +140,7 @@ export interface NewSavedView {
   view_type: string;
   filter_definitions?: null | string;
   columns?: null | Record<string, boolean>;
-  /** If true, this view will be the default for its view type. Defaults to false. */
-  is_default?: null | boolean;
+  column_order?: null | string[];
   /** If true, the view will only be visible to the current user. Defaults to false. */
   is_private?: null | boolean;
 }
@@ -368,12 +367,12 @@ export interface UpdateProject {
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
 export interface UpdateSavedView {
   name?: null | string;
-  is_default?: null | boolean;
   filter?: null | string;
   time?: null | string;
   sort?: null | string;
   filter_definitions?: null | string;
   columns?: null | Record<string, boolean>;
+  column_order?: null | string[];
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
@@ -565,7 +564,7 @@ export interface ViewSavedView {
   filter?: null | string;
   filter_definitions?: null | string;
   columns?: null | Record<string, boolean>;
-  is_default: boolean;
+  column_order?: null | string[];
   name: string;
   time?: null | string;
   sort?: null | string;

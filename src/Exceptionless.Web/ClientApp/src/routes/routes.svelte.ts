@@ -1,4 +1,5 @@
 import type { ResolvedPathname } from '$app/types';
+import type { ShortcutKey } from '$features/shared/keyboard-shortcuts';
 import type { ViewCurrentUser } from '$features/users/models';
 import type { Icon } from '@lucide/svelte';
 import type { Component } from 'svelte';
@@ -8,17 +9,16 @@ import { routes as authRoutes } from './(auth)/routes.svelte';
 
 export type NavigationChild = {
     href: string;
-    isDefault?: boolean;
     title: string;
 };
 
 export type NavigationItem = {
     children?: NavigationChild[];
-    defaultViewId?: string;
     group: string;
     href: ResolvedPathname | string;
     icon: Component | typeof Icon;
     openInNewTab?: boolean;
+    shortcut?: readonly ShortcutKey[];
     show?: (context: NavigationItemContext) => boolean;
     title: string;
     view?: string;
