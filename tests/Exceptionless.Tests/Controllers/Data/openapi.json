@@ -8595,10 +8595,14 @@
             }
           },
           "column_order": {
+            "maxItems": 50,
             "type": [
               "null",
               "array"
-            ]
+            ],
+            "items": {
+              "type": "string"
+            }
           },
           "show_stats": {
             "type": [

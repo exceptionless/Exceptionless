@@ -424,7 +424,7 @@ export const UpdateSavedViewSchema = object({
     .nullable()
     .optional(),
   columns: record(string(), boolean()).nullable().optional(),
-  column_order: array(unknown()).nullable().optional(),
+  column_order: array(string()).nullable().optional(),
   show_stats: boolean().nullable().optional(),
   show_chart: boolean().nullable().optional(),
 });

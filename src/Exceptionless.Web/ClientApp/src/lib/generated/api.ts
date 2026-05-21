@@ -377,7 +377,7 @@ export interface UpdateSavedView {
   sort?: null | string;
   filter_definitions?: null | string;
   columns?: null | Record<string, boolean>;
-  column_order?: null | unknown[];
+  column_order?: string[] | null;
   show_stats?: null | boolean;
   show_chart?: null | boolean;
 }

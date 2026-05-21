@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using Exceptionless.Core.Extensions;
 using Microsoft.AspNetCore.OpenApi;
@@ -40,6 +41,7 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
 
             // Apply data annotations from the inner type's property
             DataAnnotationHelper.ApplyToSchema(propertySchema, property);
+            ApplyArrayAnnotations(propertySchema, property);
 
             string propertyName = property.Name.ToLowerUnderscoredWords();
             schema.Properties[propertyName] = propertySchema;
@@ -133,9 +135,10 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
                 schema.AdditionalProperties = CreateSchemaForType(valueType, false);
             }
         }
-        else if (type.IsArray || (type.IsGenericType && typeof(System.Collections.IEnumerable).IsAssignableFrom(type)))
+        else if (TryGetEnumerableElementType(type, out var elementType))
         {
             schemaType |= JsonSchemaType.Array;
+            schema.Items = CreateSchemaForType(elementType, false);
         }
         else
         {
@@ -144,5 +147,41 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
 
         schema.Type = schemaType;
         return schema;
+    }
+
+    private static void ApplyArrayAnnotations(OpenApiSchema schema, PropertyInfo property)
+    {
+        if (!schema.Type.HasValue || (schema.Type.Value & JsonSchemaType.Array) != JsonSchemaType.Array)
+        {
+            return;
+        }
+
+        var maxLength = property.GetCustomAttribute<MaxLengthAttribute>();
+        if (maxLength is { Length: > -1 })
+        {
+            schema.MaxItems = maxLength.Length;
+        }
+    }
+
+    private static bool TryGetEnumerableElementType(Type type, out Type elementType)
+    {
+        if (type.IsArray)
+        {
+            elementType = type.GetElementType() ?? typeof(object);
+            return true;
+        }
+
+        if (type == typeof(string) || !typeof(System.Collections.IEnumerable).IsAssignableFrom(type))
+        {
+            elementType = typeof(object);
+            return false;
+        }
+
+        var enumerableType = type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>)
+            ? type
+            : type.GetInterfaces().FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+
+        elementType = enumerableType?.GetGenericArguments()[0] ?? typeof(object);
+        return true;
     }
 }
