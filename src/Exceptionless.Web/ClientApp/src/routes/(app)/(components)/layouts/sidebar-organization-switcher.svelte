@@ -72,12 +72,12 @@
     }
 
     async function handleImpersonate(organization: ViewOrganization): Promise<void> {
-        await goto(resolve('/(app)'));
+        await goto(resolve('/(app)/issues'));
         currentOrganizationId = organization.id;
     }
 
     async function stopImpersonating(): Promise<void> {
-        await goto(resolve('/(app)'));
+        await goto(resolve('/(app)/issues'));
         currentOrganizationId = organizations[0]?.id;
     }
 

@@ -194,6 +194,12 @@ export const NewSavedViewSchema = object({
     .max(100, "Sort must be at most 100 characters")
     .nullable()
     .optional(),
+  slug: string()
+    .min(1, "Slug is required")
+    .max(100, "Slug must be at most 100 characters")
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug has invalid format")
+    .nullable()
+    .optional(),
   view_type: string().min(1, "View type is required"),
   filter_definitions: string()
     .min(1, "Filter definitions is required")
@@ -419,6 +425,12 @@ export const UpdateSavedViewSchema = object({
   filter: string().min(1, "Filter is required").nullable().optional(),
   time: string().min(1, "Time is required").nullable().optional(),
   sort: string().min(1, "Sort is required").nullable().optional(),
+  slug: string()
+    .min(1, "Slug is required")
+    .max(100, "Slug must be at most 100 characters")
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug has invalid format")
+    .nullable()
+    .optional(),
   filter_definitions: string()
     .min(1, "Filter definitions is required")
     .nullable()
@@ -619,6 +631,10 @@ export const ViewSavedViewSchema = object({
   show_stats: boolean().nullable().optional(),
   show_chart: boolean().nullable().optional(),
   name: string().min(1, "Name is required"),
+  slug: string()
+    .min(1, "Slug is required")
+    .max(100, "Slug must be at most 100 characters")
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug has invalid format"),
   time: string().min(1, "Time is required").nullable().optional(),
   sort: string().min(1, "Sort is required").nullable().optional(),
   version: int32(),

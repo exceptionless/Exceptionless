@@ -26,7 +26,7 @@
 
     import type { NewSavedView, SavedView, UpdateSavedView } from '../models';
 
-    import { deleteSavedView, patchSavedView, postSavedView } from '../api.svelte';
+    import { deleteSavedView, markSavedViewDeleted, patchSavedView, postSavedView, restoreDeletedSavedView } from '../api.svelte';
     import DeleteViewDialog from './delete-view-dialog.svelte';
     import RenameViewDialog from './rename-view-dialog.svelte';
     import SaveViewDialog from './save-view-dialog.svelte';
@@ -48,7 +48,7 @@
         filters: IFilter[];
         isModified: boolean;
         onClearSavedView: () => void;
-        onLoadView: (id: string) => void;
+        onLoadView: (view: SavedView) => void;
         onResetToSaved: () => void;
         savedViews: SavedView[];
         setShowChart?: (show: boolean) => void;
@@ -227,7 +227,7 @@
         isDeleteDialogOpen = true;
     }
 
-    async function handleSave(name: string, isPrivate: boolean) {
+    async function handleSave(name: string, slug: string, isPrivate: boolean) {
         if (!organizationId) {
             return;
         }
@@ -244,6 +244,7 @@
             organization_id: organizationId,
             show_chart: showChart,
             show_stats: showStats,
+            slug,
             sort: sort || undefined,
             time: time || undefined,
             view_type: view
@@ -252,20 +253,20 @@
         try {
             const result = await createMutation.mutateAsync(body);
             isSaveDialogOpen = false;
-            onLoadView(result.id);
+            onLoadView(result);
             toast.success(`Saved view "${result.name}" created.`);
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
         }
     }
 
-    async function handleRename(name: string) {
+    async function handleRename(name: string, slug: string) {
         if (!activeView || !organizationId) {
             return;
         }
 
         try {
-            const result = await updateMutation.mutateAsync({ name });
+            const result = await updateMutation.mutateAsync({ name, slug });
             isRenameDialogOpen = false;
             toast.success(`View renamed to "${result.name}".`);
         } catch (error) {
@@ -303,15 +304,22 @@
         }
 
         const target = viewToDelete;
+        const wasActiveView = activeSavedView?.id === target.id;
+        markSavedViewDeleted(target);
+        if (wasActiveView) {
+            onClearSavedView();
+        }
+
         try {
             await removeMutation.mutateAsync(target);
 
-            if (activeSavedView?.id === target.id) {
-                onClearSavedView();
-            }
-
             toast.success(`View "${target.name}" deleted.`);
         } catch {
+            restoreDeletedSavedView(target);
+            if (wasActiveView) {
+                onLoadView(target);
+            }
+
             toast.error('Failed to delete view. Please try again.');
         } finally {
             isDeleteDialogOpen = false;
@@ -323,9 +331,12 @@
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="gap-x-1.5 px-3" size="lg" variant="outline" title="Manage View Settings">
+            <Button {...props} class="relative gap-x-1.5 px-3" size="lg" variant="outline" title="Manage View Settings">
                 <SlidersHorizontal class="size-4" aria-hidden="true" />
                 <span>View</span>
+                {#if isModified}
+                    <span class="bg-primary absolute top-1 right-1 size-2 rounded-full" aria-label="Unsaved view changes"></span>
+                {/if}
             </Button>
         {/snippet}
     </DropdownMenu.Trigger>
@@ -437,11 +448,28 @@
 </DropdownMenu.Root>
 
 {#if isSaveDialogOpen}
-    <SaveViewDialog bind:open={isSaveDialogOpen} {duplicateView} {saving} onSave={handleSave} onClose={() => (isSaveDialogOpen = false)} {onLoadView} />
+    <SaveViewDialog
+        bind:open={isSaveDialogOpen}
+        {duplicateView}
+        {savedViews}
+        {saving}
+        onSave={handleSave}
+        onClose={() => (isSaveDialogOpen = false)}
+        {onLoadView}
+    />
 {/if}
 
 {#if isRenameDialogOpen && activeView}
-    <RenameViewDialog bind:open={isRenameDialogOpen} name={activeView.name} {saving} onRename={handleRename} onClose={() => (isRenameDialogOpen = false)} />
+    <RenameViewDialog
+        bind:open={isRenameDialogOpen}
+        name={activeView.name}
+        slug={activeView.slug}
+        viewId={activeView.id}
+        {savedViews}
+        {saving}
+        onRename={handleRename}
+        onClose={() => (isRenameDialogOpen = false)}
+    />
 {/if}
 
 {#if isDeleteDialogOpen}

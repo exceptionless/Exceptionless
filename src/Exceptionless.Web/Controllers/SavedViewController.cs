@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -28,9 +29,23 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         ILoggerFactory loggerFactory) : base(repository, mapper, validator, timeProvider, loggerFactory)
     { }
 
-    protected override SavedView MapToModel(NewSavedView newModel) => _mapper.MapToSavedView(newModel);
-    protected override ViewSavedView MapToViewModel(SavedView model) => _mapper.MapToViewSavedView(model);
-    protected override List<ViewSavedView> MapToViewModels(IEnumerable<SavedView> models) => _mapper.MapToViewSavedViews(models);
+    protected override SavedView MapToModel(NewSavedView newModel)
+    {
+        var model = _mapper.MapToSavedView(newModel);
+        model.Slug = ToSlug(String.IsNullOrWhiteSpace(model.Slug) ? model.Name : model.Slug);
+        return model;
+    }
+
+    protected override ViewSavedView MapToViewModel(SavedView model)
+    {
+        var viewModel = _mapper.MapToViewSavedView(model);
+        if (String.IsNullOrWhiteSpace(viewModel.Slug))
+            viewModel.Slug = ToFallbackSlug(viewModel.Name, viewModel.Id);
+
+        return viewModel;
+    }
+
+    protected override List<ViewSavedView> MapToViewModels(IEnumerable<SavedView> models) => models.Select(MapToViewModel).ToList();
 
     /// <summary>
     /// Get by organization
@@ -174,6 +189,21 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         if (count >= MaxViewsPerOrganization)
             return PermissionResult.DenyWithMessage($"Organization is limited to {MaxViewsPerOrganization} saved views.");
 
+        if (String.IsNullOrWhiteSpace(value.Slug))
+            return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "URL name cannot be empty. Use at least one letter or number.");
+
+        if (IsReservedSlug(value.Slug))
+            return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "URL name cannot look like an event or issue id.");
+
+        if (!IsValidSlug(value.Slug))
+            return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "URL name can only contain lowercase letters, numbers, and single dashes.");
+
+        if (await NameExistsAsync(value.OrganizationId, value.ViewType, value.Name, null))
+            return PermissionResult.DenyWithStatus(StatusCodes.Status409Conflict, $"A saved view named '{value.Name.Trim()}' already exists.");
+
+        if (await SlugExistsAsync(value.OrganizationId, value.ViewType, value.Slug, null))
+            return PermissionResult.DenyWithStatus(StatusCodes.Status409Conflict, $"A saved view with URL name '{value.Slug}' already exists.");
+
         return await base.CanAddAsync(value);
     }
 
@@ -192,13 +222,44 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "Name cannot be empty or whitespace.");
         }
 
+        if (changedNames.Contains(nameof(UpdateSavedView.Slug))
+            && changes.TryGetPropertyValue(nameof(UpdateSavedView.Slug), out object? slugValue)
+            && (slugValue is not string slug || String.IsNullOrWhiteSpace(slug)))
+        {
+            return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "URL name cannot be empty. Use at least one letter or number.");
+        }
+
         var lengthResult = ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Name), 100)
+            ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Slug), 100)
             ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Filter), 2000)
             ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Time), 100)
             ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Sort), 100)
             ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.FilterDefinitions), SavedView.MaxFilterDefinitionsLength);
         if (lengthResult is not null)
             return lengthResult;
+
+        if (changedNames.Contains(nameof(UpdateSavedView.Name))
+            && changes.TryGetPropertyValue(nameof(UpdateSavedView.Name), out nameValue)
+            && nameValue is string changedName
+            && await NameExistsAsync(original.OrganizationId, original.ViewType, changedName, original.Id))
+        {
+            return PermissionResult.DenyWithStatus(StatusCodes.Status409Conflict, $"A saved view named '{changedName.Trim()}' already exists.");
+        }
+
+        if (changedNames.Contains(nameof(UpdateSavedView.Slug))
+            && changes.TryGetPropertyValue(nameof(UpdateSavedView.Slug), out slugValue)
+            && slugValue is string changedSlug)
+        {
+            var normalizedSlug = ToSlug(changedSlug);
+            if (IsReservedSlug(normalizedSlug))
+                return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "URL name cannot look like an event or issue id.");
+
+            if (!IsValidSlug(normalizedSlug))
+                return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "URL name can only contain lowercase letters, numbers, and single dashes.");
+
+            if (await SlugExistsAsync(original.OrganizationId, original.ViewType, normalizedSlug, original.Id))
+                return PermissionResult.DenyWithStatus(StatusCodes.Status409Conflict, $"A saved view with URL name '{normalizedSlug}' already exists.");
+        }
 
         if (changedNames.Contains(nameof(UpdateSavedView.FilterDefinitions))
             && changes.TryGetPropertyValue(nameof(UpdateSavedView.FilterDefinitions), out object? filterDefsValue)
@@ -258,9 +319,18 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 
     protected override Task<SavedView> UpdateModelAsync(SavedView original, Delta<UpdateSavedView> changes)
     {
+        var changedNames = changes.GetChangedPropertyNames();
+        changes.Patch(original);
+
+        if (changedNames.Contains(nameof(UpdateSavedView.Slug)))
+            original.Slug = ToSlug(original.Slug);
+
+        if (String.IsNullOrWhiteSpace(original.Slug))
+            original.Slug = ToFallbackSlug(original.Name, original.Id);
+
         original.UpdatedByUserId = CurrentUser.Id;
 
-        return base.UpdateModelAsync(original, changes);
+        return _repository.SaveAsync(original, o => o.Cache());
     }
 
     protected override async Task<PermissionResult> CanDeleteAsync(SavedView value)
@@ -269,5 +339,43 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             return PermissionResult.DenyWithNotFound(value.Id);
 
         return await base.CanDeleteAsync(value);
+    }
+
+    private async Task<bool> SlugExistsAsync(string organizationId, string viewType, string slug, string? excludingId)
+    {
+        var results = await _repository.GetByViewForUserAsync(organizationId, viewType, CurrentUser.Id, o => o.PageLimit(1000));
+        return results.Documents.Any(view => view.Id != excludingId && String.Equals(ToFallbackSlug(String.IsNullOrWhiteSpace(view.Slug) ? view.Name : view.Slug, view.Id), slug, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private async Task<bool> NameExistsAsync(string organizationId, string viewType, string name, string? excludingId)
+    {
+        var results = await _repository.GetByViewForUserAsync(organizationId, viewType, CurrentUser.Id, o => o.PageLimit(1000));
+        return results.Documents.Any(view => view.Id != excludingId && String.Equals(view.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsValidSlug(string slug)
+    {
+        return Regex.IsMatch(slug, "^[a-z0-9]+(?:-[a-z0-9]+)*$") && !IsReservedSlug(slug);
+    }
+
+    private static bool IsReservedSlug(string slug)
+    {
+        return Regex.IsMatch(slug, "^[a-f0-9]{24}$");
+    }
+
+    private static string ToSlug(string value)
+    {
+        var slug = Regex.Replace(value.Trim().ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
+        slug = Regex.Replace(slug, "-+", "-");
+        return slug;
+    }
+
+    private static string ToFallbackSlug(string value, string id)
+    {
+        var slug = ToSlug(value);
+        if (!String.IsNullOrWhiteSpace(slug))
+            return slug;
+
+        return String.IsNullOrWhiteSpace(id) ? "saved-view" : $"saved-view-{id}";
     }
 }

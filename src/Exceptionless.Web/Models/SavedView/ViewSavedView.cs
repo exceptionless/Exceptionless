@@ -27,6 +27,7 @@ public record ViewSavedView : IIdentity, IHaveDates
     public bool? ShowStats { get; set; }
     public bool? ShowChart { get; set; }
     public string Name { get; set; } = null!;
+    public string Slug { get; set; } = null!;
     public string? Time { get; set; }
     public string? Sort { get; set; }
     public int Version { get; set; }

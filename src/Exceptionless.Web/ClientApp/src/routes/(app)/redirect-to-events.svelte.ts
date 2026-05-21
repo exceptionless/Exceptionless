@@ -10,8 +10,8 @@ import { buildFilterCacheKey, toFilter, updateFilterCache } from '$features/even
  */
 export async function redirectToEventsWithFilter(organizationId: string | undefined, addedOrUpdated: IFilter): Promise<void> {
     const filter = toFilter([addedOrUpdated]);
-    const filterCacheKey = buildFilterCacheKey(organizationId, resolve('/(app)'), filter);
+    const filterCacheKey = buildFilterCacheKey(organizationId, resolve('/(app)/events'), filter);
     updateFilterCache(filterCacheKey, [addedOrUpdated]);
 
-    await goto(`${resolve('/(app)')}?filter=${encodeURIComponent(filter)}`);
+    await goto(`${resolve('/(app)/events')}?filter=${encodeURIComponent(filter)}`);
 }

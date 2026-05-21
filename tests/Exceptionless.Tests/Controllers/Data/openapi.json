@@ -7899,6 +7899,14 @@
               "string"
             ]
           },
+          "slug": {
+            "maxLength": 100,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "view_type": {
             "type": "string"
           },
@@ -8579,6 +8587,12 @@
               "string"
             ]
           },
+          "slug": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "filter_definitions": {
             "type": [
               "null",
@@ -9216,6 +9230,7 @@
           "organization_id",
           "created_by_user_id",
           "name",
+          "slug",
           "version",
           "view_type",
           "created_utc",
@@ -9302,6 +9317,9 @@
             ]
           },
           "name": {
+            "type": "string"
+          },
+          "slug": {
             "type": "string"
           },
           "time": {

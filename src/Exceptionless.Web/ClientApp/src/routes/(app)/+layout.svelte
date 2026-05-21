@@ -20,7 +20,8 @@
     import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
     import { premiumPage } from '$features/organizations/premium-page.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
-    import { getSavedViewsQuery, invalidateSavedViewQueries } from '$features/saved-views/api.svelte';
+    import { getSavedViewsQuery, invalidateSavedViewQueries, isSavedViewDeleted } from '$features/saved-views/api.svelte';
+    import { savedViewHref } from '$features/saved-views/slugs';
     import { appKeyboardShortcuts, isKeyboardShortcut } from '$features/shared/keyboard-shortcuts';
     import { invalidateStackQueries } from '$features/stacks/api.svelte';
     import { invalidateTokenQueries } from '$features/tokens/api.svelte';
@@ -223,7 +224,7 @@
 
             if (isKeyboardShortcut(e, appKeyboardShortcuts.allEvents)) {
                 e.preventDefault();
-                void goto(resolve('/(app)'));
+                void goto(resolve('/(app)/events'));
                 return;
             }
 
@@ -354,27 +355,13 @@
     });
 
     const viewToHref: Record<string, string> = {
-        events: resolve('/(app)'),
+        events: resolve('/(app)/events'),
         issues: resolve('/(app)/issues'),
         stream: resolve('/(app)/stream')
     };
 
-    function buildSavedViewHref(baseHref: string, savedView: SavedView): string {
-        const queryEntries: [string, string][] = [['saved', savedView.id]];
-        if (savedView.filter) {
-            queryEntries.push(['filter', savedView.filter]);
-        }
-
-        if (savedView.time) {
-            queryEntries.push(['time', savedView.time]);
-        }
-
-        if (savedView.sort && savedView.view_type !== 'issues') {
-            queryEntries.push(['sort', savedView.sort]);
-        }
-
-        const queryParams = new URLSearchParams(queryEntries);
-        return `${baseHref}?${queryParams.toString()}`;
+    function buildSavedViewHref(savedView: SavedView): string {
+        return savedViewHref(savedView);
     }
 
     const filteredRoutes = $derived.by(() => {
@@ -386,24 +373,30 @@
                     return route;
                 }
 
-                if (route.href === resolve('/(app)') && page.params.eventId) {
+                if (route.href === resolve('/(app)/events') && page.params.eventId) {
                     return {
                         ...route,
-                        children: [...(route.children ?? []), { href: resolve('/(app)/event/[eventId]', { eventId: page.params.eventId }), title: 'Details' }]
+                        children: [
+                            ...(route.children ?? []),
+                            { href: resolve('/(app)/events/[eventId=objectid]', { eventId: page.params.eventId }), title: 'Details' }
+                        ]
                     };
                 }
 
                 if (route.href === resolve('/(app)/issues') && page.params.stackId) {
                     return {
                         ...route,
-                        children: [...(route.children ?? []), { href: resolve('/(app)/issues/[stackId]', { stackId: page.params.stackId }), title: 'Details' }]
+                        children: [
+                            ...(route.children ?? []),
+                            { href: resolve('/(app)/issues/[stackId=objectid]', { stackId: page.params.stackId }), title: 'Details' }
+                        ]
                     };
                 }
 
                 return route;
             });
 
-        const savedViews = savedViewsQuery.data ?? [];
+        const savedViews = (savedViewsQuery.data ?? []).filter((savedView) => !isSavedViewDeleted(savedView));
         if (savedViews.length === 0) {
             return allRoutes;
         }
@@ -427,7 +420,7 @@
 
             const children = [
                 ...sortedViews.map((savedView) => ({
-                    href: buildSavedViewHref(route.href, savedView),
+                    href: buildSavedViewHref(savedView),
                     title: savedView.name
                 })),
                 ...(route.children ?? [])

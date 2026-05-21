@@ -1,3 +1,4 @@
+using System.Net;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
@@ -200,6 +201,90 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
             .Content(newView)
             .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Fact]
+    public Task PostAsync_WithNameThatCannotCreateUrlName_ReturnsUnprocessableEntity()
+    {
+        var newView = new NewSavedView
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            Name = "!!!",
+            Filter = "status:open",
+            ViewType = "events"
+        };
+
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(newView)
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Fact]
+    public Task PostAsync_WithObjectIdUrlName_ReturnsUnprocessableEntity()
+    {
+        var newView = new NewSavedView
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            Name = "Object Id URL Name",
+            Filter = "status:open",
+            Slug = "507f1f77bcf86cd799439011",
+            ViewType = "events"
+        };
+
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(newView)
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Fact]
+    public async Task PostAsync_DuplicateName_ReturnsConflict()
+    {
+        var created = await CreateSavedViewAsync("Duplicate Saved View Name", "status:open", "events");
+        Assert.NotNull(created);
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(new NewSavedView
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "duplicate saved view name",
+                Filter = "type:error",
+                ViewType = "events"
+            })
+            .ExpectedStatus(HttpStatusCode.Conflict)
+        );
+    }
+
+    [Fact]
+    public async Task PostAsync_DuplicateSlug_ReturnsConflict()
+    {
+        var created = await CreateSavedViewAsync("Shared URL Name", "status:open", "events", slug: "shared-url-name");
+        Assert.NotNull(created);
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(new NewSavedView
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Different Display Name",
+                Filter = "type:error",
+                Slug = "shared-url-name",
+                ViewType = "events"
+            })
+            .ExpectedStatus(HttpStatusCode.Conflict)
         );
     }
 
@@ -600,6 +685,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
                 OrganizationId = SampleDataService.TEST_ORG_ID,
                 Name = $"Cap Test {i}",
                 Filter = "status:open",
+                Slug = $"cap-test-{i}",
                 ViewType = "events",
                 Version = 1,
                 CreatedByUserId = "537650f3b77efe23a47914f0",
@@ -641,6 +727,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Organization Wide",
             Filter = "status:open",
+            Slug = "organization-wide",
             ViewType = "events",
             CreatedByUserId = testUser.Id
         });
@@ -651,6 +738,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             UserId = testUser.Id,
             Name = "My Private View",
             Filter = "type:error",
+            Slug = "my-private-view",
             ViewType = "events",
             CreatedByUserId = testUser.Id
         });
@@ -684,6 +772,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Organization View",
             Filter = "status:open",
+            Slug = "organization-view",
             ViewType = "events",
             CreatedByUserId = testUser.Id
         });
@@ -694,6 +783,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             UserId = testUser.Id,
             Name = "Private View",
             Filter = "type:error",
+            Slug = "private-view",
             ViewType = "events",
             CreatedByUserId = testUser.Id
         });
@@ -727,6 +817,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Organization Wide",
             Filter = "status:open",
+            Slug = "organization-wide",
             ViewType = "events",
             CreatedByUserId = testUser.Id
         });
@@ -737,6 +828,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             UserId = testUser.Id,
             Name = "Private",
             Filter = "type:error",
+            Slug = "private",
             ViewType = "events",
             CreatedByUserId = testUser.Id
         });
@@ -753,13 +845,14 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         Assert.NotNull(await _savedViewRepository.GetByIdAsync(organizationWide.Id));
     }
 
-    private async Task<ViewSavedView?> CreateSavedViewAsync(string name, string filter, string view, bool isPrivate = false)
+    private async Task<ViewSavedView?> CreateSavedViewAsync(string name, string filter, string view, bool isPrivate = false, string? slug = null)
     {
         var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = name,
             Filter = filter,
+            Slug = slug,
             ViewType = view,
             IsPrivate = isPrivate
         };
@@ -821,6 +914,61 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(updated);
         Assert.Equal(filterDefs, updated.FilterDefinitions);
+    }
+
+    [Fact]
+    public async Task PatchAsync_DuplicateName_ReturnsConflict()
+    {
+        // Arrange
+        var existing = await CreateSavedViewAsync("Existing Patch Name", "status:open", "events");
+        var created = await CreateSavedViewAsync("Editable Patch Name", "type:error", "events");
+        Assert.NotNull(existing);
+        Assert.NotNull(created);
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", created.Id)
+            .Content(new UpdateSavedView { Name = "existing patch name" })
+            .ExpectedStatus(HttpStatusCode.Conflict)
+        );
+    }
+
+    [Fact]
+    public async Task PatchAsync_DuplicateSlug_ReturnsConflict()
+    {
+        // Arrange
+        var existing = await CreateSavedViewAsync("Existing Patch URL", "status:open", "events", slug: "existing-patch-url");
+        var created = await CreateSavedViewAsync("Editable Patch URL", "type:error", "events", slug: "editable-patch-url");
+        Assert.NotNull(existing);
+        Assert.NotNull(created);
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", created.Id)
+            .Content(new UpdateSavedView { Slug = "existing-patch-url" })
+            .ExpectedStatus(HttpStatusCode.Conflict)
+        );
+    }
+
+    [Fact]
+    public async Task PatchAsync_WithObjectIdUrlName_ReturnsUnprocessableEntity()
+    {
+        // Arrange
+        var created = await CreateSavedViewAsync("Editable Object Id URL", "type:error", "events", slug: "editable-object-id-url");
+        Assert.NotNull(created);
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", created.Id)
+            .Content(new UpdateSavedView { Slug = "507f1f77bcf86cd799439011" })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
     }
 
     [Fact]
@@ -1404,6 +1552,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Public View",
             Filter = "status:open",
+            Slug = "public-view",
             ViewType = "events",
             CreatedByUserId = testUser.Id
         });
@@ -1414,6 +1563,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             UserId = testUser.Id,
             Name = "Own Private",
             Filter = "type:error",
+            Slug = "own-private",
             ViewType = "events",
             CreatedByUserId = testUser.Id
         });
@@ -1424,6 +1574,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             UserId = TestConstants.UserId2,
             Name = "Other Private",
             Filter = "type:log",
+            Slug = "other-private",
             ViewType = "events",
             CreatedByUserId = TestConstants.UserId2
         });
@@ -1452,6 +1603,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Events View",
             Filter = "status:open",
+            Slug = "events-view",
             ViewType = "events",
             CreatedByUserId = testUser.Id
         });
@@ -1461,6 +1613,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Issues View",
             Filter = "status:regressed",
+            Slug = "issues-view",
             ViewType = "issues",
             CreatedByUserId = testUser.Id
         });
@@ -1487,6 +1640,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Count Test 1",
+            Slug = "count-test-1",
             ViewType = "events",
             CreatedByUserId = testUser.Id
         });
@@ -1495,6 +1649,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Count Test 2",
+            Slug = "count-test-2",
             ViewType = "issues",
             CreatedByUserId = testUser.Id
         });
@@ -1519,6 +1674,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "View Type Test 1",
+            Slug = "view-type-test-1",
             ViewType = "stream",
             CreatedByUserId = testUser.Id
         });
@@ -1527,6 +1683,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "View Type Test 2",
+            Slug = "view-type-test-2",
             ViewType = "stream",
             CreatedByUserId = testUser.Id
         });
@@ -1535,6 +1692,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Wrong View Type",
+            Slug = "wrong-view-type",
             ViewType = "events",
             CreatedByUserId = testUser.Id
         });
@@ -1561,6 +1719,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Public Created By User",
+            Slug = "public-created-by-user",
             ViewType = "events",
             CreatedByUserId = testUser.Id
         });
@@ -1570,6 +1729,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             UserId = testUser.Id,
             Name = "User Private View",
+            Slug = "user-private-view",
             ViewType = "events",
             CreatedByUserId = testUser.Id
         });

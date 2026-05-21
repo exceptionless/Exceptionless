@@ -18,7 +18,7 @@
     watch(
         () => organization.current,
         () => {
-            goto(resolve('/(app)'));
+            goto(resolve('/(app)/events'));
         },
         { lazy: true }
     );
@@ -33,7 +33,7 @@
         }
 
         toast.error(`The event "${page.params.eventId}" could not be found.`);
-        await goto(resolve('/(app)'));
+        await goto(resolve('/(app)/events'));
     }
 </script>
 

@@ -23,7 +23,11 @@
         return isOnRoute && activeSavedParam === savedId;
     }
 
-    function isPathActive(href: string): boolean {
+    function isPathActive(href: string | undefined): boolean {
+        if (!href) {
+            return false;
+        }
+
         return page.url.pathname === href || page.url.pathname.startsWith(href + '/');
     }
 
@@ -47,7 +51,7 @@
     }
 
     function hasSavedViewChildren(route: NavigationItem): boolean {
-        return route.children?.some((childItem) => isSavedViewChild(childItem)) ?? false;
+        return !!route.view || (route.children?.some((childItem) => isSavedViewChild(childItem)) ?? false);
     }
 
     function isRouteActive(route: NavigationItem): boolean {
@@ -272,7 +276,6 @@
                             </Sidebar.MenuItem>
                         {/if}
                     {:else if route.children?.length}
-                        {@const hasSavedViews = hasSavedViewChildren(route)}
                         <Collapsible.Root open={isRouteGroupOpen(route)} onOpenChange={(open) => setRouteGroupOpen(route, open)} class="group/collapsible">
                             {#snippet child({ props: collapsibleProps })}
                                 <Sidebar.MenuItem {...collapsibleProps}>
@@ -280,30 +283,13 @@
                                         {#snippet child({ props: triggerProps })}
                                             <Sidebar.MenuButton {...triggerProps}>
                                                 {#snippet child({ props: buttonProps })}
-                                                    {#if hasSavedViews}
-                                                        <button type="button" title={route.title} {...buttonProps}>
-                                                            <Icon />
-                                                            <span>{route.title}</span>
-                                                            <ChevronRight
-                                                                class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
-                                                            />
-                                                        </button>
-                                                    {:else}
-                                                        <A
-                                                            variant="ghost"
-                                                            href={route.href}
-                                                            title={route.title}
-                                                            onclick={onMenuClick}
-                                                            class="flex min-w-0 flex-1 items-center gap-2"
-                                                            {...buttonProps}
-                                                        >
-                                                            <Icon />
-                                                            <span>{route.title}</span>
-                                                            <ChevronRight
-                                                                class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
-                                                            />
-                                                        </A>
-                                                    {/if}
+                                                    <button type="button" title={route.title} {...buttonProps}>
+                                                        <Icon />
+                                                        <span>{route.title}</span>
+                                                        <ChevronRight
+                                                            class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                                                        />
+                                                    </button>
                                                 {/snippet}
                                             </Sidebar.MenuButton>
                                         {/snippet}
