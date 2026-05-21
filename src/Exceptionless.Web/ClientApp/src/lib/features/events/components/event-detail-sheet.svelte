@@ -35,9 +35,17 @@
 </script>
 
 <Sheet.Root onOpenChange={handleOpenChange} open={!!eventId}>
-    <Sheet.Content class="w-full overflow-y-scroll sm:max-w-full! md:w-5/6!">
+    <Sheet.Content
+        class="top-15.25! bottom-0! h-auto! w-full transform-gpu overflow-y-auto rounded-l-lg border-l shadow-2xl duration-150 ease-out will-change-transform sm:max-w-full! md:w-5/6!"
+        overlayProps={{ class: 'top-15.25! bg-black/5 supports-backdrop-filter:backdrop-blur-none!' }}
+    >
         <Sheet.Header>
-            <Sheet.Title>Event Details <Button href={resolvedHref} size="sm" title="Open in new window" variant="ghost"><ExternalLink /></Button></Sheet.Title>
+            <Sheet.Title class="flex items-center gap-2">
+                Event Details
+                <Button aria-label="Open event details in new window" href={resolvedHref} size="icon-sm" title="Open in new window" variant="ghost">
+                    <ExternalLink aria-hidden="true" />
+                </Button>
+            </Sheet.Title>
         </Sheet.Header>
         <div class="px-4">
             {#if eventId}

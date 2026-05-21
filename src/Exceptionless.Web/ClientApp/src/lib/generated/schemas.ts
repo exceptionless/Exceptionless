@@ -202,6 +202,8 @@ export const NewSavedViewSchema = object({
     .optional(),
   columns: record(string(), boolean()).nullable().optional(),
   column_order: array(string()).nullable().optional(),
+  show_stats: boolean().nullable().optional(),
+  show_chart: boolean().nullable().optional(),
   is_private: boolean().nullable().optional(),
 });
 export type NewSavedViewFormData = Infer<typeof NewSavedViewSchema>;
@@ -288,8 +290,7 @@ export const PersistentEventSchema = object({
   type: string()
     .min(1, "Type is required")
     .max(100, "Type must be at most 100 characters")
-    .nullable()
-    .optional(),
+    .nullable(),
   source: string()
     .min(1, "Source is required")
     .max(2000, "Source must be at most 2000 characters")
@@ -424,6 +425,8 @@ export const UpdateSavedViewSchema = object({
     .optional(),
   columns: record(string(), boolean()).nullable().optional(),
   column_order: array(string()).nullable().optional(),
+  show_stats: boolean().nullable().optional(),
+  show_chart: boolean().nullable().optional(),
 });
 export type UpdateSavedViewFormData = Infer<typeof UpdateSavedViewSchema>;
 
@@ -613,6 +616,8 @@ export const ViewSavedViewSchema = object({
     .optional(),
   columns: record(string(), boolean()).nullable().optional(),
   column_order: array(string()).nullable().optional(),
+  show_stats: boolean().nullable().optional(),
+  show_chart: boolean().nullable().optional(),
   name: string().min(1, "Name is required"),
   time: string().min(1, "Time is required").nullable().optional(),
   sort: string().min(1, "Sort is required").nullable().optional(),

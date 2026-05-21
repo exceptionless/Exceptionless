@@ -19,6 +19,8 @@ public class UpdateSavedView : IValidatableObject
     public Dictionary<string, bool>? Columns { get; set; }
     [MaxLength(50)]
     public List<string>? ColumnOrder { get; set; }
+    public bool? ShowStats { get; set; }
+    public bool? ShowChart { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
