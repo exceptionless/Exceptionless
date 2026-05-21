@@ -37,7 +37,7 @@
         "@storybook/addon-svelte-csf": "^5.1.2",
         "@storybook/sveltekit": "^10.3.6",
         "@sveltejs/adapter-static": "^3.0.10",
-        "@sveltejs/kit": "^2.59.1",
+        "@sveltejs/kit": "^2.60.1",
         "@sveltejs/vite-plugin-svelte": "^6.2.4",
         "@tailwindcss/vite": "^4.3.0",
         "@tanstack/eslint-plugin-query": "^5.100.10",
