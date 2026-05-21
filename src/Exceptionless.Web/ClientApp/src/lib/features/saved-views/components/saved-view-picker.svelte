@@ -51,10 +51,10 @@
         onLoadView: (id: string) => void;
         onResetToSaved: () => void;
         savedViews: SavedView[];
-        showChart?: boolean;
-        showStats?: boolean;
         setShowChart?: (show: boolean) => void;
         setShowStats?: (show: boolean) => void;
+        showChart?: boolean;
+        showStats?: boolean;
         sort?: string;
         table: Table<StockFeatures, TData>;
         time?: string;
@@ -71,10 +71,10 @@
         onLoadView,
         onResetToSaved,
         savedViews,
-        showChart = true,
-        showStats = true,
         setShowChart,
         setShowStats,
+        showChart = true,
+        showStats = true,
         sort,
         table,
         time,

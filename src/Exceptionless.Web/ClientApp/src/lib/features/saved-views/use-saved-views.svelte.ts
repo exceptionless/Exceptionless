@@ -21,9 +21,9 @@ export interface UseSavedViewsOptions {
     filterCacheKey: (filter: null | string) => string;
     getColumnOrder?: () => ColumnOrderState;
     getColumnVisibility?: () => ColumnVisibilityState;
+    getFilterDefinitions?: () => string;
     getShowChart?: () => boolean;
     getShowStats?: () => boolean;
-    getFilterDefinitions?: () => string;
     queryParams: SavedViewQueryParams;
     setColumnOrder?: (order: ColumnOrderState) => void;
     setColumnVisibility?: (visibility: ColumnVisibilityState) => void;

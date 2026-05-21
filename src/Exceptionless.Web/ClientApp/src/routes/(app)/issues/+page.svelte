@@ -11,8 +11,8 @@
     import { type GetEventsParams, getOrganizationCountQuery, getStackEventsQuery } from '$features/events/api.svelte';
     import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
-    import { DateFilter, ProjectFilter, StatusFilter, TypeFilter } from '$features/events/components/filters';
     import EventsStatsDashboard from '$features/events/components/events-stats-dashboard.svelte';
+    import { DateFilter, ProjectFilter, StatusFilter, TypeFilter } from '$features/events/components/filters';
     import {
         applyTimeFilter,
         buildFilterCacheKey,
