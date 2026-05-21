@@ -12,6 +12,7 @@
     import { getOrganizationCountQuery } from '$features/events/api.svelte';
     import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
+    import EventsStatsDashboard from '$features/events/components/events-stats-dashboard.svelte';
     import { DateFilter, ProjectFilter, StatusFilter } from '$features/events/components/filters';
     import {
         applyTimeFilter,
@@ -92,15 +93,21 @@
     });
 
     const VIEW = 'events';
+    let showStats = $state(true);
+    let showChart = $state(true);
     const savedViewsState = useSavedViews({
         defaultColumnVisibility: defaultEventColumnVisibility,
         filterCacheKey,
         getColumnOrder: () => table.store.state.columnOrder,
         getColumnVisibility: () => table.store.state.columnVisibility,
         getFilterDefinitions: () => serializeFilters(filters ?? []),
+        getShowChart: () => showChart,
+        getShowStats: () => showStats,
         queryParams,
         setColumnOrder: (v) => table.setColumnOrder(v),
         setColumnVisibility: (v) => table.setColumnVisibility(v),
+        setShowChart: (v) => (showChart = v),
+        setShowStats: (v) => (showStats = v),
         updateFilterCache,
         view: VIEW
     });
@@ -297,6 +304,22 @@
         }));
     });
 
+    const stats = $derived.by(() => {
+        const aggregations = chartDataQuery.data?.aggregations;
+        const timeRange = parseDateMathRange(getQueryTime() || undefined);
+        const totalEvents = agg.sum(aggregations, 'sum_count')?.value ?? chartDataQuery.data?.total ?? 0;
+        const totalIssues = agg.cardinality(aggregations, 'cardinality_stack')?.value ?? 0;
+        const newIssues = agg.terms<boolean>(aggregations, 'terms_first')?.buckets[0]?.total ?? 0;
+        const hours = Math.max((timeRange.end.getTime() - timeRange.start.getTime()) / 3_600_000, 1);
+
+        return {
+            eventsPerHour: totalEvents / hours,
+            newIssues,
+            totalEvents,
+            totalIssues
+        };
+    });
+
     function onRangeSelect(start: Date, end: Date) {
         onFilterChanged(new DateFilter('date', toDateMathRange(start, end)));
     }
@@ -322,6 +345,10 @@
                     onClearSavedView={savedViewsState.handleClearSavedView}
                     onResetToSaved={savedViewsState.handleResetToSaved}
                     savedViews={savedViewsState.savedViews}
+                    {showChart}
+                    {showStats}
+                    setShowChart={(v) => (showChart = v)}
+                    setShowStats={(v) => (showStats = v)}
                     sort={queryParams.sort ?? undefined}
                     {table}
                     time={queryParams.time ?? undefined}
@@ -338,7 +365,19 @@
     </div>
 
     <div class="flex flex-col gap-y-4">
-        <EventsDashboardChart data={chartData()} isLoading={chartDataQuery.isLoading && !chartDataQuery.isSuccess} {onRangeSelect} />
+        {#if showStats}
+            <EventsStatsDashboard
+                eventsPerHour={stats.eventsPerHour}
+                isLoading={chartDataQuery.isLoading && !chartDataQuery.isSuccess}
+                newIssues={stats.newIssues}
+                totalEvents={stats.totalEvents}
+                totalIssues={stats.totalIssues}
+            />
+        {/if}
+
+        {#if showChart}
+            <EventsDashboardChart data={chartData()} isLoading={chartDataQuery.isLoading && !chartDataQuery.isSuccess} {onRangeSelect} />
+        {/if}
 
         <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} {rowClick} {rowHref} {table}>
             {#snippet footerChildren()}
