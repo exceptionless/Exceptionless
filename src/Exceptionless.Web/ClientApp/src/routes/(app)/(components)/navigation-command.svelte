@@ -175,14 +175,14 @@
     }
 
     function getEventHref(result: CommandSearchResult): string {
-        return resolve('/(app)/event/[eventId]', { eventId: result.id });
+        return resolve('/(app)/events/[eventId=objectid]', { eventId: result.id });
     }
 
     function getIssueHref(result: CommandSearchResult): string {
-        return resolve('/(app)/issues/[stackId]', { stackId: result.id });
+        return resolve('/(app)/issues/[stackId=objectid]', { stackId: result.id });
     }
 
-    const eventSearchHref = $derived(buildSearchHref(resolve('/(app)'), debouncedSearchText));
+    const eventSearchHref = $derived(buildSearchHref(resolve('/(app)/events'), debouncedSearchText));
     const issueSearchHref = $derived(buildSearchHref(resolve('/(app)/issues'), debouncedSearchText));
 
     const commandRoutes = $derived(

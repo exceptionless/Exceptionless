@@ -60,6 +60,12 @@ public record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
     [MaxLength(100)]
     public string Name { get; set; } = null!;
 
+    /// <summary>URL slug used to load this saved view.</summary>
+    [Required]
+    [MaxLength(100)]
+    [RegularExpression("^(?![a-f0-9]{24}$)[a-z0-9]+(?:-[a-z0-9]+)*$")]
+    public string Slug { get; set; } = null!;
+
     /// <summary>Date-math time range, e.g. "[now-7d TO now]". Null if no time constraint.</summary>
     [MaxLength(100)]
     public string? Time { get; set; }

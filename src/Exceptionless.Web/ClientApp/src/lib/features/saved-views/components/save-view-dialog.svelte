@@ -8,33 +8,110 @@
 
     import type { SavedView } from '../models';
 
+    import {
+        findSavedViewByName,
+        findSavedViewBySlug,
+        isSavedViewSlugReserved,
+        isSavedViewSlugValid,
+        SAVED_VIEW_NAME_MAX_LENGTH,
+        SAVED_VIEW_SLUG_MAX_LENGTH,
+        savedViewSlug
+    } from '../slugs';
+
     interface Props {
         duplicateView?: SavedView;
         onClose: () => void;
-        onLoadView: (id: string) => void;
-        onSave: (name: string, isPrivate: boolean) => Promise<void>;
+        onLoadView: (view: SavedView) => void;
+        onSave: (name: string, slug: string, isPrivate: boolean) => Promise<void>;
         open: boolean;
+        savedViews: SavedView[];
         saving: boolean;
     }
 
-    let { duplicateView, onClose, onLoadView, onSave, open = $bindable(), saving }: Props = $props();
+    let { duplicateView, onClose, onLoadView, onSave, open = $bindable(), savedViews, saving }: Props = $props();
 
     let saveName = $state('');
+    let saveSlug = $state('');
+    let isSlugDirty = $state(false);
     let isPrivate = $state(false);
+    let attemptedSubmit = $state(false);
+
+    const trimmedName = $derived(saveName.trim());
+    const normalizedSlug = $derived(savedViewSlug(saveSlug));
+    const duplicateName = $derived(findSavedViewByName(savedViews, trimmedName));
+    const duplicateSlug = $derived(findSavedViewBySlug(savedViews, normalizedSlug));
+    const nameError = $derived.by(() => {
+        if (!trimmedName) {
+            return 'Name is required.';
+        }
+
+        if (trimmedName.length > SAVED_VIEW_NAME_MAX_LENGTH) {
+            return `Name cannot exceed ${SAVED_VIEW_NAME_MAX_LENGTH} characters.`;
+        }
+
+        if (duplicateName) {
+            return `A saved view named "${duplicateName.name}" already exists.`;
+        }
+
+        return undefined;
+    });
+    const slugError = $derived.by(() => {
+        if (!normalizedSlug) {
+            return 'URL name is required. Use at least one letter or number.';
+        }
+
+        if (normalizedSlug.length > SAVED_VIEW_SLUG_MAX_LENGTH) {
+            return `URL name cannot exceed ${SAVED_VIEW_SLUG_MAX_LENGTH} characters.`;
+        }
+
+        if (!isSavedViewSlugValid(normalizedSlug)) {
+            if (isSavedViewSlugReserved(normalizedSlug)) {
+                return 'URL name cannot look like an event or issue id.';
+            }
+
+            return 'URL name can only contain lowercase letters, numbers, and single dashes.';
+        }
+
+        if (duplicateSlug) {
+            return `A saved view with the URL name "${normalizedSlug}" already exists.`;
+        }
+
+        return undefined;
+    });
+    const visibleNameError = $derived(attemptedSubmit || saveName.length > 0 ? nameError : undefined);
+    const visibleSlugError = $derived(attemptedSubmit || saveName.length > 0 || saveSlug.length > 0 ? slugError : undefined);
+    const canSave = $derived(!nameError && !slugError && !saving);
 
     $effect(() => {
         if (open) {
             saveName = '';
+            saveSlug = '';
+            isSlugDirty = false;
             isPrivate = false;
+            attemptedSubmit = false;
+        }
+    });
+
+    $effect(() => {
+        if (!isSlugDirty) {
+            saveSlug = savedViewSlug(saveName);
+        }
+    });
+
+    $effect(() => {
+        const normalizedSlug = savedViewSlug(saveSlug);
+        if (saveSlug !== normalizedSlug) {
+            saveSlug = normalizedSlug;
         }
     });
 
     async function handleSave() {
-        if (!saveName.trim()) {
+        attemptedSubmit = true;
+        if (!canSave) {
             return;
         }
 
-        await onSave(saveName.trim(), isPrivate);
+        await onSave(trimmedName, normalizedSlug, isPrivate);
     }
 </script>
 
@@ -53,7 +130,7 @@
                         class="h-auto p-0 text-sm"
                         onclick={() => {
                             open = false;
-                            onLoadView(duplicateView.id);
+                            onLoadView(duplicateView);
                         }}>load it</Button
                     > instead, or save with a different name.
                 </Muted>
@@ -68,7 +145,37 @@
         >
             <div class="flex flex-col gap-2">
                 <Label for="view-name">Name</Label>
-                <Input id="view-name" bind:value={saveName} placeholder="e.g., Production Errors" required autofocus />
+                <Input
+                    id="view-name"
+                    bind:value={saveName}
+                    placeholder="e.g., Production Errors"
+                    maxlength={SAVED_VIEW_NAME_MAX_LENGTH}
+                    aria-invalid={!!visibleNameError}
+                    aria-describedby={visibleNameError ? 'view-name-error' : undefined}
+                    required
+                    autofocus
+                />
+                {#if visibleNameError}
+                    <p id="view-name-error" class="text-destructive text-sm">{visibleNameError}</p>
+                {/if}
+            </div>
+            <div class="flex flex-col gap-2">
+                <Label for="view-slug">URL name</Label>
+                <Input
+                    id="view-slug"
+                    bind:value={saveSlug}
+                    placeholder="production-errors"
+                    maxlength={SAVED_VIEW_SLUG_MAX_LENGTH}
+                    aria-invalid={!!visibleSlugError}
+                    aria-describedby={visibleSlugError ? 'view-slug-error' : undefined}
+                    required
+                    oninput={() => {
+                        isSlugDirty = true;
+                    }}
+                />
+                {#if visibleSlugError}
+                    <p id="view-slug-error" class="text-destructive text-sm">{visibleSlugError}</p>
+                {/if}
             </div>
             <div class="flex items-center justify-between">
                 <div>
@@ -79,7 +186,7 @@
             </div>
             <Dialog.Footer>
                 <Button variant="outline" onclick={onClose}>Cancel</Button>
-                <Button type="submit" disabled={!saveName.trim() || saving}>
+                <Button type="submit" disabled={!canSave}>
                     {saving ? 'Saving...' : 'Save'}
                 </Button>
             </Dialog.Footer>

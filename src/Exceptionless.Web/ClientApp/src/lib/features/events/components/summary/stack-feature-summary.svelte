@@ -27,7 +27,7 @@
         <strong>Feature</strong>:&nbsp;
     {/if}
 
-    <A class="inline" href={`${resolve('/(app)')}?filter=stack:${source.id}`}>
+    <A class="inline" href={`${resolve('/(app)/events')}?filter=stack:${source.id}`}>
         {source.title}
     </A>
 </div>

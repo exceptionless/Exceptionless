@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { GetEventsParams } from '$features/events/api.svelte';
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
     import { resolve } from '$app/paths';
@@ -8,10 +9,11 @@
     import RefreshButton from '$comp/refresh-button.svelte';
     import { H3 } from '$comp/typography';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
-    import { type GetEventsParams, getOrganizationCountQuery } from '$features/events/api.svelte';
+    import { getOrganizationCountQuery } from '$features/events/api.svelte';
+    import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
     import EventsStatsDashboard from '$features/events/components/events-stats-dashboard.svelte';
-    import { DateFilter, ProjectFilter, StatusFilter, TypeFilter } from '$features/events/components/filters';
+    import { DateFilter, ProjectFilter, StatusFilter } from '$features/events/components/filters';
     import {
         applyTimeFilter,
         buildFilterCacheKey,
@@ -24,17 +26,17 @@
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
+    import EventsBulkActionsDropdownMenu from '$features/events/components/table/events-bulk-actions-dropdown-menu.svelte';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
-    import { getColumns } from '$features/events/components/table/options.svelte';
+    import { defaultEventColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
     import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import * as agg from '$features/shared/api/aggregations';
     import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
-    import { fillDateSeries } from '$features/shared/utils/charts';
-    import { parseDateMathRange, toDateMathRange } from '$features/shared/utils/datemath';
-    import IssueDetailSheet from '$features/stacks/components/issue-detail-sheet.svelte';
-    import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
+    import { fillDateSeries } from '$features/shared/utils/charts.js';
+    import { toDateMathRange } from '$features/shared/utils/datemath';
+    import { parseDateMathRange } from '$features/shared/utils/datemath.js';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
@@ -44,35 +46,28 @@
     import { useEventListener, watch } from 'runed';
     import { throttle } from 'throttle-debounce';
 
-    import { redirectToEventsWithFilter } from '../redirect-to-events.svelte';
+    let selectedEventId: null | string = $state(null);
 
-    // TODO: Update this page to use StackSummaryModel instead of EventSummaryModel.
-    let selectedStackId = $state<string>();
-    const DEFAULT_FILTER = '(type:404 OR type:error) (status:open OR status:regressed)';
-
-    function handleStackError(problem: ProblemDetails) {
+    function handleEventError(problem: ProblemDetails) {
         showBillingDialogOnUpgradeProblem(problem, organization.current);
-        selectedStackId = undefined;
+        selectedEventId = null;
     }
 
     function rowClick(row: EventSummaryModel<SummaryTemplateKeys>) {
-        selectedStackId = row.id;
+        selectedEventId = row.id;
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
-        return resolve('/(app)/issues/[stackId=objectid]', { stackId: row.id });
+        return resolve('/(app)/events/[eventId=objectid]', { eventId: row.id });
     }
 
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
-    const DEFAULT_FILTERS = [
-        new DateFilter('date', DEFAULT_TIME_RANGE),
-        new ProjectFilter([]),
-        new TypeFilter(['404', 'error']),
-        new StatusFilter([StackStatus.Open, StackStatus.Regressed])
-    ];
+    const DEFAULT_FILTER = '(status:open OR status:regressed)';
+    const DEFAULT_FILTERS = [new DateFilter('date', DEFAULT_TIME_RANGE), new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
     const DEFAULT_PARAMS = {
         filter: undefined as string | undefined,
         limit: DEFAULT_LIMIT,
+        sort: undefined as string | undefined,
         time: undefined as string | undefined
     };
 
@@ -96,6 +91,14 @@
         return savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
     }
 
+    function getEffectiveSort(): null | string | undefined {
+        if (page.url.searchParams.has('sort')) {
+            return queryParams.sort;
+        }
+
+        return savedViewsState.activeSavedView?.sort ?? undefined;
+    }
+
     updateFilterCache(filterCacheKey(DEFAULT_FILTER), DEFAULT_FILTERS);
     const queryParams = queryParamsState({
         default: DEFAULT_PARAMS,
@@ -103,15 +106,17 @@
         schema: {
             filter: 'string',
             limit: 'number',
+            sort: 'string',
             time: 'string'
         }
     });
 
-    const VIEW = 'issues';
+    const VIEW = 'events';
     let showStats = $state(true);
     let showChart = $state(true);
     const savedViewsState = useSavedViews({
-        baseHref: resolve('/(app)/issues'),
+        baseHref: resolve('/(app)/events'),
+        defaultColumnVisibility: defaultEventColumnVisibility,
         filterCacheKey,
         getColumnOrder: () => table.state.columnOrder,
         getColumnVisibility: () => table.state.columnVisibility,
@@ -119,6 +124,7 @@
         getFilterDefinitions: () => serializeFilters(filters ?? []),
         getShowChart: () => showChart,
         getShowStats: () => showStats,
+        getSort: getEffectiveSort,
         getTime: getQueryTime,
         queryParams,
         setColumnOrder: (v) => table.setColumnOrder(v),
@@ -131,8 +137,9 @@
         updateFilterCache,
         view: VIEW
     });
-    const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Issues');
+    const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Events');
 
+    // NOTE: This might be applying query string parameters when redirecting away.
     watch(
         () => organization.current,
         () => {
@@ -159,16 +166,9 @@
         queryParams.limit ??= DEFAULT_LIMIT;
     });
 
-    async function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
-        // If this is a stack filter, redirect to the Events page
-        if (addedOrUpdated.type === 'string' && addedOrUpdated.key === 'string-stack') {
-            await redirectToEventsWithFilter(organization.current, addedOrUpdated);
-            return;
-        }
-
-        // For all other filters, apply them to the current page
+    function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
         updateFilters(filterChanged(filters ?? [], addedOrUpdated));
-        selectedStackId = undefined;
+        selectedEventId = null;
     }
 
     function onFilterRemoved(removed?: FacetedFilter.IFilter): void {
@@ -199,14 +199,20 @@
         set limit(value) {
             queryParams.limit = value;
         },
-        mode: 'stack_frequent',
+        mode: 'summary',
         offset: DEFAULT_OFFSET,
+        get sort() {
+            return getEffectiveSort() ?? undefined;
+        },
+        set sort(value) {
+            const baseSort = savedViewsState.activeSavedView?.sort ?? undefined;
+            queryParams.sort = value === baseSort ? null : (value ?? null);
+        },
         get time() {
-            return getQueryTime()!;
+            return getQueryTime() ?? undefined;
         },
         set time(value) {
-            const baseTime = savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
-            queryParams.time = value === baseTime ? null : (value ?? '');
+            queryParams.time = value ?? null;
         }
     });
 
@@ -216,11 +222,12 @@
 
     const table = createTable(
         getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
-            columnPersistenceKey: 'issues-column-visibility',
+            columnPersistenceKey: 'events-column-visibility',
             get columns() {
                 return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode);
             },
-            paginationStrategy: 'offset',
+            defaultColumnVisibility: defaultEventColumnVisibility,
+            paginationStrategy: 'cursor',
             get queryData() {
                 return clientResponse?.data ?? [];
             },
@@ -262,12 +269,14 @@
             params: eventsQueryParameters as Record<string, unknown>
         });
 
-        showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData());
+        if (clientResponse.problem) {
+            showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData());
+        }
     }
 
-    const throttledLoadData = throttle(5000, loadData);
+    const throttledLoadData = throttle(10000, loadData);
 
-    async function onStackChanged(message: WebSocketMessageValue<'StackChanged'>) {
+    async function onPersistentEventChanged(message: WebSocketMessageValue<'PersistentEventChanged'>) {
         if (message.id && message.change_type === ChangeType.Removed) {
             removeTableSelection(table, message.id);
 
@@ -281,7 +290,7 @@
         }
     }
 
-    useEventListener(document, 'StackChanged', async (event) => await onStackChanged((event as CustomEvent).detail));
+    useEventListener(document, 'PersistentEventChanged', async (event) => await onPersistentEventChanged((event as CustomEvent).detail));
 
     $effect(() => {
         loadData();
@@ -307,16 +316,13 @@
     });
 
     const chartData = $derived(() => {
-        const timeRange = parseDateMathRange(getQueryTime());
-
-        const buildZeroFilledSeries = () => {
-            const series = fillDateSeries(timeRange.start, timeRange.end, (date: Date) => ({
+        const timeRange = parseDateMathRange(getQueryTime() || undefined);
+        const buildZeroFilledSeries = () =>
+            fillDateSeries(timeRange.start, timeRange.end, (date: Date) => ({
                 date,
                 events: 0,
                 stacks: 0
             }));
-            return series;
-        };
 
         if (!chartDataQuery.data?.aggregations) {
             return buildZeroFilledSeries();
@@ -336,7 +342,7 @@
 
     const stats = $derived.by(() => {
         const aggregations = chartDataQuery.data?.aggregations;
-        const timeRange = parseDateMathRange(getQueryTime());
+        const timeRange = parseDateMathRange(getQueryTime() || undefined);
         const totalEvents = agg.sum(aggregations, 'sum_count')?.value ?? chartDataQuery.data?.total ?? 0;
         const totalIssues = agg.cardinality(aggregations, 'cardinality_stack')?.value ?? 0;
         const newIssues = agg.terms<boolean>(aggregations, 'terms_first')?.buckets[0]?.total ?? 0;
@@ -379,6 +385,7 @@
                     {showStats}
                     setShowChart={(v) => (showChart = v)}
                     setShowStats={(v) => (showStats = v)}
+                    sort={getEffectiveSort() ?? undefined}
                     {table}
                     time={getQueryTime() ?? undefined}
                     view={VIEW}
@@ -405,13 +412,15 @@
         {/if}
 
         {#if showChart}
-            <EventsDashboardChart data={chartData()} isLoading={clientStatus.isLoading || chartDataQuery.isLoading} {onRangeSelect} />
+            <EventsDashboardChart data={chartData()} isLoading={chartDataQuery.isLoading && !chartDataQuery.isSuccess} {onRangeSelect} />
         {/if}
 
         <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} {rowClick} {rowHref} {table}>
             {#snippet footerChildren()}
                 <div class="h-9 min-w-35">
-                    <TableStacksBulkActionsDropdownMenu {table} />
+                    {#if table.getSelectedRowModel().flatRows.length}
+                        <EventsBulkActionsDropdownMenu {table} />
+                    {/if}
                 </div>
 
                 <DataTable.Selection {table} />
@@ -425,4 +434,4 @@
     </div>
 </div>
 
-<IssueDetailSheet stackId={selectedStackId} filterChanged={onFilterChanged} onClose={() => (selectedStackId = undefined)} onError={handleStackError} />
+<EventDetailSheet eventId={selectedEventId} filterChanged={onFilterChanged} onClose={() => (selectedEventId = null)} onError={handleEventError} />

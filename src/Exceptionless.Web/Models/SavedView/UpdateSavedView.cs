@@ -13,6 +13,9 @@ public class UpdateSavedView : IValidatableObject
     public string? Time { get; set; }
     [MaxLength(100)]
     public string? Sort { get; set; }
+    [MaxLength(100)]
+    [RegularExpression("^[a-z0-9]+(?:-[a-z0-9]+)*$")]
+    public string? Slug { get; set; }
     [MaxLength(SavedView.MaxFilterDefinitionsLength)]
     public string? FilterDefinitions { get; set; }
     [MaxLength(50)]

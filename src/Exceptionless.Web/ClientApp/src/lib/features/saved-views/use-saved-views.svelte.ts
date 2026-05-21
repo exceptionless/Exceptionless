@@ -1,34 +1,40 @@
 import type { IFilter } from '$comp/faceted-filter';
 import type { ColumnOrderState, ColumnVisibilityState } from '@tanstack/svelte-table';
 
+import { goto } from '$app/navigation';
 import { deserializeFilters } from '$features/events/components/filters/helpers.svelte';
 import { organization } from '$features/organizations/context.svelte';
-import { untrack } from 'svelte';
 
 import type { SavedView } from './models';
 
 import { getSavedViewsByViewQuery } from './api.svelte';
+import { savedViewHref, savedViewResolvedSlug } from './slugs';
 
 export interface SavedViewQueryParams {
-    filter: null | string;
-    saved: null | string | undefined;
+    filter: null | string | undefined;
+    saved?: null | string | undefined;
     sort?: null | string;
     time?: null | string;
 }
 
 export interface UseSavedViewsOptions {
+    baseHref?: string;
     defaultColumnVisibility?: ColumnVisibilityState;
     filterCacheKey: (filter: null | string) => string;
     getColumnOrder?: () => ColumnOrderState;
     getColumnVisibility?: () => ColumnVisibilityState;
+    getFilter?: () => null | string;
     getFilterDefinitions?: () => string;
     getShowChart?: () => boolean;
     getShowStats?: () => boolean;
+    getSort?: () => null | string | undefined;
+    getTime?: () => null | string | undefined;
     queryParams: SavedViewQueryParams;
     setColumnOrder?: (order: ColumnOrderState) => void;
     setColumnVisibility?: (visibility: ColumnVisibilityState) => void;
     setShowChart?: (show: boolean) => void;
     setShowStats?: (show: boolean) => void;
+    slug?: string;
     updateFilterCache: (key: string, filters: IFilter[]) => void;
     view: string;
 }
@@ -36,7 +42,7 @@ export interface UseSavedViewsOptions {
 export interface UseSavedViewsReturn {
     activeSavedView: SavedView | undefined;
     handleClearSavedView: () => void;
-    handleLoadView: (id: string) => void;
+    handleLoadView: (view: SavedView) => void;
     handleResetToSaved: () => void;
     isEnabled: boolean;
     isLoading: boolean;
@@ -82,7 +88,22 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
     });
 
-    const activeSavedView = $derived(savedViewsListQuery.data?.find((v) => v.id === options.queryParams.saved));
+    const activeSavedView = $derived.by(() => {
+        const views = savedViewsListQuery.data;
+        if (!views) {
+            return undefined;
+        }
+
+        if (options.slug) {
+            return views.find((view) => savedViewResolvedSlug(view) === options.slug);
+        }
+
+        if (options.queryParams.saved) {
+            return views.find((view) => view.id === options.queryParams.saved);
+        }
+
+        return undefined;
+    });
 
     function applyColumnState(view: Pick<SavedView, 'column_order' | 'columns'> | undefined): void {
         if (options.setColumnVisibility) {
@@ -99,17 +120,18 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         options.setShowChart?.(view?.show_chart ?? true);
     }
 
-    // Hydrate filters/columns when a saved view loads, or clear params if the view is no longer found.
+    // Hydrate saved view state when a saved view loads. Query params remain URL overrides.
     // lastLoadedViewId prevents re-hydration on background refetches (which would stomp user edits).
     let lastLoadedViewId = '';
     $effect(() => {
-        const savedId = options.queryParams.saved;
+        const savedViewKey = options.slug ?? options.queryParams.saved;
+        const view = activeSavedView;
         const isLoading = savedViewsListQuery.isLoading;
         const isFetching = savedViewsListQuery.isFetching;
         const views = savedViewsListQuery.data;
 
-        if (!savedId || isLoading || !views) {
-            if (!savedId) {
+        if (!savedViewKey || isLoading || !views) {
+            if (!savedViewKey) {
                 if (lastLoadedViewId !== '') {
                     applyColumnState(undefined);
                     applyDisplayState(undefined);
@@ -121,29 +143,21 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return;
         }
 
-        const view = views.find((v) => v.id === savedId);
         if (!view) {
             // Skip while refetching to avoid false-positive clears during cache invalidation
             if (isFetching) {
                 return;
             }
 
-            // View not found after a definitive load — clear params and allow auto-restore to re-run
-            untrack(() => {
-                options.queryParams.saved = null;
-            });
-            options.queryParams.filter = null;
-            setSortQueryParam(options.queryParams, null);
-            setTimeQueryParam(options.queryParams, null);
             return;
         }
 
         // Already loaded this view — skip to avoid stomping user edits on background refetch
-        if (savedId === lastLoadedViewId) {
+        if (view.id === lastLoadedViewId) {
             return;
         }
 
-        lastLoadedViewId = savedId;
+        lastLoadedViewId = view.id;
 
         if (view.filter_definitions) {
             try {
@@ -154,9 +168,6 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             }
         }
 
-        options.queryParams.filter = view.filter ?? null;
-        setSortQueryParam(options.queryParams, view.sort ?? null);
-        setTimeQueryParam(options.queryParams, view.time ?? null);
         applyColumnState(view);
         applyDisplayState(view);
     });
@@ -164,19 +175,19 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     // Detect if current filters or columns differ from the active saved view
     const isModified = $derived.by(() => {
         const view = activeSavedView;
-        if (!view || !options.queryParams.saved) {
+        if (!view) {
             return false;
         }
 
-        if ((options.queryParams.filter ?? null) !== (view.filter ?? null)) {
+        if ((options.getFilter?.() ?? options.queryParams.filter ?? null) !== (view.filter ?? null)) {
             return true;
         }
 
-        if (supportsTime && (options.queryParams.time ?? null) !== (view.time ?? null)) {
+        if (supportsTime && (options.getTime?.() ?? options.queryParams.time ?? null) !== (view.time ?? null)) {
             return true;
         }
 
-        if (supportsSort && (options.queryParams.sort ?? null) !== (view.sort ?? null)) {
+        if (supportsSort && (options.getSort?.() ?? options.queryParams.sort ?? null) !== (view.sort ?? null)) {
             return true;
         }
 
@@ -203,8 +214,13 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         return false;
     });
 
-    function handleLoadView(id: string) {
-        options.queryParams.saved = id;
+    function handleLoadView(view: SavedView) {
+        if (options.baseHref) {
+            goto(savedViewHref(view));
+            return;
+        }
+
+        options.queryParams.saved = view.id;
     }
 
     function handleResetToSaved() {
@@ -222,20 +238,27 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             }
         }
 
-        options.queryParams.filter = view.filter ?? null;
-        setSortQueryParam(options.queryParams, view.sort ?? null);
-        setTimeQueryParam(options.queryParams, view.time ?? null);
+        options.queryParams.filter = null;
+        setSortQueryParam(options.queryParams, null);
+        setTimeQueryParam(options.queryParams, null);
         applyColumnState(view);
         applyDisplayState(view);
     }
 
     function handleClearSavedView() {
-        options.queryParams.saved = null;
         options.queryParams.filter = null;
         setSortQueryParam(options.queryParams, null);
         setTimeQueryParam(options.queryParams, null);
         applyColumnState(undefined);
         applyDisplayState(undefined);
+
+        if (supportsSavedQueryParam(options.queryParams)) {
+            options.queryParams.saved = undefined;
+        }
+
+        if (options.baseHref) {
+            goto(options.baseHref);
+        }
     }
 
     return {
@@ -310,4 +333,8 @@ function normalizeFilterDefinitions(value: null | string | undefined): string {
     } catch {
         return value;
     }
+}
+
+function supportsSavedQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { saved: null | string | undefined } {
+    return Object.prototype.hasOwnProperty.call(queryParams, 'saved');
 }

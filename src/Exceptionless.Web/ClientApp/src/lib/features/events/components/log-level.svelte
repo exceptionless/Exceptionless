@@ -35,7 +35,7 @@
 </script>
 
 {#if normalizedLogLevel}
-    <Badge {variant}>
+    <Badge class="w-14 justify-center px-0 text-center" {variant}>
         {normalizedLogLevel}
     </Badge>
 {/if}

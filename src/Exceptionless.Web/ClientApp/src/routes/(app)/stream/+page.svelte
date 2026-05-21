@@ -53,7 +53,7 @@
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
-        return resolve('/(app)/event/[eventId]', { eventId: row.id });
+        return resolve('/(app)/events/[eventId=objectid]', { eventId: row.id });
     }
 
     const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
@@ -82,8 +82,8 @@
     const savedViewsState = useSavedViews({
         defaultColumnVisibility: defaultEventColumnVisibility,
         filterCacheKey,
-        getColumnOrder: () => table.store.state.columnOrder,
-        getColumnVisibility: () => table.store.state.columnVisibility,
+        getColumnOrder: () => table.state.columnOrder,
+        getColumnVisibility: () => table.state.columnVisibility,
         getFilterDefinitions: () => serializeFilters(filters ?? []),
         queryParams,
         setColumnOrder: (v) => table.setColumnOrder(v),
@@ -185,6 +185,10 @@
             get queryParameters() {
                 return eventsQueryParameters;
             }
+        }),
+        (state) => ({
+            columnOrder: state.columnOrder,
+            columnVisibility: state.columnVisibility
         })
     );
 
@@ -284,8 +288,8 @@
             {#if savedViewsState.isEnabled}
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
-                    columnOrder={table.store.state.columnOrder}
-                    columnVisibility={table.store.state.columnVisibility}
+                    columnOrder={table.state.columnOrder}
+                    columnVisibility={table.state.columnVisibility}
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}

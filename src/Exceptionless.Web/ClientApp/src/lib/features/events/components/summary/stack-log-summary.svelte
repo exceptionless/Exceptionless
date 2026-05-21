@@ -27,7 +27,7 @@
         <strong>Log source:</strong>&nbsp;
     {/if}
 
-    <A class="inline" href={`${resolve('/(app)')}?filter=stack:${source.id}`}>
+    <A class="inline" href={`${resolve('/(app)/events')}?filter=stack:${source.id}`}>
         {#if source.data?.Source}
             <abbr title={source.data.Source}>{source.data.SourceShortName}</abbr>
         {:else}

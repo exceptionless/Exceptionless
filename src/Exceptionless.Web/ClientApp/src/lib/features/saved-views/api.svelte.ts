@@ -55,6 +55,8 @@ export const queryKeys = {
     view: (organizationId: string | undefined, view: string | undefined) => [...queryKeys.type, 'organization', organizationId, 'view', view] as const
 };
 
+let deletedSavedViewIds = $state<string[]>([]);
+
 export function deleteSavedView(request: { route: { organizationId: string | undefined } }) {
     const queryClient = useQueryClient();
 
@@ -65,6 +67,17 @@ export function deleteSavedView(request: { route: { organizationId: string | und
             await client.delete(`saved-views/${savedView.id}`, {
                 expectedStatusCodes: [202]
             });
+        },
+        onError: (_error: ProblemDetails, savedView: SavedView) => {
+            restoreDeletedSavedView(savedView);
+            syncSavedViewCaches(queryClient, savedView, request.route.organizationId);
+        },
+        onMutate: (savedView: SavedView) => {
+            markSavedViewDeleted(savedView);
+            removeSavedViewFromCaches(queryClient, savedView, request.route.organizationId);
+        },
+        onSettled: () => {
+            void queryClient.invalidateQueries({ queryKey: queryKeys.type });
         },
         onSuccess: (_data: void, savedView: SavedView) => {
             removeSavedViewFromCaches(queryClient, savedView, request.route.organizationId);
@@ -96,6 +109,16 @@ export function getSavedViewsQuery(request: { route: { organizationId: string | 
         },
         queryKey: queryKeys.organization(request.route.organizationId)
     }));
+}
+
+export function isSavedViewDeleted(savedView: SavedView): boolean {
+    return !!savedView.id && deletedSavedViewIds.includes(savedView.id);
+}
+
+export function markSavedViewDeleted(savedView: SavedView): void {
+    if (savedView.id && !deletedSavedViewIds.includes(savedView.id)) {
+        deletedSavedViewIds = [...deletedSavedViewIds, savedView.id];
+    }
 }
 
 export function patchSavedView(request: { route: { id: string | undefined } }) {
@@ -134,6 +157,13 @@ export function removeSavedViewFromCaches(queryClient: QueryClient, savedView: S
     const evict = (cachedViews: SavedView[] | undefined) => cachedViews?.filter((v) => v.id !== savedView.id);
     queryClient.setQueryData(queryKeys.view(organizationId, savedView.view_type), evict);
     queryClient.setQueryData(queryKeys.organization(organizationId), evict);
+    queryClient.setQueriesData<SavedView[]>({ queryKey: queryKeys.type }, evict);
+}
+
+export function restoreDeletedSavedView(savedView: SavedView): void {
+    if (savedView.id) {
+        deletedSavedViewIds = deletedSavedViewIds.filter((id) => id !== savedView.id);
+    }
 }
 
 export function syncSavedViewCaches(queryClient: QueryClient, savedView: SavedView, organizationId: string | undefined = savedView.organization_id) {

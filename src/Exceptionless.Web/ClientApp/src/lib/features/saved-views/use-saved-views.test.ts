@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { SavedView } from './models';
 
-import { invalidateSavedViewQueries, queryKeys, SAVED_VIEW_REFRESH_DELAY_MS, syncSavedViewCaches } from './api.svelte';
+import { invalidateSavedViewQueries, queryKeys, removeSavedViewFromCaches, SAVED_VIEW_REFRESH_DELAY_MS, syncSavedViewCaches } from './api.svelte';
 import { type SavedViewQueryParams, setSortQueryParam, setTimeQueryParam, supportsSortQueryParam, supportsTimeQueryParam } from './use-saved-views.svelte';
 
 const TEST_ORG_ID = '507f1f77bcf86cd799439011';
@@ -15,6 +15,13 @@ afterEach(() => {
 });
 
 function buildSavedView({ id, name, ...overrides }: Partial<SavedView> & Pick<SavedView, 'id' | 'name'>): SavedView {
+    const slug =
+        overrides.slug ??
+        name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '');
+
     return {
         column_order: null,
         columns: {},
@@ -32,7 +39,8 @@ function buildSavedView({ id, name, ...overrides }: Partial<SavedView> & Pick<Sa
         user_id: null,
         version: 1,
         view_type: 'issues',
-        ...overrides
+        ...overrides,
+        slug
     };
 }
 
@@ -344,6 +352,25 @@ describe('useSavedViews', () => {
             // Assert
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'issues'))).toEqual([updatedView, otherView]);
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([updatedView, otherView]);
+        });
+
+        it('removes a deleted view from every saved-view list cache', () => {
+            // Arrange
+            const queryClient = new QueryClient();
+            const deletedView = buildSavedView({ id: 'view-1', name: 'Deleted View' });
+            const otherView = buildSavedView({ id: 'view-2', name: 'Other View' });
+
+            queryClient.setQueryData(queryKeys.organization(TEST_ORG_ID), [deletedView, otherView]);
+            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'issues'), [deletedView, otherView]);
+            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'events'), [deletedView, otherView]);
+
+            // Act
+            removeSavedViewFromCaches(queryClient, deletedView, TEST_ORG_ID);
+
+            // Assert
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([otherView]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'issues'))).toEqual([otherView]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'events'))).toEqual([otherView]);
         });
     });
 
