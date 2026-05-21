@@ -54,6 +54,10 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
     [MaxLength(50)]
     public List<string>? ColumnOrder { get; set; }
 
+    public bool? ShowStats { get; set; }
+
+    public bool? ShowChart { get; set; }
+
     /// <summary>If true, the view will only be visible to the current user. Defaults to false.</summary>
     public bool? IsPrivate { get; set; }
 

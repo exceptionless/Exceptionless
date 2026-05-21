@@ -22,9 +22,13 @@ export interface UseSavedViewsOptions {
     getColumnOrder?: () => ColumnOrderState;
     getColumnVisibility?: () => ColumnVisibilityState;
     getFilterDefinitions?: () => string;
+    getShowChart?: () => boolean;
+    getShowStats?: () => boolean;
     queryParams: SavedViewQueryParams;
     setColumnOrder?: (order: ColumnOrderState) => void;
     setColumnVisibility?: (visibility: ColumnVisibilityState) => void;
+    setShowChart?: (show: boolean) => void;
+    setShowStats?: (show: boolean) => void;
     updateFilterCache: (key: string, filters: IFilter[]) => void;
     view: string;
 }
@@ -90,6 +94,11 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
     }
 
+    function applyDisplayState(view: Pick<SavedView, 'show_chart' | 'show_stats'> | undefined): void {
+        options.setShowStats?.(view?.show_stats ?? true);
+        options.setShowChart?.(view?.show_chart ?? true);
+    }
+
     // Hydrate filters/columns when a saved view loads, or clear params if the view is no longer found.
     // lastLoadedViewId prevents re-hydration on background refetches (which would stomp user edits).
     let lastLoadedViewId = '';
@@ -103,6 +112,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             if (!savedId) {
                 if (lastLoadedViewId !== '') {
                     applyColumnState(undefined);
+                    applyDisplayState(undefined);
                 }
 
                 lastLoadedViewId = '';
@@ -148,6 +158,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         setSortQueryParam(options.queryParams, view.sort ?? null);
         setTimeQueryParam(options.queryParams, view.time ?? null);
         applyColumnState(view);
+        applyDisplayState(view);
     });
 
     // Detect if current filters or columns differ from the active saved view
@@ -181,6 +192,14 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return true;
         }
 
+        if (options.getShowStats && options.getShowStats() !== (view.show_stats ?? true)) {
+            return true;
+        }
+
+        if (options.getShowChart && options.getShowChart() !== (view.show_chart ?? true)) {
+            return true;
+        }
+
         return false;
     });
 
@@ -207,6 +226,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         setSortQueryParam(options.queryParams, view.sort ?? null);
         setTimeQueryParam(options.queryParams, view.time ?? null);
         applyColumnState(view);
+        applyDisplayState(view);
     }
 
     function handleClearSavedView() {
@@ -215,6 +235,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         setSortQueryParam(options.queryParams, null);
         setTimeQueryParam(options.queryParams, null);
         applyColumnState(undefined);
+        applyDisplayState(undefined);
     }
 
     return {

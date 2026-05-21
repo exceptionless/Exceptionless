@@ -51,6 +51,10 @@
         onLoadView: (id: string) => void;
         onResetToSaved: () => void;
         savedViews: SavedView[];
+        setShowChart?: (show: boolean) => void;
+        setShowStats?: (show: boolean) => void;
+        showChart?: boolean;
+        showStats?: boolean;
         sort?: string;
         table: Table<StockFeatures, TData>;
         time?: string;
@@ -67,6 +71,10 @@
         onLoadView,
         onResetToSaved,
         savedViews,
+        setShowChart,
+        setShowStats,
+        showChart = true,
+        showStats = true,
         sort,
         table,
         time,
@@ -234,6 +242,8 @@
             is_private: isPrivate || undefined,
             name,
             organization_id: organizationId,
+            show_chart: showChart,
+            show_stats: showStats,
             sort: sort || undefined,
             time: time || undefined,
             view_type: view
@@ -273,6 +283,8 @@
             columns: columnVisibility,
             filter: currentFilterString || null,
             filter_definitions: serializeFilters(filters),
+            show_chart: showChart,
+            show_stats: showStats,
             sort: sort || null,
             time: time || null
         };
@@ -346,6 +358,36 @@
                 </DropdownMenu.Item>
             {/if}
         </DropdownMenu.Group>
+        {#if setShowStats || setShowChart}
+            <DropdownMenu.Separator />
+            <DropdownMenu.Group>
+                <DropdownMenu.Label>Display</DropdownMenu.Label>
+                {#if setShowStats}
+                    <DropdownMenu.CheckboxItem
+                        checked={showStats}
+                        onclick={(event) => {
+                            event.preventDefault();
+                            setShowStats(!showStats);
+                        }}
+                        onSelect={(event) => event.preventDefault()}
+                    >
+                        Stat boxes
+                    </DropdownMenu.CheckboxItem>
+                {/if}
+                {#if setShowChart}
+                    <DropdownMenu.CheckboxItem
+                        checked={showChart}
+                        onclick={(event) => {
+                            event.preventDefault();
+                            setShowChart(!showChart);
+                        }}
+                        onSelect={(event) => event.preventDefault()}
+                    >
+                        Chart
+                    </DropdownMenu.CheckboxItem>
+                {/if}
+            </DropdownMenu.Group>
+        {/if}
         {#if reorderableColumns.length > 0}
             <DropdownMenu.Separator />
             <DropdownMenu.Group>

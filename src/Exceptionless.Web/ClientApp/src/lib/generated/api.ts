@@ -140,7 +140,9 @@ export interface NewSavedView {
   view_type: string;
   filter_definitions?: null | string;
   columns?: null | Record<string, boolean>;
-  column_order?: null | string[];
+  column_order?: string[] | null;
+  show_stats?: null | boolean;
+  show_chart?: null | boolean;
   /** If true, the view will only be visible to the current user. Defaults to false. */
   is_private?: null | boolean;
 }
@@ -219,7 +221,10 @@ export interface PersistentEvent {
   created_utc: string;
   /** Used to store primitive data type custom data values for searching the event. */
   idx?: null | Record<string, unknown>;
-  /** The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types. */
+  /**
+   * The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types.
+   * Nullable in transit; the pipeline infers a default before save. Validated as required on repository save.
+   */
   type?: null | string;
   /** The event source (ie. machine name, log name, feature name). */
   source?: null | string;
@@ -372,7 +377,9 @@ export interface UpdateSavedView {
   sort?: null | string;
   filter_definitions?: null | string;
   columns?: null | Record<string, boolean>;
-  column_order?: null | string[];
+  column_order?: string[] | null;
+  show_stats?: null | boolean;
+  show_chart?: null | boolean;
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
@@ -564,7 +571,9 @@ export interface ViewSavedView {
   filter?: null | string;
   filter_definitions?: null | string;
   columns?: null | Record<string, boolean>;
-  column_order?: null | string[];
+  column_order?: string[] | null;
+  show_stats?: null | boolean;
+  show_chart?: null | boolean;
   name: string;
   time?: null | string;
   sort?: null | string;

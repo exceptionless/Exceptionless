@@ -49,7 +49,7 @@
     ];
 </script>
 
-<div class="bg-card text-card-foreground rounded-lg border shadow-sm {className}">
+<Chart.Shell class={className}>
     {#if isLoading}
         <Skeleton class="h-16 w-full rounded" />
     {:else}
@@ -98,4 +98,4 @@
             </AreaChart>
         </Chart.Container>
     {/if}
-</div>
+</Chart.Shell>
