@@ -42,7 +42,7 @@ public static class EnumerableExtensions
                 return false;
             }
 
-            if (sourceEnumerator.Current is not null && sourceEnumerator.Current.Equals(otherEnumerator.Current))
+            if (sourceEnumerator.Current is not null && !sourceEnumerator.Current.Equals(otherEnumerator.Current))
             {
                 // values aren't equal
                 return false;

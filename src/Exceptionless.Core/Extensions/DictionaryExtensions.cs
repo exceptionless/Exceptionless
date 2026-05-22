@@ -98,9 +98,9 @@ public static class DictionaryExtensions
                 return false;
 
             if (sourceValue is null && otherValue is null)
-                return true;
+                continue;
 
-            if (sourceValue != null && sourceValue.Equals(otherValue))
+            if (sourceValue != null && !sourceValue.Equals(otherValue))
                 return false;
         }
 

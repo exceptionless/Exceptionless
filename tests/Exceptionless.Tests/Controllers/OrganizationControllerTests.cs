@@ -813,4 +813,79 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeNotFound()
         );
     }
+
+    [Fact]
+    public Task PatchAsync_AnonymousUser_ReturnsUnauthorized()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .Patch()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
+            .Content(new NewOrganization { Name = "Unauthorized Update" })
+            .StatusCodeShouldBeUnauthorized()
+        );
+    }
+
+    [Fact]
+    public async Task PatchAsync_EmptyName_ReturnsValidationError()
+    {
+        // Arrange
+        var originalOrg = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(originalOrg);
+        string originalName = originalOrg.Name;
+
+        // Act
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
+            .Content(new NewOrganization { Name = "" })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+
+        // Assert - verify data unchanged
+        var unchangedOrg = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(unchangedOrg);
+        Assert.Equal(originalName, unchangedOrg.Name);
+    }
+
+    [Fact]
+    public Task PatchAsync_NonExistentOrganization_ReturnsNotFound()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", "000000000000000000000000")
+            .Content(new NewOrganization { Name = "Nope" })
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public async Task PatchAsync_UpdateName_ReturnsUpdatedOrganization()
+    {
+        // Arrange
+        var originalOrg = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(originalOrg);
+
+        // Act
+        var updated = await SendRequestAsAsync<ViewOrganization>(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
+            .Content(new NewOrganization { Name = "Updated Acme" })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updated);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, updated.Id);
+        Assert.Equal("Updated Acme", updated.Name);
+        Assert.True(updated.UpdatedUtc >= originalOrg.UpdatedUtc);
+
+        var persisted = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(persisted);
+        Assert.Equal("Updated Acme", persisted.Name);
+    }
 }
