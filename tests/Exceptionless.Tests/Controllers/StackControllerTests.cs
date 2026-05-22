@@ -243,6 +243,8 @@ public class StackControllerTests : IntegrationTestsBase
         // Arrange
         var ev = await SubmitErrorEventAsync();
         Assert.NotNull(ev.StackId);
+        var stackBefore = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stackBefore);
 
         // Act
         await SendRequestAsync(r => r
@@ -251,6 +253,11 @@ public class StackControllerTests : IntegrationTestsBase
             .AppendPath($"stacks/{ev.StackId}/change-status")
             .QueryString("status", "Snoozed")
             .StatusCodeShouldBeBadRequest());
+
+        // Assert — status must not have changed
+        var stackAfter = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stackAfter);
+        Assert.Equal(stackBefore.Status, stackAfter.Status);
     }
 
     [Fact]
@@ -295,16 +302,16 @@ public class StackControllerTests : IntegrationTestsBase
     public async Task GetAll_WithDateRangeFilter_ReturnsOnlyMatchingStacks()
     {
         // Arrange
-        var now = TimeProvider.GetUtcNow();
+        var utcNow = TimeProvider.GetUtcNow();
         var (stacks, _) = await CreateDataAsync(d =>
         {
-            d.Event().TestProject().Date(now.AddDays(-1));
-            d.Event().TestProject().Date(now.AddDays(-3));
+            d.Event().TestProject().Date(utcNow.AddDays(-1));
+            d.Event().TestProject().Date(utcNow.AddDays(-3));
         });
 
         Assert.Equal(2, stacks.Count);
-        var recentStack = stacks.Single(s => s.LastOccurrence >= now.AddDays(-2).UtcDateTime);
-        var oldStack = stacks.Single(s => s.LastOccurrence < now.AddDays(-2).UtcDateTime);
+        var recentStack = stacks.Single(s => s.LastOccurrence >= utcNow.AddDays(-2).UtcDateTime);
+        var oldStack = stacks.Single(s => s.LastOccurrence < utcNow.AddDays(-2).UtcDateTime);
 
         // Act
         var result = await SendRequestAsAsync<IReadOnlyCollection<Stack>>(r => r
@@ -324,11 +331,11 @@ public class StackControllerTests : IntegrationTestsBase
     public async Task GetAll_WithNoFilter_ReturnsAllStacks()
     {
         // Arrange
-        var now = TimeProvider.GetUtcNow();
+        var utcNow = TimeProvider.GetUtcNow();
         await CreateDataAsync(d =>
         {
-            d.Event().TestProject().Date(now);
-            d.Event().TestProject().Date(now.AddHours(-1));
+            d.Event().TestProject().Date(utcNow);
+            d.Event().TestProject().Date(utcNow.AddHours(-1));
         });
 
         // Act
@@ -546,14 +553,14 @@ public class StackControllerTests : IntegrationTestsBase
         // Arrange
         var ev = await SubmitErrorEventAsync();
         Assert.NotNull(ev.StackId);
-        var snoozeUntil = DateTime.UtcNow.AddDays(1);
+        var snoozeUntilUtc = TimeProvider.GetUtcNow().AddDays(1);
 
         // Act
         await SendRequestAsync(r => r
             .Post()
             .AsGlobalAdminUser()
             .AppendPath($"stacks/{ev.StackId}/mark-snoozed")
-            .QueryString("snoozeUntilUtc", snoozeUntil.ToString("o"))
+            .QueryString("snoozeUntilUtc", snoozeUntilUtc.ToString("o"))
             .StatusCodeShouldBeOk());
 
         // Assert
@@ -569,14 +576,14 @@ public class StackControllerTests : IntegrationTestsBase
         // Arrange
         var ev = await SubmitErrorEventAsync();
         Assert.NotNull(ev.StackId);
-        var pastDate = DateTime.UtcNow.AddMinutes(-10);
+        var pastDateUtc = TimeProvider.GetUtcNow().AddMinutes(-10);
 
         // Act
         await SendRequestAsync(r => r
             .Post()
             .AsGlobalAdminUser()
             .AppendPath($"stacks/{ev.StackId}/mark-snoozed")
-            .QueryString("snoozeUntilUtc", pastDate.ToString("o"))
+            .QueryString("snoozeUntilUtc", pastDateUtc.ToString("o"))
             .StatusCodeShouldBeBadRequest());
     }
 
@@ -584,14 +591,14 @@ public class StackControllerTests : IntegrationTestsBase
     public Task SnoozeAsync_NonExistentStack_ReturnsNotFound()
     {
         // Arrange
-        var snoozeUntil = DateTime.UtcNow.AddDays(1);
+        var snoozeUntilUtc = TimeProvider.GetUtcNow().AddDays(1);
 
         // Act
         return SendRequestAsync(r => r
             .Post()
             .AsGlobalAdminUser()
             .AppendPath("stacks/000000000000000000000000/mark-snoozed")
-            .QueryString("snoozeUntilUtc", snoozeUntil.ToString("o"))
+            .QueryString("snoozeUntilUtc", snoozeUntilUtc.ToString("o"))
             .StatusCodeShouldBeNotFound());
     }
 }

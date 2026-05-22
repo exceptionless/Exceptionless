@@ -21,7 +21,7 @@ public class UtilityControllerTests : IntegrationTestsBase
     public async Task ValidateAsync_WithEmptyQuery_ReturnsResult()
     {
         // Arrange
-        string query = "";
+        string query = String.Empty;
 
         // Act
         var result = await SendRequestAsAsync<AppQueryValidator.QueryProcessResult>(r => r
@@ -73,7 +73,8 @@ public class UtilityControllerTests : IntegrationTestsBase
     public async Task ValidateAsync_WithPremiumQuery_ReturnsPremiumFeaturesTrue()
     {
         // Arrange
-        string query = "organization:123456789012345678901234";
+        // `tags` is not in either validator's free-field list, so it triggers premium features
+        string query = "tags:error";
 
         // Act
         var result = await SendRequestAsAsync<AppQueryValidator.QueryProcessResult>(r => r

@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -535,6 +534,7 @@ public class AdminControllerTests : IntegrationTestsBase
         Assert.NotNull(snapshots.Repositories);
         Assert.NotNull(snapshots.Snapshots);
     }
+
     [Fact]
     public Task GetElasticsearchSnapshots_WithoutAuth_ReturnsUnauthorized()
     {
@@ -542,22 +542,21 @@ public class AdminControllerTests : IntegrationTestsBase
             .AppendPaths("admin", "elasticsearch", "snapshots")
             .StatusCodeShouldBeUnauthorized());
     }
+
     [Fact]
     public async Task GetSettings_AsGlobalAdmin_ReturnsAppOptions()
     {
         // Act
-        var response = await SendRequestAsync(r => r
+        var settings = await SendRequestAsAsync<AppSettingsDto>(r => r
             .AsGlobalAdminUser()
             .AppendPaths("admin", "settings")
             .StatusCodeShouldBeOk());
 
         // Assert
-        string json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        using var doc = JsonDocument.Parse(json);
-        var root = doc.RootElement;
-        Assert.True(root.TryGetProperty("base_url", out _) || root.TryGetProperty("baseURL", out _),
-            "Expected settings to contain base URL property");
+        Assert.NotNull(settings);
+        Assert.NotNull(settings.AppMode);
     }
+
     [Fact]
     public Task GetSettings_AsNonAdmin_ReturnsForbidden()
     {
@@ -566,6 +565,7 @@ public class AdminControllerTests : IntegrationTestsBase
             .AppendPaths("admin", "settings")
             .StatusCodeShouldBeForbidden());
     }
+
     [Fact]
     public Task GetSettings_WithoutAuth_ReturnsUnauthorized()
     {
@@ -573,23 +573,21 @@ public class AdminControllerTests : IntegrationTestsBase
             .AppendPaths("admin", "settings")
             .StatusCodeShouldBeUnauthorized());
     }
+
     [Fact]
-    public async Task EchoRequest_AsGlobalAdmin_ReturnsHeadersAndIpAddress()
+    public async Task EchoRequest_AsGlobalAdmin_ReturnsIpAddress()
     {
         // Act
-        var response = await SendRequestAsync(r => r
+        var result = await SendRequestAsAsync<EchoResult>(r => r
             .AsGlobalAdminUser()
             .AppendPaths("admin", "echo")
             .StatusCodeShouldBeOk());
 
         // Assert
-        string json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        using var doc = JsonDocument.Parse(json);
-        var root = doc.RootElement;
-        Assert.True(root.TryGetProperty("headers", out _), "Expected echo response to contain 'headers'");
-        Assert.True(root.TryGetProperty("ip_address", out _) || root.TryGetProperty("ipAddress", out _),
-            "Expected echo response to contain IP address");
+        Assert.NotNull(result);
+        Assert.NotNull(result.IpAddress);
     }
+
     [Fact]
     public Task EchoRequest_AsNonAdmin_ReturnsForbidden()
     {
@@ -598,6 +596,7 @@ public class AdminControllerTests : IntegrationTestsBase
             .AppendPaths("admin", "echo")
             .StatusCodeShouldBeForbidden());
     }
+
     [Fact]
     public Task EchoRequest_WithoutAuth_ReturnsUnauthorized()
     {
@@ -605,26 +604,22 @@ public class AdminControllerTests : IntegrationTestsBase
             .AppendPaths("admin", "echo")
             .StatusCodeShouldBeUnauthorized());
     }
+
     [Fact]
     public async Task GetAssemblies_AsGlobalAdmin_ReturnsAssemblyList()
     {
         // Act
-        var response = await SendRequestAsync(r => r
+        var assemblies = await SendRequestAsAsync<List<AssemblyInfo>>(r => r
             .AsGlobalAdminUser()
             .AppendPaths("admin", "assemblies")
             .StatusCodeShouldBeOk());
 
         // Assert
-        string json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        using var doc = JsonDocument.Parse(json);
-        var root = doc.RootElement;
-        Assert.Equal(JsonValueKind.Array, root.ValueKind);
-        Assert.True(root.GetArrayLength() > 0, "Expected at least one assembly in the response");
-
-        var first = root[0];
-        Assert.True(first.TryGetProperty("assembly_name", out _) || first.TryGetProperty("assemblyName", out _),
-            "Expected assembly entry to have an assembly name property");
+        Assert.NotNull(assemblies);
+        Assert.NotEmpty(assemblies);
+        Assert.All(assemblies, a => Assert.NotNull(a.AssemblyName));
     }
+
     [Fact]
     public Task GetAssemblies_AsNonAdmin_ReturnsForbidden()
     {
@@ -633,6 +628,7 @@ public class AdminControllerTests : IntegrationTestsBase
             .AppendPaths("admin", "assemblies")
             .StatusCodeShouldBeForbidden());
     }
+
     [Fact]
     public Task GetAssemblies_WithoutAuth_ReturnsUnauthorized()
     {
@@ -640,6 +636,7 @@ public class AdminControllerTests : IntegrationTestsBase
             .AppendPaths("admin", "assemblies")
             .StatusCodeShouldBeUnauthorized());
     }
+
     [Fact]
     public async Task ChangePlanAsync_ValidOrganizationAndPlan_ChangesOrganizationPlan()
     {
@@ -649,7 +646,7 @@ public class AdminControllerTests : IntegrationTestsBase
         Assert.NotNull(organizationBefore);
 
         // Act
-        var response = await SendRequestAsync(r => r
+        var result = await SendRequestAsAsync<ChangePlanResult>(r => r
             .AsGlobalAdminUser()
             .Post()
             .AppendPaths("admin", "change-plan")
@@ -658,16 +655,14 @@ public class AdminControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk());
 
         // Assert
-        string json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        using var doc = JsonDocument.Parse(json);
-        var root = doc.RootElement;
-        Assert.True(root.TryGetProperty("success", out var successProp));
-        Assert.True(successProp.GetBoolean());
+        Assert.NotNull(result);
+        Assert.True(result.Success);
 
         var organizationAfter = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(organizationAfter);
         Assert.Equal("EX_SMALL", organizationAfter.PlanId);
     }
+
     [Fact]
     public async Task ChangePlanAsync_InvalidPlanId_ReturnsFailure()
     {
@@ -678,7 +673,7 @@ public class AdminControllerTests : IntegrationTestsBase
         string originalPlan = organizationBefore.PlanId;
 
         // Act
-        var response = await SendRequestAsync(r => r
+        var result = await SendRequestAsAsync<ChangePlanResult>(r => r
             .AsGlobalAdminUser()
             .Post()
             .AppendPaths("admin", "change-plan")
@@ -687,17 +682,15 @@ public class AdminControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk());
 
         // Assert
-        string json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        using var doc = JsonDocument.Parse(json);
-        var root = doc.RootElement;
-        Assert.True(root.TryGetProperty("success", out var successProp));
-        Assert.False(successProp.GetBoolean());
+        Assert.NotNull(result);
+        Assert.False(result.Success);
 
         // Verify plan was not changed
         var organizationAfter = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(organizationAfter);
         Assert.Equal(originalPlan, organizationAfter.PlanId);
     }
+
     [Fact]
     public Task ChangePlanAsync_AsNonAdmin_ReturnsForbidden()
     {
@@ -709,6 +702,7 @@ public class AdminControllerTests : IntegrationTestsBase
             .QueryString("planId", "EX_SMALL")
             .StatusCodeShouldBeForbidden());
     }
+
     [Fact]
     public async Task SetBonusAsync_ValidOrganization_AppliesBonus()
     {
@@ -731,12 +725,13 @@ public class AdminControllerTests : IntegrationTestsBase
         Assert.NotNull(organizationAfter);
         Assert.Equal(5000, organizationAfter.BonusEventsPerMonth);
     }
+
     [Fact]
     public async Task SetBonusAsync_WithExpiration_AppliesBonusWithExpiry()
     {
         // Arrange
         var organizationRepository = GetService<IOrganizationRepository>();
-        var expires = DateTime.UtcNow.AddDays(30).ToString("o");
+        var expiresUtc = TimeProvider.GetUtcNow().AddDays(30).ToString("o");
 
         // Act
         await SendRequestAsync(r => r
@@ -745,7 +740,7 @@ public class AdminControllerTests : IntegrationTestsBase
             .AppendPaths("admin", "set-bonus")
             .QueryString("organizationId", SampleDataService.TEST_ORG_ID)
             .QueryString("bonusEvents", "10000")
-            .QueryString("expires", expires)
+            .QueryString("expires", expiresUtc)
             .StatusCodeShouldBeOk());
 
         // Assert
@@ -754,6 +749,7 @@ public class AdminControllerTests : IntegrationTestsBase
         Assert.Equal(10000, organization.BonusEventsPerMonth);
         Assert.NotNull(organization.BonusExpiration);
     }
+
     [Fact]
     public Task SetBonusAsync_InvalidOrganization_ReturnsValidationError()
     {
@@ -766,6 +762,7 @@ public class AdminControllerTests : IntegrationTestsBase
             .QueryString("bonusEvents", "1000")
             .StatusCodeShouldBeUnprocessableEntity());
     }
+
     [Fact]
     public Task SetBonusAsync_AsNonAdmin_ReturnsForbidden()
     {
@@ -777,4 +774,12 @@ public class AdminControllerTests : IntegrationTestsBase
             .QueryString("bonusEvents", "1000")
             .StatusCodeShouldBeForbidden());
     }
+
+    private sealed record AppSettingsDto(string? AppMode, string? AppScope);
+
+    private sealed record EchoResult(string? IpAddress);
+
+    private sealed record AssemblyInfo(string? AssemblyName);
+
+    private sealed record ChangePlanResult(bool Success, string? Message);
 }

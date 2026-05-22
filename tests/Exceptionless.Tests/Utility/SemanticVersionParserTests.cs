@@ -4,14 +4,18 @@ using Xunit;
 
 namespace Exceptionless.Tests.Utility;
 
-public class SemanticVersionParserTests
+public class SemanticVersionParserTests : IDisposable
 {
+    private readonly ILoggerFactory _loggerFactory;
     private readonly SemanticVersionParser _parser;
 
     public SemanticVersionParserTests()
     {
-        _parser = new SemanticVersionParser(new LoggerFactory());
+        _loggerFactory = new LoggerFactory();
+        _parser = new SemanticVersionParser(_loggerFactory);
     }
+
+    public void Dispose() => _loggerFactory.Dispose();
 
     [Fact]
     public void Parse_EmptyString_ReturnsNull()

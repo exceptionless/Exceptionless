@@ -6,7 +6,7 @@ namespace Exceptionless.Tests.Utility;
 public class DictionaryExtensionsTests
 {
     [Fact]
-    public void AddRange_AddsAllEntries()
+    public void AddRange_WithNewKeys_AddsAllEntries()
     {
         // Arrange
         var target = new Dictionary<string, int> { ["a"] = 1 };
@@ -22,7 +22,7 @@ public class DictionaryExtensionsTests
     }
 
     [Fact]
-    public void AddRange_OverwritesExistingKeys()
+    public void AddRange_WithExistingKey_OverwritesValue()
     {
         // Arrange
         var target = new Dictionary<string, int> { ["a"] = 1 };

@@ -23,6 +23,7 @@ public class StatusControllerTests : IntegrationTestsBase
     [Theory]
     [InlineData(null, false)]
     [InlineData(null, true)]
+    //[InlineData(null, true, false)] // TODO: Resolve issue where you are required to pass a message via the body.
     [InlineData("New Release!!", false)]
     [InlineData("New Release!!", true)]
     public async Task CanSendReleaseNotification(string? message, bool critical, bool sendMessageAsContentIfEmpty = true)

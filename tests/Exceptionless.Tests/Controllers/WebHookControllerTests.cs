@@ -217,7 +217,6 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
         );
 
         // Assert
-        await RefreshDataAsync();
         var deletedHook = await _webHookRepository.GetByIdAsync(webHook.Id);
         Assert.Null(deletedHook);
     }

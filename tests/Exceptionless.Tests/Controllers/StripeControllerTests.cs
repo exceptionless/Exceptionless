@@ -21,11 +21,14 @@ public class StripeControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PostAsync_WithEmptyBody_ReturnsBadRequest()
     {
+        // Arrange
+        using var content = new StringContent(String.Empty, Encoding.UTF8, "application/json");
+
         // Act
         var response = await SendRequestAsync(r => r
             .Post()
             .AppendPath("stripe")
-            .Content(new StringContent("", Encoding.UTF8, "application/json"))
+            .Content(content)
         );
 
         // Assert
@@ -38,12 +41,13 @@ public class StripeControllerTests : IntegrationTestsBase
         // Arrange
         /* language=json */
         const string json = """{"id":"evt_test","type":"charge.succeeded"}""";
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         // Act
         var response = await SendRequestAsync(r => r
             .Post()
             .AppendPath("stripe")
-            .Content(new StringContent(json, Encoding.UTF8, "application/json"))
+            .Content(content)
             .Header("Stripe-Signature", "t=1234,v1=invalid_signature")
         );
 
@@ -57,12 +61,13 @@ public class StripeControllerTests : IntegrationTestsBase
         // Arrange
         /* language=json */
         const string json = """{"id":"evt_test","type":"charge.succeeded"}""";
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         // Act
         var response = await SendRequestAsync(r => r
             .Post()
             .AppendPath("stripe")
-            .Content(new StringContent(json, Encoding.UTF8, "application/json"))
+            .Content(content)
         );
 
         // Assert

@@ -170,6 +170,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.True(projects.Count >= 2);
         Assert.All(projects, p => Assert.Equal(SampleDataService.TEST_ORG_ID, p.OrganizationId));
     }
+
     [Fact]
     public async Task GetAllAsync_WithLimitParameter_RespectsLimit()
     {
@@ -817,9 +818,10 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
         Assert.NotNull(project);
         Assert.NotNull(project.Data);
-        Assert.True(project.Data.ContainsKey("TestDataKey"));
-        Assert.Equal("TestDataValue", project.Data["TestDataKey"]);
+        Assert.True(project.Data.TryGetValue("TestDataKey", out var dataValue));
+        Assert.Equal("TestDataValue", dataValue);
     }
+
     [Fact]
     public Task PostDataAsync_EmptyKey_ReturnsBadRequest()
     {
@@ -917,8 +919,8 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         // Assert - read back from repository
         var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
         Assert.NotNull(project);
-        Assert.True(project.NotificationSettings.ContainsKey(TestConstants.UserId));
-        var saved = project.NotificationSettings[TestConstants.UserId];
+        Assert.True(project.NotificationSettings.TryGetValue(TestConstants.UserId, out var saved));
+        Assert.NotNull(saved);
         Assert.True(saved.SendDailySummary);
         Assert.True(saved.ReportNewErrors);
         Assert.True(saved.ReportCriticalErrors);
