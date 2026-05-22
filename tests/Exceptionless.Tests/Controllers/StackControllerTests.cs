@@ -7,6 +7,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Models.Data;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Controllers;
+using Exceptionless.Web.Models;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Xunit;
@@ -170,6 +171,127 @@ public class StackControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ChangeStatusAsync_ToFixed_SetsDateFixed()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/change-status")
+            .QueryString("status", "Fixed")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.Equal(StackStatus.Fixed, stack.Status);
+        Assert.NotNull(stack.DateFixed);
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_ToOpen_ClearsFixedFields()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/mark-fixed")
+            .StatusCodeShouldBeOk());
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/change-status")
+            .QueryString("status", "Open")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.Equal(StackStatus.Open, stack.Status);
+        Assert.Null(stack.DateFixed);
+        Assert.Null(stack.FixedInVersion);
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_ToRegressed_ReturnsBadRequest()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/change-status")
+            .QueryString("status", "Regressed")
+            .StatusCodeShouldBeBadRequest());
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_ToSnoozed_ReturnsBadRequest()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/change-status")
+            .QueryString("status", "Snoozed")
+            .StatusCodeShouldBeBadRequest());
+    }
+
+    [Fact]
+    public Task ChangeStatusAsync_WithNonExistentStack_ReturnsNotFound()
+    {
+        // Arrange & Act
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("stacks/000000000000000000000000/change-status")
+            .QueryString("status", "Fixed")
+            .StatusCodeShouldBeNotFound());
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ExistingStack_ReturnsAccepted()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Delete()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}")
+            .StatusCodeShouldBeAccepted());
+    }
+
+    [Fact]
+    public Task DeleteAsync_NonExistentStack_ReturnsNotFound()
+    {
+        // Arrange & Act
+        return SendRequestAsync(r => r
+            .Delete()
+            .AsGlobalAdminUser()
+            .AppendPath("stacks/000000000000000000000000")
+            .StatusCodeShouldBeNotFound());
+    }
+
+    [Fact]
     public async Task GetAll_WithDateRangeFilter_ReturnsOnlyMatchingStacks()
     {
         // Arrange
@@ -196,5 +318,280 @@ public class StackControllerTests : IntegrationTestsBase
         Assert.NotNull(result);
         Assert.Contains(result, s => String.Equals(s.Id, recentStack.Id, StringComparison.Ordinal));
         Assert.DoesNotContain(result, s => String.Equals(s.Id, oldStack.Id, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task GetAll_WithNoFilter_ReturnsAllStacks()
+    {
+        // Arrange
+        var now = TimeProvider.GetUtcNow();
+        await CreateDataAsync(d =>
+        {
+            d.Event().TestProject().Date(now);
+            d.Event().TestProject().Date(now.AddHours(-1));
+        });
+
+        // Act
+        var result = await SendRequestAsAsync<IReadOnlyCollection<Stack>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("stacks")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Count);
+    }
+
+    [Fact]
+    public async Task GetAsync_ExistingStack_ReturnsStack()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        // Act
+        var stack = await SendRequestAsAsync<Stack>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("stacks", ev.StackId)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(stack);
+        Assert.Equal(ev.StackId, stack.Id);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, stack.OrganizationId);
+        Assert.Equal(SampleDataService.TEST_PROJECT_ID, stack.ProjectId);
+    }
+
+    [Fact]
+    public Task GetAsync_NonExistentStack_ReturnsNotFound()
+    {
+        // Arrange & Act
+        return SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("stacks", "000000000000000000000000")
+            .StatusCodeShouldBeNotFound());
+    }
+
+    [Fact]
+    public async Task GetByOrganizationAsync_ExistingOrganization_ReturnsStacks()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        // Act
+        var result = await SendRequestAsAsync<IReadOnlyCollection<Stack>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath($"organizations/{SampleDataService.TEST_ORG_ID}/stacks")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotEmpty(result);
+        Assert.All(result, s => Assert.Equal(SampleDataService.TEST_ORG_ID, s.OrganizationId));
+    }
+
+    [Fact]
+    public Task GetByOrganizationAsync_NonExistentOrganization_ReturnsNotFound()
+    {
+        // Arrange & Act
+        return SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("organizations/000000000000000000000000/stacks")
+            .StatusCodeShouldBeNotFound());
+    }
+
+    [Fact]
+    public async Task GetByProjectAsync_ExistingProject_ReturnsStacks()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        // Act
+        var result = await SendRequestAsAsync<IReadOnlyCollection<Stack>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath($"projects/{SampleDataService.TEST_PROJECT_ID}/stacks")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotEmpty(result);
+        Assert.All(result, s => Assert.Equal(SampleDataService.TEST_PROJECT_ID, s.ProjectId));
+    }
+
+    [Fact]
+    public Task GetByProjectAsync_NonExistentProject_ReturnsNotFound()
+    {
+        // Arrange & Act
+        return SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("projects/000000000000000000000000/stacks")
+            .StatusCodeShouldBeNotFound());
+    }
+
+    [Fact]
+    public async Task MarkCriticalAsync_ExistingStack_SetsOccurrencesAreCritical()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/mark-critical")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.True(stack.OccurrencesAreCritical);
+    }
+
+    [Fact]
+    public Task MarkCriticalAsync_NonExistentStack_ReturnsNotFound()
+    {
+        // Arrange & Act
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("stacks/000000000000000000000000/mark-critical")
+            .StatusCodeShouldBeNotFound());
+    }
+
+    [Fact]
+    public async Task MarkNotCriticalAsync_CriticalStack_ClearsOccurrencesAreCritical()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/mark-critical")
+            .StatusCodeShouldBeOk());
+
+        // Act
+        await SendRequestAsync(r => r
+            .Delete()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/mark-critical")
+            .ExpectedStatus(System.Net.HttpStatusCode.NoContent));
+
+        // Assert
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.False(stack.OccurrencesAreCritical);
+    }
+
+    [Fact]
+    public async Task RemoveLinkAsync_ExistingLink_RemovesReference()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        string testUrl = "https://github.com/issue/123";
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/add-link")
+            .Content(new ValueFromBody<string>(testUrl))
+            .StatusCodeShouldBeOk());
+
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.Contains(testUrl, stack.References);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/remove-link")
+            .Content(new ValueFromBody<string>(testUrl))
+            .ExpectedStatus(System.Net.HttpStatusCode.NoContent));
+
+        // Assert
+        stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.DoesNotContain(testUrl, stack.References);
+    }
+
+    [Fact]
+    public async Task RemoveLinkAsync_EmptyUrl_ReturnsBadRequest()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/remove-link")
+            .Content(new ValueFromBody<string>(""))
+            .StatusCodeShouldBeBadRequest());
+    }
+
+    [Fact]
+    public async Task SnoozeAsync_WithValidFutureDate_SetsSnoozeStatus()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+        var snoozeUntil = DateTime.UtcNow.AddDays(1);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/mark-snoozed")
+            .QueryString("snoozeUntilUtc", snoozeUntil.ToString("o"))
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.Equal(StackStatus.Snoozed, stack.Status);
+        Assert.NotNull(stack.SnoozeUntilUtc);
+    }
+
+    [Fact]
+    public async Task SnoozeAsync_WithPastDate_ReturnsBadRequest()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+        var pastDate = DateTime.UtcNow.AddMinutes(-10);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/mark-snoozed")
+            .QueryString("snoozeUntilUtc", pastDate.ToString("o"))
+            .StatusCodeShouldBeBadRequest());
+    }
+
+    [Fact]
+    public Task SnoozeAsync_NonExistentStack_ReturnsNotFound()
+    {
+        // Arrange
+        var snoozeUntil = DateTime.UtcNow.AddDays(1);
+
+        // Act
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("stacks/000000000000000000000000/mark-snoozed")
+            .QueryString("snoozeUntilUtc", snoozeUntil.ToString("o"))
+            .StatusCodeShouldBeNotFound());
     }
 }

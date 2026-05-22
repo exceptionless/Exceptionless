@@ -48,7 +48,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
         var user = await GetTestOrganizationUserAsync();
 
         // Act
-        var response = await SendRequestAsAsync<ViewUser>(r => r
+        await SendRequestAsync(r => r
             .Post()
             .AsGlobalAdminUser()
             .AppendPaths("users", user.Id, "admin-role")
@@ -56,8 +56,9 @@ public sealed class UserControllerTests : IntegrationTestsBase
         );
 
         // Assert
-        Assert.NotNull(response);
-        Assert.Contains(AuthorizationRoles.GlobalAdmin, response.Roles);
+        var updatedUser = await _userRepository.GetByIdAsync(user.Id);
+        Assert.NotNull(updatedUser);
+        Assert.Contains(AuthorizationRoles.GlobalAdmin, updatedUser.Roles);
     }
 
     [Fact]
@@ -87,16 +88,17 @@ public sealed class UserControllerTests : IntegrationTestsBase
         Assert.NotNull(currentUser);
 
         // Act
-        var response = await SendRequestAsAsync<ViewUser>(r => r
+        await SendRequestAsync(r => r
             .Delete()
             .AsGlobalAdminUser()
             .AppendPaths("users", currentUser.Id, "admin-role")
-            .StatusCodeShouldBeOk()
+            .ExpectedStatus(System.Net.HttpStatusCode.NoContent)
         );
 
         // Assert
-        Assert.NotNull(response);
-        Assert.DoesNotContain(AuthorizationRoles.GlobalAdmin, response.Roles);
+        var user = await _userRepository.GetByIdAsync(currentUser.Id);
+        Assert.NotNull(user);
+        Assert.DoesNotContain(AuthorizationRoles.GlobalAdmin, user.Roles);
     }
 
     [Fact]
@@ -498,6 +500,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
     {
         // Act & Assert
         return SendRequestAsync(r => r
+            .AsGlobalAdminUser()
             .AppendPaths("users", "verify-email-address", "invalidtoken1234567890ab")
             .StatusCodeShouldBeNotFound()
         );
