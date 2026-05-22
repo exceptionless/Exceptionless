@@ -50,6 +50,20 @@ public class DictionaryExtensionsTests
     }
 
     [Fact]
+    public void CollectionEquals_NullValueComparedToNonNullValue_ReturnsFalse()
+    {
+        // Arrange
+        var source = new Dictionary<string, string?> { ["a"] = null };
+        var other = new Dictionary<string, string?> { ["a"] = "value" };
+
+        // Act
+        bool result = source.CollectionEquals(other);
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
     public void CollectionEquals_SameKeysAndValues_ReturnsTrue()
     {
         // Arrange

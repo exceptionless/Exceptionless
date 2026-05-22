@@ -73,6 +73,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         var deleted = await _projectRepository.GetByIdAsync(project.Id);
         Assert.Null(deleted);
     }
+
     [Fact]
     public Task DeleteAsync_NonExistentProject_ReturnsNotFound()
     {
@@ -83,6 +84,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeNotFound()
         );
     }
+
     [Fact]
     public async Task DeleteDataAsync_ExistingKey_RemovesDataKey()
     {
@@ -110,6 +112,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.NotNull(project);
         Assert.False(project.Data?.ContainsKey("MyDataKey") ?? false);
     }
+
     [Fact]
     public Task DeleteDataAsync_InvalidKey_ReturnsBadRequest()
     {
@@ -121,6 +124,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeBadRequest()
         );
     }
+
     [Fact]
     public Task DeleteDataAsync_NonExistentProject_ReturnsNotFound()
     {
@@ -132,6 +136,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeNotFound()
         );
     }
+
     [Fact]
     public async Task GenerateSampleDataAsync_ValidProject_QueuesSampleEvents()
     {
@@ -154,6 +159,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.True(projectEventCount >= 100, $"Expected at least 100 generated events but found {projectEventCount}.");
         Assert.Equal(0, otherProjectEventCount);
     }
+
     [Fact]
     public async Task GetAllAsync_AsTestUser_ReturnsUserProjects()
     {
@@ -185,6 +191,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.NotNull(projects);
         Assert.Single(projects);
     }
+
     [Fact]
     public async Task GetAsync_ExistingProject_MapsToViewProjectWithSlackIntegration()
     {
@@ -200,6 +207,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.Equal(SampleDataService.TEST_PROJECT_ID, viewProject.Id);
         Assert.IsType<bool>(viewProject.HasSlackIntegration);
     }
+
     [Fact]
     public async Task GetByOrganizationAsync_ValidOrganization_ReturnsProjectsForOrg()
     {
@@ -215,6 +223,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.True(projects.Count >= 2);
         Assert.All(projects, p => Assert.Equal(SampleDataService.TEST_ORG_ID, p.OrganizationId));
     }
+
     [Fact]
     public Task GetByOrganizationAsync_InvalidOrganization_ReturnsNotFound()
     {
@@ -224,6 +233,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeNotFound()
         );
     }
+
     [Fact]
     public async Task GetConfigAsync_ByProjectId_ReturnsConfig()
     {
@@ -239,6 +249,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.True(config.Version >= 0);
         Assert.NotNull(config.Settings);
     }
+
     [Fact]
     public async Task GetConfigAsync_WithClientAuth_ReturnsConfigurationWithSettings()
     {
@@ -381,7 +392,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .AsTestOrganizationUser()
             .Post()
             .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
-            .QueryString("key", "")
+            .QueryString("key", String.Empty)
             .Content(new ValueFromBody<string>("SomeValue"))
             .StatusCodeShouldBeBadRequest()
         );
@@ -413,7 +424,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .Post()
             .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "config")
             .QueryString("key", "TestKey")
-            .Content(new ValueFromBody<string>(""))
+            .Content(new ValueFromBody<string>(String.Empty))
             .StatusCodeShouldBeBadRequest()
         );
 
@@ -575,6 +586,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.NotNull(allSettings);
         Assert.True(allSettings.Count > 0);
     }
+
     [Fact]
     public async Task GetNotificationSettingsAsync_AsUser_ReturnsUserSettings()
     {
@@ -605,6 +617,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.True(userSettings.SendDailySummary);
         Assert.True(userSettings.ReportNewErrors);
     }
+
     [Fact]
     public async Task GetV2ConfigAsync_WithClientAuth_ReturnsConfig()
     {
@@ -620,6 +633,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.True(config.Version >= 0);
         Assert.NotNull(config.Settings);
     }
+
     [Fact]
     public async Task IsNameAvailableAsync_ExistingName_ReturnsCreated()
     {
@@ -659,6 +673,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeNoContent()
         );
     }
+
     [Fact]
     public async Task PatchAsync_ChangeName_UpdatesNameAndPreservesOtherFields()
     {
@@ -702,6 +717,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.Equal("Updated Name", persisted.Name);
         Assert.True(persisted.DeleteBotDataEnabled);
     }
+
     [Fact]
     public async Task PatchAsync_NonExistentProject_ReturnsNotFound()
     {
@@ -727,6 +743,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.NotNull(afterProject);
         Assert.Equal(beforeProject.Name, afterProject.Name);
     }
+
     [Fact]
     public async Task PatchAsync_WithExtraPayloadProperties_UpdatesNameOnly()
     {
@@ -759,6 +776,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.NotNull(updatedProject);
         Assert.Equal("Patched With Extras", updatedProject.Name);
     }
+
     [Fact]
     public async Task PostAsync_NewProject_MapsAllPropertiesToProject()
     {
@@ -793,6 +811,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.Equal("Mapped Test Project", project.Name);
         Assert.True(project.DeleteBotDataEnabled);
     }
+
     [Fact]
     public async Task PostDataAsync_ValidKeyAndValue_PersistsData()
     {
@@ -821,11 +840,12 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .AsTestOrganizationUser()
             .Post()
             .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "data")
-            .QueryString("key", "")
+            .QueryString("key", String.Empty)
             .Content(new ValueFromBody<string>("SomeValue"))
             .StatusCodeShouldBeBadRequest()
         );
     }
+
     [Fact]
     public Task PostDataAsync_KeyStartsWithDash_ReturnsBadRequest()
     {
@@ -838,6 +858,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeBadRequest()
         );
     }
+
     [Fact]
     public Task PostDataAsync_NonExistentProject_ReturnsNotFound()
     {
@@ -850,6 +871,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeNotFound()
         );
     }
+
     [Fact]
     public async Task ResetDataAsync_ValidProject_ClearsStacksAndEvents()
     {
@@ -885,6 +907,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.Equal(0, stacksAfter);
         Assert.Equal(0, eventsAfter);
     }
+
     [Fact]
     public async Task SetNotificationSettingsAsync_ValidSettings_PersistsSettings()
     {
@@ -920,6 +943,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.False(saved.ReportNewEvents);
         Assert.True(saved.ReportCriticalEvents);
     }
+
     [Fact]
     public async Task SetNotificationSettingsAsync_NullSettings_RemovesSettings()
     {
@@ -950,6 +974,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.NotNull(projectAfter);
         Assert.False(projectAfter.NotificationSettings.ContainsKey(TestConstants.UserId));
     }
+
     [Fact]
     public async Task CanGetProjectListStats()
     {

@@ -27,7 +27,7 @@ public class StatusControllerTests : IntegrationTestsBase
     [InlineData("New Release!!", true)]
     public async Task CanSendReleaseNotification(string? message, bool critical, bool sendMessageAsContentIfEmpty = true)
     {
-        var utcNow = DateTime.UtcNow;
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
 
         ReleaseNotification? notification;
         if (!String.IsNullOrEmpty(message) || sendMessageAsContentIfEmpty)
@@ -95,7 +95,7 @@ public class StatusControllerTests : IntegrationTestsBase
     public async Task PostSystemNotificationAsync_WithMessage_ReturnsNotification()
     {
         // Arrange
-        var utcNow = DateTime.UtcNow;
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
 
         // Act
         var notification = await SendRequestAsAsync<SystemNotification>(r => r
@@ -118,7 +118,7 @@ public class StatusControllerTests : IntegrationTestsBase
             .Post()
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
-            .Content(new ValueFromBody<string>(""))
+            .Content(new ValueFromBody<string>(String.Empty))
             .StatusCodeShouldBeNotFound());
     }
 

@@ -48,6 +48,20 @@ public class EnumerableExtensionsTests
     }
 
     [Fact]
+    public void CollectionEquals_NullElementComparedToNonNullElement_ReturnsFalse()
+    {
+        // Arrange
+        string?[] source = [null];
+        string?[] other = ["value"];
+
+        // Act
+        bool result = source.CollectionEquals(other);
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
     public void GetCollectionHashCode_SameCollections_ProduceSameHashCode()
     {
         // Arrange

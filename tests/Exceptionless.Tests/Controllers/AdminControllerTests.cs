@@ -1,5 +1,6 @@
+using System.Text.Json;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
@@ -545,12 +546,18 @@ public class AdminControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task GetSettings_AsGlobalAdmin_ReturnsAppOptions()
+    public async Task GetSettings_AsGlobalAdmin_ReturnsAppOptions()
     {
-        return SendRequestAsync(r => r
+        // Act
+        var options = await SendRequestAsAsync<Dictionary<string, JsonElement>>(r => r
             .AsGlobalAdminUser()
             .AppendPaths("admin", "settings")
             .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(options);
+        Assert.True(options.ContainsKey("base_u_r_l"));
+        Assert.True(options.ContainsKey("app_mode"));
     }
 
     [Fact]
@@ -600,17 +607,15 @@ public class AdminControllerTests : IntegrationTestsBase
     public async Task GetAssemblies_AsGlobalAdmin_ReturnsAssemblyList()
     {
         // Act
-        var response = await SendRequestAsync(r => r
+        var assemblies = await SendRequestAsAsync<IReadOnlyCollection<AssemblyDetailResponse>>(r => r
             .AsGlobalAdminUser()
             .AppendPaths("admin", "assemblies")
             .StatusCodeShouldBeOk());
 
-        // Assert - AssemblyDetail has private setters so parse as JSON directly
-        var content = await response.Content.ReadAsStringAsync(TestCancellationToken);
-        using var doc = System.Text.Json.JsonDocument.Parse(content);
-        Assert.Equal(System.Text.Json.JsonValueKind.Array, doc.RootElement.ValueKind);
-        Assert.True(doc.RootElement.GetArrayLength() > 0);
-        Assert.True(doc.RootElement[0].TryGetProperty("assembly_name", out _));
+        // Assert
+        Assert.NotNull(assemblies);
+        Assert.NotEmpty(assemblies);
+        Assert.Contains(assemblies, a => !String.IsNullOrEmpty(a.AssemblyName));
     }
 
     [Fact]
@@ -634,17 +639,18 @@ public class AdminControllerTests : IntegrationTestsBase
     public async Task ChangePlanAsync_ValidOrganizationAndPlan_ChangesOrganizationPlan()
     {
         // Arrange
+        var plans = GetService<BillingPlans>();
         var organizationRepository = GetService<IOrganizationRepository>();
         var organizationBefore = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(organizationBefore);
 
         // Act
-        var result = await SendRequestAsAsync<ChangePlanResult>(r => r
+        var result = await SendRequestAsAsync<ChangePlanResponse>(r => r
             .AsGlobalAdminUser()
             .Post()
             .AppendPaths("admin", "change-plan")
             .QueryString("organizationId", SampleDataService.TEST_ORG_ID)
-            .QueryString("planId", "EX_SMALL")
+            .QueryString("planId", plans.SmallPlan.Id)
             .StatusCodeShouldBeOk());
 
         // Assert
@@ -653,7 +659,7 @@ public class AdminControllerTests : IntegrationTestsBase
 
         var organizationAfter = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(organizationAfter);
-        Assert.Equal("EX_SMALL", organizationAfter.PlanId);
+        Assert.Equal(plans.SmallPlan.Id, organizationAfter.PlanId);
     }
 
     [Fact]
@@ -666,7 +672,7 @@ public class AdminControllerTests : IntegrationTestsBase
         string originalPlan = organizationBefore.PlanId;
 
         // Act
-        var result = await SendRequestAsAsync<ChangePlanResult>(r => r
+        var result = await SendRequestAsAsync<ChangePlanResponse>(r => r
             .AsGlobalAdminUser()
             .Post()
             .AppendPaths("admin", "change-plan")
@@ -677,6 +683,7 @@ public class AdminControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(result);
         Assert.False(result.Success);
+        Assert.Equal("Invalid PlanId.", result.Message);
 
         // Verify plan was not changed
         var organizationAfter = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
@@ -687,12 +694,14 @@ public class AdminControllerTests : IntegrationTestsBase
     [Fact]
     public Task ChangePlanAsync_AsNonAdmin_ReturnsForbidden()
     {
+        var plans = GetService<BillingPlans>();
+
         return SendRequestAsync(r => r
             .AsTestOrganizationUser()
             .Post()
             .AppendPaths("admin", "change-plan")
             .QueryString("organizationId", SampleDataService.TEST_ORG_ID)
-            .QueryString("planId", "EX_SMALL")
+            .QueryString("planId", plans.SmallPlan.Id)
             .StatusCodeShouldBeForbidden());
     }
 
@@ -710,7 +719,7 @@ public class AdminControllerTests : IntegrationTestsBase
             .Post()
             .AppendPaths("admin", "set-bonus")
             .QueryString("organizationId", SampleDataService.TEST_ORG_ID)
-            .QueryString("bonusEvents", "5000")
+            .QueryString("bonusEvents", 5000)
             .StatusCodeShouldBeOk());
 
         // Assert
@@ -732,7 +741,7 @@ public class AdminControllerTests : IntegrationTestsBase
             .Post()
             .AppendPaths("admin", "set-bonus")
             .QueryString("organizationId", SampleDataService.TEST_ORG_ID)
-            .QueryString("bonusEvents", "10000")
+            .QueryString("bonusEvents", 10000)
             .QueryString("expires", expiresUtc)
             .StatusCodeShouldBeOk());
 
@@ -752,7 +761,7 @@ public class AdminControllerTests : IntegrationTestsBase
             .Post()
             .AppendPaths("admin", "set-bonus")
             .QueryString("organizationId", "000000000000000000000000")
-            .QueryString("bonusEvents", "1000")
+            .QueryString("bonusEvents", 1000)
             .StatusCodeShouldBeUnprocessableEntity());
     }
 
@@ -764,7 +773,7 @@ public class AdminControllerTests : IntegrationTestsBase
             .Post()
             .AppendPaths("admin", "set-bonus")
             .QueryString("organizationId", SampleDataService.TEST_ORG_ID)
-            .QueryString("bonusEvents", "1000")
+            .QueryString("bonusEvents", 1000)
             .StatusCodeShouldBeForbidden());
     }
 }
