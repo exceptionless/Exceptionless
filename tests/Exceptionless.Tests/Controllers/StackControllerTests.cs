@@ -586,6 +586,37 @@ public class StackControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PromoteAsync_WithEnabledPromoteHook_QueuesWebHookNotification()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        var webHookRepository = GetService<IWebHookRepository>();
+        var webHookNotificationQueue = GetService<IQueue<WebHookNotification>>();
+        await webHookRepository.AddAsync(new WebHook
+        {
+            OrganizationId = ev.OrganizationId,
+            ProjectId = ev.ProjectId,
+            Url = "https://example.com/promote",
+            Version = WebHook.KnownVersions.Version2,
+            EventTypes = [WebHook.KnownEventTypes.StackPromoted],
+            IsEnabled = true
+        }, o => o.ImmediateConsistency());
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/promote")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        var stats = await webHookNotificationQueue.GetQueueStatsAsync();
+        Assert.Equal(1, stats.Enqueued);
+    }
+
+    [Fact]
     public Task PromoteAsync_NonExistentStack_ReturnsNotFound()
     {
         // Act & Assert

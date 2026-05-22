@@ -7961,7 +7961,6 @@
       "NewToken": {
         "required": [
           "organization_id",
-          "project_id",
           "scopes"
         ],
         "type": "object",
@@ -7976,7 +7975,10 @@
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "default_project_id": {
             "maxLength": 24,
@@ -9355,7 +9357,6 @@
         "required": [
           "id",
           "organization_id",
-          "project_id",
           "scopes",
           "is_disabled",
           "is_suspended",
@@ -9380,7 +9381,10 @@
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "user_id": {
             "maxLength": 24,

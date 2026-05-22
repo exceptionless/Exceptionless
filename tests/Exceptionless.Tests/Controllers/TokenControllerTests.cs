@@ -3,6 +3,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
+using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Repositories;
@@ -389,6 +390,61 @@ public sealed class TokenControllerTests : IntegrationTestsBase
         Assert.NotNull(viewToken);
         Assert.Equal(SampleDataService.TEST_ORG_ID, viewToken.OrganizationId);
         Assert.Equal(SampleDataService.TEST_PROJECT_ID, viewToken.ProjectId);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithDefaultProjectId_PreservesDefaultProject()
+    {
+        // Arrange
+        var newToken = new NewToken
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            DefaultProjectId = SampleDataService.TEST_PROJECT_ID,
+            Scopes = [AuthorizationRoles.Client]
+        };
+
+        // Act
+        var viewToken = await SendRequestAsAsync<ViewToken>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("tokens")
+            .Content(newToken)
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.NotNull(viewToken);
+        Assert.Null(viewToken.ProjectId);
+        Assert.Equal(SampleDataService.TEST_PROJECT_ID, viewToken.DefaultProjectId);
+
+        var token = await _tokenRepository.GetByIdAsync(viewToken.Id);
+        Assert.NotNull(token);
+        Assert.Equal(SampleDataService.TEST_PROJECT_ID, token.DefaultProjectId);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithInvalidDefaultProjectId_ReturnsValidationError()
+    {
+        // Arrange
+        var newToken = new NewToken
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            DefaultProjectId = TestConstants.InvalidProjectId,
+            Scopes = [AuthorizationRoles.Client]
+        };
+
+        // Act
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("tokens")
+            .Content(newToken)
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Contains(problemDetails.Errors, error => error.Key.Equals("default_project_id", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

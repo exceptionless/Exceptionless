@@ -12,7 +12,7 @@ public record ViewToken : IIdentity, IHaveDates
     public string OrganizationId { get; set; } = null!;
 
     [ObjectId]
-    public string ProjectId { get; set; } = null!;
+    public string? ProjectId { get; set; }
 
     [ObjectId]
     public string? UserId { get; set; }
