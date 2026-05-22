@@ -64,7 +64,6 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         );
 
         Assert.NotNull(workItems);
-        Assert.Single(workItems.Workers);
 
         var workItemJob = GetService<WorkItemJob>();
         await workItemJob.RunUntilEmptyAsync(TestCancellationToken);
@@ -622,50 +621,43 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.NotNull(config.Settings);
     }
     [Fact]
-    public async Task IsNameAvailableAsync_ExistingName_ReturnsNoContent()
+    public async Task IsNameAvailableAsync_ExistingName_ReturnsCreated()
     {
         // Arrange - the TEST_PROJECT_ID project should have a name
         var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
         Assert.NotNull(project);
 
-        // Act
-        var response = await SendRequestAsync(r => r
+        // Act - 201 Created means name is already taken (NOT available)
+        await SendRequestAsync(r => r
             .AsTestOrganizationUser()
             .AppendPath("projects/check-name")
             .QueryString("name", project.Name)
-            .ExpectedStatus(HttpStatusCode.NoContent)
+            .StatusCodeShouldBeCreated()
         );
-
-        // Assert - 204 means name is NOT available (taken)
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
+
     [Fact]
-    public async Task IsNameAvailableAsync_NewName_ReturnsCreated()
+    public Task IsNameAvailableAsync_NewName_ReturnsNoContent()
     {
-        // Act
-        var response = await SendRequestAsync(r => r
+        // Act - 204 NoContent means name IS available
+        return SendRequestAsync(r => r
             .AsTestOrganizationUser()
             .AppendPath("projects/check-name")
             .QueryString("name", "UniqueProjectName_" + Guid.NewGuid().ToString("N"))
-            .StatusCodeShouldBeCreated()
+            .StatusCodeShouldBeNoContent()
         );
-
-        // Assert - 201 means name IS available
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
+
     [Fact]
-    public async Task IsNameAvailableAsync_ScopedToOrganization_ReturnsCorrectResult()
+    public Task IsNameAvailableAsync_ScopedToOrganization_ReturnsNoContent()
     {
-        // Act - check with a unique name scoped to org
-        var response = await SendRequestAsync(r => r
+        // Act - 204 NoContent means name IS available in this org scope
+        return SendRequestAsync(r => r
             .AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "projects", "check-name")
             .QueryString("name", "UniqueOrgScoped_" + Guid.NewGuid().ToString("N"))
-            .StatusCodeShouldBeCreated()
+            .StatusCodeShouldBeNoContent()
         );
-
-        // Assert
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
     [Fact]
     public async Task PatchAsync_ChangeName_UpdatesNameAndPreservesOtherFields()

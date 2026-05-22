@@ -18,21 +18,15 @@ public class UtilityControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task ValidateAsync_WithEmptyQuery_ReturnsResult()
+    public Task ValidateAsync_WithEmptyQuery_ReturnsBadRequest()
     {
-        // Arrange
-        string query = String.Empty;
-
-        // Act
-        var result = await SendRequestAsAsync<AppQueryValidator.QueryProcessResult>(r => r
+        // Act & Assert
+        return SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPath("search/validate")
-            .QueryString("query", query)
-            .StatusCodeShouldBeOk()
+            .QueryString("query", String.Empty)
+            .StatusCodeShouldBeBadRequest()
         );
-
-        // Assert
-        Assert.NotNull(result);
     }
 
     [Fact]

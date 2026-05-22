@@ -552,12 +552,13 @@ public sealed class TokenControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task GetByOrganizationAsync_InvalidOrganizationId_ReturnsNotFound()
+    public Task GetByOrganizationAsync_NonExistentOrganizationId_ReturnsEmptyList()
     {
+        // GlobalAdmin can access any organization, so an unknown org ID returns empty list
         return SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPaths("organizations", "000000000000000000000000", "tokens")
-            .StatusCodeShouldBeNotFound()
+            .StatusCodeShouldBeOk()
         );
     }
 

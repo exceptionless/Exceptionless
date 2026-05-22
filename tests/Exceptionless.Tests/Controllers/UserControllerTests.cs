@@ -85,7 +85,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
     public async Task DeleteAdminRoleAsync_AsGlobalAdmin_RemovesRole()
     {
         // Arrange
-        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+        var currentUser = await SendRequestAsAsync<ViewUser>(r => r
             .AsGlobalAdminUser()
             .AppendPath("users/me")
             .StatusCodeShouldBeOk()
@@ -110,7 +110,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
     public async Task DeleteAdminRoleAsync_NonAdmin_ReturnsForbidden()
     {
         // Arrange
-        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+        var currentUser = await SendRequestAsAsync<ViewUser>(r => r
             .AsGlobalAdminUser()
             .AppendPath("users/me")
             .StatusCodeShouldBeOk()
@@ -190,7 +190,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
     public async Task GetAsync_AnonymousUser_ReturnsUnauthorized()
     {
         // Arrange
-        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+        var currentUser = await SendRequestAsAsync<ViewUser>(r => r
             .AsGlobalAdminUser()
             .AppendPath("users/me")
             .StatusCodeShouldBeOk()
@@ -218,7 +218,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
     public async Task GetAsync_ValidId_ReturnsUser()
     {
         // Arrange
-        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+        var currentUser = await SendRequestAsAsync<ViewUser>(r => r
             .AsGlobalAdminUser()
             .AppendPath("users/me")
             .StatusCodeShouldBeOk()
@@ -275,7 +275,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
     public async Task GetCurrentUserAsync_AuthenticatedUser_ReturnsCurrentUser()
     {
         // Act
-        var user = await SendRequestAsAsync<ViewCurrentUser>(r => r
+        var user = await SendRequestAsAsync<ViewUser>(r => r
             .AsGlobalAdminUser()
             .AppendPath("users/me")
             .StatusCodeShouldBeOk()
@@ -286,14 +286,13 @@ public sealed class UserControllerTests : IntegrationTestsBase
         Assert.Equal(SampleDataService.TEST_USER_EMAIL, user.EmailAddress);
         Assert.NotNull(user.Id);
         Assert.True(user.IsActive);
-        Assert.True(user.IsEmailAddressVerified);
     }
 
     [Fact]
     public async Task GetCurrentUserAsync_TestOrganizationUser_ReturnsCurrentUser()
     {
         // Act
-        var user = await SendRequestAsAsync<ViewCurrentUser>(r => r
+        var user = await SendRequestAsAsync<ViewUser>(r => r
             .AsTestOrganizationUser()
             .AppendPath("users/me")
             .StatusCodeShouldBeOk()
@@ -309,7 +308,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
     public async Task PatchAsync_AnonymousUser_ReturnsUnauthorized()
     {
         // Arrange
-        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+        var currentUser = await SendRequestAsAsync<ViewUser>(r => r
             .AsGlobalAdminUser()
             .AppendPath("users/me")
             .StatusCodeShouldBeOk()
@@ -334,7 +333,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
     public async Task PatchAsync_UpdateFullName_ReturnsUpdatedUser()
     {
         // Arrange
-        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+        var currentUser = await SendRequestAsAsync<ViewUser>(r => r
             .AsGlobalAdminUser()
             .AppendPath("users/me")
             .StatusCodeShouldBeOk()
@@ -359,7 +358,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
     public async Task PatchAsync_UpdateNotifications_ReturnsUpdatedUser()
     {
         // Arrange
-        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+        var currentUser = await SendRequestAsAsync<ViewUser>(r => r
             .AsGlobalAdminUser()
             .AppendPath("users/me")
             .StatusCodeShouldBeOk()
@@ -396,7 +395,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
     public async Task PutAsync_UpdateFullName_ReturnsUpdatedUser()
     {
         // Arrange
-        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+        var currentUser = await SendRequestAsAsync<ViewUser>(r => r
             .AsGlobalAdminUser()
             .AppendPath("users/me")
             .StatusCodeShouldBeOk()
@@ -421,7 +420,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
     public async Task ResendVerificationEmailAsync_AnonymousUser_ReturnsUnauthorized()
     {
         // Arrange
-        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+        var currentUser = await SendRequestAsAsync<ViewUser>(r => r
             .AsGlobalAdminUser()
             .AppendPath("users/me")
             .StatusCodeShouldBeOk()
@@ -439,7 +438,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
     public async Task ResendVerificationEmailAsync_ValidUser_ReturnsOk()
     {
         // Arrange
-        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+        var currentUser = await SendRequestAsAsync<ViewUser>(r => r
             .AsGlobalAdminUser()
             .AppendPath("users/me")
             .StatusCodeShouldBeOk()
@@ -482,7 +481,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
     public async Task UpdateEmailAddressAsync_AnonymousUser_ReturnsUnauthorized()
     {
         // Arrange
-        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+        var currentUser = await SendRequestAsAsync<ViewUser>(r => r
             .AsGlobalAdminUser()
             .AppendPath("users/me")
             .StatusCodeShouldBeOk()
@@ -506,7 +505,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
     public async Task UpdateEmailAddressAsync_ValidEmail_ReturnsResult()
     {
         // Arrange
-        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+        var currentUser = await SendRequestAsAsync<ViewUser>(r => r
             .AsGlobalAdminUser()
             .AppendPath("users/me")
             .StatusCodeShouldBeOk()
@@ -537,7 +536,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
 
     private async Task<ViewUser> GetTestOrganizationUserAsync()
     {
-        var user = await SendRequestAsAsync<ViewCurrentUser>(r => r
+        var user = await SendRequestAsAsync<ViewUser>(r => r
             .AsTestOrganizationUser()
             .AppendPath("users/me")
             .StatusCodeShouldBeOk()

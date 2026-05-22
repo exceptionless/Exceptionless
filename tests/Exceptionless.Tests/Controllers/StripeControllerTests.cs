@@ -1,4 +1,3 @@
-using System.Net;
 using System.Text;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
@@ -24,15 +23,13 @@ public class StripeControllerTests : IntegrationTestsBase
         // Arrange
         using var content = new StringContent(String.Empty, Encoding.UTF8, "application/json");
 
-        // Act
-        var response = await SendRequestAsync(r => r
+        // Act & Assert
+        await SendRequestAsync(r => r
             .Post()
             .AppendPath("stripe")
             .Content(content)
+            .StatusCodeShouldBeBadRequest()
         );
-
-        // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -43,16 +40,14 @@ public class StripeControllerTests : IntegrationTestsBase
         const string json = """{"id":"evt_test","type":"charge.succeeded"}""";
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        // Act
-        var response = await SendRequestAsync(r => r
+        // Act & Assert
+        await SendRequestAsync(r => r
             .Post()
             .AppendPath("stripe")
             .Content(content)
             .Header("Stripe-Signature", "t=1234,v1=invalid_signature")
+            .StatusCodeShouldBeBadRequest()
         );
-
-        // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -63,14 +58,12 @@ public class StripeControllerTests : IntegrationTestsBase
         const string json = """{"id":"evt_test","type":"charge.succeeded"}""";
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        // Act
-        var response = await SendRequestAsync(r => r
+        // Act & Assert
+        await SendRequestAsync(r => r
             .Post()
             .AppendPath("stripe")
             .Content(content)
+            .StatusCodeShouldBeBadRequest()
         );
-
-        // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 }

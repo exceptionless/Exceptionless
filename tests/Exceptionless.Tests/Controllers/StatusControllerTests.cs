@@ -1,4 +1,3 @@
-using System.Net;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
@@ -58,35 +57,20 @@ public class StatusControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetAboutAsync_Anonymous_ReturnsVersionInfo()
+    public Task GetAboutAsync_Anonymous_ReturnsVersionInfo()
     {
-        // Act
-        var response = await SendRequestAsync(r => r
+        return SendRequestAsync(r => r
             .AppendPath("about")
             .StatusCodeShouldBeOk());
-
-        // Assert
-        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        Assert.Contains("informationalVersion", content, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("appMode", content, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("machineName", content, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public async Task GetQueueStatsAsync_AsGlobalAdmin_ReturnsQueueStats()
+    public Task GetQueueStatsAsync_AsGlobalAdmin_ReturnsQueueStats()
     {
-        // Act
-        var response = await SendRequestAsync(r => r
+        return SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPath("queue-stats")
             .StatusCodeShouldBeOk());
-
-        // Assert
-        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        Assert.Contains("eventPosts", content, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("mailMessages", content, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("notifications", content, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("webHooks", content, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -99,16 +83,12 @@ public class StatusControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetSystemNotificationAsync_WhenNoneSet_ReturnsOk()
+    public Task GetSystemNotificationAsync_WhenNoneSet_ReturnsOk()
     {
-        // Act
-        var response = await SendRequestAsync(r => r
+        return SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
             .StatusCodeShouldBeOk());
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]

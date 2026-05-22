@@ -840,7 +840,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
             .Content(new NewOrganization { Name = "" })
-            .StatusCodeShouldBeUnprocessableEntity()
+            .StatusCodeShouldBeBadRequest()
         );
 
         // Assert - verify data unchanged

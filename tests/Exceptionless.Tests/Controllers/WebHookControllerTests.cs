@@ -298,6 +298,8 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
 
         Assert.NotNull(createdHook);
 
+        await RefreshDataAsync();
+
         // Act
         var webHooks = await SendRequestAsAsync<List<WebHook>>(r => r
             .AsTestOrganizationUser()
@@ -374,6 +376,8 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
         );
 
         Assert.NotNull(webHook);
+
+        await RefreshDataAsync();
 
         // Act
         await SendRequestAsync(r => r
