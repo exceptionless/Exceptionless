@@ -1,3 +1,4 @@
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Extensions.Hosting.Startup;
@@ -17,11 +18,11 @@ public class OrganizationService : IStartupAction
     private readonly ITokenRepository _tokenRepository;
     private readonly IUserRepository _userRepository;
     private readonly IWebHookRepository _webHookRepository;
-    private readonly AppOptions _appOptions;
+    private readonly IStripeBillingClient _stripeBillingClient;
     private readonly UsageService _usageService;
     private readonly ILogger _logger;
 
-    public OrganizationService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ISavedViewRepository savedViewRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, AppOptions appOptions, UsageService usageService, ILoggerFactory loggerFactory)
+    public OrganizationService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ISavedViewRepository savedViewRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, IStripeBillingClient stripeBillingClient, UsageService usageService, ILoggerFactory loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
@@ -29,7 +30,7 @@ public class OrganizationService : IStartupAction
         _tokenRepository = tokenRepository;
         _userRepository = userRepository;
         _webHookRepository = webHookRepository;
-        _appOptions = appOptions;
+        _stripeBillingClient = stripeBillingClient;
         _usageService = usageService;
         _logger = loggerFactory.CreateLogger<OrganizationService>();
     }
@@ -61,13 +62,11 @@ public class OrganizationService : IStartupAction
         if (String.IsNullOrEmpty(organization.StripeCustomerId))
             return;
 
-        var client = new StripeClient(_appOptions.StripeOptions.StripeApiKey);
-        var subscriptionService = new SubscriptionService(client);
-        var subscriptions = await subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
+        var subscriptions = await _stripeBillingClient.ListSubscriptionsAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
         foreach (var subscription in subscriptions.Where(s => !s.CanceledAt.HasValue))
         {
             _logger.LogInformation("Canceling stripe subscription ({SubscriptionId}) for {OrganizationName} ({Organization})", subscription.Id, organization.Name, organization.Id);
-            await subscriptionService.CancelAsync(subscription.Id, new SubscriptionCancelOptions());
+            await _stripeBillingClient.CancelSubscriptionAsync(subscription.Id, new SubscriptionCancelOptions());
             _logger.LogInformation("Canceled stripe subscription ({SubscriptionId}) for {OrganizationName} ({Organization})", subscription.Id, organization.Name, organization.Id);
         }
     }

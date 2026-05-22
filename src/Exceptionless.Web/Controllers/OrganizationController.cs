@@ -40,6 +40,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
     private readonly BillingManager _billingManager;
     private readonly UsageService _usageService;
     private readonly BillingPlans _plans;
+    private readonly IStripeBillingClient _stripeBillingClient;
     private readonly IMailer _mailer;
     private readonly IMessagePublisher _messagePublisher;
     private readonly AppOptions _options;
@@ -54,6 +55,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         BillingManager billingManager,
         BillingPlans plans,
         UsageService usageService,
+        IStripeBillingClient stripeBillingClient,
         IMailer mailer,
         IMessagePublisher messagePublisher,
         ApiMapper mapper,
@@ -70,6 +72,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         _billingManager = billingManager;
         _plans = plans;
         _usageService = usageService;
+        _stripeBillingClient = stripeBillingClient;
         _mailer = mailer;
         _messagePublisher = messagePublisher;
         _options = options;
@@ -230,12 +233,9 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             id = "in_" + id;
 
         Stripe.Invoice? stripeInvoice = null;
-        var client = new StripeClient(_options.StripeOptions.StripeApiKey);
-
         try
         {
-            var invoiceService = new InvoiceService(client);
-            stripeInvoice = await invoiceService.GetAsync(id);
+            stripeInvoice = await _stripeBillingClient.GetInvoiceAsync(id);
         }
         catch (StripeException ex)
         {
@@ -333,10 +333,8 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
         if (!String.IsNullOrEmpty(after) && !after.StartsWith("in_"))
             after = "in_" + after;
 
-        var client = new StripeClient(_options.StripeOptions.StripeApiKey);
-        var invoiceService = new InvoiceService(client);
         var invoiceOptions = new InvoiceListOptions { Customer = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after };
-        var invoices = _mapper.MapToInvoiceGridModels(await invoiceService.ListAsync(invoiceOptions));
+        var invoices = _mapper.MapToInvoiceGridModels(await _stripeBillingClient.ListInvoicesAsync(invoiceOptions));
         return OkWithResourceLinks(invoices.Take(limit).ToList(), invoices.Count > limit);
     }
 
@@ -450,11 +448,6 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 return Ok(result);
         }
 
-        var client = new StripeClient(_options.StripeOptions.StripeApiKey);
-        var customerService = new CustomerService(client);
-        var subscriptionService = new SubscriptionService(client);
-        var paymentMethodService = new PaymentMethodService(client);
-
         bool isPaymentMethod = model.StripeToken?.StartsWith("pm_", StringComparison.Ordinal) is true;
 
         try
@@ -466,9 +459,9 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             {
                 if (!String.IsNullOrEmpty(organization.StripeCustomerId))
                 {
-                    var subs = await subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
+                    var subs = await _stripeBillingClient.ListSubscriptionsAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
                     foreach (var sub in subs.Where(s => !s.CanceledAt.HasValue))
-                        await subscriptionService.CancelAsync(sub.Id, new SubscriptionCancelOptions());
+                        await _stripeBillingClient.CancelSubscriptionAsync(sub.Id, new SubscriptionCancelOptions());
                 }
 
                 organization.BillingStatus = BillingStatus.Trialing;
@@ -501,7 +494,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                     createCustomer.Source = model.StripeToken;
                 }
 
-                var customer = await customerService.CreateAsync(createCustomer);
+                var customer = await _stripeBillingClient.CreateCustomerAsync(createCustomer);
 
                 // Persist the Stripe customer ID immediately so a retry won't create a duplicate customer
                 organization.StripeCustomerId = customer.Id;
@@ -521,7 +514,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 if (!String.IsNullOrWhiteSpace(model.CouponId))
                     subscriptionOptions.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
 
-                await subscriptionService.CreateAsync(subscriptionOptions);
+                await _stripeBillingClient.CreateSubscriptionAsync(subscriptionOptions);
 
                 organization.BillingStatus = BillingStatus.Active;
                 organization.RemoveSuspension();
@@ -537,13 +530,13 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 if (!Request.IsGlobalAdmin())
                     customerUpdateOptions.Email = CurrentUser.EmailAddress;
 
-                var listSubscriptionsTask = subscriptionService.ListAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
+                var listSubscriptionsTask = _stripeBillingClient.ListSubscriptionsAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
 
                 if (!String.IsNullOrEmpty(model.StripeToken))
                 {
                     if (isPaymentMethod)
                     {
-                        await paymentMethodService.AttachAsync(model.StripeToken, new PaymentMethodAttachOptions
+                        await _stripeBillingClient.AttachPaymentMethodAsync(model.StripeToken, new PaymentMethodAttachOptions
                         {
                             Customer = organization.StripeCustomerId
                         });
@@ -560,7 +553,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                 }
 
                 await Task.WhenAll(
-                    customerService.UpdateAsync(organization.StripeCustomerId, customerUpdateOptions),
+                    _stripeBillingClient.UpdateCustomerAsync(organization.StripeCustomerId, customerUpdateOptions),
                     listSubscriptionsTask
                 );
 
@@ -571,7 +564,7 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                     update.Items.Add(new SubscriptionItemOptions { Id = subscription.Items.Data[0].Id, Price = model.PlanId });
                     if (!String.IsNullOrWhiteSpace(model.CouponId))
                         update.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
-                    await subscriptionService.UpdateAsync(subscription.Id, update);
+                    await _stripeBillingClient.UpdateSubscriptionAsync(subscription.Id, update);
                 }
                 else if (subscription is not null)
                 {
@@ -579,18 +572,21 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
                     update.Items.Add(new SubscriptionItemOptions { Price = model.PlanId });
                     if (!String.IsNullOrWhiteSpace(model.CouponId))
                         update.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
-                    await subscriptionService.UpdateAsync(subscription.Id, update);
+                    await _stripeBillingClient.UpdateSubscriptionAsync(subscription.Id, update);
                 }
                 else
                 {
                     create.Items.Add(new SubscriptionItemOptions { Price = model.PlanId });
                     if (!String.IsNullOrWhiteSpace(model.CouponId))
                         create.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
-                    await subscriptionService.CreateAsync(create);
+                    await _stripeBillingClient.CreateSubscriptionAsync(create);
                 }
 
                 if (cardUpdated)
                     organization.CardLast4 = model.Last4;
+
+                if (organization.SubscribeDate is null || organization.SubscribeDate == DateTime.MinValue)
+                    organization.SubscribeDate = _timeProvider.GetUtcNow().UtcDateTime;
 
                 organization.BillingStatus = BillingStatus.Active;
                 organization.RemoveSuspension();
