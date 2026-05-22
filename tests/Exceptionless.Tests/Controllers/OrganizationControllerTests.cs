@@ -1,3 +1,4 @@
+using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
@@ -26,6 +27,38 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         _userRepository = GetService<IUserRepository>();
         _billingManager = GetService<BillingManager>();
         _plans = GetService<BillingPlans>();
+    }
+
+    private async Task WithBillingEnabledAsync(Func<Task> action)
+    {
+        var options = GetService<AppOptions>();
+        string? originalStripeApiKey = options.StripeOptions.StripeApiKey;
+
+        options.StripeOptions.StripeApiKey = "sk_test_local";
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            options.StripeOptions.StripeApiKey = originalStripeApiKey;
+        }
+    }
+
+    private async Task<T> WithBillingEnabledAsync<T>(Func<Task<T>> action)
+    {
+        var options = GetService<AppOptions>();
+        string? originalStripeApiKey = options.StripeOptions.StripeApiKey;
+
+        options.StripeOptions.StripeApiKey = "sk_test_local";
+        try
+        {
+            return await action();
+        }
+        finally
+        {
+            options.StripeOptions.StripeApiKey = originalStripeApiKey;
+        }
     }
 
     protected override async Task ResetDataAsync()
@@ -431,6 +464,149 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task AddUserAsync_NewEmail_AddsInvite()
+    {
+        // Arrange
+        const string emailAddress = "New.Member+Invite@localhost";
+
+        // Act
+        var user = await SendRequestAsAsync<User>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "users", emailAddress)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(user);
+        Assert.Equal(emailAddress, user.EmailAddress);
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+
+        var invite = Assert.Single(organization.Invites, i => String.Equals(i.EmailAddress, emailAddress.ToLowerInvariant(), StringComparison.Ordinal));
+        Assert.False(String.IsNullOrEmpty(invite.Token));
+        Assert.True(invite.DateAdded > DateTime.MinValue);
+    }
+
+    [Fact]
+    public async Task AddUserAsync_ExistingInvite_DoesNotDuplicateInvite()
+    {
+        // Arrange
+        const string emailAddress = "pending.member@localhost";
+        const string token = "existing-invite-token";
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.Invites.Add(new Invite
+        {
+            Token = token,
+            EmailAddress = emailAddress,
+            DateAdded = TimeProvider.GetUtcNow().UtcDateTime
+        });
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+
+        // Act
+        var user = await SendRequestAsAsync<User>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "users", emailAddress.ToUpperInvariant())
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(user);
+        Assert.Equal(emailAddress.ToUpperInvariant(), user.EmailAddress);
+
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+
+        var invite = Assert.Single(organization.Invites, i => String.Equals(i.EmailAddress, emailAddress, StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(token, invite.Token);
+    }
+
+    [Fact]
+    public async Task AddUserAsync_ExistingUserWithoutMembership_AddsOrganizationMembership()
+    {
+        // Arrange
+        var existingUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.FREE_USER_EMAIL);
+        Assert.NotNull(existingUser);
+        Assert.DoesNotContain(SampleDataService.TEST_ORG_ID, existingUser.OrganizationIds);
+
+        // Act
+        var user = await SendRequestAsAsync<User>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "users", SampleDataService.FREE_USER_EMAIL)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(user);
+        Assert.Equal(SampleDataService.FREE_USER_EMAIL, user.EmailAddress);
+
+        existingUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.FREE_USER_EMAIL);
+        Assert.NotNull(existingUser);
+        Assert.Contains(SampleDataService.TEST_ORG_ID, existingUser.OrganizationIds);
+        Assert.Contains(SampleDataService.FREE_ORG_ID, existingUser.OrganizationIds);
+    }
+
+    [Fact]
+    public async Task AddUserAsync_ExistingUserWithMembership_DoesNotDuplicateOrganizationMembership()
+    {
+        // Act
+        var user = await SendRequestAsAsync<User>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "users", SampleDataService.TEST_ORG_USER_EMAIL)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(user);
+        Assert.Equal(SampleDataService.TEST_ORG_USER_EMAIL, user.EmailAddress);
+
+        var existingUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(existingUser);
+        Assert.Single(existingUser.OrganizationIds, id => String.Equals(id, SampleDataService.TEST_ORG_ID, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public Task AddUserAsync_UnauthorizedOrganization_ReturnsNotFound()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AsFreeOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "users", "new.member@localhost")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public Task AddUserAsync_NonExistentOrganization_ReturnsNotFound()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("organizations", "000000000000000000000000", "users", "new.member@localhost")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public Task AddUserAsync_PlanLimitReached_ReturnsUpgradeRequired()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AsFreeOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "users", "new.member@localhost")
+            .StatusCodeShouldBeUpgradeRequired()
+        );
+    }
+
+    [Fact]
     public async Task RemoveUserAsync_UserWithNotificationSettings_CleansUpNotificationSettings()
     {
         // Arrange
@@ -702,6 +878,70 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public Task ChangePlanAsync_InvalidPlan_ReturnsValidationError()
+    {
+        return WithBillingEnabledAsync(() =>
+            SendRequestAsync(r => r
+                .AsTestOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest { PlanId = "missing-plan" })
+                .StatusCodeShouldBeUnprocessableEntity()
+            ));
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_SameFreePlan_ReturnsSuccess()
+    {
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest { PlanId = _plans.FreePlan.Id })
+                .StatusCodeShouldBeOk()
+            ));
+
+        Assert.NotNull(result);
+        Assert.True(result.Success);
+        Assert.Contains("already on the free plan", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_LegacyQueryParamsSameFreePlan_ReturnsSuccess()
+    {
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .QueryString("planId", _plans.FreePlan.Id)
+                .StatusCodeShouldBeOk()
+            ));
+
+        Assert.NotNull(result);
+        Assert.True(result.Success);
+        Assert.Contains("already on the free plan", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_PaidPlanWithoutBillingInformation_ReturnsFailure()
+    {
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest { PlanId = _plans.SmallPlan.Id })
+                .StatusCodeShouldBeOk()
+            ));
+
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Equal("Billing information was not set.", result.Message);
+    }
+
+    [Fact]
     public async Task CanDownGradeAsync_TooManyUsers_ReturnsFailure()
     {
         // Arrange — test org has 2 users (global admin + org user); free plan allows max 1
@@ -812,6 +1052,31 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "invoices")
             .StatusCodeShouldBeNotFound()
         );
+    }
+
+    [Fact]
+    public async Task GetInvoicesAsync_BillingEnabledOrganizationWithoutStripeCustomer_ReturnsEmptyCollection()
+    {
+        var invoices = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<List<InvoiceGridModel>>(r => r
+                .AsFreeOrganizationUser()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "invoices")
+                .StatusCodeShouldBeOk()
+            ));
+
+        Assert.NotNull(invoices);
+        Assert.Empty(invoices);
+    }
+
+    [Fact]
+    public Task GetInvoicesAsync_BillingEnabledNonExistentOrganization_ReturnsNotFound()
+    {
+        return WithBillingEnabledAsync(() =>
+            SendRequestAsync(r => r
+                .AsGlobalAdminUser()
+                .AppendPaths("organizations", "000000000000000000000000", "invoices")
+                .StatusCodeShouldBeNotFound()
+            ));
     }
 
     [Fact]

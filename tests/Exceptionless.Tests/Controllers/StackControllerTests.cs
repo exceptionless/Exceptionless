@@ -10,6 +10,8 @@ using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using Foundatio.Jobs;
 using Foundatio.Queues;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Utility;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
@@ -545,6 +547,53 @@ public class StackControllerTests : IntegrationTestsBase
             .AppendPath($"stacks/{ev.StackId}/remove-link")
             .Content(new ValueFromBody<string>(""))
             .StatusCodeShouldBeBadRequest());
+    }
+
+    [Fact]
+    public async Task PromoteAsync_NonPremiumOrganization_ReturnsUpgradeRequired()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        var organizationRepository = GetService<IOrganizationRepository>();
+        var organization = await organizationRepository.GetByIdAsync(ev.OrganizationId);
+        Assert.NotNull(organization);
+        organization.HasPremiumFeatures = false;
+        await organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/promote")
+            .StatusCodeShouldBeUpgradeRequired());
+    }
+
+    [Fact]
+    public async Task PromoteAsync_PremiumOrganizationWithoutPromoteHooks_ReturnsNotImplemented()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/promote")
+            .ExpectedStatus(System.Net.HttpStatusCode.NotImplemented));
+    }
+
+    [Fact]
+    public Task PromoteAsync_NonExistentStack_ReturnsNotFound()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("stacks/000000000000000000000000/promote")
+            .StatusCodeShouldBeNotFound());
     }
 
     [Fact]
