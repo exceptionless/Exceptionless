@@ -1,0 +1,516 @@
+using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Utility;
+using Exceptionless.Tests.Extensions;
+using Exceptionless.Web.Controllers;
+using Exceptionless.Web.Models;
+using FluentRest;
+using Foundatio.Repositories;
+using Xunit;
+
+namespace Exceptionless.Tests.Controllers;
+
+public sealed class UserControllerTests : IntegrationTestsBase
+{
+    private readonly IUserRepository _userRepository;
+
+    public UserControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
+        _userRepository = GetService<IUserRepository>();
+    }
+
+    protected override async Task ResetDataAsync()
+    {
+        await base.ResetDataAsync();
+        var service = GetService<SampleDataService>();
+        await service.CreateDataAsync();
+    }
+
+    [Fact]
+    public async Task AddAdminRoleAsync_AnonymousUser_ReturnsUnauthorized()
+    {
+        // Arrange
+        var user = await GetTestOrganizationUserAsync();
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .Post()
+            .AppendPaths("users", user.Id, "admin-role")
+            .StatusCodeShouldBeUnauthorized()
+        );
+    }
+
+    [Fact]
+    public async Task AddAdminRoleAsync_AsGlobalAdmin_AddsRole()
+    {
+        // Arrange
+        var user = await GetTestOrganizationUserAsync();
+
+        // Act
+        var response = await SendRequestAsAsync<ViewUser>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("users", user.Id, "admin-role")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.Contains(AuthorizationRoles.GlobalAdmin, response.Roles);
+    }
+
+    [Fact]
+    public async Task AddAdminRoleAsync_NonAdmin_ReturnsForbidden()
+    {
+        // Arrange
+        var user = await GetTestOrganizationUserAsync();
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("users", user.Id, "admin-role")
+            .StatusCodeShouldBeForbidden()
+        );
+    }
+
+    [Fact]
+    public async Task DeleteAdminRoleAsync_AsGlobalAdmin_RemovesRole()
+    {
+        // Arrange
+        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(currentUser);
+
+        // Act
+        var response = await SendRequestAsAsync<ViewUser>(r => r
+            .Delete()
+            .AsGlobalAdminUser()
+            .AppendPaths("users", currentUser.Id, "admin-role")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.DoesNotContain(AuthorizationRoles.GlobalAdmin, response.Roles);
+    }
+
+    [Fact]
+    public async Task DeleteAdminRoleAsync_NonAdmin_ReturnsForbidden()
+    {
+        // Arrange
+        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(currentUser);
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .Delete()
+            .AsTestOrganizationUser()
+            .AppendPaths("users", currentUser.Id, "admin-role")
+            .StatusCodeShouldBeForbidden()
+        );
+    }
+
+    [Fact]
+    public async Task DeleteAsync_AsGlobalAdmin_ReturnsAccepted()
+    {
+        // Arrange - create a user with no organizations so it can be deleted
+        var user = new User
+        {
+            FullName = "Deletable User",
+            EmailAddress = "deletable@exceptionless.test",
+            IsEmailAddressVerified = true
+        };
+        user.Roles.Add(AuthorizationRoles.Client);
+        user.Roles.Add(AuthorizationRoles.User);
+        user = await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
+
+        // Act
+        var response = await SendRequestAsAsync<WorkInProgressResult>(r => r
+            .Delete()
+            .AsGlobalAdminUser()
+            .AppendPaths("users", user.Id)
+            .StatusCodeShouldBeAccepted()
+        );
+
+        // Assert
+        Assert.NotNull(response);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_NonAdmin_ReturnsForbidden()
+    {
+        // Arrange
+        var user = await GetTestOrganizationUserAsync();
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .Delete()
+            .AsTestOrganizationUser()
+            .AppendPaths("users", user.Id)
+            .StatusCodeShouldBeForbidden()
+        );
+    }
+
+    [Fact]
+    public Task DeleteCurrentUserAsync_AnonymousUser_ReturnsUnauthorized()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .Delete()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeUnauthorized()
+        );
+    }
+
+    [Fact]
+    public async Task GetAsync_AnonymousUser_ReturnsUnauthorized()
+    {
+        // Arrange
+        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(currentUser);
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .AppendPaths("users", currentUser.Id)
+            .StatusCodeShouldBeUnauthorized()
+        );
+    }
+
+    [Fact]
+    public Task GetAsync_InvalidId_ReturnsNotFound()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("users", "000000000000000000000000")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public async Task GetAsync_ValidId_ReturnsUser()
+    {
+        // Arrange
+        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(currentUser);
+
+        // Act
+        var user = await SendRequestAsAsync<ViewUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("users", currentUser.Id)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(user);
+        Assert.Equal(currentUser.Id, user.Id);
+        Assert.Equal(SampleDataService.TEST_USER_EMAIL, user.EmailAddress);
+    }
+
+    [Fact]
+    public Task GetByOrganizationAsync_AnonymousUser_ReturnsUnauthorized()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AppendPath($"organizations/{SampleDataService.TEST_ORG_ID}/users")
+            .StatusCodeShouldBeUnauthorized()
+        );
+    }
+
+    [Fact]
+    public async Task GetByOrganizationAsync_ValidOrganization_ReturnsUsers()
+    {
+        // Act
+        var users = await SendRequestAsAsync<IReadOnlyCollection<ViewUser>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath($"organizations/{SampleDataService.TEST_ORG_ID}/users")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(users);
+        Assert.NotEmpty(users);
+    }
+
+    [Fact]
+    public Task GetCurrentUserAsync_AnonymousUser_ReturnsUnauthorized()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AppendPath("users/me")
+            .StatusCodeShouldBeUnauthorized()
+        );
+    }
+
+    [Fact]
+    public async Task GetCurrentUserAsync_AuthenticatedUser_ReturnsCurrentUser()
+    {
+        // Act
+        var user = await SendRequestAsAsync<ViewCurrentUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(user);
+        Assert.Equal(SampleDataService.TEST_USER_EMAIL, user.EmailAddress);
+        Assert.NotNull(user.Id);
+        Assert.True(user.IsActive);
+        Assert.True(user.IsEmailAddressVerified);
+    }
+
+    [Fact]
+    public async Task GetCurrentUserAsync_TestOrganizationUser_ReturnsCurrentUser()
+    {
+        // Act
+        var user = await SendRequestAsAsync<ViewCurrentUser>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(user);
+        Assert.Equal(SampleDataService.TEST_ORG_USER_EMAIL, user.EmailAddress);
+        Assert.True(user.IsActive);
+    }
+
+    [Fact]
+    public async Task PatchAsync_AnonymousUser_ReturnsUnauthorized()
+    {
+        // Arrange
+        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(currentUser);
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .Patch()
+            .AppendPaths("users", currentUser.Id)
+            .Content(new { FullName = "Hacker" })
+            .StatusCodeShouldBeUnauthorized()
+        );
+    }
+
+    [Fact]
+    public async Task PatchAsync_UpdateFullName_ReturnsUpdatedUser()
+    {
+        // Arrange
+        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(currentUser);
+
+        // Act
+        var updatedUser = await SendRequestAsAsync<ViewUser>(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("users", currentUser.Id)
+            .Content(new { FullName = "Updated Name" })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedUser);
+        Assert.Equal("Updated Name", updatedUser.FullName);
+    }
+
+    [Fact]
+    public async Task PatchAsync_UpdateNotifications_ReturnsUpdatedUser()
+    {
+        // Arrange
+        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(currentUser);
+
+        // Act
+        var updatedUser = await SendRequestAsAsync<ViewUser>(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("users", currentUser.Id)
+            .Content(new { EmailNotificationsEnabled = false })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedUser);
+        Assert.False(updatedUser.EmailNotificationsEnabled);
+    }
+
+    [Fact]
+    public async Task PutAsync_UpdateFullName_ReturnsUpdatedUser()
+    {
+        // Arrange
+        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(currentUser);
+
+        // Act
+        var updatedUser = await SendRequestAsAsync<ViewUser>(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("users", currentUser.Id)
+            .Content(new { FullName = "Put Updated Name" })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedUser);
+        Assert.Equal("Put Updated Name", updatedUser.FullName);
+    }
+
+    [Fact]
+    public async Task ResendVerificationEmailAsync_AnonymousUser_ReturnsUnauthorized()
+    {
+        // Arrange
+        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(currentUser);
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .AppendPaths("users", currentUser.Id, "resend-verification-email")
+            .StatusCodeShouldBeUnauthorized()
+        );
+    }
+
+    [Fact]
+    public async Task ResendVerificationEmailAsync_ValidUser_ReturnsOk()
+    {
+        // Arrange
+        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(currentUser);
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("users", currentUser.Id, "resend-verification-email")
+            .StatusCodeShouldBeOk()
+        );
+    }
+
+    [Fact]
+    public Task UnverifyEmailAddressAsync_AsGlobalAdmin_ReturnsOk()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("users/unverify-email-address")
+            .Content(SampleDataService.TEST_USER_EMAIL, "text/plain")
+            .StatusCodeShouldBeOk()
+        );
+    }
+
+    [Fact]
+    public Task UnverifyEmailAddressAsync_NonAdmin_ReturnsForbidden()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("users/unverify-email-address")
+            .Content(SampleDataService.TEST_USER_EMAIL, "text/plain")
+            .StatusCodeShouldBeForbidden()
+        );
+    }
+
+    [Fact]
+    public async Task UpdateEmailAddressAsync_AnonymousUser_ReturnsUnauthorized()
+    {
+        // Arrange
+        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(currentUser);
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .Post()
+            .AppendPaths("users", currentUser.Id, "email-address", "newemail@exceptionless.test")
+            .StatusCodeShouldBeUnauthorized()
+        );
+    }
+
+    [Fact]
+    public async Task UpdateEmailAddressAsync_ValidEmail_ReturnsResult()
+    {
+        // Arrange
+        var currentUser = await SendRequestAsAsync<ViewCurrentUser>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(currentUser);
+
+        // Act
+        var result = await SendRequestAsAsync<UpdateEmailAddressResult>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("users", currentUser.Id, "email-address", "newemail@exceptionless.test")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public Task VerifyAsync_InvalidToken_ReturnsNotFound()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AppendPaths("users", "verify-email-address", "invalidtoken1234567890ab")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    private async Task<ViewUser> GetTestOrganizationUserAsync()
+    {
+        var user = await SendRequestAsAsync<ViewCurrentUser>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+        Assert.NotNull(user);
+        return user;
+    }
+}
