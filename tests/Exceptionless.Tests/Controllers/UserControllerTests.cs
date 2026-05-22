@@ -33,7 +33,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
         // Arrange
         var user = await GetTestOrganizationUserAsync();
 
-        // Act & Assert
+        // Act
         await SendRequestAsync(r => r
             .Post()
             .AppendPaths("users", user.Id, "admin-role")
@@ -67,13 +67,18 @@ public sealed class UserControllerTests : IntegrationTestsBase
         // Arrange
         var user = await GetTestOrganizationUserAsync();
 
-        // Act & Assert
+        // Act
         await SendRequestAsync(r => r
             .Post()
             .AsTestOrganizationUser()
             .AppendPaths("users", user.Id, "admin-role")
             .StatusCodeShouldBeForbidden()
         );
+
+        // Assert - role was not added
+        var unchanged = await _userRepository.GetByIdAsync(user.Id);
+        Assert.NotNull(unchanged);
+        Assert.DoesNotContain(AuthorizationRoles.GlobalAdmin, unchanged.Roles);
     }
 
     [Fact]
@@ -112,19 +117,24 @@ public sealed class UserControllerTests : IntegrationTestsBase
         );
         Assert.NotNull(currentUser);
 
-        // Act & Assert
+        // Act
         await SendRequestAsync(r => r
             .Delete()
             .AsTestOrganizationUser()
             .AppendPaths("users", currentUser.Id, "admin-role")
             .StatusCodeShouldBeForbidden()
         );
+
+        // Assert - role was not removed
+        var user = await _userRepository.GetByIdAsync(currentUser.Id);
+        Assert.NotNull(user);
+        Assert.Contains(AuthorizationRoles.GlobalAdmin, user.Roles);
     }
 
     [Fact]
     public async Task DeleteAsync_AsGlobalAdmin_ReturnsAccepted()
     {
-        // Arrange - create a user with no organizations so it can be deleted
+        // Arrange
         var user = new User
         {
             FullName = "Deletable User",
@@ -153,19 +163,22 @@ public sealed class UserControllerTests : IntegrationTestsBase
         // Arrange
         var user = await GetTestOrganizationUserAsync();
 
-        // Act & Assert
+        // Act
         await SendRequestAsync(r => r
             .Delete()
             .AsTestOrganizationUser()
             .AppendPaths("users", user.Id)
             .StatusCodeShouldBeForbidden()
         );
+
+        // Assert - user still exists
+        var unchanged = await _userRepository.GetByIdAsync(user.Id);
+        Assert.NotNull(unchanged);
     }
 
     [Fact]
     public Task DeleteCurrentUserAsync_AnonymousUser_ReturnsUnauthorized()
     {
-        // Act & Assert
         return SendRequestAsync(r => r
             .Delete()
             .AppendPath("users/me")
@@ -184,7 +197,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
         );
         Assert.NotNull(currentUser);
 
-        // Act & Assert
+        // Act
         await SendRequestAsync(r => r
             .AppendPaths("users", currentUser.Id)
             .StatusCodeShouldBeUnauthorized()
@@ -194,7 +207,6 @@ public sealed class UserControllerTests : IntegrationTestsBase
     [Fact]
     public Task GetAsync_InvalidId_ReturnsNotFound()
     {
-        // Act & Assert
         return SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPaths("users", "000000000000000000000000")
@@ -229,7 +241,6 @@ public sealed class UserControllerTests : IntegrationTestsBase
     [Fact]
     public Task GetByOrganizationAsync_AnonymousUser_ReturnsUnauthorized()
     {
-        // Act & Assert
         return SendRequestAsync(r => r
             .AppendPath($"organizations/{SampleDataService.TEST_ORG_ID}/users")
             .StatusCodeShouldBeUnauthorized()
@@ -254,7 +265,6 @@ public sealed class UserControllerTests : IntegrationTestsBase
     [Fact]
     public Task GetCurrentUserAsync_AnonymousUser_ReturnsUnauthorized()
     {
-        // Act & Assert
         return SendRequestAsync(r => r
             .AppendPath("users/me")
             .StatusCodeShouldBeUnauthorized()
@@ -306,13 +316,18 @@ public sealed class UserControllerTests : IntegrationTestsBase
         );
         Assert.NotNull(currentUser);
 
-        // Act & Assert
+        // Act
         await SendRequestAsync(r => r
             .Patch()
             .AppendPaths("users", currentUser.Id)
             .Content(new { FullName = "Hacker" })
             .StatusCodeShouldBeUnauthorized()
         );
+
+        // Assert - name was not changed
+        var user = await _userRepository.GetByIdAsync(currentUser.Id);
+        Assert.NotNull(user);
+        Assert.NotEqual("Hacker", user.FullName);
     }
 
     [Fact]
@@ -366,6 +381,18 @@ public sealed class UserControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public Task PatchAsync_WithNonExistentId_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("users", "000000000000000000000000")
+            .Content(new { FullName = "Nobody" })
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
     public async Task PutAsync_UpdateFullName_ReturnsUpdatedUser()
     {
         // Arrange
@@ -401,7 +428,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
         );
         Assert.NotNull(currentUser);
 
-        // Act & Assert
+        // Act
         await SendRequestAsync(r => r
             .AppendPaths("users", currentUser.Id, "resend-verification-email")
             .StatusCodeShouldBeUnauthorized()
@@ -419,7 +446,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
         );
         Assert.NotNull(currentUser);
 
-        // Act & Assert
+        // Act
         await SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPaths("users", currentUser.Id, "resend-verification-email")
@@ -430,7 +457,6 @@ public sealed class UserControllerTests : IntegrationTestsBase
     [Fact]
     public Task UnverifyEmailAddressAsync_AsGlobalAdmin_ReturnsOk()
     {
-        // Act & Assert
         return SendRequestAsync(r => r
             .Post()
             .AsGlobalAdminUser()
@@ -443,7 +469,6 @@ public sealed class UserControllerTests : IntegrationTestsBase
     [Fact]
     public Task UnverifyEmailAddressAsync_NonAdmin_ReturnsForbidden()
     {
-        // Act & Assert
         return SendRequestAsync(r => r
             .Post()
             .AsTestOrganizationUser()
@@ -464,12 +489,17 @@ public sealed class UserControllerTests : IntegrationTestsBase
         );
         Assert.NotNull(currentUser);
 
-        // Act & Assert
+        // Act
         await SendRequestAsync(r => r
             .Post()
             .AppendPaths("users", currentUser.Id, "email-address", "newemail@exceptionless.test")
             .StatusCodeShouldBeUnauthorized()
         );
+
+        // Assert - email was not changed
+        var user = await _userRepository.GetByIdAsync(currentUser.Id);
+        Assert.NotNull(user);
+        Assert.NotEqual("newemail@exceptionless.test", user.EmailAddress);
     }
 
     [Fact]
@@ -498,7 +528,6 @@ public sealed class UserControllerTests : IntegrationTestsBase
     [Fact]
     public Task VerifyAsync_InvalidToken_ReturnsNotFound()
     {
-        // Act & Assert
         return SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPaths("users", "verify-email-address", "invalidtoken1234567890ab")

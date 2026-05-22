@@ -439,4 +439,355 @@ public sealed class TokenControllerTests : IntegrationTestsBase
         Assert.NotNull(problemDetails);
         Assert.Contains(problemDetails.Errors, error => error.Key.Equals("project_id", StringComparison.OrdinalIgnoreCase));
     }
+
+    [Fact]
+    public async Task DeleteAsync_ExistingToken_ReturnsAccepted()
+    {
+        // Arrange
+        var createdToken = await SendRequestAsAsync<ViewToken>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("tokens")
+            .Content(new NewToken
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                ProjectId = SampleDataService.TEST_PROJECT_ID,
+                Scopes = [AuthorizationRoles.Client],
+                Notes = "Token to delete"
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(createdToken);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Delete()
+            .AsGlobalAdminUser()
+            .AppendPaths("tokens", createdToken.Id)
+            .StatusCodeShouldBeAccepted()
+        );
+
+        // Assert
+        await RefreshDataAsync();
+        var deletedToken = await _tokenRepository.GetByIdAsync(createdToken.Id);
+        Assert.Null(deletedToken);
+    }
+
+    [Fact]
+    public Task DeleteAsync_NonExistentToken_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .Delete()
+            .AsGlobalAdminUser()
+            .AppendPaths("tokens", "000000000000000000000000")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WithTokenAuth_ReturnsForbidden()
+    {
+        // Arrange
+        var createdToken = await SendRequestAsAsync<ViewToken>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("tokens")
+            .Content(new NewToken
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                ProjectId = SampleDataService.TEST_PROJECT_ID,
+                Scopes = [AuthorizationRoles.Client]
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(createdToken);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Delete()
+            .BearerToken(createdToken.Id)
+            .AppendPaths("tokens", createdToken.Id)
+            .StatusCodeShouldBeForbidden()
+        );
+
+        // Assert - token should still exist
+        var token = await _tokenRepository.GetByIdAsync(createdToken.Id);
+        Assert.NotNull(token);
+    }
+
+    [Fact]
+    public async Task GetByOrganizationAsync_ExistingOrganization_ReturnsTokens()
+    {
+        // Arrange - create a token in the test org
+        var createdToken = await SendRequestAsAsync<ViewToken>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("tokens")
+            .Content(new NewToken
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                ProjectId = SampleDataService.TEST_PROJECT_ID,
+                Scopes = [AuthorizationRoles.Client],
+                Notes = "Org listing token"
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(createdToken);
+
+        // Act
+        var tokens = await SendRequestAsAsync<List<ViewToken>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "tokens")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(tokens);
+        Assert.NotEmpty(tokens);
+        Assert.Contains(tokens, t => t.Id == createdToken.Id);
+        Assert.All(tokens, t => Assert.Equal(SampleDataService.TEST_ORG_ID, t.OrganizationId));
+    }
+
+    [Fact]
+    public Task GetByOrganizationAsync_InvalidOrganizationId_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", "000000000000000000000000", "tokens")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public Task GetByOrganizationAsync_WithTokenAuth_ReturnsForbidden()
+    {
+        return SendRequestAsync(r => r
+            .BearerToken(SampleDataService.TEST_API_KEY)
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "tokens")
+            .StatusCodeShouldBeForbidden()
+        );
+    }
+
+    [Fact]
+    public async Task GetByProjectAsync_ExistingProject_ReturnsTokens()
+    {
+        // Arrange
+        var createdToken = await SendRequestAsAsync<ViewToken>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("tokens")
+            .Content(new NewToken
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                ProjectId = SampleDataService.TEST_PROJECT_ID,
+                Scopes = [AuthorizationRoles.Client],
+                Notes = "Project listing token"
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(createdToken);
+
+        // Act
+        var tokens = await SendRequestAsAsync<List<ViewToken>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "tokens")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(tokens);
+        Assert.NotEmpty(tokens);
+        Assert.Contains(tokens, t => t.Id == createdToken.Id);
+        Assert.All(tokens, t => Assert.Equal(SampleDataService.TEST_PROJECT_ID, t.ProjectId));
+    }
+
+    [Fact]
+    public Task GetByProjectAsync_InvalidProjectId_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("projects", "000000000000000000000000", "tokens")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public Task GetByProjectAsync_WithTokenAuth_ReturnsForbidden()
+    {
+        return SendRequestAsync(r => r
+            .BearerToken(SampleDataService.TEST_API_KEY)
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "tokens")
+            .StatusCodeShouldBeForbidden()
+        );
+    }
+
+    [Fact]
+    public async Task GetDefaultTokenAsync_ExistingProject_ReturnsToken()
+    {
+        // Act
+        var token = await SendRequestAsAsync<ViewToken>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "tokens", "default")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(token);
+        Assert.Equal(SampleDataService.TEST_PROJECT_ID, token.ProjectId);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, token.OrganizationId);
+    }
+
+    [Fact]
+    public Task GetDefaultTokenAsync_InvalidProjectId_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("projects", "000000000000000000000000", "tokens", "default")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public Task GetDefaultTokenAsync_WithTokenAuth_ReturnsForbidden()
+    {
+        return SendRequestAsync(r => r
+            .BearerToken(SampleDataService.TEST_API_KEY)
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "tokens", "default")
+            .StatusCodeShouldBeForbidden()
+        );
+    }
+
+    [Fact]
+    public async Task PatchAsync_UpdateNotes_ChangesNotesOnly()
+    {
+        // Arrange
+        var createdToken = await SendRequestAsAsync<ViewToken>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("tokens")
+            .Content(new NewToken
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                ProjectId = SampleDataService.TEST_PROJECT_ID,
+                Scopes = [AuthorizationRoles.Client],
+                Notes = "Original notes"
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(createdToken);
+        Assert.False(createdToken.IsDisabled);
+
+        // Act
+        var updatedToken = await SendRequestAsAsync<ViewToken>(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("tokens", createdToken.Id)
+            .Content(new UpdateToken { Notes = "Updated notes" })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedToken);
+        Assert.Equal("Updated notes", updatedToken.Notes);
+        Assert.False(updatedToken.IsDisabled);
+
+        // Verify persisted
+        var token = await _tokenRepository.GetByIdAsync(createdToken.Id);
+        Assert.NotNull(token);
+        Assert.Equal("Updated notes", token.Notes);
+        Assert.False(token.IsDisabled);
+    }
+
+    [Fact]
+    public async Task PatchAsync_DisableToken_ChangesIsDisabledOnly()
+    {
+        // Arrange
+        var createdToken = await SendRequestAsAsync<ViewToken>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("tokens")
+            .Content(new NewToken
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                ProjectId = SampleDataService.TEST_PROJECT_ID,
+                Scopes = [AuthorizationRoles.Client],
+                Notes = "Keep these notes"
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(createdToken);
+
+        // Act
+        var updatedToken = await SendRequestAsAsync<ViewToken>(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("tokens", createdToken.Id)
+            .Content(new UpdateToken { IsDisabled = true })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedToken);
+        Assert.True(updatedToken.IsDisabled);
+        Assert.Equal("Keep these notes", updatedToken.Notes);
+
+        // Verify persisted
+        var token = await _tokenRepository.GetByIdAsync(createdToken.Id);
+        Assert.NotNull(token);
+        Assert.True(token.IsDisabled);
+        Assert.Equal("Keep these notes", token.Notes);
+    }
+
+    [Fact]
+    public Task PatchAsync_NonExistentToken_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("tokens", "000000000000000000000000")
+            .Content(new UpdateToken { Notes = "Does not exist" })
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public async Task PatchAsync_WithTokenAuth_ReturnsForbidden()
+    {
+        // Arrange
+        var createdToken = await SendRequestAsAsync<ViewToken>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("tokens")
+            .Content(new NewToken
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                ProjectId = SampleDataService.TEST_PROJECT_ID,
+                Scopes = [AuthorizationRoles.Client],
+                Notes = "Should not change"
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(createdToken);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Patch()
+            .BearerToken(createdToken.Id)
+            .AppendPaths("tokens", createdToken.Id)
+            .Content(new UpdateToken { Notes = "Hacked" })
+            .StatusCodeShouldBeForbidden()
+        );
+
+        // Assert - token should not be changed
+        var token = await _tokenRepository.GetByIdAsync(createdToken.Id);
+        Assert.NotNull(token);
+        Assert.Equal("Should not change", token.Notes);
+    }
 }

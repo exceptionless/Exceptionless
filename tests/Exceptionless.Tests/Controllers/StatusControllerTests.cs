@@ -11,14 +11,11 @@ namespace Exceptionless.Tests.Controllers;
 
 public class StatusControllerTests : IntegrationTestsBase
 {
-    public StatusControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
-    {
-    }
+    public StatusControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) { }
 
     protected override async Task ResetDataAsync()
     {
         await base.ResetDataAsync();
-
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
     }
@@ -26,7 +23,6 @@ public class StatusControllerTests : IntegrationTestsBase
     [Theory]
     [InlineData(null, false)]
     [InlineData(null, true)]
-    //[InlineData(null, true, false)] // TODO: Resolve issue where you are required to pass a message via the body.
     [InlineData("New Release!!", false)]
     [InlineData("New Release!!", true)]
     public async Task CanSendReleaseNotification(string? message, bool critical, bool sendMessageAsContentIfEmpty = true)
@@ -63,7 +59,7 @@ public class StatusControllerTests : IntegrationTestsBase
     [Fact]
     public async Task GetAboutAsync_Anonymous_ReturnsVersionInfo()
     {
-        // Arrange & Act
+        // Act
         var response = await SendRequestAsync(r => r
             .AppendPath("about")
             .StatusCodeShouldBeOk());
@@ -78,7 +74,7 @@ public class StatusControllerTests : IntegrationTestsBase
     [Fact]
     public async Task GetQueueStatsAsync_AsGlobalAdmin_ReturnsQueueStats()
     {
-        // Arrange & Act
+        // Act
         var response = await SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPath("queue-stats")
@@ -95,7 +91,6 @@ public class StatusControllerTests : IntegrationTestsBase
     [Fact]
     public Task GetQueueStatsAsync_AsNonAdmin_ReturnsForbidden()
     {
-        // Arrange & Act
         return SendRequestAsync(r => r
             .AsTestOrganizationUser()
             .AppendPath("queue-stats")
@@ -105,7 +100,7 @@ public class StatusControllerTests : IntegrationTestsBase
     [Fact]
     public async Task GetSystemNotificationAsync_WhenNoneSet_ReturnsOk()
     {
-        // Arrange & Act
+        // Act
         var response = await SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
@@ -138,7 +133,6 @@ public class StatusControllerTests : IntegrationTestsBase
     [Fact]
     public Task PostSystemNotificationAsync_WithEmptyMessage_ReturnsNotFound()
     {
-        // Arrange & Act
         return SendRequestAsync(r => r
             .Post()
             .AsGlobalAdminUser()
@@ -150,7 +144,6 @@ public class StatusControllerTests : IntegrationTestsBase
     [Fact]
     public Task PostSystemNotificationAsync_AsNonAdmin_ReturnsForbidden()
     {
-        // Arrange & Act
         return SendRequestAsync(r => r
             .Post()
             .AsTestOrganizationUser()
@@ -162,7 +155,7 @@ public class StatusControllerTests : IntegrationTestsBase
     [Fact]
     public async Task RemoveSystemNotificationAsync_AsGlobalAdmin_ReturnsOk()
     {
-        // Arrange - first set a notification
+        // Arrange
         await SendRequestAsync(r => r
             .Post()
             .AsGlobalAdminUser()
@@ -177,12 +170,11 @@ public class StatusControllerTests : IntegrationTestsBase
             .AppendPath("notifications/system")
             .StatusCodeShouldBeOk());
 
-        // Assert - get should now return empty
+        // Assert
         var response = await SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
             .StatusCodeShouldBeOk());
-
         var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.DoesNotContain("To be removed", content);
     }
@@ -190,7 +182,6 @@ public class StatusControllerTests : IntegrationTestsBase
     [Fact]
     public Task RemoveSystemNotificationAsync_AsNonAdmin_ReturnsForbidden()
     {
-        // Arrange & Act
         return SendRequestAsync(r => r
             .Delete()
             .AsTestOrganizationUser()

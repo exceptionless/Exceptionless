@@ -35,8 +35,6 @@ public class InnerErrorSerializerTests : TestWithServices
         Assert.Single(result.StackTrace);
     }
 
-
-
     [Fact]
     public void RoundTrip_WithAllProperties_PreservesValues()
     {

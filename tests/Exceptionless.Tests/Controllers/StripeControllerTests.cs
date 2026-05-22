@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Headers;
 using System.Text;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
@@ -22,7 +21,7 @@ public class StripeControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PostAsync_WithEmptyBody_ReturnsBadRequest()
     {
-        // Arrange & Act
+        // Act
         var response = await SendRequestAsync(r => r
             .Post()
             .AppendPath("stripe")
@@ -37,7 +36,8 @@ public class StripeControllerTests : IntegrationTestsBase
     public async Task PostAsync_WithInvalidSignature_ReturnsBadRequest()
     {
         // Arrange
-        string json = "{\"id\":\"evt_test\",\"type\":\"charge.succeeded\"}";
+        /* language=json */
+        const string json = """{"id":"evt_test","type":"charge.succeeded"}""";
 
         // Act
         var response = await SendRequestAsync(r => r
@@ -55,7 +55,8 @@ public class StripeControllerTests : IntegrationTestsBase
     public async Task PostAsync_WithMissingSignatureHeader_ReturnsBadRequest()
     {
         // Arrange
-        string json = "{\"id\":\"evt_test\",\"type\":\"charge.succeeded\"}";
+        /* language=json */
+        const string json = """{"id":"evt_test","type":"charge.succeeded"}""";
 
         // Act
         var response = await SendRequestAsync(r => r

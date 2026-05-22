@@ -35,8 +35,6 @@ public class MethodSerializerTests : TestWithServices
         Assert.Single(result.Parameters!);
     }
 
-
-
     [Fact]
     public void RoundTrip_WithAllProperties_PreservesValues()
     {

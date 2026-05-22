@@ -14,8 +14,6 @@ public class UserDescriptionSerializerTests : TestWithServices
         _serializer = GetService<ITextSerializer>();
     }
 
-
-
     [Fact]
     public void Deserialize_SnakeCaseJson_ParsesCorrectly()
     {
