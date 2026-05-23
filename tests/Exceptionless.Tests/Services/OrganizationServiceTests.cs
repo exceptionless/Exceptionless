@@ -41,7 +41,7 @@ public sealed class OrganizationServiceTests : TestWithServices
         // Arrange
         var stripeClient = Assert.IsType<FakeStripeBillingClient>(GetService<IStripeBillingClient>());
         stripeClient.Subscriptions.Add(new Subscription { Id = "sub_active" });
-        stripeClient.Subscriptions.Add(new Subscription { Id = "sub_canceled", CanceledAt = DateTime.UtcNow });
+        stripeClient.Subscriptions.Add(new Subscription { Id = "sub_canceled", CanceledAt = TimeProvider.GetUtcNow().UtcDateTime });
         var service = GetService<OrganizationService>();
 
         // Act
