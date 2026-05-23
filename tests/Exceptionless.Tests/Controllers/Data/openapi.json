@@ -9357,6 +9357,7 @@
         "required": [
           "id",
           "organization_id",
+          "project_id",
           "scopes",
           "is_disabled",
           "is_suspended",
@@ -9381,10 +9382,7 @@
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           },
           "user_id": {
             "maxLength": 24,

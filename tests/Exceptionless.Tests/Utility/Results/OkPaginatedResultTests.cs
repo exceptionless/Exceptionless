@@ -10,7 +10,7 @@ namespace Exceptionless.Tests.Utility.Results;
 public sealed class OkPaginatedResultTests
 {
     [Fact]
-    public void AddPageLinkHeaders_AddsPreviousAndNextLinks()
+    public void AddPageLinkHeaders_WithPreviousAndNextPages_AddsPreviousAndNextLinks()
     {
         // Arrange
         var context = new DefaultHttpContext();
@@ -29,7 +29,7 @@ public sealed class OkPaginatedResultTests
     }
 
     [Fact]
-    public void OnFormatting_AddsPaginationAndTotalHeaders()
+    public void OnFormatting_WithPaginationAndTotal_AddsPaginationAndTotalHeaders()
     {
         // Arrange
         var httpContext = new DefaultHttpContext();

@@ -12,7 +12,8 @@ public record ViewToken : IIdentity, IHaveDates
     public string OrganizationId { get; set; } = null!;
 
     [ObjectId]
-    public string? ProjectId { get; set; }
+    // Keep this aligned with Token.ProjectId so the API contract mirrors project-owned token semantics.
+    public string ProjectId { get; set; } = null!;
 
     [ObjectId]
     public string? UserId { get; set; }
