@@ -1072,6 +1072,8 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     public async Task ChangePlanAsync_ExistingCustomerUpdatesPaymentMethodAndSubscription()
     {
         // Arrange
+        var subscribeDate = new DateTime(2026, 5, 22, 14, 30, 0, DateTimeKind.Utc);
+        TimeProvider.SetUtcNow(subscribeDate);
         await SetStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, "cus_existing");
         StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_active", "si_active"));
 
@@ -1115,6 +1117,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
         Assert.NotNull(organization);
         Assert.Equal("4242", organization.CardLast4);
+        Assert.Equal(subscribeDate, organization.SubscribeDate);
         Assert.Equal(_plans.SmallPlan.Id, organization.PlanId);
         Assert.Equal(BillingStatus.Active, organization.BillingStatus);
     }
