@@ -46,6 +46,9 @@ public class SubmissionClientSerializerTests : TestWithServices
         var result = _serializer.Deserialize<SubmissionClient>(json);
 
         // Assert
+        SerializerContractAssertions.IncludesProperties(json, "ip_address", "user_agent");
+        SerializerContractAssertions.ExcludesProperties(json, "IpAddress", "UserAgent");
+
         Assert.NotNull(result);
         Assert.Equal("192.168.1.100", result.IpAddress);
         Assert.Equal("exceptionless/1.0.0", result.UserAgent);

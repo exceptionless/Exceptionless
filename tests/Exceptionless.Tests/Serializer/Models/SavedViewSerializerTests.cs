@@ -63,6 +63,25 @@ public class SavedViewSerializerTests : TestWithServices
         var result = _serializer.Deserialize<SavedView>(json);
 
         // Assert
+        SerializerContractAssertions.IncludesProperties(json,
+            "organization_id",
+            "user_id",
+            "created_by_user_id",
+            "updated_by_user_id",
+            "filter_definitions",
+            "view_type",
+            "created_utc",
+            "updated_utc");
+        SerializerContractAssertions.ExcludesProperties(json,
+            "OrganizationId",
+            "UserId",
+            "CreatedByUserId",
+            "UpdatedByUserId",
+            "FilterDefinitions",
+            "ViewType",
+            "CreatedUtc",
+            "UpdatedUtc");
+
         Assert.NotNull(result);
         Assert.Equal("770000000000000000000001", result.Id);
         Assert.Equal("550000000000000000000001", result.OrganizationId);
@@ -90,8 +109,8 @@ public class SavedViewSerializerTests : TestWithServices
             CreatedByUserId = "660000000000000000000001",
             Name = "All Events",
             ViewType = "events",
-            CreatedUtc = DateTime.UtcNow,
-            UpdatedUtc = DateTime.UtcNow
+            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            UpdatedUtc = new DateTime(2024, 1, 2, 0, 0, 0, DateTimeKind.Utc)
         };
 
         // Act

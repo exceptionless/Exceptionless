@@ -48,6 +48,9 @@ public class LocationSerializerTests : TestWithServices
         var result = _serializer.Deserialize<Location>(json);
 
         // Assert
+        SerializerContractAssertions.IncludesProperties(json, "level1", "level2");
+        SerializerContractAssertions.ExcludesProperties(json, "Level1", "Level2");
+
         Assert.NotNull(result);
         Assert.Equal("United States", result.Country);
         Assert.Equal("Texas", result.Level1);

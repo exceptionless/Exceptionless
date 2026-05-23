@@ -68,6 +68,9 @@ public class InnerErrorSerializerTests : TestWithServices
         var result = _serializer.Deserialize<InnerError>(json);
 
         // Assert
+        SerializerContractAssertions.IncludesProperties(json, "stack_trace", "target_method");
+        SerializerContractAssertions.ExcludesProperties(json, "StackTrace", "TargetMethod");
+
         Assert.NotNull(result);
         Assert.Equal("Object reference not set to an instance of an object.", result.Message);
         Assert.Equal("System.NullReferenceException", result.Type);

@@ -61,6 +61,35 @@ public class OrganizationSerializerTests : TestWithServices
         var result = _serializer.Deserialize<Organization>(json);
 
         // Assert
+        SerializerContractAssertions.IncludesProperties(json,
+            "stripe_customer_id",
+            "plan_id",
+            "plan_name",
+            "plan_description",
+            "card_last4",
+            "billing_status",
+            "max_events_per_month",
+            "retention_days",
+            "has_premium_features",
+            "max_users",
+            "max_projects",
+            "created_utc",
+            "updated_utc");
+        SerializerContractAssertions.ExcludesProperties(json,
+            "StripeCustomerId",
+            "PlanId",
+            "PlanName",
+            "PlanDescription",
+            "CardLast4",
+            "BillingStatus",
+            "MaxEventsPerMonth",
+            "RetentionDays",
+            "HasPremiumFeatures",
+            "MaxUsers",
+            "MaxProjects",
+            "CreatedUtc",
+            "UpdatedUtc");
+
         Assert.NotNull(result);
         Assert.Equal("550000000000000000000001", result.Id);
         Assert.Equal("Acme Corp", result.Name);
@@ -85,8 +114,8 @@ public class OrganizationSerializerTests : TestWithServices
             PlanId = "EX_FREE",
             PlanName = "Free",
             PlanDescription = "Free plan",
-            CreatedUtc = DateTime.UtcNow,
-            UpdatedUtc = DateTime.UtcNow
+            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            UpdatedUtc = new DateTime(2024, 1, 2, 0, 0, 0, DateTimeKind.Utc)
         };
         organization.Invites.Add(new Invite
         {
@@ -122,8 +151,8 @@ public class OrganizationSerializerTests : TestWithServices
             SuspensionNotes = "Payment failed",
             SuspensionDate = new DateTime(2024, 5, 1, 0, 0, 0, DateTimeKind.Utc),
             SuspendedByUserId = "660000000000000000000001",
-            CreatedUtc = DateTime.UtcNow,
-            UpdatedUtc = DateTime.UtcNow
+            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            UpdatedUtc = new DateTime(2024, 1, 2, 0, 0, 0, DateTimeKind.Utc)
         };
 
         // Act
@@ -131,6 +160,19 @@ public class OrganizationSerializerTests : TestWithServices
         var result = _serializer.Deserialize<Organization>(json);
 
         // Assert
+        SerializerContractAssertions.IncludesProperties(json,
+            "is_suspended",
+            "suspension_code",
+            "suspension_notes",
+            "suspension_date",
+            "suspended_by_user_id");
+        SerializerContractAssertions.ExcludesProperties(json,
+            "IsSuspended",
+            "SuspensionCode",
+            "SuspensionNotes",
+            "SuspensionDate",
+            "SuspendedByUserId");
+
         Assert.NotNull(result);
         Assert.True(result.IsSuspended);
         Assert.Equal(SuspensionCode.Billing, result.SuspensionCode);

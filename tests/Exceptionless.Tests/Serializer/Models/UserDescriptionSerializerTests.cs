@@ -51,6 +51,9 @@ public class UserDescriptionSerializerTests : TestWithServices
         var result = _serializer.Deserialize<UserDescription>(json);
 
         // Assert
+        SerializerContractAssertions.IncludesProperties(json, "email_address");
+        SerializerContractAssertions.ExcludesProperties(json, "EmailAddress");
+
         Assert.NotNull(result);
         Assert.Equal("user@example.com", result.EmailAddress);
         Assert.Equal("The app crashed when I clicked the submit button.", result.Description);

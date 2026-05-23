@@ -55,6 +55,19 @@ public class TokenSerializerTests : TestWithServices
         var result = _serializer.Deserialize<Token>(json);
 
         // Assert
+        SerializerContractAssertions.IncludesProperties(json,
+            "organization_id",
+            "project_id",
+            "created_by",
+            "created_utc",
+            "updated_utc");
+        SerializerContractAssertions.ExcludesProperties(json,
+            "OrganizationId",
+            "ProjectId",
+            "CreatedBy",
+            "CreatedUtc",
+            "UpdatedUtc");
+
         Assert.NotNull(result);
         Assert.Equal("650000000000000000000001", result.Id);
         Assert.Equal("550000000000000000000001", result.OrganizationId);
@@ -77,8 +90,8 @@ public class TokenSerializerTests : TestWithServices
             IsDisabled = true,
             IsSuspended = true,
             CreatedBy = "admin",
-            CreatedUtc = DateTime.UtcNow,
-            UpdatedUtc = DateTime.UtcNow
+            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            UpdatedUtc = new DateTime(2024, 1, 2, 0, 0, 0, DateTimeKind.Utc)
         };
 
         // Act
@@ -86,6 +99,9 @@ public class TokenSerializerTests : TestWithServices
         var result = _serializer.Deserialize<Token>(json);
 
         // Assert
+        SerializerContractAssertions.IncludesProperties(json, "is_disabled", "is_suspended");
+        SerializerContractAssertions.ExcludesProperties(json, "IsDisabled", "IsSuspended");
+
         Assert.NotNull(result);
         Assert.True(result.IsDisabled);
         Assert.True(result.IsSuspended);
@@ -106,8 +122,8 @@ public class TokenSerializerTests : TestWithServices
             Refresh = "refresh_token_abc",
             ExpiresUtc = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             CreatedBy = "system",
-            CreatedUtc = DateTime.UtcNow,
-            UpdatedUtc = DateTime.UtcNow
+            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            UpdatedUtc = new DateTime(2024, 1, 2, 0, 0, 0, DateTimeKind.Utc)
         };
 
         // Act
@@ -115,6 +131,9 @@ public class TokenSerializerTests : TestWithServices
         var result = _serializer.Deserialize<Token>(json);
 
         // Assert
+        SerializerContractAssertions.IncludesProperties(json, "user_id", "default_project_id", "expires_utc");
+        SerializerContractAssertions.ExcludesProperties(json, "UserId", "DefaultProjectId", "ExpiresUtc");
+
         Assert.NotNull(result);
         Assert.Equal("660000000000000000000001", result.UserId);
         Assert.Equal("540000000000000000000001", result.DefaultProjectId);

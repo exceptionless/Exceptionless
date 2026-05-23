@@ -51,6 +51,9 @@ public class ManualStackingInfoSerializerTests : TestWithServices
         var result = _serializer.Deserialize<ManualStackingInfo>(json);
 
         // Assert
+        SerializerContractAssertions.IncludesProperties(json, "signature_data");
+        SerializerContractAssertions.ExcludesProperties(json, "SignatureData");
+
         Assert.NotNull(result);
         Assert.Equal("Payment Processing Error", result.Title);
         Assert.NotNull(result.SignatureData);

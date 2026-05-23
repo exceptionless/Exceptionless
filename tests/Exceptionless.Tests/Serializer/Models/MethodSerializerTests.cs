@@ -59,6 +59,19 @@ public class MethodSerializerTests : TestWithServices
         var result = _serializer.Deserialize<Method>(json);
 
         // Assert
+        SerializerContractAssertions.IncludesProperties(json,
+            "is_signature_target",
+            "declaring_namespace",
+            "declaring_type",
+            "module_id",
+            "generic_arguments");
+        SerializerContractAssertions.ExcludesProperties(json,
+            "IsSignatureTarget",
+            "DeclaringNamespace",
+            "DeclaringType",
+            "ModuleId",
+            "GenericArguments");
+
         Assert.NotNull(result);
         Assert.True(result.IsSignatureTarget);
         Assert.Equal("Exceptionless.Core", result.DeclaringNamespace);
