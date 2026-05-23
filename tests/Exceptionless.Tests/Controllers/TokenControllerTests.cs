@@ -395,12 +395,13 @@ public sealed class TokenControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task PostAsync_WithDefaultProjectId_PreservesDefaultProject()
+    public async Task PostAsync_WithDefaultProjectIdAndProjectId_ClearsDefaultProject()
     {
         // Arrange
         var newToken = new NewToken
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
+            ProjectId = SampleDataService.TEST_PROJECT_ID,
             DefaultProjectId = SampleDataService.TEST_PROJECT_ID,
             Scopes = [AuthorizationRoles.Client]
         };
@@ -416,22 +417,22 @@ public sealed class TokenControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(viewToken);
-        Assert.Null(viewToken.ProjectId);
-        Assert.Equal(SampleDataService.TEST_PROJECT_ID, viewToken.DefaultProjectId);
+        Assert.Equal(SampleDataService.TEST_PROJECT_ID, viewToken.ProjectId);
+        Assert.Null(viewToken.DefaultProjectId);
 
         var token = await _tokenRepository.GetByIdAsync(viewToken.Id);
         Assert.NotNull(token);
-        Assert.Equal(SampleDataService.TEST_PROJECT_ID, token.DefaultProjectId);
+        Assert.Null(token.DefaultProjectId);
     }
 
     [Fact]
-    public async Task PostAsync_WithInvalidDefaultProjectId_ReturnsValidationError()
+    public async Task PostAsync_WithoutProjectId_ReturnsBadRequest()
     {
         // Arrange
         var newToken = new NewToken
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
-            DefaultProjectId = TestConstants.InvalidProjectId,
+            DefaultProjectId = SampleDataService.TEST_PROJECT_ID,
             Scopes = [AuthorizationRoles.Client]
         };
 
@@ -441,12 +442,12 @@ public sealed class TokenControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("tokens")
             .Content(newToken)
-            .StatusCodeShouldBeUnprocessableEntity()
+            .StatusCodeShouldBeBadRequest()
         );
 
         // Assert
         Assert.NotNull(problemDetails);
-        Assert.Contains(problemDetails.Errors, error => error.Key.Equals("default_project_id", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(problemDetails.Errors, error => error.Key.Equals("project_id", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

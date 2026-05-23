@@ -7961,6 +7961,7 @@
       "NewToken": {
         "required": [
           "organization_id",
+          "project_id",
           "scopes"
         ],
         "type": "object",
@@ -7975,10 +7976,7 @@
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           },
           "default_project_id": {
             "maxLength": 24,
