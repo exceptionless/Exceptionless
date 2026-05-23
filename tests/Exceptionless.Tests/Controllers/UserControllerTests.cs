@@ -97,7 +97,7 @@ public sealed class UserControllerTests : IntegrationTestsBase
             .Delete()
             .AsGlobalAdminUser()
             .AppendPaths("users", currentUser.Id, "admin-role")
-            .ExpectedStatus(System.Net.HttpStatusCode.NoContent)
+            .StatusCodeShouldBeNoContent()
         );
 
         // Assert

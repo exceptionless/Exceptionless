@@ -492,7 +492,7 @@ public class StackControllerTests : IntegrationTestsBase
             .Delete()
             .AsGlobalAdminUser()
             .AppendPath($"stacks/{ev.StackId}/mark-critical")
-            .ExpectedStatus(System.Net.HttpStatusCode.NoContent));
+            .StatusCodeShouldBeNoContent());
 
         // Assert
         var stack = await _stackRepository.GetByIdAsync(ev.StackId);
@@ -525,7 +525,7 @@ public class StackControllerTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath($"stacks/{ev.StackId}/remove-link")
             .Content(new ValueFromBody<string>(testUrl))
-            .ExpectedStatus(System.Net.HttpStatusCode.NoContent));
+            .StatusCodeShouldBeNoContent());
 
         // Assert
         stack = await _stackRepository.GetByIdAsync(ev.StackId);
