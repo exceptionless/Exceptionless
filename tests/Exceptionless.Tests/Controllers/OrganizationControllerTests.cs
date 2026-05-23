@@ -307,7 +307,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(viewOrg);
-        Assert.IsType<bool>(viewOrg.IsOverMonthlyLimit);
+        Assert.False(viewOrg.IsOverMonthlyLimit);
     }
 
     [Fact]
@@ -1126,9 +1126,10 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     public async Task ChangePlanAsync_FreePlanCancelsActiveStripeSubscriptions()
     {
         // Arrange
+        var canceledAtUtc = TimeProvider.GetUtcNow().UtcDateTime;
         await SetPlanAndStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, _plans.SmallPlan.Id, "cus_existing");
         StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_active", "si_active"));
-        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_canceled", "si_canceled", canceledAtUtc: DateTime.UtcNow));
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_canceled", "si_canceled", canceledAtUtc: canceledAtUtc));
 
         // Act
         var result = await WithBillingEnabledAsync(() =>
@@ -1181,6 +1182,78 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ChangePlanAsync_NewCustomerSubscriptionFails_PreservesStripeCustomerForRetry()
+    {
+        // Arrange
+        StripeBillingClient.CustomerToReturn = new Customer { Id = "cus_created" };
+        StripeBillingClient.CreateSubscriptionException = new InvalidOperationException("Stripe unavailable");
+
+        // Act
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest
+                {
+                    PlanId = _plans.SmallPlan.Id,
+                    StripeToken = "tok_visa",
+                    Last4 = "4242"
+                })
+                .StatusCodeShouldBeOk()
+            ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Equal("An error occurred while changing plans. Please try again.", result.Message);
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.Equal("cus_created", organization.StripeCustomerId);
+        Assert.Equal("4242", organization.CardLast4);
+        Assert.Equal(_plans.FreePlan.Id, organization.PlanId);
+        Assert.Equal(BillingStatus.Trialing, organization.BillingStatus);
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_ExistingCustomerSubscriptionFails_DoesNotPersistPlanOrCardChange()
+    {
+        // Arrange
+        await SetStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, "cus_existing");
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_active", "si_active"));
+        StripeBillingClient.UpdateSubscriptionException = new InvalidOperationException("Stripe unavailable");
+
+        // Act
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest
+                {
+                    PlanId = _plans.SmallPlan.Id,
+                    StripeToken = "pm_card_visa",
+                    Last4 = "4242"
+                })
+                .StatusCodeShouldBeOk()
+            ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Equal("An error occurred while changing plans. Please try again.", result.Message);
+        Assert.NotEmpty(StripeBillingClient.UpdatedSubscriptions);
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.Equal("cus_existing", organization.StripeCustomerId);
+        Assert.Null(organization.CardLast4);
+        Assert.Equal(_plans.FreePlan.Id, organization.PlanId);
+        Assert.Equal(BillingStatus.Trialing, organization.BillingStatus);
+    }
+
+    [Fact]
     public async Task CanDownGradeAsync_TooManyUsers_ReturnsFailure()
     {
         // Arrange — test org has 2 users (global admin + org user); free plan allows max 1
@@ -1210,7 +1283,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         {
             Name = "Extra Project",
             OrganizationId = org.Id,
-            NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks
+            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
         };
         await _projectRepository.AddAsync(extraProject, o => o.ImmediateConsistency());
 
@@ -1237,7 +1310,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         _billingManager.ApplyBillingPlan(secondOrg, _plans.Plans.First(p => p.Id == "EX_SMALL"), freeUser);
         secondOrg.StripeCustomerId = "cus_test";
         secondOrg.CardLast4 = "4242";
-        secondOrg.SubscribeDate = DateTime.UtcNow;
+        secondOrg.SubscribeDate = TimeProvider.GetUtcNow().UtcDateTime;
         secondOrg = await _organizationRepository.AddAsync(secondOrg, o => o.ImmediateConsistency());
 
         freeUser.OrganizationIds.Add(secondOrg.Id);

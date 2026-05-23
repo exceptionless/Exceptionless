@@ -202,10 +202,10 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
-        // Assert - ViewProject should include computed HasSlackIntegration property
+        // Assert - seeded project has no Slack token, so the computed mapping must be false.
         Assert.NotNull(viewProject);
         Assert.Equal(SampleDataService.TEST_PROJECT_ID, viewProject.Id);
-        Assert.IsType<bool>(viewProject.HasSlackIntegration);
+        Assert.False(viewProject.HasSlackIntegration);
     }
 
     [Fact]

@@ -105,7 +105,9 @@ public sealed class TokenControllerTests : IntegrationTestsBase
     public async Task PostAsync_NewTokenWithExpiry_MapsExpiresUtc()
     {
         // Arrange
-        var expiryDate = DateTime.UtcNow.AddDays(30);
+        var utcNow = new DateTimeOffset(2026, 5, 22, 14, 30, 0, TimeSpan.Zero);
+        TimeProvider.SetUtcNow(utcNow);
+        var expiryDate = utcNow.UtcDateTime.AddDays(30);
         var newToken = new NewToken
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
@@ -126,7 +128,7 @@ public sealed class TokenControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(viewToken);
         Assert.NotNull(viewToken.ExpiresUtc);
-        Assert.True(viewToken.ExpiresUtc.Value > DateTime.UtcNow);
+        Assert.Equal(expiryDate, viewToken.ExpiresUtc);
     }
 
     [Fact]
