@@ -24,8 +24,7 @@ public sealed class OrganizationServiceTests : TestWithServices
     public async Task CancelSubscriptionsAsync_WithoutStripeCustomer_DoesNotCallStripe()
     {
         // Arrange
-        var stripeClient = GetService<IStripeBillingClient>() as FakeStripeBillingClient;
-        Assert.NotNull(stripeClient);
+        var stripeClient = Assert.IsType<FakeStripeBillingClient>(GetService<IStripeBillingClient>());
         var service = GetService<OrganizationService>();
 
         // Act
@@ -40,8 +39,7 @@ public sealed class OrganizationServiceTests : TestWithServices
     public async Task CancelSubscriptionsAsync_ActiveSubscriptions_CancelsOnlyActiveSubscriptions()
     {
         // Arrange
-        var stripeClient = GetService<IStripeBillingClient>() as FakeStripeBillingClient;
-        Assert.NotNull(stripeClient);
+        var stripeClient = Assert.IsType<FakeStripeBillingClient>(GetService<IStripeBillingClient>());
         stripeClient.Subscriptions.Add(new Subscription { Id = "sub_active" });
         stripeClient.Subscriptions.Add(new Subscription { Id = "sub_canceled", CanceledAt = DateTime.UtcNow });
         var service = GetService<OrganizationService>();
