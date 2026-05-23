@@ -675,7 +675,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task PatchAsync_ChangeName_UpdatesNameAndPreservesOtherFields()
+    public async Task PatchAsync_WithNameOnlySnakeCasePayload_UpdatesNameAndPreservesDeleteBotSetting()
     {
         // Arrange
         var project = await SendRequestAsAsync<ViewProject>(r => r
@@ -692,18 +692,23 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         );
         Assert.NotNull(project);
 
+        /* language=json */
+        const string json = """
+                            {
+                                "name": "Updated Name"
+                            }
+                            """;
+
         // Act
-        var updatedProject = await SendRequestAsAsync<ViewProject>(r => r
+        var response = await SendRequestAsync(r => r
             .AsTestOrganizationUser()
             .Patch()
             .AppendPaths("projects", project.Id)
-            .Content(new UpdateProject
-            {
-                Name = "Updated Name",
-                DeleteBotDataEnabled = true
-            })
+            .Content(json, "application/json")
             .StatusCodeShouldBeOk()
         );
+        string responseJson = await response.Content.ReadAsStringAsync(TestCancellationToken);
+        var updatedProject = await DeserializeResponseAsync<ViewProject>(response);
 
         // Assert
         Assert.NotNull(updatedProject);
@@ -711,11 +716,16 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         Assert.True(updatedProject.DeleteBotDataEnabled);
         Assert.Equal(project.OrganizationId, updatedProject.OrganizationId);
 
-        // Verify persisted
         var persisted = await _projectRepository.GetByIdAsync(project.Id);
         Assert.NotNull(persisted);
         Assert.Equal("Updated Name", persisted.Name);
         Assert.True(persisted.DeleteBotDataEnabled);
+
+        using var doc = JsonDocument.Parse(responseJson);
+        var root = doc.RootElement;
+        Assert.True(root.TryGetProperty("delete_bot_data_enabled", out var deleteBotDataEnabled), "Expected lower_case_underscore response property 'delete_bot_data_enabled'.");
+        Assert.True(deleteBotDataEnabled.GetBoolean());
+        Assert.False(root.TryGetProperty("DeleteBotDataEnabled", out _), "Response must not drift back to PascalCase 'DeleteBotDataEnabled'.");
     }
 
     [Fact]
@@ -745,7 +755,7 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task PatchAsync_WithExtraPayloadProperties_UpdatesNameOnly()
+    public async Task PatchAsync_WithExtraPayloadProperties_IgnoresReadOnlyFieldsAndUpdatesKnownFields()
     {
         // Arrange
         var project = await SendRequestAsAsync<ViewProject>(r => r
@@ -762,19 +772,56 @@ public sealed class ProjectControllerTests : IntegrationTestsBase
         );
         Assert.NotNull(project);
 
-        // Act - send the full ViewProject as patch payload (extra fields should be ignored)
-        project.Name = "Patched With Extras";
-        var updatedProject = await SendRequestAsAsync<ViewProject>(r => r
+        var persistedBefore = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(persistedBefore);
+
+        /* language=json */
+        string json = $$"""
+                        {
+                            "id": "000000000000000000000000",
+                            "organization_id": "{{SampleDataService.FREE_ORG_ID}}",
+                            "organization_name": "Hijacked Org",
+                            "created_utc": "2000-01-01T00:00:00Z",
+                            "name": "Patched With Extras",
+                            "delete_bot_data_enabled": false,
+                            "has_premium_features": true,
+                            "stack_count": 9999
+                        }
+                        """;
+
+        // Act
+        var response = await SendRequestAsync(r => r
             .AsTestOrganizationUser()
             .Patch()
             .AppendPaths("projects", project.Id)
-            .Content(project)
+            .Content(json, "application/json")
             .StatusCodeShouldBeOk()
         );
+        string responseJson = await response.Content.ReadAsStringAsync(TestCancellationToken);
+        var updatedProject = await DeserializeResponseAsync<ViewProject>(response);
 
         // Assert
         Assert.NotNull(updatedProject);
         Assert.Equal("Patched With Extras", updatedProject.Name);
+        Assert.False(updatedProject.DeleteBotDataEnabled);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, updatedProject.OrganizationId);
+        Assert.Equal(persistedBefore.CreatedUtc, updatedProject.CreatedUtc);
+
+        var persistedAfter = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(persistedAfter);
+        Assert.Equal("Patched With Extras", persistedAfter.Name);
+        Assert.False(persistedAfter.DeleteBotDataEnabled);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, persistedAfter.OrganizationId);
+        Assert.Equal(persistedBefore.CreatedUtc, persistedAfter.CreatedUtc);
+
+        using var doc = JsonDocument.Parse(responseJson);
+        var root = doc.RootElement;
+        Assert.True(root.TryGetProperty("organization_id", out var organizationId), "Expected lower_case_underscore response property 'organization_id'.");
+        Assert.Equal(SampleDataService.TEST_ORG_ID, organizationId.GetString());
+        Assert.True(root.TryGetProperty("delete_bot_data_enabled", out var deleteBotDataEnabled), "Expected lower_case_underscore response property 'delete_bot_data_enabled'.");
+        Assert.False(deleteBotDataEnabled.GetBoolean());
+        Assert.False(root.TryGetProperty("OrganizationId", out _), "Response must not drift back to PascalCase 'OrganizationId'.");
+        Assert.False(root.TryGetProperty("DeleteBotDataEnabled", out _), "Response must not drift back to PascalCase 'DeleteBotDataEnabled'.");
     }
 
     [Fact]
