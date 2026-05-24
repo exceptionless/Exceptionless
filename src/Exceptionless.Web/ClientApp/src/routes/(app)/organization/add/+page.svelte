@@ -20,7 +20,7 @@
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
-    import { object, string, type infer as Infer } from 'zod';
+    import { type infer as Infer, object, string } from 'zod';
 
     const SetupSchema = object({
         organization_name: string().min(1, 'Organization name is required'),

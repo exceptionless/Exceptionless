@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';

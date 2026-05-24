@@ -147,9 +147,9 @@
     const saving = $derived(
         createMutation.isPending ||
             updateMutation.isPending ||
-                predefinedViewUpdateMutation.isPending ||
-                predefinedViewMutation.isPending ||
-                deletePredefinedViewMutation.isPending ||
+            predefinedViewUpdateMutation.isPending ||
+            predefinedViewMutation.isPending ||
+            deletePredefinedViewMutation.isPending ||
             removeMutation.isPending
     );
 

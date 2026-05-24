@@ -58,6 +58,18 @@ export const queryKeys = {
 
 let deletedSavedViewIds = $state<string[]>([]);
 
+export function deletePredefinedSavedView(request: { route: { id: string | undefined } }) {
+    return createMutation<void, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            await client.delete(`saved-views/${request.route.id}/predefined`, {
+                expectedStatusCodes: [204]
+            });
+        }
+    }));
+}
+
 export function deleteSavedView(request: { route: { organizationId: string | undefined } }) {
     const queryClient = useQueryClient();
 
@@ -138,18 +150,13 @@ export function patchSavedView(request: { route: { id: string | undefined } }) {
     }));
 }
 
-export function postSavedView(request: { route: { organizationId: string | undefined } }) {
-    const queryClient = useQueryClient();
-
-    return createMutation<SavedView, ProblemDetails, NewSavedView>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.organizationId,
-        mutationFn: async (data: NewSavedView) => {
+export function postPredefinedSavedView(request: { route: { id: string | undefined } }) {
+    return createMutation<SavedView, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async () => {
             const client = useFetchClient();
-            const response = await client.postJSON<SavedView>(`organizations/${request.route.organizationId}/saved-views`, data);
+            const response = await client.postJSON<SavedView>(`saved-views/${request.route.id}/predefined`, {});
             return response.data!;
-        },
-        onSuccess: (savedView: SavedView) => {
-            syncSavedViewCaches(queryClient, savedView, request.route.organizationId);
         }
     }));
 }
@@ -172,32 +179,26 @@ export function postPredefinedSavedViews(request: { route: { organizationId: str
             }
 
             void queryClient.invalidateQueries({ queryKey: queryKeys.organization(request.route.organizationId) });
-            for (const view of new Set(savedViews.map((savedView) => savedView.view_type))) {
+            const viewTypes = savedViews.map((savedView) => savedView.view_type).filter((view, index, views) => views.indexOf(view) === index);
+            for (const view of viewTypes) {
                 void queryClient.invalidateQueries({ queryKey: queryKeys.view(request.route.organizationId, view) });
             }
         }
     }));
 }
 
-export function postPredefinedSavedView(request: { route: { id: string | undefined } }) {
-    return createMutation<SavedView, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.id,
-        mutationFn: async () => {
-            const client = useFetchClient();
-            const response = await client.postJSON<SavedView>(`saved-views/${request.route.id}/predefined`, {});
-            return response.data!;
-        }
-    }));
-}
+export function postSavedView(request: { route: { organizationId: string | undefined } }) {
+    const queryClient = useQueryClient();
 
-export function deletePredefinedSavedView(request: { route: { id: string | undefined } }) {
-    return createMutation<void, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.id,
-        mutationFn: async () => {
+    return createMutation<SavedView, ProblemDetails, NewSavedView>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.organizationId,
+        mutationFn: async (data: NewSavedView) => {
             const client = useFetchClient();
-            await client.delete(`saved-views/${request.route.id}/predefined`, {
-                expectedStatusCodes: [204]
-            });
+            const response = await client.postJSON<SavedView>(`organizations/${request.route.organizationId}/saved-views`, data);
+            return response.data!;
+        },
+        onSuccess: (savedView: SavedView) => {
+            syncSavedViewCaches(queryClient, savedView, request.route.organizationId);
         }
     }));
 }

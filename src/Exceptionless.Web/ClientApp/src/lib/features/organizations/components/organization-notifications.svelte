@@ -8,6 +8,7 @@
     import { getMeQuery } from '$features/users/api.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { useEventListener } from 'runed';
+    import { SvelteSet } from 'svelte/reactivity';
     import { debounce } from 'throttle-debounce';
 
     import FreePlanNotification from './notifications/free-plan-notification.svelte';
@@ -68,7 +69,7 @@
 
     const organization = $derived(organizationQuery.data);
     const projects = $derived((projectsQuery.data?.data ?? []).filter((p) => p.organization_id === currentOrganizationId.current));
-    let configuredProjectIds = $state(new Set<string>());
+    let configuredProjectIds = new SvelteSet<string>();
     const projectsNeedingConfig = $derived(projects.filter((p) => p.is_configured === false && !configuredProjectIds.has(p.id!)));
 
     const suspensionCode: SuspensionCode | undefined = $derived(
@@ -105,7 +106,7 @@
             return;
         }
 
-        configuredProjectIds = new Set(configuredProjectIds).add(message.project_id);
+        configuredProjectIds.add(message.project_id);
         void refetchConfigurationState();
     });
 </script>

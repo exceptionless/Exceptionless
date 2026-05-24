@@ -21,8 +21,8 @@
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
-        shouldRefreshPersistentEventChanged,
         serializeFilters,
+        shouldRefreshPersistentEventChanged,
         toFilter,
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
