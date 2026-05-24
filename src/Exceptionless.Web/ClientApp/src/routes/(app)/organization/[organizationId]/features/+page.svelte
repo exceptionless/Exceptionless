@@ -2,11 +2,18 @@
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import { Muted } from '$comp/typography';
+    import { Button } from '$comp/ui/button';
     import { Skeleton } from '$comp/ui/skeleton';
+    import { Spinner } from '$comp/ui/spinner';
     import { Switch } from '$comp/ui/switch';
     import { getOrganizationQuery, removeOrganizationFeature, setOrganizationFeature } from '$features/organizations/api.svelte';
+    import { postPredefinedSavedViews } from '$features/saved-views/api.svelte';
     import { getMeQuery } from '$features/users/api.svelte';
+    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import RefreshCw from '@lucide/svelte/icons/refresh-cw';
     import { toast } from 'svelte-sonner';
+
+    let toastId = $state<number | string>();
 
     const organizationId = $derived(page.params.organizationId || '');
 
@@ -45,6 +52,14 @@
         }
     });
 
+    const predefinedSavedViews = postPredefinedSavedViews({
+        route: {
+            get organizationId() {
+                return organizationId;
+            }
+        }
+    });
+
     async function handleToggleFeature(featureId: string, enabled: boolean) {
         if (!isGlobalAdmin) {
             return;
@@ -59,6 +74,17 @@
             toast.error('Failed to update feature. Please try again.');
         }
     }
+
+    async function updatePredefinedSavedViews() {
+        toast.dismiss(toastId);
+        try {
+            const savedViews = await predefinedSavedViews.mutateAsync();
+            toastId = toast.success(`Updated ${savedViews.length} predefined saved views.`);
+        } catch (error: unknown) {
+            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
+            toastId = toast.error(`An error occurred while updating predefined saved views: ${message}`);
+        }
+    }
 </script>
 
 {#if organizationQuery.isError}
@@ -67,9 +93,40 @@
     <ErrorMessage message="You do not have permission to manage features." />
 {:else}
     <div class="space-y-6">
-        <Muted>Enable or disable features for this organization</Muted>
+        <Muted>Manage organization features</Muted>
 
-        <div class="space-y-3">
+        <section class="space-y-3" aria-labelledby="saved-views-heading">
+            <div class="space-y-1">
+                <h2 id="saved-views-heading" class="text-sm font-medium">Saved views</h2>
+                <Muted class="text-xs">Update predefined saved views without removing custom saved views.</Muted>
+            </div>
+
+            <div class="rounded-lg border bg-card">
+                <div class="p-4">
+                    <Button
+                        class="w-full sm:w-auto"
+                        variant="secondary"
+                        onclick={updatePredefinedSavedViews}
+                        disabled={predefinedSavedViews.isPending || !organizationId}
+                    >
+                        {#if predefinedSavedViews.isPending}
+                            <Spinner />
+                            <span>Updating...</span>
+                        {:else}
+                            <RefreshCw class="mr-2 size-4" aria-hidden="true" />
+                            <span>Update Predefined Saved Views</span>
+                        {/if}
+                    </Button>
+                </div>
+            </div>
+        </section>
+
+        <section class="space-y-3" aria-labelledby="feature-flags-heading">
+            <div class="space-y-1">
+                <h2 id="feature-flags-heading" class="text-sm font-medium">Feature flags</h2>
+                <Muted class="text-xs">Manage feature flags</Muted>
+            </div>
+
             {#if organizationQuery.isLoading}
                 {#each Array.from({ length: KNOWN_FEATURES.length }, (_, index) => index) as i (`skeleton-${i}`)}
                     <div class="rounded-lg border p-4">
@@ -82,6 +139,10 @@
                         </div>
                     </div>
                 {/each}
+            {:else if KNOWN_FEATURES.length === 0}
+                <div class="rounded-lg border border-dashed p-6 text-center">
+                    <Muted class="text-xs">Feature flags will be available here when they are ready.</Muted>
+                </div>
             {:else}
                 {#each KNOWN_FEATURES as feature (feature.id)}
                     <div class="rounded-lg border p-4">
@@ -100,6 +161,6 @@
                     </div>
                 {/each}
             {/if}
-        </div>
+        </section>
     </div>
 {/if}

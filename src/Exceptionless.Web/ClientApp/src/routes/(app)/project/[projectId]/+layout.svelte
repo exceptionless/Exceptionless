@@ -33,6 +33,8 @@
         }
     });
     const currentPath = $derived(page.url.pathname);
+    const configurePath = $derived(resolve('/(app)/project/[projectId]/configure', { projectId }));
+    const isConfigurePage = $derived(currentPath === configurePath || currentPath.startsWith(configurePath + '/'));
 
     $effect(() => {
         if (projectQuery.isError) {
@@ -53,7 +55,7 @@
                 {#if projectQuery.isSuccess}
                     <span>{projectQuery.data.name}</span>
                 {/if}
-                <span class="shrink-0">Settings</span>
+                <span class="shrink-0">{isConfigurePage ? 'Configure Client' : 'Settings'}</span>
             </H3>
         </div>
         <div class="flex items-center gap-2">
@@ -68,21 +70,23 @@
         </div>
     </div>
     <div class="mt-6 space-y-6">
-        <nav class="bg-muted flex w-full flex-row flex-nowrap gap-1 overflow-x-auto rounded-lg p-1">
-            {#each routes() as route (route.href)}
-                {@const isActive = currentPath === route.href || currentPath.startsWith(route.href + '/')}
-                <A
-                    variant="ghost"
-                    href={route.href}
-                    data-sveltekit-noscroll
-                    class="shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive
-                        ? 'bg-background text-foreground shadow-xs'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
-                >
-                    {route.title}
-                </A>
-            {/each}
-        </nav>
+        {#if !isConfigurePage}
+            <nav class="bg-muted flex w-full flex-row flex-nowrap gap-1 overflow-x-auto rounded-lg p-1">
+                {#each routes() as route (route.href)}
+                    {@const isActive = currentPath === route.href || currentPath.startsWith(route.href + '/')}
+                    <A
+                        variant="ghost"
+                        href={route.href}
+                        data-sveltekit-noscroll
+                        class="shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive
+                            ? 'bg-background text-foreground shadow-xs'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
+                    >
+                        {route.title}
+                    </A>
+                {/each}
+            </nav>
+        {/if}
         {@render children()}
     </div>
 </div>

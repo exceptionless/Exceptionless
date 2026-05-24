@@ -337,6 +337,134 @@
         }
       }
     },
+    "/api/v2/organizations/{organizationId}/saved-views/predefined": {
+      "post": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Create or update predefined saved views",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The predefined saved views were created or updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ViewSavedView"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found."
+          }
+        }
+      }
+    },
+    "/api/v2/saved-views/predefined": {
+      "get": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Get global predefined saved views as seed JSON",
+        "responses": {
+          "200": {
+            "description": "The current predefined saved views.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PredefinedSavedViewDefinition"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/saved-views/{id}/predefined": {
+      "post": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Save a saved view as a global predefined saved view",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the saved view to promote.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The predefined saved view was created or updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewSavedView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The saved view could not be found."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Delete a global predefined saved view",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the saved view whose predefined saved view should be deleted.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          },
+          "204": {
+            "description": "The predefined saved view was deleted."
+          },
+          "404": {
+            "description": "The saved view could not be found."
+          }
+        }
+      }
+    },
     "/api/v2/saved-views/{ids}": {
       "delete": {
         "tags": [
@@ -7801,6 +7929,7 @@
           }
         }
       },
+      "JsonElement": { },
       "Login": {
         "required": [
           "email",
@@ -8245,6 +8374,87 @@
               "string"
             ],
             "description": "An optional identifier to be used for referencing this event instance at a later time."
+          }
+        }
+      },
+      "PredefinedSavedViewDefinition": {
+        "required": [
+          "key",
+          "name",
+          "slug",
+          "viewType"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "viewType": {
+            "type": "string"
+          },
+          "filter": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "time": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sort": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "filterDefinitions": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          },
+          "columns": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "columnOrder": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "showStats": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "showChart": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },

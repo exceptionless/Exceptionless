@@ -20,6 +20,9 @@
     <EmbeddedResource Include="Mail\Templates\user-password-reset.html" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="Seed\predefined-saved-views.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Exceptionless.DateTimeExtensions" Version="6.0.1" />
     <PackageReference Include="Exceptionless.RandomData" Version="2.0.1" />
     <PackageReference Include="Foundatio.Extensions.Hosting" Version="13.0.1" />

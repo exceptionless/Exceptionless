@@ -6,12 +6,12 @@
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import { Muted } from '$comp/typography';
-    import { Button, buttonVariants } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
+    import { Button } from '$comp/ui/button';
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import { Spinner } from '$comp/ui/spinner';
-    import { deleteProject, getProjectQuery, resetData, updateProject } from '$features/projects/api.svelte';
+    import * as Tooltip from '$comp/ui/tooltip';
+    import { deleteProject, generateSampleData, getProjectQuery, resetData, updateProject } from '$features/projects/api.svelte';
     import RemoveProjectDialog from '$features/projects/components/dialogs/remove-project-dialog.svelte';
     import ResetProjectDataDialog from '$features/projects/components/dialogs/reset-project-data-dialog.svelte';
     import { type UpdateProjectFormData, UpdateProjectSchema } from '$features/projects/schemas';
@@ -19,6 +19,8 @@
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import Issues from '@lucide/svelte/icons/bug';
+    import Configure from '@lucide/svelte/icons/cloud-download';
+    import Database from '@lucide/svelte/icons/database';
     import X from '@lucide/svelte/icons/x';
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
@@ -75,6 +77,26 @@
 
         toast.dismiss(toastId);
         toastId = toast.success('Successfully queued the project for data reset.');
+    }
+
+    const generateSampleDataMutation = generateSampleData({
+        route: {
+            get id() {
+                return projectId;
+            }
+        }
+    });
+
+    async function generateProjectSampleData() {
+        toast.dismiss(toastId);
+
+        try {
+            await generateSampleDataMutation.mutateAsync();
+            toastId = toast.success('Sample data generation has been queued. Events will appear shortly.');
+        } catch (error) {
+            toastId = toast.error('Failed to generate sample data. Please try again.');
+            throw error;
+        }
     }
 
     const form = createForm(() => ({
@@ -150,38 +172,64 @@
             <Button variant="secondary" href={`${resolve('/(app)/issues')}?filter=project:${projectId}`}>
                 <Issues class="mr-2 size-4" /> Go To Issues
             </Button>
+            <Button variant="secondary" href={resolve('/(app)/project/[projectId]/configure', { projectId })}>
+                <Configure class="mr-2 size-4" /> Configure Project
+            </Button>
+            <Button variant="secondary" onclick={generateProjectSampleData} disabled={generateSampleDataMutation.isPending}>
+                {#if generateSampleDataMutation.isPending}
+                    <Spinner />
+                    <span>Generating...</span>
+                {:else}
+                    <Database class="mr-2 size-4" />
+                    <span>Generate Sample Data</span>
+                {/if}
+            </Button>
         </div>
 
-        <div>
-            <DropdownMenu.Root>
-                <DropdownMenu.Trigger class={buttonVariants({ variant: 'destructive' })}>
-                    <X class="size-4" />
-                </DropdownMenu.Trigger>
-                <DropdownMenu.Content align="end" class="w-56">
-                    <DropdownMenu.Group>
-                        <DropdownMenu.GroupHeading>Actions</DropdownMenu.GroupHeading>
-                        <DropdownMenu.Separator />
-                        <DropdownMenu.Item onclick={() => (showResetDialog = true)} disabled={resetProject.isPending}>
+        <div class="flex items-center gap-2">
+            <Tooltip.Root>
+                <Tooltip.Trigger>
+                    {#snippet child({ props })}
+                        <Button
+                            {...props}
+                            variant="destructive"
+                            size="icon"
+                            aria-label="Reset project data"
+                            onclick={() => (showResetDialog = true)}
+                            disabled={resetProject.isPending}
+                        >
                             {#if resetProject.isPending}
                                 <Spinner />
-                                <span>Resetting...</span>
                             {:else}
-                                <AlertTriangle class="mr-2 size-4" />
-                                <span>Reset Project Data</span>
+                                <AlertTriangle class="size-4" />
                             {/if}
-                        </DropdownMenu.Item>
-                        <DropdownMenu.Item onclick={() => (showRemoveDialog = true)} disabled={removeProject.isPending}>
+                        </Button>
+                    {/snippet}
+                </Tooltip.Trigger>
+                <Tooltip.Content>Reset project data</Tooltip.Content>
+            </Tooltip.Root>
+
+            <Tooltip.Root>
+                <Tooltip.Trigger>
+                    {#snippet child({ props })}
+                        <Button
+                            {...props}
+                            variant="destructive"
+                            size="icon"
+                            aria-label="Delete project"
+                            onclick={() => (showRemoveDialog = true)}
+                            disabled={removeProject.isPending}
+                        >
                             {#if removeProject.isPending}
                                 <Spinner />
-                                <span>Deleting Project...</span>
                             {:else}
-                                <X class="mr-2 size-4" />
-                                <span>Delete Project</span>
+                                <X class="size-4" />
                             {/if}
-                        </DropdownMenu.Item>
-                    </DropdownMenu.Group>
-                </DropdownMenu.Content>
-            </DropdownMenu.Root>
+                        </Button>
+                    {/snippet}
+                </Tooltip.Trigger>
+                <Tooltip.Content>Delete project</Tooltip.Content>
+            </Tooltip.Root>
         </div>
     </div>
 </div>

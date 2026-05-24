@@ -21,6 +21,7 @@
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
+        shouldRefreshPersistentEventChanged,
         serializeFilters,
         toFilter,
         updateFilterCache
@@ -44,7 +45,7 @@
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
-    import { throttle } from 'throttle-debounce';
+    import { debounce, throttle } from 'throttle-debounce';
 
     let selectedEventId: null | string = $state(null);
 
@@ -275,6 +276,7 @@
     }
 
     const throttledLoadData = throttle(10000, loadData);
+    const debouncedLoadData = debounce(1500, loadData);
 
     async function onPersistentEventChanged(message: WebSocketMessageValue<'PersistentEventChanged'>) {
         if (message.id && message.change_type === ChangeType.Removed) {
@@ -288,6 +290,16 @@
                 }
             }
         }
+
+        if (message.change_type === ChangeType.Removed) {
+            return;
+        }
+
+        if (!shouldRefreshPersistentEventChanged(filters, queryParams.filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
+            return;
+        }
+
+        await debouncedLoadData();
     }
 
     useEventListener(document, 'PersistentEventChanged', async (event) => await onPersistentEventChanged((event as CustomEvent).detail));
@@ -354,6 +366,19 @@
             totalEvents,
             totalIssues
         };
+    });
+
+    let lastStatsRefreshKey = $state<string>();
+
+    $effect(() => {
+        const refreshKey = `${organization.current}:${page.url.search}:${stats.totalEvents}`;
+
+        if (!clientResponse?.ok || stats.totalEvents <= 0 || !isTableEmpty(table) || lastStatsRefreshKey === refreshKey) {
+            return;
+        }
+
+        lastStatsRefreshKey = refreshKey;
+        void loadData();
     });
 
     function onRangeSelect(start: Date, end: Date) {

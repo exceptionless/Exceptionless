@@ -1,6 +1,8 @@
 using System.Net;
+using System.Text.Json;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Seed;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
@@ -14,12 +16,14 @@ namespace Exceptionless.Tests.Controllers;
 
 public sealed class SavedViewControllerTests : IntegrationTestsBase
 {
+    private readonly IOrganizationRepository _organizationRepository;
     private readonly ISavedViewRepository _savedViewRepository;
     private readonly IUserRepository _userRepository;
     private readonly OrganizationService _organizationService;
 
     public SavedViewControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
+        _organizationRepository = GetService<IOrganizationRepository>();
         _savedViewRepository = GetService<ISavedViewRepository>();
         _userRepository = GetService<IUserRepository>();
         _organizationService = GetService<OrganizationService>();
@@ -30,6 +34,73 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         await base.ResetDataAsync();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
+        await GetService<DataSeedService>().SeedAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task DataSeedAsync_ExistingDataWithoutPredefinedViews_CreatesSystemPredefinedViews()
+    {
+        // Arrange
+        Assert.True(await _organizationRepository.CountAsync() > 0);
+
+        var existingSystemViews = await GetSystemPredefinedSavedViewsAsync();
+        Assert.Equal(5, existingSystemViews.Count);
+
+        foreach (var savedView in existingSystemViews)
+            await _savedViewRepository.RemoveAsync(savedView.Id, o => o.ImmediateConsistency());
+
+        await RefreshDataAsync();
+        Assert.Equal(0, await _savedViewRepository.CountByOrganizationIdAsync(PredefinedSavedViewsDataSeed.SystemOrganizationId));
+
+        // Act
+        await GetService<DataSeedService>().SeedAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        var seededSystemViews = await GetSystemPredefinedSavedViewsAsync();
+        Assert.Equal(5, seededSystemViews.Count);
+        Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "events", "Logs"));
+        Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "events", "Errors"));
+        Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "issues", "Most Frequent Errors"));
+        Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "issues", "Most Frequent 404s"));
+        Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "issues", "Most Used Features"));
+    }
+
+    [Fact]
+    public async Task GetPredefinedAsync_GlobalAdmin_ReturnsSeedJsonShape()
+    {
+        // Act
+        var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", "predefined")
+            .StatusCodeShouldBeOk()
+        );
+        string json = await response.Content.ReadAsStringAsync(TestCancellationToken);
+        var definitions = await DeserializeResponseAsync<List<PredefinedSavedViewDefinition>>(response);
+
+        // Assert
+        Assert.Contains("\"filterDefinitions\"", json);
+        Assert.DoesNotContain("\"filter_definitions\"", json);
+        Assert.NotNull(definitions);
+        Assert.Equal(5, definitions.Count);
+
+        var logs = definitions.FirstOrDefault(view => String.Equals(view.Key, "events:logs", StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(logs);
+        Assert.Equal("Logs", logs.Name);
+        Assert.Equal("logs", logs.Slug);
+        Assert.Equal("events", logs.ViewType);
+        Assert.Equal("type:log", logs.Filter);
+        Assert.NotNull(logs.FilterDefinitions);
+        Assert.Equal(JsonValueKind.Array, logs.FilterDefinitions.Value.ValueKind);
+    }
+
+    [Fact]
+    public Task GetPredefinedAsync_User_ReturnsForbidden()
+    {
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("saved-views", "predefined")
+            .StatusCodeShouldBeForbidden()
+        );
     }
 
     [Fact]
@@ -434,6 +505,352 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         Assert.NotNull(filters);
         Assert.Contains(filters, f => String.Equals(f.Id, eventsFilter.Id));
         Assert.DoesNotContain(filters, f => String.Equals(f.Id, issuesFilter.Id));
+    }
+
+    [Fact]
+    public async Task GetByOrganizationAsync_FirstRequest_CreatesPredefinedSavedViewsOnce()
+    {
+        // Act
+        var filters = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(filters);
+        Assert.Contains(filters, view => IsPredefinedSavedView(view, "events", "Logs"));
+        Assert.Contains(filters, view => IsPredefinedSavedView(view, "events", "Errors"));
+        Assert.Contains(filters, view => IsPredefinedSavedView(view, "issues", "Most Frequent Errors"));
+        Assert.Contains(filters, view => IsPredefinedSavedView(view, "issues", "Most Frequent 404s"));
+        Assert.Contains(filters, view => IsPredefinedSavedView(view, "issues", "Most Used Features"));
+
+        foreach (var savedView in filters.Where(IsPredefinedSavedView))
+            await _savedViewRepository.RemoveAsync(savedView.Id, o => o.ImmediateConsistency());
+
+        await RefreshDataAsync();
+
+        var afterDelete = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(afterDelete);
+        Assert.DoesNotContain(afterDelete, IsPredefinedSavedView);
+    }
+
+    [Fact]
+    public async Task PostPredefinedAsync_AfterDelete_RecreatesPredefinedSavedViews()
+    {
+        // Arrange
+        var filters = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(filters);
+        foreach (var savedView in filters.Where(IsPredefinedSavedView))
+            await _savedViewRepository.RemoveAsync(savedView.Id, o => o.ImmediateConsistency());
+
+        await RefreshDataAsync();
+
+        // Act
+        var predefinedViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views", "predefined")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(predefinedViews);
+        Assert.Equal(5, predefinedViews.Count);
+        Assert.Contains(predefinedViews, view => IsPredefinedSavedView(view, "events", "Logs"));
+        Assert.Contains(predefinedViews, view => IsPredefinedSavedView(view, "events", "Errors"));
+        Assert.Contains(predefinedViews, view => IsPredefinedSavedView(view, "issues", "Most Frequent Errors"));
+        Assert.Contains(predefinedViews, view => IsPredefinedSavedView(view, "issues", "Most Frequent 404s"));
+        Assert.Contains(predefinedViews, view => IsPredefinedSavedView(view, "issues", "Most Used Features"));
+    }
+
+    [Fact]
+    public async Task PostPredefinedAsync_ExistingViews_UpdatesByNameAndViewTypeAndPreservesCustomViews()
+    {
+        // Arrange
+        var predefinedViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views", "predefined")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(predefinedViews);
+        var logs = predefinedViews.FirstOrDefault(view => IsPredefinedSavedView(view, "events", "Logs"));
+        Assert.NotNull(logs);
+
+        var savedLogs = await _savedViewRepository.GetByIdAsync(logs.Id);
+        Assert.NotNull(savedLogs);
+        savedLogs.Filter = "type:error";
+        savedLogs.Slug = "legacy-logs";
+        await _savedViewRepository.SaveAsync(savedLogs, o => o.ImmediateConsistency());
+
+        var testUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(testUser);
+
+        var customView = await _savedViewRepository.AddAsync(new SavedView
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            Name = "Custom Investigation",
+            Filter = "type:error",
+            Slug = "custom-investigation",
+            ViewType = "events",
+            CreatedByUserId = testUser.Id
+        }, o => o.ImmediateConsistency());
+
+        await RefreshDataAsync();
+
+        // Act
+        var updatedPredefinedViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views", "predefined")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedPredefinedViews);
+        var updatedLogs = updatedPredefinedViews.FirstOrDefault(view => IsPredefinedSavedView(view, "events", "Logs"));
+        Assert.NotNull(updatedLogs);
+        Assert.Equal(logs.Id, updatedLogs.Id);
+        Assert.Equal("type:log", updatedLogs.Filter);
+        Assert.Equal("logs", updatedLogs.Slug);
+
+        Assert.NotNull(await _savedViewRepository.GetByIdAsync(customView.Id));
+    }
+
+    [Fact]
+    public Task PostPredefinedAsync_CrossOrganization_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "saved-views", "predefined")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public async Task PostPredefinedSavedViewAsync_GlobalAdmin_UsesPromotedConfigurationForPredefinedViews()
+    {
+        // Arrange
+        var predefinedViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views", "predefined")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(predefinedViews);
+        var logs = predefinedViews.FirstOrDefault(view => IsPredefinedSavedView(view, "events", "Logs"));
+        Assert.NotNull(logs);
+
+        var savedLogs = await _savedViewRepository.GetByIdAsync(logs.Id);
+        Assert.NotNull(savedLogs);
+        savedLogs.Name = "Application Logs";
+        savedLogs.Slug = "application-logs";
+        savedLogs.Filter = "type:log level:error";
+        savedLogs.ShowChart = false;
+        savedLogs.Columns = new Dictionary<string, bool>
+        {
+            ["summary"] = true,
+            ["date"] = true,
+            ["type"] = false
+        };
+        savedLogs.ColumnOrder = ["summary", "date", "type"];
+        await _savedViewRepository.SaveAsync(savedLogs, o => o.ImmediateConsistency());
+        await RefreshDataAsync();
+
+        // Act
+        var promoted = await SendRequestAsAsync<ViewSavedView>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", logs.Id, "predefined")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(promoted);
+        Assert.Equal("Application Logs", promoted.Name);
+        Assert.Equal("application-logs", promoted.Slug);
+
+        foreach (var savedView in predefinedViews)
+            await _savedViewRepository.RemoveAsync(savedView.Id, o => o.ImmediateConsistency());
+
+        await RefreshDataAsync();
+
+        var updatedPredefinedViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views", "predefined")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedPredefinedViews);
+        Assert.Equal(5, updatedPredefinedViews.Count);
+        var applicationLogs = updatedPredefinedViews.FirstOrDefault(view => IsPredefinedSavedView(view, "events", "Application Logs"));
+        Assert.NotNull(applicationLogs);
+        Assert.Equal("application-logs", applicationLogs.Slug);
+        Assert.Equal("type:log level:error", applicationLogs.Filter);
+        Assert.False(applicationLogs.ShowChart);
+        Assert.NotNull(applicationLogs.Columns);
+        Assert.True(applicationLogs.Columns["summary"]);
+        Assert.False(applicationLogs.Columns["type"]);
+        Assert.Equal(new[] { "summary", "date", "type" }, applicationLogs.ColumnOrder);
+        Assert.DoesNotContain(updatedPredefinedViews, view => IsPredefinedSavedView(view, "events", "Logs"));
+        Assert.Contains(updatedPredefinedViews, view => IsPredefinedSavedView(view, "events", "Errors"));
+    }
+
+    [Fact]
+    public async Task PostPredefinedSavedViewAsync_AfterPatch_ExportsLatestConfiguration()
+    {
+        // Arrange
+        var predefinedViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views", "predefined")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(predefinedViews);
+        var logs = predefinedViews.FirstOrDefault(view => IsPredefinedSavedView(view, "events", "Logs"));
+        Assert.NotNull(logs);
+
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", logs.Id)
+            .StatusCodeShouldBeOk()
+        );
+
+        var changes = new UpdateSavedView
+        {
+            Filter = "type:log level:warn",
+            FilterDefinitions = """[{"type":"type","value":["log"],"hidden":true},{"type":"level","value":["Warn"]}]"""
+        };
+
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", logs.Id)
+            .Content(changes)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", logs.Id, "predefined")
+            .StatusCodeShouldBeOk()
+        );
+
+        var definitions = await SendRequestAsAsync<List<PredefinedSavedViewDefinition>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", "predefined")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(definitions);
+        var logsDefinition = definitions.FirstOrDefault(view => String.Equals(view.Key, "events:logs", StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(logsDefinition);
+        Assert.Equal("type:log level:warn", logsDefinition.Filter);
+        Assert.NotNull(logsDefinition.FilterDefinitions);
+
+        var filterDefinitions = logsDefinition.FilterDefinitions.Value;
+        Assert.Equal(JsonValueKind.Array, filterDefinitions.ValueKind);
+        Assert.Equal(2, filterDefinitions.GetArrayLength());
+        Assert.True(filterDefinitions[0].GetProperty("hidden").GetBoolean());
+        Assert.Equal("level", filterDefinitions[1].GetProperty("type").GetString());
+    }
+
+    [Fact]
+    public async Task PostPredefinedSavedViewAsync_User_ReturnsForbidden()
+    {
+        // Arrange
+        var created = await CreateSavedViewAsync("User View", "type:error", "events");
+        Assert.NotNull(created);
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("saved-views", created.Id, "predefined")
+            .StatusCodeShouldBeForbidden()
+        );
+    }
+
+    [Fact]
+    public async Task DeletePredefinedSavedViewAsync_GlobalAdmin_RemovesSeededPredefinedView()
+    {
+        // Arrange
+        var predefinedViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views", "predefined")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(predefinedViews);
+        var logs = predefinedViews.FirstOrDefault(view => IsPredefinedSavedView(view, "events", "Logs"));
+        Assert.NotNull(logs);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Delete()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", logs.Id, "predefined")
+            .ExpectedStatus(HttpStatusCode.NoContent)
+        );
+
+        foreach (var savedView in predefinedViews)
+            await _savedViewRepository.RemoveAsync(savedView.Id, o => o.ImmediateConsistency());
+
+        await RefreshDataAsync();
+
+        var updatedPredefinedViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views", "predefined")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedPredefinedViews);
+        Assert.Equal(4, updatedPredefinedViews.Count);
+        Assert.DoesNotContain(updatedPredefinedViews, view => IsPredefinedSavedView(view, "events", "Logs"));
+        Assert.Contains(updatedPredefinedViews, view => IsPredefinedSavedView(view, "events", "Errors"));
+
+        await GetService<DataSeedService>().SeedAsync(TestContext.Current.CancellationToken);
+        await RefreshDataAsync();
+
+        Assert.Equal(4, await _savedViewRepository.CountByOrganizationIdAsync(PredefinedSavedViewsDataSeed.SystemOrganizationId));
+    }
+
+    [Fact]
+    public async Task DeletePredefinedSavedViewAsync_User_ReturnsForbidden()
+    {
+        // Arrange
+        var created = await CreateSavedViewAsync("User View", "type:error", "events");
+        Assert.NotNull(created);
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .Delete()
+            .AsTestOrganizationUser()
+            .AppendPaths("saved-views", created.Id, "predefined")
+            .StatusCodeShouldBeForbidden()
+        );
     }
 
     [Fact]
@@ -868,6 +1285,12 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
 
         await RefreshDataAsync();
         return result;
+    }
+
+    private async Task<List<SavedView>> GetSystemPredefinedSavedViewsAsync()
+    {
+        var results = await _savedViewRepository.GetByOrganizationForUserAsync(PredefinedSavedViewsDataSeed.SystemOrganizationId, PredefinedSavedViewsDataSeed.SystemUserId, o => o.PageLimit(1000));
+        return results.Documents.Where(view => view.UserId is null).ToList();
     }
 
     // CanUpdateAsync permission tests
@@ -1744,6 +2167,25 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         Assert.True(removed > 0);
         Assert.Null(await _savedViewRepository.GetByIdAsync(privateView.Id));
         Assert.NotNull(await _savedViewRepository.GetByIdAsync(publicView.Id));
+    }
+
+    private static bool IsPredefinedSavedView(ViewSavedView savedView, string viewType, string name)
+    {
+        return String.Equals(savedView.ViewType, viewType, StringComparison.OrdinalIgnoreCase) && String.Equals(savedView.Name, name, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsPredefinedSavedView(SavedView savedView, string viewType, string name)
+    {
+        return String.Equals(savedView.ViewType, viewType, StringComparison.OrdinalIgnoreCase) && String.Equals(savedView.Name, name, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsPredefinedSavedView(ViewSavedView savedView)
+    {
+        return IsPredefinedSavedView(savedView, "events", "Logs")
+            || IsPredefinedSavedView(savedView, "events", "Errors")
+            || IsPredefinedSavedView(savedView, "issues", "Most Frequent Errors")
+            || IsPredefinedSavedView(savedView, "issues", "Most Frequent 404s")
+            || IsPredefinedSavedView(savedView, "issues", "Most Used Features");
     }
 
 }

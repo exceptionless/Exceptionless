@@ -1,17 +1,21 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Seed;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
+using Foundatio.Lock;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.App.Controllers.API;
 
@@ -20,14 +24,24 @@ namespace Exceptionless.App.Controllers.API;
 public class SavedViewController : RepositoryApiController<ISavedViewRepository, SavedView, ViewSavedView, NewSavedView, UpdateSavedView>
 {
     private const int MaxViewsPerOrganization = 100;
+    private const string PredefinedSavedViewsDataKey = "@@PredefinedSavedViewsVersion";
+    private const int PredefinedSavedViewsVersion = 2;
+
+    private readonly IOrganizationRepository _organizationRepository;
+    private readonly ILockProvider _lockProvider;
 
     public SavedViewController(
         ISavedViewRepository repository,
+        IOrganizationRepository organizationRepository,
+        ILockProvider lockProvider,
         ApiMapper mapper,
         IAppQueryValidator validator,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory) : base(repository, mapper, validator, timeProvider, loggerFactory)
-    { }
+    {
+        _organizationRepository = organizationRepository;
+        _lockProvider = lockProvider;
+    }
 
     protected override SavedView MapToModel(NewSavedView newModel)
     {
@@ -61,6 +75,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             return NotFound();
 
         // Reads remain available even when the feature is disabled to preserve access to existing saved views.
+        await EnsurePredefinedSavedViewsCreatedAsync(organizationId);
 
         page = GetPage(page);
         limit = GetLimit(limit);
@@ -89,6 +104,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             return NotFound();
 
         // Reads remain available even when the feature is disabled to preserve access to existing saved views.
+        await EnsurePredefinedSavedViewsCreatedAsync(organizationId);
 
         page = GetPage(page);
         limit = GetLimit(limit);
@@ -130,6 +146,69 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             savedView.UserId = CurrentUser.Id;
 
         return await PostImplAsync(savedView);
+    }
+
+    /// <summary>
+    /// Create or update predefined saved views
+    /// </summary>
+    /// <param name="organizationId">The identifier of the organization.</param>
+    /// <response code="200">The predefined saved views were created or updated.</response>
+    /// <response code="404">The organization could not be found.</response>
+    [HttpPost("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/saved-views/predefined")]
+    public async Task<ActionResult<IReadOnlyCollection<ViewSavedView>>> PostPredefinedAsync(string organizationId)
+    {
+        if (!IsInOrganization(organizationId))
+            return NotFound();
+
+        var savedViews = await UpsertPredefinedSavedViewsAsync(organizationId);
+        return Ok(MapToViewModels(savedViews));
+    }
+
+    /// <summary>
+    /// Get global predefined saved views as seed JSON
+    /// </summary>
+    /// <response code="200">The current predefined saved views.</response>
+    [HttpGet("predefined")]
+    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
+    public async Task<ActionResult<IReadOnlyCollection<PredefinedSavedViewDefinition>>> GetPredefinedAsync()
+    {
+        return Ok(await GetPredefinedSavedViewsAsync());
+    }
+
+    /// <summary>
+    /// Save a saved view as a global predefined saved view
+    /// </summary>
+    /// <param name="id">The identifier of the saved view to promote.</param>
+    /// <response code="200">The predefined saved view was created or updated.</response>
+    /// <response code="404">The saved view could not be found.</response>
+    [HttpPost("{id:objectid}/predefined")]
+    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
+    public async Task<ActionResult<ViewSavedView>> PostPredefinedSavedViewAsync(string id)
+    {
+        var source = await _repository.GetByIdAsync(id);
+        if (source is null)
+            return NotFound();
+
+        var savedView = await UpsertSystemPredefinedSavedViewAsync(source);
+        return Ok(MapToViewModel(savedView));
+    }
+
+    /// <summary>
+    /// Delete a global predefined saved view
+    /// </summary>
+    /// <param name="id">The identifier of the saved view whose predefined saved view should be deleted.</param>
+    /// <response code="204">The predefined saved view was deleted.</response>
+    /// <response code="404">The saved view could not be found.</response>
+    [HttpDelete("{id:objectid}/predefined")]
+    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
+    public async Task<ActionResult> DeletePredefinedSavedViewAsync(string id)
+    {
+        var source = await _repository.GetByIdAsync(id);
+        if (source is null)
+            return NotFound();
+
+        await DeleteSystemPredefinedSavedViewAsync(source);
+        return NoContent();
     }
 
     /// <summary>
@@ -341,6 +420,314 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         return await base.CanDeleteAsync(value);
     }
 
+    private async Task EnsurePredefinedSavedViewsCreatedAsync(string organizationId)
+    {
+        var organization = await _organizationRepository.GetByIdAsync(organizationId);
+        if (organization is null || HasCreatedPredefinedSavedViews(organization))
+            return;
+
+        await UpsertPredefinedSavedViewsAsync(organizationId, true);
+    }
+
+    private async Task<IReadOnlyCollection<SavedView>> UpsertPredefinedSavedViewsAsync(string organizationId, bool onlyIfNeverCreated = false)
+    {
+        List<SavedView> savedViews = [];
+
+        await _lockProvider.TryUsingAsync($"predefined-saved-views:{organizationId}", async () =>
+        {
+            var organization = await _organizationRepository.GetByIdAsync(organizationId);
+            if (organization is null)
+                return;
+
+            if (onlyIfNeverCreated && HasCreatedPredefinedSavedViews(organization))
+                return;
+
+            savedViews = await UpsertPredefinedSavedViewsForOrganizationAsync(organizationId);
+            organization.Data ??= new DataDictionary();
+            organization.Data[PredefinedSavedViewsDataKey] = PredefinedSavedViewsVersion.ToString();
+            await _organizationRepository.SaveAsync(organization, o => o.Cache().ImmediateConsistency());
+        }, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15));
+
+        return savedViews;
+    }
+
+    private async Task<List<SavedView>> UpsertPredefinedSavedViewsForOrganizationAsync(string organizationId)
+    {
+        var savedViewsByView = new Dictionary<string, List<SavedView>>(StringComparer.OrdinalIgnoreCase);
+        var upserted = new List<SavedView>();
+
+        var definitions = await GetPredefinedSavedViewsAsync();
+        foreach (var definition in definitions)
+        {
+            if (!savedViewsByView.TryGetValue(definition.ViewType, out var existingViews))
+            {
+                var results = await _repository.GetByViewAsync(organizationId, definition.ViewType, o => o.PageLimit(1000));
+                existingViews = results.Documents.ToList();
+                savedViewsByView.Add(definition.ViewType, existingViews);
+            }
+
+            var existing = existingViews.FirstOrDefault(view => view.UserId is null && String.Equals(view.PredefinedKey, definition.Key, StringComparison.OrdinalIgnoreCase))
+                ?? existingViews.FirstOrDefault(view => view.UserId is null && String.IsNullOrWhiteSpace(view.PredefinedKey) && String.Equals(view.Name.Trim(), definition.Name, StringComparison.OrdinalIgnoreCase));
+            var slug = GetUniqueSlug(definition.Slug, existingViews, existing?.Id);
+
+            if (existing is null)
+            {
+                var savedView = CreatePredefinedSavedView(organizationId, definition, slug);
+                await _repository.AddAsync(savedView, o => o.Cache().ImmediateConsistency());
+                existingViews.Add(savedView);
+                upserted.Add(savedView);
+                continue;
+            }
+
+            if (ApplyPredefinedSavedView(existing, definition, slug))
+            {
+                existing.UpdatedByUserId = CurrentUser.Id;
+                await _repository.SaveAsync(existing, o => o.Cache().ImmediateConsistency());
+            }
+
+            upserted.Add(existing);
+        }
+
+        return upserted;
+    }
+
+    private static bool HasCreatedPredefinedSavedViews(Organization organization)
+    {
+        return organization.Data is not null && organization.Data.ContainsKey(PredefinedSavedViewsDataKey);
+    }
+
+    private SavedView CreatePredefinedSavedView(string organizationId, PredefinedSavedViewDefinition definition, string slug)
+    {
+        return new SavedView
+        {
+            OrganizationId = organizationId,
+            CreatedByUserId = CurrentUser.Id,
+            PredefinedKey = definition.Key,
+            Name = definition.Name,
+            Slug = slug,
+            ViewType = definition.ViewType,
+            Filter = definition.Filter,
+            Time = definition.Time,
+            Sort = definition.Sort,
+            FilterDefinitions = PredefinedSavedViewsDataSeed.GetRawJson(definition.FilterDefinitions),
+            Columns = Copy(definition.Columns),
+            ColumnOrder = definition.ColumnOrder is null ? null : [.. definition.ColumnOrder],
+            ShowStats = definition.ShowStats,
+            ShowChart = definition.ShowChart,
+            Version = 1
+        };
+    }
+
+    private static bool ApplyPredefinedSavedView(SavedView savedView, PredefinedSavedViewDefinition definition, string slug)
+    {
+        var changed = false;
+        changed |= SetIfChanged(savedView, definition.Key, static (view, value) => view.PredefinedKey = value, static view => view.PredefinedKey);
+        changed |= SetIfChanged(savedView, definition.Name, static (view, value) => view.Name = value, static view => view.Name);
+        changed |= SetIfChanged(savedView, slug, static (view, value) => view.Slug = value, static view => view.Slug);
+        changed |= SetIfChanged(savedView, definition.Filter, static (view, value) => view.Filter = value, static view => view.Filter);
+        changed |= SetIfChanged(savedView, definition.Time, static (view, value) => view.Time = value, static view => view.Time);
+        changed |= SetIfChanged(savedView, definition.Sort, static (view, value) => view.Sort = value, static view => view.Sort);
+        changed |= SetIfChanged(savedView, PredefinedSavedViewsDataSeed.GetRawJson(definition.FilterDefinitions), static (view, value) => view.FilterDefinitions = value, static view => view.FilterDefinitions);
+        changed |= SetDictionaryIfChanged(savedView, definition.Columns);
+        changed |= SetListIfChanged(savedView, definition.ColumnOrder);
+        changed |= SetIfChanged(savedView, definition.ShowStats, static (view, value) => view.ShowStats = value, static view => view.ShowStats);
+        changed |= SetIfChanged(savedView, definition.ShowChart, static (view, value) => view.ShowChart = value, static view => view.ShowChart);
+        changed |= SetIfChanged(savedView, 1, static (view, value) => view.Version = value, static view => view.Version);
+
+        return changed;
+    }
+
+    private async Task<SavedView> UpsertSystemPredefinedSavedViewAsync(SavedView source)
+    {
+        var existingPredefinedViews = await GetSystemPredefinedSavedViewsAsync(source.ViewType);
+        var key = GetPredefinedKey(source);
+        var existing = existingPredefinedViews.FirstOrDefault(view => String.Equals(view.PredefinedKey, key, StringComparison.OrdinalIgnoreCase))
+            ?? existingPredefinedViews.FirstOrDefault(view => String.IsNullOrWhiteSpace(view.PredefinedKey) && String.Equals(view.Slug, source.Slug, StringComparison.OrdinalIgnoreCase));
+        var slug = GetUniqueSlug(source.Slug, existingPredefinedViews, existing?.Id);
+
+        if (existing is null)
+        {
+            var savedView = CreateSystemPredefinedSavedView(source, key, slug);
+            await _repository.AddAsync(savedView, o => o.Cache().ImmediateConsistency());
+            return savedView;
+        }
+
+        ApplySavedViewConfiguration(existing, source, key, slug);
+        existing.UpdatedByUserId = CurrentUser.Id;
+        await _repository.SaveAsync(existing, o => o.Cache().ImmediateConsistency());
+        return existing;
+    }
+
+    private SavedView CreateSystemPredefinedSavedView(SavedView source, string key, string slug)
+    {
+        var savedView = new SavedView
+        {
+            OrganizationId = PredefinedSavedViewsDataSeed.SystemOrganizationId,
+            CreatedByUserId = CurrentUser.Id,
+            Version = 1
+        };
+
+        ApplySavedViewConfiguration(savedView, source, key, slug);
+        return savedView;
+    }
+
+    private static void ApplySavedViewConfiguration(SavedView destination, SavedView source, string key, string slug)
+    {
+        destination.UserId = null;
+        destination.PredefinedKey = key;
+        destination.Name = source.Name;
+        destination.Slug = slug;
+        destination.ViewType = source.ViewType;
+        destination.Filter = source.Filter;
+        destination.Time = source.Time;
+        destination.Sort = source.Sort;
+        destination.FilterDefinitions = source.FilterDefinitions;
+        destination.Columns = Copy(source.Columns);
+        destination.ColumnOrder = source.ColumnOrder is null ? null : [.. source.ColumnOrder];
+        destination.ShowStats = source.ShowStats;
+        destination.ShowChart = source.ShowChart;
+    }
+
+    private async Task<IReadOnlyCollection<PredefinedSavedViewDefinition>> GetPredefinedSavedViewsAsync()
+    {
+        var definitions = new List<PredefinedSavedViewDefinition>();
+
+        foreach (var viewType in NewSavedView.ValidViewTypes)
+        {
+            var savedViews = await GetSystemPredefinedSavedViewsAsync(viewType);
+            foreach (var savedView in savedViews)
+            {
+                var key = GetPredefinedKey(savedView);
+                definitions.Add(ToPredefinedSavedView(savedView, key));
+            }
+        }
+
+        return definitions;
+    }
+
+    private async Task DeleteSystemPredefinedSavedViewAsync(SavedView source)
+    {
+        var key = GetPredefinedKey(source);
+        var existingPredefinedViews = await GetSystemPredefinedSavedViewsAsync(source.ViewType);
+        var existing = existingPredefinedViews.FirstOrDefault(view => String.Equals(view.PredefinedKey, key, StringComparison.OrdinalIgnoreCase))
+            ?? existingPredefinedViews.FirstOrDefault(view => String.IsNullOrWhiteSpace(view.PredefinedKey) && String.Equals(view.Slug, source.Slug, StringComparison.OrdinalIgnoreCase));
+
+        if (existing is not null)
+            await _repository.RemoveAsync(existing.Id, o => o.ImmediateConsistency());
+    }
+
+    private async Task<List<SavedView>> GetSystemPredefinedSavedViewsAsync(string viewType)
+    {
+        var results = await _repository.GetByViewAsync(PredefinedSavedViewsDataSeed.SystemOrganizationId, viewType, o => o.PageLimit(1000));
+        return results.Documents.Where(view => view.UserId is null).ToList();
+    }
+
+    private static PredefinedSavedViewDefinition ToPredefinedSavedView(SavedView savedView, string key)
+    {
+        return new PredefinedSavedViewDefinition
+        {
+            Key = key,
+            Name = savedView.Name,
+            Slug = savedView.Slug,
+            ViewType = savedView.ViewType,
+            Filter = savedView.Filter,
+            Time = savedView.Time,
+            Sort = savedView.Sort,
+            FilterDefinitions = ParseFilterDefinitions(savedView.FilterDefinitions),
+            Columns = savedView.Columns,
+            ColumnOrder = savedView.ColumnOrder,
+            ShowStats = savedView.ShowStats,
+            ShowChart = savedView.ShowChart
+        };
+    }
+
+    private static JsonElement? ParseFilterDefinitions(string? filterDefinitions)
+    {
+        if (String.IsNullOrWhiteSpace(filterDefinitions))
+            return null;
+
+        try
+        {
+            return JsonSerializer.Deserialize<JsonElement>(filterDefinitions);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static string GetPredefinedKey(SavedView savedView)
+    {
+        if (!String.IsNullOrWhiteSpace(savedView.PredefinedKey))
+            return savedView.PredefinedKey;
+
+        return $"{savedView.ViewType}:{ToSlug(String.IsNullOrWhiteSpace(savedView.Slug) ? savedView.Name : savedView.Slug)}";
+    }
+
+    private static bool SetIfChanged<T>(SavedView savedView, T value, Action<SavedView, T> setValue, Func<SavedView, T> getValue)
+    {
+        if (EqualityComparer<T>.Default.Equals(getValue(savedView), value))
+            return false;
+
+        setValue(savedView, value);
+        return true;
+    }
+
+    private static bool SetDictionaryIfChanged(SavedView savedView, IReadOnlyDictionary<string, bool>? value)
+    {
+        if (DictionaryEquals(savedView.Columns, value))
+            return false;
+
+        savedView.Columns = Copy(value);
+        return true;
+    }
+
+    private static bool SetListIfChanged(SavedView savedView, IReadOnlyCollection<string>? value)
+    {
+        if ((savedView.ColumnOrder ?? []).SequenceEqual(value ?? []))
+            return false;
+
+        savedView.ColumnOrder = value is null ? null : [.. value];
+        return true;
+    }
+
+    private static Dictionary<string, bool>? Copy(IReadOnlyDictionary<string, bool>? value)
+    {
+        return value is null ? null : value.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+    }
+
+    private static bool DictionaryEquals(IReadOnlyDictionary<string, bool>? left, IReadOnlyDictionary<string, bool>? right)
+    {
+        if ((left?.Count ?? 0) != (right?.Count ?? 0))
+            return false;
+
+        if (left is null || right is null)
+            return true;
+
+        return left.All(kvp => right.TryGetValue(kvp.Key, out var value) && value == kvp.Value);
+    }
+
+    private static string GetUniqueSlug(string slug, IReadOnlyCollection<SavedView> existingViews, string? excludingId)
+    {
+        var baseSlug = ToSlug(slug);
+        if (String.IsNullOrWhiteSpace(baseSlug))
+            baseSlug = "saved-view";
+
+        baseSlug = baseSlug.Length > 100 ? baseSlug[..100].Trim('-') : baseSlug;
+        var candidate = baseSlug;
+        var suffix = 2;
+
+        while (existingViews.Any(view => view.Id != excludingId && String.Equals(ToFallbackSlug(String.IsNullOrWhiteSpace(view.Slug) ? view.Name : view.Slug, view.Id), candidate, StringComparison.OrdinalIgnoreCase)))
+        {
+            var suffixText = $"-{suffix}";
+            var maxBaseLength = 100 - suffixText.Length;
+            candidate = $"{baseSlug[..Math.Min(baseSlug.Length, maxBaseLength)].Trim('-')}{suffixText}";
+            suffix++;
+        }
+
+        return candidate;
+    }
+
     private async Task<bool> SlugExistsAsync(string organizationId, string viewType, string slug, string? excludingId)
     {
         var results = await _repository.GetByViewForUserAsync(organizationId, viewType, CurrentUser.Id, o => o.PageLimit(1000));
@@ -378,4 +765,5 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 
         return String.IsNullOrWhiteSpace(id) ? "saved-view" : $"saved-view-{id}";
     }
+
 }

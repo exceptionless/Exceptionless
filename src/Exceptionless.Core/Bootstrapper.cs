@@ -20,6 +20,7 @@ using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Seed;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
@@ -93,6 +94,10 @@ public class Bootstrapper
         services.AddSingleton<Nest.IElasticClient>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Client);
         services.AddSingleton<IElasticConfiguration>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>());
         services.AddStartupAction<ExceptionlessElasticConfiguration>();
+
+        services.AddSingleton<DataSeedService>();
+        services.AddSingleton<IDataSeed, PredefinedSavedViewsDataSeed>();
+        services.AddStartupAction<DataSeedService>();
 
         services.AddStartupAction("Create Sample Data", CreateSampleDataAsync);
 

@@ -51,6 +51,7 @@ async function invalidateSavedViewCache(queryClient: QueryClient, organizationId
 export const queryKeys = {
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     organization: (organizationId: string | undefined) => [...queryKeys.type, 'organization', organizationId] as const,
+    predefined: (organizationId: string | undefined) => [...queryKeys.type, 'organization', organizationId, 'predefined'] as const,
     type: ['SavedView'] as const,
     view: (organizationId: string | undefined, view: string | undefined) => [...queryKeys.type, 'organization', organizationId, 'view', view] as const
 };
@@ -149,6 +150,54 @@ export function postSavedView(request: { route: { organizationId: string | undef
         },
         onSuccess: (savedView: SavedView) => {
             syncSavedViewCaches(queryClient, savedView, request.route.organizationId);
+        }
+    }));
+}
+
+export function postPredefinedSavedViews(request: { route: { organizationId: string | undefined } }) {
+    const queryClient = useQueryClient();
+
+    return createMutation<SavedView[], ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.organizationId,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            const response = await client.postJSON<SavedView[]>(`organizations/${request.route.organizationId}/saved-views/predefined`, {});
+            return response.data!;
+        },
+        mutationKey: queryKeys.predefined(request.route.organizationId),
+        onSuccess: (savedViews: SavedView[]) => {
+            for (const savedView of savedViews) {
+                restoreDeletedSavedView(savedView);
+                syncSavedViewCaches(queryClient, savedView, request.route.organizationId);
+            }
+
+            void queryClient.invalidateQueries({ queryKey: queryKeys.organization(request.route.organizationId) });
+            for (const view of new Set(savedViews.map((savedView) => savedView.view_type))) {
+                void queryClient.invalidateQueries({ queryKey: queryKeys.view(request.route.organizationId, view) });
+            }
+        }
+    }));
+}
+
+export function postPredefinedSavedView(request: { route: { id: string | undefined } }) {
+    return createMutation<SavedView, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            const response = await client.postJSON<SavedView>(`saved-views/${request.route.id}/predefined`, {});
+            return response.data!;
+        }
+    }));
+}
+
+export function deletePredefinedSavedView(request: { route: { id: string | undefined } }) {
+    return createMutation<void, ProblemDetails, void>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async () => {
+            const client = useFetchClient();
+            await client.delete(`saved-views/${request.route.id}/predefined`, {
+                expectedStatusCodes: [204]
+            });
         }
     }));
 }
