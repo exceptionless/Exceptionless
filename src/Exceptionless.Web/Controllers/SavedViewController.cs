@@ -433,20 +433,26 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     {
         List<SavedView> savedViews = [];
 
-        await _lockProvider.TryUsingAsync($"predefined-saved-views:{organizationId}", async () =>
+        bool lockAcquired = await _lockProvider.TryUsingAsync($"predefined-saved-views:{organizationId}", async () =>
         {
             var organization = await _organizationRepository.GetByIdAsync(organizationId);
             if (organization is null)
                 return;
 
             if (onlyIfNeverCreated && HasCreatedPredefinedSavedViews(organization))
+            {
+                savedViews = await GetExistingPredefinedSavedViewsForOrganizationAsync(organizationId);
                 return;
+            }
 
             savedViews = await UpsertPredefinedSavedViewsForOrganizationAsync(organizationId);
             organization.Data ??= new DataDictionary();
             organization.Data[PredefinedSavedViewsDataKey] = PredefinedSavedViewsVersion.ToString();
             await _organizationRepository.SaveAsync(organization, o => o.Cache().ImmediateConsistency());
         }, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15));
+
+        if (!lockAcquired)
+            return await GetExistingPredefinedSavedViewsForOrganizationAsync(organizationId);
 
         return savedViews;
     }
@@ -466,8 +472,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
                 savedViewsByView.Add(definition.ViewType, existingViews);
             }
 
-            var existing = existingViews.FirstOrDefault(view => view.UserId is null && String.Equals(view.PredefinedKey, definition.Key, StringComparison.OrdinalIgnoreCase))
-                ?? existingViews.FirstOrDefault(view => view.UserId is null && String.IsNullOrWhiteSpace(view.PredefinedKey) && String.Equals(view.Name.Trim(), definition.Name, StringComparison.OrdinalIgnoreCase));
+            var existing = FindPredefinedSavedView(definition, existingViews);
             var slug = GetUniqueSlug(definition.Slug, existingViews, existing?.Id);
 
             if (existing is null)
@@ -491,9 +496,41 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         return upserted;
     }
 
+    private async Task<List<SavedView>> GetExistingPredefinedSavedViewsForOrganizationAsync(string organizationId)
+    {
+        var savedViewsByView = new Dictionary<string, List<SavedView>>(StringComparer.OrdinalIgnoreCase);
+        var existingPredefinedViews = new List<SavedView>();
+
+        var definitions = await GetPredefinedSavedViewsAsync();
+        foreach (var definition in definitions)
+        {
+            if (!savedViewsByView.TryGetValue(definition.ViewType, out var existingViews))
+            {
+                var results = await _repository.GetByViewAsync(organizationId, definition.ViewType, o => o.PageLimit(1000));
+                existingViews = results.Documents.ToList();
+                savedViewsByView.Add(definition.ViewType, existingViews);
+            }
+
+            var existing = FindPredefinedSavedView(definition, existingViews);
+            if (existing is not null)
+                existingPredefinedViews.Add(existing);
+        }
+
+        return existingPredefinedViews;
+    }
+
+    private static SavedView? FindPredefinedSavedView(PredefinedSavedViewDefinition definition, IReadOnlyCollection<SavedView> existingViews)
+    {
+        return existingViews.FirstOrDefault(view => view.UserId is null && String.Equals(view.PredefinedKey, definition.Key, StringComparison.OrdinalIgnoreCase))
+            ?? existingViews.FirstOrDefault(view => view.UserId is null && String.IsNullOrWhiteSpace(view.PredefinedKey) && String.Equals(view.Name.Trim(), definition.Name, StringComparison.OrdinalIgnoreCase));
+    }
+
     private static bool HasCreatedPredefinedSavedViews(Organization organization)
     {
-        return organization.Data is not null && organization.Data.ContainsKey(PredefinedSavedViewsDataKey);
+        if (organization.Data is null || !organization.Data.TryGetValue(PredefinedSavedViewsDataKey, out object? versionValue))
+            return false;
+
+        return Int32.TryParse(versionValue?.ToString(), out int version) && version >= PredefinedSavedViewsVersion;
     }
 
     private SavedView CreatePredefinedSavedView(string organizationId, PredefinedSavedViewDefinition definition, string slug)
@@ -698,11 +735,14 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 
     private static bool DictionaryEquals(IReadOnlyDictionary<string, bool>? left, IReadOnlyDictionary<string, bool>? right)
     {
-        if ((left?.Count ?? 0) != (right?.Count ?? 0))
+        if (left is null)
+            return right is null;
+
+        if (right is null)
             return false;
 
-        if (left is null || right is null)
-            return true;
+        if (left.Count != right.Count)
+            return false;
 
         return left.All(kvp => right.TryGetValue(kvp.Key, out var value) && value == kvp.Value);
     }

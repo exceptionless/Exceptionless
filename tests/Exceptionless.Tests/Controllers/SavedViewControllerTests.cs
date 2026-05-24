@@ -89,8 +89,8 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         Assert.Equal("logs", logs.Slug);
         Assert.Equal("events", logs.ViewType);
         Assert.Equal("type:log", logs.Filter);
-        Assert.NotNull(logs.FilterDefinitions);
-        Assert.Equal(JsonValueKind.Array, logs.FilterDefinitions.Value.ValueKind);
+        var filterDefinitions = logs.FilterDefinitions ?? throw new Xunit.Sdk.XunitException("Expected FilterDefinitions to be non-null.");
+        Assert.Equal(JsonValueKind.Array, filterDefinitions.ValueKind);
     }
 
     [Fact]
@@ -765,9 +765,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         var logsDefinition = definitions.FirstOrDefault(view => String.Equals(view.Key, "events:logs", StringComparison.OrdinalIgnoreCase));
         Assert.NotNull(logsDefinition);
         Assert.Equal("type:log level:warn", logsDefinition.Filter);
-        Assert.NotNull(logsDefinition.FilterDefinitions);
-
-        var filterDefinitions = logsDefinition.FilterDefinitions.Value;
+        var filterDefinitions = logsDefinition.FilterDefinitions ?? throw new Xunit.Sdk.XunitException("Expected FilterDefinitions to be non-null.");
         Assert.Equal(JsonValueKind.Array, filterDefinitions.ValueKind);
         Assert.Equal(2, filterDefinitions.GetArrayLength());
         Assert.True(filterDefinitions[0].GetProperty("hidden").GetBoolean());
