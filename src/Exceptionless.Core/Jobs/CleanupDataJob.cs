@@ -27,6 +27,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
     private readonly ITokenRepository _tokenRepository;
     private readonly IWebHookRepository _webHookRepository;
     private readonly BillingManager _billingManager;
+    private readonly UsageService _usageService;
     private readonly AppOptions _appOptions;
     private readonly ILockProvider _lockProvider;
     private readonly ICacheClient _cacheClient;
@@ -43,6 +44,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         ILockProvider lockProvider,
         ICacheClient cacheClient,
         BillingManager billingManager,
+        UsageService usageService,
         AppOptions appOptions,
         TimeProvider timeProvider,
         IResiliencePolicyProvider resiliencePolicyProvider,
@@ -57,6 +59,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         _tokenRepository = tokenRepository;
         _webHookRepository = webHookRepository;
         _billingManager = billingManager;
+        _usageService = usageService;
         _appOptions = appOptions;
         _lockProvider = lockProvider;
         _cacheClient = cacheClient;
@@ -164,7 +167,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         {
             try
             {
-                await RemoveStacksAsync(stackResults.Documents, context);
+                await RemoveStacksAsync(stackResults.Documents, context, trackDeletedUsage: true);
             }
             catch (Exception ex)
             {
@@ -206,6 +209,9 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         await RenewLockAsync(context);
         long removedEvents = await _eventRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);
 
+        if (removedEvents > 0)
+            await _usageService.IncrementDeletedAsync(project.OrganizationId, project.Id, removedEvents);
+
         await RenewLockAsync(context);
         long removedStacks = await _stackRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);
 
@@ -213,17 +219,27 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         _logger.RemoveProjectComplete(project.Name, project.Id, removedStacks, removedEvents);
     }
 
-    private async Task RemoveStacksAsync(IReadOnlyCollection<Stack> stacks, JobContext context)
+    private async Task RemoveStacksAsync(IReadOnlyCollection<Stack> stacks, JobContext context, bool trackDeletedUsage = false)
     {
         await RenewLockAsync(context);
 
-        string[] stackIds = stacks.Select(s => s.Id).ToArray();
-        long removedEvents = await _eventRepository.RemoveAllByStackIdsAsync(stackIds);
-        await _stackRepository.RemoveAsync(stacks);
-        foreach (var orgGroup in stacks.GroupBy(s => (s.OrganizationId, s.ProjectId)))
-            await _cacheClient.RemoveByPrefixAsync(EventStackFilterQueryBuilder.GetScopedCachePrefix(orgGroup.Key.OrganizationId, orgGroup.Key.ProjectId));
+        var groups = stacks.GroupBy(s => (s.OrganizationId, s.ProjectId)).ToList();
+        foreach (var group in groups)
+            await _cacheClient.RemoveByPrefixAsync(EventStackFilterQueryBuilder.GetScopedCachePrefix(group.Key.OrganizationId, group.Key.ProjectId));
 
-        _logger.RemoveStacksComplete(stackIds.Length, removedEvents);
+        long totalRemovedEvents = 0;
+        foreach (var group in groups)
+        {
+            string[] groupStackIds = group.Select(s => s.Id).ToArray();
+            long groupRemovedEvents = await _eventRepository.RemoveAllByStackIdsAsync(groupStackIds);
+            totalRemovedEvents += groupRemovedEvents;
+
+            if (trackDeletedUsage && groupRemovedEvents > 0)
+                await _usageService.IncrementDeletedAsync(group.Key.OrganizationId, group.Key.ProjectId, groupRemovedEvents);
+        }
+
+        await _stackRepository.RemoveAsync(stacks);
+        _logger.RemoveStacksComplete(stacks.Count, totalRemovedEvents);
     }
 
     private async Task EnforceRetentionAsync(JobContext context)

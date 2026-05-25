@@ -76,6 +76,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(eventsLeftInBucket, usage.Total);
         Assert.Equal(0, usage.Blocked);
         Assert.Equal(0, usage.TooBig);
+        Assert.Equal(0, usage.Deleted);
 
         project = await _projectRepository.GetByIdAsync(project.Id);
         Assert.NotNull(project);
@@ -84,6 +85,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(eventsLeftInBucket, usage.Total);
         Assert.Equal(0, usage.Blocked);
         Assert.Equal(0, usage.TooBig);
+        Assert.Equal(0, usage.Deleted);
     }
 
     [Fact]
@@ -217,10 +219,12 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(0, usage.Total);
         Assert.Equal(1, usage.Blocked);
         Assert.Equal(0, usage.TooBig);
+        Assert.Equal(0, usage.Deleted);
         var overage = organization.UsageHours.Single();
         Assert.Equal(0, overage.Total);
         Assert.Equal(1, overage.Blocked);
         Assert.Equal(0, overage.TooBig);
+        Assert.Equal(0, overage.Deleted);
 
         project = await _projectRepository.GetByIdAsync(project.Id);
         Assert.NotNull(project);
@@ -230,11 +234,13 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(0, usage.Total);
         Assert.Equal(1, usage.Blocked);
         Assert.Equal(0, usage.TooBig);
+        Assert.Equal(0, usage.Deleted);
 
         overage = project.UsageHours.Single();
         Assert.Equal(0, overage.Total);
         Assert.Equal(1, overage.Blocked);
         Assert.Equal(0, overage.TooBig);
+        Assert.Equal(0, overage.Deleted);
     }
 
     [Fact]
@@ -257,10 +263,12 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(0, usage.Total);
         Assert.Equal(1, usage.Discarded);
         Assert.Equal(0, usage.TooBig);
+        Assert.Equal(0, usage.Deleted);
         var overage = organization.UsageHours.Single();
         Assert.Equal(0, overage.Total);
         Assert.Equal(1, overage.Discarded);
         Assert.Equal(0, overage.TooBig);
+        Assert.Equal(0, overage.Deleted);
 
         project = await _projectRepository.GetByIdAsync(project.Id);
         Assert.NotNull(project);
@@ -270,11 +278,13 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(0, usage.Total);
         Assert.Equal(1, usage.Discarded);
         Assert.Equal(0, usage.TooBig);
+        Assert.Equal(0, usage.Deleted);
 
         overage = project.UsageHours.Single();
         Assert.Equal(0, overage.Total);
         Assert.Equal(1, overage.Discarded);
         Assert.Equal(0, overage.TooBig);
+        Assert.Equal(0, overage.Deleted);
     }
 
     [Fact]
@@ -297,6 +307,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(0, usage.Total);
         Assert.Equal(0, usage.Blocked);
         Assert.Equal(1, usage.TooBig);
+        Assert.Equal(0, usage.Deleted);
 
         project = await _projectRepository.GetByIdAsync(project.Id);
         Assert.NotNull(project);
@@ -305,6 +316,135 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(0, usage.Total);
         Assert.Equal(0, usage.Blocked);
         Assert.Equal(1, usage.TooBig);
+        Assert.Equal(0, usage.Deleted);
+    }
+
+    [Fact]
+    public async Task CanIncrementDeletedAsync()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+
+        await _usageService.IncrementDeletedAsync(organization.Id, project.Id, 5);
+
+        // move clock forward so that pending usages are saved
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+
+        await _usageService.SavePendingUsageAsync();
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.NotNull(organization);
+        Assert.Single(organization.UsageHours);
+        var usage = organization.Usage.Single();
+        Assert.Equal(organization.MaxEventsPerMonth, usage.Limit);
+        Assert.Equal(0, usage.Total);
+        Assert.Equal(0, usage.Blocked);
+        Assert.Equal(0, usage.TooBig);
+        Assert.Equal(0, usage.Discarded);
+        Assert.Equal(5, usage.Deleted);
+        var overage = organization.UsageHours.Single();
+        Assert.Equal(0, overage.Total);
+        Assert.Equal(0, overage.Blocked);
+        Assert.Equal(0, overage.TooBig);
+        Assert.Equal(0, overage.Discarded);
+        Assert.Equal(5, overage.Deleted);
+
+        project = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(project);
+        Assert.Single(project.UsageHours);
+        usage = project.Usage.Single();
+        Assert.Equal(0, usage.Total);
+        Assert.Equal(0, usage.Blocked);
+        Assert.Equal(0, usage.TooBig);
+        Assert.Equal(0, usage.Discarded);
+        Assert.Equal(5, usage.Deleted);
+        overage = project.UsageHours.Single();
+        Assert.Equal(0, overage.Total);
+        Assert.Equal(0, overage.Blocked);
+        Assert.Equal(0, overage.TooBig);
+        Assert.Equal(0, overage.Discarded);
+        Assert.Equal(5, overage.Deleted);
+    }
+
+    [Fact]
+    public async Task CanIncrementDeletedWithoutProjectAsync()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+
+        // Increment deleted at the org level only (simulating bulk delete by org)
+        await _usageService.IncrementDeletedAsync(organization.Id, null, 10);
+
+        // move clock forward so that pending usages are saved
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+
+        await _usageService.SavePendingUsageAsync();
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.NotNull(organization);
+        Assert.Single(organization.UsageHours);
+        var usage = organization.Usage.Single();
+        Assert.Equal(10, usage.Deleted);
+        Assert.Equal(0, usage.Total);
+
+        // Project should not have any usage since we didn't specify project
+        project = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(project);
+        Assert.Empty(project.Usage);
+    }
+
+    [Fact]
+    public async Task DeletedDoesNotAffectEventsLeftAsync()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+
+        int eventsLeftBefore = await _usageService.GetEventsLeftAsync(organization.Id);
+
+        await _usageService.IncrementDeletedAsync(organization.Id, project.Id, 100);
+
+        int eventsLeftAfter = await _usageService.GetEventsLeftAsync(organization.Id);
+        Assert.Equal(eventsLeftBefore, eventsLeftAfter);
+    }
+
+    [Fact]
+    public async Task CanIncrementDeletedMultipleTimesAsync()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+
+        await _usageService.IncrementDeletedAsync(organization.Id, project.Id, 3);
+        await _usageService.IncrementDeletedAsync(organization.Id, project.Id, 7);
+
+        // move clock forward so that pending usages are saved
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+
+        await _usageService.SavePendingUsageAsync();
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.NotNull(organization);
+        var usage = organization.Usage.Single();
+        Assert.Equal(10, usage.Deleted);
+
+        project = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(project);
+        usage = project.Usage.Single();
+        Assert.Equal(10, usage.Deleted);
+    }
+
+    [Fact]
+    public async Task GetUsageAsyncIncludesPendingDeletedAsync()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+
+        await _usageService.IncrementDeletedAsync(organization.Id, project.Id, 5);
+
+        // Before save, GetUsageAsync should still reflect pending deleted counts
+        var usageResponse = await _usageService.GetUsageAsync(organization.Id);
+        Assert.Equal(5, usageResponse.CurrentUsage.Deleted);
+        Assert.Equal(5, usageResponse.CurrentHourUsage.Deleted);
+
+        var projectUsageResponse = await _usageService.GetUsageAsync(organization.Id, project.Id);
+        Assert.Equal(5, projectUsageResponse.CurrentUsage.Deleted);
+        Assert.Equal(5, projectUsageResponse.CurrentHourUsage.Deleted);
     }
 
     [Fact]

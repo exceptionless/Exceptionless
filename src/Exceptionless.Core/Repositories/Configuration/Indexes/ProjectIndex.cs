@@ -51,13 +51,15 @@ internal static class ProjectIndexExtensions
                 .Number(fu => fu.Name(i => i.Blocked))
                 .Number(fu => fu.Name(i => i.Discarded))
                 .Number(fu => fu.Name(i => i.Limit))
-                .Number(fu => fu.Name(i => i.TooBig))))
+                .Number(fu => fu.Name(i => i.TooBig))
+                .Number(fu => fu.Name(i => i.Deleted))))
             .Object<UsageInfo>(ui => ui.Name(o => o.UsageHours.First()).Properties(p => p
                 .Date(fu => fu.Name(i => i.Date))
                 .Number(fu => fu.Name(i => i.Total))
                 .Number(fu => fu.Name(i => i.Blocked))
                 .Number(fu => fu.Name(i => i.Discarded))
                 .Number(fu => fu.Name(i => i.Limit))
-                .Number(fu => fu.Name(i => i.TooBig))));
+                .Number(fu => fu.Name(i => i.TooBig))
+                .Number(fu => fu.Name(i => i.Deleted))));
     }
 }
