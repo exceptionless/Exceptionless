@@ -2,7 +2,7 @@ import type { IFilter } from '$comp/faceted-filter';
 import type { ColumnOrderState, ColumnVisibilityState } from '@tanstack/svelte-table';
 
 import { goto } from '$app/navigation';
-import { deserializeFilters } from '$features/events/components/filters/helpers.svelte';
+import { buildFilterCacheKey, deserializeFilters } from '$features/events/components/filters/helpers.svelte';
 import { organization } from '$features/organizations/context.svelte';
 
 import type { SavedView } from './models';
@@ -162,7 +162,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         if (view.filter_definitions) {
             try {
                 const hydrated = deserializeFilters(view.filter_definitions);
-                options.updateFilterCache(options.filterCacheKey(view.filter ?? null), hydrated);
+                updateSavedViewFilterCache(options, view, hydrated);
             } catch {
                 console.error('Failed to deserialize saved view filter definitions');
             }
@@ -232,7 +232,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         if (view.filter_definitions) {
             try {
                 const hydrated = deserializeFilters(view.filter_definitions);
-                options.updateFilterCache(options.filterCacheKey(view.filter ?? null), hydrated);
+                updateSavedViewFilterCache(options, view, hydrated);
             } catch {
                 console.error('Failed to deserialize saved view filter definitions');
             }
@@ -337,4 +337,17 @@ function normalizeFilterDefinitions(value: null | string | undefined): string {
 
 function supportsSavedQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { saved: null | string | undefined } {
     return Object.prototype.hasOwnProperty.call(queryParams, 'saved');
+}
+
+function updateSavedViewFilterCache(options: UseSavedViewsOptions, view: SavedView, filters: IFilter[]): void {
+    const currentRouteKey = options.filterCacheKey(view.filter ?? null);
+    options.updateFilterCache(currentRouteKey, filters);
+
+    const canonicalHref = savedViewHref(view);
+    const queryIndex = canonicalHref.indexOf('?');
+    const canonicalPath = queryIndex >= 0 ? canonicalHref.slice(0, queryIndex) : canonicalHref;
+    const canonicalRouteKey = buildFilterCacheKey(organization.current, canonicalPath, view.filter ?? null);
+    if (canonicalRouteKey !== currentRouteKey) {
+        options.updateFilterCache(canonicalRouteKey, filters);
+    }
 }

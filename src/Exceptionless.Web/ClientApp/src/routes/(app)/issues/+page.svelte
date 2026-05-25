@@ -15,6 +15,7 @@
     import {
         applyTimeFilter,
         buildFilterCacheKey,
+        deserializeFilters,
         filterCacheVersionNumber,
         filterChanged,
         filterRemoved,
@@ -144,12 +145,23 @@
         { lazy: true }
     );
 
-    let filters = $state(applyTimeFilter(getFiltersFromCache(filterCacheKey(getEffectiveFilter()), getEffectiveFilter()), getQueryTime()));
+    function getCurrentFilters(): FacetedFilter.IFilter[] {
+        const filter = getEffectiveFilter();
+        const savedView = savedViewsState.activeSavedView;
+        if (!page.url.searchParams.has('filter') && savedView?.filter_definitions && filter === (savedView.filter ?? null)) {
+            const hydrated = deserializeFilters(savedView.filter_definitions);
+            updateFilterCache(filterCacheKey(filter), hydrated);
+            return applyTimeFilter(hydrated, getQueryTime());
+        }
+
+        return applyTimeFilter(getFiltersFromCache(filterCacheKey(filter), filter), getQueryTime());
+    }
+
+    let filters = $state(getCurrentFilters());
     watch(
-        [() => page.url.search, () => savedViewsState.activeSavedView, () => filterCacheVersionNumber()],
+        [() => page.url.pathname, () => page.url.search, () => savedViewsState.activeSavedView, () => filterCacheVersionNumber()],
         () => {
-            const filter = getEffectiveFilter();
-            filters = applyTimeFilter(getFiltersFromCache(filterCacheKey(filter), filter), getQueryTime());
+            filters = getCurrentFilters();
         },
         { lazy: true }
     );
