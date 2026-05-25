@@ -158,7 +158,6 @@
         const savedView = savedViewsState.activeSavedView;
         if (!page.url.searchParams.has('filter') && savedView?.filter_definitions && filter === (savedView.filter ?? null)) {
             const hydrated = deserializeFilters(savedView.filter_definitions);
-            updateFilterCache(filterCacheKey(filter), hydrated);
             return applyTimeFilter(hydrated, getQueryTime());
         }
 
