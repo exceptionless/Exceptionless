@@ -50,6 +50,7 @@ Available in `.claude/agents/`. Use `@agent-name` to invoke:
 - `qa`: QA engineer — dogfood via agent-browser, E2E, API smoke tests. Read-only. Tiered by scope: backend=API smoke, frontend=browser dogfood, fullstack=both.
 - `triage`: Issue analyst — 5 Whys for bugs, architecture deep-dives for features/questions, community responses with warmth and depth.
 - `pr-reviewer`: PR gate — security pre-screen, dependency audit, delegates to @reviewer, inline GitHub comments, resolves stale comments, verdict. Drafts first, posts after approval.
+- `openspec`: Lightweight OpenSpec coordinator. Use only for behavior-changing, compatibility-sensitive, security-sensitive, infrastructure, dependency, data/API/WebSocket/job/Elasticsearch/Redis/Docker/deployment, or cross-frontend changes. It reads OpenSpec workflow skills from `.agents/skills/` and creates/updates `openspec/changes/*`.
 
 ## Constraints
 
@@ -65,6 +66,7 @@ Available in `.claude/agents/`. Use `@agent-name` to invoke:
 - **Fix what you find:** If you encounter a broken test, bug, or issue during your work — fix it. Never label something "pre-existing" and move on. Own every problem you touch.
 - **Local testing only:** All testing and dogfooding MUST target localhost. Never test against staging or production unless the user explicitly provides an external URL.
 - **Infrastructure before tests:** Verify infrastructure is healthy before test runs — use `aspire run` or start services via the AppHost. Never skip tests because infrastructure is down.
+- OpenSpec usage: Do not require OpenSpec for typo fixes, formatting, docs-only edits, obvious small bug fixes, mechanical cleanup, or narrow test cleanup. For risky or ambiguous behavior changes, use the `openspec` subagent before implementation and validate with `openspec validate <change-id> --strict --no-interactive`.
 
 ### Branch Management
 

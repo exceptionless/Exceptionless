@@ -187,4 +187,231 @@ public sealed class WebHookControllerTests : IntegrationTestsBase
             })
             .StatusCodeShouldBeNotFound());
     }
+
+    [Fact]
+    public async Task DeleteAsync_ExistingWebHook_ReturnsAccepted()
+    {
+        // Arrange
+        var webHook = await SendRequestAsAsync<WebHook>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("webhooks")
+            .Content(new NewWebHook
+            {
+                EventTypes = [WebHook.KnownEventTypes.NewError],
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                ProjectId = SampleDataService.TEST_PROJECT_ID,
+                Url = "https://example.com/delete-test"
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(webHook);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Delete()
+            .AsTestOrganizationUser()
+            .AppendPaths("webhooks", webHook.Id)
+            .StatusCodeShouldBeAccepted()
+        );
+
+        // Assert
+        var deletedHook = await _webHookRepository.GetByIdAsync(webHook.Id);
+        Assert.Null(deletedHook);
+    }
+
+    [Fact]
+    public Task DeleteAsync_NonExistentWebHook_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .Delete()
+            .AsTestOrganizationUser()
+            .AppendPaths("webhooks", "000000000000000000000000")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public async Task GetAsync_ExistingWebHook_ReturnsWebHook()
+    {
+        // Arrange
+        var createdHook = await SendRequestAsAsync<WebHook>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("webhooks")
+            .Content(new NewWebHook
+            {
+                EventTypes = [WebHook.KnownEventTypes.StackRegression],
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                ProjectId = SampleDataService.TEST_PROJECT_ID,
+                Url = "https://example.com/get-test"
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(createdHook);
+
+        // Act
+        var webHook = await SendRequestAsAsync<WebHook>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("webhooks", createdHook.Id)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(webHook);
+        Assert.Equal(createdHook.Id, webHook.Id);
+        Assert.Equal("https://example.com/get-test", webHook.Url);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, webHook.OrganizationId);
+        Assert.Equal(SampleDataService.TEST_PROJECT_ID, webHook.ProjectId);
+        Assert.Contains(WebHook.KnownEventTypes.StackRegression, webHook.EventTypes);
+    }
+
+    [Fact]
+    public Task GetAsync_NonExistentWebHook_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("webhooks", "000000000000000000000000")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public async Task GetByProjectAsync_ExistingProject_ReturnsWebHooks()
+    {
+        // Arrange
+        var createdHook = await SendRequestAsAsync<WebHook>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("webhooks")
+            .Content(new NewWebHook
+            {
+                EventTypes = [WebHook.KnownEventTypes.NewError],
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                ProjectId = SampleDataService.TEST_PROJECT_ID,
+                Url = "https://example.com/project-list-test"
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(createdHook);
+
+        await RefreshDataAsync();
+
+        // Act
+        var webHooks = await SendRequestAsAsync<List<WebHook>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "webhooks")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(webHooks);
+        Assert.NotEmpty(webHooks);
+        Assert.Contains(webHooks, h => h.Id == createdHook.Id);
+        Assert.All(webHooks, h => Assert.Equal(SampleDataService.TEST_PROJECT_ID, h.ProjectId));
+    }
+
+    [Fact]
+    public Task GetByProjectAsync_InvalidProjectId_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", "000000000000000000000000", "webhooks")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public async Task PostAsync_WithAllEventTypes_CreatesWebHook()
+    {
+        // Arrange
+        var newWebHook = new NewWebHook
+        {
+            EventTypes = [WebHook.KnownEventTypes.NewError, WebHook.KnownEventTypes.CriticalError, WebHook.KnownEventTypes.StackRegression],
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            ProjectId = SampleDataService.TEST_PROJECT_ID,
+            Url = "https://example.com/all-events"
+        };
+
+        // Act
+        var webHook = await SendRequestAsAsync<WebHook>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("webhooks")
+            .Content(newWebHook)
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.NotNull(webHook);
+        Assert.Equal(3, webHook.EventTypes.Length);
+        Assert.Contains(WebHook.KnownEventTypes.NewError, webHook.EventTypes);
+        Assert.Contains(WebHook.KnownEventTypes.CriticalError, webHook.EventTypes);
+        Assert.Contains(WebHook.KnownEventTypes.StackRegression, webHook.EventTypes);
+
+        // Verify persisted
+        var persistedHook = await _webHookRepository.GetByIdAsync(webHook.Id);
+        Assert.NotNull(persistedHook);
+        Assert.Equal(3, persistedHook.EventTypes.Length);
+    }
+
+    [Fact]
+    public async Task UnsubscribeAsync_ExistingZapierHook_RemovesWebHook()
+    {
+        // Arrange - create a zapier hook via subscribe
+        const string zapierUrl = "https://hooks.zapier.com/hooks/unsubtest";
+        var webHook = await SendRequestAsAsync<WebHook>(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("webhooks/subscribe")
+            .Content(new Dictionary<string, string>
+            {
+                { "event", WebHook.KnownEventTypes.NewError },
+                { "target_url", zapierUrl }
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(webHook);
+
+        await RefreshDataAsync();
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AppendPath("webhooks/unsubscribe")
+            .Content(new Dictionary<string, string> { { "target_url", zapierUrl } })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        await RefreshDataAsync();
+        var results = await _webHookRepository.GetByUrlAsync(zapierUrl);
+        Assert.Empty(results.Documents);
+    }
+
+    [Fact]
+    public Task UnsubscribeAsync_NonZapierUrl_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .Post()
+            .AppendPath("webhooks/unsubscribe")
+            .Content(new Dictionary<string, string> { { "target_url", "https://example.com/not-zapier" } })
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public Task UnsubscribeAsync_MissingUrl_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .Post()
+            .AppendPath("webhooks/unsubscribe")
+            .Content(new Dictionary<string, string> { { "other_field", "value" } })
+            .StatusCodeShouldBeNotFound()
+        );
+    }
 }

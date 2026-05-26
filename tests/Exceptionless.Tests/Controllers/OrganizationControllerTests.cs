@@ -1,13 +1,19 @@
+using Exceptionless.Core;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
+using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Models;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
+using Microsoft.Extensions.DependencyInjection;
+using Stripe;
 using Xunit;
+using WebInvoice = Exceptionless.Web.Models.Invoice;
 
 namespace Exceptionless.Tests.Controllers;
 
@@ -18,6 +24,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     private readonly IUserRepository _userRepository;
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
+    private FakeStripeBillingClient StripeBillingClient => (FakeStripeBillingClient)GetService<IStripeBillingClient>();
 
     public OrganizationControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -28,12 +35,122 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         _plans = GetService<BillingPlans>();
     }
 
+    protected override void RegisterServices(IServiceCollection services)
+    {
+        base.RegisterServices(services);
+        services.ReplaceSingleton<IStripeBillingClient, FakeStripeBillingClient>();
+    }
+
+    private async Task WithBillingEnabledAsync(Func<Task> action)
+    {
+        var options = GetService<AppOptions>();
+        string? originalStripeApiKey = options.StripeOptions.StripeApiKey;
+
+        options.StripeOptions.StripeApiKey = "sk_test_local";
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            options.StripeOptions.StripeApiKey = originalStripeApiKey;
+        }
+    }
+
+    private async Task<T> WithBillingEnabledAsync<T>(Func<Task<T>> action)
+    {
+        var options = GetService<AppOptions>();
+        string? originalStripeApiKey = options.StripeOptions.StripeApiKey;
+
+        options.StripeOptions.StripeApiKey = "sk_test_local";
+        try
+        {
+            return await action();
+        }
+        finally
+        {
+            options.StripeOptions.StripeApiKey = originalStripeApiKey;
+        }
+    }
+
     protected override async Task ResetDataAsync()
     {
         await base.ResetDataAsync();
+        StripeBillingClient.Reset();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
     }
+
+    private async Task SetStripeCustomerIdAsync(string organizationId, string stripeCustomerId)
+    {
+        var organization = await _organizationRepository.GetByIdAsync(organizationId);
+        Assert.NotNull(organization);
+
+        organization.StripeCustomerId = stripeCustomerId;
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+    }
+
+    private async Task SetPlanAndStripeCustomerIdAsync(string organizationId, string planId, string stripeCustomerId)
+    {
+        var organization = await _organizationRepository.GetByIdAsync(organizationId);
+        Assert.NotNull(organization);
+
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.FREE_USER_EMAIL);
+        Assert.NotNull(user);
+
+        var plan = _billingManager.GetBillingPlan(planId);
+        Assert.NotNull(plan);
+
+        _billingManager.ApplyBillingPlan(organization, plan, user);
+        organization.StripeCustomerId = stripeCustomerId;
+        organization.CardLast4 = "4242";
+        organization.SubscribeDate = TimeProvider.GetUtcNow().UtcDateTime;
+        organization.BillingStatus = BillingStatus.Active;
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
+    }
+
+    private Stripe.Invoice CreateStripeInvoice(string id, string customerId, DateTime createdUtc)
+    {
+        var periodEndUtc = createdUtc.AddMonths(1);
+        return new Stripe.Invoice
+        {
+            Id = id,
+            CustomerId = customerId,
+            Created = createdUtc,
+            Status = "paid",
+            Total = 1500,
+            Subtotal = 1500,
+            PeriodStart = createdUtc,
+            PeriodEnd = periodEndUtc,
+            Lines = new StripeList<Stripe.InvoiceLineItem>
+            {
+                Data =
+                [
+                    new Stripe.InvoiceLineItem
+                    {
+                        Amount = 1500,
+                        Description = "Small plan",
+                        Period = new InvoiceLineItemPeriod { Start = createdUtc, End = periodEndUtc },
+                        Pricing = new InvoiceLineItemPricing
+                        {
+                            PriceDetails = new InvoiceLineItemPricingPriceDetails { PriceId = _plans.SmallPlan.Id }
+                        }
+                    }
+                ]
+            }
+        };
+    }
+
+    private static Subscription CreateStripeSubscription(string id, string itemId, DateTime? canceledAtUtc = null)
+        => new()
+        {
+            Id = id,
+            CanceledAt = canceledAtUtc,
+            Items = new StripeList<SubscriptionItem>
+            {
+                Data = [new SubscriptionItem { Id = itemId }]
+            }
+        };
 
     [Fact]
     public async Task PostAsync_NewOrganization_MapsToOrganizationAndCreates()
@@ -190,7 +307,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(viewOrg);
-        Assert.IsType<bool>(viewOrg.IsOverMonthlyLimit);
+        Assert.False(viewOrg.IsOverMonthlyLimit);
     }
 
     [Fact]
@@ -427,6 +544,149 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .AsTestOrganizationUser()
             .AppendPaths("organizations", viewOrg.Id)
             .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public async Task AddUserAsync_NewEmail_AddsInvite()
+    {
+        // Arrange
+        const string emailAddress = "New.Member+Invite@localhost";
+
+        // Act
+        var user = await SendRequestAsAsync<User>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "users", emailAddress)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(user);
+        Assert.Equal(emailAddress, user.EmailAddress);
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+
+        var invite = Assert.Single(organization.Invites, i => String.Equals(i.EmailAddress, emailAddress.ToLowerInvariant(), StringComparison.Ordinal));
+        Assert.False(String.IsNullOrEmpty(invite.Token));
+        Assert.True(invite.DateAdded > DateTime.MinValue);
+    }
+
+    [Fact]
+    public async Task AddUserAsync_ExistingInvite_DoesNotDuplicateInvite()
+    {
+        // Arrange
+        const string emailAddress = "pending.member@localhost";
+        const string token = "existing-invite-token";
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.Invites.Add(new Invite
+        {
+            Token = token,
+            EmailAddress = emailAddress,
+            DateAdded = TimeProvider.GetUtcNow().UtcDateTime
+        });
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+
+        // Act
+        var user = await SendRequestAsAsync<User>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "users", emailAddress.ToUpperInvariant())
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(user);
+        Assert.Equal(emailAddress.ToUpperInvariant(), user.EmailAddress);
+
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+
+        var invite = Assert.Single(organization.Invites, i => String.Equals(i.EmailAddress, emailAddress, StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(token, invite.Token);
+    }
+
+    [Fact]
+    public async Task AddUserAsync_ExistingUserWithoutMembership_AddsOrganizationMembership()
+    {
+        // Arrange
+        var existingUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.FREE_USER_EMAIL);
+        Assert.NotNull(existingUser);
+        Assert.DoesNotContain(SampleDataService.TEST_ORG_ID, existingUser.OrganizationIds);
+
+        // Act
+        var user = await SendRequestAsAsync<User>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "users", SampleDataService.FREE_USER_EMAIL)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(user);
+        Assert.Equal(SampleDataService.FREE_USER_EMAIL, user.EmailAddress);
+
+        existingUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.FREE_USER_EMAIL);
+        Assert.NotNull(existingUser);
+        Assert.Contains(SampleDataService.TEST_ORG_ID, existingUser.OrganizationIds);
+        Assert.Contains(SampleDataService.FREE_ORG_ID, existingUser.OrganizationIds);
+    }
+
+    [Fact]
+    public async Task AddUserAsync_ExistingUserWithMembership_DoesNotDuplicateOrganizationMembership()
+    {
+        // Act
+        var user = await SendRequestAsAsync<User>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "users", SampleDataService.TEST_ORG_USER_EMAIL)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(user);
+        Assert.Equal(SampleDataService.TEST_ORG_USER_EMAIL, user.EmailAddress);
+
+        var existingUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(existingUser);
+        Assert.Single(existingUser.OrganizationIds, id => String.Equals(id, SampleDataService.TEST_ORG_ID, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public Task AddUserAsync_UnauthorizedOrganization_ReturnsNotFound()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AsFreeOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "users", "new.member@localhost")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public Task AddUserAsync_NonExistentOrganization_ReturnsNotFound()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("organizations", "000000000000000000000000", "users", "new.member@localhost")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public Task AddUserAsync_PlanLimitReached_ReturnsUpgradeRequired()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .AsFreeOrganizationUser()
+            .Post()
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "users", "new.member@localhost")
+            .StatusCodeShouldBeUpgradeRequired()
         );
     }
 
@@ -702,6 +962,298 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public Task ChangePlanAsync_InvalidPlan_ReturnsValidationError()
+    {
+        return WithBillingEnabledAsync(() =>
+            SendRequestAsync(r => r
+                .AsTestOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest { PlanId = "missing-plan" })
+                .StatusCodeShouldBeUnprocessableEntity()
+            ));
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_SameFreePlan_ReturnsSuccess()
+    {
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest { PlanId = _plans.FreePlan.Id })
+                .StatusCodeShouldBeOk()
+            ));
+
+        Assert.NotNull(result);
+        Assert.True(result.Success);
+        Assert.Contains("already on the free plan", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_LegacyQueryParamsSameFreePlan_ReturnsSuccess()
+    {
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .QueryString("planId", _plans.FreePlan.Id)
+                .StatusCodeShouldBeOk()
+            ));
+
+        Assert.NotNull(result);
+        Assert.True(result.Success);
+        Assert.Contains("already on the free plan", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_PaidPlanWithoutBillingInformation_ReturnsFailure()
+    {
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest { PlanId = _plans.SmallPlan.Id })
+                .StatusCodeShouldBeOk()
+            ));
+
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Equal("Billing information was not set.", result.Message);
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_NewCustomerCreatesStripeCustomerAndSubscription()
+    {
+        // Arrange
+        StripeBillingClient.CustomerToReturn = new Customer { Id = "cus_created" };
+
+        // Act
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest
+                {
+                    PlanId = _plans.SmallPlan.Id,
+                    StripeToken = "tok_visa",
+                    Last4 = "4242",
+                    CouponId = "coupon_10"
+                })
+                .StatusCodeShouldBeOk()
+            ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Success, result.Message);
+        Assert.NotNull(StripeBillingClient.LastCustomerCreateOptions);
+        Assert.Equal("tok_visa", StripeBillingClient.LastCustomerCreateOptions.Source);
+        Assert.Equal(SampleDataService.FREE_USER_EMAIL, StripeBillingClient.LastCustomerCreateOptions.Email);
+
+        var subscription = Assert.Single(StripeBillingClient.CreatedSubscriptionOptions);
+        Assert.Equal("cus_created", subscription.Customer);
+        var item = Assert.Single(subscription.Items);
+        Assert.Equal(_plans.SmallPlan.Id, item.Price);
+        Assert.Equal("coupon_10", Assert.Single(subscription.Discounts).Coupon);
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.Equal("cus_created", organization.StripeCustomerId);
+        Assert.Equal("4242", organization.CardLast4);
+        Assert.Equal(_plans.SmallPlan.Id, organization.PlanId);
+        Assert.Equal(BillingStatus.Active, organization.BillingStatus);
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_ExistingCustomerUpdatesPaymentMethodAndSubscription()
+    {
+        // Arrange
+        var subscribeDate = new DateTime(2026, 5, 22, 14, 30, 0, DateTimeKind.Utc);
+        TimeProvider.SetUtcNow(subscribeDate);
+        await SetStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, "cus_existing");
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_active", "si_active"));
+
+        // Act
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest
+                {
+                    PlanId = _plans.SmallPlan.Id,
+                    StripeToken = "pm_card_visa",
+                    Last4 = "4242",
+                    CouponId = "coupon_10"
+                })
+                .StatusCodeShouldBeOk()
+            ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Success, result.Message);
+
+        var attachedPaymentMethod = Assert.Single(StripeBillingClient.AttachedPaymentMethods);
+        Assert.Equal("pm_card_visa", attachedPaymentMethod.PaymentMethodId);
+        Assert.Equal("cus_existing", attachedPaymentMethod.Options.Customer);
+
+        var updatedCustomer = Assert.Single(StripeBillingClient.UpdatedCustomers);
+        Assert.Equal("cus_existing", updatedCustomer.CustomerId);
+        Assert.Equal(SampleDataService.FREE_USER_EMAIL, updatedCustomer.Options.Email);
+        Assert.Equal("pm_card_visa", updatedCustomer.Options.InvoiceSettings?.DefaultPaymentMethod);
+
+        var updatedSubscription = Assert.Single(StripeBillingClient.UpdatedSubscriptions);
+        Assert.Equal("sub_active", updatedSubscription.SubscriptionId);
+        var item = Assert.Single(updatedSubscription.Options.Items);
+        Assert.Equal("si_active", item.Id);
+        Assert.Equal(_plans.SmallPlan.Id, item.Price);
+        Assert.Equal("coupon_10", Assert.Single(updatedSubscription.Options.Discounts).Coupon);
+        Assert.Empty(StripeBillingClient.CreatedSubscriptionOptions);
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.Equal("4242", organization.CardLast4);
+        Assert.Equal(subscribeDate, organization.SubscribeDate);
+        Assert.Equal(_plans.SmallPlan.Id, organization.PlanId);
+        Assert.Equal(BillingStatus.Active, organization.BillingStatus);
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_FreePlanCancelsActiveStripeSubscriptions()
+    {
+        // Arrange
+        var canceledAtUtc = TimeProvider.GetUtcNow().UtcDateTime;
+        await SetPlanAndStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, _plans.SmallPlan.Id, "cus_existing");
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_active", "si_active"));
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_canceled", "si_canceled", canceledAtUtc: canceledAtUtc));
+
+        // Act
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest { PlanId = _plans.FreePlan.Id })
+                .StatusCodeShouldBeOk()
+            ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Success);
+        Assert.Equal("cus_existing", StripeBillingClient.LastSubscriptionListOptions?.Customer);
+        Assert.Equal("sub_active", Assert.Single(StripeBillingClient.CanceledSubscriptions).SubscriptionId);
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.Equal(_plans.FreePlan.Id, organization.PlanId);
+        Assert.Equal(BillingStatus.Trialing, organization.BillingStatus);
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_StripeBillingClientThrows_ReturnsFailure()
+    {
+        // Arrange
+        StripeBillingClient.CreateCustomerException = new InvalidOperationException("Stripe unavailable");
+
+        // Act
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest
+                {
+                    PlanId = _plans.SmallPlan.Id,
+                    StripeToken = "tok_visa",
+                    Last4 = "4242"
+                })
+                .StatusCodeShouldBeOk()
+            ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Equal("An error occurred while changing plans. Please try again.", result.Message);
+        Assert.Empty(StripeBillingClient.CreatedSubscriptionOptions);
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_NewCustomerSubscriptionFails_PreservesStripeCustomerForRetry()
+    {
+        // Arrange
+        StripeBillingClient.CustomerToReturn = new Customer { Id = "cus_created" };
+        StripeBillingClient.CreateSubscriptionException = new InvalidOperationException("Stripe unavailable");
+
+        // Act
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest
+                {
+                    PlanId = _plans.SmallPlan.Id,
+                    StripeToken = "tok_visa",
+                    Last4 = "4242"
+                })
+                .StatusCodeShouldBeOk()
+            ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Equal("An error occurred while changing plans. Please try again.", result.Message);
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.Equal("cus_created", organization.StripeCustomerId);
+        Assert.Equal("4242", organization.CardLast4);
+        Assert.Equal(_plans.FreePlan.Id, organization.PlanId);
+        Assert.Equal(BillingStatus.Trialing, organization.BillingStatus);
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_ExistingCustomerSubscriptionFails_DoesNotPersistPlanOrCardChange()
+    {
+        // Arrange
+        await SetStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, "cus_existing");
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_active", "si_active"));
+        StripeBillingClient.UpdateSubscriptionException = new InvalidOperationException("Stripe unavailable");
+
+        // Act
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest
+                {
+                    PlanId = _plans.SmallPlan.Id,
+                    StripeToken = "pm_card_visa",
+                    Last4 = "4242"
+                })
+                .StatusCodeShouldBeOk()
+            ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Equal("An error occurred while changing plans. Please try again.", result.Message);
+        Assert.NotEmpty(StripeBillingClient.UpdatedSubscriptions);
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.Equal("cus_existing", organization.StripeCustomerId);
+        Assert.Null(organization.CardLast4);
+        Assert.Equal(_plans.FreePlan.Id, organization.PlanId);
+        Assert.Equal(BillingStatus.Trialing, organization.BillingStatus);
+    }
+
+    [Fact]
     public async Task CanDownGradeAsync_TooManyUsers_ReturnsFailure()
     {
         // Arrange — test org has 2 users (global admin + org user); free plan allows max 1
@@ -731,7 +1283,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         {
             Name = "Extra Project",
             OrganizationId = org.Id,
-            NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks
+            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
         };
         await _projectRepository.AddAsync(extraProject, o => o.ImmediateConsistency());
 
@@ -758,7 +1310,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         _billingManager.ApplyBillingPlan(secondOrg, _plans.Plans.First(p => p.Id == "EX_SMALL"), freeUser);
         secondOrg.StripeCustomerId = "cus_test";
         secondOrg.CardLast4 = "4242";
-        secondOrg.SubscribeDate = DateTime.UtcNow;
+        secondOrg.SubscribeDate = TimeProvider.GetUtcNow().UtcDateTime;
         secondOrg = await _organizationRepository.AddAsync(secondOrg, o => o.ImmediateConsistency());
 
         freeUser.OrganizationIds.Add(secondOrg.Id);
@@ -804,6 +1356,50 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetInvoiceAsync_StripeInvoice_ReturnsMappedInvoice()
+    {
+        // Arrange
+        await SetStripeCustomerIdAsync(SampleDataService.TEST_ORG_ID, "cus_test");
+        var createdUtc = new DateTime(2025, 1, 15, 12, 0, 0, DateTimeKind.Utc);
+        StripeBillingClient.Invoice = CreateStripeInvoice("in_abc1234567", "cus_test", createdUtc);
+
+        // Act
+        var invoice = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<WebInvoice>(r => r
+                .AsTestOrganizationUser()
+                .AppendPaths("organizations", "invoice", "abc1234567")
+                .StatusCodeShouldBeOk()
+            ));
+
+        // Assert
+        Assert.NotNull(invoice);
+        Assert.Equal("in_abc1234567", StripeBillingClient.LastGetInvoiceId);
+        Assert.Equal("abc1234567", invoice.Id);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, invoice.OrganizationId);
+        Assert.Equal(createdUtc, invoice.Date);
+        Assert.True(invoice.Paid);
+        Assert.Equal(15.00m, invoice.Total);
+        var item = Assert.Single(invoice.Items);
+        Assert.Equal(15.00m, item.Amount);
+        Assert.Contains("Small Plan", item.Description, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public Task GetInvoiceAsync_StripeBillingClientThrows_ReturnsNotFound()
+    {
+        // Arrange
+        StripeBillingClient.GetInvoiceException = new InvalidOperationException("Stripe unavailable");
+
+        // Act & Assert
+        return WithBillingEnabledAsync(() =>
+            SendRequestAsync(r => r
+                .AsTestOrganizationUser()
+                .AppendPaths("organizations", "invoice", "abc1234567")
+                .StatusCodeShouldBeNotFound()
+            ));
+    }
+
+    [Fact]
     public Task GetInvoicesAsync_BillingDisabled_ReturnsNotFound()
     {
         // Act & Assert
@@ -812,5 +1408,140 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "invoices")
             .StatusCodeShouldBeNotFound()
         );
+    }
+
+    [Fact]
+    public async Task GetInvoicesAsync_StripeCustomer_ReturnsMappedInvoicesAndPagination()
+    {
+        // Arrange
+        await SetStripeCustomerIdAsync(SampleDataService.TEST_ORG_ID, "cus_test");
+        StripeBillingClient.Invoices.AddRange(
+        [
+            CreateStripeInvoice("in_first", "cus_test", new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            CreateStripeInvoice("in_second", "cus_test", new DateTime(2025, 2, 1, 0, 0, 0, DateTimeKind.Utc)),
+            CreateStripeInvoice("in_third", "cus_test", new DateTime(2025, 3, 1, 0, 0, 0, DateTimeKind.Utc))
+        ]);
+
+        // Act
+        var invoices = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<List<InvoiceGridModel>>(r => r
+                .AsTestOrganizationUser()
+                .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "invoices")
+                .QueryString("before", "before_cursor")
+                .QueryString("after", "in_after_cursor")
+                .QueryString("limit", 2)
+                .StatusCodeShouldBeOk()
+            ));
+
+        // Assert
+        Assert.NotNull(invoices);
+        Assert.Equal(2, invoices.Count);
+        Assert.Equal("first", invoices[0].Id);
+        Assert.Equal("second", invoices[1].Id);
+        Assert.NotNull(StripeBillingClient.LastInvoiceListOptions);
+        Assert.Equal("cus_test", StripeBillingClient.LastInvoiceListOptions.Customer);
+        Assert.Equal(3, StripeBillingClient.LastInvoiceListOptions.Limit);
+        Assert.Equal("in_before_cursor", StripeBillingClient.LastInvoiceListOptions.EndingBefore);
+        Assert.Equal("in_after_cursor", StripeBillingClient.LastInvoiceListOptions.StartingAfter);
+    }
+
+    [Fact]
+    public async Task GetInvoicesAsync_BillingEnabledOrganizationWithoutStripeCustomer_ReturnsEmptyCollection()
+    {
+        var invoices = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<List<InvoiceGridModel>>(r => r
+                .AsFreeOrganizationUser()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "invoices")
+                .StatusCodeShouldBeOk()
+            ));
+
+        Assert.NotNull(invoices);
+        Assert.Empty(invoices);
+    }
+
+    [Fact]
+    public Task GetInvoicesAsync_BillingEnabledNonExistentOrganization_ReturnsNotFound()
+    {
+        return WithBillingEnabledAsync(() =>
+            SendRequestAsync(r => r
+                .AsGlobalAdminUser()
+                .AppendPaths("organizations", "000000000000000000000000", "invoices")
+                .StatusCodeShouldBeNotFound()
+            ));
+    }
+
+    [Fact]
+    public Task PatchAsync_AnonymousUser_ReturnsUnauthorized()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .Patch()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
+            .Content(new NewOrganization { Name = "Unauthorized Update" })
+            .StatusCodeShouldBeUnauthorized()
+        );
+    }
+
+    [Fact]
+    public async Task PatchAsync_EmptyName_ReturnsValidationError()
+    {
+        // Arrange
+        var originalOrg = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(originalOrg);
+        string originalName = originalOrg.Name;
+
+        // Act
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
+            .Content(new NewOrganization { Name = "" })
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert - verify data unchanged
+        var unchangedOrg = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(unchangedOrg);
+        Assert.Equal(originalName, unchangedOrg.Name);
+    }
+
+    [Fact]
+    public Task PatchAsync_NonExistentOrganization_ReturnsNotFound()
+    {
+        // Act & Assert
+        return SendRequestAsync(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", "000000000000000000000000")
+            .Content(new NewOrganization { Name = "Nope" })
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public async Task PatchAsync_UpdateName_ReturnsUpdatedOrganization()
+    {
+        // Arrange
+        var originalOrg = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(originalOrg);
+
+        // Act
+        var updated = await SendRequestAsAsync<ViewOrganization>(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
+            .Content(new NewOrganization { Name = "Updated Acme" })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updated);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, updated.Id);
+        Assert.Equal("Updated Acme", updated.Name);
+        Assert.True(updated.UpdatedUtc >= originalOrg.UpdatedUtc);
+
+        var persisted = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(persisted);
+        Assert.Equal("Updated Acme", persisted.Name);
     }
 }
