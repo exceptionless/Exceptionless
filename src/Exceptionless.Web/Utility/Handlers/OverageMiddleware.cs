@@ -49,15 +49,16 @@ public sealed class OverageMiddleware
         if (String.Equals(context.Request.Method, "POST", StringComparison.OrdinalIgnoreCase) && context.Request.Headers is not null)
         {
             long? contentLength = context.Request.Headers.ContentLength;
-            if (contentLength is null or <= 0)
+            if (contentLength is <= 0)
             {
                 AppDiagnostics.PostsBlocked.Add(1);
                 context.Response.StatusCode = StatusCodes.Status411LengthRequired;
                 return;
             }
 
-            long size = contentLength.Value;
-            AppDiagnostics.PostsSize.Record(size);
+            long size = contentLength.GetValueOrDefault();
+            if (size > 0)
+                AppDiagnostics.PostsSize.Record(size);
 
             if (size > _appOptions.MaximumEventPostSize)
             {
