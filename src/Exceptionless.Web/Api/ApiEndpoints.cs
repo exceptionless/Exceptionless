@@ -8,6 +8,9 @@ public static class ApiEndpoints
     {
         app.MapStatusEndpoints();
         app.MapUtilityEndpoints();
+        app.MapTokenEndpoints();
+        app.MapWebHookEndpoints();
+        app.MapStripeEndpoints();
 
         return app;
     }
