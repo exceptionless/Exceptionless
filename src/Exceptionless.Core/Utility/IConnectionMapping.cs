@@ -19,7 +19,7 @@ public class ConnectionMapping : IConnectionMapping
         if (key is null)
             return Task.CompletedTask;
 
-        _connections.AddOrUpdate(key, [.. new[] { connectionId }], (_, hs) =>
+        _connections.AddOrUpdate(key, [connectionId], (_, hs) =>
         {
             hs.Add(connectionId);
             return hs;
@@ -31,9 +31,15 @@ public class ConnectionMapping : IConnectionMapping
     public Task<ICollection<string>> GetConnectionsAsync(string key)
     {
         if (key is null)
-            return Task.FromResult<ICollection<string>>(new List<string>());
+            return Task.FromResult<ICollection<string>>([]);
 
-        return Task.FromResult<ICollection<string>>(_connections.GetOrAdd(key, []));
+        if (_connections.TryGetValue(key, out var connections))
+        {
+            lock (connections)
+                return Task.FromResult<ICollection<string>>([.. connections]);
+        }
+
+        return Task.FromResult<ICollection<string>>([]);
     }
 
     public Task<int> GetConnectionCountAsync(string key)
@@ -52,21 +58,17 @@ public class ConnectionMapping : IConnectionMapping
         if (key is null)
             return Task.CompletedTask;
 
-        bool shouldRemove = false;
+        HashSet<string>? toRemove = null;
         _connections.AddOrUpdate(key, [], (_, hs) =>
         {
             hs.Remove(connectionId);
             if (hs.Count == 0)
-                shouldRemove = true;
-
+                toRemove = hs;
             return hs;
         });
 
-        if (!shouldRemove)
-            return Task.CompletedTask;
-
-        if (_connections.TryRemove(key, out var connections) && connections.Count > 0)
-            _connections.TryAdd(key, connections);
+        if (toRemove is not null)
+            _connections.TryRemove(new KeyValuePair<string, HashSet<string>>(key, toRemove));
 
         return Task.CompletedTask;
     }

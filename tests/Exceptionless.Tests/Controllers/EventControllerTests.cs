@@ -1942,4 +1942,52 @@ public class EventControllerTests : IntegrationTestsBase
         };
         return JsonSerializer.Serialize(document.RootElement, prettyJsonOptions);
     }
+
+    [Fact]
+    public async Task LegacyPatchAsync_WithPascalCaseLegacyFields_MapsToUserDescription()
+    {
+        // Arrange — submit event with a reference ID matching an objectid format
+        const string referenceId = "507f1f77bcf86cd799439011";
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content($$"""
+                {
+                  "type": "log",
+                  "message": "Legacy patch test",
+                  "reference_id": "{{referenceId}}"
+                }
+                """, "application/json")
+            .StatusCodeShouldBeAccepted()
+        );
+
+        await GetService<EventPostsJob>().RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        // Act — v1 clients sent PascalCase "UserEmail" / "UserDescription"
+        await SendRequestAsync(r => r
+            .Patch()
+            .BaseUri(_server.BaseAddress)
+            .AsTestOrganizationClientUser()
+            .AppendPaths("api", "v1", "error", referenceId)
+            .Content("""
+                {
+                  "UserEmail": "legacy@exceptionless.test",
+                  "UserDescription": "Legacy description"
+                }
+                """, "application/json")
+            .StatusCodeShouldBeAccepted()
+        );
+
+        await GetService<EventUserDescriptionsJob>().RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        // Assert
+        var ev = (await _eventRepository.GetByReferenceIdAsync(SampleDataService.TEST_PROJECT_ID, referenceId)).Documents.Single();
+        var userDescription = ev.GetUserDescription(_jsonSerializerOptions);
+        Assert.NotNull(userDescription);
+        Assert.Equal("legacy@exceptionless.test", userDescription.EmailAddress);
+        Assert.Equal("Legacy description", userDescription.Description);
+    }
 }

@@ -67,7 +67,7 @@ public sealed class MessageBusBroker : IStartupAction
         await GroupSendAsync(userMembershipChanged.OrganizationId, userMembershipChanged);
     }
 
-    private async Task OnEntityChangedAsync(EntityChanged ec, CancellationToken cancellationToken = default)
+    internal async Task OnEntityChangedAsync(EntityChanged ec, CancellationToken cancellationToken = default)
     {
         if (ec is null)
             return;
@@ -100,19 +100,35 @@ public sealed class MessageBusBroker : IStartupAction
         if (TokenTypeName == entityChanged.Type)
         {
             string? userId = entityChanged.Data.GetValueOrDefault<string>(ExtendedEntityChanged.KnownKeys.UserId);
+            bool isAuthToken = entityChanged.Data.GetValueOrDefault<bool>(ExtendedEntityChanged.KnownKeys.IsAuthenticationToken);
+
             if (userId is not null)
             {
-                var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userId);
-                _logger.LogTrace("Sending {TokenTypeName} message for added user: {UserId} (to {UserConnectionCount} connections)", TokenTypeName, userId, userConnectionIds.Count);
+                var userConnectionIds = (await _connectionMapping.GetUserIdConnectionsAsync(userId)).ToList();
+                _logger.LogTrace("Sending {TokenTypeName} message for user: {UserId} (to {UserConnectionCount} connections)", TokenTypeName, userId, userConnectionIds.Count);
                 foreach (string connectionId in userConnectionIds)
                     await TypedSendAsync(connectionId, entityChanged);
+
+                // Auth token removed = logout. Close WebSocket connections so the middleware's
+                // OnDisconnected cleans up org-group memberships once the socket closes.
+                // We also remove the user-id mapping here so it is cleaned up even in test
+                // contexts where no real socket receive loop is running.
+                if (isAuthToken && entityChanged.ChangeType == ChangeType.Removed)
+                {
+                    _logger.LogTrace("Auth token removed for user {UserId}; closing {ConnectionCount} WebSocket connection(s)", userId, userConnectionIds.Count);
+                    foreach (string connectionId in userConnectionIds)
+                    {
+                        await _connectionMapping.UserIdRemoveAsync(userId, connectionId);
+                        await _connectionManager.RemoveWebSocketAsync(connectionId);
+                    }
+                }
 
                 return;
             }
 
-            if (entityChanged.Data.GetValueOrDefault<bool>(ExtendedEntityChanged.KnownKeys.IsAuthenticationToken))
+            if (isAuthToken)
             {
-                _logger.LogTrace("Ignoring {TokenTypeName} Authentication Token message: {UserId}", TokenTypeName, entityChanged.Id);
+                _logger.LogTrace("Ignoring {TokenTypeName} Authentication Token message: {TokenId}", TokenTypeName, entityChanged.Id);
                 return;
             }
 
