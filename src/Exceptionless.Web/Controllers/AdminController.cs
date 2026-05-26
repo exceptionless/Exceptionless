@@ -502,7 +502,6 @@ public class AdminController : ExceptionlessApiController
     }
 
     [HttpPost("notifications/force-refresh")]
-    [Consumes("application/json")]
     public async Task<ActionResult<ReleaseNotification>> ForceRefreshAsync(ForceRefreshRequest? request)
     {
         var notification = await _notificationService.SendReleaseNotificationAsync(request?.Message, critical: true);

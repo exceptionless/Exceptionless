@@ -148,6 +148,19 @@ public class AdminNotificationTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ForceRefresh_WithNoBody_UsesDefaultMessage()
+    {
+        var notification = await SendRequestAsAsync<ReleaseNotification>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("admin/notifications/force-refresh")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(notification);
+        Assert.True(notification.Critical);
+    }
+
+    [Fact]
     public Task ForceRefresh_AsNonAdmin_ReturnsForbidden()
     {
         return SendRequestAsync(r => r
