@@ -443,7 +443,20 @@
     function onIntercomUnreadCountChange(unreadCount: number) {
         intercomUnreadCount = Math.max(0, unreadCount);
     }
+
+    const setupPath = resolve('/(app)/organization/add');
+    const isSetupPage = $derived(page.url.pathname === setupPath);
 </script>
+
+{#snippet setupShell()}
+    <div class="flex h-screen w-full items-center justify-center px-4">
+        <main class="w-full">
+            <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>
+                {@render children()}
+            </div>
+        </main>
+    </div>
+{/snippet}
 
 {#snippet appShell(openChat: () => void)}
     <Navbar openCommand={openCommandPalette}></Navbar>
@@ -508,7 +521,11 @@
         routeKey={page.url.pathname}
     >
         {#snippet children(openChat)}
-            {@render appShell(openChat)}
+            {#if isSetupPage}
+                {@render setupShell()}
+            {:else}
+                {@render appShell(openChat)}
+            {/if}
         {/snippet}
     </IntercomShell>
 

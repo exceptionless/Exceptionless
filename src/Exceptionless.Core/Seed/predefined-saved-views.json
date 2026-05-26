@@ -1,0 +1,141 @@
+[
+    {
+        "key": "events:errors",
+        "name": "Errors",
+        "slug": "errors",
+        "viewType": "events",
+        "filter": "type:error",
+        "time": "[now-7d TO now]",
+        "sort": "-date",
+        "filterDefinitions": [
+            {
+                "type": "date",
+                "term": "date",
+                "value": "[now-7d TO now]"
+            },
+            {
+                "type": "type",
+                "value": ["error"],
+                "hidden": true
+            }
+        ],
+        "columns": {
+            "level": false,
+            "message": false,
+            "name": false,
+            "source": false,
+            "type": false
+        },
+        "showStats": true,
+        "showChart": true
+    },
+    {
+        "key": "events:logs",
+        "name": "Logs",
+        "slug": "logs",
+        "viewType": "events",
+        "filter": "type:log",
+        "time": "[now-7d TO now]",
+        "sort": "-date",
+        "filterDefinitions": [
+            {
+                "type": "date",
+                "term": "date",
+                "value": "[now-7d TO now]"
+            },
+            {
+                "type": "type",
+                "value": ["log"],
+                "hidden": true
+            }
+        ],
+        "columns": {
+            "level": false,
+            "message": false,
+            "name": false,
+            "source": false,
+            "type": false
+        },
+        "showStats": true,
+        "showChart": true
+    },
+    {
+        "key": "issues:most-frequent-404s",
+        "name": "Most Frequent 404s",
+        "slug": "most-frequent-404s",
+        "viewType": "issues",
+        "filter": "(status:open OR status:regressed) type:404",
+        "time": "[now-7d TO now]",
+        "sort": "-events",
+        "filterDefinitions": [
+            {
+                "type": "date",
+                "term": "date",
+                "value": "[now-7d TO now]"
+            },
+            {
+                "type": "status",
+                "value": ["open", "regressed"],
+                "hidden": true
+            },
+            {
+                "type": "type",
+                "value": ["404"],
+                "hidden": true
+            }
+        ],
+        "showStats": true,
+        "showChart": true
+    },
+    {
+        "key": "issues:most-frequent-errors",
+        "name": "Most Frequent Errors",
+        "slug": "most-frequent-errors",
+        "viewType": "issues",
+        "filter": "type:error (status:open OR status:regressed)",
+        "time": "[now-7d TO now]",
+        "sort": "-events",
+        "filterDefinitions": [
+            {
+                "type": "date",
+                "term": "date",
+                "value": "[now-7d TO now]"
+            },
+            {
+                "type": "type",
+                "value": ["error"],
+                "hidden": true
+            },
+            {
+                "type": "status",
+                "value": ["open", "regressed"],
+                "hidden": true
+            }
+        ],
+        "showStats": true,
+        "showChart": true
+    },
+    {
+        "key": "issues:most-used-features",
+        "name": "Most Used Features",
+        "slug": "most-used-features",
+        "viewType": "issues",
+        "filter": "type:usage",
+        "time": "[now-7d TO now]",
+        "sort": "-events",
+        "filterDefinitions": [
+            {
+                "type": "date",
+                "term": "date",
+                "value": "[now-7d TO now]"
+            },
+            {
+                "type": "type",
+                "value": ["usage"],
+                "hidden": true
+            }
+        ],
+        "showStats": true,
+        "showChart": true
+    }
+]

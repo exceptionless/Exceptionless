@@ -3,7 +3,6 @@ import { page } from '$app/state';
 import Usage from '@lucide/svelte/icons/bar-chart';
 import ClientConfig from '@lucide/svelte/icons/braces';
 import Issues from '@lucide/svelte/icons/bug';
-import Configure from '@lucide/svelte/icons/cloud-download';
 import ApiKey from '@lucide/svelte/icons/key';
 import Integration from '@lucide/svelte/icons/plug-2';
 import Settings from '@lucide/svelte/icons/settings';
@@ -44,19 +43,13 @@ export function routes(): NavigationItem[] {
             group: 'Project Settings',
             href: resolve('/(app)/project/[projectId]/configuration-values', { projectId: page.params.projectId }),
             icon: ClientConfig,
-            title: 'Configuration Values'
+            title: 'Configuration'
         },
         {
             group: 'Project Settings',
             href: resolve('/(app)/project/[projectId]/integrations', { projectId: page.params.projectId }),
             icon: Integration,
             title: 'Integrations'
-        },
-        {
-            group: 'Project Settings',
-            href: resolve('/(app)/project/[projectId]/configure', { projectId: page.params.projectId }),
-            icon: Configure,
-            title: 'Configure Client'
         },
         {
             group: 'Project Settings',

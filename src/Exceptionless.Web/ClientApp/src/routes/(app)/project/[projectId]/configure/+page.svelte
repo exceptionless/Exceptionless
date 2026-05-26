@@ -1,6 +1,4 @@
 <script lang="ts">
-    import { goto } from '$app/navigation';
-    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
@@ -9,15 +7,20 @@
     import * as Select from '$comp/ui/select';
     import { Spinner } from '$comp/ui/spinner';
     import { env } from '$env/dynamic/public';
+    import { ProjectFilter } from '$features/events/components/filters';
     import { getIntercom } from '$features/intercom';
     import { openSupportChat } from '$features/intercom/chat';
+    import { organization } from '$features/organizations/context.svelte';
     import { generateSampleData } from '$features/projects/api.svelte';
     import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
     import EnableTokenDialog from '$features/tokens/components/dialogs/enable-token-dialog.svelte';
+    import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import Database from '@lucide/svelte/icons/database';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener } from 'runed';
     import { toast } from 'svelte-sonner';
+
+    import { redirectToEventsWithFilter } from '../../../redirect-to-events.svelte';
 
     // Project ID from route params
     const projectId = $derived(page.params.projectId || '');
@@ -241,9 +244,12 @@ public partial class App : Application {
 }`
     });
 
-    useEventListener(document, 'PersistentEventChanged', async () => {
-        if (queryParams.redirect) {
-            await goto(resolve('/(app)/issues'));
+    useEventListener(document, 'PersistentEventChanged', async (event) => {
+        const message = (event as CustomEvent<WebSocketMessageValue<'PersistentEventChanged'>>).detail;
+
+        if (queryParams.redirect && message.project_id === projectId && message.change_type !== ChangeType.Removed) {
+            toast.success('First event received. Opening Events...');
+            await redirectToEventsWithFilter(organization.current, new ProjectFilter([projectId]));
         }
     });
 
@@ -252,6 +258,10 @@ public partial class App : Application {
 
     function openChat() {
         openSupportChat(intercom);
+    }
+
+    async function goToProjectEvents() {
+        await redirectToEventsWithFilter(organization.current, new ProjectFilter([projectId]));
     }
 </script>
 
@@ -276,6 +286,15 @@ public partial class App : Application {
                 <P
                     >The configuration steps won't work while your project's API key is suspended. Please <A onclick={openChat}>contact support</A> for more information.</P
                 >
+            </NotificationDescription>
+        </Notification>
+    {/if}
+
+    {#if queryParams.redirect}
+        <Notification>
+            <NotificationTitle>Waiting for your first event</NotificationTitle>
+            <NotificationDescription>
+                <P>Send an event from your app. When it arrives, we'll open the project Events page automatically.</P>
             </NotificationDescription>
         </Notification>
     {/if}
@@ -623,7 +642,7 @@ public partial class App : Application {
                 <Database class="mr-2 size-4" aria-hidden="true" /> Generate Sample Data
             {/if}
         </Button>
-        <Button variant="secondary" href={`${resolve('/(app)/issues')}?filter=project:${projectId}`}>Go To Most Frequent</Button>
+        <Button variant="secondary" onclick={goToProjectEvents}>View Events</Button>
     </div>
 
     {#if isTokenDisabled}

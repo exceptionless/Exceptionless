@@ -1,7 +1,7 @@
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery } from '@tanstack/svelte-query';
 
-import type { AdminStats, ElasticsearchInfo, ElasticsearchSnapshotsResponse, MigrationsResponse } from './models';
+import type { AdminStats, ElasticsearchInfo, ElasticsearchSnapshotsResponse, MigrationsResponse, PredefinedSavedViewDefinition } from './models';
 
 export type RunMaintenanceJobParams = {
     name: string;
@@ -74,6 +74,17 @@ export function getMigrationsQuery() {
         },
         queryKey: queryKeys.migrations,
         staleTime: 30 * 1000
+    }));
+}
+
+export function getPredefinedSavedViewsMutation() {
+    return createMutation<string, ProblemDetails, void>(() => ({
+        mutationFn: async () => {
+            const client = useFetchClient();
+            const response = await client.getJSON<PredefinedSavedViewDefinition[]>('saved-views/predefined');
+
+            return JSON.stringify(response.data ?? [], null, 2);
+        }
     }));
 }
 
