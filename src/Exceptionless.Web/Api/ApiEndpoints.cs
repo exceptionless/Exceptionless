@@ -11,6 +11,8 @@ public static class ApiEndpoints
         app.MapTokenEndpoints();
         app.MapWebHookEndpoints();
         app.MapStripeEndpoints();
+        app.MapSavedViewEndpoints();
+        app.MapUserEndpoints();
 
         return app;
     }

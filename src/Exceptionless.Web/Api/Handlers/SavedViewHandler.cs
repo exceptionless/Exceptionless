@@ -4,267 +4,216 @@ using System.Text.RegularExpressions;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Seed;
+using Exceptionless.Web.Api.Messages;
+using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Lock;
 using Foundatio.Repositories;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using HttpResults = Microsoft.AspNetCore.Http.Results;
+using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
-namespace Exceptionless.App.Controllers.API;
+namespace Exceptionless.Web.Api.Handlers;
 
-[Route(API_PREFIX + "/saved-views")]
-[Authorize(Policy = AuthorizationRoles.UserPolicy)]
-public class SavedViewController : RepositoryApiController<ISavedViewRepository, SavedView, ViewSavedView, NewSavedView, UpdateSavedView>
+public class SavedViewHandler(
+    ISavedViewRepository repository,
+    IOrganizationRepository organizationRepository,
+    ILockProvider lockProvider,
+    ApiMapper mapper,
+    IHttpContextAccessor httpContextAccessor)
 {
     private const int MaxViewsPerOrganization = 100;
     private const string PredefinedSavedViewsDataKey = "@@PredefinedSavedViewsVersion";
     private const int PredefinedSavedViewsVersion = 2;
 
-    private readonly IOrganizationRepository _organizationRepository;
-    private readonly ILockProvider _lockProvider;
+    private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
 
-    public SavedViewController(
-        ISavedViewRepository repository,
-        IOrganizationRepository organizationRepository,
-        ILockProvider lockProvider,
-        ApiMapper mapper,
-        IAppQueryValidator validator,
-        TimeProvider timeProvider,
-        ILoggerFactory loggerFactory) : base(repository, mapper, validator, timeProvider, loggerFactory)
+    public async Task<IResult> Handle(GetSavedViewsByOrganization message)
     {
-        _organizationRepository = organizationRepository;
-        _lockProvider = lockProvider;
-    }
+        if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
+            return HttpResults.NotFound();
 
-    protected override SavedView MapToModel(NewSavedView newModel)
-    {
-        var model = _mapper.MapToSavedView(newModel);
-        model.Slug = ToSlug(String.IsNullOrWhiteSpace(model.Slug) ? model.Name : model.Slug);
-        return model;
-    }
+        await EnsurePredefinedSavedViewsCreatedAsync(message.OrganizationId);
 
-    protected override ViewSavedView MapToViewModel(SavedView model)
-    {
-        var viewModel = _mapper.MapToViewSavedView(model);
-        if (String.IsNullOrWhiteSpace(viewModel.Slug))
-            viewModel.Slug = ToFallbackSlug(viewModel.Name, viewModel.Id);
-
-        return viewModel;
-    }
-
-    protected override List<ViewSavedView> MapToViewModels(IEnumerable<SavedView> models) => models.Select(MapToViewModel).ToList();
-
-    /// <summary>
-    /// Get by organization
-    /// </summary>
-    /// <param name="organizationId">The identifier of the organization.</param>
-    /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
-    /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-    /// <response code="404">The organization could not be found.</response>
-    [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/saved-views")]
-    public async Task<ActionResult<IReadOnlyCollection<ViewSavedView>>> GetByOrganizationAsync(string organizationId, int page = 1, int limit = 25)
-    {
-        if (!CanAccessOrganization(organizationId))
-            return NotFound();
-
-        // Reads remain available even when the feature is disabled to preserve access to existing saved views.
-        await EnsurePredefinedSavedViewsCreatedAsync(organizationId);
-
-        page = GetPage(page);
-        limit = GetLimit(limit);
-        var results = await _repository.GetByOrganizationForUserAsync(organizationId, CurrentUser.Id, o => o.PageNumber(page).PageLimit(limit));
+        int page = GetPage(message.Page);
+        int limit = GetLimit(message.Limit);
+        var results = await repository.GetByOrganizationForUserAsync(message.OrganizationId, GetCurrentUserId(), o => o.PageNumber(page).PageLimit(limit));
         AppDiagnostics.SavedViewsSize.Add((int)results.Total);
 
         var viewModels = MapToViewModels(results.Documents);
-        return OkWithResourceLinks(viewModels, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
+        return ApiResults.OkWithResourceLinks(HttpContext, viewModels, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
     }
 
-    /// <summary>
-    /// Get by organization and view
-    /// </summary>
-    /// <param name="organizationId">The identifier of the organization.</param>
-    /// <param name="viewType">The dashboard view type (events, issues, stream).</param>
-    /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
-    /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
-    /// <response code="404">The organization could not be found.</response>
-    [HttpGet("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/saved-views/{viewType}")]
-    public async Task<ActionResult<IReadOnlyCollection<ViewSavedView>>> GetByViewAsync(string organizationId, string viewType, int page = 1, int limit = 25)
+    public async Task<IResult> Handle(GetSavedViewsByView message)
     {
-        if (!CanAccessOrganization(organizationId))
-            return NotFound();
+        if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
+            return HttpResults.NotFound();
 
-        if (!NewSavedView.ValidViewTypes.Contains(viewType))
-            return NotFound();
+        if (!NewSavedView.ValidViewTypes.Contains(message.ViewType))
+            return HttpResults.NotFound();
 
-        // Reads remain available even when the feature is disabled to preserve access to existing saved views.
-        await EnsurePredefinedSavedViewsCreatedAsync(organizationId);
+        await EnsurePredefinedSavedViewsCreatedAsync(message.OrganizationId);
 
-        page = GetPage(page);
-        limit = GetLimit(limit);
-        var results = await _repository.GetByViewForUserAsync(organizationId, viewType, CurrentUser.Id, o => o.PageNumber(page).PageLimit(limit));
+        int page = GetPage(message.Page);
+        int limit = GetLimit(message.Limit);
+        var results = await repository.GetByViewForUserAsync(message.OrganizationId, message.ViewType, GetCurrentUserId(), o => o.PageNumber(page).PageLimit(limit));
         AppDiagnostics.SavedViewsViewTypeSize.Add((int)results.Total);
 
         var viewModels = MapToViewModels(results.Documents);
-        return OkWithResourceLinks(viewModels, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
+        return ApiResults.OkWithResourceLinks(HttpContext, viewModels, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
     }
 
-    /// <summary>
-    /// Get by id
-    /// </summary>
-    /// <param name="id">The identifier of the saved view.</param>
-    /// <response code="404">The saved view could not be found.</response>
-    [HttpGet("{id:objectid}", Name = "GetSavedViewById")]
-    public Task<ActionResult<ViewSavedView>> GetAsync(string id)
+    public async Task<IResult> Handle(GetSavedViewById message)
     {
-        return GetByIdImplAsync(id);
+        var model = await GetModelAsync(message.Id);
+        if (model is null)
+            return HttpResults.NotFound();
+
+        return OkModel(model);
     }
 
-    /// <summary>
-    /// Create
-    /// </summary>
-    /// <param name="organizationId">The identifier of the organization.</param>
-    /// <param name="savedView">The saved view.</param>
-    /// <response code="400">An error occurred while creating the saved view.</response>
-    /// <response code="409">The saved view already exists.</response>
-    [HttpPost("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/saved-views")]
-    [Consumes("application/json")]
-    [ProducesResponseType<ViewSavedView>(StatusCodes.Status201Created)]
-    public async Task<ActionResult<ViewSavedView>> PostAsync(string organizationId, NewSavedView savedView)
+    public async Task<IResult> Handle(CreateSavedView message)
     {
-        if (!IsInOrganization(organizationId))
-            return BadRequest();
+        if (!HttpContext.Request.IsInOrganization(message.OrganizationId))
+            return HttpResults.BadRequest();
 
-        savedView.OrganizationId = organizationId;
+        var savedView = message.SavedView;
+        savedView.OrganizationId = message.OrganizationId;
         if (savedView.IsPrivate is true)
-            savedView.UserId = CurrentUser.Id;
+            savedView.UserId = GetCurrentUserId();
 
         return await PostImplAsync(savedView);
     }
 
-    /// <summary>
-    /// Create or update predefined saved views
-    /// </summary>
-    /// <param name="organizationId">The identifier of the organization.</param>
-    /// <response code="200">The predefined saved views were created or updated.</response>
-    /// <response code="404">The organization could not be found.</response>
-    [HttpPost("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/saved-views/predefined")]
-    public async Task<ActionResult<IReadOnlyCollection<ViewSavedView>>> PostPredefinedAsync(string organizationId)
+    public async Task<IResult> Handle(CreatePredefinedSavedViews message)
     {
-        if (!IsInOrganization(organizationId))
-            return NotFound();
+        if (!HttpContext.Request.IsInOrganization(message.OrganizationId))
+            return HttpResults.NotFound();
 
-        var savedViews = await UpsertPredefinedSavedViewsAsync(organizationId);
-        return Ok(MapToViewModels(savedViews));
+        var savedViews = await UpsertPredefinedSavedViewsAsync(message.OrganizationId);
+        return HttpResults.Ok(MapToViewModels(savedViews));
     }
 
-    /// <summary>
-    /// Get global predefined saved views as seed JSON
-    /// </summary>
-    /// <response code="200">The current predefined saved views.</response>
-    [HttpGet("predefined")]
-    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-    public async Task<ActionResult<IReadOnlyCollection<PredefinedSavedViewDefinition>>> GetPredefinedAsync()
+    public async Task<IResult> Handle(GetPredefinedSavedViews message)
     {
-        return Ok(await GetPredefinedSavedViewsAsync());
+        return HttpResults.Ok(await GetPredefinedSavedViewsAsync());
     }
 
-    /// <summary>
-    /// Save a saved view as a global predefined saved view
-    /// </summary>
-    /// <param name="id">The identifier of the saved view to promote.</param>
-    /// <response code="200">The predefined saved view was created or updated.</response>
-    /// <response code="404">The saved view could not be found.</response>
-    [HttpPost("{id:objectid}/predefined")]
-    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-    public async Task<ActionResult<ViewSavedView>> PostPredefinedSavedViewAsync(string id)
+    public async Task<IResult> Handle(PromoteToPredefinedSavedView message)
     {
-        var source = await _repository.GetByIdAsync(id);
+        var source = await repository.GetByIdAsync(message.Id);
         if (source is null)
-            return NotFound();
+            return HttpResults.NotFound();
 
         var savedView = await UpsertSystemPredefinedSavedViewAsync(source);
-        return Ok(MapToViewModel(savedView));
+        return HttpResults.Ok(MapToViewModel(savedView));
     }
 
-    /// <summary>
-    /// Delete a global predefined saved view
-    /// </summary>
-    /// <param name="id">The identifier of the saved view whose predefined saved view should be deleted.</param>
-    /// <response code="204">The predefined saved view was deleted.</response>
-    /// <response code="404">The saved view could not be found.</response>
-    [HttpDelete("{id:objectid}/predefined")]
-    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-    public async Task<ActionResult> DeletePredefinedSavedViewAsync(string id)
+    public async Task<IResult> Handle(DeletePredefinedSavedView message)
     {
-        var source = await _repository.GetByIdAsync(id);
+        var source = await repository.GetByIdAsync(message.Id);
         if (source is null)
-            return NotFound();
+            return HttpResults.NotFound();
 
         await DeleteSystemPredefinedSavedViewAsync(source);
-        return NoContent();
+        return HttpResults.NoContent();
     }
 
-    /// <summary>
-    /// Update
-    /// </summary>
-    /// <param name="id">The identifier of the saved view.</param>
-    /// <param name="changes">The changes</param>
-    /// <response code="400">An error occurred while updating the saved view.</response>
-    /// <response code="404">The saved view could not be found.</response>
-    [HttpPatch("{id:objectid}")]
-    [HttpPut("{id:objectid}")]
-    [Consumes("application/json")]
-    public Task<ActionResult<ViewSavedView>> PatchAsync(string id, Delta<UpdateSavedView> changes)
+    public async Task<IResult> Handle(UpdateSavedViewMessage message)
     {
-        return PatchImplAsync(id, changes);
+        var original = await GetModelAsync(message.Id, useCache: false);
+        if (original is null)
+            return HttpResults.NotFound();
+
+        if (!message.Changes.GetChangedPropertyNames().Any())
+            return OkModel(original);
+
+        var permission = await CanUpdateAsync(original, message.Changes);
+        if (!permission.Allowed)
+            return PermissionToResult(permission);
+
+        var changedNames = message.Changes.GetChangedPropertyNames();
+        message.Changes.Patch(original);
+
+        if (changedNames.Contains(nameof(UpdateSavedView.Slug)))
+            original.Slug = ToSlug(original.Slug);
+
+        if (String.IsNullOrWhiteSpace(original.Slug))
+            original.Slug = ToFallbackSlug(original.Name, original.Id);
+
+        original.UpdatedByUserId = GetCurrentUserId();
+
+        await repository.SaveAsync(original, o => o.Cache());
+        return OkModel(original);
     }
 
-    /// <summary>
-    /// Remove
-    /// </summary>
-    /// <param name="ids">A comma-delimited list of saved view identifiers.</param>
-    /// <response code="202">Accepted</response>
-    /// <response code="400">One or more validation errors occurred.</response>
-    /// <response code="404">One or more saved views were not found.</response>
-    /// <response code="500">An error occurred while deleting one or more saved views.</response>
-    [HttpDelete("{ids:objectids}")]
-    [ProducesResponseType<WorkInProgressResult>(StatusCodes.Status202Accepted)]
-    public Task<ActionResult<WorkInProgressResult>> DeleteAsync(string ids)
+    public async Task<IResult> Handle(DeleteSavedViews message)
     {
-        return DeleteImplAsync(ids.FromDelimitedString());
+        var items = await GetModelsAsync(message.Ids, useCache: false);
+        if (items.Count == 0)
+            return HttpResults.NotFound();
+
+        var results = new ModelActionResults();
+        results.AddNotFound(message.Ids.Except(items.Select(i => i.Id)));
+
+        var deletableItems = items.ToList();
+        foreach (var model in items)
+        {
+            var permission = CanDelete(model);
+            if (permission.Allowed)
+                continue;
+
+            deletableItems.Remove(model);
+            results.Failure.Add(permission);
+        }
+
+        if (deletableItems.Count == 0)
+            return results.Failure.Count == 1 ? PermissionToResult(results.Failure.First()) : HttpResults.BadRequest(results);
+
+        await repository.RemoveAsync(deletableItems);
+
+        if (results.Failure.Count == 0)
+            return TypedResults.Json(new WorkInProgressResult(), statusCode: StatusCodes.Status202Accepted);
+
+        results.Success.AddRange(deletableItems.Select(i => i.Id));
+        return HttpResults.BadRequest(results);
     }
 
-    protected override async Task<SavedView?> GetModelAsync(string id, bool useCache = true)
+    private async Task<IResult> PostImplAsync(NewSavedView value)
     {
-        if (String.IsNullOrEmpty(id))
-            return null;
+        if (value is null)
+            return HttpResults.BadRequest();
 
-        var model = await _repository.GetByIdAsync(id, o => o.Cache(useCache));
-        if (model is null)
-            return null;
+        var mapped = mapper.MapToSavedView(value);
+        mapped.Slug = ToSlug(String.IsNullOrWhiteSpace(mapped.Slug) ? mapped.Name : mapped.Slug);
 
-        if (!String.IsNullOrEmpty(model.OrganizationId) && !IsInOrganization(model.OrganizationId))
-            return null;
+        if (String.IsNullOrEmpty(mapped.OrganizationId) && HttpContext.Request.GetAssociatedOrganizationIds().Count > 0)
+            mapped.OrganizationId = HttpContext.Request.GetDefaultOrganizationId()!;
 
-        if (model.UserId is not null && model.UserId != CurrentUser.Id && !User.IsInRole(AuthorizationRoles.GlobalAdmin))
-            return null;
+        var permission = await CanAddAsync(mapped);
+        if (!permission.Allowed)
+            return PermissionToResult(permission);
 
-        return model;
+        mapped.CreatedByUserId = GetCurrentUserId();
+        mapped.Version = 1;
+
+        var model = await repository.AddAsync(mapped, o => o.Cache());
+        var viewModel = MapToViewModel(model);
+        return TypedResults.Created($"/api/v2/saved-views/{model.Id}", viewModel);
     }
 
-    protected override async Task<PermissionResult> CanAddAsync(SavedView value)
+    private async Task<PermissionResult> CanAddAsync(SavedView value)
     {
-        if (String.IsNullOrEmpty(value.OrganizationId) || !IsInOrganization(value.OrganizationId))
+        if (String.IsNullOrEmpty(value.OrganizationId) || !HttpContext.Request.IsInOrganization(value.OrganizationId))
             return PermissionResult.Deny;
 
-        var count = await _repository.CountByOrganizationIdAsync(value.OrganizationId);
+        var count = await repository.CountByOrganizationIdAsync(value.OrganizationId);
         if (count >= MaxViewsPerOrganization)
             return PermissionResult.DenyWithMessage($"Organization is limited to {MaxViewsPerOrganization} saved views.");
 
@@ -283,15 +232,17 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         if (await SlugExistsAsync(value.OrganizationId, value.ViewType, value.Slug, null))
             return PermissionResult.DenyWithStatus(StatusCodes.Status409Conflict, $"A saved view with URL name '{value.Slug}' already exists.");
 
-        return await base.CanAddAsync(value);
+        if (!HttpContext.Request.CanAccessOrganization(value.OrganizationId))
+            return PermissionResult.DenyWithMessage("Invalid organization id specified.");
+
+        return PermissionResult.Allow;
     }
 
-    protected override async Task<PermissionResult> CanUpdateAsync(SavedView original, Delta<UpdateSavedView> changes)
+    private async Task<PermissionResult> CanUpdateAsync(SavedView original, Delta<UpdateSavedView> changes)
     {
-        if (original.UserId is not null && original.UserId != CurrentUser.Id && !User.IsInRole(AuthorizationRoles.GlobalAdmin))
+        if (original.UserId is not null && original.UserId != GetCurrentUserId() && !HttpContext.User.IsInRole(AuthorizationRoles.GlobalAdmin))
             return PermissionResult.DenyWithNotFound(original.Id);
 
-        // Delta<T> bypasses IValidatableObject — enforce data-annotation and custom validation manually.
         var changedNames = changes.GetChangedPropertyNames();
 
         if (changedNames.Contains(nameof(UpdateSavedView.Name))
@@ -308,12 +259,12 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "URL name cannot be empty. Use at least one letter or number.");
         }
 
-        var lengthResult = ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Name), 100)
-            ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Slug), 100)
-            ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Filter), 2000)
-            ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Time), 100)
-            ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.Sort), 100)
-            ?? ValidateStringLength<UpdateSavedView>(changes, changedNames, nameof(UpdateSavedView.FilterDefinitions), SavedView.MaxFilterDefinitionsLength);
+        var lengthResult = ValidateStringLength(changes, changedNames, nameof(UpdateSavedView.Name), 100)
+            ?? ValidateStringLength(changes, changedNames, nameof(UpdateSavedView.Slug), 100)
+            ?? ValidateStringLength(changes, changedNames, nameof(UpdateSavedView.Filter), 2000)
+            ?? ValidateStringLength(changes, changedNames, nameof(UpdateSavedView.Time), 100)
+            ?? ValidateStringLength(changes, changedNames, nameof(UpdateSavedView.Sort), 100)
+            ?? ValidateStringLength(changes, changedNames, nameof(UpdateSavedView.FilterDefinitions), SavedView.MaxFilterDefinitionsLength);
         if (lengthResult is not null)
             return lengthResult;
 
@@ -360,10 +311,93 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             }
         }
 
-        return await base.CanUpdateAsync(original, changes);
+        if (!HttpContext.Request.CanAccessOrganization(original.OrganizationId))
+            return PermissionResult.DenyWithMessage("Invalid organization id specified.");
+
+        if (changedNames.Contains("OrganizationId"))
+            return PermissionResult.DenyWithMessage("OrganizationId cannot be modified.");
+
+        return PermissionResult.Allow;
     }
 
-    private static PermissionResult? ValidateStringLength<T>(Delta<T> changes, IEnumerable<string> changedNames, string propertyName, int maxLength) where T : class, new()
+    private PermissionResult CanDelete(SavedView value)
+    {
+        if (value.UserId is not null && value.UserId != GetCurrentUserId() && !HttpContext.User.IsInRole(AuthorizationRoles.GlobalAdmin))
+            return PermissionResult.DenyWithNotFound(value.Id);
+
+        if (!HttpContext.Request.CanAccessOrganization(value.OrganizationId))
+            return PermissionResult.DenyWithNotFound(value.Id);
+
+        return PermissionResult.Allow;
+    }
+
+    private async Task<SavedView?> GetModelAsync(string id, bool useCache = true)
+    {
+        if (String.IsNullOrEmpty(id))
+            return null;
+
+        var model = await repository.GetByIdAsync(id, o => o.Cache(useCache));
+        if (model is null)
+            return null;
+
+        if (!String.IsNullOrEmpty(model.OrganizationId) && !HttpContext.Request.IsInOrganization(model.OrganizationId))
+            return null;
+
+        if (model.UserId is not null && model.UserId != GetCurrentUserId() && !HttpContext.User.IsInRole(AuthorizationRoles.GlobalAdmin))
+            return null;
+
+        return model;
+    }
+
+    private async Task<IReadOnlyCollection<SavedView>> GetModelsAsync(string[] ids, bool useCache = true)
+    {
+        if (ids.Length == 0)
+            return [];
+
+        var models = await repository.GetByIdsAsync(ids, o => o.Cache(useCache));
+        return models.Where(m => HttpContext.Request.CanAccessOrganization(m.OrganizationId)).ToList();
+    }
+
+    private IResult OkModel(SavedView model)
+    {
+        var viewModel = MapToViewModel(model);
+        AfterResultMap([viewModel]);
+        return HttpResults.Ok(viewModel);
+    }
+
+    private ViewSavedView MapToViewModel(SavedView model)
+    {
+        var viewModel = mapper.MapToViewSavedView(model);
+        if (String.IsNullOrWhiteSpace(viewModel.Slug))
+            viewModel.Slug = ToFallbackSlug(viewModel.Name, viewModel.Id);
+
+        return viewModel;
+    }
+
+    private List<ViewSavedView> MapToViewModels(IEnumerable<SavedView> models) => models.Select(MapToViewModel).ToList();
+
+    private string GetCurrentUserId() => HttpContext.Request.GetUser().Id;
+
+    private static void AfterResultMap<TDestination>(ICollection<TDestination> models)
+    {
+        foreach (var model in models.OfType<IData>())
+            model.Data?.RemoveSensitiveData();
+    }
+
+    private static IResult PermissionToResult(PermissionResult permission)
+    {
+        if (permission.StatusCode is StatusCodes.Status422UnprocessableEntity)
+            return TypedResults.ValidationProblem(String.IsNullOrEmpty(permission.Message)
+                ? new Dictionary<string, string[]>()
+                : new Dictionary<string, string[]> { ["general"] = [permission.Message] });
+
+        if (String.IsNullOrEmpty(permission.Message))
+            return TypedResults.Problem(statusCode: permission.StatusCode);
+
+        return TypedResults.Problem(statusCode: permission.StatusCode, title: permission.Message);
+    }
+
+    private static PermissionResult? ValidateStringLength(Delta<UpdateSavedView> changes, IEnumerable<string> changedNames, string propertyName, int maxLength)
     {
         if (changedNames.Contains(propertyName)
             && changes.TryGetPropertyValue(propertyName, out object? value)
@@ -388,41 +422,11 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             .FirstOrDefault();
     }
 
-    protected override Task<SavedView> AddModelAsync(SavedView value)
-    {
-        value.CreatedByUserId = CurrentUser.Id;
-        value.Version = 1;
-
-        return base.AddModelAsync(value);
-    }
-
-    protected override Task<SavedView> UpdateModelAsync(SavedView original, Delta<UpdateSavedView> changes)
-    {
-        var changedNames = changes.GetChangedPropertyNames();
-        changes.Patch(original);
-
-        if (changedNames.Contains(nameof(UpdateSavedView.Slug)))
-            original.Slug = ToSlug(original.Slug);
-
-        if (String.IsNullOrWhiteSpace(original.Slug))
-            original.Slug = ToFallbackSlug(original.Name, original.Id);
-
-        original.UpdatedByUserId = CurrentUser.Id;
-
-        return _repository.SaveAsync(original, o => o.Cache());
-    }
-
-    protected override async Task<PermissionResult> CanDeleteAsync(SavedView value)
-    {
-        if (value.UserId is not null && value.UserId != CurrentUser.Id && !User.IsInRole(AuthorizationRoles.GlobalAdmin))
-            return PermissionResult.DenyWithNotFound(value.Id);
-
-        return await base.CanDeleteAsync(value);
-    }
+    // --- Predefined saved views logic ---
 
     private async Task EnsurePredefinedSavedViewsCreatedAsync(string organizationId)
     {
-        var organization = await _organizationRepository.GetByIdAsync(organizationId);
+        var organization = await organizationRepository.GetByIdAsync(organizationId);
         if (organization is null || HasCreatedPredefinedSavedViews(organization))
             return;
 
@@ -433,9 +437,9 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     {
         List<SavedView> savedViews = [];
 
-        bool lockAcquired = await _lockProvider.TryUsingAsync($"predefined-saved-views:{organizationId}", async () =>
+        bool lockAcquired = await lockProvider.TryUsingAsync($"predefined-saved-views:{organizationId}", async () =>
         {
-            var organization = await _organizationRepository.GetByIdAsync(organizationId);
+            var organization = await organizationRepository.GetByIdAsync(organizationId);
             if (organization is null)
                 return;
 
@@ -448,7 +452,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             savedViews = await UpsertPredefinedSavedViewsForOrganizationAsync(organizationId);
             organization.Data ??= new DataDictionary();
             organization.Data[PredefinedSavedViewsDataKey] = PredefinedSavedViewsVersion.ToString();
-            await _organizationRepository.SaveAsync(organization, o => o.Cache().ImmediateConsistency());
+            await organizationRepository.SaveAsync(organization, o => o.Cache().ImmediateConsistency());
         }, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15));
 
         if (!lockAcquired)
@@ -467,7 +471,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         {
             if (!savedViewsByView.TryGetValue(definition.ViewType, out var existingViews))
             {
-                var results = await _repository.GetByViewAsync(organizationId, definition.ViewType, o => o.PageLimit(1000));
+                var results = await repository.GetByViewAsync(organizationId, definition.ViewType, o => o.PageLimit(1000));
                 existingViews = results.Documents.ToList();
                 savedViewsByView.Add(definition.ViewType, existingViews);
             }
@@ -478,7 +482,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             if (existing is null)
             {
                 var savedView = CreatePredefinedSavedView(organizationId, definition, slug);
-                await _repository.AddAsync(savedView, o => o.Cache().ImmediateConsistency());
+                await repository.AddAsync(savedView, o => o.Cache().ImmediateConsistency());
                 existingViews.Add(savedView);
                 upserted.Add(savedView);
                 continue;
@@ -486,8 +490,8 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 
             if (ApplyPredefinedSavedView(existing, definition, slug))
             {
-                existing.UpdatedByUserId = CurrentUser.Id;
-                await _repository.SaveAsync(existing, o => o.Cache().ImmediateConsistency());
+                existing.UpdatedByUserId = GetCurrentUserId();
+                await repository.SaveAsync(existing, o => o.Cache().ImmediateConsistency());
             }
 
             upserted.Add(existing);
@@ -506,7 +510,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         {
             if (!savedViewsByView.TryGetValue(definition.ViewType, out var existingViews))
             {
-                var results = await _repository.GetByViewAsync(organizationId, definition.ViewType, o => o.PageLimit(1000));
+                var results = await repository.GetByViewAsync(organizationId, definition.ViewType, o => o.PageLimit(1000));
                 existingViews = results.Documents.ToList();
                 savedViewsByView.Add(definition.ViewType, existingViews);
             }
@@ -538,7 +542,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         return new SavedView
         {
             OrganizationId = organizationId,
-            CreatedByUserId = CurrentUser.Id,
+            CreatedByUserId = GetCurrentUserId(),
             PredefinedKey = definition.Key,
             Name = definition.Name,
             Slug = slug,
@@ -585,13 +589,13 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         if (existing is null)
         {
             var savedView = CreateSystemPredefinedSavedView(source, key, slug);
-            await _repository.AddAsync(savedView, o => o.Cache().ImmediateConsistency());
+            await repository.AddAsync(savedView, o => o.Cache().ImmediateConsistency());
             return savedView;
         }
 
         ApplySavedViewConfiguration(existing, source, key, slug);
-        existing.UpdatedByUserId = CurrentUser.Id;
-        await _repository.SaveAsync(existing, o => o.Cache().ImmediateConsistency());
+        existing.UpdatedByUserId = GetCurrentUserId();
+        await repository.SaveAsync(existing, o => o.Cache().ImmediateConsistency());
         return existing;
     }
 
@@ -600,7 +604,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         var savedView = new SavedView
         {
             OrganizationId = PredefinedSavedViewsDataSeed.SystemOrganizationId,
-            CreatedByUserId = CurrentUser.Id,
+            CreatedByUserId = GetCurrentUserId(),
             Version = 1
         };
 
@@ -650,12 +654,12 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
             ?? existingPredefinedViews.FirstOrDefault(view => String.IsNullOrWhiteSpace(view.PredefinedKey) && String.Equals(view.Slug, source.Slug, StringComparison.OrdinalIgnoreCase));
 
         if (existing is not null)
-            await _repository.RemoveAsync(existing.Id, o => o.ImmediateConsistency());
+            await repository.RemoveAsync(existing.Id, o => o.ImmediateConsistency());
     }
 
     private async Task<List<SavedView>> GetSystemPredefinedSavedViewsAsync(string viewType)
     {
-        var results = await _repository.GetByViewAsync(PredefinedSavedViewsDataSeed.SystemOrganizationId, viewType, o => o.PageLimit(1000));
+        var results = await repository.GetByViewAsync(PredefinedSavedViewsDataSeed.SystemOrganizationId, viewType, o => o.PageLimit(1000));
         return results.Documents.Where(view => view.UserId is null).ToList();
     }
 
@@ -770,13 +774,13 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 
     private async Task<bool> SlugExistsAsync(string organizationId, string viewType, string slug, string? excludingId)
     {
-        var results = await _repository.GetByViewForUserAsync(organizationId, viewType, CurrentUser.Id, o => o.PageLimit(1000));
+        var results = await repository.GetByViewForUserAsync(organizationId, viewType, GetCurrentUserId(), o => o.PageLimit(1000));
         return results.Documents.Any(view => view.Id != excludingId && String.Equals(ToFallbackSlug(String.IsNullOrWhiteSpace(view.Slug) ? view.Name : view.Slug, view.Id), slug, StringComparison.OrdinalIgnoreCase));
     }
 
     private async Task<bool> NameExistsAsync(string organizationId, string viewType, string name, string? excludingId)
     {
-        var results = await _repository.GetByViewForUserAsync(organizationId, viewType, CurrentUser.Id, o => o.PageLimit(1000));
+        var results = await repository.GetByViewForUserAsync(organizationId, viewType, GetCurrentUserId(), o => o.PageLimit(1000));
         return results.Documents.Any(view => view.Id != excludingId && String.Equals(view.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
     }
 
@@ -806,4 +810,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         return String.IsNullOrWhiteSpace(id) ? "saved-view" : $"saved-view-{id}";
     }
 
+    private static int GetPage(int page) => page < 1 ? 1 : page;
+    private static int GetLimit(int limit) => limit < 1 ? 10 : limit > 100 ? 100 : limit;
+    private static bool NextPageExceedsSkipLimit(int page, int limit) => (page + 1) * limit >= 1000;
 }
