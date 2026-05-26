@@ -1,11 +1,14 @@
-using Microsoft.AspNetCore.Routing;
+using Exceptionless.Web.Api.Endpoints;
 
 namespace Exceptionless.Web.Api;
 
 public static class ApiEndpoints
 {
-    public static IEndpointRouteBuilder MapApiEndpoints(this IEndpointRouteBuilder endpoints)
+    public static WebApplication MapApiEndpoints(this WebApplication app)
     {
-        return endpoints;
+        app.MapStatusEndpoints();
+        app.MapUtilityEndpoints();
+
+        return app;
     }
 }
