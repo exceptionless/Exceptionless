@@ -34,13 +34,16 @@ public sealed class OverageMiddlewareTests : IntegrationTestsBase
     public async Task Invoke_SuspendedOrganizationUserRequest_ReturnsPaymentRequired()
     {
         // Arrange
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(organization);
         organization.IsSuspended = true;
+        organization.SuspensionCode = SuspensionCode.Billing;
+        organization.SuspensionDate = DateTime.UtcNow;
+        organization.SuspendedByUserId = user.Id;
         await _organizationRepository.SaveAsync(organization);
-
-        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
-        Assert.NotNull(user);
 
         bool nextCalled = false;
         var middleware = CreateMiddleware(context =>
