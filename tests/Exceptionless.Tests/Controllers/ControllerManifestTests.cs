@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Exceptionless.Web.Controllers;
+using Foundatio.Xunit;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
@@ -9,7 +10,7 @@ using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
 
-public sealed class ControllerManifestTests
+public sealed class ControllerManifestTests(ITestOutputHelper output) : TestWithLoggingBase(output)
 {
     [Fact]
     public async Task GetControllerManifest_AllEndpoints_ReturnsExpectedBaseline()
