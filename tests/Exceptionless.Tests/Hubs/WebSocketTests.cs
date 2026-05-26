@@ -30,6 +30,7 @@ public sealed class WebSocketTests : TestWithServices
     {
         // Arrange
         const string userId = "test-user-id";
+        const string organizationId = "test-organization-id";
         var socket1 = new TestWebSocket();
         var socket2 = new TestWebSocket();
         var unrelatedSocket = new TestWebSocket();
@@ -42,6 +43,9 @@ public sealed class WebSocketTests : TestWithServices
         {
             await _connectionMapping.UserIdAddAsync(userId, connectionId1);
             await _connectionMapping.UserIdAddAsync(userId, connectionId2);
+            await _connectionMapping.GroupAddAsync(organizationId, connectionId1);
+            await _connectionMapping.GroupAddAsync(organizationId, connectionId2);
+            await _connectionMapping.GroupAddAsync(organizationId, unrelatedConnectionId);
 
             var entityChanged = new EntityChanged
             {
@@ -49,6 +53,7 @@ public sealed class WebSocketTests : TestWithServices
                 Type = nameof(Token),
                 ChangeType = ChangeType.Removed
             };
+            entityChanged.Data[ExtendedEntityChanged.KnownKeys.OrganizationId] = organizationId;
             entityChanged.Data[ExtendedEntityChanged.KnownKeys.UserId] = userId;
             entityChanged.Data[ExtendedEntityChanged.KnownKeys.IsAuthenticationToken] = true;
 
@@ -67,11 +72,17 @@ public sealed class WebSocketTests : TestWithServices
             // Assert – user-id mapping removed by broker
             var remaining = await _connectionMapping.GetUserIdConnectionsAsync(userId);
             Assert.Empty(remaining);
+            var organizationConnections = await _connectionMapping.GetGroupConnectionsAsync(organizationId);
+            Assert.DoesNotContain(connectionId1, organizationConnections);
+            Assert.DoesNotContain(connectionId2, organizationConnections);
+            Assert.Contains(unrelatedConnectionId, organizationConnections);
+
             var mapping = Assert.IsType<ConnectionMapping>(_connectionMapping);
-            Assert.Equal(0, mapping.TrackedKeyCount);
+            Assert.Equal(1, mapping.TrackedKeyCount);
         }
         finally
         {
+            await _connectionMapping.GroupRemoveAsync(organizationId, unrelatedConnectionId);
             await _connectionManager.RemoveWebSocketAsync(unrelatedConnectionId);
         }
     }
