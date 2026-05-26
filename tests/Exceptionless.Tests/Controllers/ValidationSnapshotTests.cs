@@ -48,7 +48,7 @@ public sealed class ValidationSnapshotTests : IntegrationTestsBase
         );
 
         // Assert
-        await AssertProblemDetailsAsync(response, StatusCodes.Status400BadRequest, expectErrors: true);
+        using var _ = await AssertProblemDetailsAsync(response, StatusCodes.Status400BadRequest, expectErrors: true);
     }
 
     [Fact]

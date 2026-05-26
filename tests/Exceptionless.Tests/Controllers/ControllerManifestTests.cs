@@ -208,7 +208,7 @@ public sealed class ControllerManifestTests
             || attribute is ApiExplorerSettingsAttribute { IgnoreApi: true });
     }
 
-    private sealed class ControllerEndpointManifest
+    private sealed record ControllerEndpointManifest
     {
         public required string Controller { get; init; }
         public required string Action { get; init; }

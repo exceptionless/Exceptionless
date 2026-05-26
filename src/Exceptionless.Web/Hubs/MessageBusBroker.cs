@@ -104,15 +104,10 @@ public sealed class MessageBusBroker : IStartupAction
 
             if (userId is not null)
             {
-                var userConnectionIds = (await _connectionMapping.GetUserIdConnectionsAsync(userId)).ToList();
-                _logger.LogTrace("Sending {TokenTypeName} message for user: {UserId} (to {UserConnectionCount} connections)", TokenTypeName, userId, userConnectionIds.Count);
-                foreach (string connectionId in userConnectionIds)
-                    await TypedSendAsync(connectionId, entityChanged);
+                var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userId);
 
-                // Auth token removed = logout. Close WebSocket connections so the middleware's
-                // OnDisconnected cleans up org-group memberships once the socket closes.
-                // We also remove the user-id mapping here so it is cleaned up even in test
-                // contexts where no real socket receive loop is running.
+                // Auth token removed = logout. Close sockets immediately without sending;
+                // there is no point delivering a message to a connection we are about to tear down.
                 if (isAuthToken && entityChanged.ChangeType == ChangeType.Removed)
                 {
                     _logger.LogTrace("Auth token removed for user {UserId}; closing {ConnectionCount} WebSocket connection(s)", userId, userConnectionIds.Count);
@@ -121,7 +116,12 @@ public sealed class MessageBusBroker : IStartupAction
                         await _connectionMapping.UserIdRemoveAsync(userId, connectionId);
                         await _connectionManager.RemoveWebSocketAsync(connectionId);
                     }
+                    return;
                 }
+
+                _logger.LogTrace("Sending {TokenTypeName} message for user: {UserId} (to {UserConnectionCount} connections)", TokenTypeName, userId, userConnectionIds.Count);
+                foreach (string connectionId in userConnectionIds)
+                    await TypedSendAsync(connectionId, entityChanged);
 
                 return;
             }

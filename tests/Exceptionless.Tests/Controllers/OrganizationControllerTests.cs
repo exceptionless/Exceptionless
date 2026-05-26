@@ -1549,8 +1549,8 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
     public async Task PatchAsync_EmptyJsonBody_ReturnsOriginalOrganizationUnchanged()
     {
         // Arrange
-        var originalOrg = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
-        Assert.NotNull(originalOrg);
+        var originalOrganization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(originalOrganization);
 
         // Act
         var updated = await SendRequestAsAsync<ViewOrganization>(r => r
@@ -1563,7 +1563,7 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(updated);
-        Assert.Equal(originalOrg.Name, updated.Name);
-        Assert.Equal(originalOrg.UpdatedUtc, updated.UpdatedUtc);
+        Assert.Equal(originalOrganization.Name, updated.Name);
+        Assert.Equal(originalOrganization.UpdatedUtc, updated.UpdatedUtc);
     }
 }

@@ -34,10 +34,7 @@ public class ConnectionMapping : IConnectionMapping
             return Task.FromResult<ICollection<string>>([]);
 
         if (_connections.TryGetValue(key, out var connections))
-        {
-            lock (connections)
-                return Task.FromResult<ICollection<string>>([.. connections]);
-        }
+            return Task.FromResult<ICollection<string>>([.. connections]);
 
         return Task.FromResult<ICollection<string>>([]);
     }
