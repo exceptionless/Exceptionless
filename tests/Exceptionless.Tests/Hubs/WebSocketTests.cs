@@ -67,6 +67,8 @@ public sealed class WebSocketTests : TestWithServices
             // Assert – user-id mapping removed by broker
             var remaining = await _connectionMapping.GetUserIdConnectionsAsync(userId);
             Assert.Empty(remaining);
+            var mapping = Assert.IsType<ConnectionMapping>(_connectionMapping);
+            Assert.Equal(0, mapping.TrackedKeyCount);
         }
         finally
         {
@@ -109,4 +111,3 @@ public sealed class WebSocketTests : TestWithServices
         }
     }
 }
-

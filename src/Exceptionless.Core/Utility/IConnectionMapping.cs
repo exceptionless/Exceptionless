@@ -12,20 +12,28 @@ public interface IConnectionMapping
 
 public class ConnectionMapping : IConnectionMapping
 {
-    private readonly ConcurrentDictionary<string, HashSet<string>> _connections = new();
+    private readonly ConcurrentDictionary<string, ConnectionSet> _connections = new();
+
+    internal int TrackedKeyCount => _connections.Count;
 
     public Task AddAsync(string key, string connectionId)
     {
         if (key is null)
             return Task.CompletedTask;
 
-        _connections.AddOrUpdate(key, [connectionId], (_, hs) =>
+        while (true)
         {
-            hs.Add(connectionId);
-            return hs;
-        });
+            var connections = _connections.GetOrAdd(key, _ => new ConnectionSet());
 
-        return Task.CompletedTask;
+            lock (connections.SyncRoot)
+            {
+                if (connections.IsDetachedFromMap)
+                    continue;
+
+                connections.ConnectionIds.Add(connectionId);
+                return Task.CompletedTask;
+            }
+        }
     }
 
     public Task<ICollection<string>> GetConnectionsAsync(string key)
@@ -33,10 +41,16 @@ public class ConnectionMapping : IConnectionMapping
         if (key is null)
             return Task.FromResult<ICollection<string>>([]);
 
-        if (_connections.TryGetValue(key, out var connections))
-            return Task.FromResult<ICollection<string>>([.. connections]);
+        if (!_connections.TryGetValue(key, out var connections))
+            return Task.FromResult<ICollection<string>>([]);
 
-        return Task.FromResult<ICollection<string>>([]);
+        lock (connections.SyncRoot)
+        {
+            if (connections.IsDetachedFromMap)
+                return Task.FromResult<ICollection<string>>([]);
+
+            return Task.FromResult<ICollection<string>>([.. connections.ConnectionIds]);
+        }
     }
 
     public Task<int> GetConnectionCountAsync(string key)
@@ -44,10 +58,13 @@ public class ConnectionMapping : IConnectionMapping
         if (key is null)
             return Task.FromResult(0);
 
-        if (_connections.TryGetValue(key, out var connections))
-            return Task.FromResult(connections.Count);
+        if (!_connections.TryGetValue(key, out var connections))
+            return Task.FromResult(0);
 
-        return Task.FromResult(0);
+        lock (connections.SyncRoot)
+        {
+            return Task.FromResult(connections.IsDetachedFromMap ? 0 : connections.ConnectionIds.Count);
+        }
     }
 
     public Task RemoveAsync(string key, string connectionId)
@@ -55,13 +72,31 @@ public class ConnectionMapping : IConnectionMapping
         if (key is null)
             return Task.CompletedTask;
 
-        _connections.AddOrUpdate(key, [], (_, hs) =>
-        {
-            hs.Remove(connectionId);
-            return hs;
-        });
+        if (!_connections.TryGetValue(key, out var connections))
+            return Task.CompletedTask;
 
-        return Task.CompletedTask;
+        lock (connections.SyncRoot)
+        {
+            if (connections.IsDetachedFromMap)
+                return Task.CompletedTask;
+
+            if (!connections.ConnectionIds.Remove(connectionId))
+                return Task.CompletedTask;
+
+            if (connections.ConnectionIds.Count is not 0)
+                return Task.CompletedTask;
+
+            connections.IsDetachedFromMap = true;
+            _connections.TryRemove(key, out _);
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class ConnectionSet
+    {
+        public object SyncRoot { get; } = new();
+        public HashSet<string> ConnectionIds { get; } = [];
+        public bool IsDetachedFromMap { get; set; }
     }
 }
 
