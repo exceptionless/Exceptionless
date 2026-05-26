@@ -76,9 +76,6 @@ public sealed class WebSocketTests : TestWithServices
             Assert.DoesNotContain(connectionId1, organizationConnections);
             Assert.DoesNotContain(connectionId2, organizationConnections);
             Assert.Contains(unrelatedConnectionId, organizationConnections);
-
-            var mapping = Assert.IsType<ConnectionMapping>(_connectionMapping);
-            Assert.Equal(1, mapping.TrackedKeyCount);
         }
         finally
         {

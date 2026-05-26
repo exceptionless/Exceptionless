@@ -52,7 +52,7 @@ public sealed class OverageMiddlewareTests : IntegrationTestsBase
 
             return Task.CompletedTask;
         });
-        var context = CreateEventPostContext(new ClaimsPrincipal(user.ToIdentity()), SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID, 128);
+        var context = CreateEventPostContext(new ClaimsPrincipal(user.ToIdentity()), 128);
 
         // Act
         await middleware.Invoke(context);
@@ -73,7 +73,7 @@ public sealed class OverageMiddlewareTests : IntegrationTestsBase
 
             return Task.CompletedTask;
         });
-        var context = CreateEventPostContext(CreateTokenPrincipal(SampleDataService.TEST_API_KEY, SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID), SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID);
+        var context = CreateEventPostContext(CreateTokenPrincipal(SampleDataService.TEST_API_KEY, SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID));
 
         // Act
         await middleware.Invoke(context);
@@ -96,8 +96,6 @@ public sealed class OverageMiddlewareTests : IntegrationTestsBase
         });
         var context = CreateEventPostContext(
             CreateTokenPrincipal(SampleDataService.TEST_API_KEY, SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID),
-            SampleDataService.TEST_ORG_ID,
-            SampleDataService.TEST_PROJECT_ID,
             0);
 
         // Act
@@ -121,8 +119,6 @@ public sealed class OverageMiddlewareTests : IntegrationTestsBase
         });
         var context = CreateEventPostContext(
             CreateTokenPrincipal(SampleDataService.TEST_API_KEY, SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID),
-            SampleDataService.TEST_ORG_ID,
-            SampleDataService.TEST_PROJECT_ID,
             GetService<AppOptions>().MaximumEventPostSize + 1);
 
         // Act
@@ -148,8 +144,6 @@ public sealed class OverageMiddlewareTests : IntegrationTestsBase
         });
         var context = CreateEventPostContext(
             CreateTokenPrincipal(SampleDataService.FREE_API_KEY, SampleDataService.FREE_ORG_ID, SampleDataService.FREE_PROJECT_ID),
-            SampleDataService.FREE_ORG_ID,
-            SampleDataService.FREE_PROJECT_ID,
             128);
 
         // Act
@@ -199,8 +193,6 @@ public sealed class OverageMiddlewareTests : IntegrationTestsBase
             });
             var context = CreateEventPostContext(
                 CreateTokenPrincipal(SampleDataService.TEST_API_KEY, SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID),
-                SampleDataService.TEST_ORG_ID,
-                SampleDataService.TEST_PROJECT_ID,
                 128);
 
             // Act
@@ -239,7 +231,7 @@ public sealed class OverageMiddlewareTests : IntegrationTestsBase
         return new ClaimsPrincipal(token.ToIdentity());
     }
 
-    private static DefaultHttpContext CreateEventPostContext(ClaimsPrincipal user, string organizationId, string projectId, long? contentLength = null)
+    private static DefaultHttpContext CreateEventPostContext(ClaimsPrincipal user, long? contentLength = null)
     {
         var context = CreateContext(HttpMethods.Post, "/api/v2/events");
         context.User = user;
