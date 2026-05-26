@@ -80,6 +80,48 @@ public sealed class ThrottlingMiddlewareTests : TestWithServices
         Assert.Equal(2, nextCallCount);
     }
 
+    [Fact]
+    public async Task Invoke_V1ProjectConfigurationPath_DoesNotThrottleRequest()
+    {
+        // Arrange
+        var cache = GetService<ICacheClient>();
+        bool nextCalled = false;
+        var middleware = CreateMiddleware(context =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        }, cache, maxRequests: 0);
+        var context = CreateContext("/api/v1/project/config");
+
+        // Act
+        await middleware.Invoke(context);
+
+        // Assert
+        Assert.True(nextCalled);
+        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Invoke_WebSocketPath_DoesNotThrottleRequest()
+    {
+        // Arrange
+        var cache = GetService<ICacheClient>();
+        bool nextCalled = false;
+        var middleware = CreateMiddleware(context =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        }, cache, maxRequests: 0);
+        var context = CreateContext("/api/v2/push");
+
+        // Act
+        await middleware.Invoke(context);
+
+        // Assert
+        Assert.True(nextCalled);
+        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+    }
+
     private ThrottlingMiddleware CreateMiddleware(RequestDelegate next, ICacheClient cache, long maxRequests)
     {
         return new ThrottlingMiddleware(next, cache, new ThrottlingOptions

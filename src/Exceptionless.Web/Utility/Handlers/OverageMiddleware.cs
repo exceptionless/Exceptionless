@@ -48,14 +48,15 @@ public sealed class OverageMiddleware
         bool tooBig = false;
         if (String.Equals(context.Request.Method, "POST", StringComparison.OrdinalIgnoreCase) && context.Request.Headers is not null)
         {
-            if (context.Request.Headers.ContentLength is <= 0)
+            long? contentLength = context.Request.Headers.ContentLength;
+            if (contentLength is <= 0)
             {
                 AppDiagnostics.PostsBlocked.Add(1);
                 context.Response.StatusCode = StatusCodes.Status411LengthRequired;
                 return;
             }
 
-            long size = context.Request.Headers.ContentLength.GetValueOrDefault();
+            long size = contentLength.GetValueOrDefault();
             if (size > 0)
                 AppDiagnostics.PostsSize.Record(size);
 
@@ -70,7 +71,6 @@ public sealed class OverageMiddleware
                 tooBig = true;
             }
         }
-
 
         // block large submissions, client should break them up or remove some of the data.
         if (tooBig)
@@ -90,9 +90,9 @@ public sealed class OverageMiddleware
             return;
         }
 
-        // if user auth, check to see if the org is suspended
+        // if user auth, check to see if the organization is suspended
         // api tokens are marked as suspended immediately
-        if (context.Request.GetAuthType() == AuthType.User)
+        if (context.Request.GetAuthType() is AuthType.User)
         {
             AppDiagnostics.PostsBlocked.Add(1);
             var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());

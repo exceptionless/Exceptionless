@@ -1544,4 +1544,26 @@ public sealed class OrganizationControllerTests : IntegrationTestsBase
         Assert.NotNull(persisted);
         Assert.Equal("Updated Acme", persisted.Name);
     }
+
+    [Fact]
+    public async Task PatchAsync_EmptyJsonBody_ReturnsOriginalOrganizationUnchanged()
+    {
+        // Arrange
+        var originalOrganization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(originalOrganization);
+
+        // Act
+        var updated = await SendRequestAsAsync<ViewOrganization>(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
+            .Content("{}", "application/json")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updated);
+        Assert.Equal(originalOrganization.Name, updated.Name);
+        Assert.Equal(originalOrganization.UpdatedUtc, updated.UpdatedUtc);
+    }
 }
