@@ -8,6 +8,7 @@ using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
@@ -44,6 +45,7 @@ public class AdminController : ExceptionlessApiController
     private readonly BillingPlans _plans;
     private readonly IMigrationStateRepository _migrationStateRepository;
     private readonly SampleDataService _sampleDataService;
+    private readonly NotificationService _notificationService;
 
     public AdminController(
         ExceptionlessElasticConfiguration configuration,
@@ -61,6 +63,7 @@ public class AdminController : ExceptionlessApiController
         BillingPlans plans,
         IMigrationStateRepository migrationStateRepository,
         SampleDataService sampleDataService,
+        NotificationService notificationService,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory) : base(timeProvider)
     {
@@ -80,6 +83,7 @@ public class AdminController : ExceptionlessApiController
         _plans = plans;
         _migrationStateRepository = migrationStateRepository;
         _sampleDataService = sampleDataService;
+        _notificationService = notificationService;
     }
 
     [HttpGet("settings")]
@@ -455,5 +459,53 @@ public class AdminController : ExceptionlessApiController
 
         await _sampleDataService.EnqueueSampleEventsAsync(eventCount, daysBack);
         return Ok(new { Success = true, Message = $"Enqueued generation of {eventCount} sample events over {daysBack} days. Events will appear shortly." });
+    }
+
+    [HttpGet("notifications")]
+    public async Task<ActionResult<NotificationSettingsResponse>> GetNotificationSettingsAsync()
+    {
+        var notification = await _notificationService.GetSystemNotificationAsync();
+        return Ok(new NotificationSettingsResponse
+        {
+            ConfiguredSystemNotificationMessage = _appOptions.NotificationMessage,
+            SystemNotification = notification
+        });
+    }
+
+    [HttpPut("notifications/system")]
+    [Consumes("application/json")]
+    public async Task<ActionResult<SystemNotification>> SetSystemNotificationAsync(SetSystemNotificationRequest request)
+    {
+        if (String.IsNullOrWhiteSpace(request.Message))
+        {
+            ModelState.AddModelError(nameof(request.Message), "Message cannot be empty.");
+            return ValidationProblem(ModelState);
+        }
+
+        var notification = await _notificationService.SetSystemNotificationAsync(request.Message, request.Publish);
+        return Ok(notification);
+    }
+
+    [HttpDelete("notifications/system")]
+    public async Task<IActionResult> ClearSystemNotificationAsync(bool publish = true)
+    {
+        await _notificationService.ClearSystemNotificationAsync(publish);
+        return Ok();
+    }
+
+    [HttpPost("notifications/release")]
+    [Consumes("application/json")]
+    public async Task<ActionResult<ReleaseNotification>> SendReleaseNotificationAsync(SendReleaseNotificationRequest request)
+    {
+        var notification = await _notificationService.SendReleaseNotificationAsync(request.Message, request.Critical);
+        return Ok(notification);
+    }
+
+    [HttpPost("notifications/force-refresh")]
+    [Consumes("application/json")]
+    public async Task<ActionResult<ReleaseNotification>> ForceRefreshAsync(ForceRefreshRequest? request)
+    {
+        var notification = await _notificationService.SendReleaseNotificationAsync(request?.Message, critical: true);
+        return Ok(notification);
     }
 }

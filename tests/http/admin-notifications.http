@@ -1,0 +1,71 @@
+@url = https://localhost:5100
+@apiUrl = {{url}}/api/v2
+@email = test@exceptionless.io
+@password = tester
+
+### Login
+# @name login
+POST {{url}}/api/v2/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+###
+@token = {{login.response.body.token}}
+
+### Get Notification Settings
+GET {{apiUrl}}/admin/notifications
+Authorization: Bearer {{token}}
+
+### Set System Notification
+PUT {{apiUrl}}/admin/notifications/system
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "message": "System maintenance scheduled for tonight at midnight.",
+  "publish": true
+}
+
+### Clear System Notification
+DELETE {{apiUrl}}/admin/notifications/system?publish=true
+Authorization: Bearer {{token}}
+
+### Send Release Notification
+POST {{apiUrl}}/admin/notifications/release
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "message": "New version 8.0.0 has been released with exciting features!",
+  "critical": false
+}
+
+### Send Critical Release Notification
+POST {{apiUrl}}/admin/notifications/release
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "message": "Critical update available. Please refresh.",
+  "critical": true
+}
+
+### Force Refresh All Clients
+POST {{apiUrl}}/admin/notifications/force-refresh
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "message": "Deploying breaking changes - forcing client refresh."
+}
+
+### Force Refresh (no message)
+POST {{apiUrl}}/admin/notifications/force-refresh
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
