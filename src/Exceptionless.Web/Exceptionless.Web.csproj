@@ -5,6 +5,7 @@
     <DefaultItemExcludes>
       $(DefaultItemExcludes);$(SpaRoot)node_modules\**;$(AngularSpaRoot)node_modules\**;</DefaultItemExcludes>
     <SkipSpaPublish>false</SkipSpaPublish>
+    <OpenApiGenerateDocumentsOnBuild>false</OpenApiGenerateDocumentsOnBuild>
   </PropertyGroup>
   <ItemGroup>
     <Content Remove="Mail\**" />
@@ -17,6 +18,8 @@
     <PackageReference Include="Exceptionless.AspNetCore" Version="6.1.0" />
     <PackageReference Include="Joonasw.AspNetCore.SecurityHeaders" Version="6.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
+    <PackageReference Include="Foundatio.Mediator" Version="1.2.1" />
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Version="10.0.8" PrivateAssets="all" />
     <PackageReference Include="Riok.Mapperly" Version="4.3.1" />
     <PackageReference Include="MiniValidation" Version="0.10.0" />
     <PackageReference Include="NEST.JsonNetSerializer" Version="7.17.5" />

@@ -4,13 +4,14 @@ using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Web;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Xunit;
 
 namespace Exceptionless.Tests;
 
-public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
+public class AppWebHostFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private static int s_counter = -1;
     private static readonly ConcurrentQueue<int> s_pool = new();
@@ -86,21 +87,17 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseEnvironment(Environments.Development);
         builder.UseSolutionRelativeContentRoot("src/Exceptionless.Web", "*.slnx");
-    }
-
-    protected override IHostBuilder CreateHostBuilder()
-    {
-        var config = new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddYamlFile("appsettings.yml", optional: false, reloadOnChange: false)
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["AppScope"] = AppScope
-            })
-            .Build();
-
-        return Web.Program.CreateHostBuilder(config, Environments.Development);
+        builder.ConfigureAppConfiguration((_, config) =>
+        {
+            config.SetBasePath(AppContext.BaseDirectory)
+                .AddYamlFile("appsettings.yml", optional: false, reloadOnChange: false)
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["AppScope"] = AppScope
+                });
+        });
     }
 
     public override ValueTask DisposeAsync()

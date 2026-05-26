@@ -25,7 +25,7 @@ public class Bootstrapper
         if (appOptions.RunJobsInProcess)
             Core.Bootstrapper.AddHostedJobs(services, loggerFactory);
 
-        var logger = loggerFactory.CreateLogger<Startup>();
+        var logger = loggerFactory.CreateLogger<Program>();
         services.AddStartupAction<MessageBusBroker>();
         services.AddStartupAction("Subscribe to Log Work Item Progress", (sp, ct) =>
         {
