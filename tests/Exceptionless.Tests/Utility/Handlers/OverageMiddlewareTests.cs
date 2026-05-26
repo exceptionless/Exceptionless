@@ -46,6 +46,7 @@ public sealed class OverageMiddlewareTests : IntegrationTestsBase
         var middleware = CreateMiddleware(context =>
         {
             nextCalled = true;
+
             return Task.CompletedTask;
         });
         var context = CreateEventPostContext(new ClaimsPrincipal(user.ToIdentity()), SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID, 128);
@@ -66,6 +67,7 @@ public sealed class OverageMiddlewareTests : IntegrationTestsBase
         var middleware = CreateMiddleware(context =>
         {
             nextCalled = true;
+
             return Task.CompletedTask;
         });
         var context = CreateEventPostContext(CreateTokenPrincipal(SampleDataService.TEST_API_KEY, SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID), SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID);
@@ -86,6 +88,7 @@ public sealed class OverageMiddlewareTests : IntegrationTestsBase
         var middleware = CreateMiddleware(context =>
         {
             nextCalled = true;
+
             return Task.CompletedTask;
         });
         var context = CreateEventPostContext(
@@ -112,6 +115,7 @@ public sealed class OverageMiddlewareTests : IntegrationTestsBase
         var middleware = CreateMiddleware(context =>
         {
             nextCalled = true;
+
             return Task.CompletedTask;
         });
         var context = CreateEventPostContext(
@@ -136,6 +140,7 @@ public sealed class OverageMiddlewareTests : IntegrationTestsBase
         var middleware = CreateMiddleware(context =>
         {
             nextCalled = true;
+
             return Task.CompletedTask;
         });
         var context = CreateContext(HttpMethods.Get, "/api/v2/projects");
@@ -161,6 +166,7 @@ public sealed class OverageMiddlewareTests : IntegrationTestsBase
             var middleware = CreateMiddleware(context =>
             {
                 nextCalled = true;
+
                 return Task.CompletedTask;
             });
             var context = CreateEventPostContext(

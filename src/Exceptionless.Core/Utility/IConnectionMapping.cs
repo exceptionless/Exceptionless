@@ -55,17 +55,11 @@ public class ConnectionMapping : IConnectionMapping
         if (key is null)
             return Task.CompletedTask;
 
-        HashSet<string>? toRemove = null;
         _connections.AddOrUpdate(key, [], (_, hs) =>
         {
             hs.Remove(connectionId);
-            if (hs.Count == 0)
-                toRemove = hs;
             return hs;
         });
-
-        if (toRemove is not null)
-            _connections.TryRemove(new KeyValuePair<string, HashSet<string>>(key, toRemove));
 
         return Task.CompletedTask;
     }

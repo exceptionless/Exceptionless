@@ -15,7 +15,7 @@ public sealed class ControllerManifestTests
     public async Task GetControllerManifest_AllEndpoints_ReturnsExpectedBaseline()
     {
         // Arrange
-        string baselinePath = Path.Combine(AppContext.BaseDirectory, "Controllers", "Data", "controller-manifest.json");
+        string baselinePath = Path.Join(AppContext.BaseDirectory, "Controllers", "Data", "controller-manifest.json");
 
         // Act
         string actualJson = BuildManifestJson();
@@ -23,7 +23,10 @@ public sealed class ControllerManifestTests
         // Set UPDATE_SNAPSHOTS=true to regenerate the baseline file.
         if (String.Equals(Environment.GetEnvironmentVariable("UPDATE_SNAPSHOTS"), "true", StringComparison.OrdinalIgnoreCase))
         {
-            await File.WriteAllTextAsync(baselinePath, actualJson, TestContext.Current.CancellationToken);
+            // Write to the source tree so the change produces a real git diff.
+            string sourcePath = Path.GetFullPath(Path.Join(AppContext.BaseDirectory, "..", "..", "..", "Controllers", "Data", "controller-manifest.json"));
+            await File.WriteAllTextAsync(sourcePath, actualJson, TestContext.Current.CancellationToken);
+
             return;
         }
 

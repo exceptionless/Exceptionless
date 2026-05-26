@@ -116,6 +116,7 @@ public sealed class MessageBusBroker : IStartupAction
                         await _connectionMapping.UserIdRemoveAsync(userId, connectionId);
                         await _connectionManager.RemoveWebSocketAsync(connectionId);
                     }
+
                     return;
                 }
 
