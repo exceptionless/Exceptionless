@@ -6,6 +6,10 @@
     import { SuspensionCode } from '$features/organizations/models';
     import { getOrganizationProjectsQuery } from '$features/projects/api.svelte';
     import { getMeQuery } from '$features/users/api.svelte';
+    import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+    import { useEventListener } from 'runed';
+    import { SvelteSet } from 'svelte/reactivity';
+    import { debounce } from 'throttle-debounce';
 
     import FreePlanNotification from './notifications/free-plan-notification.svelte';
     import HourlyOverageNotification from './notifications/hourly-overage-notification.svelte';
@@ -65,7 +69,8 @@
 
     const organization = $derived(organizationQuery.data);
     const projects = $derived((projectsQuery.data?.data ?? []).filter((p) => p.organization_id === currentOrganizationId.current));
-    const projectsNeedingConfig = $derived(projects.filter((p) => p.is_configured === false));
+    let configuredProjectIds = new SvelteSet<string>();
+    const projectsNeedingConfig = $derived(projects.filter((p) => p.is_configured === false && !configuredProjectIds.has(p.id!)));
 
     const suspensionCode: SuspensionCode | undefined = $derived(
         organization?.suspension_code === 'Billing'
@@ -89,6 +94,21 @@
         projectsQuery.isSuccess && !ignoreConfigureProjects && projects.length > 0 && projectsNeedingConfig.length === projects.length
     );
     const requiresPremiumUpgrade = $derived(requiresPremium && !organization?.has_premium_features && !needsProjectConfiguration);
+
+    const refetchConfigurationState = debounce(1500, async () => {
+        await Promise.all([organizationQuery.refetch(), projectsQuery.refetch()]);
+    });
+
+    useEventListener(document, 'PersistentEventChanged', (event) => {
+        const message = (event as CustomEvent<WebSocketMessageValue<'PersistentEventChanged'>>).detail;
+
+        if (message.change_type === ChangeType.Removed || message.organization_id !== currentOrganizationId.current || !message.project_id) {
+            return;
+        }
+
+        configuredProjectIds.add(message.project_id);
+        void refetchConfigurationState();
+    });
 </script>
 
 {#if isImpersonating && organization}

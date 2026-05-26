@@ -14,10 +14,12 @@
     import { toFilter } from '$features/events/components/filters/helpers.svelte';
     import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import { getMeQuery } from '$features/users/api.svelte';
     import GripVertical from '@lucide/svelte/icons/grip-vertical';
     import Pencil from '@lucide/svelte/icons/pencil';
     import Plus from '@lucide/svelte/icons/plus';
     import Save from '@lucide/svelte/icons/save';
+    import ShieldCheck from '@lucide/svelte/icons/shield-check';
     import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import Undo2 from '@lucide/svelte/icons/undo-2';
@@ -26,7 +28,15 @@
 
     import type { NewSavedView, SavedView, UpdateSavedView } from '../models';
 
-    import { deleteSavedView, markSavedViewDeleted, patchSavedView, postSavedView, restoreDeletedSavedView } from '../api.svelte';
+    import {
+        deletePredefinedSavedView,
+        deleteSavedView,
+        markSavedViewDeleted,
+        patchSavedView,
+        postPredefinedSavedView,
+        postSavedView,
+        restoreDeletedSavedView
+    } from '../api.svelte';
     import DeleteViewDialog from './delete-view-dialog.svelte';
     import RenameViewDialog from './rename-view-dialog.svelte';
     import SaveViewDialog from './save-view-dialog.svelte';
@@ -103,6 +113,27 @@
             }
         }
     });
+    const predefinedViewMutation = postPredefinedSavedView({
+        route: {
+            get id() {
+                return predefinedViewTarget?.id;
+            }
+        }
+    });
+    const deletePredefinedViewMutation = deletePredefinedSavedView({
+        route: {
+            get id() {
+                return predefinedViewTarget?.id;
+            }
+        }
+    });
+    const predefinedViewUpdateMutation = patchSavedView({
+        route: {
+            get id() {
+                return predefinedViewTarget?.id;
+            }
+        }
+    });
     const removeMutation = deleteSavedView({
         route: {
             get organizationId() {
@@ -110,8 +141,17 @@
             }
         }
     });
+    const meQuery = getMeQuery();
+    const isGlobalAdmin = $derived(!!meQuery.data?.roles?.includes('global'));
 
-    const saving = $derived(createMutation.isPending || updateMutation.isPending || removeMutation.isPending);
+    const saving = $derived(
+        createMutation.isPending ||
+            updateMutation.isPending ||
+            predefinedViewUpdateMutation.isPending ||
+            predefinedViewMutation.isPending ||
+            deletePredefinedViewMutation.isPending ||
+            removeMutation.isPending
+    );
 
     const currentFilterString = $derived(toFilter(filters.filter((f) => f.type !== 'date')));
 
@@ -139,6 +179,7 @@
     });
 
     const activeView = $derived(activeSavedView);
+    const predefinedViewTarget = $derived(activeView ?? duplicateView);
     const hideableColumns = $derived(table.getAllLeafColumns().filter((column) => column.getCanHide()));
     const reorderableColumns = $derived(table.getAllLeafColumns().filter((column) => column.id !== 'select'));
     const visibleHideableColumnCount = $derived(hideableColumns.filter((column) => column.getIsVisible()).length);
@@ -274,12 +315,8 @@
         }
     }
 
-    async function handleUpdate() {
-        if (!activeView || !organizationId) {
-            return;
-        }
-
-        const body: UpdateSavedView = {
+    function getUpdateBody(): UpdateSavedView {
+        return {
             column_order: getSavedColumnOrder() ?? null,
             columns: columnVisibility,
             filter: currentFilterString || null,
@@ -289,12 +326,46 @@
             sort: sort || null,
             time: time || null
         };
+    }
+
+    async function handleUpdate() {
+        if (!activeView || !organizationId) {
+            return;
+        }
 
         try {
-            await updateMutation.mutateAsync(body);
+            await updateMutation.mutateAsync(getUpdateBody());
             toast.success(`View "${activeView.name}" saved.`);
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
+        }
+    }
+
+    async function handleSavePredefinedView() {
+        if (!predefinedViewTarget || !organizationId) {
+            return;
+        }
+
+        try {
+            await predefinedViewUpdateMutation.mutateAsync(getUpdateBody());
+
+            const result = await predefinedViewMutation.mutateAsync();
+            toast.success(`"${result.name}" is now a predefined saved view.`);
+        } catch (error) {
+            toast.error(getErrorMessage(error, 'Failed to save predefined saved view. Please try again.'));
+        }
+    }
+
+    async function handleDeletePredefinedView() {
+        if (!predefinedViewTarget || !organizationId) {
+            return;
+        }
+
+        try {
+            await deletePredefinedViewMutation.mutateAsync();
+            toast.success(`"${predefinedViewTarget.name}" is no longer a predefined saved view.`);
+        } catch (error) {
+            toast.error(getErrorMessage(error, 'Failed to delete predefined saved view. Please try again.'));
         }
     }
 
@@ -366,6 +437,18 @@
                 <DropdownMenu.Item class="text-destructive" onclick={() => openDeleteDialog(activeView)}>
                     <Trash2 class="mr-2 size-4" aria-hidden="true" />
                     Delete "{activeView.name}"
+                </DropdownMenu.Item>
+            {/if}
+            {#if isGlobalAdmin && predefinedViewTarget}
+                <DropdownMenu.Separator />
+                <DropdownMenu.Label>Predefined Saved Views</DropdownMenu.Label>
+                <DropdownMenu.Item disabled={saving} onclick={handleSavePredefinedView}>
+                    <ShieldCheck class="mr-2 size-4" aria-hidden="true" />
+                    Save Predefined
+                </DropdownMenu.Item>
+                <DropdownMenu.Item class="text-destructive" disabled={saving} onclick={handleDeletePredefinedView}>
+                    <Trash2 class="mr-2 size-4" aria-hidden="true" />
+                    Delete Predefined
                 </DropdownMenu.Item>
             {/if}
         </DropdownMenu.Group>
