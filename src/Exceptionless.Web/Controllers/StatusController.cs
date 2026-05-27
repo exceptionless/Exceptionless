@@ -130,7 +130,7 @@ public class StatusController : ExceptionlessApiController
     public async Task<ActionResult<SystemNotification>> PostSystemNotificationAsync(ValueFromBody<string> message, bool publish = true)
     {
         if (String.IsNullOrWhiteSpace(message?.Value))
-            return NotFound();
+            return BadRequest();
 
         var notification = await _notificationService.SetSystemNotificationAsync(message.Value, publish);
         return Ok(notification);
@@ -149,10 +149,10 @@ public class StatusController : ExceptionlessApiController
     /// </summary>
     [HttpGet("notifications/settings")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-    public async Task<IActionResult> GetNotificationSettingsAsync()
+    public async Task<ActionResult<NotificationSettingsResponse>> GetNotificationSettingsAsync()
     {
         var notification = await _notificationService.GetSystemNotificationAsync();
-        return Ok(new
+        return Ok(new NotificationSettingsResponse
         {
             ConfiguredSystemNotificationMessage = _appOptions.NotificationMessage,
             SystemNotification = notification

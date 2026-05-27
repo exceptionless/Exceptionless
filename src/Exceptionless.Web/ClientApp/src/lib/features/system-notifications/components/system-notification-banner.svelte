@@ -4,6 +4,7 @@
     import { env } from '$env/dynamic/public';
     import { Notification, NotificationDescription } from '$features/shared/components/notification';
     import { getCurrentSystemNotificationQuery } from '$features/system-notifications/api.svelte';
+    import { resolveDisplayMessage } from '$features/system-notifications/resolve-message';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import Info from '@lucide/svelte/icons/info';
 
@@ -14,9 +15,7 @@
 
     const fallbackMessage = $derived(env.PUBLIC_SYSTEM_NOTIFICATION_MESSAGE || null);
     const persistedMessage = $derived(currentNotificationQuery.data?.message || null);
-    const displaySystemMessage = $derived(
-        realtimeSystemMessage !== undefined ? realtimeSystemMessage || fallbackMessage : (persistedMessage ?? fallbackMessage)
-    );
+    const displaySystemMessage = $derived(resolveDisplayMessage(realtimeSystemMessage, persistedMessage, fallbackMessage));
 
     $effect(() => {
         function onSystemNotification(e: Event) {

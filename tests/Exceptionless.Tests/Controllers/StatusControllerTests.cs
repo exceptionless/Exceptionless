@@ -112,14 +112,14 @@ public class StatusControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task PostSystemNotificationAsync_WithEmptyMessage_ReturnsNotFound()
+    public Task PostSystemNotificationAsync_WithEmptyMessage_ReturnsBadRequest()
     {
         return SendRequestAsync(r => r
             .Post()
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
             .Content(new ValueFromBody<string>(String.Empty))
-            .StatusCodeShouldBeNotFound());
+            .StatusCodeShouldBeBadRequest());
     }
 
     [Fact]
@@ -210,8 +210,11 @@ public class StatusControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task ForceRefresh_WithNoBody_UsesDefaultMessage()
+    public async Task ForceRefresh_WithNoBody_ReturnsCriticalNotificationWithNullMessage()
     {
+        // Arrange
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
+
         // Act
         var notification = await SendRequestAsAsync<ReleaseNotification>(r => r
             .Post()
@@ -222,6 +225,8 @@ public class StatusControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(notification);
         Assert.True(notification.Critical);
+        Assert.Null(notification.Message);
+        Assert.True(notification.Date.IsAfterOrEqual(utcNow));
     }
 
     [Fact]
@@ -235,7 +240,7 @@ public class StatusControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task PostSystemNotificationAsync_WithPublishFalse_DoesNotPublish()
+    public async Task PostSystemNotificationAsync_WithPublishFalse_StoresWithoutPublishing()
     {
         // Arrange & Act
         var notification = await SendRequestAsAsync<SystemNotification>(r => r
@@ -246,8 +251,16 @@ public class StatusControllerTests : IntegrationTestsBase
             .Content(new ValueFromBody<string>("Silent notification"))
             .StatusCodeShouldBeOk());
 
-        // Assert
+        // Assert — notification is persisted and returned
         Assert.NotNull(notification);
         Assert.Equal("Silent notification", notification.Message);
+
+        // Verify it was actually persisted to cache
+        var persisted = await SendRequestAsAsync<SystemNotification>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/system")
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(persisted);
+        Assert.Equal("Silent notification", persisted.Message);
     }
 }

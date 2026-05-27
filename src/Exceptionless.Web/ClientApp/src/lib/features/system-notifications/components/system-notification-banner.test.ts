@@ -1,72 +1,53 @@
 import { describe, expect, it } from 'vitest';
 
-// NOTE: Testing the notification-banners component directly is impractical because:
-// 1. It imports from '$env/dynamic/public' which requires SvelteKit runtime
-// 2. The component relies on DOM CustomEvent listeners set up via $effect
-// 3. Mocking the env module requires SvelteKit-specific test setup
-//
-// Instead, we test the core logic that the component depends on:
-// - Event handling behavior
-// - Message resolution logic
+import { resolveDisplayMessage } from '../resolve-message';
 
-describe('notification-banners logic', () => {
-    it('SystemNotification event with message provides the message', () => {
-        const event = new CustomEvent('SystemNotification', {
-            bubbles: true,
-            detail: { date: new Date().toISOString(), message: 'Maintenance tonight' }
+describe('resolveDisplayMessage', () => {
+    describe('when realtime message has not been received (undefined)', () => {
+        it('returns persisted message over fallback', () => {
+            expect(resolveDisplayMessage(undefined, 'Active outage', 'Scheduled maintenance')).toBe('Active outage');
         });
 
-        expect(event.detail.message).toBe('Maintenance tonight');
-    });
-
-    it('SystemNotification event with no message resets to null', () => {
-        const event = new CustomEvent('SystemNotification', {
-            bubbles: true,
-            detail: { date: new Date().toISOString(), message: undefined }
+        it('returns fallback when no persisted message', () => {
+            expect(resolveDisplayMessage(undefined, null, 'Scheduled maintenance')).toBe('Scheduled maintenance');
         });
 
-        const message = event.detail.message || null;
-        expect(message).toBeNull();
+        it('returns null when no persisted or fallback message', () => {
+            expect(resolveDisplayMessage(undefined, null, null)).toBeNull();
+        });
     });
 
-    it('ReleaseNotification with critical=true indicates reload needed', () => {
-        const event = new CustomEvent('ReleaseNotification', {
-            bubbles: true,
-            detail: { critical: true, date: new Date().toISOString(), message: 'Breaking change' }
+    describe('when realtime message is received (string)', () => {
+        it('returns the realtime message', () => {
+            expect(resolveDisplayMessage('Realtime alert', 'Old persisted', 'Fallback')).toBe('Realtime alert');
         });
 
-        // The component calls window.location.reload() when critical is true.
-        // Here we just verify the critical flag is correctly detected.
-        expect(event.detail.critical).toBe(true);
+        it('ignores persisted message', () => {
+            expect(resolveDisplayMessage('New message', 'Stale persisted', null)).toBe('New message');
+        });
     });
 
-    it('ReleaseNotification with critical=false extracts message', () => {
-        const event = new CustomEvent('ReleaseNotification', {
-            bubbles: true,
-            detail: { critical: false, date: new Date().toISOString(), message: 'New version available' }
+    describe('when realtime message is cleared (null)', () => {
+        it('falls back to fallback message', () => {
+            expect(resolveDisplayMessage(null, 'Persisted', 'Fallback')).toBe('Fallback');
         });
 
-        let releaseMessage: null | string = null;
-        if (!event.detail.critical) {
-            releaseMessage = event.detail.message || null;
-        }
-
-        expect(releaseMessage).toBe('New version available');
+        it('returns null when no fallback configured', () => {
+            expect(resolveDisplayMessage(null, 'Persisted', null)).toBeNull();
+        });
     });
 
-    it('fallback message used when no persisted system message', () => {
-        const systemMessage: null | string = null;
-        const fallbackMessage = 'Scheduled maintenance';
+    describe('edge cases', () => {
+        it('empty string realtime falls through to fallback', () => {
+            expect(resolveDisplayMessage('', null, 'Fallback')).toBe('Fallback');
+        });
 
-        const displayMessage = systemMessage ?? fallbackMessage;
-        expect(displayMessage).toBe('Scheduled maintenance');
-    });
+        it('empty string persisted falls through to fallback', () => {
+            expect(resolveDisplayMessage(undefined, '', 'Fallback')).toBe('Fallback');
+        });
 
-    it('persisted system message takes precedence over fallback', () => {
-        const systemMessage = 'Active outage';
-        const fallbackMessage = 'Scheduled maintenance';
-
-        const displayMessage = systemMessage ?? fallbackMessage;
-        expect(displayMessage).toBe('Active outage');
+        it('all empty/null returns null', () => {
+            expect(resolveDisplayMessage(undefined, null, null)).toBeNull();
+        });
     });
 });

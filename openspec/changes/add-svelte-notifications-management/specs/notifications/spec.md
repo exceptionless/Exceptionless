@@ -1,68 +1,77 @@
 # Spec: Notifications
 
-## ADDED: Admin notification management endpoints
+## ADDED: StatusController notification management endpoints
 
 ### Requirement: Admin can read notification settings
 
 Given an authenticated global admin user
-When they send `GET /api/v2/admin/notifications`
-Then the response is 200 with:
-- `configured_message`: the `AppOptions.NotificationMessage` value (may be null)
+When they send `GET /api/v2/notifications/settings`
+Then the response is 200 with a `NotificationSettingsResponse`:
+- `configured_system_notification_message`: the `AppOptions.NotificationMessage` value (may be null)
 - `system_notification`: the currently cached `SystemNotification` (may be null)
 
 ### Requirement: Non-admin cannot access admin notification endpoints
 
 Given an authenticated non-admin user
-When they send any request to `/api/v2/admin/notifications/*`
+When they send any request to `POST/DELETE /api/v2/notifications/*` or `GET /api/v2/notifications/settings`
 Then the response is 403 Forbidden.
 
 ### Requirement: Admin can set a system notification
 
 Given an authenticated global admin user
-When they send `PUT /api/v2/admin/notifications/system` with body `{ "message": "Maintenance tonight" }`
+When they send `POST /api/v2/notifications/system` with body `{ "value": "Maintenance tonight" }`
 Then:
 - The system notification is stored in cache key `system-notification`
-- A `SystemNotification` message is published to the message bus
+- A `SystemNotification` message is published to the message bus (when `publish=true`, the default)
 - The response is 200 with the `SystemNotification` object
 
 #### Scenario: Empty message is rejected
 
 Given an authenticated global admin user
-When they send `PUT /api/v2/admin/notifications/system` with body `{ "message": "" }`
+When they send `POST /api/v2/notifications/system` with body `{ "value": "" }`
 Then the response is 400 Bad Request.
+
+#### Scenario: Publish suppression
+
+Given an authenticated global admin user
+When they send `POST /api/v2/notifications/system?publish=false` with body `{ "value": "Silent" }`
+Then:
+- The system notification is stored in cache
+- No message is published to the message bus
+- The response is 200 with the `SystemNotification` object
 
 ### Requirement: Admin can clear a system notification
 
 Given an authenticated global admin user
-When they send `DELETE /api/v2/admin/notifications/system`
+When they send `DELETE /api/v2/notifications/system`
 Then:
 - The `system-notification` cache key is removed
-- A blank `SystemNotification` is published to the message bus
-- The response is 204 No Content
+- A blank `SystemNotification` is published to the message bus (when `publish=true`, the default)
+- The response is 200
 
 #### Scenario: Clear without publish
 
 Given an authenticated global admin user
-When they send `DELETE /api/v2/admin/notifications/system?publish=false`
+When they send `DELETE /api/v2/notifications/system?publish=false`
 Then:
 - The `system-notification` cache key is removed
 - No message is published to the message bus
-- The response is 204 No Content
+- The response is 200
 
 ### Requirement: Admin can send a release notification
 
 Given an authenticated global admin user
-When they send `POST /api/v2/admin/notifications/release` with body `{ "message": "v8.0 released", "critical": false }`
+When they send `POST /api/v2/notifications/release` with body `{ "value": "v8.0 released" }` and optional `?critical=false`
 Then:
-- A `ReleaseNotification` is published to the message bus with `critical=false`
+- A `ReleaseNotification` is published to the message bus
 - The response is 200 with the `ReleaseNotification` object
 
 ### Requirement: Admin can force-refresh all clients
 
 Given an authenticated global admin user
-When they send `POST /api/v2/admin/notifications/force-refresh`
+When they send `POST /api/v2/notifications/force-refresh` with optional body `{ "value": "reason" }`
 Then:
-- A `ReleaseNotification` is published with `critical=true` and no message
+- A `ReleaseNotification` is published with `critical=true` and optional message
 - The response is 200 with the `ReleaseNotification` object
 
 ## ADDED: Svelte notification banners (Svelte UI only)
@@ -97,7 +106,7 @@ Then the system notification banner updates to show the new message.
 
 Given a user has the Svelte app open with a system notification banner visible
 When a `SystemNotification` WebSocket message is received with an empty/null message
-Then the system notification banner is hidden.
+Then the system notification banner is hidden (falls back to env var if configured).
 
 ### Requirement: Release notification banner displays on WebSocket message
 
@@ -142,27 +151,15 @@ Given an authenticated non-admin user
 When they view the system navigation
 Then the "Notifications" link is not visible.
 
-## MODIFIED: StatusController notification endpoints preserved
-
-### Requirement: Legacy notification endpoints continue to work unchanged
-
-Given the existing endpoints:
-- `GET /api/v2/notifications/system`
-- `POST /api/v2/notifications/system`
-- `DELETE /api/v2/notifications/system`
-- `POST /api/v2/notifications/release`
-
-When any client calls these endpoints
-Then behavior is identical to current implementation (same auth, same cache key, same publish).
-
 ## HTTP test file updates
 
-### Requirement: tests/http files updated for new admin endpoints
+### Requirement: tests/http files updated for notification endpoints
 
-Given the new admin notification endpoints are added
-Then `tests/http/admin.http` (or equivalent) includes sample requests for:
-- GET admin/notifications
-- PUT admin/notifications/system
-- DELETE admin/notifications/system
-- POST admin/notifications/release
-- POST admin/notifications/force-refresh
+Given the notification endpoints exist in StatusController
+Then `tests/http/status.http` includes sample requests for:
+- GET notifications/settings
+- POST notifications/system
+- DELETE notifications/system
+- POST notifications/release
+- POST notifications/force-refresh
+
