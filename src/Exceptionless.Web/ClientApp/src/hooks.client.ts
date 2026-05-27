@@ -1,29 +1,85 @@
-import type { ServerInit } from '@sveltejs/kit';
+import type { HandleClientError, ServerInit } from '@sveltejs/kit';
 
+import { dev } from '$app/environment';
+import { page } from '$app/state';
 import { env } from '$env/dynamic/public';
-import { Exceptionless, toError } from '@exceptionless/browser';
+import { normalizePath, normalizeRouteId } from '$lib/telemetry';
+import { Exceptionless, guid, toError } from '@exceptionless/browser';
+import { useMiddleware } from '@exceptionless/fetchclient';
 
-// If the PUBLIC_BASE_URL is set in local storage, we will use that instead of the one from the environment variables.
-// This allows you to target other environments from your browser.
 const PUBLIC_BASE_URL = localStorage?.getItem('PUBLIC_BASE_URL');
 if (PUBLIC_BASE_URL) {
     env.PUBLIC_BASE_URL = PUBLIC_BASE_URL;
 }
 
 export const init: ServerInit = async () => {
+    if (!env.PUBLIC_EXCEPTIONLESS_API_KEY) {
+        return;
+    }
+
     await Exceptionless.startup((c) => {
         c.apiKey = env.PUBLIC_EXCEPTIONLESS_API_KEY;
         c.serverUrl = env.PUBLIC_EXCEPTIONLESS_SERVER_URL || window.location.origin;
-
         c.defaultTags.push('UI', 'Svelte');
-        c.settings['@@log:*'] = 'debug';
+
+        if (env.PUBLIC_APP_VERSION) {
+            c.version = env.PUBLIC_APP_VERSION;
+        }
+
+        if (dev) {
+            c.settings['@@log:*'] = 'debug';
+        }
+
+        c.useSessions();
+
+        c.addPlugin('route-context', 10, async (ctx) => {
+            if (ctx.event.type !== 'usage') {
+                ctx.event.data = ctx.event.data ?? {};
+                ctx.event.data['@route'] = normalizeRouteId(page.route.id);
+            }
+        });
+    });
+
+    useMiddleware(async (ctx, next) => {
+        await next();
+
+        const status = ctx.response?.status;
+        if (!status || (status < 500 && status !== 429)) {
+            return;
+        }
+
+        const rawUrl = ctx.request?.url ?? '';
+        if (rawUrl.includes('/api/v2/events') || rawUrl.includes('/api/v2/configuration')) {
+            return;
+        }
+
+        const method = ctx.request?.method ?? 'UNKNOWN';
+        const pathname = (() => {
+            try {
+                return new URL(rawUrl).pathname;
+            } catch {
+                return rawUrl;
+            }
+        })();
+        const path = normalizePath(pathname, '');
+        void Exceptionless.createLog(`${method} ${path}`, `HTTP ${status}`, 'warn').addTags('api-failure').submit();
     });
 };
 
-/** @type {import('@sveltejs/kit').HandleClientError} */
-export async function handleError({ error, event, message, status }) {
-    console.warn({ error, event, message, source: 'client error handler', status });
-    await Exceptionless.createException(toError(error ?? message))
-        .setProperty('status', status)
-        .submit();
-}
+export const handleError: HandleClientError = async ({ error, event, message, status }) => {
+    if (dev) {
+        console.warn({ error, event, message, status });
+    }
+
+    let errorId: null | string = null;
+    try {
+        await Exceptionless.createException(toError(error ?? message))
+            .setProperty('status', String(status))
+            .submit();
+        errorId = Exceptionless.getLastReferenceId();
+    } catch {
+        // never throw
+    }
+
+    return { errorId: errorId ?? guid(), message };
+};

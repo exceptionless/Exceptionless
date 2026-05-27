@@ -30,6 +30,7 @@
     import { invalidateWebhookQueries } from '$features/webhooks/api.svelte';
     import { isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
     import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
+    import { Telemetry } from '$lib/telemetry';
     import { useMiddleware } from '@exceptionless/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
     import { tick } from 'svelte';
@@ -58,7 +59,6 @@
     let isOrganizationSwitcherOpen = $state(false);
     let isUserMenuOpen = $state(false);
 
-    // Auto-reset premium page state on navigation so pages don't need cleanup
     beforeNavigate(() => {
         premiumPage.current = undefined;
     });
@@ -533,3 +533,5 @@
         <UpgradeRequiredDialog />
     {/if}
 {/if}
+
+<Telemetry userId={isAuthenticated ? meQuery.data?.id : undefined} userName={isAuthenticated ? meQuery.data?.full_name : undefined} />
