@@ -9,10 +9,12 @@ public class ConfigurationResponseEndpointFilter : IEndpointFilter
     {
         var result = await next(context);
 
-        var httpContext = context.HttpContext;
-        if (httpContext.Response.StatusCode != StatusCodes.Status200OK && httpContext.Response.StatusCode != StatusCodes.Status202Accepted)
+        // In Minimal API filters, the IResult hasn't been executed yet so httpContext.Response.StatusCode
+        // is still the default. Inspect the result object's status code directly.
+        if (result is IStatusCodeHttpResult { StatusCode: not (StatusCodes.Status200OK or StatusCodes.Status202Accepted) })
             return result;
 
+        var httpContext = context.HttpContext;
         var project = httpContext.Request.GetProject();
         if (project is null)
             return result;
