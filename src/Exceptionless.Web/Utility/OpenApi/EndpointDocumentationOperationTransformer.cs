@@ -13,8 +13,7 @@ public sealed record AdditionalParameterDefinition(
     string? Description = null,
     bool Required = false,
     string Type = "string",
-    string? Format = null,
-    string? ItemsRef = null // For array types — e.g. "#/components/schemas/StringStringValuesKeyValuePair"
+    string? Format = null
 );
 
 /// <summary>
@@ -59,20 +58,18 @@ public class EndpointDocumentationOperationTransformer : IOpenApiOperationTransf
 
                 if (additionalParam.Type == "array")
                 {
-                    // Array type — items are generic objects (key-value pairs from query string)
-                    schema = new OpenApiSchema
+                    // Array type — items are key-value pairs from query string
+                    var itemSchema = new OpenApiSchema { Type = JsonSchemaType.Object };
+                    itemSchema.Required = new HashSet<string> { "key", "value" };
+                    itemSchema.Properties = new Dictionary<string, IOpenApiSchema>
                     {
-                        Type = JsonSchemaType.Array,
-                        Items = new OpenApiSchema { Type = JsonSchemaType.Object }
+                        ["key"] = new OpenApiSchema { Type = JsonSchemaType.Null | JsonSchemaType.String },
+                        ["value"] = new OpenApiSchema { Type = JsonSchemaType.Array, Items = new OpenApiSchema { Type = JsonSchemaType.String } }
                     };
-                }
-                else if (additionalParam.ItemsRef is not null)
-                {
-                    // Array type with schema reference (reserved for future use)
                     schema = new OpenApiSchema
                     {
                         Type = JsonSchemaType.Array,
-                        Items = new OpenApiSchema { Type = JsonSchemaType.Object }
+                        Items = itemSchema
                     };
                 }
                 else

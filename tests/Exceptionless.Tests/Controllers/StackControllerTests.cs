@@ -16,6 +16,7 @@ using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
 
+[Collection("EventQueue")]
 public class StackControllerTests : IntegrationTestsBase
 {
     private readonly IStackRepository _stackRepository;

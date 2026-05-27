@@ -198,7 +198,25 @@
             "schema": {
               "type": "array",
               "items": {
-                "type": "object"
+                "required": [
+                  "key",
+                  "value"
+                ],
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "value": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             }
           }
@@ -342,7 +360,25 @@
             "schema": {
               "type": "array",
               "items": {
-                "type": "object"
+                "required": [
+                  "key",
+                  "value"
+                ],
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "value": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             }
           }
@@ -486,7 +522,25 @@
             "schema": {
               "type": "array",
               "items": {
-                "type": "object"
+                "required": [
+                  "key",
+                  "value"
+                ],
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "value": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             }
           }
@@ -639,7 +693,25 @@
             "schema": {
               "type": "array",
               "items": {
-                "type": "object"
+                "required": [
+                  "key",
+                  "value"
+                ],
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "value": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             }
           }
@@ -8535,7 +8607,25 @@
             "schema": {
               "type": "array",
               "items": {
-                "type": "object"
+                "required": [
+                  "key",
+                  "value"
+                ],
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "value": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             }
           }
@@ -8681,7 +8771,25 @@
             "schema": {
               "type": "array",
               "items": {
-                "type": "object"
+                "required": [
+                  "key",
+                  "value"
+                ],
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "value": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             }
           }
@@ -8834,7 +8942,25 @@
             "schema": {
               "type": "array",
               "items": {
-                "type": "object"
+                "required": [
+                  "key",
+                  "value"
+                ],
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "value": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             }
           }
@@ -8990,7 +9116,25 @@
             "schema": {
               "type": "array",
               "items": {
-                "type": "object"
+                "required": [
+                  "key",
+                  "value"
+                ],
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "value": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             }
           }

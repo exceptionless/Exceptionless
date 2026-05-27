@@ -32,6 +32,7 @@ using Run = Exceptionless.Tests.Utility.Run;
 
 namespace Exceptionless.Tests.Controllers;
 
+[Collection("EventQueue")]
 public class EventControllerTests : IntegrationTestsBase
 {
     private readonly JsonSerializerOptions _jsonSerializerOptions;
