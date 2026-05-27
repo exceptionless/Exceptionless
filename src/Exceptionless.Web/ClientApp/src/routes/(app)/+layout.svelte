@@ -435,7 +435,6 @@
     <Sidebar routes={filteredRoutes}>
         {#snippet header()}
             <SidebarOrganizationSwitcher
-                class="pt-2"
                 isLoading={organizationsQuery.isLoading}
                 {organizations}
                 {impersonatedOrganization}
