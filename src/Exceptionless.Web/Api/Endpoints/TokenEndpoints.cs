@@ -19,7 +19,8 @@ public static class TokenEndpoints
     {
         var group = endpoints.MapGroup("api/v2")
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
-            .AddEndpointFilter<AutoValidationEndpointFilter>();
+            .AddEndpointFilter<AutoValidationEndpointFilter>()
+            .WithTags("Token");
 
         group.MapGet("organizations/{organizationId:objectid}/tokens", async (string organizationId, IMediator mediator, int page = 1, int limit = 10)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.GetTokensByOrganization(organizationId, page, limit)))

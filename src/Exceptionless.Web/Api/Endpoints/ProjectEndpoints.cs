@@ -22,7 +22,7 @@ public static class ProjectEndpoints
         var group = endpoints.MapGroup("api/v2")
             .RequireAuthorization(AuthorizationRoles.ClientPolicy)
             .AddEndpointFilter<AutoValidationEndpointFilter>()
-            .WithTags("Projects");
+            .WithTags("Project");
 
         group.MapGet("projects", async (HttpContext httpContext, IMediator mediator, string? filter = null, string? sort = null, int page = 1, int limit = 10, string? mode = null)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new ProjectMessages.GetProjects(filter, sort, page, limit, mode, httpContext)))
@@ -160,7 +160,7 @@ public static class ProjectEndpoints
         endpoints.MapGet("api/v1/project/config", async (HttpContext httpContext, IMediator mediator, int? v = null)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new ProjectMessages.GetLegacyProjectConfig(v, httpContext)))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
-        .WithTags("Projects")
+        .WithTags("Project")
         .Produces<ClientConfiguration>()
         .Produces(StatusCodes.Status304NotModified)
         .ProducesProblem(StatusCodes.Status404NotFound);

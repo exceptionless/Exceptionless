@@ -24,7 +24,7 @@ public static class OrganizationEndpoints
         var group = endpoints.MapGroup("api/v2")
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
             .AddEndpointFilter<AutoValidationEndpointFilter>()
-            .WithTags("Organizations");
+            .WithTags("Organization");
 
         group.MapGet("organizations", async (HttpContext httpContext, IMediator mediator, string? filter = null, string? mode = null)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new OrganizationMessages.GetOrganizations(filter, mode, httpContext)))

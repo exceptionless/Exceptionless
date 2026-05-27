@@ -3,7 +3,9 @@
     "method": "POST",
     "route": "/api/v1/error",
     "displayName": "HTTP: POST api/v1/error",
-    "tags": [],
+    "tags": [
+      "Event"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "ClientPolicy"
@@ -15,7 +17,9 @@
     "method": "PATCH",
     "route": "/api/v1/error/{id:objectid}",
     "displayName": "HTTP: PATCH api/v1/error/{id:objectid}",
-    "tags": [],
+    "tags": [
+      "Event"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "ClientPolicy"
@@ -27,7 +31,9 @@
     "method": "POST",
     "route": "/api/v1/events",
     "displayName": "HTTP: POST api/v1/events",
-    "tags": [],
+    "tags": [
+      "Event"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "ClientPolicy"
@@ -39,7 +45,9 @@
     "method": "GET",
     "route": "/api/v1/events/submit",
     "displayName": "HTTP: GET api/v1/events/submit",
-    "tags": [],
+    "tags": [
+      "Event"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "ClientPolicy"
@@ -51,7 +59,9 @@
     "method": "GET",
     "route": "/api/v1/events/submit/{type:minlength(1)}",
     "displayName": "HTTP: GET api/v1/events/submit/{type:minlength(1)}",
-    "tags": [],
+    "tags": [
+      "Event"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "ClientPolicy"
@@ -64,7 +74,7 @@
     "route": "/api/v1/project/config",
     "displayName": "HTTP: GET api/v1/project/config",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -123,7 +133,9 @@
     "method": "POST",
     "route": "/api/v1/projects/{projectId:objectid}/events",
     "displayName": "HTTP: POST api/v1/projects/{projectId:objectid}/events",
-    "tags": [],
+    "tags": [
+      "Event"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "ClientPolicy"
@@ -135,7 +147,9 @@
     "method": "GET",
     "route": "/api/v1/projects/{projectId:objectid}/events/submit",
     "displayName": "HTTP: GET api/v1/projects/{projectId:objectid}/events/submit",
-    "tags": [],
+    "tags": [
+      "Event"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "ClientPolicy"
@@ -147,7 +161,9 @@
     "method": "GET",
     "route": "/api/v1/projects/{projectId:objectid}/events/submit/{type:minlength(1)}",
     "displayName": "HTTP: GET api/v1/projects/{projectId:objectid}/events/submit/{type:minlength(1)}",
-    "tags": [],
+    "tags": [
+      "Event"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "ClientPolicy"
@@ -292,7 +308,7 @@
     "route": "/api/v2/admin/organizations",
     "displayName": "HTTP: GET api/v2/admin/organizations",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -307,7 +323,7 @@
     "route": "/api/v2/admin/organizations/stats",
     "displayName": "HTTP: GET api/v2/admin/organizations/stats",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -566,7 +582,7 @@
     "route": "/api/v2/events",
     "displayName": "HTTP: GET api/v2/events",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -581,7 +597,7 @@
     "route": "/api/v2/events",
     "displayName": "HTTP: POST api/v2/events",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -595,7 +611,7 @@
     "route": "/api/v2/events/by-ref/{referenceId:identifier}",
     "displayName": "HTTP: GET api/v2/events/by-ref/{referenceId:identifier}",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -610,7 +626,7 @@
     "route": "/api/v2/events/by-ref/{referenceId:identifier}/user-description",
     "displayName": "HTTP: POST api/v2/events/by-ref/{referenceId:identifier}/user-description",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -624,7 +640,7 @@
     "route": "/api/v2/events/count",
     "displayName": "HTTP: GET api/v2/events/count",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -639,7 +655,7 @@
     "route": "/api/v2/events/session/heartbeat",
     "displayName": "HTTP: GET api/v2/events/session/heartbeat",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -653,7 +669,7 @@
     "route": "/api/v2/events/sessions",
     "displayName": "HTTP: GET api/v2/events/sessions",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -668,7 +684,7 @@
     "route": "/api/v2/events/sessions/{sessionId:identifier}",
     "displayName": "HTTP: GET api/v2/events/sessions/{sessionId:identifier}",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -683,7 +699,7 @@
     "route": "/api/v2/events/submit",
     "displayName": "HTTP: GET api/v2/events/submit",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -697,7 +713,7 @@
     "route": "/api/v2/events/submit/{type:minlength(1)}",
     "displayName": "HTTP: GET api/v2/events/submit/{type:minlength(1)}",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -711,7 +727,7 @@
     "route": "/api/v2/events/{id:objectid}",
     "displayName": "HTTP: GET api/v2/events/{id:objectid}",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -726,7 +742,7 @@
     "route": "/api/v2/events/{ids:objectids}",
     "displayName": "HTTP: DELETE api/v2/events/{ids:objectids}",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -792,7 +808,7 @@
     "route": "/api/v2/organizations",
     "displayName": "HTTP: GET api/v2/organizations",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -806,7 +822,7 @@
     "route": "/api/v2/organizations",
     "displayName": "HTTP: POST api/v2/organizations",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -820,7 +836,7 @@
     "route": "/api/v2/organizations/check-name",
     "displayName": "HTTP: GET api/v2/organizations/check-name",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -834,7 +850,7 @@
     "route": "/api/v2/organizations/invoice/{id:minlength(10)}",
     "displayName": "HTTP: GET api/v2/organizations/invoice/{id:minlength(10)}",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -848,7 +864,7 @@
     "route": "/api/v2/organizations/{id:objectid}",
     "displayName": "HTTP: GET api/v2/organizations/{id:objectid}",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -862,7 +878,7 @@
     "route": "/api/v2/organizations/{id:objectid}",
     "displayName": "HTTP: PATCH api/v2/organizations/{id:objectid}",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -876,7 +892,7 @@
     "route": "/api/v2/organizations/{id:objectid}",
     "displayName": "HTTP: PUT api/v2/organizations/{id:objectid}",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -890,7 +906,7 @@
     "route": "/api/v2/organizations/{id:objectid}/change-plan",
     "displayName": "HTTP: POST api/v2/organizations/{id:objectid}/change-plan",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -904,7 +920,7 @@
     "route": "/api/v2/organizations/{id:objectid}/data/{key:minlength(1)}",
     "displayName": "HTTP: DELETE api/v2/organizations/{id:objectid}/data/{key:minlength(1)}",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -918,7 +934,7 @@
     "route": "/api/v2/organizations/{id:objectid}/data/{key:minlength(1)}",
     "displayName": "HTTP: POST api/v2/organizations/{id:objectid}/data/{key:minlength(1)}",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -932,7 +948,7 @@
     "route": "/api/v2/organizations/{id:objectid}/features/{feature:minlength(1)}",
     "displayName": "HTTP: DELETE api/v2/organizations/{id:objectid}/features/{feature:minlength(1)}",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -947,7 +963,7 @@
     "route": "/api/v2/organizations/{id:objectid}/features/{feature:minlength(1)}",
     "displayName": "HTTP: POST api/v2/organizations/{id:objectid}/features/{feature:minlength(1)}",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -962,7 +978,7 @@
     "route": "/api/v2/organizations/{id:objectid}/invoices",
     "displayName": "HTTP: GET api/v2/organizations/{id:objectid}/invoices",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -976,7 +992,7 @@
     "route": "/api/v2/organizations/{id:objectid}/plans",
     "displayName": "HTTP: GET api/v2/organizations/{id:objectid}/plans",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -990,7 +1006,7 @@
     "route": "/api/v2/organizations/{id:objectid}/suspend",
     "displayName": "HTTP: DELETE api/v2/organizations/{id:objectid}/suspend",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1005,7 +1021,7 @@
     "route": "/api/v2/organizations/{id:objectid}/suspend",
     "displayName": "HTTP: POST api/v2/organizations/{id:objectid}/suspend",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1020,7 +1036,7 @@
     "route": "/api/v2/organizations/{id:objectid}/users/{email:minlength(1)}",
     "displayName": "HTTP: DELETE api/v2/organizations/{id:objectid}/users/{email:minlength(1)}",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1034,7 +1050,7 @@
     "route": "/api/v2/organizations/{id:objectid}/users/{email:minlength(1)}",
     "displayName": "HTTP: POST api/v2/organizations/{id:objectid}/users/{email:minlength(1)}",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1048,7 +1064,7 @@
     "route": "/api/v2/organizations/{ids:objectids}",
     "displayName": "HTTP: DELETE api/v2/organizations/{ids:objectids}",
     "tags": [
-      "Organizations"
+      "Organization"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1062,7 +1078,7 @@
     "route": "/api/v2/organizations/{organizationId:objectid}/events",
     "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/events",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1077,7 +1093,7 @@
     "route": "/api/v2/organizations/{organizationId:objectid}/events/count",
     "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/events/count",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1092,7 +1108,7 @@
     "route": "/api/v2/organizations/{organizationId:objectid}/events/sessions",
     "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/events/sessions",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1107,7 +1123,7 @@
     "route": "/api/v2/organizations/{organizationId:objectid}/projects",
     "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/projects",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1122,7 +1138,7 @@
     "route": "/api/v2/organizations/{organizationId:objectid}/projects/check-name",
     "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/projects/check-name",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1137,7 +1153,7 @@
     "route": "/api/v2/organizations/{organizationId:objectid}/saved-views",
     "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/saved-views",
     "tags": [
-      "Saved Views"
+      "SavedView"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1151,7 +1167,7 @@
     "route": "/api/v2/organizations/{organizationId:objectid}/saved-views",
     "displayName": "HTTP: POST api/v2/organizations/{organizationId:objectid}/saved-views",
     "tags": [
-      "Saved Views"
+      "SavedView"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1165,7 +1181,7 @@
     "route": "/api/v2/organizations/{organizationId:objectid}/saved-views/predefined",
     "displayName": "HTTP: POST api/v2/organizations/{organizationId:objectid}/saved-views/predefined",
     "tags": [
-      "Saved Views"
+      "SavedView"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1179,7 +1195,7 @@
     "route": "/api/v2/organizations/{organizationId:objectid}/saved-views/{viewType}",
     "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/saved-views/{viewType}",
     "tags": [
-      "Saved Views"
+      "SavedView"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1193,7 +1209,7 @@
     "route": "/api/v2/organizations/{organizationId:objectid}/stacks",
     "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/stacks",
     "tags": [
-      "Stacks"
+      "Stack"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1207,7 +1223,9 @@
     "method": "GET",
     "route": "/api/v2/organizations/{organizationId:objectid}/tokens",
     "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/tokens",
-    "tags": [],
+    "tags": [
+      "Token"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "UserPolicy"
@@ -1219,7 +1237,9 @@
     "method": "POST",
     "route": "/api/v2/organizations/{organizationId:objectid}/tokens",
     "displayName": "HTTP: POST api/v2/organizations/{organizationId:objectid}/tokens",
-    "tags": [],
+    "tags": [
+      "Token"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "UserPolicy"
@@ -1232,7 +1252,7 @@
     "route": "/api/v2/organizations/{organizationId:objectid}/users",
     "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/users",
     "tags": [
-      "Users"
+      "User"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1246,7 +1266,7 @@
     "route": "/api/v2/projects",
     "displayName": "HTTP: GET api/v2/projects",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1261,7 +1281,7 @@
     "route": "/api/v2/projects",
     "displayName": "HTTP: POST api/v2/projects",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1276,7 +1296,7 @@
     "route": "/api/v2/projects/check-name",
     "displayName": "HTTP: GET api/v2/projects/check-name",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1291,7 +1311,7 @@
     "route": "/api/v2/projects/config",
     "displayName": "HTTP: GET api/v2/projects/config",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1305,7 +1325,7 @@
     "route": "/api/v2/projects/{id:objectid}",
     "displayName": "HTTP: GET api/v2/projects/{id:objectid}",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1320,7 +1340,7 @@
     "route": "/api/v2/projects/{id:objectid}",
     "displayName": "HTTP: PATCH api/v2/projects/{id:objectid}",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1335,7 +1355,7 @@
     "route": "/api/v2/projects/{id:objectid}",
     "displayName": "HTTP: PUT api/v2/projects/{id:objectid}",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1350,7 +1370,7 @@
     "route": "/api/v2/projects/{id:objectid}/config",
     "displayName": "HTTP: DELETE api/v2/projects/{id:objectid}/config",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1365,7 +1385,7 @@
     "route": "/api/v2/projects/{id:objectid}/config",
     "displayName": "HTTP: GET api/v2/projects/{id:objectid}/config",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1379,7 +1399,7 @@
     "route": "/api/v2/projects/{id:objectid}/config",
     "displayName": "HTTP: POST api/v2/projects/{id:objectid}/config",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1394,7 +1414,7 @@
     "route": "/api/v2/projects/{id:objectid}/data",
     "displayName": "HTTP: DELETE api/v2/projects/{id:objectid}/data",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1409,7 +1429,7 @@
     "route": "/api/v2/projects/{id:objectid}/data",
     "displayName": "HTTP: POST api/v2/projects/{id:objectid}/data",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1424,7 +1444,7 @@
     "route": "/api/v2/projects/{id:objectid}/notifications",
     "displayName": "HTTP: GET api/v2/projects/{id:objectid}/notifications",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1439,7 +1459,7 @@
     "route": "/api/v2/projects/{id:objectid}/promotedtabs",
     "displayName": "HTTP: DELETE api/v2/projects/{id:objectid}/promotedtabs",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1454,7 +1474,7 @@
     "route": "/api/v2/projects/{id:objectid}/promotedtabs",
     "displayName": "HTTP: POST api/v2/projects/{id:objectid}/promotedtabs",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1469,7 +1489,7 @@
     "route": "/api/v2/projects/{id:objectid}/promotedtabs",
     "displayName": "HTTP: PUT api/v2/projects/{id:objectid}/promotedtabs",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1484,7 +1504,7 @@
     "route": "/api/v2/projects/{id:objectid}/reset-data",
     "displayName": "HTTP: GET api/v2/projects/{id:objectid}/reset-data",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1499,7 +1519,7 @@
     "route": "/api/v2/projects/{id:objectid}/reset-data",
     "displayName": "HTTP: POST api/v2/projects/{id:objectid}/reset-data",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1514,7 +1534,7 @@
     "route": "/api/v2/projects/{id:objectid}/sample-data",
     "displayName": "HTTP: POST api/v2/projects/{id:objectid}/sample-data",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1529,7 +1549,7 @@
     "route": "/api/v2/projects/{id:objectid}/slack",
     "displayName": "HTTP: DELETE api/v2/projects/{id:objectid}/slack",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1544,7 +1564,7 @@
     "route": "/api/v2/projects/{id:objectid}/slack",
     "displayName": "HTTP: POST api/v2/projects/{id:objectid}/slack",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1559,7 +1579,7 @@
     "route": "/api/v2/projects/{id:objectid}/{integration:minlength(1)}/notifications",
     "displayName": "HTTP: GET api/v2/projects/{id:objectid}/{integration:minlength(1)}/notifications",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1574,7 +1594,7 @@
     "route": "/api/v2/projects/{id:objectid}/{integration:minlength(1)}/notifications",
     "displayName": "HTTP: POST api/v2/projects/{id:objectid}/{integration:minlength(1)}/notifications",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1589,7 +1609,7 @@
     "route": "/api/v2/projects/{id:objectid}/{integration:minlength(1)}/notifications",
     "displayName": "HTTP: PUT api/v2/projects/{id:objectid}/{integration:minlength(1)}/notifications",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1604,7 +1624,7 @@
     "route": "/api/v2/projects/{ids:objectids}",
     "displayName": "HTTP: DELETE api/v2/projects/{ids:objectids}",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1619,7 +1639,7 @@
     "route": "/api/v2/projects/{projectId:objectid}/events",
     "displayName": "HTTP: GET api/v2/projects/{projectId:objectid}/events",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1634,7 +1654,7 @@
     "route": "/api/v2/projects/{projectId:objectid}/events",
     "displayName": "HTTP: POST api/v2/projects/{projectId:objectid}/events",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1648,7 +1668,7 @@
     "route": "/api/v2/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}",
     "displayName": "HTTP: GET api/v2/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1663,7 +1683,7 @@
     "route": "/api/v2/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}/user-description",
     "displayName": "HTTP: POST api/v2/projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}/user-description",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1677,7 +1697,7 @@
     "route": "/api/v2/projects/{projectId:objectid}/events/count",
     "displayName": "HTTP: GET api/v2/projects/{projectId:objectid}/events/count",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1692,7 +1712,7 @@
     "route": "/api/v2/projects/{projectId:objectid}/events/sessions",
     "displayName": "HTTP: GET api/v2/projects/{projectId:objectid}/events/sessions",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1707,7 +1727,7 @@
     "route": "/api/v2/projects/{projectId:objectid}/events/sessions/{sessionId:identifier}",
     "displayName": "HTTP: GET api/v2/projects/{projectId:objectid}/events/sessions/{sessionId:identifier}",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1722,7 +1742,7 @@
     "route": "/api/v2/projects/{projectId:objectid}/events/submit",
     "displayName": "HTTP: GET api/v2/projects/{projectId:objectid}/events/submit",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1736,7 +1756,7 @@
     "route": "/api/v2/projects/{projectId:objectid}/events/submit/{type:minlength(1)}",
     "displayName": "HTTP: GET api/v2/projects/{projectId:objectid}/events/submit/{type:minlength(1)}",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1750,7 +1770,7 @@
     "route": "/api/v2/projects/{projectId:objectid}/stacks",
     "displayName": "HTTP: GET api/v2/projects/{projectId:objectid}/stacks",
     "tags": [
-      "Stacks"
+      "Stack"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1764,7 +1784,9 @@
     "method": "GET",
     "route": "/api/v2/projects/{projectId:objectid}/tokens",
     "displayName": "HTTP: GET api/v2/projects/{projectId:objectid}/tokens",
-    "tags": [],
+    "tags": [
+      "Token"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "UserPolicy"
@@ -1776,7 +1798,9 @@
     "method": "POST",
     "route": "/api/v2/projects/{projectId:objectid}/tokens",
     "displayName": "HTTP: POST api/v2/projects/{projectId:objectid}/tokens",
-    "tags": [],
+    "tags": [
+      "Token"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "UserPolicy"
@@ -1788,7 +1812,9 @@
     "method": "GET",
     "route": "/api/v2/projects/{projectId:objectid}/tokens/default",
     "displayName": "HTTP: GET api/v2/projects/{projectId:objectid}/tokens/default",
-    "tags": [],
+    "tags": [
+      "Token"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "UserPolicy"
@@ -1800,7 +1826,9 @@
     "method": "GET",
     "route": "/api/v2/projects/{projectId:objectid}/webhooks",
     "displayName": "HTTP: GET api/v2/projects/{projectId:objectid}/webhooks",
-    "tags": [],
+    "tags": [
+      "WebHook"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "ClientPolicy",
@@ -1827,7 +1855,7 @@
     "route": "/api/v2/saved-views/predefined",
     "displayName": "HTTP: GET api/v2/saved-views/predefined",
     "tags": [
-      "Saved Views"
+      "SavedView"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1842,7 +1870,7 @@
     "route": "/api/v2/saved-views/{id:objectid}",
     "displayName": "HTTP: GET api/v2/saved-views/{id:objectid}",
     "tags": [
-      "Saved Views"
+      "SavedView"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1856,7 +1884,7 @@
     "route": "/api/v2/saved-views/{id:objectid}",
     "displayName": "HTTP: PATCH api/v2/saved-views/{id:objectid}",
     "tags": [
-      "Saved Views"
+      "SavedView"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1870,7 +1898,7 @@
     "route": "/api/v2/saved-views/{id:objectid}",
     "displayName": "HTTP: PUT api/v2/saved-views/{id:objectid}",
     "tags": [
-      "Saved Views"
+      "SavedView"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1884,7 +1912,7 @@
     "route": "/api/v2/saved-views/{id:objectid}/predefined",
     "displayName": "HTTP: DELETE api/v2/saved-views/{id:objectid}/predefined",
     "tags": [
-      "Saved Views"
+      "SavedView"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1899,7 +1927,7 @@
     "route": "/api/v2/saved-views/{id:objectid}/predefined",
     "displayName": "HTTP: POST api/v2/saved-views/{id:objectid}/predefined",
     "tags": [
-      "Saved Views"
+      "SavedView"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1914,7 +1942,7 @@
     "route": "/api/v2/saved-views/{ids:objectids}",
     "displayName": "HTTP: DELETE api/v2/saved-views/{ids:objectids}",
     "tags": [
-      "Saved Views"
+      "SavedView"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1940,7 +1968,7 @@
     "route": "/api/v2/stacks",
     "displayName": "HTTP: GET api/v2/stacks",
     "tags": [
-      "Stacks"
+      "Stack"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1955,7 +1983,7 @@
     "route": "/api/v2/stacks/add-link",
     "displayName": "HTTP: POST api/v2/stacks/add-link",
     "tags": [
-      "Stacks"
+      "Stack"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1969,7 +1997,7 @@
     "route": "/api/v2/stacks/mark-fixed",
     "displayName": "HTTP: POST api/v2/stacks/mark-fixed",
     "tags": [
-      "Stacks"
+      "Stack"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1983,7 +2011,7 @@
     "route": "/api/v2/stacks/{id:objectid}",
     "displayName": "HTTP: GET api/v2/stacks/{id:objectid}",
     "tags": [
-      "Stacks"
+      "Stack"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1998,7 +2026,7 @@
     "route": "/api/v2/stacks/{id:objectid}/add-link",
     "displayName": "HTTP: POST api/v2/stacks/{id:objectid}/add-link",
     "tags": [
-      "Stacks"
+      "Stack"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2013,7 +2041,7 @@
     "route": "/api/v2/stacks/{id:objectid}/promote",
     "displayName": "HTTP: POST api/v2/stacks/{id:objectid}/promote",
     "tags": [
-      "Stacks"
+      "Stack"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2028,7 +2056,7 @@
     "route": "/api/v2/stacks/{id:objectid}/remove-link",
     "displayName": "HTTP: POST api/v2/stacks/{id:objectid}/remove-link",
     "tags": [
-      "Stacks"
+      "Stack"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2043,7 +2071,7 @@
     "route": "/api/v2/stacks/{ids:objectids}",
     "displayName": "HTTP: DELETE api/v2/stacks/{ids:objectids}",
     "tags": [
-      "Stacks"
+      "Stack"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2058,7 +2086,7 @@
     "route": "/api/v2/stacks/{ids:objectids}/change-status",
     "displayName": "HTTP: POST api/v2/stacks/{ids:objectids}/change-status",
     "tags": [
-      "Stacks"
+      "Stack"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2073,7 +2101,7 @@
     "route": "/api/v2/stacks/{ids:objectids}/mark-critical",
     "displayName": "HTTP: DELETE api/v2/stacks/{ids:objectids}/mark-critical",
     "tags": [
-      "Stacks"
+      "Stack"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2088,7 +2116,7 @@
     "route": "/api/v2/stacks/{ids:objectids}/mark-critical",
     "displayName": "HTTP: POST api/v2/stacks/{ids:objectids}/mark-critical",
     "tags": [
-      "Stacks"
+      "Stack"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2103,7 +2131,7 @@
     "route": "/api/v2/stacks/{ids:objectids}/mark-fixed",
     "displayName": "HTTP: POST api/v2/stacks/{ids:objectids}/mark-fixed",
     "tags": [
-      "Stacks"
+      "Stack"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2118,7 +2146,7 @@
     "route": "/api/v2/stacks/{ids:objectids}/mark-snoozed",
     "displayName": "HTTP: POST api/v2/stacks/{ids:objectids}/mark-snoozed",
     "tags": [
-      "Stacks"
+      "Stack"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2133,7 +2161,7 @@
     "route": "/api/v2/stacks/{stackId:objectid}/events",
     "displayName": "HTTP: GET api/v2/stacks/{stackId:objectid}/events",
     "tags": [
-      "Events"
+      "Event"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2157,7 +2185,9 @@
     "method": "POST",
     "route": "/api/v2/tokens",
     "displayName": "HTTP: POST api/v2/tokens",
-    "tags": [],
+    "tags": [
+      "Token"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "UserPolicy"
@@ -2169,7 +2199,9 @@
     "method": "PATCH",
     "route": "/api/v2/tokens/{id:tokens}",
     "displayName": "HTTP: PATCH api/v2/tokens/{id:tokens}",
-    "tags": [],
+    "tags": [
+      "Token"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "UserPolicy"
@@ -2181,7 +2213,9 @@
     "method": "PUT",
     "route": "/api/v2/tokens/{id:tokens}",
     "displayName": "HTTP: PUT api/v2/tokens/{id:tokens}",
-    "tags": [],
+    "tags": [
+      "Token"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "UserPolicy"
@@ -2193,7 +2227,9 @@
     "method": "GET",
     "route": "/api/v2/tokens/{id:token}",
     "displayName": "HTTP: GET api/v2/tokens/{id:token}",
-    "tags": [],
+    "tags": [
+      "Token"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "UserPolicy"
@@ -2205,7 +2241,9 @@
     "method": "DELETE",
     "route": "/api/v2/tokens/{ids:tokens}",
     "displayName": "HTTP: DELETE api/v2/tokens/{ids:tokens}",
-    "tags": [],
+    "tags": [
+      "Token"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "UserPolicy"
@@ -2218,7 +2256,7 @@
     "route": "/api/v2/users/me",
     "displayName": "HTTP: DELETE api/v2/users/me",
     "tags": [
-      "Users"
+      "User"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2232,7 +2270,7 @@
     "route": "/api/v2/users/me",
     "displayName": "HTTP: GET api/v2/users/me",
     "tags": [
-      "Users"
+      "User"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2246,7 +2284,7 @@
     "route": "/api/v2/users/unverify-email-address",
     "displayName": "HTTP: POST api/v2/users/unverify-email-address",
     "tags": [
-      "Users"
+      "User"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2261,7 +2299,7 @@
     "route": "/api/v2/users/verify-email-address/{token:token}",
     "displayName": "HTTP: GET api/v2/users/verify-email-address/{token:token}",
     "tags": [
-      "Users"
+      "User"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2275,7 +2313,7 @@
     "route": "/api/v2/users/{id:objectid}",
     "displayName": "HTTP: GET api/v2/users/{id:objectid}",
     "tags": [
-      "Users"
+      "User"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2289,7 +2327,7 @@
     "route": "/api/v2/users/{id:objectid}",
     "displayName": "HTTP: PATCH api/v2/users/{id:objectid}",
     "tags": [
-      "Users"
+      "User"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2303,7 +2341,7 @@
     "route": "/api/v2/users/{id:objectid}",
     "displayName": "HTTP: PUT api/v2/users/{id:objectid}",
     "tags": [
-      "Users"
+      "User"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2317,7 +2355,7 @@
     "route": "/api/v2/users/{id:objectid}/admin-role",
     "displayName": "HTTP: DELETE api/v2/users/{id:objectid}/admin-role",
     "tags": [
-      "Users"
+      "User"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2332,7 +2370,7 @@
     "route": "/api/v2/users/{id:objectid}/admin-role",
     "displayName": "HTTP: POST api/v2/users/{id:objectid}/admin-role",
     "tags": [
-      "Users"
+      "User"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2347,7 +2385,7 @@
     "route": "/api/v2/users/{id:objectid}/email-address/{email:minlength(1)}",
     "displayName": "HTTP: POST api/v2/users/{id:objectid}/email-address/{email:minlength(1)}",
     "tags": [
-      "Users"
+      "User"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2361,7 +2399,7 @@
     "route": "/api/v2/users/{id:objectid}/resend-verification-email",
     "displayName": "HTTP: GET api/v2/users/{id:objectid}/resend-verification-email",
     "tags": [
-      "Users"
+      "User"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2375,7 +2413,7 @@
     "route": "/api/v2/users/{ids:objectids}",
     "displayName": "HTTP: DELETE api/v2/users/{ids:objectids}",
     "tags": [
-      "Users"
+      "User"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2390,7 +2428,7 @@
     "route": "/api/v2/users/{userId:objectid}/projects/{id:objectid}/notifications",
     "displayName": "HTTP: DELETE api/v2/users/{userId:objectid}/projects/{id:objectid}/notifications",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2405,7 +2443,7 @@
     "route": "/api/v2/users/{userId:objectid}/projects/{id:objectid}/notifications",
     "displayName": "HTTP: GET api/v2/users/{userId:objectid}/projects/{id:objectid}/notifications",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2420,7 +2458,7 @@
     "route": "/api/v2/users/{userId:objectid}/projects/{id:objectid}/notifications",
     "displayName": "HTTP: POST api/v2/users/{userId:objectid}/projects/{id:objectid}/notifications",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2435,7 +2473,7 @@
     "route": "/api/v2/users/{userId:objectid}/projects/{id:objectid}/notifications",
     "displayName": "HTTP: PUT api/v2/users/{userId:objectid}/projects/{id:objectid}/notifications",
     "tags": [
-      "Projects"
+      "Project"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2449,7 +2487,9 @@
     "method": "POST",
     "route": "/api/v2/webhooks",
     "displayName": "HTTP: POST api/v2/webhooks",
-    "tags": [],
+    "tags": [
+      "WebHook"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "ClientPolicy",
@@ -2462,7 +2502,9 @@
     "method": "POST",
     "route": "/api/v2/webhooks/subscribe",
     "displayName": "HTTP: POST api/v2/webhooks/subscribe",
-    "tags": [],
+    "tags": [
+      "WebHook"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "ClientPolicy"
@@ -2474,7 +2516,9 @@
     "method": "GET",
     "route": "/api/v2/webhooks/test",
     "displayName": "HTTP: GET api/v2/webhooks/test",
-    "tags": [],
+    "tags": [
+      "WebHook"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "ClientPolicy"
@@ -2486,7 +2530,9 @@
     "method": "POST",
     "route": "/api/v2/webhooks/test",
     "displayName": "HTTP: POST api/v2/webhooks/test",
-    "tags": [],
+    "tags": [
+      "WebHook"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "ClientPolicy"
@@ -2498,7 +2544,9 @@
     "method": "POST",
     "route": "/api/v2/webhooks/unsubscribe",
     "displayName": "HTTP: POST api/v2/webhooks/unsubscribe",
-    "tags": [],
+    "tags": [
+      "WebHook"
+    ],
     "allowAnonymous": true,
     "authorizationPolicies": [
       "ClientPolicy"
@@ -2510,7 +2558,9 @@
     "method": "GET",
     "route": "/api/v2/webhooks/{id:objectid}",
     "displayName": "HTTP: GET api/v2/webhooks/{id:objectid}",
-    "tags": [],
+    "tags": [
+      "WebHook"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "ClientPolicy",
@@ -2523,7 +2573,9 @@
     "method": "DELETE",
     "route": "/api/v2/webhooks/{ids:objectids}",
     "displayName": "HTTP: DELETE api/v2/webhooks/{ids:objectids}",
-    "tags": [],
+    "tags": [
+      "WebHook"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "ClientPolicy",

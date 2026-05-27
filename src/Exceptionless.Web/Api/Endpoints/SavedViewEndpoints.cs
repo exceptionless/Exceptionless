@@ -21,7 +21,7 @@ public static class SavedViewEndpoints
         var group = endpoints.MapGroup("api/v2")
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
             .AddEndpointFilter<AutoValidationEndpointFilter>()
-            .WithTags("Saved Views");
+            .WithTags("SavedView");
 
         group.MapGet("organizations/{organizationId:objectid}/saved-views", async (string organizationId, IMediator mediator, int page = 1, int limit = 25)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SavedViewMessages.GetSavedViewsByOrganization(organizationId, page, limit)))

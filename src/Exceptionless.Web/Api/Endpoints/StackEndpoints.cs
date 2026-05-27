@@ -19,7 +19,7 @@ public static class StackEndpoints
         var group = endpoints.MapGroup("api/v2")
             .RequireAuthorization(AuthorizationRoles.ClientPolicy)
             .AddEndpointFilter<AutoValidationEndpointFilter>()
-            .WithTags("Stacks");
+            .WithTags("Stack");
 
         // GET by id
         group.MapGet("stacks/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, string? offset = null)

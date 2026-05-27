@@ -18,7 +18,7 @@ public static class UserEndpoints
         var group = endpoints.MapGroup("api/v2")
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
             .AddEndpointFilter<AutoValidationEndpointFilter>()
-            .WithTags("Users");
+            .WithTags("User");
 
         group.MapGet("users/me", async (IMediator mediator)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new UserMessages.GetCurrentUser()))

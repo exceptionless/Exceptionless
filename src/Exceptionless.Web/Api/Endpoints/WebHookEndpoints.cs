@@ -19,7 +19,8 @@ public static class WebHookEndpoints
     {
         var group = endpoints.MapGroup("api/v2")
             .RequireAuthorization(AuthorizationRoles.ClientPolicy)
-            .AddEndpointFilter<AutoValidationEndpointFilter>();
+            .AddEndpointFilter<AutoValidationEndpointFilter>()
+            .WithTags("WebHook");
 
         group.MapGet("projects/{projectId:objectid}/webhooks", async (string projectId, IMediator mediator, int page = 1, int limit = 10)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new WebHookMessages.GetWebHooksByProject(projectId, page, limit)))

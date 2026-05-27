@@ -23,7 +23,7 @@
     "/api/v1/project/config": {
       "get": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "parameters": [
           {
@@ -65,7 +65,7 @@
     "/api/v1/error/{id}": {
       "patch": {
         "tags": [
-          "Exceptionless.Tests"
+          "Event"
         ],
         "parameters": [
           {
@@ -98,7 +98,7 @@
     "/api/v1/events/submit": {
       "get": {
         "tags": [
-          "Exceptionless.Tests"
+          "Event"
         ],
         "parameters": [
           {
@@ -233,7 +233,7 @@
     "/api/v1/events/submit/{type}": {
       "get": {
         "tags": [
-          "Exceptionless.Tests"
+          "Event"
         ],
         "parameters": [
           {
@@ -377,7 +377,7 @@
     "/api/v1/projects/{projectId}/events/submit": {
       "get": {
         "tags": [
-          "Exceptionless.Tests"
+          "Event"
         ],
         "parameters": [
           {
@@ -521,7 +521,7 @@
     "/api/v1/projects/{projectId}/events/submit/{type}": {
       "get": {
         "tags": [
-          "Exceptionless.Tests"
+          "Event"
         ],
         "parameters": [
           {
@@ -674,7 +674,7 @@
     "/api/v1/error": {
       "post": {
         "tags": [
-          "Exceptionless.Tests"
+          "Event"
         ],
         "parameters": [
           {
@@ -719,7 +719,7 @@
     "/api/v1/events": {
       "post": {
         "tags": [
-          "Exceptionless.Tests"
+          "Event"
         ],
         "parameters": [
           {
@@ -761,7 +761,7 @@
     "/api/v1/projects/{projectId}/events": {
       "post": {
         "tags": [
-          "Exceptionless.Tests"
+          "Event"
         ],
         "parameters": [
           {
@@ -1435,7 +1435,7 @@
     "/api/v2/organizations/{organizationId}/tokens": {
       "get": {
         "tags": [
-          "Exceptionless.Tests"
+          "Token"
         ],
         "summary": "Get by organization",
         "parameters": [
@@ -1488,7 +1488,7 @@
       },
       "post": {
         "tags": [
-          "Exceptionless.Tests"
+          "Token"
         ],
         "summary": "Create for organization",
         "parameters": [
@@ -1566,7 +1566,7 @@
     "/api/v2/projects/{projectId}/tokens": {
       "get": {
         "tags": [
-          "Exceptionless.Tests"
+          "Token"
         ],
         "summary": "Get by project",
         "parameters": [
@@ -1619,7 +1619,7 @@
       },
       "post": {
         "tags": [
-          "Exceptionless.Tests"
+          "Token"
         ],
         "summary": "Create for project",
         "parameters": [
@@ -1697,7 +1697,7 @@
     "/api/v2/projects/{projectId}/tokens/default": {
       "get": {
         "tags": [
-          "Exceptionless.Tests"
+          "Token"
         ],
         "summary": "Get a projects default token",
         "parameters": [
@@ -1739,7 +1739,7 @@
     "/api/v2/tokens/{id}": {
       "get": {
         "tags": [
-          "Exceptionless.Tests"
+          "Token"
         ],
         "summary": "Get by id",
         "operationId": "GetTokenById",
@@ -1780,7 +1780,7 @@
       },
       "patch": {
         "tags": [
-          "Exceptionless.Tests"
+          "Token"
         ],
         "summary": "Update",
         "parameters": [
@@ -1840,7 +1840,7 @@
       },
       "put": {
         "tags": [
-          "Exceptionless.Tests"
+          "Token"
         ],
         "summary": "Update",
         "parameters": [
@@ -1902,7 +1902,7 @@
     "/api/v2/tokens": {
       "post": {
         "tags": [
-          "Exceptionless.Tests"
+          "Token"
         ],
         "summary": "Create",
         "requestBody": {
@@ -1952,7 +1952,7 @@
     "/api/v2/tokens/{ids}": {
       "delete": {
         "tags": [
-          "Exceptionless.Tests"
+          "Token"
         ],
         "summary": "Remove",
         "parameters": [
@@ -2014,7 +2014,7 @@
     "/api/v2/projects/{projectId}/webhooks": {
       "get": {
         "tags": [
-          "Exceptionless.Tests"
+          "WebHook"
         ],
         "summary": "Get by project",
         "parameters": [
@@ -2069,7 +2069,7 @@
     "/api/v2/webhooks/{id}": {
       "get": {
         "tags": [
-          "Exceptionless.Tests"
+          "WebHook"
         ],
         "summary": "Get by id",
         "operationId": "GetWebHookById",
@@ -2112,7 +2112,7 @@
     "/api/v2/webhooks": {
       "post": {
         "tags": [
-          "Exceptionless.Tests"
+          "WebHook"
         ],
         "summary": "Create",
         "requestBody": {
@@ -2162,7 +2162,7 @@
     "/api/v2/webhooks/{ids}": {
       "delete": {
         "tags": [
-          "Exceptionless.Tests"
+          "WebHook"
         ],
         "summary": "Remove",
         "parameters": [
@@ -2224,7 +2224,7 @@
     "/api/v2/organizations/{organizationId}/saved-views": {
       "get": {
         "tags": [
-          "Saved Views"
+          "SavedView"
         ],
         "summary": "Get by organization",
         "parameters": [
@@ -2287,7 +2287,7 @@
       },
       "post": {
         "tags": [
-          "Saved Views"
+          "SavedView"
         ],
         "summary": "Create",
         "parameters": [
@@ -2359,7 +2359,7 @@
     "/api/v2/organizations/{organizationId}/saved-views/{viewType}": {
       "get": {
         "tags": [
-          "Saved Views"
+          "SavedView"
         ],
         "summary": "Get by organization and view",
         "parameters": [
@@ -2433,7 +2433,7 @@
     "/api/v2/saved-views/{id}": {
       "get": {
         "tags": [
-          "Saved Views"
+          "SavedView"
         ],
         "summary": "Get by id",
         "operationId": "GetSavedViewById",
@@ -2474,7 +2474,7 @@
       },
       "patch": {
         "tags": [
-          "Saved Views"
+          "SavedView"
         ],
         "summary": "Update",
         "parameters": [
@@ -2554,7 +2554,7 @@
       },
       "put": {
         "tags": [
-          "Saved Views"
+          "SavedView"
         ],
         "summary": "Update",
         "parameters": [
@@ -2636,7 +2636,7 @@
     "/api/v2/organizations/{organizationId}/saved-views/predefined": {
       "post": {
         "tags": [
-          "Saved Views"
+          "SavedView"
         ],
         "summary": "Create or update predefined saved views",
         "parameters": [
@@ -2681,7 +2681,7 @@
     "/api/v2/saved-views/predefined": {
       "get": {
         "tags": [
-          "Saved Views"
+          "SavedView"
         ],
         "summary": "Get global predefined saved views as seed JSON",
         "responses": {
@@ -2704,7 +2704,7 @@
     "/api/v2/saved-views/{id}/predefined": {
       "post": {
         "tags": [
-          "Saved Views"
+          "SavedView"
         ],
         "summary": "Save a saved view as a global predefined saved view",
         "parameters": [
@@ -2744,7 +2744,7 @@
       },
       "delete": {
         "tags": [
-          "Saved Views"
+          "SavedView"
         ],
         "summary": "Delete a global predefined saved view",
         "parameters": [
@@ -2782,7 +2782,7 @@
     "/api/v2/saved-views/{ids}": {
       "delete": {
         "tags": [
-          "Saved Views"
+          "SavedView"
         ],
         "summary": "Remove",
         "parameters": [
@@ -2844,7 +2844,7 @@
     "/api/v2/users/me": {
       "get": {
         "tags": [
-          "Users"
+          "User"
         ],
         "summary": "Get current user",
         "responses": {
@@ -2872,7 +2872,7 @@
       },
       "delete": {
         "tags": [
-          "Users"
+          "User"
         ],
         "summary": "Delete current user",
         "responses": {
@@ -2902,7 +2902,7 @@
     "/api/v2/users/{id}": {
       "get": {
         "tags": [
-          "Users"
+          "User"
         ],
         "summary": "Get by id",
         "operationId": "GetUserById",
@@ -2943,7 +2943,7 @@
       },
       "patch": {
         "tags": [
-          "Users"
+          "User"
         ],
         "summary": "Update",
         "parameters": [
@@ -3003,7 +3003,7 @@
       },
       "put": {
         "tags": [
-          "Users"
+          "User"
         ],
         "summary": "Update",
         "parameters": [
@@ -3065,7 +3065,7 @@
     "/api/v2/organizations/{organizationId}/users": {
       "get": {
         "tags": [
-          "Users"
+          "User"
         ],
         "summary": "Get by organization",
         "parameters": [
@@ -3130,7 +3130,7 @@
     "/api/v2/users/{ids}": {
       "delete": {
         "tags": [
-          "Users"
+          "User"
         ],
         "summary": "Remove",
         "parameters": [
@@ -3192,7 +3192,7 @@
     "/api/v2/users/{id}/email-address/{email}": {
       "post": {
         "tags": [
-          "Users"
+          "User"
         ],
         "summary": "Update email address",
         "parameters": [
@@ -3274,7 +3274,7 @@
     "/api/v2/users/verify-email-address/{token}": {
       "get": {
         "tags": [
-          "Users"
+          "User"
         ],
         "summary": "Verify email address",
         "parameters": [
@@ -3319,7 +3319,7 @@
     "/api/v2/users/{id}/resend-verification-email": {
       "get": {
         "tags": [
-          "Users"
+          "User"
         ],
         "summary": "Resend verification email",
         "parameters": [
@@ -3354,7 +3354,7 @@
     "/api/v2/projects": {
       "get": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Get all",
         "parameters": [
@@ -3421,7 +3421,7 @@
       },
       "post": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Create",
         "requestBody": {
@@ -3481,7 +3481,7 @@
     "/api/v2/organizations/{organizationId}/projects": {
       "get": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Get all",
         "parameters": [
@@ -3570,7 +3570,7 @@
     "/api/v2/projects/{id}": {
       "get": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Get by id",
         "operationId": "GetProjectById",
@@ -3619,7 +3619,7 @@
       },
       "patch": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Update",
         "parameters": [
@@ -3689,7 +3689,7 @@
       },
       "put": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Update",
         "parameters": [
@@ -3761,7 +3761,7 @@
     "/api/v2/projects/{ids}": {
       "delete": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Remove",
         "parameters": [
@@ -3823,7 +3823,7 @@
     "/api/v2/projects/config": {
       "get": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Get configuration settings",
         "parameters": [
@@ -3867,7 +3867,7 @@
     "/api/v2/projects/{id}/config": {
       "get": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Get configuration settings",
         "parameters": [
@@ -3919,7 +3919,7 @@
       },
       "post": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Add configuration value",
         "parameters": [
@@ -3981,7 +3981,7 @@
       },
       "delete": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Remove configuration value",
         "parameters": [
@@ -4035,7 +4035,7 @@
     "/api/v2/projects/{id}/sample-data": {
       "post": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Generate sample project data",
         "parameters": [
@@ -4077,7 +4077,7 @@
     "/api/v2/projects/{id}/reset-data": {
       "get": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Reset project data",
         "parameters": [
@@ -4117,7 +4117,7 @@
       },
       "post": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Reset project data",
         "parameters": [
@@ -4159,7 +4159,7 @@
     "/api/v2/users/{userId}/projects/{id}/notifications": {
       "get": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Get user notification settings",
         "parameters": [
@@ -4209,7 +4209,7 @@
       },
       "put": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Set user notification settings",
         "parameters": [
@@ -4268,7 +4268,7 @@
       },
       "post": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Set user notification settings",
         "parameters": [
@@ -4327,7 +4327,7 @@
       },
       "delete": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Remove user notification settings",
         "parameters": [
@@ -4372,7 +4372,7 @@
     "/api/v2/projects/{id}/{integration}/notifications": {
       "put": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Set an integrations notification settings",
         "parameters": [
@@ -4441,7 +4441,7 @@
       },
       "post": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Set an integrations notification settings",
         "parameters": [
@@ -4512,7 +4512,7 @@
     "/api/v2/projects/{id}/promotedtabs": {
       "put": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Promote tab",
         "parameters": [
@@ -4564,7 +4564,7 @@
       },
       "post": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Promote tab",
         "parameters": [
@@ -4616,7 +4616,7 @@
       },
       "delete": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Demote tab",
         "parameters": [
@@ -4670,7 +4670,7 @@
     "/api/v2/projects/check-name": {
       "get": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Check for unique name",
         "parameters": [
@@ -4704,7 +4704,7 @@
     "/api/v2/organizations/{organizationId}/projects/check-name": {
       "get": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Check for unique name",
         "parameters": [
@@ -4741,7 +4741,7 @@
     "/api/v2/projects/{id}/data": {
       "post": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Add custom data",
         "parameters": [
@@ -4803,7 +4803,7 @@
       },
       "delete": {
         "tags": [
-          "Projects"
+          "Project"
         ],
         "summary": "Remove custom data",
         "parameters": [
@@ -4857,7 +4857,7 @@
     "/api/v2/organizations": {
       "get": {
         "tags": [
-          "Organizations"
+          "Organization"
         ],
         "summary": "Get all",
         "parameters": [
@@ -4896,7 +4896,7 @@
       },
       "post": {
         "tags": [
-          "Organizations"
+          "Organization"
         ],
         "summary": "Create",
         "requestBody": {
@@ -4956,7 +4956,7 @@
     "/api/v2/organizations/{id}": {
       "get": {
         "tags": [
-          "Organizations"
+          "Organization"
         ],
         "summary": "Get by id",
         "operationId": "GetOrganizationById",
@@ -5005,7 +5005,7 @@
       },
       "patch": {
         "tags": [
-          "Organizations"
+          "Organization"
         ],
         "summary": "Update",
         "parameters": [
@@ -5075,7 +5075,7 @@
       },
       "put": {
         "tags": [
-          "Organizations"
+          "Organization"
         ],
         "summary": "Update",
         "parameters": [
@@ -5147,7 +5147,7 @@
     "/api/v2/organizations/{ids}": {
       "delete": {
         "tags": [
-          "Organizations"
+          "Organization"
         ],
         "summary": "Remove",
         "parameters": [
@@ -5209,7 +5209,7 @@
     "/api/v2/organizations/invoice/{id}": {
       "get": {
         "tags": [
-          "Organizations"
+          "Organization"
         ],
         "summary": "Get invoice",
         "parameters": [
@@ -5251,7 +5251,7 @@
     "/api/v2/organizations/{id}/invoices": {
       "get": {
         "tags": [
-          "Organizations"
+          "Organization"
         ],
         "summary": "Get invoices",
         "parameters": [
@@ -5322,7 +5322,7 @@
     "/api/v2/organizations/{id}/plans": {
       "get": {
         "tags": [
-          "Organizations"
+          "Organization"
         ],
         "summary": "Get plans",
         "parameters": [
@@ -5367,7 +5367,7 @@
     "/api/v2/organizations/{id}/change-plan": {
       "post": {
         "tags": [
-          "Organizations"
+          "Organization"
         ],
         "summary": "Change plan",
         "parameters": [
@@ -5467,7 +5467,7 @@
     "/api/v2/organizations/{id}/users/{email}": {
       "post": {
         "tags": [
-          "Organizations"
+          "Organization"
         ],
         "summary": "Add user",
         "parameters": [
@@ -5527,7 +5527,7 @@
       },
       "delete": {
         "tags": [
-          "Organizations"
+          "Organization"
         ],
         "summary": "Remove user",
         "parameters": [
@@ -5582,7 +5582,7 @@
     "/api/v2/organizations/{id}/data/{key}": {
       "post": {
         "tags": [
-          "Organizations"
+          "Organization"
         ],
         "summary": "Add custom data",
         "parameters": [
@@ -5645,7 +5645,7 @@
       },
       "delete": {
         "tags": [
-          "Organizations"
+          "Organization"
         ],
         "summary": "Remove custom data",
         "parameters": [
@@ -5690,7 +5690,7 @@
     "/api/v2/organizations/check-name": {
       "get": {
         "tags": [
-          "Organizations"
+          "Organization"
         ],
         "summary": "Check for unique name",
         "parameters": [
@@ -5720,7 +5720,7 @@
     "/api/v2/stacks/{id}": {
       "get": {
         "tags": [
-          "Stacks"
+          "Stack"
         ],
         "summary": "Get by id",
         "operationId": "GetStackById",
@@ -5771,7 +5771,7 @@
     "/api/v2/stacks/{ids}/mark-fixed": {
       "post": {
         "tags": [
-          "Stacks"
+          "Stack"
         ],
         "summary": "Mark fixed",
         "parameters": [
@@ -5817,7 +5817,7 @@
     "/api/v2/stacks/{ids}/mark-snoozed": {
       "post": {
         "tags": [
-          "Stacks"
+          "Stack"
         ],
         "summary": "Mark the selected stacks as snoozed",
         "parameters": [
@@ -5865,7 +5865,7 @@
     "/api/v2/stacks/{id}/add-link": {
       "post": {
         "tags": [
-          "Stacks"
+          "Stack"
         ],
         "summary": "Add reference link",
         "parameters": [
@@ -5920,7 +5920,7 @@
     "/api/v2/stacks/{id}/remove-link": {
       "post": {
         "tags": [
-          "Stacks"
+          "Stack"
         ],
         "summary": "Remove reference link",
         "parameters": [
@@ -5978,7 +5978,7 @@
     "/api/v2/stacks/{ids}/mark-critical": {
       "post": {
         "tags": [
-          "Stacks"
+          "Stack"
         ],
         "summary": "Mark future occurrences as critical",
         "parameters": [
@@ -6014,7 +6014,7 @@
       },
       "delete": {
         "tags": [
-          "Stacks"
+          "Stack"
         ],
         "summary": "Mark future occurrences as not critical",
         "parameters": [
@@ -6049,7 +6049,7 @@
     "/api/v2/stacks/{ids}/change-status": {
       "post": {
         "tags": [
-          "Stacks"
+          "Stack"
         ],
         "summary": "Change stack status",
         "parameters": [
@@ -6093,7 +6093,7 @@
     "/api/v2/stacks/{id}/promote": {
       "post": {
         "tags": [
-          "Stacks"
+          "Stack"
         ],
         "summary": "Promote to external service",
         "parameters": [
@@ -6141,7 +6141,7 @@
     "/api/v2/stacks/{ids}": {
       "delete": {
         "tags": [
-          "Stacks"
+          "Stack"
         ],
         "summary": "Remove",
         "parameters": [
@@ -6203,7 +6203,7 @@
     "/api/v2/stacks": {
       "get": {
         "tags": [
-          "Stacks"
+          "Stack"
         ],
         "summary": "Get all",
         "parameters": [
@@ -6288,7 +6288,7 @@
     "/api/v2/organizations/{organizationId}/stacks": {
       "get": {
         "tags": [
-          "Stacks"
+          "Stack"
         ],
         "summary": "Get by organization",
         "parameters": [
@@ -6403,7 +6403,7 @@
     "/api/v2/projects/{projectId}/stacks": {
       "get": {
         "tags": [
-          "Stacks"
+          "Stack"
         ],
         "summary": "Get by project",
         "parameters": [
@@ -6518,7 +6518,7 @@
     "/api/v2/events/count": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Count",
         "parameters": [
@@ -6590,7 +6590,7 @@
     "/api/v2/organizations/{organizationId}/events/count": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Count by organization",
         "parameters": [
@@ -6672,7 +6672,7 @@
     "/api/v2/projects/{projectId}/events/count": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Count by project",
         "parameters": [
@@ -6754,7 +6754,7 @@
     "/api/v2/events/{id}": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Get by id",
         "operationId": "GetPersistentEventById",
@@ -6823,7 +6823,7 @@
     "/api/v2/events": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Get all",
         "parameters": [
@@ -6931,7 +6931,7 @@
       },
       "post": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Submit event by POST",
         "parameters": [
@@ -6974,7 +6974,7 @@
     "/api/v2/organizations/{organizationId}/events": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Get by organization",
         "parameters": [
@@ -7104,7 +7104,7 @@
     "/api/v2/projects/{projectId}/events": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Get by project",
         "parameters": [
@@ -7232,7 +7232,7 @@
       },
       "post": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Submit event by POST for a specific project",
         "parameters": [
@@ -7285,7 +7285,7 @@
     "/api/v2/stacks/{stackId}/events": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Get by stack",
         "parameters": [
@@ -7415,7 +7415,7 @@
     "/api/v2/events/by-ref/{referenceId}": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Get by reference id",
         "parameters": [
@@ -7511,7 +7511,7 @@
     "/api/v2/projects/{projectId}/events/by-ref/{referenceId}": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Get by reference id",
         "parameters": [
@@ -7627,7 +7627,7 @@
     "/api/v2/events/sessions/{sessionId}": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Get a list of all sessions or events by a session id",
         "parameters": [
@@ -7747,7 +7747,7 @@
     "/api/v2/projects/{projectId}/events/sessions/{sessionId}": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Get a list of by a session id",
         "parameters": [
@@ -7887,7 +7887,7 @@
     "/api/v2/events/sessions": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Get a list of all sessions",
         "parameters": [
@@ -7987,7 +7987,7 @@
     "/api/v2/organizations/{organizationId}/events/sessions": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Get a list of all sessions",
         "parameters": [
@@ -8117,7 +8117,7 @@
     "/api/v2/projects/{projectId}/events/sessions": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Get a list of all sessions",
         "parameters": [
@@ -8247,7 +8247,7 @@
     "/api/v2/events/by-ref/{referenceId}/user-description": {
       "post": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Set user description",
         "parameters": [
@@ -8309,7 +8309,7 @@
     "/api/v2/projects/{projectId}/events/by-ref/{referenceId}/user-description": {
       "post": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Set user description",
         "parameters": [
@@ -8374,7 +8374,7 @@
     "/api/v2/events/session/heartbeat": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Submit heartbeat",
         "parameters": [
@@ -8426,7 +8426,7 @@
     "/api/v2/events/submit": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Submit event by GET",
         "parameters": [
@@ -8570,7 +8570,7 @@
     "/api/v2/events/submit/{type}": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Submit event type by GET",
         "parameters": [
@@ -8716,7 +8716,7 @@
     "/api/v2/projects/{projectId}/events/submit": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Submit event type by GET for a specific project",
         "parameters": [
@@ -8869,7 +8869,7 @@
     "/api/v2/projects/{projectId}/events/submit/{type}": {
       "get": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Submit event type by GET for a specific project",
         "parameters": [
@@ -9025,7 +9025,7 @@
     "/api/v2/events/{ids}": {
       "delete": {
         "tags": [
-          "Events"
+          "Event"
         ],
         "summary": "Remove",
         "parameters": [
@@ -11280,28 +11280,31 @@
   },
   "tags": [
     {
-      "name": "Projects"
+      "name": "Project"
     },
     {
-      "name": "Exceptionless.Tests"
+      "name": "Event"
     },
     {
       "name": "Auth"
     },
     {
-      "name": "Saved Views"
+      "name": "Token"
     },
     {
-      "name": "Users"
+      "name": "WebHook"
     },
     {
-      "name": "Organizations"
+      "name": "SavedView"
     },
     {
-      "name": "Stacks"
+      "name": "User"
     },
     {
-      "name": "Events"
+      "name": "Organization"
+    },
+    {
+      "name": "Stack"
     }
   ]
 }
