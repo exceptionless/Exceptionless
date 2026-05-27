@@ -129,43 +129,6 @@ export function formatDateRangeLabel(start: Date, end: Date, currentDate: Date =
     return `${startLabel} to ${endLabel}`;
 }
 
-function formatDatePart(date: Date, currentDate: Date): string {
-    const sameDay = date.toDateString() === currentDate.toDateString();
-    const yesterday = new Date(currentDate);
-    yesterday.setDate(currentDate.getDate() - 1);
-    const isYesterday = date.toDateString() === yesterday.toDateString();
-
-    if (sameDay) return 'Today';
-    if (isYesterday) return 'Yesterday';
-
-    const isSameYear = date.getFullYear() === currentDate.getFullYear();
-    return new Intl.DateTimeFormat(undefined, {
-        day: 'numeric',
-        month: 'short',
-        ...(isSameYear ? undefined : { year: 'numeric' })
-    }).format(date);
-}
-
-function formatTimePart(date: Date, omitSeconds: boolean): string {
-    const sec = date.getSeconds();
-    const min = date.getMinutes();
-
-    const opts: Intl.DateTimeFormatOptions = {
-        hour: 'numeric',
-        hour12: true,
-        ...(min > 0 || (!omitSeconds && sec > 0) ? { minute: '2-digit' } : {}),
-        ...(!omitSeconds && sec > 0 ? { second: '2-digit' } : {})
-    };
-
-    return new Intl.DateTimeFormat(undefined, opts).format(date);
-}
-
-function formatCompactDateTimeLabel(date: Date, currentDate: Date): string {
-    const datePart = formatDatePart(date, currentDate);
-    const timePart = formatTimePart(date, true);
-    return `${datePart} at ${timePart}`;
-}
-
 export function formatLongDate(value: Date): string {
     return value.toLocaleDateString(undefined, {
         day: 'numeric',
@@ -223,4 +186,46 @@ export function getSetIntervalTime(value: Date | string): number {
 
 export function isSameUtcMonth(date: Date, other: Date = new Date()): boolean {
     return date.getUTCFullYear() === other.getUTCFullYear() && date.getUTCMonth() === other.getUTCMonth();
+}
+
+function formatCompactDateTimeLabel(date: Date, currentDate: Date): string {
+    const datePart = formatDatePart(date, currentDate);
+    const timePart = formatTimePart(date, true);
+    return `${datePart} at ${timePart}`;
+}
+
+function formatDatePart(date: Date, currentDate: Date): string {
+    const sameDay = date.toDateString() === currentDate.toDateString();
+    const yesterday = new Date(currentDate);
+    yesterday.setDate(currentDate.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+
+    if (sameDay) {
+        return 'Today';
+    }
+
+    if (isYesterday) {
+        return 'Yesterday';
+    }
+
+    const isSameYear = date.getFullYear() === currentDate.getFullYear();
+    return new Intl.DateTimeFormat(undefined, {
+        day: 'numeric',
+        month: 'short',
+        ...(isSameYear ? undefined : { year: 'numeric' })
+    }).format(date);
+}
+
+function formatTimePart(date: Date, omitSeconds: boolean): string {
+    const sec = date.getSeconds();
+    const min = date.getMinutes();
+
+    const opts: Intl.DateTimeFormatOptions = {
+        hour: 'numeric',
+        hour12: true,
+        ...(min > 0 || (!omitSeconds && sec > 0) ? { minute: '2-digit' } : {}),
+        ...(!omitSeconds && sec > 0 ? { second: '2-digit' } : {})
+    };
+
+    return new Intl.DateTimeFormat(undefined, opts).format(date);
 }
