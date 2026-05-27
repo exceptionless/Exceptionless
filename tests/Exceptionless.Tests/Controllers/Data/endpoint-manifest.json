@@ -2145,8 +2145,8 @@
   },
   {
     "method": "POST",
-    "route": "/api/v2/stripe/",
-    "displayName": "HTTP: POST api/v2/stripe/",
+    "route": "/api/v2/stripe",
+    "displayName": "HTTP: POST api/v2/stripe",
     "tags": [],
     "allowAnonymous": true,
     "authorizationPolicies": [],
@@ -2166,33 +2166,9 @@
     "authenticationSchemes": []
   },
   {
-    "method": "DELETE",
-    "route": "/api/v2/tokens/{ids}",
-    "displayName": "HTTP: DELETE api/v2/tokens/{ids}",
-    "tags": [],
-    "allowAnonymous": false,
-    "authorizationPolicies": [
-      "UserPolicy"
-    ],
-    "authorizationRoles": [],
-    "authenticationSchemes": []
-  },
-  {
-    "method": "GET",
-    "route": "/api/v2/tokens/{id}",
-    "displayName": "HTTP: GET api/v2/tokens/{id}",
-    "tags": [],
-    "allowAnonymous": false,
-    "authorizationPolicies": [
-      "UserPolicy"
-    ],
-    "authorizationRoles": [],
-    "authenticationSchemes": []
-  },
-  {
     "method": "PATCH",
-    "route": "/api/v2/tokens/{id}",
-    "displayName": "HTTP: PATCH api/v2/tokens/{id}",
+    "route": "/api/v2/tokens/{id:tokens}",
+    "displayName": "HTTP: PATCH api/v2/tokens/{id:tokens}",
     "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2203,8 +2179,32 @@
   },
   {
     "method": "PUT",
-    "route": "/api/v2/tokens/{id}",
-    "displayName": "HTTP: PUT api/v2/tokens/{id}",
+    "route": "/api/v2/tokens/{id:tokens}",
+    "displayName": "HTTP: PUT api/v2/tokens/{id:tokens}",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/tokens/{id:token}",
+    "displayName": "HTTP: GET api/v2/tokens/{id:token}",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "DELETE",
+    "route": "/api/v2/tokens/{ids:tokens}",
+    "displayName": "HTTP: DELETE api/v2/tokens/{ids:tokens}",
     "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2454,6 +2454,18 @@
     "authorizationPolicies": [
       "ClientPolicy",
       "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/webhooks/subscribe",
+    "displayName": "HTTP: POST api/v2/webhooks/subscribe",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "ClientPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
