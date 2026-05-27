@@ -249,73 +249,116 @@
         closeCommandWindow();
         await openKeyboardShortcuts();
     }
+
+    const PAGE_JUMP_SIZE = 7;
+    let commandValue = $state('');
+
+    function handleKeydown(event: KeyboardEvent): void {
+        if (event.key !== 'PageDown' && event.key !== 'PageUp') {
+            return;
+        }
+
+        event.preventDefault();
+
+        const root = event.currentTarget;
+        if (!(root instanceof HTMLElement)) {
+            return;
+        }
+
+        const items = Array.from(root.querySelectorAll<HTMLElement>('[data-command-item]:not([aria-disabled="true"])'));
+        const visibleItems = items.filter((item) => {
+            const group = item.closest('[data-command-group]');
+            return !group?.hasAttribute('hidden');
+        });
+
+        if (visibleItems.length === 0) {
+            return;
+        }
+
+        const currentIndex = visibleItems.findIndex((item) => item.hasAttribute('data-selected'));
+        let targetIndex: number;
+
+        if (event.key === 'PageDown') {
+            targetIndex = currentIndex === -1 ? PAGE_JUMP_SIZE - 1 : Math.min(currentIndex + PAGE_JUMP_SIZE, visibleItems.length - 1);
+        } else {
+            targetIndex = currentIndex === -1 ? 0 : Math.max(currentIndex - PAGE_JUMP_SIZE, 0);
+        }
+
+        const targetValue = visibleItems[targetIndex]?.getAttribute('data-value');
+        if (targetValue) {
+            commandValue = targetValue;
+            visibleItems[targetIndex]?.scrollIntoView({ block: 'nearest' });
+        }
+    }
 </script>
 
 {#key resetKey}
-    <Command.Dialog bind:open filter={filterCommandItem}>
+    <Command.Dialog bind:open bind:value={commandValue} filter={filterCommandItem} onkeydown={handleKeydown}>
         <Command.Input bind:value={searchText} placeholder="Search or jump to..." />
         <Command.List>
             <Command.Empty>No results found.</Command.Empty>
             {#if hasSearchText && showRemoteSearchResults}
-                {#if showEventSearchResults}
-                    <Command.Group heading="Events" value="Search Events">
-                        {#if eventSearchQuery.isPending}
-                            <Command.Item disabled value={`Searching events ${debouncedSearchText}`}>
-                                <Activity />
-                                <span>Searching events...</span>
-                            </Command.Item>
-                        {:else}
-                            {#each eventMatches as event (event.id)}
-                                <Command.LinkItem href={getEventHref(event)} onclick={closeCommandWindow} value={getResultValue('Event', event)}>
+                {#key debouncedSearchText}
+                    {#if showEventSearchResults}
+                        <Command.Group heading="Events" value="Search Events">
+                            {#if eventSearchQuery.isPending}
+                                <Command.Item disabled value={`Searching events ${debouncedSearchText}`}>
                                     <Activity />
-                                    <div class="flex min-w-0 flex-col">
-                                        <span class="truncate">{getResultTitle(event)}</span>
-                                        {#if getResultDescription(event)}
-                                            <span class="text-muted-foreground truncate text-xs">{getResultDescription(event)}</span>
-                                        {/if}
-                                    </div>
-                                </Command.LinkItem>
-                            {/each}
-                            {#if hasMoreEventMatches}
-                                <Command.LinkItem href={eventSearchHref} onclick={closeCommandWindow} value={`View all events ${debouncedSearchText}`}>
-                                    <Search />
-                                    <span>View all matching events</span>
-                                </Command.LinkItem>
+                                    <span>Searching events...</span>
+                                </Command.Item>
+                            {:else}
+                                {#each eventMatches as event (event.id)}
+                                    <Command.LinkItem href={getEventHref(event)} onclick={closeCommandWindow} value={getResultValue('Event', event)}>
+                                        <Activity />
+                                        <div class="flex min-w-0 flex-col">
+                                            <span class="truncate">{getResultTitle(event)}</span>
+                                            {#if getResultDescription(event)}
+                                                <span class="text-muted-foreground truncate text-xs">{getResultDescription(event)}</span>
+                                            {/if}
+                                        </div>
+                                    </Command.LinkItem>
+                                {/each}
+                                {#if hasMoreEventMatches}
+                                    <Command.LinkItem href={eventSearchHref} onclick={closeCommandWindow} value={`View all events ${debouncedSearchText}`}>
+                                        <Search />
+                                        <span>View all matching events</span>
+                                    </Command.LinkItem>
+                                {/if}
                             {/if}
-                        {/if}
-                    </Command.Group>
-                {/if}
-                {#if showEventSearchResults && showIssueSearchResults}
-                    <Command.Separator />
-                {/if}
-                {#if showIssueSearchResults}
-                    <Command.Group heading="Issues" value="Search Issues">
-                        {#if issueSearchQuery.isPending}
-                            <Command.Item disabled value={`Searching issues ${debouncedSearchText}`}>
-                                <Bug />
-                                <span>Searching issues...</span>
-                            </Command.Item>
-                        {:else}
-                            {#each issueMatches as issue (issue.id)}
-                                <Command.LinkItem href={getIssueHref(issue)} onclick={closeCommandWindow} value={getResultValue('Issue', issue)}>
+                        </Command.Group>
+                    {/if}
+                    {#if showEventSearchResults && showIssueSearchResults}
+                        <Command.Separator />
+                    {/if}
+                    {#if showIssueSearchResults}
+                        <Command.Group heading="Issues" value="Search Issues">
+                            {#if issueSearchQuery.isPending}
+                                <Command.Item disabled value={`Searching issues ${debouncedSearchText}`}>
                                     <Bug />
-                                    <div class="flex min-w-0 flex-col">
-                                        <span class="truncate">{getResultTitle(issue)}</span>
-                                        {#if getResultDescription(issue)}
-                                            <span class="text-muted-foreground truncate text-xs">{getResultDescription(issue)}</span>
-                                        {/if}
-                                    </div>
-                                </Command.LinkItem>
-                            {/each}
-                            {#if hasMoreIssueMatches}
-                                <Command.LinkItem href={issueSearchHref} onclick={closeCommandWindow} value={`View all issues ${debouncedSearchText}`}>
-                                    <Search />
-                                    <span>View all matching issues</span>
-                                </Command.LinkItem>
+                                    <span>Searching issues...</span>
+                                </Command.Item>
+                            {:else}
+                                {#each issueMatches as issue (issue.id)}
+                                    <Command.LinkItem href={getIssueHref(issue)} onclick={closeCommandWindow} value={getResultValue('Issue', issue)}>
+                                        <Bug />
+                                        <div class="flex min-w-0 flex-col">
+                                            <span class="truncate">{getResultTitle(issue)}</span>
+                                            {#if getResultDescription(issue)}
+                                                <span class="text-muted-foreground truncate text-xs">{getResultDescription(issue)}</span>
+                                            {/if}
+                                        </div>
+                                    </Command.LinkItem>
+                                {/each}
+                                {#if hasMoreIssueMatches}
+                                    <Command.LinkItem href={issueSearchHref} onclick={closeCommandWindow} value={`View all issues ${debouncedSearchText}`}>
+                                        <Search />
+                                        <span>View all matching issues</span>
+                                    </Command.LinkItem>
+                                {/if}
                             {/if}
-                        {/if}
-                    </Command.Group>
-                {/if}
+                        </Command.Group>
+                    {/if}
+                {/key}
                 <Command.Separator />
             {/if}
             {#each Object.entries(groupedRoutes) as [group, items], index (group)}
