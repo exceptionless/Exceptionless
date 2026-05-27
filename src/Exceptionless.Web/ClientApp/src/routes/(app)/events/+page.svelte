@@ -155,6 +155,7 @@
     function getCurrentFilters(): FacetedFilter.IFilter[] {
         const filter = getEffectiveFilter();
         const savedView = savedViewsState.activeSavedView;
+
         if (queryParams.filter == null && savedView?.filter_definitions && filter === (savedView.filter ?? null)) {
             const hydrated = deserializeFilters(savedView.filter_definitions);
             return applyTimeFilter(hydrated, getQueryTime());
@@ -164,9 +165,15 @@
     }
 
     let filters = $state(getCurrentFilters());
+    let isInternalFilterUpdate = false;
     watch(
         [() => page.url.pathname, () => page.url.search, () => savedViewsState.activeSavedView],
         () => {
+            if (isInternalFilterUpdate) {
+                isInternalFilterUpdate = false;
+                return;
+            }
+
             filters = getCurrentFilters();
         },
         { lazy: true }
@@ -200,9 +207,18 @@
         const baseFilter = savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
         const baseTime = savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
 
+        const newFilterParam = filter === baseFilter ? null : filter;
+        const newTimeParam = time === baseTime ? null : (time ?? '');
+
         updateFilterCache(filterCacheKey(filter), updatedFilters);
-        queryParams.time = time === baseTime ? null : (time ?? '');
-        queryParams.filter = filter === baseFilter ? null : filter;
+        // Only skip the watch when the URL will actually change from our update.
+        // If the URL doesn't change, the watch won't fire and the flag would stay stale.
+        if (newFilterParam !== queryParams.filter || newTimeParam !== queryParams.time) {
+            isInternalFilterUpdate = true;
+        }
+
+        queryParams.time = newTimeParam;
+        queryParams.filter = newFilterParam;
     }
 
     const eventsQueryParameters: GetEventsParams = $state({
@@ -374,15 +390,15 @@
         const aggregations = chartDataQuery.data?.aggregations;
         const timeRange = parseDateMathRange(getQueryTime() || undefined);
         const totalEvents = agg.sum(aggregations, 'sum_count')?.value ?? chartDataQuery.data?.total ?? 0;
-        const totalIssues = agg.cardinality(aggregations, 'cardinality_stack')?.value ?? 0;
-        const newIssues = agg.terms<boolean>(aggregations, 'terms_first')?.buckets[0]?.total ?? 0;
+        const totalStacks = agg.cardinality(aggregations, 'cardinality_stack')?.value ?? 0;
+        const newStacks = agg.terms<boolean>(aggregations, 'terms_first')?.buckets[0]?.total ?? 0;
         const hours = Math.max((timeRange.end.getTime() - timeRange.start.getTime()) / 3_600_000, 1);
 
         return {
             eventsPerHour: totalEvents / hours,
-            newIssues,
+            newStacks,
             totalEvents,
-            totalIssues
+            totalStacks
         };
     });
 
@@ -448,9 +464,9 @@
             <EventsStatsDashboard
                 eventsPerHour={stats.eventsPerHour}
                 isLoading={chartDataQuery.isLoading && !chartDataQuery.isSuccess}
-                newIssues={stats.newIssues}
+                newStacks={stats.newStacks}
                 totalEvents={stats.totalEvents}
-                totalIssues={stats.totalIssues}
+                totalStacks={stats.totalStacks}
             />
         {/if}
 

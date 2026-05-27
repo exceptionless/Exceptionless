@@ -25,7 +25,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 {
     private const int MaxViewsPerOrganization = 100;
     private const string PredefinedSavedViewsDataKey = "@@PredefinedSavedViewsVersion";
-    private const int PredefinedSavedViewsVersion = 2;
+    private const int PredefinedSavedViewsVersion = 4;
 
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ILockProvider _lockProvider;
@@ -90,7 +90,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
     /// Get by organization and view
     /// </summary>
     /// <param name="organizationId">The identifier of the organization.</param>
-    /// <param name="viewType">The dashboard view type (events, issues, stream).</param>
+    /// <param name="viewType">The dashboard view type (events, stacks, stream).</param>
     /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
     /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
     /// <response code="404">The organization could not be found.</response>

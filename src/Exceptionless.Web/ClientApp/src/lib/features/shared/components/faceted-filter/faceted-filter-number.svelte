@@ -4,6 +4,7 @@
     import { Input } from '$comp/ui/input';
     import * as Popover from '$comp/ui/popover';
     import Separator from '$comp/ui/separator/separator.svelte';
+    import { onDestroy } from 'svelte';
 
     interface Props {
         changed: (value?: number) => void;
@@ -17,12 +18,26 @@
 
     let { changed, hidden = false, open = $bindable(), remove, title, toggleHidden, value }: Props = $props();
 
+    const DEBOUNCE_MS = 500;
+
     // eslint-disable-next-line svelte/prefer-writable-derived
     let updatedValue = $state<number | undefined>();
+    let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+    onDestroy(() => clearTimeout(debounceTimer));
 
     $effect.pre(() => {
         updatedValue = value;
     });
+
+    function scheduleApply() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            if (updatedValue !== value) {
+                changed(updatedValue);
+            }
+        }, DEBOUNCE_MS);
+    }
 
     function handleKeyDown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
@@ -35,6 +50,7 @@
     }
 
     function applyAndClose() {
+        clearTimeout(debounceTimer);
         if (updatedValue !== value) {
             changed(updatedValue);
         }
@@ -43,6 +59,7 @@
     }
 
     function cancelAndClose() {
+        clearTimeout(debounceTimer);
         updatedValue = value;
         open = false;
     }
@@ -86,6 +103,7 @@
                 aria-label={`Filter by ${title}`}
                 aria-describedby={`${title}-help`}
                 onkeydown={handleKeyDown}
+                oninput={scheduleApply}
                 autofocus={open}
             />
         </div>

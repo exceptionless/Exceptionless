@@ -47,7 +47,7 @@
 
 {#if stackEventsQuery.isSuccess && !eventId}
     <StackCard {filterChanged} id={stackId} />
-    <Muted>This issue has no events to display.</Muted>
+    <Muted>This stack has no events to display.</Muted>
 {:else if eventId}
     <EventsOverview {filterChanged} id={eventId} {handleError} />
 {/if}

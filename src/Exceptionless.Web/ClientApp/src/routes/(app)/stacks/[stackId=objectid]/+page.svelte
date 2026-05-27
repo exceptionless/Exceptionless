@@ -8,7 +8,7 @@
     import { H3 } from '$comp/typography';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import { organization } from '$features/organizations/context.svelte';
-    import IssueDetails from '$features/stacks/components/issue-details.svelte';
+    import StackDetails from '$features/stacks/components/stack-details.svelte';
     import { watch } from 'runed';
     import { toast } from 'svelte-sonner';
 
@@ -19,7 +19,7 @@
     watch(
         () => organization.current,
         () => {
-            goto(resolve('/(app)/issues'));
+            goto(resolve('/(app)/stacks'));
         },
         { lazy: true }
     );
@@ -33,11 +33,11 @@
             return;
         }
 
-        toast.error('Unable to load issue event details.');
+        toast.error('Unable to load stack event details.');
     }
 </script>
 
 <div class="flex flex-col gap-4">
-    <H3>Issue Details</H3>
-    <IssueDetails {filterChanged} {handleError} {stackId} />
+    <H3>Stack Details</H3>
+    <StackDetails {filterChanged} {handleError} {stackId} />
 </div>

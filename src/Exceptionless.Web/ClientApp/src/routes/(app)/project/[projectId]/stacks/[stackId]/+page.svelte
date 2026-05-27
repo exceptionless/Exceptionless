@@ -40,7 +40,7 @@
     watch(
         () => organization.current,
         () => {
-            goto(resolve('/(app)/project/[projectId]/issues', { projectId: page.params.projectId || '' }));
+            goto(resolve('/(app)/project/[projectId]/stacks', { projectId: page.params.projectId || '' }));
         },
         { lazy: true }
     );
@@ -54,15 +54,15 @@
             return;
         }
 
-        toast.error('Unable to load issue event details.');
+        toast.error('Unable to load stack event details.');
     }
 </script>
 
 <div class="flex flex-col gap-4">
-    <H3>Issue Details</H3>
+    <H3>Stack Details</H3>
     {#if stackEventsQuery.isSuccess && !eventId}
         <StackCard {filterChanged} id={stackId} />
-        <Muted>This issue has no events to display.</Muted>
+        <Muted>This stack has no events to display.</Muted>
     {:else if eventId}
         <EventsOverview {filterChanged} {handleError} id={eventId} />
     {/if}

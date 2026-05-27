@@ -6,10 +6,10 @@
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { deleteProject } from '$features/projects/api.svelte';
-    import Issues from '@lucide/svelte/icons/bug';
     import Configure from '@lucide/svelte/icons/cloud';
     import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
     import Organization from '@lucide/svelte/icons/group';
+    import Stacks from '@lucide/svelte/icons/layers';
     import Edit from '@lucide/svelte/icons/pen';
     import X from '@lucide/svelte/icons/x';
     import { toast } from 'svelte-sonner';
@@ -47,9 +47,9 @@
         {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
-        <DropdownMenu.Item onclick={() => goto(resolve('/(app)/issues'))}>
-            <Issues />
-            Issues
+        <DropdownMenu.Item onclick={() => goto(resolve('/(app)/stacks'))}>
+            <Stacks />
+            Stacks
         </DropdownMenu.Item>
         <DropdownMenu.Item onclick={() => goto(resolve('/(app)/project/[projectId]/manage', { projectId: project.id }))}>
             <Edit />

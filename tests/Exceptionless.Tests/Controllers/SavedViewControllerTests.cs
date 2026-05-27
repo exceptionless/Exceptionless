@@ -60,9 +60,9 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         Assert.Equal(5, seededSystemViews.Count);
         Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "events", "Logs"));
         Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "events", "Errors"));
-        Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "issues", "Most Frequent Errors"));
-        Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "issues", "Most Frequent 404s"));
-        Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "issues", "Most Used Features"));
+        Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "stacks", "Most Frequent Errors"));
+        Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "stacks", "Most Frequent 404s"));
+        Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "stacks", "Most Used Features"));
     }
 
     [Fact]
@@ -163,7 +163,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "My Private View",
             Filter = "status:regressed",
-            ViewType = "issues",
+            ViewType = "stacks",
             IsPrivate = true
         };
 
@@ -401,7 +401,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
 
     [Theory]
     [InlineData("events")]
-    [InlineData("issues")]
+    [InlineData("stacks")]
     [InlineData("stream")]
     public async Task PostAsync_WithValidView_Succeeds(string view)
     {
@@ -490,9 +490,9 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     {
         // Arrange
         var eventsFilter = await CreateSavedViewAsync("Events Only", "status:open", "events");
-        var issuesFilter = await CreateSavedViewAsync("Issues Only", "status:regressed", "issues");
+        var stacksFilter = await CreateSavedViewAsync("Stacks Only", "status:regressed", "stacks");
         Assert.NotNull(eventsFilter);
-        Assert.NotNull(issuesFilter);
+        Assert.NotNull(stacksFilter);
 
         // Act
         var filters = await SendRequestAsAsync<List<ViewSavedView>>(r => r
@@ -504,7 +504,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(filters);
         Assert.Contains(filters, f => String.Equals(f.Id, eventsFilter.Id));
-        Assert.DoesNotContain(filters, f => String.Equals(f.Id, issuesFilter.Id));
+        Assert.DoesNotContain(filters, f => String.Equals(f.Id, stacksFilter.Id));
     }
 
     [Fact]
@@ -521,9 +521,9 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         Assert.NotNull(filters);
         Assert.Contains(filters, view => IsPredefinedSavedView(view, "events", "Logs"));
         Assert.Contains(filters, view => IsPredefinedSavedView(view, "events", "Errors"));
-        Assert.Contains(filters, view => IsPredefinedSavedView(view, "issues", "Most Frequent Errors"));
-        Assert.Contains(filters, view => IsPredefinedSavedView(view, "issues", "Most Frequent 404s"));
-        Assert.Contains(filters, view => IsPredefinedSavedView(view, "issues", "Most Used Features"));
+        Assert.Contains(filters, view => IsPredefinedSavedView(view, "stacks", "Most Frequent Errors"));
+        Assert.Contains(filters, view => IsPredefinedSavedView(view, "stacks", "Most Frequent 404s"));
+        Assert.Contains(filters, view => IsPredefinedSavedView(view, "stacks", "Most Used Features"));
 
         foreach (var savedView in filters.Where(IsPredefinedSavedView))
             await _savedViewRepository.RemoveAsync(savedView.Id, o => o.ImmediateConsistency());
@@ -569,9 +569,9 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         Assert.Equal(5, predefinedViews.Count);
         Assert.Contains(predefinedViews, view => IsPredefinedSavedView(view, "events", "Logs"));
         Assert.Contains(predefinedViews, view => IsPredefinedSavedView(view, "events", "Errors"));
-        Assert.Contains(predefinedViews, view => IsPredefinedSavedView(view, "issues", "Most Frequent Errors"));
-        Assert.Contains(predefinedViews, view => IsPredefinedSavedView(view, "issues", "Most Frequent 404s"));
-        Assert.Contains(predefinedViews, view => IsPredefinedSavedView(view, "issues", "Most Used Features"));
+        Assert.Contains(predefinedViews, view => IsPredefinedSavedView(view, "stacks", "Most Frequent Errors"));
+        Assert.Contains(predefinedViews, view => IsPredefinedSavedView(view, "stacks", "Most Frequent 404s"));
+        Assert.Contains(predefinedViews, view => IsPredefinedSavedView(view, "stacks", "Most Used Features"));
     }
 
     [Fact]
@@ -2035,7 +2035,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             Name = "Issues View",
             Filter = "status:regressed",
             Slug = "issues-view",
-            ViewType = "issues",
+            ViewType = "stacks",
             CreatedByUserId = testUser.Id
         });
 
@@ -2071,7 +2071,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Name = "Count Test 2",
             Slug = "count-test-2",
-            ViewType = "issues",
+            ViewType = "stacks",
             CreatedByUserId = testUser.Id
         });
 
@@ -2181,9 +2181,9 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     {
         return IsPredefinedSavedView(savedView, "events", "Logs")
             || IsPredefinedSavedView(savedView, "events", "Errors")
-            || IsPredefinedSavedView(savedView, "issues", "Most Frequent Errors")
-            || IsPredefinedSavedView(savedView, "issues", "Most Frequent 404s")
-            || IsPredefinedSavedView(savedView, "issues", "Most Used Features");
+            || IsPredefinedSavedView(savedView, "stacks", "Most Frequent Errors")
+            || IsPredefinedSavedView(savedView, "stacks", "Most Frequent 404s")
+            || IsPredefinedSavedView(savedView, "stacks", "Most Used Features");
     }
 
 }

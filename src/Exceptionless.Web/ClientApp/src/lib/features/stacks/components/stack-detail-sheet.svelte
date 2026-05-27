@@ -7,7 +7,7 @@
     import * as Sheet from '$comp/ui/sheet';
     import ExternalLink from '@lucide/svelte/icons/external-link';
 
-    import IssueDetails from './issue-details.svelte';
+    import StackDetails from './stack-details.svelte';
 
     interface Props {
         filterChanged: (filter: IFilter) => void;
@@ -18,7 +18,7 @@
 
     let { filterChanged, onClose, onError, stackId = $bindable() }: Props = $props();
 
-    const resolvedHref = $derived(stackId ? resolve('/(app)/issues/[stackId=objectid]', { stackId }) : '#');
+    const resolvedHref = $derived(stackId ? resolve('/(app)/stacks/[stackId=objectid]', { stackId }) : '#');
 
     function handleOpenChange() {
         onClose();
@@ -41,15 +41,15 @@
     >
         <Sheet.Header class="pt-4.5 pb-0">
             <Sheet.Title class="flex items-center gap-2 text-2xl font-semibold tracking-tight" level={3}>
-                Issue Details
-                <Button aria-label="Open issue details in new window" href={resolvedHref} size="icon-sm" title="Open in new window" variant="ghost">
+                Stack Details
+                <Button aria-label="Open stack details in new window" href={resolvedHref} size="icon-sm" title="Open in new window" variant="ghost">
                     <ExternalLink aria-hidden="true" />
                 </Button>
             </Sheet.Title>
         </Sheet.Header>
         <div class="mt-0.5 px-4">
             {#if stackId}
-                <IssueDetails {filterChanged} {handleError} {stackId} />
+                <StackDetails {filterChanged} {handleError} {stackId} />
             {/if}
         </div>
     </Sheet.Content>
