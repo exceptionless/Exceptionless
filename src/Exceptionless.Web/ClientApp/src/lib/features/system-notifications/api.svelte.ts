@@ -16,7 +16,8 @@ export function clearSystemNotificationMutation() {
         mutationFn: async (params: { publish?: boolean }) => {
             const client = useFetchClient();
             const publish = params.publish !== false;
-            await client.delete(`notifications/system?publish=${publish}`);
+            const qs = new URLSearchParams({ publish: String(publish) });
+            await client.delete(`notifications/system?${qs}`);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.settings });
@@ -29,9 +30,9 @@ export function forceRefreshClientsMutation() {
     return createMutation<ReleaseNotification, ProblemDetails, undefined | { message?: string }>(() => ({
         mutationFn: async (params?: { message?: string }) => {
             const client = useFetchClient();
-            const response = await client.postJSON<ReleaseNotification>('notifications/force-refresh', {
-                value: params?.message ?? null
-            });
+            const response = params?.message
+                ? await client.postJSON<ReleaseNotification>('notifications/force-refresh', { value: params.message })
+                : await client.postJSON<ReleaseNotification>('notifications/force-refresh');
             return response.data!;
         }
     }));
@@ -66,7 +67,8 @@ export function sendReleaseNotificationMutation() {
         mutationFn: async (params: { critical?: boolean; message?: string }) => {
             const client = useFetchClient();
             const critical = params.critical ?? false;
-            const response = await client.postJSON<ReleaseNotification>(`notifications/release?critical=${critical}`, {
+            const qs = new URLSearchParams({ critical: String(critical) });
+            const response = await client.postJSON<ReleaseNotification>(`notifications/release?${qs}`, {
                 value: params.message ?? null
             });
             return response.data!;
@@ -80,7 +82,8 @@ export function setSystemNotificationMutation() {
         mutationFn: async (params: { message: string; publish?: boolean }) => {
             const client = useFetchClient();
             const publish = params.publish !== false;
-            const response = await client.postJSON<SystemNotification>(`notifications/system?publish=${publish}`, {
+            const qs = new URLSearchParams({ publish: String(publish) });
+            const response = await client.postJSON<SystemNotification>(`notifications/system?${qs}`, {
                 value: params.message
             });
             return response.data!;
