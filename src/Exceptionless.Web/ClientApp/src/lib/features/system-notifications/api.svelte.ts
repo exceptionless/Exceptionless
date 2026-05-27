@@ -16,8 +16,7 @@ export function clearSystemNotificationMutation() {
         mutationFn: async (params: { publish?: boolean }) => {
             const client = useFetchClient();
             const publish = params.publish !== false;
-            const qs = new URLSearchParams({ publish: String(publish) });
-            await client.delete(`notifications/system?${qs}`);
+            await client.delete(`notifications/system?publish=${publish}`);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.settings });
@@ -67,8 +66,7 @@ export function sendReleaseNotificationMutation() {
         mutationFn: async (params: { critical?: boolean; message?: string }) => {
             const client = useFetchClient();
             const critical = params.critical ?? false;
-            const qs = new URLSearchParams({ critical: String(critical) });
-            const response = await client.postJSON<ReleaseNotification>(`notifications/release?${qs}`, {
+            const response = await client.postJSON<ReleaseNotification>(`notifications/release?critical=${critical}`, {
                 value: params.message ?? null
             });
             return response.data!;
@@ -82,8 +80,7 @@ export function setSystemNotificationMutation() {
         mutationFn: async (params: { message: string; publish?: boolean }) => {
             const client = useFetchClient();
             const publish = params.publish !== false;
-            const qs = new URLSearchParams({ publish: String(publish) });
-            const response = await client.postJSON<SystemNotification>(`notifications/system?${qs}`, {
+            const response = await client.postJSON<SystemNotification>(`notifications/system?publish=${publish}`, {
                 value: params.message
             });
             return response.data!;
