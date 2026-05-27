@@ -15,11 +15,11 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import { Spinner } from '$comp/ui/spinner';
     import * as Tabs from '$comp/ui/tabs';
+    import { submitFeatureUsage } from '$features/auth/exceptionless-session';
     import { FREE_PLAN_ID, isStripeEnabled, StripeProvider } from '$features/billing';
     import { type ChangePlanFormData, ChangePlanSchema } from '$features/billing/schemas';
     import { changePlanMutation, getPlansQuery } from '$features/organizations/api.svelte';
     import { getFormErrorMessages, problemDetailsToFormErrors } from '$features/shared/validation';
-    import { submitFeatureUsage } from '$features/auth/exceptionless-session';
     import { Exceptionless } from '@exceptionless/browser';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import Check from '@lucide/svelte/icons/check';
