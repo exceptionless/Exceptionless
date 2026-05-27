@@ -8,7 +8,7 @@
     {#snippet content()}
         <Section class="py-2 px-4">
             <Text class="text-[20px] leading-[1.6] text-dark"
-                >{@html '{{#if IsOverMonthlyLimit}}{{OrganizationName}} has reached its monthly plan limit. Upgrade now to to continue receiving events.{{else if IsOverHourlyLimit}}Events are currently being throttled for {{OrganizationName}} until {{ThrottledUntil}} UTC to prevent using up your plan limit in a small window of time. Upgrade now to increase your limits.{{/if}}'}</Text
+                >{@html '{{#if IsOverMonthlyLimit}}{{OrganizationName}} has reached its monthly plan limit. Upgrade now to continue receiving events.{{else if IsOverHourlyLimit}}Events are currently being throttled for {{OrganizationName}} until {{ThrottledUntil}} UTC to prevent using up your plan limit in a small window of time. Upgrade now to increase your limits.{{/if}}'}</Text
             >
             <Section class="text-center">
                 <Button
@@ -28,7 +28,7 @@
                 >{@html '{{/if}}'} You can also view the <Link
                     href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/frequent"
                     class="text-primary no-underline">most frequent events</Link
-                > to to see an overall picture of the events that are being counting against your plan limits.</Text
+                > to see an overall picture of the events that are counting against your plan limits.</Text
             >
             <Text class="text-base text-dark leading-[1.3]"
                 >Please send us an email at <Link

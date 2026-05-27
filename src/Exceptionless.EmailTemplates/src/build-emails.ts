@@ -48,9 +48,14 @@ function cleanHtml(html: string): string {
         return `__SCRIPT_PLACEHOLDER_${scripts.length - 1}__`;
     });
 
-    // Collapse inter-tag whitespace
+    // Collapse inter-tag whitespace (between adjacent HTML tags, no space needed).
     html = html.replace(/>\s+</g, '><');
-    html = html.replace(/\n\s*/g, '');
+    // Replace remaining newlines (within text nodes) with a space so that
+    // multi-line text in Svelte templates doesn't get concatenated without a
+    // separator (e.g. "from\nwhich" → "from which", not "fromwhich").
+    html = html.replace(/\n[ \t]*/g, ' ');
+    // Collapse runs of spaces to a single space.
+    html = html.replace(/ {2,}/g, ' ');
 
     // Restore script blocks preserving newlines so `}}` inside JSON
     // cannot be mis-parsed as Handlebars closing tokens.
