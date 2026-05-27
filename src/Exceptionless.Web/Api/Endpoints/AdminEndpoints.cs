@@ -36,7 +36,7 @@ public static class AdminEndpoints
         group.MapGet("requeue", async (IMediator mediator, string? path = null, bool archive = false)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AdminRequeue(path, archive)));
 
-        group.MapGet("maintenance/{name}", async (string name, IMediator mediator, DateTime? utcStart = null, DateTime? utcEnd = null, string? organizationId = null)
+        group.MapGet("maintenance/{name:minlength(1)}", async (string name, IMediator mediator, DateTime? utcStart = null, DateTime? utcEnd = null, string? organizationId = null)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AdminRunMaintenance(name, utcStart, utcEnd, organizationId)));
 
         group.MapGet("elasticsearch", async (IMediator mediator)

@@ -37,7 +37,6 @@ public static class StackEndpoints
         // Mark fixed - Zapier v2 (no id in route)
         group.MapPost("stacks/mark-fixed", async (HttpContext httpContext, IMediator mediator, [FromBody] JsonDocument data)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new MarkStacksFixedByZapier(data, httpContext)))
-        .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .ExcludeFromDescription();
 
         // Snooze
@@ -60,7 +59,6 @@ public static class StackEndpoints
         // Add link - Zapier v2 (no id in route)
         group.MapPost("stacks/add-link", async (HttpContext httpContext, IMediator mediator, [FromBody] JsonDocument data)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AddStackLinkByZapier(data, httpContext)))
-        .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .ExcludeFromDescription();
 
         // Remove link
