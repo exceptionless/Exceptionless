@@ -51,24 +51,15 @@
         updatedValues = values;
     });
 
-    const hasChanged = $derived(updatedValues.length !== values.length || updatedValues.some((value) => !values.includes(value)));
-
-    function applyAndClose() {
-        if (hasChanged) {
-            changed(updatedValues);
-        }
-
-        open = false;
-    }
-
     function cancelAndClose() {
         updatedValues = values;
+        changed(updatedValues);
         open = false;
     }
 
     function onOpenChange(isOpen: boolean) {
         if (!isOpen) {
-            applyAndClose();
+            open = false;
         }
     }
 
@@ -79,10 +70,12 @@
 
     export function onValueSelected(currentValue: string) {
         updatedValues = updatedValues.includes(currentValue) ? updatedValues.filter((v) => v !== currentValue) : [...updatedValues, currentValue];
+        changed(updatedValues);
     }
 
     export function onClearFilter() {
         updatedValues = [];
+        changed(updatedValues);
     }
 
     function filter(value: string, search: string) {
@@ -119,7 +112,7 @@
             </Button>
         {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={applyAndClose}>
+    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={(e) => e.preventDefault()}>
         <Command.Root {filter}>
             <Command.Input placeholder={title} autofocus={open} aria-describedby={`${title}-help`} />
             <Command.List>

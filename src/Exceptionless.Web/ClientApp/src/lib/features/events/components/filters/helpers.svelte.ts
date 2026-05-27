@@ -22,11 +22,6 @@ import {
     VersionFilter
 } from './models.svelte';
 
-let filterCacheVersion = $state(1);
-export function filterCacheVersionNumber() {
-    return filterCacheVersion;
-}
-
 const filterCache = new SvelteMap<null | string, IFilter[]>();
 
 interface SerializedFilter {
@@ -56,7 +51,6 @@ export function buildFilterCacheKey(organization: string | undefined, scope: str
 
 export function clearFilterCache() {
     filterCache.clear();
-    filterCacheVersion = 1;
 }
 
 export function deserializeFilters(json: string): IFilter[] {
@@ -226,7 +220,6 @@ export function updateFilterCache(cacheKey: string, filters: IFilter[]) {
 
     filterCache.delete(cacheKey);
     filterCache.set(cacheKey, filters);
-    filterCacheVersion += 1;
 }
 
 function processFilterRules(filters: IFilter[]): IFilter[] {
