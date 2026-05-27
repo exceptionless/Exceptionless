@@ -46,10 +46,6 @@
         updatedValue = value;
     });
 
-    function applyAndClose() {
-        open = false;
-    }
-
     function cancelAndClose() {
         updatedValue = value;
         changed(updatedValue);
@@ -73,6 +69,7 @@
         } else {
             updatedValue = currentValue;
         }
+
         changed(updatedValue);
     }
 
@@ -115,7 +112,7 @@
             </Button>
         {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={applyAndClose}>
+    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={(e) => e.preventDefault()}>
         <Command.Root {filter}>
             <Command.Input placeholder={title} autofocus={open} aria-describedby={`${title}-help`} />
             <Command.List>

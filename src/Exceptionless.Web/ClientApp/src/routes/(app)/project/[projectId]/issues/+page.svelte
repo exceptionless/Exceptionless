@@ -11,7 +11,6 @@
     import { StatusFilter, StringFilter, TagFilter } from '$features/events/components/filters';
     import {
         buildFilterCacheKey,
-        filterCacheVersionNumber,
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
@@ -115,7 +114,7 @@
 
     let filters = $state(sanitizeStackFilters(getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter)));
     watch(
-        [() => queryParams.filter, () => filterCacheVersionNumber()],
+        [() => queryParams.filter],
         ([filter]) => {
             filters = sanitizeStackFilters(getFiltersFromCache(filterCacheKey(filter), filter), true);
         },
@@ -134,16 +133,24 @@
             return;
         }
 
-        updateFilters(filterChanged(filters ?? [], addedOrUpdated));
+        const isNew = !filters?.some((f) => f.id === addedOrUpdated.id);
+        const updatedFilters = filterChanged(filters ?? [], addedOrUpdated);
+        updateFilters(updatedFilters);
+        if (isNew) {
+            filters = sanitizeStackFilters(updatedFilters);
+        }
     }
 
     function onFilterRemoved(removed?: FacetedFilter.IFilter): void {
         if (!removed) {
             updateFilters([]);
+            filters = [];
             return;
         }
 
-        updateFilters(filterRemoved(filters ?? [], removed));
+        const updatedFilters = filterRemoved(filters ?? [], removed);
+        updateFilters(updatedFilters);
+        filters = updatedFilters;
     }
 
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
