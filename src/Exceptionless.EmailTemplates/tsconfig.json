@@ -1,13 +1,15 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "esModuleInterop": true,
-    "strict": true,
-    "outDir": "dist",
-    "rootDir": ".",
-    "types": ["node"]
-  },
-  "include": ["*.ts", "src/**/*.ts"]
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "esModuleInterop": true,
+        "strict": true,
+        "skipLibCheck": true,
+        "outDir": "dist",
+        "rootDir": ".",
+        "types": ["node", "vite/client"]
+    },
+    "include": ["*.ts", "src/**/*.ts", "src/**/*.svelte", ".storybook/**/*.ts"],
+    "exclude": ["node_modules"]
 }
