@@ -78,7 +78,7 @@
         {/snippet}
     </Popover.Trigger>
     <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={(e) => e.preventDefault()}>
-        <div class="flex items-center border-b">
+        <div class="p-2">
             <Input
                 bind:value={updatedValue}
                 placeholder={title}

@@ -36,6 +36,7 @@
         } else if (selectedValue === 'no-value') {
             updatedValue = undefined;
         }
+
         changed(updatedValue);
     }
 

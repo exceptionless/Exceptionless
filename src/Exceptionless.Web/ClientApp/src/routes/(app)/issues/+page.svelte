@@ -185,6 +185,7 @@
         if (isNew) {
             filters = updatedFilters;
         }
+
         selectedStackId = undefined;
     }
 

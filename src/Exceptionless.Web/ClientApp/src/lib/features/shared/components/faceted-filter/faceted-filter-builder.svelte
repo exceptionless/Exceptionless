@@ -6,8 +6,11 @@
     import { Button } from '$comp/ui/button';
     import * as Command from '$comp/ui/command';
     import * as Popover from '$comp/ui/popover';
-    import Separator from '$comp/ui/separator/separator.svelte';
+    import * as Tooltip from '$comp/ui/tooltip';
     import Circle from '@lucide/svelte/icons/circle-plus';
+    import Eraser from '@lucide/svelte/icons/eraser';
+    import Eye from '@lucide/svelte/icons/eye';
+    import EyeOff from '@lucide/svelte/icons/eye-off';
     import { computeCommandScore } from 'bits-ui';
 
     import type { FacetedFilter, IFilter } from './models';
@@ -55,6 +58,7 @@
                     existing.title = builder.title;
                     return existing;
                 }
+
                 return {
                     component: builder.component,
                     filter: f,
@@ -65,8 +69,7 @@
             .filter((f): f is FacetedFilter<IFilter> => !!f);
 
         // Only replace the array if the set of facets actually changed
-        const idsMatch =
-            newFacets.length === facets.length && newFacets.every((f, i) => f.filter.id === facets[i]?.filter.id);
+        const idsMatch = newFacets.length === facets.length && newFacets.every((f, i) => f.filter.id === facets[i]?.filter.id);
         if (!idsMatch) {
             facets = newFacets;
         }
@@ -242,15 +245,34 @@
                 {/if}
             </Command.List>
         </Command.Root>
-        <div class="flex flex-col">
-            <Separator />
+        <div class="flex items-center justify-end gap-0.5 border-t px-2 py-1">
             {#if hiddenFilterCount > 0}
-                <Button variant="ghost" onclick={toggleHiddenFilters}>
-                    {showHiddenFilters ? 'Hide Hidden Filters' : `Show ${hiddenFilterLabel}`}
-                </Button>
+                <Tooltip.Root>
+                    <Tooltip.Trigger>
+                        {#snippet child({ props })}
+                            <Button {...props} variant="ghost" size="icon-sm" onclick={toggleHiddenFilters}>
+                                {#if showHiddenFilters}
+                                    <EyeOff class="text-muted-foreground size-3.5" />
+                                {:else}
+                                    <Eye class="text-muted-foreground size-3.5" />
+                                {/if}
+                            </Button>
+                        {/snippet}
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>Toggle hidden filters</Tooltip.Content>
+                </Tooltip.Root>
             {/if}
             {#if filters.some((f) => f.type !== 'date')}
-                <Button variant="ghost" onclick={onRemoveAll}>Clear Filters</Button>
+                <Tooltip.Root>
+                    <Tooltip.Trigger>
+                        {#snippet child({ props })}
+                            <Button {...props} variant="ghost" size="icon-sm" onclick={onRemoveAll}>
+                                <Eraser class="text-muted-foreground size-3.5" />
+                            </Button>
+                        {/snippet}
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>Clear all filters</Tooltip.Content>
+                </Tooltip.Root>
             {/if}
         </div>
     </Popover.Content>

@@ -124,6 +124,7 @@
         if (isNew) {
             filters = updatedFilters;
         }
+
         selectedEventId = null;
     }
 

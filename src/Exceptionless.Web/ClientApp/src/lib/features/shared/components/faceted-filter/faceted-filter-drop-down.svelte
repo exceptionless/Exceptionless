@@ -69,6 +69,7 @@
         } else {
             updatedValue = currentValue;
         }
+
         changed(updatedValue);
     }
 

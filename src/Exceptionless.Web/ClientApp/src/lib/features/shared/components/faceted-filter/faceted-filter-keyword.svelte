@@ -78,7 +78,7 @@
         {/snippet}
     </Popover.Trigger>
     <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={(e) => e.preventDefault()}>
-        <div class="flex items-center border-b">
+        <div class="p-2">
             <Input
                 bind:value={updatedValue}
                 placeholder={title}
@@ -87,6 +87,8 @@
                 aria-describedby={`${title}-help`}
                 onkeydown={handleKeyDown}
                 autofocus={open}
+                spellcheck="false"
+                autocomplete="off"
             />
         </div>
         <div id={`${title}-help`} class="sr-only">Type keywords. Enter applies, Escape cancels.</div>

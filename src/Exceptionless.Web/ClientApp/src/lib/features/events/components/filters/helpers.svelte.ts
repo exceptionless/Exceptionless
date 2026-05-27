@@ -22,7 +22,6 @@ import {
     VersionFilter
 } from './models.svelte';
 
-
 const filterCache = new SvelteMap<null | string, IFilter[]>();
 
 interface SerializedFilter {
