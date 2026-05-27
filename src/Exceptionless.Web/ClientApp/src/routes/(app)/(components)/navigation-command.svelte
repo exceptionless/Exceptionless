@@ -261,7 +261,9 @@
         event.preventDefault();
 
         const root = event.currentTarget;
-        if (!(root instanceof HTMLElement)) {return;}
+        if (!(root instanceof HTMLElement)) {
+            return;
+        }
 
         const items = Array.from(root.querySelectorAll<HTMLElement>('[data-command-item]:not([aria-disabled="true"])'));
         const visibleItems = items.filter((item) => {
@@ -269,7 +271,9 @@
             return !group?.hasAttribute('hidden');
         });
 
-        if (visibleItems.length === 0) {return;}
+        if (visibleItems.length === 0) {
+            return;
+        }
 
         const currentIndex = visibleItems.findIndex((item) => item.hasAttribute('data-selected'));
         let targetIndex: number;

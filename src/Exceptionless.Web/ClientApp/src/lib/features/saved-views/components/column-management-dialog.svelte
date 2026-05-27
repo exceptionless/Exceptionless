@@ -54,7 +54,9 @@
     function moveColumnUp(columnId: string): void {
         const columnIds = visibleColumns.map((c) => c.id);
         const index = columnIds.indexOf(columnId);
-        if (index <= 0) {return;}
+        if (index <= 0) {
+            return;
+        }
 
         const temp = columnIds[index]!;
         columnIds[index] = columnIds[index - 1]!;
@@ -65,7 +67,9 @@
     function moveColumnDown(columnId: string): void {
         const columnIds = visibleColumns.map((c) => c.id);
         const index = columnIds.indexOf(columnId);
-        if (index === -1 || index >= columnIds.length - 1) {return;}
+        if (index === -1 || index >= columnIds.length - 1) {
+            return;
+        }
 
         const temp = columnIds[index]!;
         columnIds[index] = columnIds[index + 1]!;
@@ -96,7 +100,9 @@
             const columnIds = visibleColumns.map((c) => c.id);
             const fromIndex = columnIds.indexOf(draggedColumnId);
             const toIndex = columnIds.indexOf(targetColumnId);
-            if (fromIndex === -1 || toIndex === -1) {return;}
+            if (fromIndex === -1 || toIndex === -1) {
+                return;
+            }
 
             const [moved] = columnIds.splice(fromIndex, 1);
             if (moved) {
