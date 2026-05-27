@@ -97,6 +97,75 @@ export function formatDateLabel(date: Date, currentDate: Date = new Date(), opti
     return `${datePart}${joiner}${timeStr}`;
 }
 
+/**
+ * Formats a date range compactly:
+ * - Same day: "May 24, 10:01 AM – 3:02 PM"
+ * - Range > 1 day: omits seconds from both sides
+ * - Different days: "May 24 at 10:01 AM to May 25 at 3:02 PM"
+ */
+export function formatDateRangeLabel(start: Date, end: Date, currentDate: Date = new Date()): string {
+    const rangeMs = Math.abs(end.getTime() - start.getTime());
+    const rangeExceedsDay = rangeMs > 24 * 60 * 60 * 1000;
+    const sameDateStr = start.toDateString() === end.toDateString();
+
+    if (sameDateStr) {
+        // Same day: show date once, both times separated by dash
+        const datePart = formatDatePart(start, currentDate);
+        const startTime = formatTimePart(start, rangeExceedsDay);
+        const endTime = formatTimePart(end, rangeExceedsDay);
+        return `${datePart}, ${startTime} – ${endTime}`;
+    }
+
+    // Different days: full label for each, but strip seconds if range > 1 day
+    const startLabel = formatDateLabel(start, currentDate, { includeRelative: false, month: 'short' });
+    const endLabel = formatDateLabel(end, currentDate, { includeRelative: false, month: 'short' });
+
+    if (rangeExceedsDay) {
+        const startCompact = formatCompactDateTimeLabel(start, currentDate);
+        const endCompact = formatCompactDateTimeLabel(end, currentDate);
+        return `${startCompact} to ${endCompact}`;
+    }
+
+    return `${startLabel} to ${endLabel}`;
+}
+
+function formatDatePart(date: Date, currentDate: Date): string {
+    const sameDay = date.toDateString() === currentDate.toDateString();
+    const yesterday = new Date(currentDate);
+    yesterday.setDate(currentDate.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+
+    if (sameDay) return 'Today';
+    if (isYesterday) return 'Yesterday';
+
+    const isSameYear = date.getFullYear() === currentDate.getFullYear();
+    return new Intl.DateTimeFormat(undefined, {
+        day: 'numeric',
+        month: 'short',
+        ...(isSameYear ? undefined : { year: 'numeric' })
+    }).format(date);
+}
+
+function formatTimePart(date: Date, omitSeconds: boolean): string {
+    const sec = date.getSeconds();
+    const min = date.getMinutes();
+
+    const opts: Intl.DateTimeFormatOptions = {
+        hour: 'numeric',
+        hour12: true,
+        ...(min > 0 || (!omitSeconds && sec > 0) ? { minute: '2-digit' } : {}),
+        ...(!omitSeconds && sec > 0 ? { second: '2-digit' } : {})
+    };
+
+    return new Intl.DateTimeFormat(undefined, opts).format(date);
+}
+
+function formatCompactDateTimeLabel(date: Date, currentDate: Date): string {
+    const datePart = formatDatePart(date, currentDate);
+    const timePart = formatTimePart(date, true);
+    return `${datePart} at ${timePart}`;
+}
+
 export function formatLongDate(value: Date): string {
     return value.toLocaleDateString(undefined, {
         day: 'numeric',
