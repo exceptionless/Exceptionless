@@ -19,6 +19,7 @@
     import { type ChangePlanFormData, ChangePlanSchema } from '$features/billing/schemas';
     import { changePlanMutation, getPlansQuery } from '$features/organizations/api.svelte';
     import { getFormErrorMessages, problemDetailsToFormErrors } from '$features/shared/validation';
+    import { submitFeatureUsage } from '$features/auth/exceptionless-session';
     import { Exceptionless } from '@exceptionless/browser';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import Check from '@lucide/svelte/icons/check';
@@ -256,6 +257,7 @@
                     }
 
                     toast.success(result.message ?? 'Your billing plan has been successfully changed.');
+                    await submitFeatureUsage('organization.ChangePlan');
                     onclose(true);
 
                     return null;
