@@ -36,6 +36,7 @@
         } else if (selectedValue === 'no-value') {
             updatedValue = undefined;
         }
+        changed(updatedValue);
     }
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -49,21 +50,18 @@
     }
 
     function applyAndClose() {
-        if (updatedValue !== value) {
-            changed(updatedValue);
-        }
-
         open = false;
     }
 
     function cancelAndClose() {
         updatedValue = value;
+        changed(updatedValue);
         open = false;
     }
 
     function onOpenChange(isOpen: boolean) {
         if (!isOpen) {
-            applyAndClose();
+            open = false;
         }
     }
 

@@ -51,24 +51,19 @@
         updatedValues = values;
     });
 
-    const hasChanged = $derived(updatedValues.length !== values.length || updatedValues.some((value) => !values.includes(value)));
-
     function applyAndClose() {
-        if (hasChanged) {
-            changed(updatedValues);
-        }
-
         open = false;
     }
 
     function cancelAndClose() {
         updatedValues = values;
+        changed(updatedValues);
         open = false;
     }
 
     function onOpenChange(isOpen: boolean) {
         if (!isOpen) {
-            applyAndClose();
+            open = false;
         }
     }
 
@@ -79,10 +74,12 @@
 
     export function onValueSelected(currentValue: string) {
         updatedValues = updatedValues.includes(currentValue) ? updatedValues.filter((v) => v !== currentValue) : [...updatedValues, currentValue];
+        changed(updatedValues);
     }
 
     export function onClearFilter() {
         updatedValues = [];
+        changed(updatedValues);
     }
 
     function filter(value: string, search: string) {

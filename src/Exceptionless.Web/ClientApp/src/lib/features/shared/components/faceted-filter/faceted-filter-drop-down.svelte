@@ -47,21 +47,18 @@
     });
 
     function applyAndClose() {
-        if (updatedValue !== value) {
-            changed(updatedValue);
-        }
-
         open = false;
     }
 
     function cancelAndClose() {
         updatedValue = value;
+        changed(updatedValue);
         open = false;
     }
 
     function onOpenChange(isOpen: boolean) {
         if (!isOpen) {
-            applyAndClose();
+            open = false;
         }
     }
 
@@ -76,10 +73,13 @@
         } else {
             updatedValue = currentValue;
         }
+        changed(updatedValue);
+        open = false;
     }
 
     export function onClearFilter() {
         updatedValue = undefined;
+        changed(updatedValue);
     }
 
     function displayValue(value: string | undefined) {
