@@ -54,7 +54,7 @@
             return;
         }
 
-        toast.error('Unable to load issue event details.');
+        toast.error('Unable to load stack event details.');
     }
 </script>
 
@@ -62,7 +62,7 @@
     <H3>Stack Details</H3>
     {#if stackEventsQuery.isSuccess && !eventId}
         <StackCard {filterChanged} id={stackId} />
-        <Muted>This issue has no events to display.</Muted>
+        <Muted>This stack has no events to display.</Muted>
     {:else if eventId}
         <EventsOverview {filterChanged} {handleError} id={eventId} />
     {/if}

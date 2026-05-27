@@ -7,7 +7,7 @@
     import * as Sheet from '$comp/ui/sheet';
     import ExternalLink from '@lucide/svelte/icons/external-link';
 
-    import IssueDetails from './stack-details.svelte';
+    import StackDetails from './stack-details.svelte';
 
     interface Props {
         filterChanged: (filter: IFilter) => void;
@@ -49,7 +49,7 @@
         </Sheet.Header>
         <div class="mt-0.5 px-4">
             {#if stackId}
-                <IssueDetails {filterChanged} {handleError} {stackId} />
+                <StackDetails {filterChanged} {handleError} {stackId} />
             {/if}
         </div>
     </Sheet.Content>

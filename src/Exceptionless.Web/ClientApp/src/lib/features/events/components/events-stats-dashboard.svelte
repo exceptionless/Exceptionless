@@ -12,12 +12,12 @@
     interface Props {
         eventsPerHour?: number;
         isLoading?: boolean;
-        newIssues?: number;
+        newStacks?: number;
         totalEvents?: number;
-        totalIssues?: number;
+        totalStacks?: number;
     }
 
-    let { eventsPerHour = 0, isLoading = false, newIssues = 0, totalEvents = 0, totalIssues = 0 }: Props = $props();
+    let { eventsPerHour = 0, isLoading = false, newStacks = 0, totalEvents = 0, totalStacks = 0 }: Props = $props();
 
     const metricCardClass =
         "relative h-[66px]! justify-between gap-1! overflow-hidden bg-card py-2! ring-[color-mix(in_oklab,var(--chart-1)_42%,transparent)] before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-[linear-gradient(90deg,var(--chart-1),var(--chart-2))] before:content-['']";
@@ -76,7 +76,7 @@
                 <Skeleton class="h-5 w-16" />
             {:else}
                 <div class={metricValueClass}>
-                    <Number value={totalIssues} />
+                    <Number value={totalStacks} />
                 </div>
             {/if}
         </Card.Content>
@@ -103,7 +103,7 @@
                 <Skeleton class="h-5 w-16" />
             {:else}
                 <div class={metricValueClass}>
-                    <Number value={newIssues} />
+                    <Number value={newStacks} />
                 </div>
             {/if}
         </Card.Content>

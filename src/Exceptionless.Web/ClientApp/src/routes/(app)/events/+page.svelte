@@ -388,15 +388,15 @@
         const aggregations = chartDataQuery.data?.aggregations;
         const timeRange = parseDateMathRange(getQueryTime() || undefined);
         const totalEvents = agg.sum(aggregations, 'sum_count')?.value ?? chartDataQuery.data?.total ?? 0;
-        const totalIssues = agg.cardinality(aggregations, 'cardinality_stack')?.value ?? 0;
-        const newIssues = agg.terms<boolean>(aggregations, 'terms_first')?.buckets[0]?.total ?? 0;
+        const totalStacks = agg.cardinality(aggregations, 'cardinality_stack')?.value ?? 0;
+        const newStacks = agg.terms<boolean>(aggregations, 'terms_first')?.buckets[0]?.total ?? 0;
         const hours = Math.max((timeRange.end.getTime() - timeRange.start.getTime()) / 3_600_000, 1);
 
         return {
             eventsPerHour: totalEvents / hours,
-            newIssues,
+            newStacks,
             totalEvents,
-            totalIssues
+            totalStacks
         };
     });
 
@@ -462,9 +462,9 @@
             <EventsStatsDashboard
                 eventsPerHour={stats.eventsPerHour}
                 isLoading={chartDataQuery.isLoading && !chartDataQuery.isSuccess}
-                newIssues={stats.newIssues}
+                newStacks={stats.newStacks}
                 totalEvents={stats.totalEvents}
-                totalIssues={stats.totalIssues}
+                totalStacks={stats.totalStacks}
             />
         {/if}
 

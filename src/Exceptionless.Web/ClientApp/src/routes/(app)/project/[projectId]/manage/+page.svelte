@@ -20,7 +20,7 @@
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import Configure from '@lucide/svelte/icons/cloud-download';
     import Database from '@lucide/svelte/icons/database';
-    import Issues from '@lucide/svelte/icons/layers';
+    import Stacks from '@lucide/svelte/icons/layers';
     import X from '@lucide/svelte/icons/x';
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
@@ -170,7 +170,7 @@
     <div class="flex w-full items-center justify-between">
         <div class="flex gap-2">
             <Button variant="secondary" href={`${resolve('/(app)/stacks')}?filter=project:${projectId}`}>
-                <Issues class="mr-2 size-4" /> Go To Stacks
+                <Stacks class="mr-2 size-4" /> Go To Stacks
             </Button>
             <Button variant="secondary" href={resolve('/(app)/project/[projectId]/configure', { projectId })}>
                 <Configure class="mr-2 size-4" /> Configure Project

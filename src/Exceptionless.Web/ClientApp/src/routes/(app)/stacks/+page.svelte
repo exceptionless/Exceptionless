@@ -33,7 +33,7 @@
     import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts';
     import { parseDateMathRange, toDateMathRange } from '$features/shared/utils/datemath';
-    import IssueDetailSheet from '$features/stacks/components/stack-detail-sheet.svelte';
+    import StackDetailSheet from '$features/stacks/components/stack-detail-sheet.svelte';
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
@@ -372,15 +372,15 @@
         const aggregations = chartDataQuery.data?.aggregations;
         const timeRange = parseDateMathRange(getQueryTime());
         const totalEvents = agg.sum(aggregations, 'sum_count')?.value ?? chartDataQuery.data?.total ?? 0;
-        const totalIssues = agg.cardinality(aggregations, 'cardinality_stack')?.value ?? 0;
-        const newIssues = agg.terms<boolean>(aggregations, 'terms_first')?.buckets[0]?.total ?? 0;
+        const totalStacks = agg.cardinality(aggregations, 'cardinality_stack')?.value ?? 0;
+        const newStacks = agg.terms<boolean>(aggregations, 'terms_first')?.buckets[0]?.total ?? 0;
         const hours = Math.max((timeRange.end.getTime() - timeRange.start.getTime()) / 3_600_000, 1);
 
         return {
             eventsPerHour: totalEvents / hours,
-            newIssues,
+            newStacks,
             totalEvents,
-            totalIssues
+            totalStacks
         };
     });
 
@@ -432,9 +432,9 @@
             <EventsStatsDashboard
                 eventsPerHour={stats.eventsPerHour}
                 isLoading={chartDataQuery.isLoading && !chartDataQuery.isSuccess}
-                newIssues={stats.newIssues}
+                newStacks={stats.newStacks}
                 totalEvents={stats.totalEvents}
-                totalIssues={stats.totalIssues}
+                totalStacks={stats.totalStacks}
             />
         {/if}
 
@@ -459,4 +459,4 @@
     </div>
 </div>
 
-<IssueDetailSheet stackId={selectedStackId} filterChanged={onFilterChanged} onClose={() => (selectedStackId = undefined)} onError={handleStackError} />
+<StackDetailSheet stackId={selectedStackId} filterChanged={onFilterChanged} onClose={() => (selectedStackId = undefined)} onError={handleStackError} />

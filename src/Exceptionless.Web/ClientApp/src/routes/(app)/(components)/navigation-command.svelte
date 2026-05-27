@@ -86,7 +86,7 @@
         queryKey: ['navigation-command', 'events', organization.current, debouncedSearchText]
     }));
 
-    const issueSearchQuery = createQuery<FetchClientResponse<StackSummaryModel<SummaryTemplateKeys>[]>, ProblemDetails>(() => ({
+    const stackSearchQuery = createQuery<FetchClientResponse<StackSummaryModel<SummaryTemplateKeys>[]>, ProblemDetails>(() => ({
         enabled: () => open && !!accessToken.current && !!organization.current && hasSearchText,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             return client.getJSON<StackSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
@@ -104,12 +104,12 @@
     }));
 
     const eventMatches = $derived((eventSearchQuery.data?.data ?? []).slice(0, COMMAND_SEARCH_RESULT_LIMIT));
-    const issueMatches = $derived((issueSearchQuery.data?.data ?? []).slice(0, COMMAND_SEARCH_RESULT_LIMIT));
+    const stackMatches = $derived((stackSearchQuery.data?.data ?? []).slice(0, COMMAND_SEARCH_RESULT_LIMIT));
     const hasMoreEventMatches = $derived((eventSearchQuery.data?.data?.length ?? 0) > COMMAND_SEARCH_RESULT_LIMIT);
-    const hasMoreIssueMatches = $derived((issueSearchQuery.data?.data?.length ?? 0) > COMMAND_SEARCH_RESULT_LIMIT);
+    const hasMoreStackMatches = $derived((stackSearchQuery.data?.data?.length ?? 0) > COMMAND_SEARCH_RESULT_LIMIT);
     const showEventSearchResults = $derived(eventSearchQuery.isPending || eventMatches.length > 0 || hasMoreEventMatches);
-    const showIssueSearchResults = $derived(issueSearchQuery.isPending || issueMatches.length > 0 || hasMoreIssueMatches);
-    const showRemoteSearchResults = $derived(showEventSearchResults || showIssueSearchResults);
+    const showStackSearchResults = $derived(stackSearchQuery.isPending || stackMatches.length > 0 || hasMoreStackMatches);
+    const showRemoteSearchResults = $derived(showEventSearchResults || showStackSearchResults);
 
     $effect(() => {
         if (resetKey >= 0) {
@@ -178,12 +178,12 @@
         return resolve('/(app)/events/[eventId=objectid]', { eventId: result.id });
     }
 
-    function getIssueHref(result: CommandSearchResult): string {
+    function getStackHref(result: CommandSearchResult): string {
         return resolve('/(app)/stacks/[stackId=objectid]', { stackId: result.id });
     }
 
     const eventSearchHref = $derived(buildSearchHref(resolve('/(app)/events'), debouncedSearchText));
-    const issueSearchHref = $derived(buildSearchHref(resolve('/(app)/stacks'), debouncedSearchText));
+    const stackSearchHref = $derived(buildSearchHref(resolve('/(app)/stacks'), debouncedSearchText));
 
     const commandRoutes = $derived(
         routes.flatMap((route) => {
@@ -327,30 +327,30 @@
                             {/if}
                         </Command.Group>
                     {/if}
-                    {#if showEventSearchResults && showIssueSearchResults}
+                    {#if showEventSearchResults && showStackSearchResults}
                         <Command.Separator />
                     {/if}
-                    {#if showIssueSearchResults}
+                    {#if showStackSearchResults}
                         <Command.Group heading="Stacks" value="Search Stacks">
-                            {#if issueSearchQuery.isPending}
+                            {#if stackSearchQuery.isPending}
                                 <Command.Item disabled value={`Searching stacks ${debouncedSearchText}`}>
                                     <Bug />
                                     <span>Searching stacks...</span>
                                 </Command.Item>
                             {:else}
-                                {#each issueMatches as issue (issue.id)}
-                                    <Command.LinkItem href={getIssueHref(issue)} onclick={closeCommandWindow} value={getResultValue('Stack', issue)}>
+                                {#each stackMatches as stack (stack.id)}
+                                    <Command.LinkItem href={getStackHref(stack)} onclick={closeCommandWindow} value={getResultValue('Stack', stack)}>
                                         <Bug />
                                         <div class="flex min-w-0 flex-col">
-                                            <span class="truncate">{getResultTitle(issue)}</span>
-                                            {#if getResultDescription(issue)}
-                                                <span class="text-muted-foreground truncate text-xs">{getResultDescription(issue)}</span>
+                                            <span class="truncate">{getResultTitle(stack)}</span>
+                                            {#if getResultDescription(stack)}
+                                                <span class="text-muted-foreground truncate text-xs">{getResultDescription(stack)}</span>
                                             {/if}
                                         </div>
                                     </Command.LinkItem>
                                 {/each}
-                                {#if hasMoreIssueMatches}
-                                    <Command.LinkItem href={issueSearchHref} onclick={closeCommandWindow} value={`View all stacks ${debouncedSearchText}`}>
+                                {#if hasMoreStackMatches}
+                                    <Command.LinkItem href={stackSearchHref} onclick={closeCommandWindow} value={`View all stacks ${debouncedSearchText}`}>
                                         <Search />
                                         <span>View all matching stacks</span>
                                     </Command.LinkItem>
