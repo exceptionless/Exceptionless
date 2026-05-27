@@ -138,10 +138,10 @@ public class UserHandler(
             return ApiResults.TooManyRequests("Unable to update email address. Please try later.");
 
         if (!await IsEmailAddressAvailableInternalAsync(email))
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            return HttpResults.ValidationProblem(new Dictionary<string, string[]>
             {
-                ["EmailAddress"] = ["A user already exists with this email address."]
-            });
+                ["email_address"] = ["A user already exists with this email address."]
+            }, statusCode: StatusCodes.Status422UnprocessableEntity);
 
         user.ResetPasswordResetToken();
         user.EmailAddress = email;
@@ -180,10 +180,10 @@ public class UserHandler(
         }
 
         if (!user.HasValidVerifyEmailAddressTokenExpiration(timeProvider))
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            return HttpResults.ValidationProblem(new Dictionary<string, string[]>
             {
-                ["VerifyEmailAddressTokenExpiration"] = ["Verify Email Address Token has expired."]
-            });
+                ["verify_email_address_token_expiration"] = ["Verify Email Address Token has expired."]
+            }, statusCode: StatusCodes.Status422UnprocessableEntity);
 
         user.MarkEmailAddressVerified();
         await repository.SaveAsync(user, o => o.Cache());
@@ -396,9 +396,10 @@ public class UserHandler(
     private static IResult PermissionToResult(PermissionResult permission)
     {
         if (permission.StatusCode is StatusCodes.Status422UnprocessableEntity)
-            return TypedResults.ValidationProblem(String.IsNullOrEmpty(permission.Message)
+            return HttpResults.ValidationProblem(String.IsNullOrEmpty(permission.Message)
                 ? new Dictionary<string, string[]>()
-                : new Dictionary<string, string[]> { ["general"] = [permission.Message] });
+                : new Dictionary<string, string[]> { ["general"] = [permission.Message] },
+                statusCode: StatusCodes.Status422UnprocessableEntity);
 
         if (String.IsNullOrEmpty(permission.Message))
             return TypedResults.Problem(statusCode: permission.StatusCode);

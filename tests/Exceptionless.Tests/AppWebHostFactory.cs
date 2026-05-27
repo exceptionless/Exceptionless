@@ -2,10 +2,14 @@ using System.Collections.Concurrent;
 using System.Net;
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
+using Exceptionless.Core;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Insulation.Configuration;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Exceptionless.Tests;
@@ -104,6 +108,30 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
                 {
                     ["AppScope"] = AppScope
                 });
+        });
+
+        // In the minimal hosting model, Program.Main reads AppOptions BEFORE Build() applies
+        // ConfigureAppConfiguration overrides. Re-register AppOptions from the final configuration
+        // so the per-instance AppScope (test, test-1, test-2) is used correctly.
+        builder.ConfigureTestServices(services =>
+        {
+            services.AddSingleton(sp =>
+            {
+                var config = (IConfigurationRoot)sp.GetRequiredService<IConfiguration>();
+                var opts = AppOptions.ReadFromConfiguration(config);
+                opts.QueueOptions.MetricsPollingEnabled = opts.RunJobsInProcess;
+                return opts;
+            });
+            services.AddSingleton(sp => sp.GetRequiredService<AppOptions>().CacheOptions);
+            services.AddSingleton(sp => sp.GetRequiredService<AppOptions>().MessageBusOptions);
+            services.AddSingleton(sp => sp.GetRequiredService<AppOptions>().QueueOptions);
+            services.AddSingleton(sp => sp.GetRequiredService<AppOptions>().StorageOptions);
+            services.AddSingleton(sp => sp.GetRequiredService<AppOptions>().EmailOptions);
+            services.AddSingleton(sp => sp.GetRequiredService<AppOptions>().ElasticsearchOptions);
+            services.AddSingleton(sp => sp.GetRequiredService<AppOptions>().IntercomOptions);
+            services.AddSingleton(sp => sp.GetRequiredService<AppOptions>().SlackOptions);
+            services.AddSingleton(sp => sp.GetRequiredService<AppOptions>().StripeOptions);
+            services.AddSingleton(sp => sp.GetRequiredService<AppOptions>().AuthOptions);
         });
     }
 

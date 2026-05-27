@@ -28,6 +28,13 @@ public class ExceptionToProblemDetailsHandler()
                 error => error.Value
             ));
         }
+        else if (exception is BadHttpRequestException badRequestException)
+        {
+            httpContext.Items.Add("errors", new Dictionary<string, string[]>
+            {
+                [""] = [badRequestException.Message]
+            });
+        }
 
         return ValueTask.FromResult(false);
     }

@@ -148,11 +148,11 @@ public class AdminHandler(
     {
         var httpContext = message.Context;
         if (String.IsNullOrEmpty(message.OrganizationId) || !httpContext.Request.CanAccessOrganization(message.OrganizationId))
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["organizationId"] = ["Invalid Organization Id"] });
+            return HttpResults.ValidationProblem(new Dictionary<string, string[]> { ["organizationId"] = ["Invalid Organization Id"] }, statusCode: StatusCodes.Status422UnprocessableEntity);
 
         var organization = await organizationRepository.GetByIdAsync(message.OrganizationId);
         if (organization is null)
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["organizationId"] = ["Invalid Organization Id"] });
+            return HttpResults.ValidationProblem(new Dictionary<string, string[]> { ["organizationId"] = ["Invalid Organization Id"] }, statusCode: StatusCodes.Status422UnprocessableEntity);
 
         billingManager.ApplyBonus(organization, message.BonusEvents, message.Expires);
         await organizationRepository.SaveAsync(organization, o => o.Cache().Originals());
@@ -182,7 +182,7 @@ public class AdminHandler(
                 var effectiveUtcStart = message.UtcStart ?? timeProvider.GetUtcNow().UtcDateTime.AddDays(-90);
 
                 if (message.UtcEnd.HasValue && message.UtcEnd.Value.IsBefore(effectiveUtcStart))
-                    return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["utcEnd"] = ["utcEnd must be greater than or equal to utcStart."] });
+                    return HttpResults.ValidationProblem(new Dictionary<string, string[]> { ["utc_end"] = ["utcEnd must be greater than or equal to utcStart."] }, statusCode: StatusCodes.Status422UnprocessableEntity);
 
                 await workItemQueue.EnqueueAsync(new FixStackStatsWorkItem
                 {
@@ -373,10 +373,10 @@ public class AdminHandler(
     public async Task<IResult> Handle(AdminGenerateSampleEvents message)
     {
         if (message.EventCount < 1 || message.EventCount > 10000)
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["eventCount"] = ["Event count must be between 1 and 10,000."] });
+            return HttpResults.ValidationProblem(new Dictionary<string, string[]> { ["eventCount"] = ["Event count must be between 1 and 10,000."] }, statusCode: StatusCodes.Status422UnprocessableEntity);
 
         if (message.DaysBack < 1 || message.DaysBack > 365)
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["daysBack"] = ["Days back must be between 1 and 365."] });
+            return HttpResults.ValidationProblem(new Dictionary<string, string[]> { ["daysBack"] = ["Days back must be between 1 and 365."] }, statusCode: StatusCodes.Status422UnprocessableEntity);
 
         await sampleDataService.EnqueueSampleEventsAsync(message.EventCount, message.DaysBack);
         return HttpResults.Ok(new { Success = true, Message = $"Enqueued generation of {message.EventCount} sample events over {message.DaysBack} days. Events will appear shortly." });

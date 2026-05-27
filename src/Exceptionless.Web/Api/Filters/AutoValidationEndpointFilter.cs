@@ -1,3 +1,4 @@
+using Exceptionless.Core.Extensions;
 using MiniValidation;
 
 namespace Exceptionless.Web.Api.Filters;
@@ -17,7 +18,11 @@ public class AutoValidationEndpointFilter : IEndpointFilter
         {
             if (!MiniValidator.TryValidate(argument!, out var errors))
             {
-                return Microsoft.AspNetCore.Http.Results.ValidationProblem(errors, statusCode: StatusCodes.Status422UnprocessableEntity);
+                var normalizedErrors = new Dictionary<string, string[]>();
+                foreach (var error in errors)
+                    normalizedErrors[error.Key.ToLowerUnderscoredWords()] = error.Value;
+
+                return Microsoft.AspNetCore.Http.Results.ValidationProblem(normalizedErrors, statusCode: StatusCodes.Status422UnprocessableEntity);
             }
         }
 

@@ -55,7 +55,20 @@ public partial class Program
             builder.Configuration
                 .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
                 .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
-                .AddYamlFile("appsettings.Local.yml", optional: true, reloadOnChange: true)
+                .AddYamlFile("appsettings.Local.yml", optional: true, reloadOnChange: true);
+
+            // When running inside WebApplicationFactory, AppContext.BaseDirectory differs from
+            // the content root and may contain test-specific configuration overrides.
+            string appBaseDir = Path.GetFullPath(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar));
+            string contentRoot = Path.GetFullPath(builder.Environment.ContentRootPath.TrimEnd(Path.DirectorySeparatorChar));
+            if (!appBaseDir.Equals(contentRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                builder.Configuration.AddYamlFile(
+                    new Microsoft.Extensions.FileProviders.PhysicalFileProvider(appBaseDir),
+                    "appsettings.yml", optional: true, reloadOnChange: false);
+            }
+
+            builder.Configuration
                 .AddCustomEnvironmentVariables()
                 .AddCommandLine(args);
 
@@ -184,6 +197,7 @@ public partial class Program
                 {
                     UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
                     MiniValidatorException => StatusCodes.Status422UnprocessableEntity,
+                    BadHttpRequestException badRequest => badRequest.StatusCode,
                     ApplicationException applicationException when applicationException.Message.Contains("version_conflict") => StatusCodes.Status409Conflict,
                     VersionConflictDocumentException => StatusCodes.Status409Conflict,
                     NotImplementedException => StatusCodes.Status501NotImplemented,

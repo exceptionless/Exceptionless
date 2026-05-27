@@ -340,7 +340,8 @@ public class OrganizationHandler(
         if (plan is null)
         {
             _logger.LogWarning("Plan {PlanId} not found for organization {OrganizationId}", model.PlanId, message.Id);
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["general"] = ["Invalid plan. Please select a valid plan."] });
+            return HttpResults.ValidationProblem(new Dictionary<string, string[]> { ["general"] = ["Invalid plan. Please select a valid plan."] },
+                statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
         if (String.Equals(organization.PlanId, plan.Id) && String.Equals(plans.FreePlan.Id, plan.Id))
@@ -874,9 +875,10 @@ public class OrganizationHandler(
     {
         if (permission.StatusCode == StatusCodes.Status422UnprocessableEntity)
         {
-            return TypedResults.ValidationProblem(String.IsNullOrEmpty(permission.Message)
+            return HttpResults.ValidationProblem(String.IsNullOrEmpty(permission.Message)
                 ? new Dictionary<string, string[]>()
-                : new Dictionary<string, string[]> { ["general"] = [permission.Message] });
+                : new Dictionary<string, string[]> { ["general"] = [permission.Message] },
+                statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
         if (String.IsNullOrEmpty(permission.Message))

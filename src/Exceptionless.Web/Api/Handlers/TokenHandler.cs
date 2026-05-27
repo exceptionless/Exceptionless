@@ -183,6 +183,11 @@ public class TokenHandler(
         if (value is null)
             return HttpResults.BadRequest();
 
+        // ProjectId is required for direct token creation (mirrors old MVC implicit-required behavior)
+        if (String.IsNullOrEmpty(value.ProjectId))
+            return TypedResults.ValidationProblem(
+                new Dictionary<string, string[]> { ["project_id"] = ["The project_id field is required."] });
+
         var mapped = mapper.MapToToken(value);
         if (String.IsNullOrEmpty(mapped.OrganizationId) && HttpContext.Request.GetAssociatedOrganizationIds().Count > 0)
             mapped.OrganizationId = HttpContext.Request.GetDefaultOrganizationId()!;
@@ -201,9 +206,6 @@ public class TokenHandler(
     {
         if (String.IsNullOrEmpty(value.OrganizationId))
             return PermissionToResult(PermissionResult.Deny);
-
-        if (!HttpContext.Request.CanAccessOrganization(value.OrganizationId))
-            return PermissionToResult(PermissionResult.DenyWithMessage("Invalid organization id specified."));
 
         bool hasUserRole = HttpContext.User.IsInRole(AuthorizationRoles.User);
         bool hasGlobalAdminRole = HttpContext.User.IsInRole(AuthorizationRoles.GlobalAdmin);
@@ -250,6 +252,10 @@ public class TokenHandler(
             if (project is null)
                 return ValidationProblem("default_project_id", "Please specify a valid default project id.");
         }
+
+        // Organization access check comes last (matches old base.CanAddAsync order)
+        if (!HttpContext.Request.CanAccessOrganization(value.OrganizationId))
+            return PermissionToResult(PermissionResult.DenyWithMessage("Invalid organization id specified."));
 
         return null;
     }
@@ -353,9 +359,10 @@ public class TokenHandler(
     private static IResult PermissionToResult(PermissionResult permission)
     {
         if (permission.StatusCode is StatusCodes.Status422UnprocessableEntity)
-            return TypedResults.ValidationProblem(String.IsNullOrEmpty(permission.Message)
+            return HttpResults.ValidationProblem(String.IsNullOrEmpty(permission.Message)
                 ? new Dictionary<string, string[]>()
-                : new Dictionary<string, string[]> { ["general"] = [permission.Message] });
+                : new Dictionary<string, string[]> { ["general"] = [permission.Message] },
+                statusCode: StatusCodes.Status422UnprocessableEntity);
 
         if (String.IsNullOrEmpty(permission.Message))
             return TypedResults.Problem(statusCode: permission.StatusCode);
@@ -364,7 +371,9 @@ public class TokenHandler(
     }
 
     private static IResult ValidationProblem(string key, string error)
-        => TypedResults.ValidationProblem(new Dictionary<string, string[]> { [key] = [error] });
+        => Microsoft.AspNetCore.Http.Results.ValidationProblem(
+            new Dictionary<string, string[]> { [key] = [error] },
+            statusCode: StatusCodes.Status422UnprocessableEntity);
 
     private IResult? CanUpdate(Token original, Delta<UpdateToken> changes)
     {

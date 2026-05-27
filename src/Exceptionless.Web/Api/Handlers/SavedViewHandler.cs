@@ -387,9 +387,10 @@ public class SavedViewHandler(
     private static IResult PermissionToResult(PermissionResult permission)
     {
         if (permission.StatusCode is StatusCodes.Status422UnprocessableEntity)
-            return TypedResults.ValidationProblem(String.IsNullOrEmpty(permission.Message)
+            return HttpResults.ValidationProblem(String.IsNullOrEmpty(permission.Message)
                 ? new Dictionary<string, string[]>()
-                : new Dictionary<string, string[]> { ["general"] = [permission.Message] });
+                : new Dictionary<string, string[]> { ["general"] = [permission.Message] },
+                statusCode: StatusCodes.Status422UnprocessableEntity);
 
         if (String.IsNullOrEmpty(permission.Message))
             return TypedResults.Problem(statusCode: permission.StatusCode);

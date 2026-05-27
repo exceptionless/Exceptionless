@@ -18,6 +18,12 @@ public static class UtilityEndpoints
 
         group.MapGet("search/validate", async (IMediator mediator, string query) =>
         {
+            if (String.IsNullOrEmpty(query))
+                return HttpResults.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["query"] = ["The query field is required."]
+                });
+
             var result = await mediator.InvokeAsync<AppQueryValidator.QueryProcessResult>(new ValidateSearchQuery(query));
             return HttpResults.Ok(result);
         });

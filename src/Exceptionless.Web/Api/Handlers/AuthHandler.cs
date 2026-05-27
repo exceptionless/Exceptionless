@@ -755,5 +755,5 @@ public class AuthHandler(
     }
 
     private static IResult ValidationProblem(string key, string error)
-        => global::Microsoft.AspNetCore.Http.Results.ValidationProblem(new Dictionary<string, string[]> { [key] = [error] }, statusCode: StatusCodes.Status422UnprocessableEntity);
+        => global::Microsoft.AspNetCore.Http.Results.ValidationProblem(new Dictionary<string, string[]> { [key.ToLowerUnderscoredWords()] = [error] }, statusCode: StatusCodes.Status422UnprocessableEntity);
 }

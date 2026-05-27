@@ -412,7 +412,7 @@ public class StackHandler(
 
         try
         {
-            var results = await stackRepository.FindAsync(q => q.AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null).FilterExpression(filter).SortExpression(sort).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field), o => o.PageNumber(page).PageLimit(limit));
+            var results = await stackRepository.FindAsync(q => q.AppFilter(ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null).FilterExpression(filter).SortExpression(sort).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field), o => o.PageNumber(page).PageLimit(limit));
 
             var stacks = results.Documents.Select(s => s.ApplyOffset(ti.Offset)).ToList();
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase))
@@ -430,17 +430,23 @@ public class StackHandler(
         }
     }
 
-    private static bool ShouldApplySystemFilter(AppFilter sf, string? filter)
+    private static bool ShouldApplySystemFilter(AppFilter sf, string? filter, HttpRequest? request = null)
     {
-        // Don't apply filter for global admin queries that are scoped
-        if (sf.IsUserOrganizationsFilter && !String.IsNullOrEmpty(filter))
-        {
-            var scope = GetFilterScopeVisitor.Run(filter);
-            if (scope.IsScopable)
-                return false;
-        }
+        // Apply filter to non admin users.
+        if (request is null || !request.IsGlobalAdmin())
+            return true;
 
-        return true;
+        // Apply filter as it's scoped via a controller action.
+        if (!sf.IsUserOrganizationsFilter)
+            return true;
+
+        // Empty user filter
+        if (String.IsNullOrEmpty(filter))
+            return true;
+
+        // Used for impersonating a user. Only skip the filter if it contains an org, project or stack.
+        var scope = GetFilterScopeVisitor.Run(filter);
+        return !scope.HasScope;
     }
 
     private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, AppFilter eventSystemFilter, TimeInfo ti)

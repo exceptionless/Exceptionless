@@ -246,8 +246,8 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapPost("organizations/{id:objectid}/suspend", async (string id, SuspensionCode code, HttpContext httpContext, IMediator mediator, string? notes = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new OrganizationMessages.SuspendOrganization(id, code, notes, httpContext)))
+        group.MapPost("organizations/{id:objectid}/suspend", async (string id, HttpContext httpContext, IMediator mediator, SuspensionCode? code = null, string? notes = null)
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new OrganizationMessages.SuspendOrganization(id, code ?? SuspensionCode.Billing, notes, httpContext)))
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)

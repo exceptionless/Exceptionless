@@ -325,7 +325,7 @@ public class EventHandler(
         if (!isValid)
         {
             var errorDict = errors.ToDictionary(e => e.Key, e => e.Value.ToArray());
-            return TypedResults.ValidationProblem(errorDict);
+            return HttpResults.ValidationProblem(errorDict, statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
         var project = await GetProjectAsync(projectId, httpContext);
@@ -644,7 +644,7 @@ public class EventHandler(
             filter = AddFirstOccurrenceFilter(ti.Range, filter);
 
         var query = new RepositoryQuery<PersistentEvent>()
-            .AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null)
+            .AppFilter(ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null)
             .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field)
             .Index(ti.Range.UtcStart, ti.Range.UtcEnd);
 
@@ -704,7 +704,7 @@ public class EventHandler(
             switch (mode)
             {
                 case "summary":
-                    events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after);
+                    events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after, httpContext.Request);
                     var summaries = events.Documents.Select(e =>
                     {
                         var summaryData = formattingPluginManager.GetEventSummaryData(e);
@@ -725,7 +725,7 @@ public class EventHandler(
                         return HttpResults.BadRequest("Sort is not supported in stack mode.");
 
                     var systemFilter = new RepositoryQuery<PersistentEvent>()
-                        .AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null)
+                        .AppFilter(ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null)
                         .EnforceEventStackFilter()
                         .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date)
                         .Index(ti.Range.UtcStart, ti.Range.UtcEnd);
@@ -761,7 +761,7 @@ public class EventHandler(
                     long total = (stackTerms.Data?.GetValueOrDefault("SumOtherDocCount") as long? ?? 0L) + stackTerms.Buckets.Count;
                     return ApiResults.OkWithResourceLinks(httpContext, stackSummaries.Take(limit).ToList(), stackSummaries.Count > limit && !Pagination.NextPageExceedsSkipLimit(resolvedPage, limit), resolvedPage, total);
                 default:
-                    events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after);
+                    events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after, httpContext.Request);
                     return ApiResults.OkWithResourceLinks(httpContext, events.Documents.ToArray(), events.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(), events.Hits.LastOrDefault()?.GetSortToken());
             }
         }
@@ -810,13 +810,13 @@ public class EventHandler(
         return sb.ToString();
     }
 
-    private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter sf, TimeInfo ti, string? filter, string? sort, int? page, int limit, string? before, string? after)
+    private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter sf, TimeInfo ti, string? filter, string? sort, int? page, int limit, string? before, string? after, HttpRequest? request = null)
     {
         if (String.IsNullOrEmpty(sort))
             sort = $"-{EventIndex.Alias.Date}";
 
         return eventRepository.FindAsync(
-            q => q.AppFilter(ShouldApplySystemFilter(sf, filter) ? sf : null)
+            q => q.AppFilter(ShouldApplySystemFilter(sf, filter, request) ? sf : null)
                 .FilterExpression(filter)
                 .EnforceEventStackFilter()
                 .SortExpression(sort)
@@ -827,16 +827,23 @@ public class EventHandler(
                 : o.SearchBeforeToken(before).SearchAfterToken(after).PageLimit(limit));
     }
 
-    private static bool ShouldApplySystemFilter(AppFilter sf, string? filter)
+    private static bool ShouldApplySystemFilter(AppFilter sf, string? filter, HttpRequest? request = null)
     {
-        if (sf.IsUserOrganizationsFilter && !String.IsNullOrEmpty(filter))
-        {
-            var scope = GetFilterScopeVisitor.Run(filter);
-            if (scope.IsScopable)
-                return false;
-        }
+        // Apply filter to non admin users.
+        if (request is null || !request.IsGlobalAdmin())
+            return true;
 
-        return true;
+        // Apply filter as it's scoped via a controller action.
+        if (!sf.IsUserOrganizationsFilter)
+            return true;
+
+        // Empty user filter
+        if (String.IsNullOrEmpty(filter))
+            return true;
+
+        // Used for impersonating a user. Only skip the filter if it contains an org, project or stack.
+        var scope = GetFilterScopeVisitor.Run(filter);
+        return !scope.HasScope;
     }
 
     private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(List<Stack> stacks, IReadOnlyCollection<KeyedBucket<string>> stackTerms, AppFilter sf, TimeInfo ti)

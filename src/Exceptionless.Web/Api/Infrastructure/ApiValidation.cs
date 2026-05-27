@@ -1,3 +1,4 @@
+using Exceptionless.Core.Extensions;
 using Microsoft.AspNetCore.Http.HttpResults;
 using MiniValidation;
 
@@ -8,7 +9,7 @@ public static class ApiValidation
     /// <summary>
     /// Validates an object using MiniValidation and returns a problem details result if invalid.
     /// </summary>
-    public static async Task<IResult?> ValidateAsync<T>(T instance, IServiceProvider serviceProvider, int statusCode = StatusCodes.Status400BadRequest) where T : class
+    public static async Task<IResult?> ValidateAsync<T>(T instance, IServiceProvider serviceProvider, int statusCode = StatusCodes.Status422UnprocessableEntity) where T : class
     {
         var (isValid, errors) = await MiniValidator.TryValidateAsync(instance, serviceProvider, recurse: true);
         if (isValid)
@@ -17,7 +18,7 @@ public static class ApiValidation
         var problemErrors = new Dictionary<string, string[]>();
         foreach (var error in errors)
         {
-            problemErrors[error.Key] = error.Value;
+            problemErrors[error.Key.ToLowerUnderscoredWords()] = error.Value;
         }
 
         return global::Microsoft.AspNetCore.Http.Results.ValidationProblem(problemErrors, statusCode: statusCode);
@@ -26,7 +27,7 @@ public static class ApiValidation
     /// <summary>
     /// Validates an object synchronously using MiniValidation.
     /// </summary>
-    public static IResult? Validate<T>(T instance, int statusCode = StatusCodes.Status400BadRequest) where T : class
+    public static IResult? Validate<T>(T instance, int statusCode = StatusCodes.Status422UnprocessableEntity) where T : class
     {
         bool isValid = MiniValidator.TryValidate(instance, recurse: true, out var errors);
         if (isValid)
@@ -35,7 +36,7 @@ public static class ApiValidation
         var problemErrors = new Dictionary<string, string[]>();
         foreach (var error in errors)
         {
-            problemErrors[error.Key] = error.Value;
+            problemErrors[error.Key.ToLowerUnderscoredWords()] = error.Value;
         }
 
         return global::Microsoft.AspNetCore.Http.Results.ValidationProblem(problemErrors, statusCode: statusCode);

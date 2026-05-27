@@ -17,17 +17,17 @@ public static class ApiResults
 
     public static IResult OkWithResourceLinks<TEntity>(HttpContext context, ICollection<TEntity> content, bool hasMore, int? page = null, long? total = null, string? before = null, string? after = null) where TEntity : class
     {
-        var headers = new Dictionary<string, string>();
+        var headers = new Dictionary<string, string[]>();
 
         if (total.HasValue)
-            headers[Headers.ResultCount] = total.Value.ToString();
+            headers[Headers.ResultCount] = [total.Value.ToString()];
 
         var linkValues = page.HasValue
             ? GetPagedLinks(new Uri(context.Request.GetDisplayUrl()), page.Value, hasMore)
             : GetBeforeAndAfterLinks(new Uri(context.Request.GetDisplayUrl()), before, after);
 
         if (linkValues.Count > 0)
-            headers[HeaderNames.Link.ToString()] = String.Join(", ", linkValues);
+            headers[HeaderNames.Link.ToString()] = linkValues.ToArray();
 
         return new OkWithHeadersResult<ICollection<TEntity>>(content, headers);
     }
@@ -136,9 +136,9 @@ public class OkWithLinksResult<T> : IResult
 public class OkWithHeadersResult<T> : IResult
 {
     private readonly T _content;
-    private readonly Dictionary<string, string> _headers;
+    private readonly Dictionary<string, string[]> _headers;
 
-    public OkWithHeadersResult(T content, Dictionary<string, string> headers)
+    public OkWithHeadersResult(T content, Dictionary<string, string[]> headers)
     {
         _content = content;
         _headers = headers;
