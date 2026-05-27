@@ -13,7 +13,7 @@
         "format": "npm run format:prettier && npm run format:eslint",
         "format:eslint": "eslint . --fix",
         "format:prettier": "prettier --write .",
-        "storybook": "npm run build && storybook dev -p 6006",
+        "storybook": "npm run build && storybook dev -p 6008 --no-open",
         "build-storybook": "npm run build && storybook build"
     },
     "dependencies": {

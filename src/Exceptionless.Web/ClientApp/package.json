@@ -20,7 +20,7 @@
         "test:e2e": "playwright test",
         "test:unit": "vitest run",
         "test": "npm run test:unit -- --run && npm run test:e2e",
-        "storybook": "storybook dev -p 6006",
+        "storybook": "storybook dev -p 6006 --no-open",
         "build-storybook": "storybook build",
         "update": "ncu -i",
         "update:shadcn": "npx shadcn-svelte@latest update",

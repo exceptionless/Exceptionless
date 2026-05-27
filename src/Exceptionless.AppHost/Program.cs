@@ -150,6 +150,26 @@ if (!servicesOnly)
         })
         .WithParentRelationship(api);
 #pragma warning restore ASPIREBROWSERLOGS001
+
+    builder.AddJavaScriptApp("Storybook", "../Exceptionless.Web/ClientApp", "storybook")
+        .WithHttpEndpoint(port: 6006, targetPort: 6006, name: "http", isProxied: false)
+        .WithUrlForEndpoint("http", u =>
+        {
+            u.DisplayText = "Component Library";
+            u.DisplayOrder = 200;
+        })
+        .WithHttpHealthCheck("/")
+        .WithParentRelationship(api);
+
+    builder.AddJavaScriptApp("EmailStorybook", "../Exceptionless.EmailTemplates", "storybook")
+        .WithHttpEndpoint(port: 6008, targetPort: 6008, name: "http", isProxied: false)
+        .WithUrlForEndpoint("http", u =>
+        {
+            u.DisplayText = "Email Templates";
+            u.DisplayOrder = 300;
+        })
+        .WithHttpHealthCheck("/")
+        .WithParentRelationship(api);
 }
 
 await builder.Build().RunAsync();
