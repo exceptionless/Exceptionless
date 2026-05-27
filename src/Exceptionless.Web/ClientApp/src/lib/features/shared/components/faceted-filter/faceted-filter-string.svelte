@@ -29,10 +29,10 @@
 
     function scheduleApply() {
         clearTimeout(debounceTimer);
-        if (!updatedValue?.trim()) return;
         debounceTimer = setTimeout(() => {
-            if (updatedValue !== value) {
-                changed(updatedValue);
+            const normalized = updatedValue?.trim() || undefined;
+            if (normalized !== value) {
+                changed(normalized);
             }
         }, DEBOUNCE_MS);
     }
@@ -49,8 +49,9 @@
 
     function applyAndClose() {
         clearTimeout(debounceTimer);
-        if (updatedValue !== value) {
-            changed(updatedValue);
+        const normalized = updatedValue?.trim() || undefined;
+        if (normalized !== value) {
+            changed(normalized);
         }
 
         open = false;
