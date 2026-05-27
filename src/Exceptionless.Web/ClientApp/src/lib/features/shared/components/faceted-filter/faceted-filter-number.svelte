@@ -4,6 +4,7 @@
     import { Input } from '$comp/ui/input';
     import * as Popover from '$comp/ui/popover';
     import Separator from '$comp/ui/separator/separator.svelte';
+    import { onDestroy } from 'svelte';
 
     interface Props {
         changed: (value?: number) => void;
@@ -22,6 +23,8 @@
     // eslint-disable-next-line svelte/prefer-writable-derived
     let updatedValue = $state<number | undefined>();
     let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+    onDestroy(() => clearTimeout(debounceTimer));
 
     $effect.pre(() => {
         updatedValue = value;

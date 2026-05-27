@@ -13,7 +13,7 @@
     import Building2 from '@lucide/svelte/icons/building-2';
     import CircleUserRound from '@lucide/svelte/icons/circle-user-round';
     import Keyboard from '@lucide/svelte/icons/keyboard';
-    import Bug from '@lucide/svelte/icons/layers';
+    import Stacks from '@lucide/svelte/icons/layers';
     import Search from '@lucide/svelte/icons/search';
     import { createQuery } from '@tanstack/svelte-query';
 
@@ -334,13 +334,13 @@
                         <Command.Group heading="Stacks" value="Search Stacks">
                             {#if stackSearchQuery.isPending}
                                 <Command.Item disabled value={`Searching stacks ${debouncedSearchText}`}>
-                                    <Bug />
+                                    <Stacks />
                                     <span>Searching stacks...</span>
                                 </Command.Item>
                             {:else}
                                 {#each stackMatches as stack (stack.id)}
                                     <Command.LinkItem href={getStackHref(stack)} onclick={closeCommandWindow} value={getResultValue('Stack', stack)}>
-                                        <Bug />
+                                        <Stacks />
                                         <div class="flex min-w-0 flex-col">
                                             <span class="truncate">{getResultTitle(stack)}</span>
                                             {#if getResultDescription(stack)}

@@ -490,9 +490,9 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     {
         // Arrange
         var eventsFilter = await CreateSavedViewAsync("Events Only", "status:open", "events");
-        var issuesFilter = await CreateSavedViewAsync("Stacks Only", "status:regressed", "stacks");
+        var stacksFilter = await CreateSavedViewAsync("Stacks Only", "status:regressed", "stacks");
         Assert.NotNull(eventsFilter);
-        Assert.NotNull(issuesFilter);
+        Assert.NotNull(stacksFilter);
 
         // Act
         var filters = await SendRequestAsAsync<List<ViewSavedView>>(r => r
@@ -504,7 +504,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(filters);
         Assert.Contains(filters, f => String.Equals(f.Id, eventsFilter.Id));
-        Assert.DoesNotContain(filters, f => String.Equals(f.Id, issuesFilter.Id));
+        Assert.DoesNotContain(filters, f => String.Equals(f.Id, stacksFilter.Id));
     }
 
     [Fact]

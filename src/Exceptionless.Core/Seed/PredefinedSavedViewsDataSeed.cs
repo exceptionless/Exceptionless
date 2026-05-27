@@ -62,7 +62,13 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
             foreach (var definition in definitions)
             {
                 if (!existingByKey.TryGetValue(definition.Key, out var existing))
-                    continue;
+                {
+                    // Fallback: try legacy key format (e.g., "issues:*" → "stacks:*" rename).
+                    var legacyKey = definition.Key.Replace("stacks:", "issues:", StringComparison.Ordinal);
+                    if (String.Equals(legacyKey, definition.Key, StringComparison.Ordinal)
+                        || !existingByKey.TryGetValue(legacyKey, out existing))
+                        continue;
+                }
 
                 if (ApplyDefinition(existing, definition))
                     toSave.Add(existing);
@@ -79,6 +85,12 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
     private static bool ApplyDefinition(SavedView existing, PredefinedSavedViewDefinition definition)
     {
         bool changed = false;
+
+        if (!String.Equals(existing.PredefinedKey, definition.Key, StringComparison.Ordinal))
+        {
+            existing.PredefinedKey = definition.Key;
+            changed = true;
+        }
 
         if (!String.Equals(existing.ViewType, definition.ViewType, StringComparison.Ordinal))
         {

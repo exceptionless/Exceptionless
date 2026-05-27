@@ -117,14 +117,14 @@ export function formatDateRangeLabel(start: Date, end: Date, currentDate: Date =
     }
 
     // Different days: full label for each, but strip seconds if range > 1 day
-    const startLabel = formatDateLabel(start, currentDate, { includeRelative: false, month: 'short' });
-    const endLabel = formatDateLabel(end, currentDate, { includeRelative: false, month: 'short' });
-
     if (rangeExceedsDay) {
         const startCompact = formatCompactDateTimeLabel(start, currentDate);
         const endCompact = formatCompactDateTimeLabel(end, currentDate);
         return `${startCompact} to ${endCompact}`;
     }
+
+    const startLabel = formatDateLabel(start, currentDate, { includeRelative: false, month: 'short' });
+    const endLabel = formatDateLabel(end, currentDate, { includeRelative: false, month: 'short' });
 
     return `${startLabel} to ${endLabel}`;
 }
