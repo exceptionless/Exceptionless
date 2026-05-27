@@ -36,6 +36,7 @@
         } else if (selectedValue === 'no-value') {
             updatedValue = undefined;
         }
+
         changed(updatedValue);
     }
 
@@ -89,7 +90,7 @@
             </Button>
         {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={applyAndClose}>
+    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={(e) => e.preventDefault()}>
         <div class="border-b p-4">
             <RadioGroup.Root
                 value={radioValue}

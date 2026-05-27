@@ -1,12 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/sveltekit';
 
 import DateRangePicker from './date-range-picker.svelte';
-import { quickRanges } from './quick-ranges';
 
 const meta = {
-    args: {
-        quickRanges
-    },
+    args: {},
     argTypes: {},
     component: DateRangePicker,
     parameters: {
@@ -22,21 +19,20 @@ type Story = StoryObj<typeof meta>;
 
 export const DefaultQuickRanges: Story = {
     args: {
-        value: 'last 24 hours'
+        value: '[now-1d TO now]'
     }
 };
 
-export const CustomQuickRanges: Story = {
+export const CustomRange: Story = {
     args: {
-        quickRanges,
-        value: 'previous week'
+        value: '[2025-01-01T00:00:00 TO 2025-01-02T00:00:00]'
     },
     name: 'Custom Range'
 };
 
 export const WithSelectedRange: Story = {
     args: {
-        value: '[now-1d TO now]'
+        value: '[now-7d TO now]'
     }
 };
 
@@ -47,7 +43,7 @@ export const ShowingCustomForm: Story = {
     parameters: {
         docs: {
             description: {
-                story: 'This story demonstrates the calendar time picker with a selected quick range. Switch to the Custom tab to edit a custom range.'
+                story: 'This story demonstrates the date range picker with a selected quick range. Expand the Custom range section to edit a custom range.'
             }
         }
     }
@@ -55,14 +51,13 @@ export const ShowingCustomForm: Story = {
 
 export const AutoSelectCustomTab: Story = {
     args: {
-        // A value unlikely to match a predefined quick range forces the custom tab active
-        value: '2025-01-01T00:00:00 TO 2025-01-02T00:00:00'
+        value: '[2025-01-01T00:00:00 TO 2025-01-02T00:00:00]'
     },
-    name: 'Auto Selects Custom Tab (non quick value)',
+    name: 'Auto Expands Custom Section (non quick value)',
     parameters: {
         docs: {
             description: {
-                story: 'When the current value does not match any quick range option, the Custom tab is automatically selected.'
+                story: 'When the current value does not match any common range option, the Custom range section is automatically expanded.'
             }
         }
     }
