@@ -17,12 +17,24 @@
 
     let { changed, hidden = false, open = $bindable(), remove, title = 'Keyword', toggleHidden, value }: Props = $props();
 
+    const DEBOUNCE_MS = 500;
+
     // eslint-disable-next-line svelte/prefer-writable-derived
     let updatedValue = $state<string | undefined>();
+    let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
     $effect.pre(() => {
         updatedValue = value;
     });
+
+    function scheduleApply() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            if (updatedValue !== value) {
+                changed(updatedValue);
+            }
+        }, DEBOUNCE_MS);
+    }
 
     function handleKeyDown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
@@ -35,6 +47,7 @@
     }
 
     function applyAndClose() {
+        clearTimeout(debounceTimer);
         if (updatedValue !== value) {
             changed(updatedValue);
         }
@@ -43,6 +56,7 @@
     }
 
     function cancelAndClose() {
+        clearTimeout(debounceTimer);
         updatedValue = value;
         open = false;
     }
@@ -86,6 +100,7 @@
                 aria-label={`Filter by ${title}`}
                 aria-describedby={`${title}-help`}
                 onkeydown={handleKeyDown}
+                oninput={scheduleApply}
                 autofocus={open}
                 spellcheck="false"
                 autocomplete="off"
