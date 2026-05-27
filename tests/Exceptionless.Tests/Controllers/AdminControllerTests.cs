@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -541,5 +543,237 @@ public class AdminControllerTests : IntegrationTestsBase
         return SendRequestAsync(r => r
             .AppendPaths("admin", "elasticsearch", "snapshots")
             .StatusCodeShouldBeUnauthorized());
+    }
+
+    [Fact]
+    public async Task GetSettings_AsGlobalAdmin_ReturnsAppOptions()
+    {
+        // Act
+        var options = await SendRequestAsAsync<Dictionary<string, JsonElement>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "settings")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(options);
+        Assert.True(options.ContainsKey("base_u_r_l"));
+        Assert.True(options.ContainsKey("app_mode"));
+    }
+
+    [Fact]
+    public Task GetSettings_AsNonAdmin_ReturnsForbidden()
+    {
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("admin", "settings")
+            .StatusCodeShouldBeForbidden());
+    }
+
+    [Fact]
+    public Task GetSettings_WithoutAuth_ReturnsUnauthorized()
+    {
+        return SendRequestAsync(r => r
+            .AppendPaths("admin", "settings")
+            .StatusCodeShouldBeUnauthorized());
+    }
+
+    [Fact]
+    public Task EchoRequest_AsGlobalAdmin_ReturnsIpAddress()
+    {
+        return SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "echo")
+            .StatusCodeShouldBeOk());
+    }
+
+    [Fact]
+    public Task EchoRequest_AsNonAdmin_ReturnsForbidden()
+    {
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("admin", "echo")
+            .StatusCodeShouldBeForbidden());
+    }
+
+    [Fact]
+    public Task EchoRequest_WithoutAuth_ReturnsUnauthorized()
+    {
+        return SendRequestAsync(r => r
+            .AppendPaths("admin", "echo")
+            .StatusCodeShouldBeUnauthorized());
+    }
+
+    [Fact]
+    public async Task GetAssemblies_AsGlobalAdmin_ReturnsAssemblyList()
+    {
+        // Act
+        var assemblies = await SendRequestAsAsync<IReadOnlyCollection<AssemblyDetailResponse>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "assemblies")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(assemblies);
+        Assert.NotEmpty(assemblies);
+        Assert.Contains(assemblies, a => !String.IsNullOrEmpty(a.AssemblyName));
+    }
+
+    [Fact]
+    public Task GetAssemblies_AsNonAdmin_ReturnsForbidden()
+    {
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("admin", "assemblies")
+            .StatusCodeShouldBeForbidden());
+    }
+
+    [Fact]
+    public Task GetAssemblies_WithoutAuth_ReturnsUnauthorized()
+    {
+        return SendRequestAsync(r => r
+            .AppendPaths("admin", "assemblies")
+            .StatusCodeShouldBeUnauthorized());
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_ValidOrganizationAndPlan_ChangesOrganizationPlan()
+    {
+        // Arrange
+        var plans = GetService<BillingPlans>();
+        var organizationRepository = GetService<IOrganizationRepository>();
+        var organizationBefore = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organizationBefore);
+
+        // Act
+        var result = await SendRequestAsAsync<ChangePlanResponse>(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("admin", "change-plan")
+            .QueryString("organizationId", SampleDataService.TEST_ORG_ID)
+            .QueryString("planId", plans.SmallPlan.Id)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Success);
+
+        var organizationAfter = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organizationAfter);
+        Assert.Equal(plans.SmallPlan.Id, organizationAfter.PlanId);
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_InvalidPlanId_ReturnsFailure()
+    {
+        // Arrange
+        var organizationRepository = GetService<IOrganizationRepository>();
+        var organizationBefore = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organizationBefore);
+        string originalPlan = organizationBefore.PlanId;
+
+        // Act
+        var result = await SendRequestAsAsync<ChangePlanResponse>(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("admin", "change-plan")
+            .QueryString("organizationId", SampleDataService.TEST_ORG_ID)
+            .QueryString("planId", "NONEXISTENT_PLAN")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Equal("Invalid PlanId.", result.Message);
+
+        // Verify plan was not changed
+        var organizationAfter = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organizationAfter);
+        Assert.Equal(originalPlan, organizationAfter.PlanId);
+    }
+
+    [Fact]
+    public Task ChangePlanAsync_AsNonAdmin_ReturnsForbidden()
+    {
+        var plans = GetService<BillingPlans>();
+
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("admin", "change-plan")
+            .QueryString("organizationId", SampleDataService.TEST_ORG_ID)
+            .QueryString("planId", plans.SmallPlan.Id)
+            .StatusCodeShouldBeForbidden());
+    }
+
+    [Fact]
+    public async Task SetBonusAsync_ValidOrganization_AppliesBonus()
+    {
+        // Arrange
+        var organizationRepository = GetService<IOrganizationRepository>();
+        var organizationBefore = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organizationBefore);
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("admin", "set-bonus")
+            .QueryString("organizationId", SampleDataService.TEST_ORG_ID)
+            .QueryString("bonusEvents", 5000)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        var organizationAfter = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organizationAfter);
+        Assert.Equal(5000, organizationAfter.BonusEventsPerMonth);
+    }
+
+    [Fact]
+    public async Task SetBonusAsync_WithExpiration_AppliesBonusWithExpiry()
+    {
+        // Arrange
+        var organizationRepository = GetService<IOrganizationRepository>();
+        var expiresUtc = TimeProvider.GetUtcNow().AddDays(30).ToString("o");
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("admin", "set-bonus")
+            .QueryString("organizationId", SampleDataService.TEST_ORG_ID)
+            .QueryString("bonusEvents", 10000)
+            .QueryString("expires", expiresUtc)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        var organization = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.Equal(10000, organization.BonusEventsPerMonth);
+        Assert.NotNull(organization.BonusExpiration);
+    }
+
+    [Fact]
+    public Task SetBonusAsync_InvalidOrganization_ReturnsValidationError()
+    {
+        // Act
+        return SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("admin", "set-bonus")
+            .QueryString("organizationId", "000000000000000000000000")
+            .QueryString("bonusEvents", 1000)
+            .StatusCodeShouldBeUnprocessableEntity());
+    }
+
+    [Fact]
+    public Task SetBonusAsync_AsNonAdmin_ReturnsForbidden()
+    {
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPaths("admin", "set-bonus")
+            .QueryString("organizationId", SampleDataService.TEST_ORG_ID)
+            .QueryString("bonusEvents", 1000)
+            .StatusCodeShouldBeForbidden());
     }
 }

@@ -3,20 +3,18 @@ using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
+using FluentRest;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
 
 public class StatusControllerTests : IntegrationTestsBase
 {
-    public StatusControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
-    {
-    }
+    public StatusControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) { }
 
     protected override async Task ResetDataAsync()
     {
         await base.ResetDataAsync();
-
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
     }
@@ -29,7 +27,7 @@ public class StatusControllerTests : IntegrationTestsBase
     [InlineData("New Release!!", true)]
     public async Task CanSendReleaseNotification(string? message, bool critical, bool sendMessageAsContentIfEmpty = true)
     {
-        var utcNow = DateTime.UtcNow;
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
 
         ReleaseNotification? notification;
         if (!String.IsNullOrEmpty(message) || sendMessageAsContentIfEmpty)
@@ -56,5 +54,119 @@ public class StatusControllerTests : IntegrationTestsBase
         Assert.Equal(message, notification.Message);
         Assert.Equal(critical, notification.Critical);
         Assert.True(notification.Date.IsAfterOrEqual(utcNow));
+    }
+
+    [Fact]
+    public Task GetAboutAsync_Anonymous_ReturnsVersionInfo()
+    {
+        return SendRequestAsync(r => r
+            .AppendPath("about")
+            .StatusCodeShouldBeOk());
+    }
+
+    [Fact]
+    public Task GetQueueStatsAsync_AsGlobalAdmin_ReturnsQueueStats()
+    {
+        return SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("queue-stats")
+            .StatusCodeShouldBeOk());
+    }
+
+    [Fact]
+    public Task GetQueueStatsAsync_AsNonAdmin_ReturnsForbidden()
+    {
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("queue-stats")
+            .StatusCodeShouldBeForbidden());
+    }
+
+    [Fact]
+    public Task GetSystemNotificationAsync_WhenNoneSet_ReturnsOk()
+    {
+        return SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/system")
+            .StatusCodeShouldBeOk());
+    }
+
+    [Fact]
+    public async Task PostSystemNotificationAsync_WithMessage_ReturnsNotification()
+    {
+        // Arrange
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
+
+        // Act
+        var notification = await SendRequestAsAsync<SystemNotification>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/system")
+            .Content(new ValueFromBody<string>("System maintenance scheduled"))
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(notification);
+        Assert.Equal("System maintenance scheduled", notification.Message);
+        Assert.True(notification.Date.IsAfterOrEqual(utcNow));
+    }
+
+    [Fact]
+    public Task PostSystemNotificationAsync_WithEmptyMessage_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/system")
+            .Content(new ValueFromBody<string>(String.Empty))
+            .StatusCodeShouldBeNotFound());
+    }
+
+    [Fact]
+    public Task PostSystemNotificationAsync_AsNonAdmin_ReturnsForbidden()
+    {
+        return SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("notifications/system")
+            .Content(new ValueFromBody<string>("test"))
+            .StatusCodeShouldBeForbidden());
+    }
+
+    [Fact]
+    public async Task RemoveSystemNotificationAsync_AsGlobalAdmin_ReturnsOk()
+    {
+        // Arrange
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/system")
+            .Content(new ValueFromBody<string>("To be removed"))
+            .StatusCodeShouldBeOk());
+
+        // Act
+        await SendRequestAsync(r => r
+            .Delete()
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/system")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        var response = await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/system")
+            .StatusCodeShouldBeOk());
+        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.DoesNotContain("To be removed", content);
+    }
+
+    [Fact]
+    public Task RemoveSystemNotificationAsync_AsNonAdmin_ReturnsForbidden()
+    {
+        return SendRequestAsync(r => r
+            .Delete()
+            .AsTestOrganizationUser()
+            .AppendPath("notifications/system")
+            .StatusCodeShouldBeForbidden());
     }
 }

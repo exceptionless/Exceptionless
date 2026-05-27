@@ -181,6 +181,7 @@
 
     const activeView = $derived(activeSavedView);
     const predefinedViewTarget = $derived(activeView ?? duplicateView);
+
     const reorderableColumns = $derived(table.getAllLeafColumns().filter((column) => column.id !== 'select'));
 
     async function openSaveDialog() {

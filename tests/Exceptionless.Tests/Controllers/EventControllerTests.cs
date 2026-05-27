@@ -166,6 +166,92 @@ public class EventControllerTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetSubmitEventAsync_WithOnlyIgnoredParameters_DoesNotEnqueueEvent()
+    {
+        // Act
+        await SendRequestAsync(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("events", "submit")
+            .QueryString("api_key", SampleDataService.TEST_API_KEY)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        var stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(0, stats.Enqueued);
+    }
+
+    [Fact]
+    public async Task GetSubmitEventAsync_WithQueryParameters_EnqueuesEvent()
+    {
+        // Arrange
+        var eventDate = TimeProvider.GetUtcNow().AddMinutes(-5);
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("events", "submit", Event.KnownTypes.FeatureUsage)
+            .QueryString("source", "build")
+            .QueryString("message", "GET submit event")
+            .QueryString("reference", "get-submit-reference")
+            .QueryString("date", eventDate.ToString("O"))
+            .QueryString("count", "3")
+            .QueryString("value", "10.5")
+            .QueryString("tags", "one,two")
+            .QueryString("identity", "user-123")
+            .QueryString("identity.name", "Test User")
+            .QueryString("custom_property", "custom value")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        var stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(1, stats.Enqueued);
+        Assert.Equal(0, stats.Completed);
+
+        var processEventsJob = GetService<EventPostsJob>();
+        await processEventsJob.RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(1, stats.Completed);
+
+        var ev = (await _eventRepository.GetAllAsync()).Documents.Single(e => String.Equals(e.ReferenceId, "get-submit-reference", StringComparison.Ordinal));
+        Assert.Equal(Event.KnownTypes.FeatureUsage, ev.Type);
+        Assert.Equal("build", ev.Source);
+        Assert.Equal("GET submit event", ev.Message);
+        Assert.Equal("get-submit-reference", ev.ReferenceId);
+        Assert.Equal(3, ev.Count);
+        Assert.Equal(10.5m, ev.Value);
+        Assert.NotNull(ev.Tags);
+        Assert.Contains("one", ev.Tags);
+        Assert.Contains("two", ev.Tags);
+        Assert.NotNull(ev.Data);
+        Assert.Equal("custom value", ev.Data["custom_property"]);
+
+        var identity = ev.GetUserIdentity(_jsonSerializerOptions);
+        Assert.NotNull(identity);
+        Assert.Equal("user-123", identity.Identity);
+        Assert.Equal("Test User", identity.Name);
+    }
+
+    [Fact]
+    public async Task GetSubmitEventByProjectV2Async_MismatchedProjectRoute_ReturnsNotFound()
+    {
+        // Act
+        await SendRequestAsync(r => r
+            .AsTestOrganizationClientUser()
+            .AppendPaths("projects", SampleDataService.FREE_PROJECT_ID, "events", "submit")
+            .QueryString("message", "should not enqueue")
+            .StatusCodeShouldBeNotFound()
+        );
+
+        // Assert
+        var stats = await _eventQueue.GetQueueStatsAsync();
+        Assert.Equal(0, stats.Enqueued);
+    }
+
+    [Fact]
     public async Task CanPostStringAsync()
     {
         const string message = "simple string";
@@ -1855,5 +1941,53 @@ public class EventControllerTests : IntegrationTestsBase
             WriteIndented = true
         };
         return JsonSerializer.Serialize(document.RootElement, prettyJsonOptions);
+    }
+
+    [Fact]
+    public async Task LegacyPatchAsync_WithPascalCaseLegacyFields_MapsToUserDescription()
+    {
+        // Arrange — submit event with a reference ID matching an objectid format
+        const string referenceId = "507f1f77bcf86cd799439011";
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content($$"""
+                {
+                  "type": "log",
+                  "message": "Legacy patch test",
+                  "reference_id": "{{referenceId}}"
+                }
+                """, "application/json")
+            .StatusCodeShouldBeAccepted()
+        );
+
+        await GetService<EventPostsJob>().RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        // Act — v1 clients sent PascalCase "UserEmail" / "UserDescription"
+        await SendRequestAsync(r => r
+            .Patch()
+            .BaseUri(_server.BaseAddress)
+            .AsTestOrganizationClientUser()
+            .AppendPaths("api", "v1", "error", referenceId)
+            .Content("""
+                {
+                  "UserEmail": "legacy@exceptionless.test",
+                  "UserDescription": "Legacy description"
+                }
+                """, "application/json")
+            .StatusCodeShouldBeAccepted()
+        );
+
+        await GetService<EventUserDescriptionsJob>().RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        // Assert
+        var ev = (await _eventRepository.GetByReferenceIdAsync(SampleDataService.TEST_PROJECT_ID, referenceId)).Documents.Single();
+        var userDescription = ev.GetUserDescription(_jsonSerializerOptions);
+        Assert.NotNull(userDescription);
+        Assert.Equal("legacy@exceptionless.test", userDescription.EmailAddress);
+        Assert.Equal("Legacy description", userDescription.Description);
     }
 }
