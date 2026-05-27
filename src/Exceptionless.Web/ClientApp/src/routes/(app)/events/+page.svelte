@@ -18,7 +18,6 @@
         applyTimeFilter,
         buildFilterCacheKey,
         deserializeFilters,
-        filterCacheVersionNumber,
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
@@ -78,24 +77,24 @@
     }
 
     function getQueryTime(): null | string {
-        if (page.url.searchParams.has('time')) {
-            return page.url.searchParams.get('time') === '' ? null : queryParams.time;
+        if (queryParams.time != null) {
+            return queryParams.time || null;
         }
 
         return savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
     }
 
     function getEffectiveFilter(): null | string {
-        if (page.url.searchParams.has('filter')) {
-            return queryParams.filter ?? '';
+        if (queryParams.filter != null) {
+            return queryParams.filter;
         }
 
         return savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
     }
 
     function getEffectiveSort(): null | string | undefined {
-        if (page.url.searchParams.has('sort')) {
-            return queryParams.sort;
+        if (queryParams.sort != null) {
+            return queryParams.sort || undefined;
         }
 
         return savedViewsState.activeSavedView?.sort ?? undefined;
@@ -156,7 +155,7 @@
     function getCurrentFilters(): FacetedFilter.IFilter[] {
         const filter = getEffectiveFilter();
         const savedView = savedViewsState.activeSavedView;
-        if (!page.url.searchParams.has('filter') && savedView?.filter_definitions && filter === (savedView.filter ?? null)) {
+        if (queryParams.filter == null && savedView?.filter_definitions && filter === (savedView.filter ?? null)) {
             const hydrated = deserializeFilters(savedView.filter_definitions);
             return applyTimeFilter(hydrated, getQueryTime());
         }
@@ -166,7 +165,7 @@
 
     let filters = $state(getCurrentFilters());
     watch(
-        [() => page.url.pathname, () => page.url.search, () => savedViewsState.activeSavedView, () => filterCacheVersionNumber()],
+        [() => page.url.pathname, () => page.url.search, () => savedViewsState.activeSavedView],
         () => {
             filters = getCurrentFilters();
         },
@@ -179,12 +178,19 @@
     });
 
     function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
-        updateFilters(filterChanged(filters ?? [], addedOrUpdated));
+        const isNew = !filters?.some((f) => f.id === addedOrUpdated.id);
+        const updatedFilters = filterChanged(filters ?? [], addedOrUpdated);
+        updateFilters(updatedFilters);
+        if (isNew) {
+            filters = updatedFilters;
+        }
         selectedEventId = null;
     }
 
     function onFilterRemoved(removed?: FacetedFilter.IFilter): void {
-        updateFilters(filterRemoved(filters ?? [], removed));
+        const updatedFilters = filterRemoved(filters ?? [], removed);
+        updateFilters(updatedFilters);
+        filters = updatedFilters;
     }
 
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {

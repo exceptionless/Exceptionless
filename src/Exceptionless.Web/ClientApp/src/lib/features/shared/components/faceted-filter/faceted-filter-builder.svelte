@@ -31,12 +31,15 @@
 
     // Clear the builder context because multiple builders will be loaded during page navigation.
     builderContext.clear();
-    let facets: FacetedFilter<IFilter>[] = $derived.by(() => {
+    let facets: FacetedFilter<IFilter>[] = $state([]);
+
+    $effect.pre(() => {
         if (builderContext.size === 0) {
-            return [];
+            facets = [];
+            return;
         }
 
-        return filters
+        const newFacets = filters
             .map((filter) => {
                 const builder = builderContext.get(filter.key);
                 if (!builder) {
@@ -44,6 +47,14 @@
                 }
 
                 const f = builder.create(filter);
+                // Reuse existing facet to preserve open state and avoid component recreation
+                const existing = facets.find((facet) => facet.filter.id === f.id);
+                if (existing) {
+                    existing.filter = f;
+                    existing.component = builder.component;
+                    existing.title = builder.title;
+                    return existing;
+                }
                 return {
                     component: builder.component,
                     filter: f,
@@ -52,6 +63,13 @@
                 };
             })
             .filter((f): f is FacetedFilter<IFilter> => !!f);
+
+        // Only replace the array if the set of facets actually changed
+        const idsMatch =
+            newFacets.length === facets.length && newFacets.every((f, i) => f.filter.id === facets[i]?.filter.id);
+        if (!idsMatch) {
+            facets = newFacets;
+        }
     });
 
     const hiddenFilterCount = $derived(filters.filter((filter) => filter.hidden).length);
