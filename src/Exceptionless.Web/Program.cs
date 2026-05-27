@@ -44,6 +44,13 @@ public partial class Program
             Console.Title = "Exceptionless Web";
 
             var builder = WebApplication.CreateBuilder(args);
+            builder.Host.UseDefaultServiceProvider(o =>
+            {
+                // Disable ValidateOnBuild because the service graph uses lambda factories
+                // (queues, caching, Elasticsearch config) that resolve dependencies at runtime
+                // through IServiceProvider, which cannot be statically validated at build time.
+                o.ValidateOnBuild = false;
+            });
             string? environment = Environment.GetEnvironmentVariable("EX_AppMode");
             if (String.IsNullOrWhiteSpace(environment))
                 environment = builder.Environment.EnvironmentName;

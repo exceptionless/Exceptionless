@@ -323,15 +323,11 @@ public class StackHandler(
         var results = new ModelActionResults();
         results.AddNotFound(ids.Except(items.Select(i => i.Id)));
 
-        var list = items.ToList();
-        foreach (var model in items)
-        {
-            if (model is IOwnedByOrganization orgModel && !httpContext.Request.CanAccessOrganization(orgModel.OrganizationId))
-            {
-                list.Remove(model);
-                results.Failure.Add(PermissionResult.DenyWithNotFound(model.Id));
-            }
-        }
+        var denied = items.Where(model => model is IOwnedByOrganization orgModel && !httpContext.Request.CanAccessOrganization(orgModel.OrganizationId)).ToList();
+        foreach (var model in denied)
+            results.Failure.Add(PermissionResult.DenyWithNotFound(model.Id));
+
+        var list = items.Except(denied).ToList();
 
         if (list.Count == 0)
             return results.Failure.Count == 1 ? PermissionToResult(results.Failure.First()) : HttpResults.BadRequest(results);
@@ -488,7 +484,7 @@ public class StackHandler(
 
     private async Task<Dictionary<string, double>> GetUserCountByProjectIdsAsync(ICollection<Stack> stacks, AppFilter sf, DateTime utcStart, DateTime utcEnd)
     {
-        var scopedCacheClient = new ScopedCacheClient(cacheClient, $"Project:user-count:{utcStart.Floor(TimeSpan.FromMinutes(15)).Ticks}-{utcEnd.Floor(TimeSpan.FromMinutes(15)).Ticks}");
+        using var scopedCacheClient = new ScopedCacheClient(cacheClient, $"Project:user-count:{utcStart.Floor(TimeSpan.FromMinutes(15)).Ticks}-{utcEnd.Floor(TimeSpan.FromMinutes(15)).Ticks}");
         var projectIds = stacks.Select(s => s.ProjectId).Distinct().ToList();
         var cachedTotals = await scopedCacheClient.GetAllAsync<double>(projectIds);
 

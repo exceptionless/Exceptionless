@@ -10,20 +10,12 @@ public class AutoValidationEndpointFilter : IEndpointFilter
 {
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
-        foreach (var argument in context.Arguments)
+        var validatableArguments = context.Arguments
+            .Where(arg => arg is not null && ShouldValidate(arg.GetType()));
+
+        foreach (var argument in validatableArguments)
         {
-            if (argument is null)
-                continue;
-
-            var argumentType = argument.GetType();
-
-            // Skip primitives, strings, value types, and framework types
-            if (argumentType.IsPrimitive || argumentType == typeof(string) || argumentType.IsValueType)
-                continue;
-            if (argumentType.Namespace?.StartsWith("Microsoft.") == true || argumentType.Namespace?.StartsWith("System.") == true)
-                continue;
-
-            if (!MiniValidator.TryValidate(argument, out var errors))
+            if (!MiniValidator.TryValidate(argument!, out var errors))
             {
                 return Microsoft.AspNetCore.Http.Results.ValidationProblem(errors, statusCode: StatusCodes.Status422UnprocessableEntity);
             }
@@ -31,4 +23,11 @@ public class AutoValidationEndpointFilter : IEndpointFilter
 
         return await next(context);
     }
+
+    private static bool ShouldValidate(Type type) =>
+        !type.IsPrimitive
+        && type != typeof(string)
+        && !type.IsValueType
+        && type.Namespace?.StartsWith("Microsoft.") != true
+        && type.Namespace?.StartsWith("System.") != true;
 }
