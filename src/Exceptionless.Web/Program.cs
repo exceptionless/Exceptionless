@@ -25,7 +25,6 @@ using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Net.Http.Headers;
 using OpenTelemetry;
@@ -118,18 +117,6 @@ public partial class Program
                 o.KnownProxies.Clear();
             });
 
-            builder.Services.AddControllers(o =>
-            {
-                o.ModelBinderProviders.Insert(0, new CustomAttributesModelBinderProvider());
-                o.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider(LowerCaseUnderscoreNamingPolicy.Instance));
-                o.InputFormatters.Insert(0, new RawRequestBodyFormatter());
-            })
-            .AddJsonOptions(o =>
-            {
-                o.JsonSerializerOptions.ConfigureExceptionlessDefaults();
-                o.JsonSerializerOptions.Converters.Add(new DeltaJsonConverterFactory());
-            });
-
             builder.Services.ConfigureHttpJsonOptions(o =>
             {
                 o.SerializerOptions.ConfigureExceptionlessDefaults();
@@ -138,7 +125,6 @@ public partial class Program
 
             builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails = CustomizeProblemDetails);
             builder.Services.AddExceptionHandler<ExceptionToProblemDetailsHandler>();
-            builder.Services.AddAutoValidation();
 
             builder.Services.AddAuthentication(ApiKeyAuthenticationOptions.ApiKeySchema).AddApiKeyAuthentication();
             builder.Services.AddAuthorization(o =>
@@ -337,7 +323,6 @@ public partial class Program
                     .AddPreferredSecuritySchemes("Bearer");
             });
             app.MapApiEndpoints();
-            app.MapControllers();
             app.MapFallback("{**slug:nonfile}", CreateRequestDelegate(app, "/index.html"));
 
             await app.RunAsync();
