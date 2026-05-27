@@ -82,10 +82,6 @@
     }
 
     function filterChanged(filter: IFilter) {
-        if (lastOpenFilterId === filter.id) {
-            lastOpenFilterId = undefined;
-        }
-
         changed(filter);
     }
 
