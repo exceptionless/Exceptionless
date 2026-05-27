@@ -16,6 +16,7 @@ using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
 
+[Collection("EventQueue")]
 public class AdminControllerTests : IntegrationTestsBase
 {
     private readonly WorkItemJob _workItemJob;
