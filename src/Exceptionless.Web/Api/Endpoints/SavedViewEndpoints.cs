@@ -86,6 +86,7 @@ public static class SavedViewEndpoints
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Create")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The saved view.",
             ParameterDescriptions = new() {
                 ["organizationId"] = "The identifier of the organization.",
             },
@@ -164,6 +165,7 @@ public static class SavedViewEndpoints
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The changes",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the saved view.",
             },
@@ -182,6 +184,7 @@ public static class SavedViewEndpoints
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The changes",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the saved view.",
             },

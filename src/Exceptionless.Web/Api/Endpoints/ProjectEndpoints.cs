@@ -92,6 +92,7 @@ public static class ProjectEndpoints
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Create")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The project.",
             ResponseDescriptions = new() {
                 ["201"] = "Created",
                 ["400"] = "An error occurred while creating the project.",
@@ -109,6 +110,7 @@ public static class ProjectEndpoints
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The changes",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the project.",
             },
@@ -128,6 +130,7 @@ public static class ProjectEndpoints
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The changes",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the project.",
             },
@@ -207,6 +210,7 @@ public static class ProjectEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Add configuration value")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The configuration value.",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the project.",
                 ["key"] = "The key name of the configuration object.",
@@ -322,6 +326,7 @@ public static class ProjectEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Set user notification settings")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The notification settings.",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the project.",
                 ["userId"] = "The identifier of the user.",
@@ -340,6 +345,7 @@ public static class ProjectEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Set user notification settings")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The notification settings.",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the project.",
                 ["userId"] = "The identifier of the user.",
@@ -359,6 +365,7 @@ public static class ProjectEndpoints
         .ProducesProblem(StatusCodes.Status426UpgradeRequired)
         .WithSummary("Set an integrations notification settings")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The notification settings.",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the project.",
                 ["integration"] = "The identifier of the integration.",
@@ -379,6 +386,7 @@ public static class ProjectEndpoints
         .ProducesProblem(StatusCodes.Status426UpgradeRequired)
         .WithSummary("Set an integrations notification settings")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The notification settings.",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the project.",
                 ["integration"] = "The identifier of the integration.",
@@ -501,6 +509,7 @@ public static class ProjectEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Add custom data")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "Any string value.",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the project.",
                 ["key"] = "The key name of the data object.",

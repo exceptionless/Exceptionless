@@ -887,6 +887,7 @@
           "Auth"
         ],
         "summary": "Login",
+        "description": "Log in with your email address and password to generate a token scoped with your users roles.\n\n\u0060\u0060\u0060{ \u0022email\u0022: \u0022noreply@exceptionless.io\u0022, \u0022password\u0022: \u0022exceptionless\u0022 }\u0060\u0060\u0060\n\nThis token can then be used to access the api. You can use this token in the header (bearer authentication)\nor append it onto the query string: ?access_token=MY_TOKEN\n\nPlease note that you can also use this token on the documentation site by placing it in the\nheaders api_key input box.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1313,6 +1314,7 @@
           }
         ],
         "requestBody": {
+          "description": "The provider user id.",
           "content": {
             "application/json": {
               "schema": {
@@ -1563,6 +1565,7 @@
           "Token"
         ],
         "summary": "Create for organization",
+        "description": "This is a helper action that makes it easier to create a token for a specific organization. You may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
         "parameters": [
           {
             "name": "organizationId",
@@ -1576,6 +1579,7 @@
           }
         ],
         "requestBody": {
+          "description": "The token.",
           "content": {
             "application/json": {
               "schema": {
@@ -1694,6 +1698,7 @@
           "Token"
         ],
         "summary": "Create for project",
+        "description": "This is a helper action that makes it easier to create a token for a specific project. You may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
         "parameters": [
           {
             "name": "projectId",
@@ -1707,6 +1712,7 @@
           }
         ],
         "requestBody": {
+          "description": "The token.",
           "content": {
             "application/json": {
               "schema": {
@@ -1868,6 +1874,7 @@
           }
         ],
         "requestBody": {
+          "description": "The changes",
           "content": {
             "application/json": {
               "schema": {
@@ -1928,6 +1935,7 @@
           }
         ],
         "requestBody": {
+          "description": "The changes",
           "content": {
             "application/json": {
               "schema": {
@@ -1977,7 +1985,9 @@
           "Token"
         ],
         "summary": "Create",
+        "description": "To create a new token, you must specify an organization_id. There are three valid scopes: client, user and admin.",
         "requestBody": {
+          "description": "The token.",
           "content": {
             "application/json": {
               "schema": {
@@ -2188,6 +2198,7 @@
         ],
         "summary": "Create",
         "requestBody": {
+          "description": "The web hook.",
           "content": {
             "application/json": {
               "schema": {
@@ -2375,6 +2386,7 @@
           }
         ],
         "requestBody": {
+          "description": "The saved view.",
           "content": {
             "application/json": {
               "schema": {
@@ -2562,6 +2574,7 @@
           }
         ],
         "requestBody": {
+          "description": "The changes",
           "content": {
             "application/json": {
               "schema": {
@@ -2642,6 +2655,7 @@
           }
         ],
         "requestBody": {
+          "description": "The changes",
           "content": {
             "application/json": {
               "schema": {
@@ -3031,6 +3045,7 @@
           }
         ],
         "requestBody": {
+          "description": "The changes",
           "content": {
             "application/json": {
               "schema": {
@@ -3091,6 +3106,7 @@
           }
         ],
         "requestBody": {
+          "description": "The changes",
           "content": {
             "application/json": {
               "schema": {
@@ -3497,6 +3513,7 @@
         ],
         "summary": "Create",
         "requestBody": {
+          "description": "The project.",
           "content": {
             "application/json": {
               "schema": {
@@ -3707,6 +3724,7 @@
           }
         ],
         "requestBody": {
+          "description": "The changes",
           "content": {
             "application/json": {
               "schema": {
@@ -3777,6 +3795,7 @@
           }
         ],
         "requestBody": {
+          "description": "The changes",
           "content": {
             "application/json": {
               "schema": {
@@ -4016,6 +4035,7 @@
           }
         ],
         "requestBody": {
+          "description": "The configuration value.",
           "content": {
             "application/json": {
               "schema": {
@@ -4307,6 +4327,7 @@
           }
         ],
         "requestBody": {
+          "description": "The notification settings.",
           "content": {
             "application/json": {
               "schema": {
@@ -4366,6 +4387,7 @@
           }
         ],
         "requestBody": {
+          "description": "The notification settings.",
           "content": {
             "application/json": {
               "schema": {
@@ -4470,6 +4492,7 @@
           }
         ],
         "requestBody": {
+          "description": "The notification settings.",
           "content": {
             "application/json": {
               "schema": {
@@ -4539,6 +4562,7 @@
           }
         ],
         "requestBody": {
+          "description": "The notification settings.",
           "content": {
             "application/json": {
               "schema": {
@@ -4838,6 +4862,7 @@
           }
         ],
         "requestBody": {
+          "description": "Any string value.",
           "content": {
             "application/json": {
               "schema": {
@@ -4972,6 +4997,7 @@
         ],
         "summary": "Create",
         "requestBody": {
+          "description": "The organization.",
           "content": {
             "application/json": {
               "schema": {
@@ -5093,6 +5119,7 @@
           }
         ],
         "requestBody": {
+          "description": "The changes",
           "content": {
             "application/json": {
               "schema": {
@@ -5163,6 +5190,7 @@
           }
         ],
         "requestBody": {
+          "description": "The changes",
           "content": {
             "application/json": {
               "schema": {
@@ -5397,6 +5425,7 @@
           "Organization"
         ],
         "summary": "Get plans",
+        "description": "Gets available plans for a specific organization.",
         "parameters": [
           {
             "name": "id",
@@ -5442,6 +5471,7 @@
           "Organization"
         ],
         "summary": "Change plan",
+        "description": "Upgrades or downgrades the organization\u0027s plan. Accepts parameters via JSON body (preferred) or query string (legacy).",
         "parameters": [
           {
             "name": "id",
@@ -5487,6 +5517,7 @@
           }
         ],
         "requestBody": {
+          "description": "The plan change request (JSON body).",
           "content": {
             "application/json": {
               "schema": {
@@ -5680,6 +5711,7 @@
           }
         ],
         "requestBody": {
+          "description": "Any string value.",
           "content": {
             "application/json": {
               "schema": {
@@ -5947,6 +5979,7 @@
           }
         ],
         "requestBody": {
+          "description": "The reference link.",
           "content": {
             "application/json": {
               "schema": {
@@ -6002,6 +6035,7 @@
           }
         ],
         "requestBody": {
+          "description": "The reference link.",
           "content": {
             "application/json": {
               "schema": {
@@ -6994,6 +7028,7 @@
           "Event"
         ],
         "summary": "Submit event by POST",
+        "description": "You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON object into the events data collection.\n\nYou can also post a multi-line string. We automatically split strings by the \\n character and create a new log event for every line.\n\nSimple event:\n\u0060\u0060\u0060{ \u0022message\u0022: \u0022Exceptionless is amazing!\u0022 }\u0060\u0060\u0060\n\nSimple log event with user identity:\n\u0060\u0060\u0060{ \u0022type\u0022: \u0022log\u0022, \u0022message\u0022: \u0022Exceptionless is amazing!\u0022, \u0022date\u0022:\u00222030-01-01T12:00:00.0000000-05:00\u0022, \u0022@user\u0022:{ \u0022identity\u0022:\u0022123456789\u0022, \u0022name\u0022: \u0022Test User\u0022 } }\u0060\u0060\u0060\n\nSimple error:\n\u0060\u0060\u0060{ \u0022type\u0022: \u0022error\u0022, \u0022date\u0022:\u00222030-01-01T12:00:00.0000000-05:00\u0022, \u0022@simple_error\u0022: { \u0022message\u0022: \u0022Simple Exception\u0022, \u0022type\u0022: \u0022System.Exception\u0022, \u0022stack_trace\u0022: \u0022   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77\u0022 } }\u0060\u0060\u0060",
         "parameters": [
           {
             "name": "userAgent",
@@ -7295,6 +7330,7 @@
           "Event"
         ],
         "summary": "Submit event by POST for a specific project",
+        "description": "You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON object into the events data collection.\n\nYou can also post a multi-line string. We automatically split strings by the \\n character and create a new log event for every line.\n\nSimple event:\n\u0060\u0060\u0060{ \u0022message\u0022: \u0022Exceptionless is amazing!\u0022 }\u0060\u0060\u0060\n\nSimple log event with user identity:\n\u0060\u0060\u0060{ \u0022type\u0022: \u0022log\u0022, \u0022message\u0022: \u0022Exceptionless is amazing!\u0022, \u0022date\u0022:\u00222030-01-01T12:00:00.0000000-05:00\u0022, \u0022@user\u0022:{ \u0022identity\u0022:\u0022123456789\u0022, \u0022name\u0022: \u0022Test User\u0022 } }\u0060\u0060\u0060\n\nSimple error:\n\u0060\u0060\u0060{ \u0022type\u0022: \u0022error\u0022, \u0022date\u0022:\u00222030-01-01T12:00:00.0000000-05:00\u0022, \u0022@simple_error\u0022: { \u0022message\u0022: \u0022Simple Exception\u0022, \u0022type\u0022: \u0022System.Exception\u0022, \u0022stack_trace\u0022: \u0022   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77\u0022 } }\u0060\u0060\u0060",
         "parameters": [
           {
             "name": "projectId",
@@ -8310,6 +8346,7 @@
           "Event"
         ],
         "summary": "Set user description",
+        "description": "You can also save an end users contact information and a description of the event. This is really useful for error events as a user can specify reproduction steps in the description.",
         "parameters": [
           {
             "name": "referenceId",
@@ -8330,6 +8367,7 @@
           }
         ],
         "requestBody": {
+          "description": "The user description.",
           "content": {
             "application/json": {
               "schema": {
@@ -8372,6 +8410,7 @@
           "Event"
         ],
         "summary": "Set user description",
+        "description": "You can also save an end users contact information and a description of the event. This is really useful for error events as a user can specify reproduction steps in the description.",
         "parameters": [
           {
             "name": "referenceId",
@@ -8395,6 +8434,7 @@
           }
         ],
         "requestBody": {
+          "description": "The user description.",
           "content": {
             "application/json": {
               "schema": {
@@ -8489,6 +8529,7 @@
           "Event"
         ],
         "summary": "Submit event by GET",
+        "description": "You can submit an event using an HTTP GET and query string parameters. Any unknown query string parameters will be added to the extended data of the event.\n\nFeature usage named build with a duration of 10:\n\u0060\u0060\u0060/events/submit?access_token=YOUR_API_KEY\u0026type=usage\u0026source=build\u0026value=10\u0060\u0060\u0060\n\nLog with message, geo and extended data\n\u0060\u0060\u0060/events/submit?access_token=YOUR_API_KEY\u0026type=log\u0026message=Hello World\u0026source=server01\u0026geo=32.85,-96.9613\u0026randomproperty=true\u0060\u0060\u0060",
         "parameters": [
           {
             "name": "type",
@@ -8651,6 +8692,7 @@
           "Event"
         ],
         "summary": "Submit event type by GET",
+        "description": "You can submit an event using an HTTP GET and query string parameters.\n\nFeature usage event named build with a value of 10:\n\u0060\u0060\u0060/events/submit/usage?access_token=YOUR_API_KEY\u0026source=build\u0026value=10\u0060\u0060\u0060\n\nLog event with message, geo and extended data\n\u0060\u0060\u0060/events/submit/log?access_token=YOUR_API_KEY\u0026message=Hello World\u0026source=server01\u0026geo=32.85,-96.9613\u0026randomproperty=true\u0060\u0060\u0060",
         "parameters": [
           {
             "name": "type",
@@ -8815,6 +8857,7 @@
           "Event"
         ],
         "summary": "Submit event type by GET for a specific project",
+        "description": "You can submit an event using an HTTP GET and query string parameters.\n\nFeature usage named build with a duration of 10:\n\u0060\u0060\u0060/projects/{projectId}/events/submit?access_token=YOUR_API_KEY\u0026type=usage\u0026source=build\u0026value=10\u0060\u0060\u0060\n\nLog with message, geo and extended data\n\u0060\u0060\u0060/projects/{projectId}/events/submit?access_token=YOUR_API_KEY\u0026type=log\u0026message=Hello World\u0026source=server01\u0026geo=32.85,-96.9613\u0026randomproperty=true\u0060\u0060\u0060",
         "parameters": [
           {
             "name": "projectId",
@@ -8986,6 +9029,7 @@
           "Event"
         ],
         "summary": "Submit event type by GET for a specific project",
+        "description": "You can submit an event using an HTTP GET and query string parameters.\n\nFeature usage named build with a duration of 10:\n\u0060\u0060\u0060/projects/{projectId}/events/submit?access_token=YOUR_API_KEY\u0026type=usage\u0026source=build\u0026value=10\u0060\u0060\u0060\n\nLog with message, geo and extended data\n\u0060\u0060\u0060/projects/{projectId}/events/submit?access_token=YOUR_API_KEY\u0026type=log\u0026message=Hello World\u0026source=server01\u0026geo=32.85,-96.9613\u0026randomproperty=true\u0060\u0060\u0060",
         "parameters": [
           {
             "name": "projectId",
@@ -9225,12 +9269,12 @@
           "name",
           "description",
           "price",
-          "maxProjects",
-          "maxUsers",
-          "retentionDays",
-          "maxEventsPerMonth",
-          "hasPremiumFeatures",
-          "isHidden"
+          "max_projects",
+          "max_users",
+          "retention_days",
+          "max_events_per_month",
+          "has_premium_features",
+          "is_hidden"
         ],
         "type": "object",
         "properties": {
@@ -9247,26 +9291,26 @@
             "type": "number",
             "format": "double"
           },
-          "maxProjects": {
+          "max_projects": {
             "type": "integer",
             "format": "int32"
           },
-          "maxUsers": {
+          "max_users": {
             "type": "integer",
             "format": "int32"
           },
-          "retentionDays": {
+          "retention_days": {
             "type": "integer",
             "format": "int32"
           },
-          "maxEventsPerMonth": {
+          "max_events_per_month": {
             "type": "integer",
             "format": "int32"
           },
-          "hasPremiumFeatures": {
+          "has_premium_features": {
             "type": "boolean"
           },
-          "isHidden": {
+          "is_hidden": {
             "type": "boolean"
           }
         }
@@ -9290,12 +9334,12 @@
       },
       "ChangePasswordModel": {
         "required": [
-          "currentPassword",
+          "current_password",
           "password"
         ],
         "type": "object",
         "properties": {
-          "currentPassword": {
+          "current_password": {
             "maxLength": 100,
             "minLength": 6,
             "type": "string"
@@ -9309,14 +9353,14 @@
       },
       "ChangePlanRequest": {
         "required": [
-          "planId"
+          "plan_id"
         ],
         "type": "object",
         "properties": {
-          "planId": {
+          "plan_id": {
             "type": "string"
           },
-          "stripeToken": {
+          "stripe_token": {
             "type": [
               "null",
               "string"
@@ -9328,7 +9372,7 @@
               "string"
             ]
           },
-          "couponId": {
+          "coupon_id": {
             "type": [
               "null",
               "string"
@@ -9446,19 +9490,19 @@
       "Invite": {
         "required": [
           "token",
-          "emailAddress",
-          "dateAdded"
+          "email_address",
+          "date_added"
         ],
         "type": "object",
         "properties": {
           "token": {
             "type": "string"
           },
-          "emailAddress": {
+          "email_address": {
             "type": "string",
             "format": "email"
           },
-          "dateAdded": {
+          "date_added": {
             "type": "string",
             "format": "date-time"
           }
@@ -9467,8 +9511,8 @@
       "Invoice": {
         "required": [
           "id",
-          "organizationId",
-          "organizationName",
+          "organization_id",
+          "organization_name",
           "date",
           "paid",
           "total",
@@ -9479,13 +9523,13 @@
           "id": {
             "type": "string"
           },
-          "organizationId": {
+          "organization_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "organizationName": {
+          "organization_name": {
             "type": "string"
           },
           "date": {
@@ -9565,7 +9609,7 @@
             "minLength": 6,
             "type": "string"
           },
-          "inviteToken": {
+          "invite_token": {
             "maxLength": 40,
             "minLength": 40,
             "type": [
@@ -9588,13 +9632,13 @@
       },
       "NewProject": {
         "required": [
-          "organizationId",
+          "organization_id",
           "name",
-          "deleteBotDataEnabled"
+          "delete_bot_data_enabled"
         ],
         "type": "object",
         "properties": {
-          "organizationId": {
+          "organization_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
@@ -9603,7 +9647,7 @@
           "name": {
             "type": "string"
           },
-          "deleteBotDataEnabled": {
+          "delete_bot_data_enabled": {
             "type": "boolean"
           }
         }
@@ -9611,12 +9655,12 @@
       "NewSavedView": {
         "required": [
           "name",
-          "viewType",
-          "organizationId"
+          "view_type",
+          "organization_id"
         ],
         "type": "object",
         "properties": {
-          "organizationId": {
+          "organization_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
@@ -9655,10 +9699,10 @@
               "string"
             ]
           },
-          "viewType": {
+          "view_type": {
             "type": "string"
           },
-          "filterDefinitions": {
+          "filter_definitions": {
             "maxLength": 100000,
             "type": [
               "null",
@@ -9675,7 +9719,7 @@
               "type": "boolean"
             }
           },
-          "columnOrder": {
+          "column_order": {
             "maxItems": 50,
             "type": [
               "null",
@@ -9685,19 +9729,19 @@
               "type": "string"
             }
           },
-          "showStats": {
+          "show_stats": {
             "type": [
               "null",
               "boolean"
             ]
           },
-          "showChart": {
+          "show_chart": {
             "type": [
               "null",
               "boolean"
             ]
           },
-          "isPrivate": {
+          "is_private": {
             "type": [
               "null",
               "boolean"
@@ -9707,25 +9751,25 @@
       },
       "NewToken": {
         "required": [
-          "organizationId",
-          "projectId",
+          "organization_id",
+          "project_id",
           "scopes"
         ],
         "type": "object",
         "properties": {
-          "organizationId": {
+          "organization_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "projectId": {
+          "project_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "defaultProjectId": {
+          "default_project_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
@@ -9741,7 +9785,7 @@
               "type": "string"
             }
           },
-          "expiresUtc": {
+          "expires_utc": {
             "type": [
               "null",
               "string"
@@ -9758,20 +9802,20 @@
       },
       "NewWebHook": {
         "required": [
-          "organizationId",
-          "projectId",
+          "organization_id",
+          "project_id",
           "url",
-          "eventTypes"
+          "event_types"
         ],
         "type": "object",
         "properties": {
-          "organizationId": {
+          "organization_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "projectId": {
+          "project_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
@@ -9781,7 +9825,7 @@
             "type": "string",
             "format": "uri"
           },
-          "eventTypes": {
+          "event_types": {
             "type": "array",
             "items": {
               "type": "string"
@@ -9798,31 +9842,31 @@
       },
       "NotificationSettings": {
         "required": [
-          "sendDailySummary",
-          "reportNewErrors",
-          "reportCriticalErrors",
-          "reportEventRegressions",
-          "reportNewEvents",
-          "reportCriticalEvents"
+          "send_daily_summary",
+          "report_new_errors",
+          "report_critical_errors",
+          "report_event_regressions",
+          "report_new_events",
+          "report_critical_events"
         ],
         "type": "object",
         "properties": {
-          "sendDailySummary": {
+          "send_daily_summary": {
             "type": "boolean"
           },
-          "reportNewErrors": {
+          "report_new_errors": {
             "type": "boolean"
           },
-          "reportCriticalErrors": {
+          "report_critical_errors": {
             "type": "boolean"
           },
-          "reportEventRegressions": {
+          "report_event_regressions": {
             "type": "boolean"
           },
-          "reportNewEvents": {
+          "report_new_events": {
             "type": "boolean"
           },
-          "reportCriticalEvents": {
+          "report_critical_events": {
             "type": "boolean"
           }
         }
@@ -9830,22 +9874,22 @@
       "OAuthAccount": {
         "required": [
           "provider",
-          "providerUserId",
+          "provider_user_id",
           "username",
-          "extraData"
+          "extra_data"
         ],
         "type": "object",
         "properties": {
           "provider": {
             "type": "string"
           },
-          "providerUserId": {
+          "provider_user_id": {
             "type": "string"
           },
           "username": {
             "type": "string"
           },
-          "extraData": {
+          "extra_data": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
@@ -9855,13 +9899,13 @@
       },
       "PersistentEvent": {
         "required": [
-          "organizationId",
-          "projectId",
-          "stackId",
+          "organization_id",
+          "project_id",
+          "stack_id",
           "type",
           "id",
-          "isFirstOccurrence",
-          "createdUtc",
+          "is_first_occurrence",
+          "created_utc",
           "date"
         ],
         "type": "object",
@@ -9872,28 +9916,28 @@
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "organizationId": {
+          "organization_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "projectId": {
+          "project_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "stackId": {
+          "stack_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "isFirstOccurrence": {
+          "is_first_occurrence": {
             "type": "boolean"
           },
-          "createdUtc": {
+          "created_utc": {
             "type": "string",
             "format": "date-time"
           },
@@ -9969,7 +10013,7 @@
             ],
             "additionalProperties": {}
           },
-          "referenceId": {
+          "reference_id": {
             "type": [
               "null",
               "string"
@@ -10096,12 +10140,12 @@
       },
       "ResetPasswordModel": {
         "required": [
-          "passwordResetToken",
+          "password_reset_token",
           "password"
         ],
         "type": "object",
         "properties": {
-          "passwordResetToken": {
+          "password_reset_token": {
             "maxLength": 40,
             "minLength": 40,
             "type": "string"
@@ -10132,7 +10176,7 @@
             "minLength": 6,
             "type": "string"
           },
-          "inviteToken": {
+          "invite_token": {
             "maxLength": 40,
             "minLength": 40,
             "type": [
@@ -10144,25 +10188,25 @@
       },
       "Stack": {
         "required": [
-          "organizationId",
-          "projectId",
+          "organization_id",
+          "project_id",
           "type",
-          "signatureHash",
-          "signatureInfo",
+          "signature_hash",
+          "signature_info",
           "id",
           "status",
           "title",
-          "totalOccurrences",
-          "firstOccurrence",
-          "lastOccurrence",
-          "occurrencesAreCritical",
+          "total_occurrences",
+          "first_occurrence",
+          "last_occurrence",
+          "occurrences_are_critical",
           "references",
           "tags",
-          "duplicateSignature",
-          "createdUtc",
-          "updatedUtc",
-          "isDeleted",
-          "allowNotifications"
+          "duplicate_signature",
+          "created_utc",
+          "updated_utc",
+          "is_deleted",
+          "allow_notifications"
         ],
         "type": "object",
         "properties": {
@@ -10172,13 +10216,13 @@
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "organizationId": {
+          "organization_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "projectId": {
+          "project_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
@@ -10192,29 +10236,29 @@
           "status": {
             "$ref": "#/components/schemas/StackStatus"
           },
-          "snoozeUntilUtc": {
+          "snooze_until_utc": {
             "type": [
               "null",
               "string"
             ],
             "format": "date-time"
           },
-          "signatureHash": {
+          "signature_hash": {
             "type": "string"
           },
-          "signatureInfo": {
+          "signature_info": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
             }
           },
-          "fixedInVersion": {
+          "fixed_in_version": {
             "type": [
               "null",
               "string"
             ]
           },
-          "dateFixed": {
+          "date_fixed": {
             "type": [
               "null",
               "string"
@@ -10226,15 +10270,15 @@
             "minLength": 0,
             "type": "string"
           },
-          "totalOccurrences": {
+          "total_occurrences": {
             "type": "integer",
             "format": "int32"
           },
-          "firstOccurrence": {
+          "first_occurrence": {
             "type": "string",
             "format": "date-time"
           },
-          "lastOccurrence": {
+          "last_occurrence": {
             "type": "string",
             "format": "date-time"
           },
@@ -10244,7 +10288,7 @@
               "string"
             ]
           },
-          "occurrencesAreCritical": {
+          "occurrences_are_critical": {
             "type": "boolean"
           },
           "references": {
@@ -10260,21 +10304,21 @@
               "type": "string"
             }
           },
-          "duplicateSignature": {
+          "duplicate_signature": {
             "type": "string"
           },
-          "createdUtc": {
+          "created_utc": {
             "type": "string",
             "format": "date-time"
           },
-          "updatedUtc": {
+          "updated_utc": {
             "type": "string",
             "format": "date-time"
           },
-          "isDeleted": {
+          "is_deleted": {
             "type": "boolean"
           },
-          "allowNotifications": {
+          "allow_notifications": {
             "type": "boolean",
             "readOnly": true
           }
@@ -10325,11 +10369,11 @@
       },
       "UpdateEmailAddressResult": {
         "required": [
-          "isVerified"
+          "is_verified"
         ],
         "type": "object",
         "properties": {
-          "isVerified": {
+          "is_verified": {
             "type": "boolean"
           }
         }
@@ -10337,13 +10381,6 @@
       "UpdateEvent": {
         "type": "object",
         "properties": {
-          "unknownProperties": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "readOnly": true
-          },
           "email_address": {
             "type": [
               "null",
@@ -10362,13 +10399,6 @@
       "UpdateProject": {
         "type": "object",
         "properties": {
-          "unknownProperties": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "readOnly": true
-          },
           "name": {
             "type": "string"
           },
@@ -10380,13 +10410,6 @@
       "UpdateSavedView": {
         "type": "object",
         "properties": {
-          "unknownProperties": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "readOnly": true
-          },
           "name": {
             "type": [
               "null",
@@ -10459,13 +10482,6 @@
       "UpdateToken": {
         "type": "object",
         "properties": {
-          "unknownProperties": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "readOnly": true
-          },
           "is_disabled": {
             "type": "boolean"
           },
@@ -10480,13 +10496,6 @@
       "UpdateUser": {
         "type": "object",
         "properties": {
-          "unknownProperties": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "readOnly": true
-          },
           "full_name": {
             "type": "string"
           },
@@ -10501,7 +10510,7 @@
           "total",
           "blocked",
           "discarded",
-          "tooBig"
+          "too_big"
         ],
         "type": "object",
         "properties": {
@@ -10521,7 +10530,7 @@
             "type": "integer",
             "format": "int32"
           },
-          "tooBig": {
+          "too_big": {
             "type": "integer",
             "format": "int32"
           }
@@ -10534,7 +10543,7 @@
           "total",
           "blocked",
           "discarded",
-          "tooBig"
+          "too_big"
         ],
         "type": "object",
         "properties": {
@@ -10558,7 +10567,7 @@
             "type": "integer",
             "format": "int32"
           },
-          "tooBig": {
+          "too_big": {
             "type": "integer",
             "format": "int32"
           }
@@ -10566,19 +10575,19 @@
       },
       "User": {
         "required": [
-          "fullName",
-          "emailAddress",
+          "full_name",
+          "email_address",
           "id",
-          "organizationIds",
-          "passwordResetTokenExpiration",
-          "oAuthAccounts",
-          "emailNotificationsEnabled",
-          "isEmailAddressVerified",
-          "verifyEmailAddressTokenExpiration",
-          "isActive",
+          "organization_ids",
+          "password_reset_token_expiration",
+          "o_auth_accounts",
+          "email_notifications_enabled",
+          "is_email_address_verified",
+          "verify_email_address_token_expiration",
+          "is_active",
           "roles",
-          "createdUtc",
-          "updatedUtc"
+          "created_utc",
+          "updated_utc"
         ],
         "type": "object",
         "properties": {
@@ -10588,7 +10597,7 @@
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "organizationIds": {
+          "organization_ids": {
             "uniqueItems": true,
             "type": "array",
             "items": {
@@ -10607,46 +10616,46 @@
               "string"
             ]
           },
-          "passwordResetToken": {
+          "password_reset_token": {
             "type": [
               "null",
               "string"
             ]
           },
-          "passwordResetTokenExpiration": {
+          "password_reset_token_expiration": {
             "type": "string",
             "format": "date-time"
           },
-          "oAuthAccounts": {
+          "o_auth_accounts": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/OAuthAccount"
             }
           },
-          "fullName": {
+          "full_name": {
             "type": "string"
           },
-          "emailAddress": {
+          "email_address": {
             "type": "string",
             "format": "email"
           },
-          "emailNotificationsEnabled": {
+          "email_notifications_enabled": {
             "type": "boolean"
           },
-          "isEmailAddressVerified": {
+          "is_email_address_verified": {
             "type": "boolean"
           },
-          "verifyEmailAddressToken": {
+          "verify_email_address_token": {
             "type": [
               "null",
               "string"
             ]
           },
-          "verifyEmailAddressTokenExpiration": {
+          "verify_email_address_token_expiration": {
             "type": "string",
             "format": "date-time"
           },
-          "isActive": {
+          "is_active": {
             "type": "boolean"
           },
           "roles": {
@@ -10656,11 +10665,11 @@
               "type": "string"
             }
           },
-          "createdUtc": {
+          "created_utc": {
             "type": "string",
             "format": "date-time"
           },
-          "updatedUtc": {
+          "updated_utc": {
             "type": "string",
             "format": "date-time"
           }
@@ -10669,7 +10678,7 @@
       "UserDescription": {
         "type": "object",
         "properties": {
-          "emailAddress": {
+          "email_address": {
             "type": [
               "null",
               "string"
@@ -10693,16 +10702,16 @@
       },
       "ViewCurrentUser": {
         "required": [
-          "hasLocalAccount",
-          "oAuthAccounts",
+          "has_local_account",
+          "o_auth_accounts",
           "id",
-          "organizationIds",
-          "fullName",
-          "emailAddress",
-          "emailNotificationsEnabled",
-          "isEmailAddressVerified",
-          "isActive",
-          "isInvite",
+          "organization_ids",
+          "full_name",
+          "email_address",
+          "email_notifications_enabled",
+          "is_email_address_verified",
+          "is_active",
+          "is_invite",
           "roles"
         ],
         "type": "object",
@@ -10713,10 +10722,10 @@
               "string"
             ]
           },
-          "hasLocalAccount": {
+          "has_local_account": {
             "type": "boolean"
           },
-          "oAuthAccounts": {
+          "o_auth_accounts": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/OAuthAccount"
@@ -10728,30 +10737,30 @@
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "organizationIds": {
+          "organization_ids": {
             "uniqueItems": true,
             "type": "array",
             "items": {
               "type": "string"
             }
           },
-          "fullName": {
+          "full_name": {
             "type": "string"
           },
-          "emailAddress": {
+          "email_address": {
             "type": "string",
             "format": "email"
           },
-          "emailNotificationsEnabled": {
+          "email_notifications_enabled": {
             "type": "boolean"
           },
-          "isEmailAddressVerified": {
+          "is_email_address_verified": {
             "type": "boolean"
           },
-          "isActive": {
+          "is_active": {
             "type": "boolean"
           },
-          "isInvite": {
+          "is_invite": {
             "type": "boolean"
           },
           "roles": {
@@ -10766,31 +10775,31 @@
       "ViewOrganization": {
         "required": [
           "id",
-          "createdUtc",
-          "updatedUtc",
+          "created_utc",
+          "updated_utc",
           "name",
-          "planId",
-          "planName",
-          "planDescription",
-          "billingStatus",
-          "billingPrice",
-          "maxEventsPerMonth",
-          "bonusEventsPerMonth",
-          "retentionDays",
-          "isSuspended",
-          "hasPremiumFeatures",
+          "plan_id",
+          "plan_name",
+          "plan_description",
+          "billing_status",
+          "billing_price",
+          "max_events_per_month",
+          "bonus_events_per_month",
+          "retention_days",
+          "is_suspended",
+          "has_premium_features",
           "features",
-          "maxUsers",
-          "maxProjects",
-          "projectCount",
-          "stackCount",
-          "eventCount",
+          "max_users",
+          "max_projects",
+          "project_count",
+          "stack_count",
+          "event_count",
           "invites",
-          "usageHours",
+          "usage_hours",
           "usage",
-          "isThrottled",
-          "isOverMonthlyLimit",
-          "isOverRequestLimit"
+          "is_throttled",
+          "is_over_monthly_limit",
+          "is_over_request_limit"
         ],
         "type": "object",
         "properties": {
@@ -10800,47 +10809,47 @@
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "createdUtc": {
+          "created_utc": {
             "type": "string",
             "format": "date-time"
           },
-          "updatedUtc": {
+          "updated_utc": {
             "type": "string",
             "format": "date-time"
           },
           "name": {
             "type": "string"
           },
-          "planId": {
+          "plan_id": {
             "type": "string"
           },
-          "planName": {
+          "plan_name": {
             "type": "string"
           },
-          "planDescription": {
+          "plan_description": {
             "type": "string"
           },
-          "cardLast4": {
+          "card_last4": {
             "type": [
               "null",
               "string"
             ]
           },
-          "subscribeDate": {
+          "subscribe_date": {
             "type": [
               "null",
               "string"
             ],
             "format": "date-time"
           },
-          "billingChangeDate": {
+          "billing_change_date": {
             "type": [
               "null",
               "string"
             ],
             "format": "date-time"
           },
-          "billingChangedByUserId": {
+          "billing_changed_by_user_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
@@ -10849,55 +10858,55 @@
               "string"
             ]
           },
-          "billingStatus": {
+          "billing_status": {
             "$ref": "#/components/schemas/BillingStatus"
           },
-          "billingPrice": {
+          "billing_price": {
             "type": "number",
             "format": "double"
           },
-          "maxEventsPerMonth": {
+          "max_events_per_month": {
             "type": "integer",
             "format": "int32"
           },
-          "bonusEventsPerMonth": {
+          "bonus_events_per_month": {
             "type": "integer",
             "format": "int32"
           },
-          "bonusExpiration": {
+          "bonus_expiration": {
             "type": [
               "null",
               "string"
             ],
             "format": "date-time"
           },
-          "retentionDays": {
+          "retention_days": {
             "type": "integer",
             "format": "int32"
           },
-          "isSuspended": {
+          "is_suspended": {
             "type": "boolean"
           },
-          "suspensionCode": {
+          "suspension_code": {
             "type": [
               "null",
               "string"
             ]
           },
-          "suspensionNotes": {
+          "suspension_notes": {
             "type": [
               "null",
               "string"
             ]
           },
-          "suspensionDate": {
+          "suspension_date": {
             "type": [
               "null",
               "string"
             ],
             "format": "date-time"
           },
-          "hasPremiumFeatures": {
+          "has_premium_features": {
             "type": "boolean"
           },
           "features": {
@@ -10907,23 +10916,23 @@
               "type": "string"
             }
           },
-          "maxUsers": {
+          "max_users": {
             "type": "integer",
             "format": "int32"
           },
-          "maxProjects": {
+          "max_projects": {
             "type": "integer",
             "format": "int32"
           },
-          "projectCount": {
+          "project_count": {
             "type": "integer",
             "format": "int64"
           },
-          "stackCount": {
+          "stack_count": {
             "type": "integer",
             "format": "int64"
           },
-          "eventCount": {
+          "event_count": {
             "type": "integer",
             "format": "int64"
           },
@@ -10933,7 +10942,7 @@
               "$ref": "#/components/schemas/Invite"
             }
           },
-          "usageHours": {
+          "usage_hours": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/UsageHourInfo"
@@ -10952,13 +10961,13 @@
             ],
             "additionalProperties": {}
           },
-          "isThrottled": {
+          "is_throttled": {
             "type": "boolean"
           },
-          "isOverMonthlyLimit": {
+          "is_over_monthly_limit": {
             "type": "boolean"
           },
-          "isOverRequestLimit": {
+          "is_over_request_limit": {
             "type": "boolean"
           }
         }
@@ -10966,17 +10975,17 @@
       "ViewProject": {
         "required": [
           "id",
-          "createdUtc",
-          "organizationId",
-          "organizationName",
+          "created_utc",
+          "organization_id",
+          "organization_name",
           "name",
-          "deleteBotDataEnabled",
-          "promotedTabs",
-          "stackCount",
-          "eventCount",
-          "hasPremiumFeatures",
-          "hasSlackIntegration",
-          "usageHours",
+          "delete_bot_data_enabled",
+          "promoted_tabs",
+          "stack_count",
+          "event_count",
+          "has_premium_features",
+          "has_slack_integration",
+          "usage_hours",
           "usage"
         ],
         "type": "object",
@@ -10987,23 +10996,23 @@
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "createdUtc": {
+          "created_utc": {
             "type": "string",
             "format": "date-time"
           },
-          "organizationId": {
+          "organization_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "organizationName": {
+          "organization_name": {
             "type": "string"
           },
           "name": {
             "type": "string"
           },
-          "deleteBotDataEnabled": {
+          "delete_bot_data_enabled": {
             "type": "boolean"
           },
           "data": {
@@ -11013,34 +11022,34 @@
             ],
             "additionalProperties": {}
           },
-          "promotedTabs": {
+          "promoted_tabs": {
             "uniqueItems": true,
             "type": "array",
             "items": {
               "type": "string"
             }
           },
-          "isConfigured": {
+          "is_configured": {
             "type": [
               "null",
               "boolean"
             ]
           },
-          "stackCount": {
+          "stack_count": {
             "type": "integer",
             "format": "int64"
           },
-          "eventCount": {
+          "event_count": {
             "type": "integer",
             "format": "int64"
           },
-          "hasPremiumFeatures": {
+          "has_premium_features": {
             "type": "boolean"
           },
-          "hasSlackIntegration": {
+          "has_slack_integration": {
             "type": "boolean"
           },
-          "usageHours": {
+          "usage_hours": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/UsageHourInfo"
@@ -11057,14 +11066,14 @@
       "ViewSavedView": {
         "required": [
           "id",
-          "organizationId",
-          "createdByUserId",
+          "organization_id",
+          "created_by_user_id",
           "name",
           "slug",
           "version",
-          "viewType",
-          "createdUtc",
-          "updatedUtc"
+          "view_type",
+          "created_utc",
+          "updated_utc"
         ],
         "type": "object",
         "properties": {
@@ -11074,13 +11083,13 @@
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "organizationId": {
+          "organization_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "userId": {
+          "user_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
@@ -11089,13 +11098,13 @@
               "string"
             ]
           },
-          "createdByUserId": {
+          "created_by_user_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "updatedByUserId": {
+          "updated_by_user_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
@@ -11110,7 +11119,7 @@
               "string"
             ]
           },
-          "filterDefinitions": {
+          "filter_definitions": {
             "type": [
               "null",
               "string"
@@ -11125,7 +11134,7 @@
               "type": "boolean"
             }
           },
-          "columnOrder": {
+          "column_order": {
             "type": [
               "null",
               "array"
@@ -11134,13 +11143,13 @@
               "type": "string"
             }
           },
-          "showStats": {
+          "show_stats": {
             "type": [
               "null",
               "boolean"
             ]
           },
-          "showChart": {
+          "show_chart": {
             "type": [
               "null",
               "boolean"
@@ -11168,14 +11177,14 @@
             "type": "integer",
             "format": "int32"
           },
-          "viewType": {
+          "view_type": {
             "type": "string"
           },
-          "createdUtc": {
+          "created_utc": {
             "type": "string",
             "format": "date-time"
           },
-          "updatedUtc": {
+          "updated_utc": {
             "type": "string",
             "format": "date-time"
           }
@@ -11184,13 +11193,13 @@
       "ViewToken": {
         "required": [
           "id",
-          "organizationId",
-          "projectId",
+          "organization_id",
+          "project_id",
           "scopes",
-          "isDisabled",
-          "isSuspended",
-          "createdUtc",
-          "updatedUtc"
+          "is_disabled",
+          "is_suspended",
+          "created_utc",
+          "updated_utc"
         ],
         "type": "object",
         "properties": {
@@ -11200,19 +11209,19 @@
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "organizationId": {
+          "organization_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "projectId": {
+          "project_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "userId": {
+          "user_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
@@ -11221,7 +11230,7 @@
               "string"
             ]
           },
-          "defaultProjectId": {
+          "default_project_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
@@ -11237,7 +11246,7 @@
               "type": "string"
             }
           },
-          "expiresUtc": {
+          "expires_utc": {
             "type": [
               "null",
               "string"
@@ -11250,17 +11259,17 @@
               "string"
             ]
           },
-          "isDisabled": {
+          "is_disabled": {
             "type": "boolean"
           },
-          "isSuspended": {
+          "is_suspended": {
             "type": "boolean"
           },
-          "createdUtc": {
+          "created_utc": {
             "type": "string",
             "format": "date-time"
           },
-          "updatedUtc": {
+          "updated_utc": {
             "type": "string",
             "format": "date-time"
           }
@@ -11269,13 +11278,13 @@
       "ViewUser": {
         "required": [
           "id",
-          "organizationIds",
-          "fullName",
-          "emailAddress",
-          "emailNotificationsEnabled",
-          "isEmailAddressVerified",
-          "isActive",
-          "isInvite",
+          "organization_ids",
+          "full_name",
+          "email_address",
+          "email_notifications_enabled",
+          "is_email_address_verified",
+          "is_active",
+          "is_invite",
           "roles"
         ],
         "type": "object",
@@ -11286,30 +11295,30 @@
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "organizationIds": {
+          "organization_ids": {
             "uniqueItems": true,
             "type": "array",
             "items": {
               "type": "string"
             }
           },
-          "fullName": {
+          "full_name": {
             "type": "string"
           },
-          "emailAddress": {
+          "email_address": {
             "type": "string",
             "format": "email"
           },
-          "emailNotificationsEnabled": {
+          "email_notifications_enabled": {
             "type": "boolean"
           },
-          "isEmailAddressVerified": {
+          "is_email_address_verified": {
             "type": "boolean"
           },
-          "isActive": {
+          "is_active": {
             "type": "boolean"
           },
-          "isInvite": {
+          "is_invite": {
             "type": "boolean"
           },
           "roles": {
@@ -11323,14 +11332,14 @@
       },
       "WebHook": {
         "required": [
-          "organizationId",
+          "organization_id",
           "url",
-          "eventTypes",
+          "event_types",
           "version",
           "id",
-          "projectId",
-          "isEnabled",
-          "createdUtc"
+          "project_id",
+          "is_enabled",
+          "created_utc"
         ],
         "type": "object",
         "properties": {
@@ -11340,13 +11349,13 @@
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "organizationId": {
+          "organization_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string"
           },
-          "projectId": {
+          "project_id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
@@ -11356,7 +11365,7 @@
             "type": "string",
             "format": "uri"
           },
-          "eventTypes": {
+          "event_types": {
             "maxItems": 6,
             "minItems": 1,
             "type": "array",
@@ -11364,13 +11373,13 @@
               "type": "string"
             }
           },
-          "isEnabled": {
+          "is_enabled": {
             "type": "boolean"
           },
           "version": {
             "type": "string"
           },
-          "createdUtc": {
+          "created_utc": {
             "type": "string",
             "format": "date-time"
           }

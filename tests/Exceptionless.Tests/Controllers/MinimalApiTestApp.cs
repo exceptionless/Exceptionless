@@ -1,4 +1,5 @@
 using System.Reflection;
+using Exceptionless.Core.Serialization;
 using Exceptionless.Web.Api;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.OpenApi;
@@ -20,6 +21,10 @@ internal static class MinimalApiTestApp
 
         builder.Services.AddAuthorization();
         builder.Services.AddAuthenticationCore();
+        builder.Services.ConfigureHttpJsonOptions(o =>
+        {
+            o.SerializerOptions.ConfigureExceptionlessDefaults();
+        });
         builder.Services.AddRouting(options =>
         {
             options.ConstraintMap.Add("identifier", typeof(IdentifierRouteConstraint));

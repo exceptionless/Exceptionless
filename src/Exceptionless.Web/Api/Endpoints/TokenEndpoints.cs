@@ -95,7 +95,9 @@ public static class TokenEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Create")
+        .WithDescription("To create a new token, you must specify an organization_id. There are three valid scopes: client, user and admin.")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The token.",
             ResponseDescriptions = new() {
                 ["201"] = "Created",
                 ["400"] = "An error occurred while creating the token.",
@@ -120,7 +122,9 @@ public static class TokenEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Create for project")
+        .WithDescription("This is a helper action that makes it easier to create a token for a specific project. You may also specify a scope when creating a token. There are three valid scopes: client, user and admin.")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The token.",
             ParameterDescriptions = new() {
                 ["projectId"] = "The identifier of the project.",
             },
@@ -149,7 +153,9 @@ public static class TokenEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Create for organization")
+        .WithDescription("This is a helper action that makes it easier to create a token for a specific organization. You may also specify a scope when creating a token. There are three valid scopes: client, user and admin.")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The token.",
             ParameterDescriptions = new() {
                 ["organizationId"] = "The identifier of the organization.",
             },
@@ -167,6 +173,7 @@ public static class TokenEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The changes",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the token.",
             },
@@ -183,6 +190,7 @@ public static class TokenEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The changes",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the token.",
             },

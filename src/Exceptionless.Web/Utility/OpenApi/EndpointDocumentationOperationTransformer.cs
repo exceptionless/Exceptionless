@@ -22,6 +22,7 @@ public sealed record AdditionalParameterDefinition(
 /// </summary>
 public sealed record EndpointDocumentation
 {
+    public string? RequestBodyDescription { get; init; }
     public Dictionary<string, string> ParameterDescriptions { get; init; } = new();
     public Dictionary<string, string> ResponseDescriptions { get; init; } = new();
     public List<AdditionalParameterDefinition> AdditionalParameters { get; init; } = new();
@@ -123,6 +124,12 @@ public class EndpointDocumentationOperationTransformer : IOpenApiOperationTransf
                     response.Description = desc;
                 }
             }
+        }
+
+        // Apply request body description
+        if (documentation.RequestBodyDescription is not null && operation.RequestBody is not null)
+        {
+            operation.RequestBody.Description = documentation.RequestBodyDescription;
         }
 
         return Task.CompletedTask;

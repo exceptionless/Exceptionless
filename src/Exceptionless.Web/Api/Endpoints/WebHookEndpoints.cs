@@ -69,6 +69,7 @@ public static class WebHookEndpoints
         .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Create")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The web hook.",
             ResponseDescriptions = new() {
                 ["201"] = "Created",
                 ["400"] = "An error occurred while creating the web hook.",

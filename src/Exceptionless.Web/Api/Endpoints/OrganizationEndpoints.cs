@@ -80,6 +80,7 @@ public static class OrganizationEndpoints
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Create")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The organization.",
             ResponseDescriptions = new() {
                 ["201"] = "Created",
                 ["400"] = "An error occurred while creating the organization.",
@@ -96,6 +97,7 @@ public static class OrganizationEndpoints
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The changes",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the organization.",
             },
@@ -114,6 +116,7 @@ public static class OrganizationEndpoints
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The changes",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the organization.",
             },
@@ -178,6 +181,7 @@ public static class OrganizationEndpoints
         .Produces<IReadOnlyCollection<BillingPlan>>()
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Get plans")
+        .WithDescription("Gets available plans for a specific organization.")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the organization.",
@@ -199,7 +203,9 @@ public static class OrganizationEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Change plan")
+        .WithDescription("Upgrades or downgrades the organization's plan. Accepts parameters via JSON body (preferred) or query string (legacy).")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The plan change request (JSON body).",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the organization.",
                 ["planId"] = "Legacy query parameter: the plan identifier.",
@@ -268,6 +274,7 @@ public static class OrganizationEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Add custom data")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "Any string value.",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the organization.",
                 ["key"] = "The key name of the data object.",

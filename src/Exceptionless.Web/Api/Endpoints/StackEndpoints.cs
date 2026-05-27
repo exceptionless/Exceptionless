@@ -96,6 +96,7 @@ public static class StackEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Add reference link")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The reference link.",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the stack.",
             },
@@ -126,6 +127,7 @@ public static class StackEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Remove reference link")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The reference link.",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the stack.",
             },

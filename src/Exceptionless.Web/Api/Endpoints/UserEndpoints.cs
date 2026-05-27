@@ -69,6 +69,7 @@ public static class UserEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The changes",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the user.",
             },
@@ -85,6 +86,7 @@ public static class UserEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The changes",
             ParameterDescriptions = new() {
                 ["id"] = "The identifier of the user.",
             },

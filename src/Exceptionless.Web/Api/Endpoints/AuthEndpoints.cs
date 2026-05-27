@@ -32,6 +32,17 @@ public static class AuthEndpoints
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Login")
+        .WithDescription("""
+            Log in with your email address and password to generate a token scoped with your users roles.
+
+            ```{ "email": "noreply@exceptionless.io", "password": "exceptionless" }```
+
+            This token can then be used to access the api. You can use this token in the header (bearer authentication)
+            or append it onto the query string: ?access_token=MY_TOKEN
+
+            Please note that you can also use this token on the documentation site by placing it in the
+            headers api_key input box.
+            """)
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
@@ -187,6 +198,7 @@ public static class AuthEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .WithSummary("Removes an external login provider from the account")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The provider user id.",
             ParameterDescriptions = new() {
                 ["providerName"] = "The provider name.",
             },

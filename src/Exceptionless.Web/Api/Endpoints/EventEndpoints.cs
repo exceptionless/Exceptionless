@@ -416,7 +416,9 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Set user description")
+        .WithDescription("You can also save an end users contact information and a description of the event. This is really useful for error events as a user can specify reproduction steps in the description.")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The user description.",
             ParameterDescriptions = new() {
                 ["referenceId"] = "An identifier used that references an event instance.",
             },
@@ -435,7 +437,9 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Set user description")
+        .WithDescription("You can also save an end users contact information and a description of the event. This is really useful for error events as a user can specify reproduction steps in the description.")
         .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The user description.",
             ParameterDescriptions = new() {
                 ["referenceId"] = "An identifier used that references an event instance.",
                 ["projectId"] = "The identifier of the project.",
@@ -550,6 +554,15 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Submit event by GET")
+        .WithDescription("""
+            You can submit an event using an HTTP GET and query string parameters. Any unknown query string parameters will be added to the extended data of the event.
+
+            Feature usage named build with a duration of 10:
+            ```/events/submit?access_token=YOUR_API_KEY&type=usage&source=build&value=10```
+
+            Log with message, geo and extended data
+            ```/events/submit?access_token=YOUR_API_KEY&type=log&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true```
+            """)
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.SubmitGetAdditionalParameters,
             ParameterDescriptions = new() {
@@ -580,6 +593,15 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Submit event type by GET")
+        .WithDescription("""
+            You can submit an event using an HTTP GET and query string parameters.
+
+            Feature usage event named build with a value of 10:
+            ```/events/submit/usage?access_token=YOUR_API_KEY&source=build&value=10```
+
+            Log event with message, geo and extended data
+            ```/events/submit/log?access_token=YOUR_API_KEY&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true```
+            """)
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.SubmitGetAdditionalParameters,
             ParameterDescriptions = new() {
@@ -610,6 +632,7 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Submit event type by GET for a specific project")
+        .WithDescription("You can submit an event using an HTTP GET and query string parameters.\n\nFeature usage named build with a duration of 10:\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&type=usage&source=build&value=10```\n\nLog with message, geo and extended data\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&type=log&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true```")
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.SubmitGetAdditionalParameters,
             ParameterDescriptions = new() {
@@ -640,6 +663,7 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Submit event type by GET for a specific project")
+        .WithDescription("You can submit an event using an HTTP GET and query string parameters.\n\nFeature usage named build with a duration of 10:\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&type=usage&source=build&value=10```\n\nLog with message, geo and extended data\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&type=log&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true```")
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.SubmitGetAdditionalParameters,
             ParameterDescriptions = new() {
@@ -728,6 +752,20 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Submit event by POST")
+        .WithDescription("""
+            You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON object into the events data collection.
+
+            You can also post a multi-line string. We automatically split strings by the \n character and create a new log event for every line.
+
+            Simple event:
+            ```{ "message": "Exceptionless is amazing!" }```
+
+            Simple log event with user identity:
+            ```{ "type": "log", "message": "Exceptionless is amazing!", "date":"2030-01-01T12:00:00.0000000-05:00", "@user":{ "identity":"123456789", "name": "Test User" } }```
+
+            Simple error:
+            ```{ "type": "error", "date":"2030-01-01T12:00:00.0000000-05:00", "@simple_error": { "message": "Simple Exception", "type": "System.Exception", "stack_trace": "   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77" } }```
+            """)
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.PostUserAgentParameter,
             ParameterDescriptions = new() {
@@ -747,6 +785,20 @@ public static class EventEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Submit event by POST for a specific project")
+        .WithDescription("""
+            You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON object into the events data collection.
+
+            You can also post a multi-line string. We automatically split strings by the \n character and create a new log event for every line.
+
+            Simple event:
+            ```{ "message": "Exceptionless is amazing!" }```
+
+            Simple log event with user identity:
+            ```{ "type": "log", "message": "Exceptionless is amazing!", "date":"2030-01-01T12:00:00.0000000-05:00", "@user":{ "identity":"123456789", "name": "Test User" } }```
+
+            Simple error:
+            ```{ "type": "error", "date":"2030-01-01T12:00:00.0000000-05:00", "@simple_error": { "message": "Simple Exception", "type": "System.Exception", "stack_trace": "   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77" } }```
+            """)
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.PostUserAgentParameter,
             ParameterDescriptions = new() {
