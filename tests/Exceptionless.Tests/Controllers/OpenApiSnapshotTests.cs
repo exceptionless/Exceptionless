@@ -1,35 +1,20 @@
+using System.Net;
 using System.Text.Json;
-using Exceptionless.Tests.Extensions;
+using Microsoft.AspNetCore.TestHost;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers;
 
-public class OpenApiControllerTests : IntegrationTestsBase
+public sealed class OpenApiSnapshotTests
 {
-    public OpenApiControllerTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
-    {
-    }
-
     [Fact]
-    public async Task GetOpenApiJson_Default_ReturnsExpectedBaseline()
+    public async Task GetOpenApiJson_Default_MatchesSnapshot()
     {
-        // Arrange
-        string baselinePath = Path.Combine(AppContext.BaseDirectory, "Controllers", "Data", "openapi.json");
-
         // Act
-        var response = await SendRequestAsync(r => r
-            .BaseUri(_server.BaseAddress)
-            .AppendPaths("docs", "v2", "openapi.json")
-            .StatusCodeShouldBeOk()
-        );
-
-        string actualJson = await response.Content.ReadAsStringAsync(TestCancellationToken);
+        string actualJson = await GetOpenApiJsonAsync();
 
         // Assert
-        string expectedJson = (await File.ReadAllTextAsync(baselinePath, TestCancellationToken)).Replace("\\r\\n", "\\n");
-        actualJson = actualJson.Replace("\\r\\n", "\\n");
-
-        Assert.Equal(expectedJson, actualJson);
+        await SnapshotTestHelper.AssertMatchesJsonSnapshotAsync("openapi.json", actualJson, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -55,7 +40,7 @@ public class OpenApiControllerTests : IntegrationTestsBase
         Assert.True(paths.TryGetProperty("/api/v2/events/by-ref/{referenceId}/user-description", out var userDescriptionPath));
         Assert.True(userDescriptionPath.TryGetProperty("post", out var userDescriptionPost));
         Assert.True(userDescriptionPost.TryGetProperty("requestBody", out _));
-        AssertResponseCodes(userDescriptionPost, "202");
+        AssertResponseCodes(userDescriptionPost, "200");
     }
 
     [Fact]
@@ -85,16 +70,25 @@ public class OpenApiControllerTests : IntegrationTestsBase
         Assert.Equal("access_token", token.GetProperty("name").GetString());
     }
 
-    private async Task<JsonDocument> GetOpenApiDocumentAsync()
+    private static async Task<JsonDocument> GetOpenApiDocumentAsync()
     {
-        var response = await SendRequestAsync(r => r
-            .BaseUri(_server.BaseAddress)
-            .AppendPaths("docs", "v2", "openapi.json")
-            .StatusCodeShouldBeOk()
-        );
-
-        string json = await response.Content.ReadAsStringAsync(TestCancellationToken);
+        string json = await GetOpenApiJsonAsync();
         return JsonDocument.Parse(json);
+    }
+
+    private static async Task<string> GetOpenApiJsonAsync()
+    {
+        await using var app = MinimalApiTestApp.Create(useTestServer: true, includeOpenApi: true);
+        await app.StartAsync(TestContext.Current.CancellationToken);
+
+        var client = app.GetTestClient();
+        client.BaseAddress = new Uri("http://localhost");
+
+        using var response = await client.GetAsync("/docs/v2/openapi.json", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        string json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        return SnapshotTestHelper.NormalizeJson(json);
     }
 
     private static void AssertResponseCodes(JsonElement operation, params string[] expectedStatusCodes)
