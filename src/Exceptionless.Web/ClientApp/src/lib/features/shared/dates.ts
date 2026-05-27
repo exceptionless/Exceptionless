@@ -80,16 +80,14 @@ export function formatDateLabel(date: Date, currentDate: Date = new Date(), opti
     }
 
     // Minimal time components per your rules
-    const ms = date.getMilliseconds();
     const sec = date.getSeconds();
     const min = date.getMinutes();
 
     const timeOpts: Intl.DateTimeFormatOptions = {
         hour: 'numeric',
         hour12,
-        ...(min > 0 || sec > 0 || ms > 0 ? { minute: '2-digit' } : {}),
-        ...(sec > 0 || ms > 0 ? { second: '2-digit' } : {}),
-        ...(ms > 0 ? { fractionalSecondDigits: 3 } : {}),
+        ...(min > 0 || sec > 0 ? { minute: '2-digit' } : {}),
+        ...(sec > 0 ? { second: '2-digit' } : {}),
         ...(timeZone ? { timeZone } : {})
     };
 
