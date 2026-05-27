@@ -165,6 +165,7 @@
                 isInternalFilterUpdate = false;
                 return;
             }
+
             filters = getCurrentFilters();
         },
         { lazy: true }
@@ -216,6 +217,7 @@
         if (newFilterParam !== queryParams.filter || newTimeParam !== queryParams.time) {
             isInternalFilterUpdate = true;
         }
+
         queryParams.time = newTimeParam;
         queryParams.filter = newFilterParam;
     }
