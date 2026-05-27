@@ -98,7 +98,7 @@ export async function login(email: string, password: string) {
 
 export async function logout(queryClient?: QueryClient, client = useFetchClient()) {
     await client.get('auth/logout', { expectedStatusCodes: [200, 401, 403] });
-    await endSession();
+    endSession().catch(() => {});
 
     await queryClient?.cancelQueries();
     queryClient?.clear();
