@@ -45,8 +45,9 @@ public class ResetProjectDataWorkItemHandlerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task ResetProjectData_TracksDeletedUsage()
+    public async Task ResetProjectData_WithEvents_IncrementsDeletedUsageAndPersists()
     {
+        // Arrange
         var organization = await _organizationRepository.AddAsync(_organizationData.GenerateSampleOrganization(_billingManager, _plans), o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
@@ -54,21 +55,20 @@ public class ResetProjectDataWorkItemHandlerTests : IntegrationTestsBase
         var events = _eventData.GenerateEvents(5, organization.Id, project.Id, stack.Id).ToList();
         await _eventRepository.AddAsync(events, o => o.ImmediateConsistency());
 
+        // Act
         await _workItemQueue.EnqueueAsync(new ResetProjectDataWorkItem { OrganizationId = organization.Id, ProjectId = project.Id });
         await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
         await RefreshDataAsync();
 
-        // All events and stacks should be gone
+        // Assert
         var remaining = await _eventRepository.GetAllAsync();
-        Assert.DoesNotContain(remaining.Documents, e => e.ProjectId == project.Id);
+        Assert.DoesNotContain(remaining.Documents, e => String.Equals(e.ProjectId, project.Id, StringComparison.Ordinal));
         Assert.Null(await _stackRepository.GetByIdAsync(stack.Id, o => o.IncludeSoftDeletes()));
 
-        // Pending deleted usage should reflect 5 removed events
         var usageResponse = await _usageService.GetUsageAsync(organization.Id, project.Id);
         Assert.Equal(5, usageResponse.CurrentUsage.Deleted);
         Assert.Equal(5, usageResponse.CurrentHourUsage.Deleted);
 
-        // Flush and verify org + project usage are persisted
         TimeProvider.Advance(TimeSpan.FromMinutes(10));
         await _usageService.SavePendingUsageAsync();
 
@@ -82,23 +82,26 @@ public class ResetProjectDataWorkItemHandlerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task ResetProjectData_EmptyProject_NoDeletedUsageTracked()
+    public async Task ResetProjectData_EmptyProject_DoesNotIncrementDeletedUsage()
     {
+        // Arrange
         var organization = await _organizationRepository.AddAsync(_organizationData.GenerateSampleOrganization(_billingManager, _plans), o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
 
+        // Act
         await _workItemQueue.EnqueueAsync(new ResetProjectDataWorkItem { OrganizationId = organization.Id, ProjectId = project.Id });
         await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
 
-        // Project had no events; deleted usage should remain zero
+        // Assert
         var usageResponse = await _usageService.GetUsageAsync(organization.Id, project.Id);
         Assert.Equal(0, usageResponse.CurrentUsage.Deleted);
         Assert.Equal(0, usageResponse.CurrentHourUsage.Deleted);
     }
 
     [Fact]
-    public async Task ResetProjectData_MultipleStacks_TracksAllEventsDeleted()
+    public async Task ResetProjectData_MultipleStacks_IncrementsDeletedUsageForAllEvents()
     {
+        // Arrange
         var organization = await _organizationRepository.AddAsync(_organizationData.GenerateSampleOrganization(_billingManager, _plans), o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
 
@@ -108,16 +111,19 @@ public class ResetProjectDataWorkItemHandlerTests : IntegrationTestsBase
         await _eventRepository.AddAsync(_eventData.GenerateEvents(3, organization.Id, project.Id, stack1.Id), o => o.ImmediateConsistency());
         await _eventRepository.AddAsync(_eventData.GenerateEvents(4, organization.Id, project.Id, stack2.Id), o => o.ImmediateConsistency());
 
+        // Act
         await _workItemQueue.EnqueueAsync(new ResetProjectDataWorkItem { OrganizationId = organization.Id, ProjectId = project.Id });
         await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
 
+        // Assert
         var usageResponse = await _usageService.GetUsageAsync(organization.Id, project.Id);
         Assert.Equal(7, usageResponse.CurrentUsage.Deleted);
     }
 
     [Fact]
-    public async Task ResetProjectData_DoesNotAffectOtherProjectUsage()
+    public async Task ResetProjectData_MultipleProjects_OnlyIncrementsTargetProject()
     {
+        // Arrange
         var organization = await _organizationRepository.AddAsync(_organizationData.GenerateSampleOrganization(_billingManager, _plans), o => o.ImmediateConsistency());
         var project1 = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
         var project2 = await _projectRepository.AddAsync(_projectData.GenerateProject(generateId: true, organizationId: organization.Id), o => o.ImmediateConsistency());
@@ -128,38 +134,39 @@ public class ResetProjectDataWorkItemHandlerTests : IntegrationTestsBase
         await _eventRepository.AddAsync(_eventData.GenerateEvents(5, organization.Id, project1.Id, stack1.Id), o => o.ImmediateConsistency());
         await _eventRepository.AddAsync(_eventData.GenerateEvents(3, organization.Id, project2.Id, stack2.Id), o => o.ImmediateConsistency());
 
-        // Reset only project1
+        // Act
         await _workItemQueue.EnqueueAsync(new ResetProjectDataWorkItem { OrganizationId = organization.Id, ProjectId = project1.Id });
         await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
 
+        // Assert
         var usage1 = await _usageService.GetUsageAsync(organization.Id, project1.Id);
         var usage2 = await _usageService.GetUsageAsync(organization.Id, project2.Id);
 
         Assert.Equal(5, usage1.CurrentUsage.Deleted);
         Assert.Equal(0, usage2.CurrentUsage.Deleted);
 
-        // Project2's events are untouched
         var project2Events = await _eventRepository.GetAllAsync();
-        Assert.Equal(3, project2Events.Documents.Count(e => e.ProjectId == project2.Id));
+        Assert.Equal(3, project2Events.Documents.Count(e => String.Equals(e.ProjectId, project2.Id, StringComparison.Ordinal)));
     }
 
     [Fact]
-    public async Task ResetProjectData_DeletedUsageDoesNotAffectEventsLeft()
+    public async Task ResetProjectData_DeletedUsage_DoesNotReduceEventsLeft()
     {
+        // Arrange
         var organization = await _organizationRepository.AddAsync(_organizationData.GenerateSampleOrganization(_billingManager, _plans), o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
         var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
 
         await _eventRepository.AddAsync(_eventData.GenerateEvents(10, organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
 
-        long eventsLeftBefore = await _usageService.GetEventsLeftAsync(organization.Id);
+        int eventsLeftBefore = await _usageService.GetEventsLeftAsync(organization.Id);
 
+        // Act
         await _workItemQueue.EnqueueAsync(new ResetProjectDataWorkItem { OrganizationId = organization.Id, ProjectId = project.Id });
         await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
 
-        long eventsLeftAfter = await _usageService.GetEventsLeftAsync(organization.Id);
-
-        // Deleted usage must not reduce the events-left allowance
+        // Assert
+        int eventsLeftAfter = await _usageService.GetEventsLeftAsync(organization.Id);
         Assert.Equal(eventsLeftBefore, eventsLeftAfter);
     }
 }

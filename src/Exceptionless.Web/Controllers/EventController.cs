@@ -1462,20 +1462,20 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<PersistentEvent> events)
     {
         var user = CurrentUser;
-        var groups = events.GroupBy(ev => new { ev.OrganizationId, ev.ProjectId }).ToList();
-        foreach (var group in groups)
+        var projectGroups = events.GroupBy(ev => new { ev.OrganizationId, ev.ProjectId }).ToList();
+        foreach (var projectGroup in projectGroups)
         {
-            var ev = group.First();
+            var ev = projectGroup.First();
             using var _ = _logger.BeginScope(new ExceptionlessState().Organization(ev.OrganizationId).Project(ev.ProjectId).Tag("Delete").Identity(user.EmailAddress).Property("User", user).SetHttpContext(HttpContext));
-            _logger.LogInformation("User {User} deleted {RemovedCount} events in project ({ProjectId})", user.Id, group.Count(), ev.ProjectId);
+            _logger.LogInformation("User {User} deleted {RemovedCount} events in project ({ProjectId})", user.Id, projectGroup.Count(), ev.ProjectId);
         }
 
         var result = await base.DeleteModelsAsync(events);
 
         try
         {
-            foreach (var group in groups)
-                await _usageService.IncrementDeletedAsync(group.Key.OrganizationId, group.Key.ProjectId, group.Count());
+            foreach (var projectGroup in projectGroups)
+                await _usageService.IncrementDeletedAsync(projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, projectGroup.Count());
         }
         catch (Exception ex)
         {

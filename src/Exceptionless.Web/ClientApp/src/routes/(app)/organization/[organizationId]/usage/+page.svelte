@@ -33,7 +33,7 @@
 
     const chartConfig = {
         blocked: { color: 'var(--chart-2)', label: 'Blocked' },
-        deleted: { color: 'var(--chart-5)', label: 'Deleted' },
+        deleted: { color: 'var(--chart-7)', label: 'Deleted' },
         discarded: { color: 'var(--chart-3)', label: 'Discarded' },
         limit: { color: 'var(--chart-6)', label: 'Limit' },
         too_big: { color: 'var(--chart-4)', label: 'Too Big' },

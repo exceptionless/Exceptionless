@@ -223,22 +223,24 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
     {
         await RenewLockAsync(context);
 
-        var groups = stacks.GroupBy(s => (s.OrganizationId, s.ProjectId)).ToList();
-        foreach (var group in groups)
-            await _cacheClient.RemoveByPrefixAsync(EventStackFilterQueryBuilder.GetScopedCachePrefix(group.Key.OrganizationId, group.Key.ProjectId));
+        var projectGroups = stacks.GroupBy(s => (s.OrganizationId, s.ProjectId)).ToList();
 
         long totalRemovedEvents = 0;
-        foreach (var group in groups)
+        foreach (var projectGroup in projectGroups)
         {
-            string[] groupStackIds = group.Select(s => s.Id).ToArray();
-            long groupRemovedEvents = await _eventRepository.RemoveAllByStackIdsAsync(groupStackIds);
-            totalRemovedEvents += groupRemovedEvents;
+            string[] stackIds = projectGroup.Select(s => s.Id).ToArray();
+            long removedEvents = await _eventRepository.RemoveAllByStackIdsAsync(stackIds);
+            totalRemovedEvents += removedEvents;
 
-            if (trackDeletedUsage && groupRemovedEvents > 0)
-                await _usageService.IncrementDeletedAsync(group.Key.OrganizationId, group.Key.ProjectId, groupRemovedEvents);
+            if (trackDeletedUsage && removedEvents > 0)
+                await _usageService.IncrementDeletedAsync(projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, removedEvents);
         }
 
         await _stackRepository.RemoveAsync(stacks);
+
+        foreach (var projectGroup in projectGroups)
+            await _cacheClient.RemoveByPrefixAsync(EventStackFilterQueryBuilder.GetScopedCachePrefix(projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId));
+
         _logger.RemoveStacksComplete(stacks.Count, totalRemovedEvents);
     }
 
