@@ -1,4 +1,5 @@
 using Exceptionless.Core.Authorization;
+using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Messages;
 using IMediator = Foundatio.Mediator.IMediator;
 
@@ -10,6 +11,7 @@ public static class AdminEndpoints
     {
         var group = endpoints.MapGroup("api/v2/admin")
             .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
+            .AddEndpointFilter<AutoValidationEndpointFilter>()
             .ExcludeFromDescription();
 
         group.MapGet("settings", async (IMediator mediator)

@@ -3,6 +3,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
@@ -21,6 +22,7 @@ public static class OrganizationEndpoints
     {
         var group = endpoints.MapGroup("api/v2")
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
+            .AddEndpointFilter<AutoValidationEndpointFilter>()
             .WithTags("Organizations");
 
         group.MapGet("organizations", async (HttpContext httpContext, IMediator mediator, string? filter = null, string? mode = null)

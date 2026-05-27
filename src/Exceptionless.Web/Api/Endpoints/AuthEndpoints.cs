@@ -1,4 +1,5 @@
 using Exceptionless.Core.Authorization;
+using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Models;
 using IMediator = Foundatio.Mediator.IMediator;
@@ -13,6 +14,7 @@ public static class AuthEndpoints
     {
         var group = endpoints.MapGroup("api/v2/auth")
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
+            .AddEndpointFilter<AutoValidationEndpointFilter>()
             .WithTags("Auth");
 
         group.MapPost("login", async (IMediator mediator, IServiceProvider serviceProvider, HttpContext httpContext, [FromBody] Login model) =>

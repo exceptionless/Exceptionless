@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Models;
 using IMediator = Foundatio.Mediator.IMediator;
@@ -14,7 +15,8 @@ public static class WebHookEndpoints
     public static IEndpointRouteBuilder MapWebHookEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("api/v2")
-            .RequireAuthorization(AuthorizationRoles.ClientPolicy);
+            .RequireAuthorization(AuthorizationRoles.ClientPolicy)
+            .AddEndpointFilter<AutoValidationEndpointFilter>();
 
         group.MapGet("projects/{projectId:objectid}/webhooks", async (string projectId, IMediator mediator, int page = 1, int limit = 10)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new WebHookMessages.GetWebHooksByProject(projectId, page, limit)))
@@ -38,6 +40,11 @@ public static class WebHookEndpoints
         group.MapDelete("webhooks/{ids:objectids}", async (string ids, IMediator mediator)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new WebHookMessages.DeleteWebHooks(ids.FromDelimitedString())))
         .RequireAuthorization(AuthorizationRoles.UserPolicy);
+
+        group.MapPost("webhooks/subscribe", async (IMediator mediator, [FromBody] JsonDocument data)
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new WebHookMessages.SubscribeWebHook(data, 1)))
+        .RequireAuthorization(AuthorizationRoles.ClientPolicy)
+        .ExcludeFromDescription();
 
         endpoints.MapPost("api/v{apiVersion:int}/webhooks/subscribe", async (int apiVersion, IMediator mediator, [FromBody] JsonDocument data)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new WebHookMessages.SubscribeWebHook(data, apiVersion)))

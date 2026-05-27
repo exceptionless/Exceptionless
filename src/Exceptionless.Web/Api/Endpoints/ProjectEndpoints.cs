@@ -2,6 +2,7 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
@@ -19,6 +20,7 @@ public static class ProjectEndpoints
     {
         var group = endpoints.MapGroup("api/v2")
             .RequireAuthorization(AuthorizationRoles.ClientPolicy)
+            .AddEndpointFilter<AutoValidationEndpointFilter>()
             .WithTags("Projects");
 
         group.MapGet("projects", async (HttpContext httpContext, IMediator mediator, string? filter = null, string? sort = null, int page = 1, int limit = 10, string? mode = null)

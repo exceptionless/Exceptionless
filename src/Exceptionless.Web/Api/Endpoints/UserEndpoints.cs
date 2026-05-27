@@ -1,5 +1,6 @@
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
@@ -15,6 +16,7 @@ public static class UserEndpoints
     {
         var group = endpoints.MapGroup("api/v2")
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
+            .AddEndpointFilter<AutoValidationEndpointFilter>()
             .WithTags("Users");
 
         group.MapGet("users/me", async (IMediator mediator)

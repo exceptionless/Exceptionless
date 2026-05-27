@@ -1,5 +1,6 @@
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Queries.Validation;
+using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Messages;
 using Foundatio.Mediator;
 using HttpResults = Microsoft.AspNetCore.Http.Results;
@@ -12,6 +13,7 @@ public static class UtilityEndpoints
     {
         var group = endpoints.MapGroup("api/v2")
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
+            .AddEndpointFilter<AutoValidationEndpointFilter>()
             .ExcludeFromDescription();
 
         group.MapGet("search/validate", async (IMediator mediator, string query) =>

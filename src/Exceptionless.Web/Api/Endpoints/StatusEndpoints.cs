@@ -1,5 +1,6 @@
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Messaging.Models;
+using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Models;
 using Foundatio.Caching;
@@ -15,6 +16,7 @@ public static class StatusEndpoints
     {
         var group = endpoints.MapGroup("api/v2")
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
+            .AddEndpointFilter<AutoValidationEndpointFilter>()
             .ExcludeFromDescription();
 
         group.MapGet("about", async (IMediator mediator) =>

@@ -2,11 +2,11 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Messages;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using IMediator = Foundatio.Mediator.IMediator;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Net.Http.Headers;
 
 namespace Exceptionless.Web.Api.Endpoints;
 
@@ -16,6 +16,7 @@ public static class EventEndpoints
     {
         var group = endpoints.MapGroup("api/v2")
             .RequireAuthorization(AuthorizationRoles.ClientPolicy)
+            .AddEndpointFilter<AutoValidationEndpointFilter>()
             .WithTags("Events");
 
         // Count
@@ -116,72 +117,72 @@ public static class EventEndpoints
 
         // Submit via GET - v1 legacy
         endpoints.MapGet("api/v1/events/submit", async (HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(null, 1, null, httpContext.Request.Headers[HeaderNames.UserAgent].ToString(), httpContext)))
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(null, 1, null, httpContext.Request.GetClientUserAgent(), httpContext)))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithMetadata(new ObsoleteAttribute("Use GET /api/v2/events/submit"));
 
         endpoints.MapGet("api/v1/events/submit/{type:minlength(1)}", async (string type, HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(null, 1, type, httpContext.Request.Headers[HeaderNames.UserAgent].ToString(), httpContext)))
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(null, 1, type, httpContext.Request.GetClientUserAgent(), httpContext)))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithMetadata(new ObsoleteAttribute("Use GET /api/v2/events/submit"));
 
         endpoints.MapGet("api/v1/projects/{projectId:objectid}/events/submit", async (string projectId, HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(projectId, 1, null, httpContext.Request.Headers[HeaderNames.UserAgent].ToString(), httpContext)))
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(projectId, 1, null, httpContext.Request.GetClientUserAgent(), httpContext)))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithMetadata(new ObsoleteAttribute("Use GET /api/v2/events/submit"));
 
         endpoints.MapGet("api/v1/projects/{projectId:objectid}/events/submit/{type:minlength(1)}", async (string projectId, string type, HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(projectId, 1, type, httpContext.Request.Headers[HeaderNames.UserAgent].ToString(), httpContext)))
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(projectId, 1, type, httpContext.Request.GetClientUserAgent(), httpContext)))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithMetadata(new ObsoleteAttribute("Use GET /api/v2/events/submit"));
 
         // Submit via GET - v2
         group.MapGet("events/submit", async (HttpContext httpContext, IMediator mediator, string? type = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(null, 2, type, httpContext.Request.Headers[HeaderNames.UserAgent].ToString(), httpContext)))
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(null, 2, type, httpContext.Request.GetClientUserAgent(), httpContext)))
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>();
 
         group.MapGet("events/submit/{type:minlength(1)}", async (string type, HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(null, 2, type, httpContext.Request.Headers[HeaderNames.UserAgent].ToString(), httpContext)))
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(null, 2, type, httpContext.Request.GetClientUserAgent(), httpContext)))
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>();
 
         group.MapGet("projects/{projectId:objectid}/events/submit", async (string projectId, HttpContext httpContext, IMediator mediator, string? type = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(projectId, 2, type, httpContext.Request.Headers[HeaderNames.UserAgent].ToString(), httpContext)))
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(projectId, 2, type, httpContext.Request.GetClientUserAgent(), httpContext)))
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>();
 
         group.MapGet("projects/{projectId:objectid}/events/submit/{type:minlength(1)}", async (string projectId, string type, HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(projectId, 2, type, httpContext.Request.Headers[HeaderNames.UserAgent].ToString(), httpContext)))
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(projectId, 2, type, httpContext.Request.GetClientUserAgent(), httpContext)))
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>();
 
         // Submit via POST - v1 legacy
         endpoints.MapPost("api/v1/error", async (HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByPost(null, 1, httpContext.Request.Headers[HeaderNames.UserAgent].ToString(), httpContext)))
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByPost(null, 1, httpContext.Request.GetClientUserAgent(), httpContext)))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithMetadata(new ObsoleteAttribute("Use POST /api/v2/events"));
 
         endpoints.MapPost("api/v1/events", async (HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByPost(null, 1, httpContext.Request.Headers[HeaderNames.UserAgent].ToString(), httpContext)))
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByPost(null, 1, httpContext.Request.GetClientUserAgent(), httpContext)))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithMetadata(new ObsoleteAttribute("Use POST /api/v2/events"));
 
         endpoints.MapPost("api/v1/projects/{projectId:objectid}/events", async (string projectId, HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByPost(projectId, 1, httpContext.Request.Headers[HeaderNames.UserAgent].ToString(), httpContext)))
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByPost(projectId, 1, httpContext.Request.GetClientUserAgent(), httpContext)))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithMetadata(new ObsoleteAttribute("Use POST /api/v2/events"));
 
         // Submit via POST - v2
         group.MapPost("events", async (HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByPost(null, 2, httpContext.Request.Headers[HeaderNames.UserAgent].ToString(), httpContext)))
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByPost(null, 2, httpContext.Request.GetClientUserAgent(), httpContext)))
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>();
 
         group.MapPost("projects/{projectId:objectid}/events", async (string projectId, HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByPost(projectId, 2, httpContext.Request.Headers[HeaderNames.UserAgent].ToString(), httpContext)))
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByPost(projectId, 2, httpContext.Request.GetClientUserAgent(), httpContext)))
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>();
 
         // Delete

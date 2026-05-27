@@ -2,6 +2,7 @@ using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Models;
 using IMediator = Foundatio.Mediator.IMediator;
@@ -15,6 +16,7 @@ public static class StackEndpoints
     {
         var group = endpoints.MapGroup("api/v2")
             .RequireAuthorization(AuthorizationRoles.ClientPolicy)
+            .AddEndpointFilter<AutoValidationEndpointFilter>()
             .WithTags("Stacks");
 
         // GET by id
