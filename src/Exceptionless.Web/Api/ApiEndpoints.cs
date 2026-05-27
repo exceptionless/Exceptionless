@@ -13,6 +13,8 @@ public static class ApiEndpoints
         app.MapStripeEndpoints();
         app.MapSavedViewEndpoints();
         app.MapUserEndpoints();
+        app.MapProjectEndpoints();
+        app.MapOrganizationEndpoints();
 
         return app;
     }
