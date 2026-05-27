@@ -481,10 +481,7 @@ public class EventHandler(
                     if (kvp.Key.AnyWildcardMatches(exclusions, true))
                         continue;
 
-                    if (kvp.Value.Count > 1)
-                        ev.Data![kvp.Key] = kvp.Value;
-                    else
-                        ev.Data![kvp.Key] = kvp.Value.FirstOrDefault();
+                    ev.Data![kvp.Key] = kvp.Value.Count > 1 ? kvp.Value : kvp.Value.FirstOrDefault();
 
                     break;
             }

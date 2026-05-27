@@ -16,7 +16,7 @@ public sealed class ControllerManifestTests(ITestOutputHelper output) : TestWith
     public void NoMvcControllersRemain()
     {
         // After the Minimal API migration, no MVC controllers should remain.
-        var controllerTypes = typeof(Program).Assembly.GetTypes()
+        var controllerTypes = typeof(Exceptionless.Web.Program).Assembly.GetTypes()
             .Where(type => !type.IsAbstract)
             .Where(type => typeof(ControllerBase).IsAssignableFrom(type))
             .ToArray();

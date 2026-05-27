@@ -208,7 +208,7 @@ public partial class Program
 
             app.Use(async (context, next) =>
             {
-                if (options.AppMode != AppMode.Development && context.Request.IsLocal() == false)
+                if (options.AppMode != AppMode.Development && !context.Request.IsLocal())
                     context.Response.Headers.StrictTransportSecurity = "max-age=31536000; includeSubDomains";
 
                 context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";

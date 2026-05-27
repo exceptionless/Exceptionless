@@ -354,12 +354,10 @@ public class UserHandler(
 
     private IResult? CanUpdate(User original, Delta<UpdateUser> changes)
     {
-        if (!HttpContext.Request.CanAccessOrganization(original.OrganizationIds.FirstOrDefault() ?? ""))
-        {
-            // Users don't have a single OrganizationId - only check if not global admin and not self
-            if (!HttpContext.Request.IsGlobalAdmin() && original.Id != GetCurrentUserId())
-                return PermissionToResult(PermissionResult.DenyWithMessage("Invalid organization id specified."));
-        }
+        // Users don't have a single OrganizationId - only check if not global admin and not self
+        if (!HttpContext.Request.CanAccessOrganization(original.OrganizationIds.FirstOrDefault() ?? "")
+            && !HttpContext.Request.IsGlobalAdmin() && original.Id != GetCurrentUserId())
+            return PermissionToResult(PermissionResult.DenyWithMessage("Invalid organization id specified."));
 
         if (changes.GetChangedPropertyNames().Contains("OrganizationId"))
             return PermissionToResult(PermissionResult.DenyWithMessage("OrganizationId cannot be modified."));

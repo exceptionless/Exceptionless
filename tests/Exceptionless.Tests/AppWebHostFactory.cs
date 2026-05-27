@@ -3,7 +3,6 @@ using System.Net;
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Exceptionless.Insulation.Configuration;
-using Exceptionless.Web;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -11,7 +10,7 @@ using Xunit;
 
 namespace Exceptionless.Tests;
 
-public class AppWebHostFactory : WebApplicationFactory<Program>, IAsyncLifetime
+public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program>, IAsyncLifetime
 {
     private static int s_counter = -1;
     private static readonly ConcurrentQueue<int> s_pool = new();
