@@ -356,7 +356,7 @@
 
     const viewToHref: Record<string, string> = {
         events: resolve('/(app)/events'),
-        issues: resolve('/(app)/stacks'),
+        stacks: resolve('/(app)/stacks'),
         stream: resolve('/(app)/stream')
     };
 

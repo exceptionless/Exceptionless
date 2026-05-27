@@ -107,7 +107,7 @@
         }
     });
 
-    const VIEW = 'issues';
+    const VIEW = 'stacks';
     let showStats = $state(true);
     let showChart = $state(true);
     const savedViewsState = useSavedViews({
