@@ -113,7 +113,9 @@
 </script>
 
 {#if stackQuery.isSuccess}
-    <Card.Root>
+    <Card.Root
+        class="relative overflow-hidden ring-[color-mix(in_oklab,var(--chart-1)_42%,transparent)] before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-[linear-gradient(90deg,var(--chart-1),var(--chart-2))] before:content-['']"
+    >
         <Card.Header>
             <Card.Title class="flex flex-row items-center justify-between text-lg font-semibold">
                 <div class="mb-2 flex w-0 min-w-0 flex-1 flex-col lg:mb-0">

@@ -16,10 +16,10 @@
 <div class="flex flex-col">
     <Separator />
     {#if showClear}
-        <Button class="justify-center text-center" variant="ghost" onclick={clear}>Clear Filter</Button>
+        <Button variant="ghost" onclick={clear}>Clear Filter</Button>
     {/if}
     {#if toggleHidden}
-        <Button class="justify-center text-center" variant="ghost" onclick={toggleHidden}>{hidden ? 'Show Filter' : 'Hide Filter'}</Button>
+        <Button variant="ghost" onclick={toggleHidden}>{hidden ? 'Show Filter' : 'Hide Filter'}</Button>
     {/if}
-    <Button class="justify-center text-center" variant="ghost" onclick={remove}>Remove Filter</Button>
+    <Button variant="ghost" onclick={remove}>Remove Filter</Button>
 </div>

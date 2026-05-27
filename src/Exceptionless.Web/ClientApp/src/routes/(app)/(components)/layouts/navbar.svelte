@@ -20,7 +20,7 @@
 </script>
 
 <nav class="bg-background text-foreground fixed z-30 w-full border-b">
-    <div class="px-3 py-3 lg:px-5 lg:pl-3">
+    <div class="px-4 py-3">
         <div class="flex items-center justify-between">
             <div class="flex items-center justify-start">
                 <Sidebar.Trigger variant="outline" class="size-9" />
@@ -33,7 +33,7 @@
                     {/if}
                 </A>
             </div>
-            <div class="flex items-center gap-x-2 lg:gap-x-3">
+            <div class="flex items-center gap-2">
                 <Button class="w-44 justify-start sm:w-56 md:w-72" onclick={openCommand} size="default" variant="outline">
                     <Search />
                     <span class="text-muted-foreground flex items-center gap-1.5">Type <Kbd.Root>/</Kbd.Root> to search</span>

@@ -231,14 +231,13 @@
         <div class="flex flex-col">
             <Separator />
             {#if hiddenFilterCount > 0}
-                <Button class="justify-center text-center" variant="ghost" onclick={toggleHiddenFilters}>
+                <Button variant="ghost" onclick={toggleHiddenFilters}>
                     {showHiddenFilters ? 'Hide Hidden Filters' : `Show ${hiddenFilterLabel}`}
                 </Button>
             {/if}
             {#if filters.some((f) => f.type !== 'date')}
-                <Button class="justify-center text-center" variant="ghost" onclick={onRemoveAll}>Clear Filters</Button>
+                <Button variant="ghost" onclick={onRemoveAll}>Clear Filters</Button>
             {/if}
-            <Button class="justify-center text-center" variant="ghost" onclick={onClose}>Close</Button>
         </div>
     </Popover.Content>
 </Popover.Root>
