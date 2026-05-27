@@ -204,7 +204,7 @@
     });
 
     function rowHref(row: Stack): string {
-        return resolve('/(app)/project/[projectId]/issues/[stackId]', { projectId: projectId ?? '', stackId: row.id });
+        return resolve('/(app)/project/[projectId]/stacks/[stackId]', { projectId: projectId ?? '', stackId: row.id });
     }
 
     const table = createTable(getTableOptions(stacksQueryParameters, stacksQuery, handleTagClick));

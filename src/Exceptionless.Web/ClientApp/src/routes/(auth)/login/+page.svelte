@@ -33,7 +33,7 @@
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { createForm } from '@tanstack/svelte-form';
 
-    const defaultRedirect = resolve('/(app)/issues');
+    const defaultRedirect = resolve('/(app)/stacks');
     const redirectUrl = getSafeRedirectUrl(page.url.searchParams.get('redirect'), defaultRedirect);
 
     const form = createForm(() => ({

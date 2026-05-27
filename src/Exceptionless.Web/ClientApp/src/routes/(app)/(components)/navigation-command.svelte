@@ -10,10 +10,10 @@
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
     import { useFetchClient } from '@exceptionless/fetchclient';
     import Activity from '@lucide/svelte/icons/activity';
-    import Bug from '@lucide/svelte/icons/bug';
     import Building2 from '@lucide/svelte/icons/building-2';
     import CircleUserRound from '@lucide/svelte/icons/circle-user-round';
     import Keyboard from '@lucide/svelte/icons/keyboard';
+    import Bug from '@lucide/svelte/icons/layers';
     import Search from '@lucide/svelte/icons/search';
     import { createQuery } from '@tanstack/svelte-query';
 
@@ -100,7 +100,7 @@
                 signal
             });
         },
-        queryKey: ['navigation-command', 'issues', organization.current, debouncedSearchText]
+        queryKey: ['navigation-command', 'stacks', organization.current, debouncedSearchText]
     }));
 
     const eventMatches = $derived((eventSearchQuery.data?.data ?? []).slice(0, COMMAND_SEARCH_RESULT_LIMIT));
@@ -170,7 +170,7 @@
         return values.join(' · ') || undefined;
     }
 
-    function getResultValue(group: 'Event' | 'Issue', result: CommandSearchResult): string {
+    function getResultValue(group: 'Event' | 'Stack', result: CommandSearchResult): string {
         return getCommandValue(group, debouncedSearchText, getResultTitle(result), getResultDescription(result), result.id);
     }
 
@@ -179,11 +179,11 @@
     }
 
     function getIssueHref(result: CommandSearchResult): string {
-        return resolve('/(app)/issues/[stackId=objectid]', { stackId: result.id });
+        return resolve('/(app)/stacks/[stackId=objectid]', { stackId: result.id });
     }
 
     const eventSearchHref = $derived(buildSearchHref(resolve('/(app)/events'), debouncedSearchText));
-    const issueSearchHref = $derived(buildSearchHref(resolve('/(app)/issues'), debouncedSearchText));
+    const issueSearchHref = $derived(buildSearchHref(resolve('/(app)/stacks'), debouncedSearchText));
 
     const commandRoutes = $derived(
         routes.flatMap((route) => {
@@ -331,15 +331,15 @@
                         <Command.Separator />
                     {/if}
                     {#if showIssueSearchResults}
-                        <Command.Group heading="Issues" value="Search Issues">
+                        <Command.Group heading="Stacks" value="Search Stacks">
                             {#if issueSearchQuery.isPending}
-                                <Command.Item disabled value={`Searching issues ${debouncedSearchText}`}>
+                                <Command.Item disabled value={`Searching stacks ${debouncedSearchText}`}>
                                     <Bug />
-                                    <span>Searching issues...</span>
+                                    <span>Searching stacks...</span>
                                 </Command.Item>
                             {:else}
                                 {#each issueMatches as issue (issue.id)}
-                                    <Command.LinkItem href={getIssueHref(issue)} onclick={closeCommandWindow} value={getResultValue('Issue', issue)}>
+                                    <Command.LinkItem href={getIssueHref(issue)} onclick={closeCommandWindow} value={getResultValue('Stack', issue)}>
                                         <Bug />
                                         <div class="flex min-w-0 flex-col">
                                             <span class="truncate">{getResultTitle(issue)}</span>
@@ -350,9 +350,9 @@
                                     </Command.LinkItem>
                                 {/each}
                                 {#if hasMoreIssueMatches}
-                                    <Command.LinkItem href={issueSearchHref} onclick={closeCommandWindow} value={`View all issues ${debouncedSearchText}`}>
+                                    <Command.LinkItem href={issueSearchHref} onclick={closeCommandWindow} value={`View all stacks ${debouncedSearchText}`}>
                                         <Search />
-                                        <span>View all matching issues</span>
+                                        <span>View all matching stacks</span>
                                     </Command.LinkItem>
                                 {/if}
                             {/if}

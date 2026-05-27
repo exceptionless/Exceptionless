@@ -228,9 +228,9 @@
                 return;
             }
 
-            if (isKeyboardShortcut(e, appKeyboardShortcuts.issues)) {
+            if (isKeyboardShortcut(e, appKeyboardShortcuts.stacks)) {
                 e.preventDefault();
-                void goto(resolve('/(app)/issues'));
+                void goto(resolve('/(app)/stacks'));
                 return;
             }
 
@@ -356,7 +356,7 @@
 
     const viewToHref: Record<string, string> = {
         events: resolve('/(app)/events'),
-        issues: resolve('/(app)/issues'),
+        issues: resolve('/(app)/stacks'),
         stream: resolve('/(app)/stream')
     };
 

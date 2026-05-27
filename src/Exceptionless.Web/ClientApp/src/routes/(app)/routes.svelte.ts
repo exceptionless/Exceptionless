@@ -4,9 +4,9 @@ import { apiReferenceHref, documentationHref, githubRepositoryHref, supportIssue
 import { appKeyboardShortcuts } from '$features/shared/keyboard-shortcuts';
 import Documentation from '@lucide/svelte/icons/book-open';
 import ApiDocumentations from '@lucide/svelte/icons/braces';
-import Issues from '@lucide/svelte/icons/bug';
 import Events from '@lucide/svelte/icons/calendar-days';
 import Support from '@lucide/svelte/icons/circle-help';
+import Stacks from '@lucide/svelte/icons/layers';
 import Sessions from '@lucide/svelte/icons/timer';
 
 import type { NavigationItem } from '../routes.svelte';
@@ -21,10 +21,10 @@ export function routes(): NavigationItem[] {
     const items = [
         {
             group: 'Dashboards',
-            href: resolve('/(app)/issues'),
-            icon: Issues,
-            shortcut: appKeyboardShortcuts.issues.keys,
-            title: 'Issues'
+            href: resolve('/(app)/stacks'),
+            icon: Stacks,
+            shortcut: appKeyboardShortcuts.stacks.keys,
+            title: 'Stacks'
         },
         {
             group: 'Dashboards',

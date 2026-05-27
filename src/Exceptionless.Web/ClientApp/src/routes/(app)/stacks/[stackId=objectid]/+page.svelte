@@ -8,7 +8,7 @@
     import { H3 } from '$comp/typography';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import { organization } from '$features/organizations/context.svelte';
-    import IssueDetails from '$features/stacks/components/issue-details.svelte';
+    import IssueDetails from '$features/stacks/components/stack-details.svelte';
     import { watch } from 'runed';
     import { toast } from 'svelte-sonner';
 
@@ -19,7 +19,7 @@
     watch(
         () => organization.current,
         () => {
-            goto(resolve('/(app)/issues'));
+            goto(resolve('/(app)/stacks'));
         },
         { lazy: true }
     );

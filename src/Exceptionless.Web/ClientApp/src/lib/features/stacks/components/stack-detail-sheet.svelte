@@ -7,7 +7,7 @@
     import * as Sheet from '$comp/ui/sheet';
     import ExternalLink from '@lucide/svelte/icons/external-link';
 
-    import IssueDetails from './issue-details.svelte';
+    import IssueDetails from './stack-details.svelte';
 
     interface Props {
         filterChanged: (filter: IFilter) => void;
@@ -18,7 +18,7 @@
 
     let { filterChanged, onClose, onError, stackId = $bindable() }: Props = $props();
 
-    const resolvedHref = $derived(stackId ? resolve('/(app)/issues/[stackId=objectid]', { stackId }) : '#');
+    const resolvedHref = $derived(stackId ? resolve('/(app)/stacks/[stackId=objectid]', { stackId }) : '#');
 
     function handleOpenChange() {
         onClose();

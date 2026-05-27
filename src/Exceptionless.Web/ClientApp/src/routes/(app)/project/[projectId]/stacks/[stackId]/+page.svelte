@@ -40,7 +40,7 @@
     watch(
         () => organization.current,
         () => {
-            goto(resolve('/(app)/project/[projectId]/issues', { projectId: page.params.projectId || '' }));
+            goto(resolve('/(app)/project/[projectId]/stacks', { projectId: page.params.projectId || '' }));
         },
         { lazy: true }
     );

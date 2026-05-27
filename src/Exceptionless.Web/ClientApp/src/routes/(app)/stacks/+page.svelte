@@ -33,7 +33,7 @@
     import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts';
     import { parseDateMathRange, toDateMathRange } from '$features/shared/utils/datemath';
-    import IssueDetailSheet from '$features/stacks/components/issue-detail-sheet.svelte';
+    import IssueDetailSheet from '$features/stacks/components/stack-detail-sheet.svelte';
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
@@ -60,7 +60,7 @@
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
-        return resolve('/(app)/issues/[stackId=objectid]', { stackId: row.id });
+        return resolve('/(app)/stacks/[stackId=objectid]', { stackId: row.id });
     }
 
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
@@ -111,7 +111,7 @@
     let showStats = $state(true);
     let showChart = $state(true);
     const savedViewsState = useSavedViews({
-        baseHref: resolve('/(app)/issues'),
+        baseHref: resolve('/(app)/stacks'),
         filterCacheKey,
         getColumnOrder: () => table.state.columnOrder,
         getColumnVisibility: () => table.state.columnVisibility,
@@ -131,7 +131,7 @@
         updateFilterCache,
         view: VIEW
     });
-    const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Issues');
+    const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Stacks');
 
     watch(
         () => organization.current,
@@ -236,7 +236,7 @@
 
     const table = createTable(
         getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
-            columnPersistenceKey: 'issues-column-visibility',
+            columnPersistenceKey: 'stacks-column-visibility',
             get columns() {
                 return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode);
             },

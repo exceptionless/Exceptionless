@@ -59,16 +59,16 @@
         <Card.Header class={metricHeaderClass}>
             <div class="flex min-w-0 items-center gap-1.5">
                 <Layers aria-hidden="true" class={metricIconClass} />
-                <Card.Title class={metricTitleClass}>Issues</Card.Title>
+                <Card.Title class={metricTitleClass}>Stacks</Card.Title>
             </div>
             <Tooltip.Root>
                 <Tooltip.Trigger
                     class="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm outline-none focus-visible:ring-2"
-                    aria-label="About issues"
+                    aria-label="About stacks"
                 >
                     <Info aria-hidden="true" class="size-3.5" />
                 </Tooltip.Trigger>
-                <Tooltip.Content sideOffset={6}>Unique issues matching the current filters.</Tooltip.Content>
+                <Tooltip.Content sideOffset={6}>Unique stacks matching the current filters.</Tooltip.Content>
             </Tooltip.Root>
         </Card.Header>
         <Card.Content class="px-3">
@@ -86,16 +86,16 @@
         <Card.Header class={metricHeaderClass}>
             <div class="flex min-w-0 items-center gap-1.5">
                 <Sparkles aria-hidden="true" class={metricIconClass} />
-                <Card.Title class={metricTitleClass}>New Issues</Card.Title>
+                <Card.Title class={metricTitleClass}>New Stacks</Card.Title>
             </div>
             <Tooltip.Root>
                 <Tooltip.Trigger
                     class="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm outline-none focus-visible:ring-2"
-                    aria-label="About new issues"
+                    aria-label="About new stacks"
                 >
                     <Info aria-hidden="true" class="size-3.5" />
                 </Tooltip.Trigger>
-                <Tooltip.Content sideOffset={6}>Issues with their first occurrence in the selected time range.</Tooltip.Content>
+                <Tooltip.Content sideOffset={6}>Stacks with their first occurrence in the selected time range.</Tooltip.Content>
             </Tooltip.Root>
         </Card.Header>
         <Card.Content class="px-3">
