@@ -1472,14 +1472,16 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
 
         var result = await base.DeleteModelsAsync(events);
 
-        try
+        foreach (var projectGroup in projectGroups)
         {
-            foreach (var projectGroup in projectGroups)
+            try
+            {
                 await _usageService.IncrementDeletedAsync(projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, projectGroup.Count());
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to increment deleted usage metrics");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to increment deleted usage metrics for org {OrganizationId} project {ProjectId}", projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId);
+            }
         }
 
         return result;

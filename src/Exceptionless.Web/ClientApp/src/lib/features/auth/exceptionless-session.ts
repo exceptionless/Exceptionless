@@ -1,8 +1,10 @@
 import { Exceptionless } from '@exceptionless/browser';
 
+let _activeUserId: string | null = null;
+
 /**
- * Sets the current user identity for Exceptionless error tracking and starts a session.
- * Call once the full user profile is available (e.g., from getMeQuery.onSuccess).
+ * Sets the current user identity for Exceptionless error tracking.
+ * Starts a new session only when the identity changes (guards against repeated onSuccess calls from query refetches).
  */
 export async function setUserIdentity(userId: string, userName?: string): Promise<void> {
     if (!userId) {
@@ -15,7 +17,10 @@ export async function setUserIdentity(userId: string, userName?: string): Promis
         Exceptionless.config.setUserIdentity(userId);
     }
 
-    await Exceptionless.submitSessionStart();
+    if (_activeUserId !== userId) {
+        _activeUserId = userId;
+        await Exceptionless.submitSessionStart();
+    }
 }
 
 /**
@@ -25,6 +30,7 @@ export async function setUserIdentity(userId: string, userName?: string): Promis
 export async function endSession(): Promise<void> {
     await Exceptionless.submitSessionEnd();
     Exceptionless.config.setUserIdentity('', '');
+    _activeUserId = null;
 }
 
 /**
