@@ -88,6 +88,14 @@ public class AppWebHostFactory : WebApplicationFactory<Program>, IAsyncLifetime
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(Environments.Development);
+        builder.UseDefaultServiceProvider(options =>
+        {
+            // Disable ValidateOnBuild because the service graph uses lambda factories
+            // (queues, caching, Elasticsearch config) that resolve dependencies at runtime
+            // through IServiceProvider, which cannot be statically validated at build time.
+            options.ValidateOnBuild = false;
+            options.ValidateScopes = true;
+        });
         builder.UseSolutionRelativeContentRoot("src/Exceptionless.Web", "*.slnx");
         builder.ConfigureAppConfiguration((_, config) =>
         {
