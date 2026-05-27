@@ -3,11 +3,11 @@ import type { ReleaseNotification, SystemNotification } from '$features/websocke
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
-import type { ForceRefreshRequest, NotificationSettings, SendReleaseNotificationRequest, SetSystemNotificationRequest } from './models';
+import type { NotificationSettings } from './models';
 
 export const queryKeys = {
     current: ['notifications', 'system'] as const,
-    settings: ['admin', 'notifications'] as const
+    settings: ['notifications', 'settings'] as const
 };
 
 export function clearSystemNotificationMutation() {
@@ -15,7 +15,8 @@ export function clearSystemNotificationMutation() {
     return createMutation<void, ProblemDetails, { publish?: boolean }>(() => ({
         mutationFn: async (params: { publish?: boolean }) => {
             const client = useFetchClient();
-            await client.delete(`admin/notifications/system?publish=${params.publish !== false}`);
+            const publish = params.publish !== false;
+            await client.delete(`notifications/system?publish=${publish}`);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.settings });
@@ -25,10 +26,12 @@ export function clearSystemNotificationMutation() {
 }
 
 export function forceRefreshClientsMutation() {
-    return createMutation<ReleaseNotification, ProblemDetails, ForceRefreshRequest | undefined>(() => ({
-        mutationFn: async (params?: ForceRefreshRequest) => {
+    return createMutation<ReleaseNotification, ProblemDetails, undefined | { message?: string }>(() => ({
+        mutationFn: async (params?: { message?: string }) => {
             const client = useFetchClient();
-            const response = await client.postJSON<ReleaseNotification>('admin/notifications/force-refresh', params ?? {});
+            const response = await client.postJSON<ReleaseNotification>('notifications/force-refresh', {
+                value: params?.message ?? null
+            });
             return response.data!;
         }
     }));
@@ -50,7 +53,7 @@ export function getNotificationSettingsQuery() {
     return createQuery<NotificationSettings, ProblemDetails>(() => ({
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<NotificationSettings>('admin/notifications', { signal });
+            const response = await client.getJSON<NotificationSettings>('notifications/settings', { signal });
             return response.data!;
         },
         queryKey: queryKeys.settings,
@@ -59,10 +62,13 @@ export function getNotificationSettingsQuery() {
 }
 
 export function sendReleaseNotificationMutation() {
-    return createMutation<ReleaseNotification, ProblemDetails, SendReleaseNotificationRequest>(() => ({
-        mutationFn: async (params: SendReleaseNotificationRequest) => {
+    return createMutation<ReleaseNotification, ProblemDetails, { critical?: boolean; message?: string }>(() => ({
+        mutationFn: async (params: { critical?: boolean; message?: string }) => {
             const client = useFetchClient();
-            const response = await client.postJSON<ReleaseNotification>('admin/notifications/release', params);
+            const critical = params.critical ?? false;
+            const response = await client.postJSON<ReleaseNotification>(`notifications/release?critical=${critical}`, {
+                value: params.message ?? null
+            });
             return response.data!;
         }
     }));
@@ -70,10 +76,13 @@ export function sendReleaseNotificationMutation() {
 
 export function setSystemNotificationMutation() {
     const queryClient = useQueryClient();
-    return createMutation<SystemNotification, ProblemDetails, SetSystemNotificationRequest>(() => ({
-        mutationFn: async (params: SetSystemNotificationRequest) => {
+    return createMutation<SystemNotification, ProblemDetails, { message: string; publish?: boolean }>(() => ({
+        mutationFn: async (params: { message: string; publish?: boolean }) => {
             const client = useFetchClient();
-            const response = await client.putJSON<SystemNotification>('admin/notifications/system', params);
+            const publish = params.publish !== false;
+            const response = await client.postJSON<SystemNotification>(`notifications/system?publish=${publish}`, {
+                value: params.message
+            });
             return response.data!;
         },
         onSuccess: () => {

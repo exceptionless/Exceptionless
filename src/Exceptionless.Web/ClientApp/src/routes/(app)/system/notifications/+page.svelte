@@ -11,7 +11,7 @@
         getNotificationSettingsQuery,
         sendReleaseNotificationMutation,
         setSystemNotificationMutation
-    } from '$features/notifications/api.svelte';
+    } from '$features/system-notifications/api.svelte';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import Bell from '@lucide/svelte/icons/bell';
     import RefreshCw from '@lucide/svelte/icons/refresh-cw';

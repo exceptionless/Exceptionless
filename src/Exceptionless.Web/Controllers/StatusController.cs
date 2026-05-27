@@ -127,20 +127,46 @@ public class StatusController : ExceptionlessApiController
     [HttpPost("notifications/system")]
     [Consumes("application/json")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-    public async Task<ActionResult<SystemNotification>> PostSystemNotificationAsync(ValueFromBody<string> message)
+    public async Task<ActionResult<SystemNotification>> PostSystemNotificationAsync(ValueFromBody<string> message, bool publish = true)
     {
         if (String.IsNullOrWhiteSpace(message?.Value))
             return NotFound();
 
-        var notification = await _notificationService.SetSystemNotificationAsync(message.Value);
+        var notification = await _notificationService.SetSystemNotificationAsync(message.Value, publish);
         return Ok(notification);
     }
 
     [HttpDelete("notifications/system")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-    public async Task<IActionResult> RemoveSystemNotificationAsync()
+    public async Task<IActionResult> RemoveSystemNotificationAsync(bool publish = true)
     {
-        await _notificationService.ClearSystemNotificationAsync();
+        await _notificationService.ClearSystemNotificationAsync(publish);
         return Ok();
+    }
+
+    /// <summary>
+    /// Returns the current notification settings state for the admin management page.
+    /// </summary>
+    [HttpGet("notifications/settings")]
+    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
+    public async Task<IActionResult> GetNotificationSettingsAsync()
+    {
+        var notification = await _notificationService.GetSystemNotificationAsync();
+        return Ok(new
+        {
+            ConfiguredSystemNotificationMessage = _appOptions.NotificationMessage,
+            SystemNotification = notification
+        });
+    }
+
+    /// <summary>
+    /// Force all connected clients to reload their browser.
+    /// </summary>
+    [HttpPost("notifications/force-refresh")]
+    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
+    public async Task<ActionResult<ReleaseNotification>> ForceRefreshAsync(ValueFromBody<string?>? message)
+    {
+        var notification = await _notificationService.SendReleaseNotificationAsync(message?.Value, critical: true);
+        return Ok(notification);
     }
 }

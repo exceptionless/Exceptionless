@@ -2,8 +2,8 @@
     import type { ReleaseNotification, SystemNotification } from '$features/websockets/models';
 
     import { env } from '$env/dynamic/public';
-    import { getCurrentSystemNotificationQuery } from '$features/notifications/api.svelte';
     import { Notification, NotificationDescription } from '$features/shared/components/notification';
+    import { getCurrentSystemNotificationQuery } from '$features/system-notifications/api.svelte';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import Info from '@lucide/svelte/icons/info';
 

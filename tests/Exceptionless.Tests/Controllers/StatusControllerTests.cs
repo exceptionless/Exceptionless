@@ -169,4 +169,85 @@ public class StatusControllerTests : IntegrationTestsBase
             .AppendPath("notifications/system")
             .StatusCodeShouldBeForbidden());
     }
+
+    [Fact]
+    public Task GetNotificationSettings_AsGlobalAdmin_ReturnsSettings()
+    {
+        return SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/settings")
+            .StatusCodeShouldBeOk());
+    }
+
+    [Fact]
+    public Task GetNotificationSettings_AsNonAdmin_ReturnsForbidden()
+    {
+        return SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("notifications/settings")
+            .StatusCodeShouldBeForbidden());
+    }
+
+    [Fact]
+    public async Task ForceRefresh_AsGlobalAdmin_ReturnsCriticalNotification()
+    {
+        // Arrange
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
+
+        // Act
+        var notification = await SendRequestAsAsync<ReleaseNotification>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/force-refresh")
+            .Content(new ValueFromBody<string?>("Deploy v9.0"))
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(notification);
+        Assert.True(notification.Critical);
+        Assert.Equal("Deploy v9.0", notification.Message);
+        Assert.True(notification.Date.IsAfterOrEqual(utcNow));
+    }
+
+    [Fact]
+    public async Task ForceRefresh_WithNoBody_UsesDefaultMessage()
+    {
+        // Act
+        var notification = await SendRequestAsAsync<ReleaseNotification>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/force-refresh")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(notification);
+        Assert.True(notification.Critical);
+    }
+
+    [Fact]
+    public Task ForceRefresh_AsNonAdmin_ReturnsForbidden()
+    {
+        return SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPath("notifications/force-refresh")
+            .StatusCodeShouldBeForbidden());
+    }
+
+    [Fact]
+    public async Task PostSystemNotificationAsync_WithPublishFalse_DoesNotPublish()
+    {
+        // Arrange & Act
+        var notification = await SendRequestAsAsync<SystemNotification>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/system")
+            .QueryString("publish", "false")
+            .Content(new ValueFromBody<string>("Silent notification"))
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(notification);
+        Assert.Equal("Silent notification", notification.Message);
+    }
 }

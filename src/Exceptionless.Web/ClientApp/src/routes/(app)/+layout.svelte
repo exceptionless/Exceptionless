@@ -15,7 +15,6 @@
     import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
     import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
     import { shouldLoadIntercomOrganization } from '$features/intercom/config';
-    import NotificationBanners from '$features/notifications/components/notification-banners.svelte';
     import { getOrganizationQuery, getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
     import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
     import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
@@ -25,6 +24,7 @@
     import { savedViewHref } from '$features/saved-views/slugs';
     import { appKeyboardShortcuts, isKeyboardShortcut } from '$features/shared/keyboard-shortcuts';
     import { invalidateStackQueries } from '$features/stacks/api.svelte';
+    import SystemNotificationBanner from '$features/system-notifications/components/system-notification-banner.svelte';
     import { invalidateTokenQueries } from '$features/tokens/api.svelte';
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
@@ -500,7 +500,7 @@
                 />
                 <KeyboardShortcutsDialog bind:open={isKeyboardShortcutsOpen} />
 
-                <NotificationBanners />
+                <SystemNotificationBanner />
 
                 {#if showOrganizationNotifications.current}
                     <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} premiumFeatureName={premiumPage.current} class="mb-4" />
