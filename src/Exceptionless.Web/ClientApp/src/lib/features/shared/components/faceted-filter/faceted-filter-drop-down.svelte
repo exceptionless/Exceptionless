@@ -74,7 +74,6 @@
             updatedValue = currentValue;
         }
         changed(updatedValue);
-        open = false;
     }
 
     export function onClearFilter() {
