@@ -22,7 +22,88 @@ public class Program
     {
         try
         {
-            await CreateHostBuilder(args).Build().RunAsync();
+            var jobOptions = new JobRunnerOptions(args);
+
+            Console.Title = $"Exceptionless {jobOptions.JobName} Job";
+            string environment = Environment.GetEnvironmentVariable("EX_AppMode") ?? "Production";
+
+            var builder = WebApplication.CreateBuilder(args);
+            builder.Host.UseEnvironment(environment);
+            builder.Configuration.Sources.Clear();
+            builder.Configuration
+                .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
+                .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
+                .AddCustomEnvironmentVariables()
+                .AddCommandLine(args);
+
+            var configuration = (IConfigurationRoot)builder.Configuration;
+            Log.Logger = new LoggerConfiguration()
+                .ReadFrom.Configuration(configuration)
+                .CreateBootstrapLogger()
+                .ForContext<Program>();
+
+            var options = AppOptions.ReadFromConfiguration(configuration);
+            // only poll the queue metrics if this process is going to run the stack event count job
+            options.QueueOptions.MetricsPollingEnabled = jobOptions.StackEventCount;
+
+            var apmConfig = new ApmConfig(configuration, $"job-{jobOptions.JobName.ToLowerUnderscoredWords('-')}", options.InformationalVersion, options.CacheOptions.Provider == "redis");
+
+            Log.Information("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with options {@Options}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, options);
+
+            builder.Logging.ClearProviders();
+            builder.Host
+                .UseSerilog((ctx, sp, c) =>
+                {
+                    c.ReadFrom.Configuration(ctx.Configuration);
+                    c.ReadFrom.Services(sp);
+                    c.Enrich.WithMachineName();
+
+                    if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
+                        c.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Information);
+                }, writeToProviders: true)
+                .AddApm(apmConfig);
+
+            AddJobs(builder.Services, jobOptions);
+            builder.Services.AddAppOptions(options);
+            Bootstrapper.RegisterServices(builder.Services, options);
+            Insulation.Bootstrapper.RegisterServices(builder.Services, options, true);
+
+            var app = builder.Build();
+
+            app.UseSerilogRequestLogging(o =>
+            {
+                o.MessageTemplate = "TraceId={TraceId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+                o.GetLevel = (context, duration, ex) =>
+                {
+                    if (ex is not null || context.Response.StatusCode > 499)
+                        return LogEventLevel.Error;
+
+                    return duration < 1000 && context.Response.StatusCode < 400 ? LogEventLevel.Debug : LogEventLevel.Information;
+                };
+            });
+
+            Core.Bootstrapper.LogConfiguration(app.Services, options, app.Services.GetRequiredService<ILogger<Program>>());
+
+            if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
+                app.UseExceptionless(ExceptionlessClient.Default);
+
+            app.UseHealthChecks("/health", new HealthCheckOptions
+            {
+                Predicate = _ => false
+            });
+
+            app.UseHealthChecks("/ready", new HealthCheckOptions
+            {
+                Predicate = hcr => hcr.Tags.Contains("Critical")
+            });
+
+            app.UseWaitForStartupActionsBeforeServingRequests();
+            app.MapFallback(async context =>
+            {
+                await context.Response.WriteAsync($"Running Job: {jobOptions.JobName}");
+            });
+
+            await app.RunAsync();
             return 0;
         }
         catch (Exception ex)
@@ -38,98 +119,6 @@ public class Program
             if (Debugger.IsAttached)
                 Console.ReadKey();
         }
-    }
-
-    public static IHostBuilder CreateHostBuilder(string[] args)
-    {
-        var jobOptions = new JobRunnerOptions(args);
-
-        Console.Title = $"Exceptionless {jobOptions.JobName} Job";
-        string environment = Environment.GetEnvironmentVariable("EX_AppMode") ?? "Production";
-        var config = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
-            .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
-            .AddCustomEnvironmentVariables()
-            .AddCommandLine(args)
-            .Build();
-
-        Log.Logger = new LoggerConfiguration()
-            .ReadFrom.Configuration(config)
-            .CreateBootstrapLogger()
-            .ForContext<Program>();
-
-        var options = AppOptions.ReadFromConfiguration(config);
-        // only poll the queue metrics if this process is going to run the stack event count job
-        options.QueueOptions.MetricsPollingEnabled = jobOptions.StackEventCount;
-
-        var apmConfig = new ApmConfig(config, $"job-{jobOptions.JobName.ToLowerUnderscoredWords('-')}", options.InformationalVersion, options.CacheOptions.Provider == "redis");
-
-        Log.Information("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with options {@Options}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, options);
-
-        var builder = Host.CreateDefaultBuilder()
-            .UseEnvironment(environment)
-            .ConfigureLogging(b => b.ClearProviders()) // clears .net providers since we are telling serilog to write to providers we only want it to be the otel provider
-            .UseSerilog((ctx, sp, c) =>
-            {
-                c.ReadFrom.Configuration(ctx.Configuration);
-                c.ReadFrom.Services(sp);
-                c.Enrich.WithMachineName();
-
-                if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
-                    c.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Information);
-            }, writeToProviders: true)
-            .ConfigureWebHostDefaults(webBuilder =>
-            {
-                webBuilder
-                    .UseConfiguration(config)
-                    .Configure(app =>
-                    {
-                        app.UseSerilogRequestLogging(o =>
-                        {
-                            o.MessageTemplate = "TraceId={TraceId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
-                            o.GetLevel = new Func<HttpContext, double, Exception?, LogEventLevel>((context, duration, ex) =>
-                            {
-                                if (ex is not null || context.Response.StatusCode > 499)
-                                    return LogEventLevel.Error;
-
-                                return duration < 1000 && context.Response.StatusCode < 400 ? LogEventLevel.Debug : LogEventLevel.Information;
-                            });
-                        });
-
-                        Bootstrapper.LogConfiguration(app.ApplicationServices, options, app.ApplicationServices.GetRequiredService<ILogger<Program>>());
-
-                        if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
-                            app.UseExceptionless(ExceptionlessClient.Default);
-
-                        app.UseHealthChecks("/health", new HealthCheckOptions
-                        {
-                            Predicate = _ => false
-                        });
-
-                        app.UseHealthChecks("/ready", new HealthCheckOptions
-                        {
-                            Predicate = hcr => hcr.Tags.Contains("Critical")
-                        });
-
-                        app.UseWaitForStartupActionsBeforeServingRequests();
-                        app.Run(async context =>
-                        {
-                            await context.Response.WriteAsync($"Running Job: {jobOptions.JobName}");
-                        });
-                    });
-            })
-            .ConfigureServices((ctx, services) =>
-            {
-                AddJobs(services, jobOptions);
-                services.AddAppOptions(options);
-
-                Bootstrapper.RegisterServices(services, options);
-                Insulation.Bootstrapper.RegisterServices(services, options, true);
-            })
-            .AddApm(apmConfig);
-
-        return builder;
     }
 
     private static void AddJobs(IServiceCollection services, JobRunnerOptions options)
