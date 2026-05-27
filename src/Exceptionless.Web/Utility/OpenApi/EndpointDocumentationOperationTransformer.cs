@@ -4,6 +4,20 @@ using Microsoft.OpenApi;
 namespace Exceptionless.Web.Utility.OpenApi;
 
 /// <summary>
+/// Defines an additional parameter to inject into the OpenAPI operation.
+/// Used for parameters that are read from HttpContext rather than method signatures.
+/// </summary>
+public sealed record AdditionalParameterDefinition(
+    string Name,
+    string In, // "query" or "header"
+    string? Description = null,
+    bool Required = false,
+    string Type = "string",
+    string? Format = null,
+    string? ItemsRef = null // For array types — e.g. "#/components/schemas/StringStringValuesKeyValuePair"
+);
+
+/// <summary>
 /// Metadata record that holds API documentation for an endpoint's parameters and responses.
 /// Applied via .WithMetadata() on endpoint definitions.
 /// </summary>
@@ -11,6 +25,7 @@ public sealed record EndpointDocumentation
 {
     public Dictionary<string, string> ParameterDescriptions { get; init; } = new();
     public Dictionary<string, string> ResponseDescriptions { get; init; } = new();
+    public List<AdditionalParameterDefinition> AdditionalParameters { get; init; } = new();
 }
 
 /// <summary>
@@ -27,6 +42,67 @@ public class EndpointDocumentationOperationTransformer : IOpenApiOperationTransf
 
         if (documentation is null)
             return Task.CompletedTask;
+
+        // Inject additional parameters that don't already exist
+        if (documentation.AdditionalParameters.Count > 0)
+        {
+            operation.Parameters ??= [];
+
+            foreach (var additionalParam in documentation.AdditionalParameters)
+            {
+                // Skip if parameter already exists
+                var location = additionalParam.In == "header" ? ParameterLocation.Header : ParameterLocation.Query;
+                if (operation.Parameters.Any(p => string.Equals(p.Name, additionalParam.Name, StringComparison.OrdinalIgnoreCase) && p.In == location))
+                    continue;
+
+                OpenApiSchema schema;
+
+                if (additionalParam.Type == "array")
+                {
+                    // Array type — items are generic objects (key-value pairs from query string)
+                    schema = new OpenApiSchema
+                    {
+                        Type = JsonSchemaType.Array,
+                        Items = new OpenApiSchema { Type = JsonSchemaType.Object }
+                    };
+                }
+                else if (additionalParam.ItemsRef is not null)
+                {
+                    // Array type with schema reference (reserved for future use)
+                    schema = new OpenApiSchema
+                    {
+                        Type = JsonSchemaType.Array,
+                        Items = new OpenApiSchema { Type = JsonSchemaType.Object }
+                    };
+                }
+                else
+                {
+                    schema = new OpenApiSchema();
+                    schema.Type = additionalParam.Type switch
+                    {
+                        "integer" => JsonSchemaType.Integer,
+                        "number" => JsonSchemaType.Number,
+                        "boolean" => JsonSchemaType.Boolean,
+                        _ => JsonSchemaType.String,
+                    };
+                    if (additionalParam.Format is not null)
+                        schema.Format = additionalParam.Format;
+                }
+
+                var param = new OpenApiParameter
+                {
+                    Name = additionalParam.Name,
+                    In = location,
+                    Required = additionalParam.Required,
+                    Schema = schema
+                };
+
+                if (additionalParam.Description is not null)
+                    param.Description = additionalParam.Description;
+
+                operation.Parameters.Add(param);
+            }
+        }
 
         // Apply parameter descriptions
         if (operation.Parameters is not null)

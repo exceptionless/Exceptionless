@@ -1,8 +1,10 @@
 using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
 using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Infrastructure;
+using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using IMediator = Foundatio.Mediator.IMediator;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +24,8 @@ public static class WebHookEndpoints
         group.MapGet("projects/{projectId:objectid}/webhooks", async (string projectId, IMediator mediator, int page = 1, int limit = 10)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new WebHookMessages.GetWebHooksByProject(projectId, page, limit)))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Produces(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Get by project")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -38,6 +42,8 @@ public static class WebHookEndpoints
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new WebHookMessages.GetWebHookById(id)))
         .WithName("GetWebHookById")
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Produces<WebHook>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Get by id")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -57,6 +63,9 @@ public static class WebHookEndpoints
             return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new WebHookMessages.CreateWebHook(webHook));
         })
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Produces<WebHook>(StatusCodes.Status201Created)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Create")
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
@@ -69,6 +78,10 @@ public static class WebHookEndpoints
         group.MapDelete("webhooks/{ids:objectids}", async (string ids, IMediator mediator)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new WebHookMessages.DeleteWebHooks(ids.FromDelimitedString())))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status500InternalServerError)
         .WithSummary("Remove")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {

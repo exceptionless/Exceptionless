@@ -4,6 +4,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Messages;
+using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using IMediator = Foundatio.Mediator.IMediator;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,8 @@ public static class StackEndpoints
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetStackById(id, offset, httpContext)))
         .WithName("GetStackById")
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Produces<Stack>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Get by id")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -40,6 +43,9 @@ public static class StackEndpoints
         group.MapPost("stacks/{ids:objectids}/mark-fixed", async (string ids, HttpContext httpContext, IMediator mediator, string? version = null)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new MarkStacksFixed(ids, version, httpContext)))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status202Accepted)
+        .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Mark fixed")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -67,6 +73,9 @@ public static class StackEndpoints
         group.MapPost("stacks/{ids:objectids}/mark-snoozed", async (string ids, HttpContext httpContext, IMediator mediator, DateTime snoozeUntilUtc)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SnoozeStacks(ids, snoozeUntilUtc, httpContext)))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status202Accepted)
+        .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Mark the selected stacks as snoozed")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -84,6 +93,9 @@ public static class StackEndpoints
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AddStackLink(id, url, httpContext)))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Accepts<ValueFromBody<string?>>("application/json")
+        .Produces(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Add reference link")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -111,6 +123,10 @@ public static class StackEndpoints
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new RemoveStackLink(id, url, httpContext)))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Accepts<ValueFromBody<string>>("application/json")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Remove reference link")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -127,6 +143,9 @@ public static class StackEndpoints
         group.MapPost("stacks/{ids:objectids}/mark-critical", async (string ids, HttpContext httpContext, IMediator mediator)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new MarkStacksCritical(ids, httpContext)))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Mark future occurrences as critical")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -141,6 +160,8 @@ public static class StackEndpoints
         group.MapDelete("stacks/{ids:objectids}/mark-critical", async (string ids, HttpContext httpContext, IMediator mediator)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new MarkStacksNotCritical(ids, httpContext)))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Mark future occurrences as not critical")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -156,6 +177,8 @@ public static class StackEndpoints
         group.MapPost("stacks/{ids:objectids}/change-status", async (string ids, HttpContext httpContext, IMediator mediator, StackStatus status)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new ChangeStacksStatus(ids, status, httpContext)))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Produces(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Change stack status")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -171,6 +194,10 @@ public static class StackEndpoints
         group.MapPost("stacks/{id:objectid}/promote", async (string id, HttpContext httpContext, IMediator mediator)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new PromoteStack(id, httpContext)))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Produces(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
+        .Produces(StatusCodes.Status501NotImplemented)
         .WithSummary("Promote to external service")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -187,6 +214,10 @@ public static class StackEndpoints
         group.MapDelete("stacks/{ids:objectids}", async (string ids, HttpContext httpContext, IMediator mediator)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new DeleteStacks(ids, httpContext)))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status500InternalServerError)
         .WithSummary("Remove")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -204,6 +235,8 @@ public static class StackEndpoints
         group.MapGet("stacks", async (HttpContext httpContext, IMediator mediator, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int page = 1, int limit = 10)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetAllStacks(filter, sort, time, offset, mode, page, limit, httpContext)))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Produces(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
         .WithSummary("Get all")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -224,6 +257,10 @@ public static class StackEndpoints
         group.MapGet("organizations/{organizationId:objectid}/stacks", async (string organizationId, HttpContext httpContext, IMediator mediator, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int page = 1, int limit = 10)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetStacksByOrganization(organizationId, filter, sort, time, offset, mode, page, limit, httpContext)))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Produces(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
         .WithSummary("Get by organization")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -247,6 +284,10 @@ public static class StackEndpoints
         group.MapGet("projects/{projectId:objectid}/stacks", async (string projectId, HttpContext httpContext, IMediator mediator, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int page = 1, int limit = 10)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetStacksByProject(projectId, filter, sort, time, offset, mode, page, limit, httpContext)))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Produces(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
         .WithSummary("Get by project")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {

@@ -100,9 +100,132 @@
         "tags": [
           "Exceptionless.Tests"
         ],
+        "parameters": [
+          {
+            "name": "source",
+            "in": "query",
+            "description": "The event source (ie. machine name, log name, feature name).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "message",
+            "in": "query",
+            "description": "The event message.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reference",
+            "in": "query",
+            "description": "An optional identifier to be used for referencing this event instance at a later time.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "description": "The date that the event occurred on.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "description": "The number of duplicated events.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "value",
+            "in": "query",
+            "description": "The value of the event if any.",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "geo",
+            "in": "query",
+            "description": "The geo coordinates where the event happened.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "description": "A list of tags used to categorize this event (comma separated).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identity",
+            "in": "query",
+            "description": "The user\u0027s identity that the event happened to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identityname",
+            "in": "query",
+            "description": "The user\u0027s friendly name that the event happened to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userAgent",
+            "in": "header",
+            "description": "The user agent that submitted the event.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "parameters",
+            "in": "query",
+            "description": "Query string parameters that control what properties are set on the event",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "No project id specified and no default project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -121,11 +244,132 @@
               "minLength": 1,
               "type": "string"
             }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "description": "The event source (ie. machine name, log name, feature name).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "message",
+            "in": "query",
+            "description": "The event message.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reference",
+            "in": "query",
+            "description": "An optional identifier to be used for referencing this event instance at a later time.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "description": "The date that the event occurred on.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "description": "The number of duplicated events.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "value",
+            "in": "query",
+            "description": "The value of the event if any.",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "geo",
+            "in": "query",
+            "description": "The geo coordinates where the event happened.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "description": "A list of tags used to categorize this event (comma separated).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identity",
+            "in": "query",
+            "description": "The user\u0027s identity that the event happened to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identityname",
+            "in": "query",
+            "description": "The user\u0027s friendly name that the event happened to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userAgent",
+            "in": "header",
+            "description": "The user agent that submitted the event.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "parameters",
+            "in": "query",
+            "description": "Query string parameters that control what properties are set on the event",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
           }
         ],
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "No project id specified and no default project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -144,11 +388,132 @@
               "pattern": "^[a-zA-Z\\d]{24,36}$",
               "type": "string"
             }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "description": "The event source (ie. machine name, log name, feature name).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "message",
+            "in": "query",
+            "description": "The event message.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reference",
+            "in": "query",
+            "description": "An optional identifier to be used for referencing this event instance at a later time.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "description": "The date that the event occurred on.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "description": "The number of duplicated events.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "value",
+            "in": "query",
+            "description": "The value of the event if any.",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "geo",
+            "in": "query",
+            "description": "The geo coordinates where the event happened.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "description": "A list of tags used to categorize this event (comma separated).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identity",
+            "in": "query",
+            "description": "The user\u0027s identity that the event happened to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identityname",
+            "in": "query",
+            "description": "The user\u0027s friendly name that the event happened to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userAgent",
+            "in": "header",
+            "description": "The user agent that submitted the event.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "parameters",
+            "in": "query",
+            "description": "Query string parameters that control what properties are set on the event",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
           }
         ],
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "No project id specified and no default project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -176,11 +541,132 @@
               "minLength": 1,
               "type": "string"
             }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "description": "The event source (ie. machine name, log name, feature name).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "message",
+            "in": "query",
+            "description": "The event message.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reference",
+            "in": "query",
+            "description": "An optional identifier to be used for referencing this event instance at a later time.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "description": "The date that the event occurred on.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "description": "The number of duplicated events.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "value",
+            "in": "query",
+            "description": "The value of the event if any.",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "geo",
+            "in": "query",
+            "description": "The geo coordinates where the event happened.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "description": "A list of tags used to categorize this event (comma separated).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identity",
+            "in": "query",
+            "description": "The user\u0027s identity that the event happened to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identityname",
+            "in": "query",
+            "description": "The user\u0027s friendly name that the event happened to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userAgent",
+            "in": "header",
+            "description": "The user agent that submitted the event.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "parameters",
+            "in": "query",
+            "description": "Query string parameters that control what properties are set on the event",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
           }
         ],
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "No project id specified and no default project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -190,9 +676,42 @@
         "tags": [
           "Exceptionless.Tests"
         ],
+        "parameters": [
+          {
+            "name": "userAgent",
+            "in": "header",
+            "description": "The user agent that submitted the event.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "202": {
+            "description": "Accepted"
+          },
+          "400": {
+            "description": "No project id specified and no default project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -202,9 +721,39 @@
         "tags": [
           "Exceptionless.Tests"
         ],
+        "parameters": [
+          {
+            "name": "userAgent",
+            "in": "header",
+            "description": "The user agent that submitted the event.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
-          "200": {
-            "description": "OK"
+          "202": {
+            "description": "Accepted"
+          },
+          "400": {
+            "description": "No project id specified and no default project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -223,11 +772,39 @@
               "pattern": "^[a-zA-Z\\d]{24,36}$",
               "type": "string"
             }
+          },
+          {
+            "name": "userAgent",
+            "in": "header",
+            "description": "The user agent that submitted the event.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK"
+          "202": {
+            "description": "Accepted"
+          },
+          "400": {
+            "description": "No project id specified and no default project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -896,6 +1473,16 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "404": {
+            "description": "The organization could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       },
@@ -933,8 +1520,45 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewToken"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred while creating the token.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The token already exists.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -980,6 +1604,16 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "404": {
+            "description": "The project could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       },
@@ -1017,8 +1651,45 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewToken"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred while creating the token.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The token already exists.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -1043,7 +1714,24 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewToken"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -1069,7 +1757,24 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewToken"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The token could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       },
@@ -1102,7 +1807,34 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewToken"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred while updating the token.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The token could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       },
@@ -1135,7 +1867,34 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewToken"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred while updating the token.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The token could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -1157,8 +1916,35 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewToken"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred while creating the token.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The token already exists.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -1182,8 +1968,45 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK"
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkInProgressResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "One or more validation errors occurred.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "One or more tokens were not found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred while deleting one or more tokens.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -1229,6 +2052,16 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "404": {
+            "description": "The project could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -1254,7 +2087,24 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebHook"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The web hook could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -1276,8 +2126,35 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebHook"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred while creating the web hook.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The web hook already exists.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -1301,8 +2178,45 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK"
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkInProgressResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "One or more validation errors occurred.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "One or more web hooks were not found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred while deleting one or more web hooks.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -1846,6 +2760,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK"
+          },
           "204": {
             "description": "The predefined saved view was deleted."
           },
@@ -1903,6 +2820,16 @@
           },
           "404": {
             "description": "One or more saved views were not found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred while deleting one or more saved views.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2241,6 +3168,16 @@
           },
           "404": {
             "description": "One or more users were not found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred while deleting one or more users.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2862,6 +3799,16 @@
           },
           "404": {
             "description": "One or more projects were not found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred while deleting one or more projects.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4245,6 +5192,16 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "An error occurred while deleting one or more organizations.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -4748,6 +5705,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK"
+          },
           "201": {
             "description": "The organization name is available."
           },
@@ -4786,7 +5746,24 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stack"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The stack could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -4820,6 +5797,19 @@
         "responses": {
           "200": {
             "description": "The stacks were marked as fixed."
+          },
+          "202": {
+            "description": "Accepted"
+          },
+          "404": {
+            "description": "One or more stacks could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -4855,6 +5845,19 @@
         "responses": {
           "200": {
             "description": "The stacks were snoozed."
+          },
+          "202": {
+            "description": "Accepted"
+          },
+          "404": {
+            "description": "One or more stacks could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -4890,6 +5893,26 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Invalid reference link.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The stack could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -4925,6 +5948,29 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "204": {
+            "description": "The reference link was removed."
+          },
+          "400": {
+            "description": "Invalid reference link.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The stack could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -4950,6 +5996,19 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "One or more stacks could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       },
@@ -4971,8 +6030,18 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK"
+          "204": {
+            "description": "The stacks were marked as not critical."
+          },
+          "404": {
+            "description": "One or more stacks could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -5007,6 +6076,16 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "404": {
+            "description": "One or more stacks could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -5032,6 +6111,29 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "404": {
+            "description": "The stack could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Promote to External is a premium feature used to promote an error stack to an external system.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "No promoted web hooks are configured for this project."
           }
         }
       }
@@ -5055,8 +6157,45 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK"
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkInProgressResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "One or more validation errors occurred.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "One or more stacks were not found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred while deleting one or more stacks.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -5132,6 +6271,16 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -5217,6 +6366,36 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Unable to view stack occurrences for the suspended organization.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -5302,6 +6481,36 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Unable to view stack occurrences for the suspended organization.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -5356,7 +6565,24 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -5421,7 +6647,24 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -5486,7 +6729,24 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -5528,7 +6788,34 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersistentEvent"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The event occurrence could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Unable to view event occurrence due to plan limits.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -5619,6 +6906,26 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Unable to view event occurrences for the suspended organization.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       },
@@ -5627,9 +6934,39 @@
           "Events"
         ],
         "summary": "Submit event by POST",
+        "parameters": [
+          {
+            "name": "userAgent",
+            "in": "header",
+            "description": "The user agent that submitted the event.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
-          "200": {
-            "description": "OK"
+          "202": {
+            "description": "Accepted"
+          },
+          "400": {
+            "description": "No project id specified and no default project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -5730,6 +7067,36 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Unable to view event occurrences for the suspended organization.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -5830,6 +7197,36 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Unable to view event occurrences for the suspended organization.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       },
@@ -5848,11 +7245,39 @@
               "pattern": "^[a-zA-Z\\d]{24,36}$",
               "type": "string"
             }
+          },
+          {
+            "name": "userAgent",
+            "in": "header",
+            "description": "The user agent that submitted the event.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK"
+          "202": {
+            "description": "Accepted"
+          },
+          "400": {
+            "description": "No project id specified and no default project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -5953,6 +7378,36 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The stack could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Unable to view event occurrences for the suspended organization.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -6029,6 +7484,26 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Unable to view event occurrences for the suspended organization.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -6115,6 +7590,36 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Unable to view event occurrences for the suspended organization.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -6215,6 +7720,26 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Unable to view event occurrences for the suspended organization.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -6325,6 +7850,36 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Unable to view event occurrences for the suspended organization.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -6415,6 +7970,16 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -6515,6 +8080,36 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Unable to view event occurrences for the suspended organization.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -6615,6 +8210,36 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Unable to view event occurrences for the suspended organization.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -6655,8 +8280,28 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "202": {
+            "description": "Accepted"
+          },
+          "400": {
+            "description": "Description must be specified.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The event occurrence with the specified reference id could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -6700,8 +8345,28 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "202": {
+            "description": "Accepted"
+          },
+          "400": {
+            "description": "Description must be specified.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The event occurrence with the specified reference id could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -6734,6 +8399,26 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "No project id specified and no default project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -6752,11 +8437,132 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "description": "The event source (ie. machine name, log name, feature name).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "message",
+            "in": "query",
+            "description": "The event message.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reference",
+            "in": "query",
+            "description": "An optional identifier to be used for referencing this event instance at a later time.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "description": "The date that the event occurred on.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "description": "The number of duplicated events.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "value",
+            "in": "query",
+            "description": "The value of the event if any.",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "geo",
+            "in": "query",
+            "description": "The geo coordinates where the event happened.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "description": "A list of tags used to categorize this event (comma separated).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identity",
+            "in": "query",
+            "description": "The user\u0027s identity that the event happened to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identityname",
+            "in": "query",
+            "description": "The user\u0027s friendly name that the event happened to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userAgent",
+            "in": "header",
+            "description": "The user agent that submitted the event.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "parameters",
+            "in": "query",
+            "description": "Query string parameters that control what properties are set on the event",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
           }
         ],
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "No project id specified and no default project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -6777,11 +8583,132 @@
               "minLength": 1,
               "type": "string"
             }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "description": "The event source (ie. machine name, log name, feature name).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "message",
+            "in": "query",
+            "description": "The event message.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reference",
+            "in": "query",
+            "description": "An optional identifier to be used for referencing this event instance at a later time.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "description": "The date that the event occurred on.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "description": "The number of duplicated events.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "value",
+            "in": "query",
+            "description": "The value of the event if any.",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "geo",
+            "in": "query",
+            "description": "The geo coordinates where the event happened.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "description": "A list of tags used to categorize this event (comma separated).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identity",
+            "in": "query",
+            "description": "The user\u0027s identity that the event happened to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identityname",
+            "in": "query",
+            "description": "The user\u0027s friendly name that the event happened to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userAgent",
+            "in": "header",
+            "description": "The user agent that submitted the event.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "parameters",
+            "in": "query",
+            "description": "Query string parameters that control what properties are set on the event",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
           }
         ],
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "No project id specified and no default project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -6809,11 +8736,132 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "description": "The event source (ie. machine name, log name, feature name).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "message",
+            "in": "query",
+            "description": "The event message.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reference",
+            "in": "query",
+            "description": "An optional identifier to be used for referencing this event instance at a later time.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "description": "The date that the event occurred on.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "description": "The number of duplicated events.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "value",
+            "in": "query",
+            "description": "The value of the event if any.",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "geo",
+            "in": "query",
+            "description": "The geo coordinates where the event happened.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "description": "A list of tags used to categorize this event (comma separated).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identity",
+            "in": "query",
+            "description": "The user\u0027s identity that the event happened to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identityname",
+            "in": "query",
+            "description": "The user\u0027s friendly name that the event happened to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userAgent",
+            "in": "header",
+            "description": "The user agent that submitted the event.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "parameters",
+            "in": "query",
+            "description": "Query String parameters that control what properties are set on the event",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
           }
         ],
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "No project id specified and no default project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -6844,11 +8892,132 @@
               "minLength": 1,
               "type": "string"
             }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "description": "The event source (ie. machine name, log name, feature name).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "message",
+            "in": "query",
+            "description": "The event message.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reference",
+            "in": "query",
+            "description": "An optional identifier to be used for referencing this event instance at a later time.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "description": "The date that the event occurred on.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "description": "The number of duplicated events.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "value",
+            "in": "query",
+            "description": "The value of the event if any.",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "geo",
+            "in": "query",
+            "description": "The geo coordinates where the event happened.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "description": "A list of tags used to categorize this event (comma separated).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identity",
+            "in": "query",
+            "description": "The user\u0027s identity that the event happened to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identityname",
+            "in": "query",
+            "description": "The user\u0027s friendly name that the event happened to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userAgent",
+            "in": "header",
+            "description": "The user agent that submitted the event.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "parameters",
+            "in": "query",
+            "description": "Query String parameters that control what properties are set on the event",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
           }
         ],
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "No project id specified and no default project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -6872,8 +9041,45 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK"
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkInProgressResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "One or more validation errors occurred.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "One or more event occurrences were not found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred while deleting one or more event occurrences.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -7031,6 +9237,40 @@
             "additionalProperties": {
               "type": "string"
             }
+          }
+        }
+      },
+      "CountResult": {
+        "required": [
+          "total",
+          "aggregations",
+          "data"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "default": 0
+          },
+          "aggregations": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/IAggregate"
+                }
+              }
+            ]
+          },
+          "data": {
+            "type": [
+              "null",
+              "object"
+            ]
           }
         }
       },
@@ -7481,6 +9721,130 @@
           }
         }
       },
+      "PersistentEvent": {
+        "required": [
+          "organizationId",
+          "projectId",
+          "stackId",
+          "type",
+          "id",
+          "isFirstOccurrence",
+          "createdUtc",
+          "date"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "organizationId": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "projectId": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "stackId": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "isFirstOccurrence": {
+            "type": "boolean"
+          },
+          "createdUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "idx": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {}
+          },
+          "type": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "source": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "tags": {
+            "uniqueItems": true,
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "message": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "geo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "value": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "count": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "data": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {}
+          },
+          "referenceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "PredefinedSavedViewDefinition": {
         "required": [
           "key",
@@ -7643,6 +10007,144 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "Stack": {
+        "required": [
+          "organizationId",
+          "projectId",
+          "type",
+          "signatureHash",
+          "signatureInfo",
+          "id",
+          "status",
+          "title",
+          "totalOccurrences",
+          "firstOccurrence",
+          "lastOccurrence",
+          "occurrencesAreCritical",
+          "references",
+          "tags",
+          "duplicateSignature",
+          "createdUtc",
+          "updatedUtc",
+          "isDeleted",
+          "allowNotifications"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "organizationId": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "projectId": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "type": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StackStatus"
+          },
+          "snoozeUntilUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "signatureHash": {
+            "type": "string"
+          },
+          "signatureInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "fixedInVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dateFixed": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "title": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "totalOccurrences": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstOccurrence": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastOccurrence": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "occurrencesAreCritical": {
+            "type": "boolean"
+          },
+          "references": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tags": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "duplicateSignature": {
+            "type": "string"
+          },
+          "createdUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isDeleted": {
+            "type": "boolean"
+          },
+          "allowNotifications": {
+            "type": "boolean",
+            "readOnly": true
           }
         }
       },
@@ -8547,6 +11049,91 @@
           }
         }
       },
+      "ViewToken": {
+        "required": [
+          "id",
+          "organizationId",
+          "projectId",
+          "scopes",
+          "isDisabled",
+          "isSuspended",
+          "createdUtc",
+          "updatedUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "organizationId": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "projectId": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "userId": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "defaultProjectId": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "scopes": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expiresUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isDisabled": {
+            "type": "boolean"
+          },
+          "isSuspended": {
+            "type": "boolean"
+          },
+          "createdUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "ViewUser": {
         "required": [
           "id",
@@ -8599,6 +11186,61 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "WebHook": {
+        "required": [
+          "organizationId",
+          "url",
+          "eventTypes",
+          "version",
+          "id",
+          "projectId",
+          "isEnabled",
+          "createdUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "organizationId": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "projectId": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "eventTypes": {
+            "maxItems": 6,
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "isEnabled": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "string"
+          },
+          "createdUtc": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

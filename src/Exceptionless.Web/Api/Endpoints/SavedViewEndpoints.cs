@@ -141,6 +141,7 @@ public static class SavedViewEndpoints
         group.MapDelete("saved-views/{id:objectid}/predefined", async (string id, IMediator mediator)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SavedViewMessages.DeletePredefinedSavedView(id)))
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
+        .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status204NoContent)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Delete a global predefined saved view")
@@ -195,6 +196,7 @@ public static class SavedViewEndpoints
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status500InternalServerError)
         .WithSummary("Remove")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {

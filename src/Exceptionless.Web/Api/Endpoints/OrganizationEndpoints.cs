@@ -128,6 +128,7 @@ public static class OrganizationEndpoints
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status500InternalServerError)
         .WithSummary("Remove")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -309,6 +310,7 @@ public static class OrganizationEndpoints
 
         group.MapGet("organizations/check-name", async (string name, HttpContext httpContext, IMediator mediator)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new OrganizationMessages.CheckOrganizationName(name, httpContext)))
+        .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status201Created)
         .Produces(StatusCodes.Status204NoContent)
         .WithSummary("Check for unique name")

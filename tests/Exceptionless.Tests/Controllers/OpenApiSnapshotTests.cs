@@ -40,7 +40,7 @@ public sealed class OpenApiSnapshotTests
         Assert.True(paths.TryGetProperty("/api/v2/events/by-ref/{referenceId}/user-description", out var userDescriptionPath));
         Assert.True(userDescriptionPath.TryGetProperty("post", out var userDescriptionPost));
         Assert.True(userDescriptionPost.TryGetProperty("requestBody", out _));
-        AssertResponseCodes(userDescriptionPost, "200");
+        AssertResponseCodes(userDescriptionPost, "202");
     }
 
     [Fact]
