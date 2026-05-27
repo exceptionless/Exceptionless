@@ -25,7 +25,7 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 {
     private const int MaxViewsPerOrganization = 100;
     private const string PredefinedSavedViewsDataKey = "@@PredefinedSavedViewsVersion";
-    private const int PredefinedSavedViewsVersion = 3;
+    private const int PredefinedSavedViewsVersion = 4;
 
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ILockProvider _lockProvider;

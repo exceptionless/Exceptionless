@@ -40,14 +40,77 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (await _savedViewRepository.CountByOrganizationIdAsync(SystemOrganizationId) > 0)
-                return;
-
             var definitions = await ReadDefaultSavedViewsAsync(cancellationToken);
-            var savedViews = definitions.Select(CreateSavedView).ToList();
-            await _savedViewRepository.AddAsync(savedViews, o => o.Cache().ImmediateConsistency());
-            _logger.LogInformation("Seeded {Count} predefined saved views", savedViews.Count);
+            var existingResults = await _savedViewRepository.GetByOrganizationIdAsync(SystemOrganizationId, o => o.PageLimit(1000));
+
+            if (existingResults.Total == 0)
+            {
+                // First-time seed: create all views from definitions.
+                var savedViews = definitions.Select(CreateSavedView).ToList();
+                await _savedViewRepository.AddAsync(savedViews, o => o.Cache().ImmediateConsistency());
+                _logger.LogInformation("Seeded {Count} predefined saved views", savedViews.Count);
+                return;
+            }
+
+            // Update existing views whose fields have drifted (e.g., viewType rename).
+            // Never re-create views that were manually deleted at runtime.
+            var existingByKey = existingResults.Documents
+                .Where(v => !String.IsNullOrEmpty(v.PredefinedKey))
+                .ToDictionary(v => v.PredefinedKey!, StringComparer.OrdinalIgnoreCase);
+
+            var toSave = new List<SavedView>();
+            foreach (var definition in definitions)
+            {
+                if (!existingByKey.TryGetValue(definition.Key, out var existing))
+                    continue;
+
+                if (ApplyDefinition(existing, definition))
+                    toSave.Add(existing);
+            }
+
+            if (toSave.Count > 0)
+            {
+                await _savedViewRepository.SaveAsync(toSave, o => o.Cache().ImmediateConsistency());
+                _logger.LogInformation("Updated {Count} stale predefined saved views", toSave.Count);
+            }
         }, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15));
+    }
+
+    private static bool ApplyDefinition(SavedView existing, PredefinedSavedViewDefinition definition)
+    {
+        bool changed = false;
+
+        if (!String.Equals(existing.ViewType, definition.ViewType, StringComparison.Ordinal))
+        {
+            existing.ViewType = definition.ViewType;
+            changed = true;
+        }
+
+        if (!String.Equals(existing.Name, definition.Name, StringComparison.Ordinal))
+        {
+            existing.Name = definition.Name;
+            changed = true;
+        }
+
+        if (!String.Equals(existing.Slug, definition.Slug, StringComparison.Ordinal))
+        {
+            existing.Slug = definition.Slug;
+            changed = true;
+        }
+
+        if (!String.Equals(existing.Filter, definition.Filter, StringComparison.Ordinal))
+        {
+            existing.Filter = definition.Filter;
+            changed = true;
+        }
+
+        if (!String.Equals(existing.Sort, definition.Sort, StringComparison.Ordinal))
+        {
+            existing.Sort = definition.Sort;
+            changed = true;
+        }
+
+        return changed;
     }
 
     public static async Task<IReadOnlyCollection<PredefinedSavedViewDefinition>> ReadDefaultSavedViewsAsync(CancellationToken cancellationToken = default)
