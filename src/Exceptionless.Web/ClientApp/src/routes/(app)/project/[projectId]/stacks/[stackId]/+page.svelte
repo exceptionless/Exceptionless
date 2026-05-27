@@ -59,7 +59,7 @@
 </script>
 
 <div class="flex flex-col gap-4">
-    <H3>Issue Details</H3>
+    <H3>Stack Details</H3>
     {#if stackEventsQuery.isSuccess && !eventId}
         <StackCard {filterChanged} id={stackId} />
         <Muted>This issue has no events to display.</Muted>

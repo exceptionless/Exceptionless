@@ -38,6 +38,6 @@
 </script>
 
 <div class="flex flex-col gap-4">
-    <H3>Issue Details</H3>
+    <H3>Stack Details</H3>
     <IssueDetails {filterChanged} {handleError} {stackId} />
 </div>

@@ -41,8 +41,8 @@
     >
         <Sheet.Header class="pt-4.5 pb-0">
             <Sheet.Title class="flex items-center gap-2 text-2xl font-semibold tracking-tight" level={3}>
-                Issue Details
-                <Button aria-label="Open issue details in new window" href={resolvedHref} size="icon-sm" title="Open in new window" variant="ghost">
+                Stack Details
+                <Button aria-label="Open stack details in new window" href={resolvedHref} size="icon-sm" title="Open in new window" variant="ghost">
                     <ExternalLink aria-hidden="true" />
                 </Button>
             </Sheet.Title>
