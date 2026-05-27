@@ -16,6 +16,9 @@ public static class ApiEndpoints
         app.MapUserEndpoints();
         app.MapProjectEndpoints();
         app.MapOrganizationEndpoints();
+        app.MapStackEndpoints();
+        app.MapAdminEndpoints();
+        app.MapEventEndpoints();
 
         return app;
     }

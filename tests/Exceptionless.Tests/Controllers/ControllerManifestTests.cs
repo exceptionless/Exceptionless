@@ -55,7 +55,7 @@ public sealed class ControllerManifestTests(ITestOutputHelper output) : TestWith
 
     private static IEnumerable<ControllerEndpointManifest> GetEndpoints()
     {
-        var controllerTypes = typeof(AuthController).Assembly.GetTypes()
+        var controllerTypes = typeof(ExceptionlessApiController).Assembly.GetTypes()
             .Where(type => !type.IsAbstract)
             .Where(type => typeof(ControllerBase).IsAssignableFrom(type))
             .Where(type => type.Namespace is not null
