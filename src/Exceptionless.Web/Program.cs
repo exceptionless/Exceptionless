@@ -155,6 +155,7 @@ public partial class Program
                 o.AddOperationTransformer<ObsoleteOperationTransformer>();
                 o.AddOperationTransformer<RequestBodyContentOperationTransformer>();
                 o.AddOperationTransformer<XmlDocumentationOperationTransformer>();
+                o.AddOperationTransformer<EndpointDocumentationOperationTransformer>();
                 o.AddSchemaTransformer<DataAnnotationsSchemaTransformer>();
                 o.AddSchemaTransformer<DeltaSchemaTransformer>();
                 o.AddSchemaTransformer<DictionarySubclassSchemaTransformer>();

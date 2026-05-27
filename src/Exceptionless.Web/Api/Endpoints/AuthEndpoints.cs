@@ -5,6 +5,7 @@ using Exceptionless.Web.Models;
 using IMediator = Foundatio.Mediator.IMediator;
 using Microsoft.AspNetCore.Mvc;
 using AuthMessages = Exceptionless.Web.Api.Messages;
+using Exceptionless.Web.Utility.OpenApi;
 
 namespace Exceptionless.Web.Api.Endpoints;
 
@@ -30,21 +31,42 @@ public static class AuthEndpoints
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
-        .WithSummary("Login");
+        .WithSummary("Login")
+        .WithMetadata(new EndpointDocumentation {
+            ResponseDescriptions = new() {
+                ["200"] = "User Authentication Token",
+                ["401"] = "Login failed",
+                ["422"] = "Validation error",
+            }
+        });
 
         group.MapGet("intercom", async (IMediator mediator, HttpContext httpContext)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.GetIntercomToken(httpContext)))
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
-        .WithSummary("Get the current user's Intercom messenger token.");
+        .WithSummary("Get the current user's Intercom messenger token.")
+        .WithMetadata(new EndpointDocumentation {
+            ResponseDescriptions = new() {
+                ["200"] = "Intercom messenger token",
+                ["401"] = "User not logged in",
+                ["422"] = "Intercom is not enabled.",
+            }
+        });
 
         group.MapGet("logout", async (IMediator mediator, HttpContext httpContext)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.LogoutMessage(httpContext)))
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
-        .WithSummary("Logout the current user and remove the current access token");
+        .WithSummary("Logout the current user and remove the current access token")
+        .WithMetadata(new EndpointDocumentation {
+            ResponseDescriptions = new() {
+                ["200"] = "User successfully logged-out",
+                ["401"] = "User not logged in",
+                ["403"] = "Current action is not supported with user access token",
+            }
+        });
 
         group.MapPost("signup", async (IMediator mediator, IServiceProvider serviceProvider, HttpContext httpContext, [FromBody] Signup model) =>
         {
@@ -60,7 +82,15 @@ public static class AuthEndpoints
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
-        .WithSummary("Sign up");
+        .WithSummary("Sign up")
+        .WithMetadata(new EndpointDocumentation {
+            ResponseDescriptions = new() {
+                ["200"] = "User Authentication Token",
+                ["401"] = "Sign-up failed",
+                ["403"] = "Account Creation is currently disabled",
+                ["422"] = "Validation error",
+            }
+        });
 
         group.MapPost("github", async (IMediator mediator, IServiceProvider serviceProvider, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
         {
@@ -75,7 +105,14 @@ public static class AuthEndpoints
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
-        .WithSummary("Sign in with GitHub");
+        .WithSummary("Sign in with GitHub")
+        .WithMetadata(new EndpointDocumentation {
+            ResponseDescriptions = new() {
+                ["200"] = "User Authentication Token",
+                ["403"] = "Account Creation is currently disabled",
+                ["422"] = "Validation error",
+            }
+        });
 
         group.MapPost("google", async (IMediator mediator, IServiceProvider serviceProvider, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
         {
@@ -90,7 +127,14 @@ public static class AuthEndpoints
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
-        .WithSummary("Sign in with Google");
+        .WithSummary("Sign in with Google")
+        .WithMetadata(new EndpointDocumentation {
+            ResponseDescriptions = new() {
+                ["200"] = "User Authentication Token",
+                ["403"] = "Account Creation is currently disabled",
+                ["422"] = "Validation error",
+            }
+        });
 
         group.MapPost("facebook", async (IMediator mediator, IServiceProvider serviceProvider, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
         {
@@ -105,7 +149,14 @@ public static class AuthEndpoints
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
-        .WithSummary("Sign in with Facebook");
+        .WithSummary("Sign in with Facebook")
+        .WithMetadata(new EndpointDocumentation {
+            ResponseDescriptions = new() {
+                ["200"] = "User Authentication Token",
+                ["403"] = "Account Creation is currently disabled",
+                ["422"] = "Validation error",
+            }
+        });
 
         group.MapPost("live", async (IMediator mediator, IServiceProvider serviceProvider, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
         {
@@ -120,14 +171,30 @@ public static class AuthEndpoints
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
-        .WithSummary("Sign in with Microsoft");
+        .WithSummary("Sign in with Microsoft")
+        .WithMetadata(new EndpointDocumentation {
+            ResponseDescriptions = new() {
+                ["200"] = "User Authentication Token",
+                ["403"] = "Account Creation is currently disabled",
+                ["422"] = "Validation error",
+            }
+        });
 
         group.MapPost("unlink/{providerName:minlength(1)}", async (string providerName, IMediator mediator, HttpContext httpContext, [FromBody] ValueFromBody<string> providerUserId)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.RemoveExternalLogin(providerName, providerUserId, httpContext)))
         .Accepts<ValueFromBody<string>>("application/json", "application/*+json")
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
-        .WithSummary("Removes an external login provider from the account");
+        .WithSummary("Removes an external login provider from the account")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["providerName"] = "The provider name.",
+            },
+            ResponseDescriptions = new() {
+                ["200"] = "User Authentication Token",
+                ["400"] = "Invalid provider name.",
+            }
+        });
 
         group.MapPost("change-password", async (IMediator mediator, IServiceProvider serviceProvider, HttpContext httpContext, [FromBody] ChangePasswordModel model) =>
         {
@@ -140,7 +207,13 @@ public static class AuthEndpoints
         .Accepts<ChangePasswordModel>("application/json", "application/*+json")
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
-        .WithSummary("Change password");
+        .WithSummary("Change password")
+        .WithMetadata(new EndpointDocumentation {
+            ResponseDescriptions = new() {
+                ["200"] = "User Authentication Token",
+                ["422"] = "Validation error",
+            }
+        });
 
         group.MapGet("check-email-address/{email:minlength(1)}", async (string email, IMediator mediator, HttpContext httpContext)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.CheckEmailAddress(email, httpContext)))
@@ -152,7 +225,16 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
-        .WithSummary("Forgot password");
+        .WithSummary("Forgot password")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["email"] = "The email address.",
+            },
+            ResponseDescriptions = new() {
+                ["200"] = "Forgot password email was sent.",
+                ["400"] = "Invalid email address.",
+            }
+        });
 
         group.MapPost("reset-password", async (IMediator mediator, IServiceProvider serviceProvider, HttpContext httpContext, [FromBody] ResetPasswordModel model) =>
         {
@@ -166,14 +248,29 @@ public static class AuthEndpoints
         .Accepts<ResetPasswordModel>("application/json", "application/*+json")
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
-        .WithSummary("Reset password");
+        .WithSummary("Reset password")
+        .WithMetadata(new EndpointDocumentation {
+            ResponseDescriptions = new() {
+                ["200"] = "Password reset email was sent.",
+                ["422"] = "Invalid reset password model.",
+            }
+        });
 
         group.MapPost("cancel-reset-password/{token:minlength(1)}", async (string token, IMediator mediator, HttpContext httpContext)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.CancelResetPassword(token, httpContext)))
         .AllowAnonymous()
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
-        .WithSummary("Cancel reset password");
+        .WithSummary("Cancel reset password")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["token"] = "The password reset token.",
+            },
+            ResponseDescriptions = new() {
+                ["200"] = "Password reset email was cancelled.",
+                ["400"] = "Invalid password reset token.",
+            }
+        });
 
         return endpoints;
     }

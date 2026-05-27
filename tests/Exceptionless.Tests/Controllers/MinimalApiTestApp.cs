@@ -43,6 +43,7 @@ internal static class MinimalApiTestApp
                 options.AddOperationTransformer<ObsoleteOperationTransformer>();
                 options.AddOperationTransformer<RequestBodyContentOperationTransformer>();
                 options.AddOperationTransformer<XmlDocumentationOperationTransformer>();
+                options.AddOperationTransformer<EndpointDocumentationOperationTransformer>();
                 options.AddSchemaTransformer<DataAnnotationsSchemaTransformer>();
                 options.AddSchemaTransformer<DeltaSchemaTransformer>();
                 options.AddSchemaTransformer<DictionarySubclassSchemaTransformer>();

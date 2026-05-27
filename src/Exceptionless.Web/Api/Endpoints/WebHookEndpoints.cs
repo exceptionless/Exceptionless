@@ -7,6 +7,7 @@ using Exceptionless.Web.Models;
 using IMediator = Foundatio.Mediator.IMediator;
 using Microsoft.AspNetCore.Mvc;
 using WebHookMessages = Exceptionless.Web.Api.Messages;
+using Exceptionless.Web.Utility.OpenApi;
 
 namespace Exceptionless.Web.Api.Endpoints;
 
@@ -20,12 +21,32 @@ public static class WebHookEndpoints
 
         group.MapGet("projects/{projectId:objectid}/webhooks", async (string projectId, IMediator mediator, int page = 1, int limit = 10)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new WebHookMessages.GetWebHooksByProject(projectId, page, limit)))
-        .RequireAuthorization(AuthorizationRoles.UserPolicy);
+        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .WithSummary("Get by project")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["projectId"] = "The identifier of the project.",
+                ["page"] = "The page parameter is used for pagination. This value must be greater than 0.",
+                ["limit"] = "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
+            },
+            ResponseDescriptions = new() {
+                ["404"] = "The project could not be found.",
+            }
+        });
 
         group.MapGet("webhooks/{id:objectid}", async (string id, IMediator mediator)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new WebHookMessages.GetWebHookById(id)))
         .WithName("GetWebHookById")
-        .RequireAuthorization(AuthorizationRoles.UserPolicy);
+        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .WithSummary("Get by id")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["id"] = "The identifier of the web hook.",
+            },
+            ResponseDescriptions = new() {
+                ["404"] = "The web hook could not be found.",
+            }
+        });
 
         group.MapPost("webhooks", async (IMediator mediator, IServiceProvider serviceProvider, [FromBody] NewWebHook webHook) =>
         {
@@ -35,11 +56,31 @@ public static class WebHookEndpoints
 
             return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new WebHookMessages.CreateWebHook(webHook));
         })
-        .RequireAuthorization(AuthorizationRoles.UserPolicy);
+        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .WithSummary("Create")
+        .WithMetadata(new EndpointDocumentation {
+            ResponseDescriptions = new() {
+                ["201"] = "Created",
+                ["400"] = "An error occurred while creating the web hook.",
+                ["409"] = "The web hook already exists.",
+            }
+        });
 
         group.MapDelete("webhooks/{ids:objectids}", async (string ids, IMediator mediator)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new WebHookMessages.DeleteWebHooks(ids.FromDelimitedString())))
-        .RequireAuthorization(AuthorizationRoles.UserPolicy);
+        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .WithSummary("Remove")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["ids"] = "A comma-delimited list of web hook identifiers.",
+            },
+            ResponseDescriptions = new() {
+                ["202"] = "Accepted",
+                ["400"] = "One or more validation errors occurred.",
+                ["404"] = "One or more web hooks were not found.",
+                ["500"] = "An error occurred while deleting one or more web hooks.",
+            }
+        });
 
         group.MapPost("webhooks/subscribe", async (IMediator mediator, [FromBody] JsonDocument data)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new WebHookMessages.SubscribeWebHook(data, 1)))

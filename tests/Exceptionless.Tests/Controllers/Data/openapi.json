@@ -255,7 +255,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "User Authentication Token",
             "content": {
               "application/json": {
                 "schema": {
@@ -265,7 +265,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized",
+            "description": "Login failed",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -275,7 +275,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Validation error",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -295,7 +295,7 @@
         "summary": "Get the current user\u0027s Intercom messenger token.",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Intercom messenger token",
             "content": {
               "application/json": {
                 "schema": {
@@ -305,7 +305,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized",
+            "description": "User not logged in",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -315,7 +315,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Intercom is not enabled.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -335,10 +335,10 @@
         "summary": "Logout the current user and remove the current access token",
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "User successfully logged-out"
           },
           "401": {
-            "description": "Unauthorized",
+            "description": "User not logged in",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -348,7 +348,7 @@
             }
           },
           "403": {
-            "description": "Forbidden",
+            "description": "Current action is not supported with user access token",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -383,7 +383,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "User Authentication Token",
             "content": {
               "application/json": {
                 "schema": {
@@ -393,7 +393,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized",
+            "description": "Sign-up failed",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -403,7 +403,7 @@
             }
           },
           "403": {
-            "description": "Forbidden",
+            "description": "Account Creation is currently disabled",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -413,7 +413,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Validation error",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -448,7 +448,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "User Authentication Token",
             "content": {
               "application/json": {
                 "schema": {
@@ -458,7 +458,7 @@
             }
           },
           "403": {
-            "description": "Forbidden",
+            "description": "Account Creation is currently disabled",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -468,7 +468,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Validation error",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -503,7 +503,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "User Authentication Token",
             "content": {
               "application/json": {
                 "schema": {
@@ -513,7 +513,7 @@
             }
           },
           "403": {
-            "description": "Forbidden",
+            "description": "Account Creation is currently disabled",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -523,7 +523,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Validation error",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -558,7 +558,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "User Authentication Token",
             "content": {
               "application/json": {
                 "schema": {
@@ -568,7 +568,7 @@
             }
           },
           "403": {
-            "description": "Forbidden",
+            "description": "Account Creation is currently disabled",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -578,7 +578,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Validation error",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -613,7 +613,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "User Authentication Token",
             "content": {
               "application/json": {
                 "schema": {
@@ -623,7 +623,7 @@
             }
           },
           "403": {
-            "description": "Forbidden",
+            "description": "Account Creation is currently disabled",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -633,7 +633,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Validation error",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -655,6 +655,7 @@
           {
             "name": "providerName",
             "in": "path",
+            "description": "The provider name.",
             "required": true,
             "schema": {
               "minLength": 1,
@@ -679,7 +680,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "User Authentication Token",
             "content": {
               "application/json": {
                 "schema": {
@@ -689,7 +690,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Invalid provider name.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -724,7 +725,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "User Authentication Token",
             "content": {
               "application/json": {
                 "schema": {
@@ -734,7 +735,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Validation error",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -756,6 +757,7 @@
           {
             "name": "email",
             "in": "path",
+            "description": "The email address.",
             "required": true,
             "schema": {
               "minLength": 1,
@@ -765,10 +767,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Forgot password email was sent."
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Invalid email address.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -803,10 +805,10 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Password reset email was sent."
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Invalid reset password model.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -828,6 +830,7 @@
           {
             "name": "token",
             "in": "path",
+            "description": "The password reset token.",
             "required": true,
             "schema": {
               "minLength": 1,
@@ -837,10 +840,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Password reset email was cancelled."
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Invalid password reset token.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -857,10 +860,12 @@
         "tags": [
           "Exceptionless.Tests"
         ],
+        "summary": "Get by organization",
         "parameters": [
           {
             "name": "organizationId",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -870,6 +875,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -879,6 +885,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -896,10 +903,12 @@
         "tags": [
           "Exceptionless.Tests"
         ],
+        "summary": "Create for organization",
         "parameters": [
           {
             "name": "organizationId",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -935,10 +944,12 @@
         "tags": [
           "Exceptionless.Tests"
         ],
+        "summary": "Get by project",
         "parameters": [
           {
             "name": "projectId",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -948,6 +959,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -957,6 +969,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -974,10 +987,12 @@
         "tags": [
           "Exceptionless.Tests"
         ],
+        "summary": "Create for project",
         "parameters": [
           {
             "name": "projectId",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -1013,10 +1028,12 @@
         "tags": [
           "Exceptionless.Tests"
         ],
+        "summary": "Get a projects default token",
         "parameters": [
           {
             "name": "projectId",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -1036,13 +1053,16 @@
         "tags": [
           "Exceptionless.Tests"
         ],
+        "summary": "Get by id",
         "operationId": "GetTokenById",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the token.",
             "required": true,
             "schema": {
+              "pattern": "^[a-zA-Z\\d-]{24,40}$",
               "type": "string"
             }
           }
@@ -1057,12 +1077,15 @@
         "tags": [
           "Exceptionless.Tests"
         ],
+        "summary": "Update",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the token.",
             "required": true,
             "schema": {
+              "pattern": "^[a-zA-Z\\d-]{24,40}(,[a-zA-Z\\d-]{24,40})*$",
               "type": "string"
             }
           }
@@ -1087,12 +1110,15 @@
         "tags": [
           "Exceptionless.Tests"
         ],
+        "summary": "Update",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the token.",
             "required": true,
             "schema": {
+              "pattern": "^[a-zA-Z\\d-]{24,40}(,[a-zA-Z\\d-]{24,40})*$",
               "type": "string"
             }
           }
@@ -1119,6 +1145,7 @@
         "tags": [
           "Exceptionless.Tests"
         ],
+        "summary": "Create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1141,12 +1168,15 @@
         "tags": [
           "Exceptionless.Tests"
         ],
+        "summary": "Remove",
         "parameters": [
           {
             "name": "ids",
             "in": "path",
+            "description": "A comma-delimited list of token identifiers.",
             "required": true,
             "schema": {
+              "pattern": "^[a-zA-Z\\d-]{24,40}(,[a-zA-Z\\d-]{24,40})*$",
               "type": "string"
             }
           }
@@ -1163,10 +1193,12 @@
         "tags": [
           "Exceptionless.Tests"
         ],
+        "summary": "Get by project",
         "parameters": [
           {
             "name": "projectId",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -1176,6 +1208,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -1185,6 +1218,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -1204,11 +1238,13 @@
         "tags": [
           "Exceptionless.Tests"
         ],
+        "summary": "Get by id",
         "operationId": "GetWebHookById",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the web hook.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -1228,6 +1264,7 @@
         "tags": [
           "Exceptionless.Tests"
         ],
+        "summary": "Create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1250,10 +1287,12 @@
         "tags": [
           "Exceptionless.Tests"
         ],
+        "summary": "Remove",
         "parameters": [
           {
             "name": "ids",
             "in": "path",
+            "description": "A comma-delimited list of web hook identifiers.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}(,[a-zA-Z\\d]{24,36})*$",
@@ -1273,10 +1312,12 @@
         "tags": [
           "Saved Views"
         ],
+        "summary": "Get by organization",
         "parameters": [
           {
             "name": "organizationId",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -1286,6 +1327,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -1295,6 +1337,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -1317,7 +1360,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The organization could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1332,10 +1375,12 @@
         "tags": [
           "Saved Views"
         ],
+        "summary": "Create",
         "parameters": [
           {
             "name": "organizationId",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -1365,7 +1410,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "An error occurred while creating the saved view.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1375,7 +1420,7 @@
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "The saved view already exists.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1402,10 +1447,12 @@
         "tags": [
           "Saved Views"
         ],
+        "summary": "Get by organization and view",
         "parameters": [
           {
             "name": "organizationId",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -1415,6 +1462,7 @@
           {
             "name": "viewType",
             "in": "path",
+            "description": "The dashboard view type (events, issues, stream).",
             "required": true,
             "schema": {
               "type": "string"
@@ -1423,6 +1471,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -1432,6 +1481,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -1454,7 +1504,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The organization could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1471,11 +1521,13 @@
         "tags": [
           "Saved Views"
         ],
+        "summary": "Get by id",
         "operationId": "GetSavedViewById",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the saved view.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -1495,7 +1547,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The saved view could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1510,10 +1562,12 @@
         "tags": [
           "Saved Views"
         ],
+        "summary": "Update",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the saved view.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -1543,7 +1597,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "An error occurred while updating the saved view.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1553,7 +1607,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The saved view could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1588,10 +1642,12 @@
         "tags": [
           "Saved Views"
         ],
+        "summary": "Update",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the saved view.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -1621,7 +1677,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "An error occurred while updating the saved view.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1631,7 +1687,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The saved view could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1668,10 +1724,12 @@
         "tags": [
           "Saved Views"
         ],
+        "summary": "Create or update predefined saved views",
         "parameters": [
           {
             "name": "organizationId",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -1681,7 +1739,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "The predefined saved views were created or updated.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1694,7 +1752,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The organization could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1711,9 +1769,10 @@
         "tags": [
           "Saved Views"
         ],
+        "summary": "Get global predefined saved views as seed JSON",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "The current predefined saved views.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1733,10 +1792,12 @@
         "tags": [
           "Saved Views"
         ],
+        "summary": "Save a saved view as a global predefined saved view",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the saved view to promote.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -1746,7 +1807,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "The predefined saved view was created or updated.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1756,7 +1817,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The saved view could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1771,10 +1832,12 @@
         "tags": [
           "Saved Views"
         ],
+        "summary": "Delete a global predefined saved view",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the saved view whose predefined saved view should be deleted.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -1784,10 +1847,10 @@
         ],
         "responses": {
           "204": {
-            "description": "No Content"
+            "description": "The predefined saved view was deleted."
           },
           "404": {
-            "description": "Not Found",
+            "description": "The saved view could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1804,10 +1867,12 @@
         "tags": [
           "Saved Views"
         ],
+        "summary": "Remove",
         "parameters": [
           {
             "name": "ids",
             "in": "path",
+            "description": "A comma-delimited list of saved view identifiers.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}(,[a-zA-Z\\d]{24,36})*$",
@@ -1827,7 +1892,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "One or more validation errors occurred.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1837,7 +1902,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "One or more saved views were not found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1854,6 +1919,7 @@
         "tags": [
           "Users"
         ],
+        "summary": "Get current user",
         "responses": {
           "200": {
             "description": "OK",
@@ -1866,7 +1932,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The current user could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1881,6 +1947,7 @@
         "tags": [
           "Users"
         ],
+        "summary": "Delete current user",
         "responses": {
           "202": {
             "description": "Accepted",
@@ -1893,7 +1960,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The current user could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1910,11 +1977,13 @@
         "tags": [
           "Users"
         ],
+        "summary": "Get by id",
         "operationId": "GetUserById",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the user.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -1934,7 +2003,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The user could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1949,10 +2018,12 @@
         "tags": [
           "Users"
         ],
+        "summary": "Update",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the user.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -1982,7 +2053,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "An error occurred while updating the user.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1992,7 +2063,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The user could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2007,10 +2078,12 @@
         "tags": [
           "Users"
         ],
+        "summary": "Update",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the user.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -2040,7 +2113,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "An error occurred while updating the user.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2050,7 +2123,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The user could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2067,10 +2140,12 @@
         "tags": [
           "Users"
         ],
+        "summary": "Get by organization",
         "parameters": [
           {
             "name": "organizationId",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -2080,6 +2155,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -2089,6 +2165,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -2111,7 +2188,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The organization could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2128,10 +2205,12 @@
         "tags": [
           "Users"
         ],
+        "summary": "Remove",
         "parameters": [
           {
             "name": "ids",
             "in": "path",
+            "description": "A comma-delimited list of user identifiers.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}(,[a-zA-Z\\d]{24,36})*$",
@@ -2151,7 +2230,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "One or more validation errors occurred.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2161,7 +2240,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "One or more users were not found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2178,10 +2257,12 @@
         "tags": [
           "Users"
         ],
+        "summary": "Update email address",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the user.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -2191,6 +2272,7 @@
           {
             "name": "email",
             "in": "path",
+            "description": "The new email address.",
             "required": true,
             "schema": {
               "minLength": 1,
@@ -2210,7 +2292,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "An error occurred while updating the users email address.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2230,7 +2312,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Validation error",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2240,7 +2322,7 @@
             }
           },
           "429": {
-            "description": "Too Many Requests",
+            "description": "Update email address rate limit reached.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2257,10 +2339,12 @@
         "tags": [
           "Users"
         ],
+        "summary": "Verify email address",
         "parameters": [
           {
             "name": "token",
             "in": "path",
+            "description": "The token identifier.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d-]{24,40}$",
@@ -2273,7 +2357,7 @@
             "description": "OK"
           },
           "404": {
-            "description": "Not Found",
+            "description": "The user could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2283,7 +2367,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Verify Email Address Token has expired.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2300,10 +2384,12 @@
         "tags": [
           "Users"
         ],
+        "summary": "Resend verification email",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the user.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -2313,10 +2399,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "The user verification email has been sent."
           },
           "404": {
-            "description": "Not Found",
+            "description": "The user could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2333,10 +2419,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Get all",
         "parameters": [
           {
             "name": "filter",
             "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
             "schema": {
               "type": "string"
             }
@@ -2344,6 +2432,7 @@
           {
             "name": "sort",
             "in": "query",
+            "description": "Controls the sort order that the data is returned in. In this example -created returns the results descending by the created date.",
             "schema": {
               "type": "string"
             }
@@ -2351,6 +2440,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -2360,6 +2450,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -2369,6 +2460,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the lightweight project object will be returned. If the mode is set to stats than the fully populated object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -2394,6 +2486,7 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2416,7 +2509,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "An error occurred while creating the project.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2426,7 +2519,7 @@
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "The project already exists.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2453,10 +2546,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Get all",
         "parameters": [
           {
             "name": "organizationId",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -2466,6 +2561,7 @@
           {
             "name": "filter",
             "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
             "schema": {
               "type": "string"
             }
@@ -2473,6 +2569,7 @@
           {
             "name": "sort",
             "in": "query",
+            "description": "Controls the sort order that the data is returned in. In this example -created returns the results descending by the created date.",
             "schema": {
               "type": "string"
             }
@@ -2480,6 +2577,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -2489,6 +2587,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -2498,6 +2597,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the lightweight project object will be returned. If the mode is set to stats than the fully populated object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -2518,7 +2618,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The organization could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2535,11 +2635,13 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Get by id",
         "operationId": "GetProjectById",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -2549,6 +2651,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the lightweight project object will be returned. If the mode is set to stats than the fully populated object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -2566,7 +2669,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2581,10 +2684,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Update",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -2614,7 +2719,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "An error occurred while updating the project.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2624,7 +2729,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2649,10 +2754,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Update",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -2682,7 +2789,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "An error occurred while updating the project.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2692,7 +2799,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2719,10 +2826,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Remove",
         "parameters": [
           {
             "name": "ids",
             "in": "path",
+            "description": "A comma-delimited list of project identifiers.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}(,[a-zA-Z\\d]{24,36})*$",
@@ -2742,7 +2851,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "One or more validation errors occurred.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2752,7 +2861,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "One or more projects were not found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2769,10 +2878,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Get configuration settings",
         "parameters": [
           {
             "name": "v",
             "in": "query",
+            "description": "The client configuration version.",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -2791,10 +2902,10 @@
             }
           },
           "304": {
-            "description": "Not Modified"
+            "description": "The client configuration version is the current version."
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2811,10 +2922,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Get configuration settings",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -2824,6 +2937,7 @@
           {
             "name": "v",
             "in": "query",
+            "description": "The client configuration version.",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -2842,10 +2956,10 @@
             }
           },
           "304": {
-            "description": "Not Modified"
+            "description": "The client configuration version is the current version."
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2860,10 +2974,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Add configuration value",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -2873,6 +2989,7 @@
           {
             "name": "key",
             "in": "query",
+            "description": "The key name of the configuration object.",
             "required": true,
             "schema": {
               "type": "string"
@@ -2894,7 +3011,7 @@
             "description": "OK"
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Invalid configuration value.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2904,7 +3021,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2919,10 +3036,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Remove configuration value",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -2932,6 +3051,7 @@
           {
             "name": "key",
             "in": "query",
+            "description": "The key name of the configuration object.",
             "required": true,
             "schema": {
               "type": "string"
@@ -2943,7 +3063,7 @@
             "description": "OK"
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Invalid key value.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2953,7 +3073,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2970,10 +3090,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Generate sample project data",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -2993,7 +3115,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3010,10 +3132,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Reset project data",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3033,7 +3157,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3048,10 +3172,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Reset project data",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3071,7 +3197,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3088,10 +3214,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Get user notification settings",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3101,6 +3229,7 @@
           {
             "name": "userId",
             "in": "path",
+            "description": "The identifier of the user.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3120,7 +3249,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3135,10 +3264,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Set user notification settings",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3148,6 +3279,7 @@
           {
             "name": "userId",
             "in": "path",
+            "description": "The identifier of the user.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3176,7 +3308,7 @@
             "description": "OK"
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3191,10 +3323,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Set user notification settings",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3204,6 +3338,7 @@
           {
             "name": "userId",
             "in": "path",
+            "description": "The identifier of the user.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3232,7 +3367,7 @@
             "description": "OK"
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3247,10 +3382,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Remove user notification settings",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3260,6 +3397,7 @@
           {
             "name": "userId",
             "in": "path",
+            "description": "The identifier of the user.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3272,7 +3410,7 @@
             "description": "OK"
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3289,10 +3427,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Set an integrations notification settings",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3302,6 +3442,7 @@
           {
             "name": "integration",
             "in": "path",
+            "description": "The identifier of the integration.",
             "required": true,
             "schema": {
               "minLength": 1,
@@ -3330,7 +3471,7 @@
             "description": "OK"
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project or integration could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3340,7 +3481,7 @@
             }
           },
           "426": {
-            "description": "Upgrade Required",
+            "description": "Please upgrade your plan to enable integrations.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3355,10 +3496,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Set an integrations notification settings",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3368,6 +3511,7 @@
           {
             "name": "integration",
             "in": "path",
+            "description": "The identifier of the integration.",
             "required": true,
             "schema": {
               "minLength": 1,
@@ -3396,7 +3540,7 @@
             "description": "OK"
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project or integration could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3406,7 +3550,7 @@
             }
           },
           "426": {
-            "description": "Upgrade Required",
+            "description": "Please upgrade your plan to enable integrations.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3423,10 +3567,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Promote tab",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3436,6 +3582,7 @@
           {
             "name": "name",
             "in": "query",
+            "description": "The tab name.",
             "required": true,
             "schema": {
               "type": "string"
@@ -3447,7 +3594,7 @@
             "description": "OK"
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Invalid tab name.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3457,7 +3604,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3472,10 +3619,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Promote tab",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3485,6 +3634,7 @@
           {
             "name": "name",
             "in": "query",
+            "description": "The tab name.",
             "required": true,
             "schema": {
               "type": "string"
@@ -3496,7 +3646,7 @@
             "description": "OK"
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Invalid tab name.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3506,7 +3656,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3521,10 +3671,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Demote tab",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3534,6 +3686,7 @@
           {
             "name": "name",
             "in": "query",
+            "description": "The tab name.",
             "required": true,
             "schema": {
               "type": "string"
@@ -3545,7 +3698,7 @@
             "description": "OK"
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Invalid tab name.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3555,7 +3708,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3572,10 +3725,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Check for unique name",
         "parameters": [
           {
             "name": "name",
             "in": "query",
+            "description": "The project name to check.",
             "required": true,
             "schema": {
               "type": "string"
@@ -3591,10 +3746,10 @@
         ],
         "responses": {
           "201": {
-            "description": "Created"
+            "description": "The project name is available."
           },
           "204": {
-            "description": "No Content"
+            "description": "The project name is not available."
           }
         }
       }
@@ -3604,10 +3759,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Check for unique name",
         "parameters": [
           {
             "name": "organizationId",
             "in": "path",
+            "description": "If set the check name will be scoped to a specific organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3617,6 +3774,7 @@
           {
             "name": "name",
             "in": "query",
+            "description": "The project name to check.",
             "required": true,
             "schema": {
               "type": "string"
@@ -3625,10 +3783,10 @@
         ],
         "responses": {
           "201": {
-            "description": "Created"
+            "description": "The project name is available."
           },
           "204": {
-            "description": "No Content"
+            "description": "The project name is not available."
           }
         }
       }
@@ -3638,10 +3796,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Add custom data",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3651,6 +3811,7 @@
           {
             "name": "key",
             "in": "query",
+            "description": "The key name of the data object.",
             "required": true,
             "schema": {
               "type": "string"
@@ -3672,7 +3833,7 @@
             "description": "OK"
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Invalid key or value.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3682,7 +3843,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3697,10 +3858,12 @@
         "tags": [
           "Projects"
         ],
+        "summary": "Remove custom data",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3710,6 +3873,7 @@
           {
             "name": "key",
             "in": "query",
+            "description": "The key name of the data object.",
             "required": true,
             "schema": {
               "type": "string"
@@ -3721,7 +3885,7 @@
             "description": "OK"
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Invalid key or value.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3731,7 +3895,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The project could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3748,10 +3912,12 @@
         "tags": [
           "Organizations"
         ],
+        "summary": "Get all",
         "parameters": [
           {
             "name": "filter",
             "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
             "schema": {
               "type": "string"
             }
@@ -3759,6 +3925,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then a lightweight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -3784,6 +3951,7 @@
         "tags": [
           "Organizations"
         ],
+        "summary": "Create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3806,7 +3974,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "An error occurred while creating the organization.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3816,7 +3984,7 @@
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "The organization already exists.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3843,11 +4011,13 @@
         "tags": [
           "Organizations"
         ],
+        "summary": "Get by id",
         "operationId": "GetOrganizationById",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3857,6 +4027,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the a lightweight organization object will be returned. If the mode is set to stats than the fully populated object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -3874,7 +4045,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The organization could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3889,10 +4060,12 @@
         "tags": [
           "Organizations"
         ],
+        "summary": "Update",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3922,7 +4095,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "An error occurred while updating the organization.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3932,7 +4105,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The organization could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3957,10 +4130,12 @@
         "tags": [
           "Organizations"
         ],
+        "summary": "Update",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -3990,7 +4165,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "An error occurred while updating the organization.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4000,7 +4175,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The organization could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4027,10 +4202,12 @@
         "tags": [
           "Organizations"
         ],
+        "summary": "Remove",
         "parameters": [
           {
             "name": "ids",
             "in": "path",
+            "description": "A comma-delimited list of organization identifiers.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}(,[a-zA-Z\\d]{24,36})*$",
@@ -4050,7 +4227,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "One or more validation errors occurred.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4060,7 +4237,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "One or more organizations were not found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4077,10 +4254,12 @@
         "tags": [
           "Organizations"
         ],
+        "summary": "Get invoice",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the invoice.",
             "required": true,
             "schema": {
               "minLength": 10,
@@ -4100,7 +4279,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The invoice was not found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4117,10 +4296,12 @@
         "tags": [
           "Organizations"
         ],
+        "summary": "Get invoices",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -4130,6 +4311,7 @@
           {
             "name": "before",
             "in": "query",
+            "description": "A cursor for use in pagination. before is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with obj_bar, your subsequent call can include before=obj_bar in order to fetch the previous page of the list.",
             "schema": {
               "type": "string"
             }
@@ -4137,6 +4319,7 @@
           {
             "name": "after",
             "in": "query",
+            "description": "A cursor for use in pagination. after is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with obj_foo, your subsequent call can include after=obj_foo in order to fetch the next page of the list.",
             "schema": {
               "type": "string"
             }
@@ -4144,6 +4327,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -4166,7 +4350,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The organization was not found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4183,10 +4367,12 @@
         "tags": [
           "Organizations"
         ],
+        "summary": "Get plans",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -4209,7 +4395,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The organization was not found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4226,10 +4412,12 @@
         "tags": [
           "Organizations"
         ],
+        "summary": "Change plan",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -4239,6 +4427,7 @@
           {
             "name": "planId",
             "in": "query",
+            "description": "Legacy query parameter: the plan identifier.",
             "schema": {
               "type": "string"
             }
@@ -4246,6 +4435,7 @@
           {
             "name": "stripeToken",
             "in": "query",
+            "description": "Legacy query parameter: the Stripe token.",
             "schema": {
               "type": "string"
             }
@@ -4253,6 +4443,7 @@
           {
             "name": "last4",
             "in": "query",
+            "description": "Legacy query parameter: last four digits of the card.",
             "schema": {
               "type": "string"
             }
@@ -4260,6 +4451,7 @@
           {
             "name": "couponId",
             "in": "query",
+            "description": "Legacy query parameter: the coupon identifier.",
             "schema": {
               "type": "string"
             }
@@ -4293,7 +4485,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The organization was not found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4320,10 +4512,12 @@
         "tags": [
           "Organizations"
         ],
+        "summary": "Add user",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -4333,6 +4527,7 @@
           {
             "name": "email",
             "in": "path",
+            "description": "The email address of the user you wish to add to your organization.",
             "required": true,
             "schema": {
               "minLength": 1,
@@ -4352,7 +4547,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The organization was not found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4362,7 +4557,7 @@
             }
           },
           "426": {
-            "description": "Upgrade Required",
+            "description": "Please upgrade your plan to add an additional user.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4377,10 +4572,12 @@
         "tags": [
           "Organizations"
         ],
+        "summary": "Remove user",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -4390,6 +4587,7 @@
           {
             "name": "email",
             "in": "path",
+            "description": "The email address of the user you wish to remove from your organization.",
             "required": true,
             "schema": {
               "minLength": 1,
@@ -4402,7 +4600,7 @@
             "description": "OK"
           },
           "400": {
-            "description": "Bad Request",
+            "description": "The error occurred while removing the user from your organization",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4412,7 +4610,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The organization was not found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4429,10 +4627,12 @@
         "tags": [
           "Organizations"
         ],
+        "summary": "Add custom data",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -4442,6 +4642,7 @@
           {
             "name": "key",
             "in": "path",
+            "description": "The key name of the data object.",
             "required": true,
             "schema": {
               "minLength": 1,
@@ -4474,7 +4675,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "The organization was not found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4489,10 +4690,12 @@
         "tags": [
           "Organizations"
         ],
+        "summary": "Remove custom data",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -4502,6 +4705,7 @@
           {
             "name": "key",
             "in": "path",
+            "description": "The key name of the data object.",
             "required": true,
             "schema": {
               "minLength": 1,
@@ -4514,7 +4718,7 @@
             "description": "OK"
           },
           "404": {
-            "description": "Not Found",
+            "description": "The organization was not found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4531,10 +4735,12 @@
         "tags": [
           "Organizations"
         ],
+        "summary": "Check for unique name",
         "parameters": [
           {
             "name": "name",
             "in": "query",
+            "description": "The organization name to check.",
             "required": true,
             "schema": {
               "type": "string"
@@ -4543,10 +4749,10 @@
         ],
         "responses": {
           "201": {
-            "description": "Created"
+            "description": "The organization name is available."
           },
           "204": {
-            "description": "No Content"
+            "description": "The organization name is not available."
           }
         }
       }
@@ -4556,11 +4762,13 @@
         "tags": [
           "Stacks"
         ],
+        "summary": "Get by id",
         "operationId": "GetStackById",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the stack.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -4570,6 +4778,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the \u0060time\u0060 filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -4587,10 +4796,12 @@
         "tags": [
           "Stacks"
         ],
+        "summary": "Mark fixed",
         "parameters": [
           {
             "name": "ids",
             "in": "path",
+            "description": "A comma-delimited list of stack identifiers.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}(,[a-zA-Z\\d]{24,36})*$",
@@ -4600,6 +4811,7 @@
           {
             "name": "version",
             "in": "query",
+            "description": "A version number that the stack was fixed in.",
             "schema": {
               "type": "string"
             }
@@ -4607,7 +4819,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "The stacks were marked as fixed."
           }
         }
       }
@@ -4617,10 +4829,12 @@
         "tags": [
           "Stacks"
         ],
+        "summary": "Mark the selected stacks as snoozed",
         "parameters": [
           {
             "name": "ids",
             "in": "path",
+            "description": "A comma-delimited list of stack identifiers.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}(,[a-zA-Z\\d]{24,36})*$",
@@ -4630,6 +4844,7 @@
           {
             "name": "snoozeUntilUtc",
             "in": "query",
+            "description": "A time that the stack should be snoozed until.",
             "required": true,
             "schema": {
               "type": "string",
@@ -4639,7 +4854,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "The stacks were snoozed."
           }
         }
       }
@@ -4649,10 +4864,12 @@
         "tags": [
           "Stacks"
         ],
+        "summary": "Add reference link",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the stack.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -4682,10 +4899,12 @@
         "tags": [
           "Stacks"
         ],
+        "summary": "Remove reference link",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the stack.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -4715,10 +4934,12 @@
         "tags": [
           "Stacks"
         ],
+        "summary": "Mark future occurrences as critical",
         "parameters": [
           {
             "name": "ids",
             "in": "path",
+            "description": "A comma-delimited list of stack identifiers.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}(,[a-zA-Z\\d]{24,36})*$",
@@ -4736,10 +4957,12 @@
         "tags": [
           "Stacks"
         ],
+        "summary": "Mark future occurrences as not critical",
         "parameters": [
           {
             "name": "ids",
             "in": "path",
+            "description": "A comma-delimited list of stack identifiers.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}(,[a-zA-Z\\d]{24,36})*$",
@@ -4759,10 +4982,12 @@
         "tags": [
           "Stacks"
         ],
+        "summary": "Change stack status",
         "parameters": [
           {
             "name": "ids",
             "in": "path",
+            "description": "A comma-delimited list of stack identifiers.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}(,[a-zA-Z\\d]{24,36})*$",
@@ -4772,6 +4997,7 @@
           {
             "name": "status",
             "in": "query",
+            "description": "The status that the stack should be changed to.",
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/StackStatus"
@@ -4790,10 +5016,12 @@
         "tags": [
           "Stacks"
         ],
+        "summary": "Promote to external service",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the stack.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -4813,10 +5041,12 @@
         "tags": [
           "Stacks"
         ],
+        "summary": "Remove",
         "parameters": [
           {
             "name": "ids",
             "in": "path",
+            "description": "A comma-delimited list of stack identifiers.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}(,[a-zA-Z\\d]{24,36})*$",
@@ -4836,10 +5066,12 @@
         "tags": [
           "Stacks"
         ],
+        "summary": "Get all",
         "parameters": [
           {
             "name": "filter",
             "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
             "schema": {
               "type": "string"
             }
@@ -4847,6 +5079,7 @@
           {
             "name": "sort",
             "in": "query",
+            "description": "Controls the sort order that the data is returned in. In this example -date returns the results descending by date.",
             "schema": {
               "type": "string"
             }
@@ -4854,6 +5087,7 @@
           {
             "name": "time",
             "in": "query",
+            "description": "The time filter that limits the data being returned to a specific date range.",
             "schema": {
               "type": "string"
             }
@@ -4861,6 +5095,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -4868,6 +5103,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the whole stack object will be returned. If the mode is set to summary than a lightweight object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -4875,6 +5111,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -4884,6 +5121,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -4903,10 +5141,12 @@
         "tags": [
           "Stacks"
         ],
+        "summary": "Get by organization",
         "parameters": [
           {
             "name": "organizationId",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -4916,6 +5156,7 @@
           {
             "name": "filter",
             "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
             "schema": {
               "type": "string"
             }
@@ -4923,6 +5164,7 @@
           {
             "name": "sort",
             "in": "query",
+            "description": "Controls the sort order that the data is returned in. In this example -date returns the results descending by date.",
             "schema": {
               "type": "string"
             }
@@ -4930,6 +5172,7 @@
           {
             "name": "time",
             "in": "query",
+            "description": "The time filter that limits the data being returned to a specific date range.",
             "schema": {
               "type": "string"
             }
@@ -4937,6 +5180,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -4944,6 +5188,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the whole stack object will be returned. If the mode is set to summary than a lightweight object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -4951,6 +5196,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -4960,6 +5206,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -4979,10 +5226,12 @@
         "tags": [
           "Stacks"
         ],
+        "summary": "Get by project",
         "parameters": [
           {
             "name": "projectId",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -4992,6 +5241,7 @@
           {
             "name": "filter",
             "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
             "schema": {
               "type": "string"
             }
@@ -4999,6 +5249,7 @@
           {
             "name": "sort",
             "in": "query",
+            "description": "Controls the sort order that the data is returned in. In this example -date returns the results descending by date.",
             "schema": {
               "type": "string"
             }
@@ -5006,6 +5257,7 @@
           {
             "name": "time",
             "in": "query",
+            "description": "The time filter that limits the data being returned to a specific date range.",
             "schema": {
               "type": "string"
             }
@@ -5013,6 +5265,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -5020,6 +5273,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the whole stack object will be returned. If the mode is set to summary than a lightweight object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -5027,6 +5281,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -5036,6 +5291,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -5055,10 +5311,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Count",
         "parameters": [
           {
             "name": "filter",
             "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
             "schema": {
               "type": "string"
             }
@@ -5066,6 +5324,7 @@
           {
             "name": "aggregations",
             "in": "query",
+            "description": "A list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value",
             "schema": {
               "type": "string"
             }
@@ -5073,6 +5332,7 @@
           {
             "name": "time",
             "in": "query",
+            "description": "The time filter that limits the data being returned to a specific date range.",
             "schema": {
               "type": "string"
             }
@@ -5080,6 +5340,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -5087,6 +5348,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -5104,10 +5366,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Count by organization",
         "parameters": [
           {
             "name": "organizationId",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -5117,6 +5381,7 @@
           {
             "name": "filter",
             "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
             "schema": {
               "type": "string"
             }
@@ -5124,6 +5389,7 @@
           {
             "name": "aggregations",
             "in": "query",
+            "description": "A list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value",
             "schema": {
               "type": "string"
             }
@@ -5131,6 +5397,7 @@
           {
             "name": "time",
             "in": "query",
+            "description": "The time filter that limits the data being returned to a specific date range.",
             "schema": {
               "type": "string"
             }
@@ -5138,6 +5405,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -5145,6 +5413,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -5162,10 +5431,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Count by project",
         "parameters": [
           {
             "name": "projectId",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -5175,6 +5446,7 @@
           {
             "name": "filter",
             "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
             "schema": {
               "type": "string"
             }
@@ -5182,6 +5454,7 @@
           {
             "name": "aggregations",
             "in": "query",
+            "description": "A list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value",
             "schema": {
               "type": "string"
             }
@@ -5189,6 +5462,7 @@
           {
             "name": "time",
             "in": "query",
+            "description": "The time filter that limits the data being returned to a specific date range.",
             "schema": {
               "type": "string"
             }
@@ -5196,6 +5470,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -5203,6 +5478,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If mode is set to stack_new, then additional filters will be added.",
             "schema": {
               "type": "string"
             }
@@ -5220,11 +5496,13 @@
         "tags": [
           "Events"
         ],
+        "summary": "Get by id",
         "operationId": "GetPersistentEventById",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The identifier of the event.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -5234,6 +5512,7 @@
           {
             "name": "time",
             "in": "query",
+            "description": "The time filter that limits the data being returned to a specific date range.",
             "schema": {
               "type": "string"
             }
@@ -5241,6 +5520,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -5258,10 +5538,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Get all",
         "parameters": [
           {
             "name": "filter",
             "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
             "schema": {
               "type": "string"
             }
@@ -5269,6 +5551,7 @@
           {
             "name": "sort",
             "in": "query",
+            "description": "Controls the sort order that the data is returned in. In this example -date returns the results descending by date.",
             "schema": {
               "type": "string"
             }
@@ -5276,6 +5559,7 @@
           {
             "name": "time",
             "in": "query",
+            "description": "The time filter that limits the data being returned to a specific date range.",
             "schema": {
               "type": "string"
             }
@@ -5283,6 +5567,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -5290,6 +5575,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -5297,6 +5583,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -5305,6 +5592,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -5314,6 +5602,7 @@
           {
             "name": "before",
             "in": "query",
+            "description": "The before parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -5321,6 +5610,7 @@
           {
             "name": "after",
             "in": "query",
+            "description": "The after parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -5336,6 +5626,7 @@
         "tags": [
           "Events"
         ],
+        "summary": "Submit event by POST",
         "responses": {
           "200": {
             "description": "OK"
@@ -5348,10 +5639,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Get by organization",
         "parameters": [
           {
             "name": "organizationId",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -5361,6 +5654,7 @@
           {
             "name": "filter",
             "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
             "schema": {
               "type": "string"
             }
@@ -5368,6 +5662,7 @@
           {
             "name": "sort",
             "in": "query",
+            "description": "Controls the sort order that the data is returned in. In this example -date returns the results descending by date.",
             "schema": {
               "type": "string"
             }
@@ -5375,6 +5670,7 @@
           {
             "name": "time",
             "in": "query",
+            "description": "The time filter that limits the data being returned to a specific date range.",
             "schema": {
               "type": "string"
             }
@@ -5382,6 +5678,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -5389,6 +5686,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -5396,6 +5694,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -5404,6 +5703,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -5413,6 +5713,7 @@
           {
             "name": "before",
             "in": "query",
+            "description": "The before parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -5420,6 +5721,7 @@
           {
             "name": "after",
             "in": "query",
+            "description": "The after parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -5437,10 +5739,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Get by project",
         "parameters": [
           {
             "name": "projectId",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -5450,6 +5754,7 @@
           {
             "name": "filter",
             "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
             "schema": {
               "type": "string"
             }
@@ -5457,6 +5762,7 @@
           {
             "name": "sort",
             "in": "query",
+            "description": "Controls the sort order that the data is returned in. In this example -date returns the results descending by date.",
             "schema": {
               "type": "string"
             }
@@ -5464,6 +5770,7 @@
           {
             "name": "time",
             "in": "query",
+            "description": "The time filter that limits the data being returned to a specific date range.",
             "schema": {
               "type": "string"
             }
@@ -5471,6 +5778,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -5478,6 +5786,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -5485,6 +5794,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -5493,6 +5803,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -5502,6 +5813,7 @@
           {
             "name": "before",
             "in": "query",
+            "description": "The before parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -5509,6 +5821,7 @@
           {
             "name": "after",
             "in": "query",
+            "description": "The after parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -5524,10 +5837,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Submit event by POST for a specific project",
         "parameters": [
           {
             "name": "projectId",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -5547,10 +5862,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Get by stack",
         "parameters": [
           {
             "name": "stackId",
             "in": "path",
+            "description": "The identifier of the stack.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -5560,6 +5877,7 @@
           {
             "name": "filter",
             "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
             "schema": {
               "type": "string"
             }
@@ -5567,6 +5885,7 @@
           {
             "name": "sort",
             "in": "query",
+            "description": "Controls the sort order that the data is returned in. In this example -date returns the results descending by date.",
             "schema": {
               "type": "string"
             }
@@ -5574,6 +5893,7 @@
           {
             "name": "time",
             "in": "query",
+            "description": "The time filter that limits the data being returned to a specific date range.",
             "schema": {
               "type": "string"
             }
@@ -5581,6 +5901,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -5588,6 +5909,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -5595,6 +5917,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -5603,6 +5926,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -5612,6 +5936,7 @@
           {
             "name": "before",
             "in": "query",
+            "description": "The before parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -5619,6 +5944,7 @@
           {
             "name": "after",
             "in": "query",
+            "description": "The after parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -5636,10 +5962,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Get by reference id",
         "parameters": [
           {
             "name": "referenceId",
             "in": "path",
+            "description": "An identifier used that references an event instance.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d-]{8,100}$",
@@ -5649,6 +5977,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -5656,6 +5985,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -5663,6 +5993,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -5671,6 +6002,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -5680,6 +6012,7 @@
           {
             "name": "before",
             "in": "query",
+            "description": "The before parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -5687,6 +6020,7 @@
           {
             "name": "after",
             "in": "query",
+            "description": "The after parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -5704,10 +6038,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Get by reference id",
         "parameters": [
           {
             "name": "referenceId",
             "in": "path",
+            "description": "An identifier used that references an event instance.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d-]{8,100}$",
@@ -5717,6 +6053,7 @@
           {
             "name": "projectId",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -5726,6 +6063,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -5733,6 +6071,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -5740,6 +6079,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -5748,6 +6088,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -5757,6 +6098,7 @@
           {
             "name": "before",
             "in": "query",
+            "description": "The before parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -5764,6 +6106,7 @@
           {
             "name": "after",
             "in": "query",
+            "description": "The after parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -5781,10 +6124,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Get a list of all sessions or events by a session id",
         "parameters": [
           {
             "name": "sessionId",
             "in": "path",
+            "description": "An identifier that represents a session of events.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d-]{8,100}$",
@@ -5794,6 +6139,7 @@
           {
             "name": "filter",
             "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
             "schema": {
               "type": "string"
             }
@@ -5801,6 +6147,7 @@
           {
             "name": "sort",
             "in": "query",
+            "description": "Controls the sort order that the data is returned in. In this example -date returns the results descending by date.",
             "schema": {
               "type": "string"
             }
@@ -5808,6 +6155,7 @@
           {
             "name": "time",
             "in": "query",
+            "description": "The time filter that limits the data being returned to a specific date range.",
             "schema": {
               "type": "string"
             }
@@ -5815,6 +6163,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -5822,6 +6171,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -5829,6 +6179,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -5837,6 +6188,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -5846,6 +6198,7 @@
           {
             "name": "before",
             "in": "query",
+            "description": "The before parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -5853,6 +6206,7 @@
           {
             "name": "after",
             "in": "query",
+            "description": "The after parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -5870,10 +6224,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Get a list of by a session id",
         "parameters": [
           {
             "name": "sessionId",
             "in": "path",
+            "description": "An identifier that represents a session of events.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d-]{8,100}$",
@@ -5883,6 +6239,7 @@
           {
             "name": "projectId",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -5892,6 +6249,7 @@
           {
             "name": "filter",
             "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
             "schema": {
               "type": "string"
             }
@@ -5899,6 +6257,7 @@
           {
             "name": "sort",
             "in": "query",
+            "description": "Controls the sort order that the data is returned in. In this example -date returns the results descending by date.",
             "schema": {
               "type": "string"
             }
@@ -5906,6 +6265,7 @@
           {
             "name": "time",
             "in": "query",
+            "description": "The time filter that limits the data being returned to a specific date range.",
             "schema": {
               "type": "string"
             }
@@ -5913,6 +6273,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -5920,6 +6281,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -5927,6 +6289,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -5935,6 +6298,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -5944,6 +6308,7 @@
           {
             "name": "before",
             "in": "query",
+            "description": "The before parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -5951,6 +6316,7 @@
           {
             "name": "after",
             "in": "query",
+            "description": "The after parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -5968,10 +6334,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Get a list of all sessions",
         "parameters": [
           {
             "name": "filter",
             "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
             "schema": {
               "type": "string"
             }
@@ -5979,6 +6347,7 @@
           {
             "name": "sort",
             "in": "query",
+            "description": "Controls the sort order that the data is returned in. In this example -date returns the results descending by date.",
             "schema": {
               "type": "string"
             }
@@ -5986,6 +6355,7 @@
           {
             "name": "time",
             "in": "query",
+            "description": "The time filter that limits the data being returned to a specific date range.",
             "schema": {
               "type": "string"
             }
@@ -5993,6 +6363,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -6000,6 +6371,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -6007,6 +6379,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -6015,6 +6388,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -6024,6 +6398,7 @@
           {
             "name": "before",
             "in": "query",
+            "description": "The before parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -6031,6 +6406,7 @@
           {
             "name": "after",
             "in": "query",
+            "description": "The after parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -6048,10 +6424,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Get a list of all sessions",
         "parameters": [
           {
             "name": "organizationId",
             "in": "path",
+            "description": "The identifier of the organization.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -6061,6 +6439,7 @@
           {
             "name": "filter",
             "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
             "schema": {
               "type": "string"
             }
@@ -6068,6 +6447,7 @@
           {
             "name": "sort",
             "in": "query",
+            "description": "Controls the sort order that the data is returned in. In this example -date returns the results descending by date.",
             "schema": {
               "type": "string"
             }
@@ -6075,6 +6455,7 @@
           {
             "name": "time",
             "in": "query",
+            "description": "The time filter that limits the data being returned to a specific date range.",
             "schema": {
               "type": "string"
             }
@@ -6082,6 +6463,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -6089,6 +6471,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -6096,6 +6479,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -6104,6 +6488,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -6113,6 +6498,7 @@
           {
             "name": "before",
             "in": "query",
+            "description": "The before parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -6120,6 +6506,7 @@
           {
             "name": "after",
             "in": "query",
+            "description": "The after parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -6137,10 +6524,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Get a list of all sessions",
         "parameters": [
           {
             "name": "projectId",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -6150,6 +6539,7 @@
           {
             "name": "filter",
             "in": "query",
+            "description": "A filter that controls what data is returned from the server.",
             "schema": {
               "type": "string"
             }
@@ -6157,6 +6547,7 @@
           {
             "name": "sort",
             "in": "query",
+            "description": "Controls the sort order that the data is returned in. In this example -date returns the results descending by date.",
             "schema": {
               "type": "string"
             }
@@ -6164,6 +6555,7 @@
           {
             "name": "time",
             "in": "query",
+            "description": "The time filter that limits the data being returned to a specific date range.",
             "schema": {
               "type": "string"
             }
@@ -6171,6 +6563,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
             "schema": {
               "type": "string"
             }
@@ -6178,6 +6571,7 @@
           {
             "name": "mode",
             "in": "query",
+            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
             "schema": {
               "type": "string"
             }
@@ -6185,6 +6579,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "The page parameter is used for pagination. This value must be greater than 0.",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -6193,6 +6588,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -6202,6 +6598,7 @@
           {
             "name": "before",
             "in": "query",
+            "description": "The before parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -6209,6 +6606,7 @@
           {
             "name": "after",
             "in": "query",
+            "description": "The after parameter is a cursor used for pagination and defines your place in the list of results.",
             "schema": {
               "type": "string"
             }
@@ -6226,10 +6624,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Set user description",
         "parameters": [
           {
             "name": "referenceId",
             "in": "path",
+            "description": "An identifier used that references an event instance.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d-]{8,100}$",
@@ -6266,10 +6666,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Set user description",
         "parameters": [
           {
             "name": "referenceId",
             "in": "path",
+            "description": "An identifier used that references an event instance.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d-]{8,100}$",
@@ -6279,6 +6681,7 @@
           {
             "name": "projectId",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -6308,10 +6711,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Submit heartbeat",
         "parameters": [
           {
             "name": "id",
             "in": "query",
+            "description": "The session id or user id.",
             "schema": {
               "type": "string"
             }
@@ -6319,6 +6724,7 @@
           {
             "name": "close",
             "in": "query",
+            "description": "If true, the session will be closed.",
             "schema": {
               "type": "boolean",
               "default": false
@@ -6337,10 +6743,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Submit event by GET",
         "parameters": [
           {
             "name": "type",
             "in": "query",
+            "description": "The event type (ie. error, log message, feature usage).",
             "schema": {
               "type": "string"
             }
@@ -6358,10 +6766,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Submit event type by GET",
         "parameters": [
           {
             "name": "type",
             "in": "path",
+            "description": "The event type (ie. error, log message, feature usage).",
             "required": true,
             "schema": {
               "minLength": 1,
@@ -6381,10 +6791,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Submit event type by GET for a specific project",
         "parameters": [
           {
             "name": "projectId",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -6411,10 +6823,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Submit event type by GET for a specific project",
         "parameters": [
           {
             "name": "projectId",
             "in": "path",
+            "description": "The identifier of the project.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -6424,6 +6838,7 @@
           {
             "name": "type",
             "in": "path",
+            "description": "The event type (ie. error, log message, feature usage).",
             "required": true,
             "schema": {
               "minLength": 1,
@@ -6443,10 +6858,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "Remove",
         "parameters": [
           {
             "name": "ids",
             "in": "path",
+            "description": "A comma-delimited list of event identifiers.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}(,[a-zA-Z\\d]{24,36})*$",

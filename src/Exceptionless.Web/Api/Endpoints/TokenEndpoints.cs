@@ -8,6 +8,7 @@ using IMediator = Foundatio.Mediator.IMediator;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using TokenMessages = Exceptionless.Web.Api.Messages;
+using Exceptionless.Web.Utility.OpenApi;
 
 namespace Exceptionless.Web.Api.Endpoints;
 
@@ -20,17 +21,57 @@ public static class TokenEndpoints
             .AddEndpointFilter<AutoValidationEndpointFilter>();
 
         group.MapGet("organizations/{organizationId:objectid}/tokens", async (string organizationId, IMediator mediator, int page = 1, int limit = 10)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.GetTokensByOrganization(organizationId, page, limit)));
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.GetTokensByOrganization(organizationId, page, limit)))
+        .WithSummary("Get by organization")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["organizationId"] = "The identifier of the organization.",
+                ["page"] = "The page parameter is used for pagination. This value must be greater than 0.",
+                ["limit"] = "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
+            },
+            ResponseDescriptions = new() {
+                ["404"] = "The organization could not be found.",
+            }
+        });
 
         group.MapGet("projects/{projectId:objectid}/tokens", async (string projectId, IMediator mediator, int page = 1, int limit = 10)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.GetTokensByProject(projectId, page, limit)));
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.GetTokensByProject(projectId, page, limit)))
+        .WithSummary("Get by project")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["projectId"] = "The identifier of the project.",
+                ["page"] = "The page parameter is used for pagination. This value must be greater than 0.",
+                ["limit"] = "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
+            },
+            ResponseDescriptions = new() {
+                ["404"] = "The project could not be found.",
+            }
+        });
 
         group.MapGet("projects/{projectId:objectid}/tokens/default", async (string projectId, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.GetDefaultToken(projectId)));
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.GetDefaultToken(projectId)))
+        .WithSummary("Get a projects default token")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["projectId"] = "The identifier of the project.",
+            },
+            ResponseDescriptions = new() {
+                ["404"] = "The project could not be found.",
+            }
+        });
 
         group.MapGet("tokens/{id:token}", async (string id, IMediator mediator)
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.GetTokenById(id)))
-        .WithName("GetTokenById");
+        .WithName("GetTokenById")
+        .WithSummary("Get by id")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["id"] = "The identifier of the token.",
+            },
+            ResponseDescriptions = new() {
+                ["404"] = "The token could not be found.",
+            }
+        });
 
         group.MapPost("tokens", async (IMediator mediator, IServiceProvider serviceProvider, [FromBody] NewToken token) =>
         {
@@ -39,6 +80,14 @@ public static class TokenEndpoints
                 return validation;
 
             return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.CreateToken(token));
+        })
+        .WithSummary("Create")
+        .WithMetadata(new EndpointDocumentation {
+            ResponseDescriptions = new() {
+                ["201"] = "Created",
+                ["400"] = "An error occurred while creating the token.",
+                ["409"] = "The token already exists.",
+            }
         });
 
         group.MapPost("projects/{projectId:objectid}/tokens", async (string projectId, IMediator mediator, IServiceProvider serviceProvider,
@@ -52,6 +101,18 @@ public static class TokenEndpoints
             }
 
             return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.CreateTokenByProject(projectId, token));
+        })
+        .WithSummary("Create for project")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["projectId"] = "The identifier of the project.",
+            },
+            ResponseDescriptions = new() {
+                ["201"] = "Created",
+                ["400"] = "An error occurred while creating the token.",
+                ["404"] = "The project could not be found.",
+                ["409"] = "The token already exists.",
+            }
         });
 
         group.MapPost("organizations/{organizationId:objectid}/tokens", async (string organizationId, IMediator mediator, IServiceProvider serviceProvider,
@@ -65,16 +126,59 @@ public static class TokenEndpoints
             }
 
             return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.CreateTokenByOrganization(organizationId, token));
+        })
+        .WithSummary("Create for organization")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["organizationId"] = "The identifier of the organization.",
+            },
+            ResponseDescriptions = new() {
+                ["201"] = "Created",
+                ["400"] = "An error occurred while creating the token.",
+                ["409"] = "The token already exists.",
+            }
         });
 
         group.MapPatch("tokens/{id:tokens}", async (string id, IMediator mediator, [FromBody] Delta<UpdateToken> changes)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.UpdateTokenMessage(id, changes)));
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.UpdateTokenMessage(id, changes)))
+        .WithSummary("Update")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["id"] = "The identifier of the token.",
+            },
+            ResponseDescriptions = new() {
+                ["400"] = "An error occurred while updating the token.",
+                ["404"] = "The token could not be found.",
+            }
+        });
 
         group.MapPut("tokens/{id:tokens}", async (string id, IMediator mediator, [FromBody] Delta<UpdateToken> changes)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.UpdateTokenMessage(id, changes)));
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.UpdateTokenMessage(id, changes)))
+        .WithSummary("Update")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["id"] = "The identifier of the token.",
+            },
+            ResponseDescriptions = new() {
+                ["400"] = "An error occurred while updating the token.",
+                ["404"] = "The token could not be found.",
+            }
+        });
 
         group.MapDelete("tokens/{ids:tokens}", async (string ids, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.DeleteTokens(ids.FromDelimitedString())));
+            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.DeleteTokens(ids.FromDelimitedString())))
+        .WithSummary("Remove")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["ids"] = "A comma-delimited list of token identifiers.",
+            },
+            ResponseDescriptions = new() {
+                ["202"] = "Accepted",
+                ["400"] = "One or more validation errors occurred.",
+                ["404"] = "One or more tokens were not found.",
+                ["500"] = "An error occurred while deleting one or more tokens.",
+            }
+        });
 
         return endpoints;
     }
