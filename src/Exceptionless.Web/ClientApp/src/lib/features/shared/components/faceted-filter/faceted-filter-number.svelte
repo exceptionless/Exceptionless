@@ -29,6 +29,7 @@
 
     function scheduleApply() {
         clearTimeout(debounceTimer);
+        if (updatedValue == null || updatedValue === '') return;
         debounceTimer = setTimeout(() => {
             if (updatedValue !== value) {
                 changed(updatedValue);
