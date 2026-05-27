@@ -44,7 +44,6 @@ public static class StackEndpoints
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new MarkStacksFixed(ids, version, httpContext)))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Mark fixed")
         .WithMetadata(new EndpointDocumentation {
@@ -74,7 +73,6 @@ public static class StackEndpoints
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SnoozeStacks(ids, snoozeUntilUtc, httpContext)))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Mark the selected stacks as snoozed")
         .WithMetadata(new EndpointDocumentation {
@@ -123,7 +121,6 @@ public static class StackEndpoints
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new RemoveStackLink(id, url, httpContext)))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Accepts<ValueFromBody<string>>("application/json")
-        .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status204NoContent)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -144,7 +141,6 @@ public static class StackEndpoints
             => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new MarkStacksCritical(ids, httpContext)))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status204NoContent)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Mark future occurrences as critical")
         .WithMetadata(new EndpointDocumentation {

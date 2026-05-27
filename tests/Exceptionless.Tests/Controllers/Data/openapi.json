@@ -5870,9 +5870,6 @@
           "200": {
             "description": "The stacks were marked as fixed."
           },
-          "202": {
-            "description": "Accepted"
-          },
           "404": {
             "description": "One or more stacks could not be found.",
             "content": {
@@ -5917,9 +5914,6 @@
         "responses": {
           "200": {
             "description": "The stacks were snoozed."
-          },
-          "202": {
-            "description": "Accepted"
           },
           "404": {
             "description": "One or more stacks could not be found.",
@@ -6018,9 +6012,6 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK"
-          },
           "204": {
             "description": "The reference link was removed."
           },
@@ -6068,9 +6059,6 @@
         "responses": {
           "200": {
             "description": "OK"
-          },
-          "204": {
-            "description": "No Content"
           },
           "404": {
             "description": "One or more stacks could not be found.",
