@@ -46,9 +46,11 @@ public class OrganizationHandler(
     ApiMapper mapper,
     AppOptions options,
     TimeProvider timeProvider,
+    IHttpContextAccessor httpContextAccessor,
     ILoggerFactory loggerFactory)
 {
     private readonly ILogger _logger = loggerFactory.CreateLogger<OrganizationHandler>();
+    private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
 
     public async Task<IResult> Handle(GetOrganizations message)
     {
@@ -785,7 +787,14 @@ public class OrganizationHandler(
         if (String.IsNullOrEmpty(id))
             return null;
 
-        return await repository.GetByIdAsync(id, o => o.Cache(useCache));
+        var model = await repository.GetByIdAsync(id, o => o.Cache(useCache));
+        if (model is null)
+            return null;
+
+        if (!HttpContext.Request.CanAccessOrganization(model.Id))
+            return null;
+
+        return model;
     }
 
     private async Task<IReadOnlyCollection<Organization>> GetModelsAsync(string[] ids, bool useCache = true)
@@ -793,7 +802,8 @@ public class OrganizationHandler(
         if (ids.Length == 0)
             return [];
 
-        return await repository.GetByIdsAsync(ids, o => o.Cache(useCache));
+        var models = await repository.GetByIdsAsync(ids, o => o.Cache(useCache));
+        return models.Where(m => HttpContext.Request.CanAccessOrganization(m.Id)).ToList();
     }
 
     private async Task AfterResultMapAsync<TDestination>(ICollection<TDestination> models)
