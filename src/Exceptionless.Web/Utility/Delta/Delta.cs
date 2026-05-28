@@ -22,6 +22,7 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     private HashSet<string> _changedProperties = null!;
     private TEntityType _entity = null!;
     private Type _entityType = null!;
+    private JsonSerializerOptions? _options;
 
     /// <summary>
     /// Initializes a new instance of <see cref="Delta{TEntityType}" />.
@@ -33,12 +34,9 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     /// <summary>
     /// Initializes a new instance of <see cref="Delta{TEntityType}" />.
     /// </summary>
-    /// <param name="entityType">
-    ///     The derived entity type for which the changes would be tracked.
-    ///     <paramref name="entityType" /> should be assignable to instances of <typeparamref name="TEntityType" />.
-    /// </param>
-    public Delta(Type entityType)
+    public Delta(Type entityType, JsonSerializerOptions? options = null)
     {
+        _options = options;
         Initialize(entityType);
     }
 
@@ -70,10 +68,8 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
     {
         ArgumentNullException.ThrowIfNull(name);
 
-        if (!_propertiesThatExist.ContainsKey(name))
+        if (!_propertiesThatExist.TryGetValue(name, out var cacheHit))
             return false;
-
-        var cacheHit = _propertiesThatExist[name];
 
         if (value is null && !IsNullable(cacheHit.MemberType))
             return false;
@@ -84,7 +80,9 @@ public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType
             {
                 try
                 {
-                    value = JsonSerializer.Deserialize(jsonElement.GetRawText(), cacheHit.MemberType);
+                    value = _options is not null
+                        ? JsonSerializer.Deserialize(jsonElement.GetRawText(), cacheHit.MemberType, _options)
+                        : JsonSerializer.Deserialize(jsonElement.GetRawText(), cacheHit.MemberType);
                 }
                 catch (Exception)
                 {

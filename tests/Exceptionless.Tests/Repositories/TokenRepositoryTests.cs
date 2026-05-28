@@ -73,4 +73,26 @@ public sealed class TokenRepositoryTests : IntegrationTestsBase
         Assert.Equal(0, (await _repository.GetByTypeAndUserIdAsync(TokenType.Authentication, TestConstants.UserId)).Total);
         Assert.Equal(1, (await _repository.GetByOrganizationIdAsync(TestConstants.OrganizationId)).Total);
     }
+
+    [Fact]
+    public async Task GetByTypeAndProjectId_FieldOr_MatchesProjectIdOrDefaultProjectId()
+    {
+        // Arrange
+        var utcNow = DateTime.UtcNow;
+        await _repository.AddAsync(new List<Token>
+        {
+            new() { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, Type = TokenType.Access, CreatedUtc = utcNow, UpdatedUtc = utcNow, Id = StringExtensions.GetNewToken() },
+            new() { OrganizationId = TestConstants.OrganizationId, DefaultProjectId = TestConstants.ProjectId, Type = TokenType.Access, CreatedUtc = utcNow, UpdatedUtc = utcNow, Id = StringExtensions.GetNewToken() },
+            new() { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, Type = TokenType.Authentication, CreatedUtc = utcNow, UpdatedUtc = utcNow, Id = StringExtensions.GetNewToken() },
+            new() { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectIdWithNoRoles, Type = TokenType.Access, CreatedUtc = utcNow, UpdatedUtc = utcNow, Id = StringExtensions.GetNewToken() },
+        }, o => o.ImmediateConsistency());
+
+        // Act
+        var accessResults = await _repository.GetByTypeAndProjectIdAsync(TokenType.Access, TestConstants.ProjectId, o => o.PageLimit(10));
+        var authenticationResults = await _repository.GetByTypeAndProjectIdAsync(TokenType.Authentication, TestConstants.ProjectId, o => o.PageLimit(10));
+
+        // Assert
+        Assert.Equal(2, accessResults.Total);
+        Assert.Single(authenticationResults.Documents);
+    }
 }

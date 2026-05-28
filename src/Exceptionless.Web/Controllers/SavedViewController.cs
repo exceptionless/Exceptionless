@@ -21,7 +21,7 @@ namespace Exceptionless.App.Controllers.API;
 
 [Route(API_PREFIX + "/saved-views")]
 [Authorize(Policy = AuthorizationRoles.UserPolicy)]
-public class SavedViewController : RepositoryApiController<ISavedViewRepository, SavedView, ViewSavedView, NewSavedView, UpdateSavedView>
+public partial class SavedViewController : RepositoryApiController<ISavedViewRepository, SavedView, ViewSavedView, NewSavedView, UpdateSavedView>
 {
     private const int MaxViewsPerOrganization = 100;
     private const string PredefinedSavedViewsDataKey = "@@PredefinedSavedViewsVersion";
@@ -782,12 +782,12 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
 
     private static bool IsValidSlug(string slug)
     {
-        return Regex.IsMatch(slug, "^[a-z0-9]+(?:-[a-z0-9]+)*$") && !IsReservedSlug(slug);
+        return !IsReservedSlug(slug) && SavedView.SlugRegex().IsMatch(slug);
     }
 
     private static bool IsReservedSlug(string slug)
     {
-        return Regex.IsMatch(slug, "^[a-f0-9]{24}$");
+        return ObjectIdSlugRegex().IsMatch(slug);
     }
 
     private static string ToSlug(string value)
@@ -806,4 +806,6 @@ public class SavedViewController : RepositoryApiController<ISavedViewRepository,
         return String.IsNullOrWhiteSpace(id) ? "saved-view" : $"saved-view-{id}";
     }
 
+    [GeneratedRegex("^[a-f0-9]{24}$")]
+    private static partial Regex ObjectIdSlugRegex();
 }

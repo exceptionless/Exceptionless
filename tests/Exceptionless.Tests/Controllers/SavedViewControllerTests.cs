@@ -258,6 +258,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     [Fact]
     public Task PostAsync_WithEmptyName_ReturnsUnprocessableEntity()
     {
+        // Arrange
         var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
@@ -266,6 +267,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             ViewType = "events"
         };
 
+        // Act & Assert
         return SendRequestAsync(r => r
             .Post()
             .AsGlobalAdminUser()
@@ -278,6 +280,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     [Fact]
     public Task PostAsync_WithNameThatCannotCreateUrlName_ReturnsUnprocessableEntity()
     {
+        // Arrange
         var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
@@ -286,6 +289,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             ViewType = "events"
         };
 
+        // Act & Assert
         return SendRequestAsync(r => r
             .Post()
             .AsGlobalAdminUser()
@@ -298,6 +302,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     [Fact]
     public Task PostAsync_WithObjectIdUrlName_ReturnsUnprocessableEntity()
     {
+        // Arrange
         var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
@@ -307,6 +312,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             ViewType = "events"
         };
 
+        // Act & Assert
         return SendRequestAsync(r => r
             .Post()
             .AsGlobalAdminUser()
@@ -319,9 +325,11 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PostAsync_DuplicateName_ReturnsConflict()
     {
+        // Arrange
         var created = await CreateSavedViewAsync("Duplicate Saved View Name", "status:open", "events");
         Assert.NotNull(created);
 
+        // Act & Assert
         await SendRequestAsync(r => r
             .Post()
             .AsGlobalAdminUser()
@@ -340,9 +348,11 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     [Fact]
     public async Task PostAsync_DuplicateSlug_ReturnsConflict()
     {
+        // Arrange
         var created = await CreateSavedViewAsync("Shared URL Name", "status:open", "events", slug: "shared-url-name");
         Assert.NotNull(created);
 
+        // Act & Assert
         await SendRequestAsync(r => r
             .Post()
             .AsGlobalAdminUser()
@@ -362,6 +372,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     [Fact]
     public Task PostAsync_WithEmptyFilter_ReturnsCreated()
     {
+        // Arrange
         var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
@@ -370,6 +381,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             ViewType = "events"
         };
 
+        // Act & Assert
         return SendRequestAsync(r => r
             .Post()
             .AsGlobalAdminUser()
@@ -382,6 +394,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
     [Fact]
     public Task PostAsync_WithInvalidView_ReturnsUnprocessableEntity()
     {
+        // Arrange
         var newView = new NewSavedView
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
@@ -390,6 +403,7 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             ViewType = "invalid-view"
         };
 
+        // Act & Assert
         return SendRequestAsync(r => r
             .Post()
             .AsGlobalAdminUser()

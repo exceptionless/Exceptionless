@@ -1,6 +1,9 @@
 ﻿using System.Text;
+using System.Text.Json;
 using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
+using Foundatio.Serializer;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Extensions;
 
@@ -48,9 +51,21 @@ public static class ProjectExtensions
     /// <summary>
     /// Gets the slack token from extended data.
     /// </summary>
-    public static SlackToken? GetSlackToken(this Project project)
+    public static SlackToken? GetSlackToken(this Project project, ITextSerializer serializer, ILogger? logger = null)
     {
-        return project.Data is not null && project.Data.TryGetValue(Project.KnownDataKeys.SlackToken, out object? value) ? value as SlackToken : null;
+        if (project.Data is null || !project.Data.TryGetValue(Project.KnownDataKeys.SlackToken, out _))
+            return null;
+
+        try
+        {
+            return project.Data.GetValue<SlackToken>(Project.KnownDataKeys.SlackToken, serializer);
+        }
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
+        {
+            logger?.LogWarning(ex, "Failed to deserialize SlackToken for project {ProjectId}", project.Id);
+        }
+
+        return null;
     }
 
     public static bool HasHourlyUsage(this Project project, DateTime date)

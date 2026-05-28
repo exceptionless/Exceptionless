@@ -43,7 +43,7 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
     public string? Sort { get; set; }
 
     [MaxLength(100)]
-    [RegularExpression("^[a-z0-9]+(?:-[a-z0-9]+)*$")]
+    [RegularExpression(SavedView.SlugPattern)]
     public string? Slug { get; set; }
 
     [Required]

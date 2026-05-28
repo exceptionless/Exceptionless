@@ -9,7 +9,6 @@ using Exceptionless.Web.Models.Admin;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
-using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
 using Xunit;
@@ -506,6 +505,7 @@ public class AdminControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(elasticsearch);
+        Assert.NotNull(elasticsearch.IndexDetails);
         Assert.All(elasticsearch.IndexDetails, indexDetail =>
         {
             Assert.True(indexDetail.DocsCount >= 0);
@@ -556,7 +556,7 @@ public class AdminControllerTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(options);
-        Assert.True(options.ContainsKey("base_u_r_l"));
+        Assert.True(options.ContainsKey("base_url"));
         Assert.True(options.ContainsKey("app_mode"));
     }
 

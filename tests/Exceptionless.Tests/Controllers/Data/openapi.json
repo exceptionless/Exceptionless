@@ -8030,7 +8030,7 @@
           },
           "slug": {
             "maxLength": 100,
-            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "pattern": "^(?![a-f0-9]{24}$)[a-z0-9]+(?:-[a-z0-9]+)*$",
             "type": [
               "null",
               "string"

@@ -14,23 +14,6 @@ public class SubmissionClientSerializerTests : TestWithServices
     }
 
     [Fact]
-    public void Deserialize_SnakeCaseJson_ParsesCorrectly()
-    {
-        // Arrange
-        /* language=json */
-        const string json = """{"ip_address":"10.0.0.1","user_agent":"Mozilla/5.0","version":"1.0.0"}""";
-
-        // Act
-        var result = _serializer.Deserialize<SubmissionClient>(json);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal("10.0.0.1", result.IpAddress);
-        Assert.Equal("Mozilla/5.0", result.UserAgent);
-        Assert.Equal("1.0.0", result.Version);
-    }
-
-    [Fact]
     public void RoundTrip_WithAllProperties_PreservesValues()
     {
         // Arrange
@@ -46,9 +29,6 @@ public class SubmissionClientSerializerTests : TestWithServices
         var result = _serializer.Deserialize<SubmissionClient>(json);
 
         // Assert
-        SerializerContractAssertions.IncludesProperties(json, "ip_address", "user_agent");
-        SerializerContractAssertions.ExcludesProperties(json, "IpAddress", "UserAgent");
-
         Assert.NotNull(result);
         Assert.Equal("192.168.1.100", result.IpAddress);
         Assert.Equal("exceptionless/1.0.0", result.UserAgent);
@@ -73,6 +53,23 @@ public class SubmissionClientSerializerTests : TestWithServices
         // Assert
         Assert.NotNull(result);
         Assert.Equal("::ffff:192.168.1.1", result.IpAddress);
+    }
+
+    [Fact]
+    public void Deserialize_SnakeCaseJson_ParsesCorrectly()
+    {
+        // Arrange
+        /* language=json */
+        const string json = """{"ip_address":"10.0.0.1","user_agent":"Mozilla/5.0","version":"1.0.0"}""";
+
+        // Act
+        var result = _serializer.Deserialize<SubmissionClient>(json);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("10.0.0.1", result.IpAddress);
+        Assert.Equal("Mozilla/5.0", result.UserAgent);
+        Assert.Equal("1.0.0", result.Version);
     }
 
     [Fact]

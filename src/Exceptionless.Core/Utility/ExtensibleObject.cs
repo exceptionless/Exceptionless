@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel;
+using System.Text.Json;
 using Exceptionless.Core.Extensions;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Utility;
 
@@ -9,7 +8,7 @@ public interface IExtensibleObject
 {
     void SetProperty<T>(string name, T value);
 
-    T? GetProperty<T>(string name);
+    T? GetProperty<T>(string name, JsonSerializerOptions? options = null);
 
     object? GetProperty(string name);
 
@@ -22,7 +21,6 @@ public interface IExtensibleObject
 
 public class ExtensibleObject : INotifyPropertyChanged, IExtensibleObject
 {
-    [JsonProperty]
     private readonly Dictionary<string, object?> _extendedData = new();
 
     public void SetProperty<T>(string name, T value)
@@ -35,7 +33,7 @@ public class ExtensibleObject : INotifyPropertyChanged, IExtensibleObject
         NotifyPropertyChanged(name);
     }
 
-    public T? GetProperty<T>(string name)
+    public T? GetProperty<T>(string name, JsonSerializerOptions? options = null)
     {
         object? value = GetProperty(name);
         if (value is null)
@@ -44,8 +42,18 @@ public class ExtensibleObject : INotifyPropertyChanged, IExtensibleObject
         if (value is T tValue)
             return tValue;
 
-        if (value is JContainer container)
-            return container.ToObject<T>();
+        // Handle JsonElement from STJ deserialization
+        if (value is JsonElement jsonElement)
+        {
+            try
+            {
+                return jsonElement.Deserialize<T>(options);
+            }
+            catch (JsonException)
+            {
+                // Fall through to ToType conversion
+            }
+        }
 
         return value.ToType<T>();
     }

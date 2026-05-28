@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -33,20 +34,31 @@ public class DeltaJsonConverterFactory : JsonConverterFactory
 public class DeltaJsonConverter<TEntityType> : JsonConverter<Delta<TEntityType>> where TEntityType : class
 {
     private readonly JsonSerializerOptions _options;
-    private readonly Dictionary<string, string> _jsonNameToPropertyName;
+    private readonly Dictionary<string, string> _propertyNameMap;
 
     public DeltaJsonConverter(JsonSerializerOptions options)
     {
-        // Create a copy without the converter to avoid infinite recursion
+        // Create a copy without the factory to avoid infinite recursion if a Delta<T> property
+        // ever appears inside another Delta<T> model.
         _options = new JsonSerializerOptions(options);
+        for (int i = _options.Converters.Count - 1; i >= 0; i--)
+        {
+            if (_options.Converters[i] is DeltaJsonConverterFactory)
+            {
+                _options.Converters.RemoveAt(i);
+                break;
+            }
+        }
 
         // Build a mapping from JSON property names (snake_case) to C# property names (PascalCase)
-        _jsonNameToPropertyName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        _propertyNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var entityType = typeof(TEntityType);
         foreach (var prop in entityType.GetProperties())
         {
-            var jsonName = options.PropertyNamingPolicy?.ConvertName(prop.Name) ?? prop.Name;
-            _jsonNameToPropertyName[jsonName] = prop.Name;
+            // [JsonPropertyName] takes precedence over the naming policy
+            var jsonPropertyNameAttr = prop.GetCustomAttribute<JsonPropertyNameAttribute>();
+            var jsonName = jsonPropertyNameAttr?.Name ?? options.PropertyNamingPolicy?.ConvertName(prop.Name) ?? prop.Name;
+            _propertyNameMap[jsonName] = prop.Name;
         }
     }
 
@@ -62,7 +74,7 @@ public class DeltaJsonConverter<TEntityType> : JsonConverter<Delta<TEntityType>>
             throw new JsonException("Expected StartObject token");
         }
 
-        var delta = new Delta<TEntityType>();
+        var delta = new Delta<TEntityType>(typeof(TEntityType), _options);
 
         while (reader.Read())
         {
@@ -85,7 +97,7 @@ public class DeltaJsonConverter<TEntityType> : JsonConverter<Delta<TEntityType>>
             reader.Read();
 
             // Convert JSON property name (snake_case) to C# property name (PascalCase)
-            var propertyName = _jsonNameToPropertyName.TryGetValue(jsonPropertyName, out var mapped)
+            var propertyName = _propertyNameMap.TryGetValue(jsonPropertyName, out var mapped)
                 ? mapped
                 : jsonPropertyName;
 
