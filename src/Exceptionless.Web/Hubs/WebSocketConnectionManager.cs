@@ -6,6 +6,10 @@ using Foundatio.Serializer;
 
 namespace Exceptionless.Web.Hubs;
 
+/// <summary>
+/// Temporary WebSocket compatibility layer for the Angular rollout. Remove once the
+/// SSE rollout is complete and the websocket active-connection gauge remains at zero.
+/// </summary>
 public sealed class WebSocketConnectionManager : IDisposable
 {
     private static readonly ArraySegment<byte> KeepAliveMessage = new(Encoding.ASCII.GetBytes("{}"), 0, 2);
@@ -50,9 +54,19 @@ public sealed class WebSocketConnectionManager : IDisposable
         return _connections.TryGetValue(connectionId, out var socket) ? socket : null;
     }
 
+    public WebSocket? GetWebSocketById(string connectionId)
+    {
+        return GetConnectionById(connectionId);
+    }
+
     public ICollection<WebSocket> GetAll()
     {
         return _connections.Values;
+    }
+
+    public string GetConnectionId(WebSocket socket)
+    {
+        return _connections.FirstOrDefault(pair => pair.Value == socket).Key;
     }
 
     public string AddConnection(WebSocket socket)
@@ -62,6 +76,11 @@ public sealed class WebSocketConnectionManager : IDisposable
         AppDiagnostics.PushWebSocketConnectionsOpened.Add(1);
         AppDiagnostics.Gauge("push.connections.websocket.active", _connections.Count);
         return connectionId;
+    }
+
+    public string AddWebSocket(WebSocket socket)
+    {
+        return AddConnection(socket);
     }
 
     public async Task RemoveConnectionAsync(string connectionId)
@@ -93,6 +112,11 @@ public sealed class WebSocketConnectionManager : IDisposable
         }
     }
 
+    public Task RemoveWebSocketAsync(string connectionId)
+    {
+        return RemoveConnectionAsync(connectionId);
+    }
+
     public bool SendMessage(string connectionId, object message)
     {
         if (!_connections.TryGetValue(connectionId, out var socket))
@@ -108,10 +132,22 @@ public sealed class WebSocketConnectionManager : IDisposable
         return true;
     }
 
+    public Task SendMessageAsync(string connectionId, object message)
+    {
+        SendMessage(connectionId, message);
+        return Task.CompletedTask;
+    }
+
     public void SendMessage(IEnumerable<string> connectionIds, object message)
     {
         foreach (var connectionId in connectionIds)
             SendMessage(connectionId, message);
+    }
+
+    public Task SendMessageAsync(IEnumerable<string> connectionIds, object message)
+    {
+        SendMessage(connectionIds, message);
+        return Task.CompletedTask;
     }
 
     public void SendMessageToAll(object message)
@@ -126,6 +162,12 @@ public sealed class WebSocketConnectionManager : IDisposable
 
             _ = SendMessageAsync(connectionId, socket, message);
         }
+    }
+
+    public Task SendMessageToAllAsync(object message, bool throwOnError = true)
+    {
+        SendMessageToAll(message);
+        return Task.CompletedTask;
     }
 
     public void Dispose()

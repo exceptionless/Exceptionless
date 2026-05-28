@@ -10,9 +10,9 @@ using Xunit;
 
 namespace Exceptionless.Tests.Hubs;
 
-public sealed class WebSocketConnectionManagerTests : TestWithServices
+public sealed class WebSocketConnectionCompatibilityTests : TestWithServices
 {
-    public WebSocketConnectionManagerTests(ITestOutputHelper output) : base(output) { }
+    public WebSocketConnectionCompatibilityTests(ITestOutputHelper output) : base(output) { }
 
     [Fact]
     public void AddConnection_NewSocket_CanLookupAndEnumerateConnection()

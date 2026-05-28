@@ -4,6 +4,10 @@ using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Web.Hubs;
 
+/// <summary>
+/// Temporary WebSocket endpoint compatibility for the Angular rollout. Keep this in place
+/// until all clients are on SSE and websocket active connections stay at zero.
+/// </summary>
 public sealed class WebSocketPushMiddleware
 {
     private static readonly PathString PushEndpoint = new("/api/v2/push");
