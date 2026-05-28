@@ -55,6 +55,7 @@ export class SseClient {
     private hasConnectedBefore: boolean = false;
     private reconnectAttempts: number = 0;
     private reconnectTimeoutId: null | ReturnType<typeof setTimeout> = null;
+    private streamGeneration: number = 0;
 
     private abortController: AbortController | null = null;
 
@@ -73,11 +74,9 @@ export class SseClient {
                 this.accessToken = accessToken.current;
                 this.reconnectAttempts = 0;
                 this.authFailed = false;
-                this.close();
-                this.forcedClose = false; // Allow reconnect with new token
+                this.close(false);
             } else if (!visibility.visible) {
-                this.close();
-                this.forcedClose = false; // Allow reconnect when visible again
+                this.close(false);
             }
 
             if (this.accessToken && visibility.visible && this.readyState === SSE_CLOSED && this.reconnectTimeoutId === null && !this.authFailed && !this.forcedClose) {
@@ -86,14 +85,15 @@ export class SseClient {
         });
     }
 
-    public close(): boolean {
+    public close(isManual: boolean = true): boolean {
         clearTimeout(this.reconnectTimeoutId!);
         this.reconnectTimeoutId = null;
         clearTimeout(this.connectionTimeoutId!);
         this.connectionTimeoutId = null;
+        this.forcedClose = isManual;
 
         if (this.abortController) {
-            this.forcedClose = true;
+            this.streamGeneration++;
             this.abortController.abort();
             this.abortController = null;
             this.readyState = SSE_CLOSED;
@@ -105,6 +105,7 @@ export class SseClient {
 
     public connect() {
         const isReconnect: boolean = this.hasConnectedBefore;
+        const generation = ++this.streamGeneration;
 
         this.readyState = SSE_CONNECTING;
         this.forcedClose = false;
@@ -125,7 +126,7 @@ export class SseClient {
             }
         }, timeout);
 
-        this.startStream(signal, isReconnect);
+        this.startStream(signal, isReconnect, generation);
     }
 
     public onClose: () => void = () => {};
@@ -146,7 +147,7 @@ export class SseClient {
         return Math.min(1000 * Math.pow(2, attempt - 1), 30000);
     }
 
-    private async startStream(signal: AbortSignal, isReconnect: boolean) {
+    private async startStream(signal: AbortSignal, isReconnect: boolean, generation: number) {
         try {
             const token = this.accessToken ?? accessToken.current;
             const response = await fetch(this.url, {
@@ -184,6 +185,11 @@ export class SseClient {
                 throw new Error('SSE response has no body');
             }
 
+            if (generation !== this.streamGeneration) {
+                this.readyState = SSE_CLOSED;
+                return;
+            }
+
             this.readyState = SSE_OPEN;
             this.reconnectAttempts = 0;
             this.hasConnectedBefore = true;
@@ -199,6 +205,11 @@ export class SseClient {
 
                 if (done) {
                     break;
+                }
+
+                if (generation !== this.streamGeneration) {
+                    this.readyState = SSE_CLOSED;
+                    return;
                 }
 
                 buffer += decoder.decode(value, { stream: true });
@@ -236,6 +247,11 @@ export class SseClient {
             clearTimeout(this.connectionTimeoutId!);
             this.connectionTimeoutId = null;
 
+            if (generation !== this.streamGeneration) {
+                this.readyState = SSE_CLOSED;
+                return;
+            }
+
             if (signal.aborted && this.forcedClose) {
                 // Intentional close - don't reconnect
                 this.readyState = SSE_CLOSED;
@@ -254,12 +270,17 @@ export class SseClient {
         }
 
         // Stream ended (server closed connection) - reconnect
-        if (!this.forcedClose) {
+        if (generation === this.streamGeneration && !this.forcedClose) {
             this.scheduleReconnect();
         }
     }
 
     private scheduleReconnect() {
+        if (this.reconnectTimeoutId !== null || this.authFailed || this.forcedClose || !(this.accessToken ?? accessToken.current)) {
+            this.readyState = SSE_CLOSED;
+            return;
+        }
+
         this.reconnectAttempts++;
         const delay = this.getReconnectDelay(this.reconnectAttempts);
 

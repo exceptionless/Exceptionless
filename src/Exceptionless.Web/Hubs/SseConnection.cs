@@ -57,13 +57,13 @@ public sealed class SseConnection : IAsyncDisposable
     /// If an identical message (same serialized payload) is already queued, the new
     /// one is skipped (deduped) and this returns true.
     /// </summary>
-    public bool TryWrite(object message)
+    public bool TryWrite(object message, bool canDrop = true)
     {
         if (_cts.IsCancellationRequested)
             return false;
 
         string data = _serializer.SerializeToString(message);
-        var result = _queue.TryEnqueue(new SseEvent { Data = data, DedupeKey = data });
+        var result = _queue.TryEnqueue(new SseEvent { Data = data, DedupeKey = canDrop ? data : null, CanDrop = canDrop });
 
         if (result == EnqueueResult.Deduped)
         {
@@ -71,7 +71,7 @@ public sealed class SseConnection : IAsyncDisposable
             return true;
         }
 
-        if (result == EnqueueResult.DroppedOldest)
+        if (result == EnqueueResult.DroppedQueuedMessage)
             Interlocked.Increment(ref _droppedMessages);
 
         return true;
@@ -172,16 +172,17 @@ public sealed class SseConnection : IAsyncDisposable
         /// the same client-side cache invalidation, so coalescing is safe.
         /// </summary>
         public string? DedupeKey { get; init; }
+        public bool CanDrop { get; init; }
 
         public bool IsKeepAlive { get; init; }
-        public static SseEvent KeepAlive => new() { IsKeepAlive = true };
+        public static SseEvent KeepAlive => new() { IsKeepAlive = true, CanDrop = true };
     }
 
     internal enum EnqueueResult
     {
         Enqueued,
         Deduped,
-        DroppedOldest
+        DroppedQueuedMessage
     }
 
     /// <summary>
@@ -216,14 +217,13 @@ public sealed class SseConnection : IAsyncDisposable
 
                 var result = EnqueueResult.Enqueued;
 
-                // Enforce capacity: drop oldest if full
+                // Enforce capacity: drop the oldest droppable message first so direct user
+                // notifications do not get crowded out by stale cache invalidations.
                 if (_list.Count >= _capacity)
                 {
-                    var oldest = _list.First!;
-                    _list.RemoveFirst();
-                    if (oldest.Value.DedupeKey is not null)
-                        _index.Remove(oldest.Value.DedupeKey);
-                    result = EnqueueResult.DroppedOldest;
+                    var queuedToDrop = !evt.CanDrop ? FindFirstDroppableNode() : null;
+                    RemoveNode(queuedToDrop ?? _list.First!);
+                    result = EnqueueResult.DroppedQueuedMessage;
                 }
 
                 var node = _list.AddLast(evt);
@@ -245,9 +245,7 @@ public sealed class SseConnection : IAsyncDisposable
                     return null; // Completed
 
                 var node = _list.First!;
-                _list.RemoveFirst();
-                if (node.Value.DedupeKey is not null)
-                    _index.Remove(node.Value.DedupeKey);
+                RemoveNode(node);
                 return node.Value;
             }
         }
@@ -266,6 +264,27 @@ public sealed class SseConnection : IAsyncDisposable
         public void Dispose()
         {
             _signal.Dispose();
+        }
+
+        private LinkedListNode<SseEvent>? FindFirstDroppableNode()
+        {
+            var current = _list.First;
+            while (current is not null)
+            {
+                if (current.Value.CanDrop)
+                    return current;
+
+                current = current.Next;
+            }
+
+            return null;
+        }
+
+        private void RemoveNode(LinkedListNode<SseEvent> node)
+        {
+            _list.Remove(node);
+            if (node.Value.DedupeKey is not null)
+                _index.Remove(node.Value.DedupeKey);
         }
     }
 }

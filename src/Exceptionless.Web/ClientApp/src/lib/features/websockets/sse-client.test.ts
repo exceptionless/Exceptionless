@@ -197,6 +197,22 @@ describe('SseClient', () => {
             // fetch should only be called once (no reconnect)
             expect(fetchMock).toHaveBeenCalledTimes(1);
         });
+
+        it('should allow reconnect after internal close', async () => {
+            fetchMock.mockImplementation(() => Promise.resolve(createOpenSseResponse([': keepalive\n\n'])));
+
+            const client = trackedClient();
+            client.connect();
+
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            expect(client.close(false)).toBe(true);
+
+            client.connect();
+            await new Promise((resolve) => setTimeout(resolve, 50));
+
+            expect(client.readyState).toBe(SSE_OPEN);
+            expect(fetchMock).toHaveBeenCalledTimes(2);
+        });
     });
 
     describe('Auth Failure Handling', () => {
