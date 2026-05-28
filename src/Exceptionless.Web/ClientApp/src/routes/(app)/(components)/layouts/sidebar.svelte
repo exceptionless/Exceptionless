@@ -255,12 +255,16 @@
                                         </DropdownMenu.Item>
                                         <DropdownMenu.Separator />
                                     {/if}
-                                        {#each route.children as savedItem (savedItem.href)}
+                                    {#each route.children as savedItem (savedItem.href)}
                                         <DropdownMenu.Item>
                                             <A variant="ghost" href={savedItem.href} class="w-full" onclick={onFlyoutLinkClick}>
                                                 {savedItem.title}
                                                 {#if savedItem.usesPremiumFeatures}
-                                                    <Zap class="text-muted-foreground ml-1 inline-block size-3" aria-label="Requires premium plan" title="This view uses premium features" />
+                                                    <Zap
+                                                        class="text-muted-foreground ml-1 inline-block size-3"
+                                                        aria-label="Requires premium plan"
+                                                        title="This view uses premium features"
+                                                    />
                                                 {/if}
                                             </A>
                                         </DropdownMenu.Item>
@@ -312,9 +316,13 @@
                                                                 {...subProps}
                                                             >
                                                                 <span class="truncate">{savedItem.title}</span>
-                                                            {#if savedItem.usesPremiumFeatures}
-                                                                <Zap class="text-muted-foreground ml-auto size-3 shrink-0" aria-label="Requires premium plan" title="This view uses premium features" />
-                                                            {/if}
+                                                                {#if savedItem.usesPremiumFeatures}
+                                                                    <Zap
+                                                                        class="text-muted-foreground ml-auto size-3 shrink-0"
+                                                                        aria-label="Requires premium plan"
+                                                                        title="This view uses premium features"
+                                                                    />
+                                                                {/if}
                                                             </A>
                                                         {/snippet}
                                                     </Sidebar.MenuSubButton>

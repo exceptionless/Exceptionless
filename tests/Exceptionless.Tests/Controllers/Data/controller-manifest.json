@@ -1142,6 +1142,70 @@
   },
   {
     "Controller": "OrganizationController",
+    "Action": "GetEventCustomFieldsAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/organizations/{id:objectid}/event-custom-fields",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OrganizationController",
+    "Action": "PostEventCustomFieldAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/organizations/{id:objectid}/event-custom-fields",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [
+      "application/json"
+    ],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OrganizationController",
+    "Action": "DeleteEventCustomFieldAsync",
+    "HttpMethod": "DELETE",
+    "Route": "/api/v2/organizations/{id:objectid}/event-custom-fields/{fieldId}",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OrganizationController",
+    "Action": "PatchEventCustomFieldAsync",
+    "HttpMethod": "PATCH",
+    "Route": "/api/v2/organizations/{id:objectid}/event-custom-fields/{fieldId}",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [
+      "application/json"
+    ],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "OrganizationController",
     "Action": "RemoveFeatureAsync",
     "HttpMethod": "DELETE",
     "Route": "/api/v2/organizations/{id:objectid}/features/{feature:minlength(1)}",
@@ -1387,21 +1451,6 @@
     "Consumes": [
       "application/json"
     ],
-    "Produces": [
-      "application/json",
-      "application/problem\u002Bjson"
-    ],
-    "ExcludeFromDescription": false
-  },
-  {
-    "Controller": "SavedViewController",
-    "Action": "PostPredefinedAsync",
-    "HttpMethod": "POST",
-    "Route": "/api/v2/organizations/{organizationId:objectid}/saved-views/predefined",
-    "Authorization": [
-      "Authorize(Policy=UserPolicy)"
-    ],
-    "Consumes": [],
     "Produces": [
       "application/json",
       "application/problem\u002Bjson"
@@ -2147,22 +2196,6 @@
   },
   {
     "Controller": "SavedViewController",
-    "Action": "GetPredefinedAsync",
-    "HttpMethod": "GET",
-    "Route": "/api/v2/saved-views/predefined",
-    "Authorization": [
-      "Authorize(Policy=GlobalAdminPolicy)",
-      "Authorize(Policy=UserPolicy)"
-    ],
-    "Consumes": [],
-    "Produces": [
-      "application/json",
-      "application/problem\u002Bjson"
-    ],
-    "ExcludeFromDescription": false
-  },
-  {
-    "Controller": "SavedViewController",
     "Action": "GetAsync",
     "HttpMethod": "GET",
     "Route": "/api/v2/saved-views/{id:objectid}",
@@ -2205,38 +2238,6 @@
     "Consumes": [
       "application/json"
     ],
-    "Produces": [
-      "application/json",
-      "application/problem\u002Bjson"
-    ],
-    "ExcludeFromDescription": false
-  },
-  {
-    "Controller": "SavedViewController",
-    "Action": "DeletePredefinedSavedViewAsync",
-    "HttpMethod": "DELETE",
-    "Route": "/api/v2/saved-views/{id:objectid}/predefined",
-    "Authorization": [
-      "Authorize(Policy=GlobalAdminPolicy)",
-      "Authorize(Policy=UserPolicy)"
-    ],
-    "Consumes": [],
-    "Produces": [
-      "application/json",
-      "application/problem\u002Bjson"
-    ],
-    "ExcludeFromDescription": false
-  },
-  {
-    "Controller": "SavedViewController",
-    "Action": "PostPredefinedSavedViewAsync",
-    "HttpMethod": "POST",
-    "Route": "/api/v2/saved-views/{id:objectid}/predefined",
-    "Authorization": [
-      "Authorize(Policy=GlobalAdminPolicy)",
-      "Authorize(Policy=UserPolicy)"
-    ],
-    "Consumes": [],
     "Produces": [
       "application/json",
       "application/problem\u002Bjson"
