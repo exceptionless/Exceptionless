@@ -20,7 +20,7 @@ EnableDailySummary: false
 
 # Runs the jobs in the current website process
 RunJobsInProcess: false
-EnableWebSockets: true
+EnablePush: true
 
 Serilog:
   MinimumLevel: Warning

@@ -9,7 +9,7 @@ namespace Exceptionless.Web.Hubs;
 /// Sends keep-alive comments every 15 seconds to prevent proxy/LB disconnects.
 /// Proactively prunes dead connections during keep-alive sweeps.
 /// </summary>
-public sealed class SseConnectionManager : IDisposable
+public sealed class SseConnectionManager : IDisposable, IAsyncDisposable
 {
     private readonly ConcurrentDictionary<string, SseConnection> _connections = new();
     private readonly ConcurrentDictionary<string, Lazy<Task>> _pendingDisposals = new();
@@ -144,9 +144,16 @@ public sealed class SseConnectionManager : IDisposable
 
     public void Dispose()
     {
+        // Synchronous disposal: used by test hosts and non-async disposal paths.
+        // For production host shutdown, the DI container will prefer DisposeAsync().
+        DisposeAsync().AsTask().GetAwaiter().GetResult();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
         _timer?.Dispose();
 
-        var disposeTasks = new HashSet<Task>();
+        var disposeTasks = new List<Task>();
 
         foreach (var (connectionId, connection) in _connections)
         {
@@ -157,7 +164,8 @@ public sealed class SseConnectionManager : IDisposable
         foreach (var pendingDisposal in _pendingDisposals.Values)
             disposeTasks.Add(pendingDisposal.Value);
 
-        Task.WhenAll(disposeTasks).GetAwaiter().GetResult();
+        if (disposeTasks.Count > 0)
+            await Task.WhenAll(disposeTasks).ConfigureAwait(false);
     }
 
     private Task DisposeConnectionAsync(string connectionId, SseConnection connection)
