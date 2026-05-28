@@ -82,8 +82,11 @@ spec:
 {{- include "exceptionless.otel-env" . | indent 12 }}
             - name: RunJobsInProcess
               value: 'false'
+            # SSE rollout prerequisite: Azure Application Gateway for Containers Ingress API
+            # does not support the routeTimeout=0s override required for long-lived SSE streams.
+            # Keep push disabled here until this route moves to Gateway API + RoutePolicy.
             - name: EnablePush
-              value: 'true'
+              value: 'false'
 {{- if (empty .Values.storage.connectionString) }}
           volumeMounts:
             - mountPath: "/app/storage"
@@ -163,6 +166,8 @@ metadata:
     alb.networking.azure.io/alb-namespace: {{ .Values.ingress.albNamespace }}
     alb.networking.azure.io/alb-frontend: {{ template "exceptionless.fullname" . }}-fe
     cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer }}
+    # SSE is not safe to enable behind the current AGC Ingress API path.
+    # Migrate to Gateway API and attach a RoutePolicy with routeTimeout: 0s before enabling push.
 spec:
   ingressClassName: azure-alb-external
   tls:

@@ -456,4 +456,22 @@ public sealed class SseDeduplicationTests : TestWithServices
         Assert.Equal("msg-3", item2!.Value.Data);
         Assert.Equal("msg-4", item3!.Value.Data);
     }
+
+    [Fact]
+    public async Task CriticalMessage_WhenQueueFull_DropsOldestDroppableMessageFirst()
+    {
+        var queue = new SseConnection.DedupQueue(2);
+        queue.TryEnqueue(new SseConnection.SseEvent { Data = "lossy-1", DedupeKey = "lossy-1", CanDrop = true });
+        queue.TryEnqueue(new SseConnection.SseEvent { Data = "critical-1", CanDrop = false });
+
+        var result = queue.TryEnqueue(new SseConnection.SseEvent { Data = "critical-2", CanDrop = false });
+
+        using var cts = new CancellationTokenSource();
+        var item1 = await queue.DequeueAsync(cts.Token);
+        var item2 = await queue.DequeueAsync(cts.Token);
+
+        Assert.Equal(SseConnection.EnqueueResult.DroppedQueuedMessage, result);
+        Assert.Equal("critical-1", item1!.Value.Data);
+        Assert.Equal("critical-2", item2!.Value.Data);
+    }
 }

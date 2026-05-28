@@ -85,6 +85,8 @@ public sealed class SseConnectionManager : IDisposable
     {
         var connection = new SseConnection(connectionId, response, _serializer, requestAborted, _logger);
         _connections.TryAdd(connectionId, connection);
+        AppDiagnostics.PushSseConnectionsOpened.Add(1);
+        AppDiagnostics.Gauge("push.connections.sse.active", _connections.Count);
         return connection;
     }
 
@@ -106,7 +108,7 @@ public sealed class SseConnectionManager : IDisposable
             _ = ObserveDisposeAsync(connectionId, DisposeConnectionAsync(connectionId, connection));
     }
 
-    public bool SendMessage(string connectionId, object message)
+    public bool SendMessage(string connectionId, object message, bool canDrop = true)
     {
         if (!_connections.TryGetValue(connectionId, out var connection))
             return false;
@@ -117,16 +119,16 @@ public sealed class SseConnectionManager : IDisposable
             return false;
         }
 
-        return connection.TryWrite(message);
+        return connection.TryWrite(message, canDrop);
     }
 
-    public void SendMessage(IEnumerable<string> connectionIds, object message)
+    public void SendMessage(IEnumerable<string> connectionIds, object message, bool canDrop = true)
     {
         foreach (string connectionId in connectionIds)
-            SendMessage(connectionId, message);
+            SendMessage(connectionId, message, canDrop);
     }
 
-    public void SendMessageToAll(object message)
+    public void SendMessageToAll(object message, bool canDrop = true)
     {
         foreach (var (connectionId, connection) in _connections)
         {
@@ -136,7 +138,7 @@ public sealed class SseConnectionManager : IDisposable
                 continue;
             }
 
-            connection.TryWrite(message);
+            connection.TryWrite(message, canDrop);
         }
     }
 
@@ -174,6 +176,8 @@ public sealed class SseConnectionManager : IDisposable
         finally
         {
             _pendingDisposals.TryRemove(connectionId, out _);
+            AppDiagnostics.PushSseConnectionsClosed.Add(1);
+            AppDiagnostics.Gauge("push.connections.sse.active", _connections.Count);
         }
     }
 

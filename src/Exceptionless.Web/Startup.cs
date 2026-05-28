@@ -307,6 +307,8 @@ public class Startup
 
         if (options.EnablePush)
         {
+            app.UseWebSockets();
+            app.UseMiddleware<WebSocketPushMiddleware>();
             app.UseMiddleware<SseMiddleware>();
         }
 

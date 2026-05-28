@@ -15,6 +15,7 @@ public class Bootstrapper
     public static void RegisterServices(IServiceCollection services, AppOptions appOptions, ILoggerFactory loggerFactory)
     {
         services.AddSingleton<SseConnectionManager>();
+        services.AddSingleton<WebSocketConnectionManager>();
         services.AddSingleton<MessageBusBroker>();
 
         services.AddSingleton<ApiMapper>();

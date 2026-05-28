@@ -124,6 +124,11 @@ public static class AppDiagnostics
 
     internal static readonly Counter<int> SavedViewsSize = Meter.CreateCounter<int>("ex.savedviews.size", description: "Size of user saved views");
     internal static readonly Counter<int> SavedViewsViewTypeSize = Meter.CreateCounter<int>("ex.savedviews.viewtype.size", description: "Size of user saved views by view type");
+
+    internal static readonly Counter<int> PushSseConnectionsOpened = Meter.CreateCounter<int>("ex.push.connections.sse.opened", description: "SSE push connections opened");
+    internal static readonly Counter<int> PushSseConnectionsClosed = Meter.CreateCounter<int>("ex.push.connections.sse.closed", description: "SSE push connections closed");
+    internal static readonly Counter<int> PushWebSocketConnectionsOpened = Meter.CreateCounter<int>("ex.push.connections.websocket.opened", description: "WebSocket push connections opened");
+    internal static readonly Counter<int> PushWebSocketConnectionsClosed = Meter.CreateCounter<int>("ex.push.connections.websocket.closed", description: "WebSocket push connections closed");
 }
 
 public static class MetricsClientExtensions

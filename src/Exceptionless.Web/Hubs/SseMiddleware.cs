@@ -27,7 +27,8 @@ public class SseMiddleware
     public async Task Invoke(HttpContext context)
     {
         if (!context.Request.Path.StartsWithSegments(_sseEndpoint, StringComparison.Ordinal)
-            || !HttpMethods.IsGet(context.Request.Method))
+            || !HttpMethods.IsGet(context.Request.Method)
+            || context.WebSockets.IsWebSocketRequest)
         {
             await _next(context);
             return;

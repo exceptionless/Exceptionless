@@ -3,8 +3,10 @@ using System.Text;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Utility;
+using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Hubs;
+using Exceptionless.Web.Models;
 using Foundatio.Messaging;
 using Foundatio.Repositories.Models;
 using Xunit;
@@ -25,6 +27,12 @@ public sealed class SseIntegrationTests : IntegrationTestsBase
         _messagePublisher = GetService<IMessagePublisher>();
     }
 
+    protected override async Task ResetDataAsync()
+    {
+        await base.ResetDataAsync();
+        await GetService<SampleDataService>().CreateDataAsync();
+    }
+
     [Fact]
     public async Task ConnectWithValidToken_ReturnsEventStream()
     {
@@ -33,7 +41,7 @@ public sealed class SseIntegrationTests : IntegrationTestsBase
         using var client = _server.CreateClient();
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v2/push");
         request.Headers.Add("Accept", "text/event-stream");
-        request.Headers.Add("Authorization", $"Bearer {token.Id}");
+        request.Headers.Add("Authorization", $"Bearer {token}");
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         cts.CancelAfter(TimeSpan.FromSeconds(5));
@@ -78,7 +86,7 @@ public sealed class SseIntegrationTests : IntegrationTestsBase
         var token = await CreateTokenAsync();
 
         using var client = _server.CreateClient();
-        using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v2/push?access_token={token.Id}");
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v2/push?access_token={token}");
         request.Headers.Add("Accept", "text/event-stream");
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
@@ -92,12 +100,12 @@ public sealed class SseIntegrationTests : IntegrationTestsBase
     public async Task ConnectedClient_ReceivesEntityChangedMessage()
     {
         var token = await CreateTokenAsync();
-        var orgId = token.OrganizationId;
+        var orgId = SampleDataService.TEST_ORG_ID;
 
         using var client = _server.CreateClient();
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v2/push");
         request.Headers.Add("Accept", "text/event-stream");
-        request.Headers.Add("Authorization", $"Bearer {token.Id}");
+        request.Headers.Add("Authorization", $"Bearer {token}");
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         cts.CancelAfter(TimeSpan.FromSeconds(10));
@@ -144,7 +152,7 @@ public sealed class SseIntegrationTests : IntegrationTestsBase
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v2/push");
             request.Headers.Add("Accept", "text/event-stream");
-            request.Headers.Add("Authorization", $"Bearer {token.Id}");
+            request.Headers.Add("Authorization", $"Bearer {token}");
 
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(3));
@@ -188,9 +196,19 @@ public sealed class SseIntegrationTests : IntegrationTestsBase
         return sb.Length > 0 ? sb.ToString() : null;
     }
 
-    private async Task<Token> CreateTokenAsync()
+    private async Task<string> CreateTokenAsync()
     {
-        var tokenData = GetService<TokenData>();
-        return tokenData.GenerateSampleUserToken();
+        var result = await SendRequestAsAsync<TokenResult>(r => r
+            .Post()
+            .AppendPath("auth/login")
+            .Content(new Login
+            {
+                Email = SampleDataService.TEST_USER_EMAIL,
+                Password = SampleDataService.TEST_USER_PASSWORD
+            })
+            .StatusCodeShouldBeOk()
+        );
+
+        return result?.Token ?? throw new InvalidOperationException("Login did not return a token.");
     }
 }
