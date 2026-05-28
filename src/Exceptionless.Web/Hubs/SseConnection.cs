@@ -109,7 +109,6 @@ public sealed class SseConnection : IAsyncDisposable
         if (Interlocked.Exchange(ref _disposeState, 1) != 0)
             return;
         Abort();
-        Abort();
         using (_queue)
         using (_cts)
         {
@@ -181,7 +180,8 @@ public sealed class SseConnection : IAsyncDisposable
     {
         Enqueued,
         Deduped,
-        DroppedQueuedMessage
+        DroppedQueuedMessage,
+        Skipped
     }
 
     /// <summary>
@@ -220,6 +220,9 @@ public sealed class SseConnection : IAsyncDisposable
                 // notifications do not get crowded out by stale cache invalidations.
                 if (_list.Count >= _capacity)
                 {
+                    if (evt.IsKeepAlive)
+                        return EnqueueResult.Skipped;
+
                     var queuedToDrop = FindFirstDroppableNode();
                     RemoveNode(queuedToDrop ?? _list.First!);
                     result = EnqueueResult.DroppedQueuedMessage;
