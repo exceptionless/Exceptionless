@@ -2,7 +2,7 @@
     import { afterNavigate } from '$app/navigation';
     import { Exceptionless } from '@exceptionless/browser';
 
-    import { normalizeRouteId } from './index';
+    import { normalizeRouteId } from './route';
 
     interface Props {
         userId?: string;

@@ -31,7 +31,7 @@
         },
         stacks: {
             color: 'var(--chart-2)',
-            label: 'Issues'
+            label: 'Stacks'
         }
     } satisfies Chart.ChartConfig;
 
@@ -39,7 +39,7 @@
         {
             color: chartConfig.stacks.color,
             key: 'stacks',
-            label: 'Issues'
+            label: 'Stacks'
         },
         {
             color: chartConfig.events.color,

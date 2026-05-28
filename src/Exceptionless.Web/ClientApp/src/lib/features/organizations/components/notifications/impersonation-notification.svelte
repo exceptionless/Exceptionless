@@ -17,7 +17,7 @@
     let { name, userOrganizations, ...restProps }: Props = $props();
 
     async function stopImpersonating(): Promise<void> {
-        await goto(resolve('/(app)/issues'));
+        await goto(resolve('/(app)/stacks'));
         organization.current = userOrganizations[0]?.id;
     }
 </script>

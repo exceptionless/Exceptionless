@@ -16,7 +16,6 @@
         applyTimeFilter,
         buildFilterCacheKey,
         deserializeFilters,
-        filterCacheVersionNumber,
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
@@ -34,7 +33,7 @@
     import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts';
     import { parseDateMathRange, toDateMathRange } from '$features/shared/utils/datemath';
-    import IssueDetailSheet from '$features/stacks/components/issue-detail-sheet.svelte';
+    import StackDetailSheet from '$features/stacks/components/stack-detail-sheet.svelte';
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
@@ -61,7 +60,7 @@
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
-        return resolve('/(app)/issues/[stackId=objectid]', { stackId: row.id });
+        return resolve('/(app)/stacks/[stackId=objectid]', { stackId: row.id });
     }
 
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
@@ -82,16 +81,16 @@
     }
 
     function getQueryTime(): null | string {
-        if (page.url.searchParams.has('time')) {
-            return page.url.searchParams.get('time') === '' ? null : queryParams.time;
+        if (queryParams.time != null) {
+            return queryParams.time || null;
         }
 
         return savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
     }
 
     function getEffectiveFilter(): null | string {
-        if (page.url.searchParams.has('filter')) {
-            return queryParams.filter ?? '';
+        if (queryParams.filter != null) {
+            return queryParams.filter;
         }
 
         return savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
@@ -108,11 +107,11 @@
         }
     });
 
-    const VIEW = 'issues';
+    const VIEW = 'stacks';
     let showStats = $state(true);
     let showChart = $state(true);
     const savedViewsState = useSavedViews({
-        baseHref: resolve('/(app)/issues'),
+        baseHref: resolve('/(app)/stacks'),
         filterCacheKey,
         getColumnOrder: () => table.state.columnOrder,
         getColumnVisibility: () => table.state.columnVisibility,
@@ -132,7 +131,11 @@
         updateFilterCache,
         view: VIEW
     });
-    const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Issues');
+    const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Stacks');
+
+    $effect(() => {
+        document.title = `${pageTitle} - Exceptionless`;
+    });
 
     watch(
         () => organization.current,
@@ -148,7 +151,8 @@
     function getCurrentFilters(): FacetedFilter.IFilter[] {
         const filter = getEffectiveFilter();
         const savedView = savedViewsState.activeSavedView;
-        if (!page.url.searchParams.has('filter') && savedView?.filter_definitions && filter === (savedView.filter ?? null)) {
+
+        if (queryParams.filter == null && savedView?.filter_definitions && filter === (savedView.filter ?? null)) {
             const hydrated = deserializeFilters(savedView.filter_definitions);
             return applyTimeFilter(hydrated, getQueryTime());
         }
@@ -157,9 +161,15 @@
     }
 
     let filters = $state(getCurrentFilters());
+    let isInternalFilterUpdate = false;
     watch(
-        [() => page.url.pathname, () => page.url.search, () => savedViewsState.activeSavedView, () => filterCacheVersionNumber()],
+        [() => page.url.pathname, () => page.url.search, () => savedViewsState.activeSavedView],
         () => {
+            if (isInternalFilterUpdate) {
+                isInternalFilterUpdate = false;
+                return;
+            }
+
             filters = getCurrentFilters();
         },
         { lazy: true }
@@ -178,12 +188,22 @@
         }
 
         // For all other filters, apply them to the current page
-        updateFilters(filterChanged(filters ?? [], addedOrUpdated));
+        const isNew = !filters?.some((f) => f.id === addedOrUpdated.id);
+        const updatedFilters = filterChanged(filters ?? [], addedOrUpdated);
+        updateFilters(updatedFilters);
+        // Only reassign filters for newly added filters to avoid re-rendering open popovers.
+        // Existing filter values are already mutated in place via $state.
+        if (isNew) {
+            filters = updatedFilters;
+        }
+
         selectedStackId = undefined;
     }
 
     function onFilterRemoved(removed?: FacetedFilter.IFilter): void {
-        updateFilters(filterRemoved(filters ?? [], removed));
+        const updatedFilters = filterRemoved(filters ?? [], removed);
+        updateFilters(updatedFilters);
+        filters = updatedFilters;
     }
 
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
@@ -192,9 +212,18 @@
         const baseFilter = savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
         const baseTime = savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
 
+        const newFilterParam = filter === baseFilter ? null : filter;
+        const newTimeParam = time === baseTime ? null : (time ?? '');
+
         updateFilterCache(filterCacheKey(filter), updatedFilters);
-        queryParams.time = time === baseTime ? null : (time ?? '');
-        queryParams.filter = filter === baseFilter ? null : filter;
+        // Only skip the watch when the URL will actually change from our update.
+        // If the URL doesn't change, the watch won't fire and the flag would stay stale.
+        if (newFilterParam !== queryParams.filter || newTimeParam !== queryParams.time) {
+            isInternalFilterUpdate = true;
+        }
+
+        queryParams.time = newTimeParam;
+        queryParams.filter = newFilterParam;
     }
 
     const eventsQueryParameters: GetEventsParams = $state({
@@ -227,7 +256,7 @@
 
     const table = createTable(
         getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
-            columnPersistenceKey: 'issues-column-visibility',
+            columnPersistenceKey: 'stacks-column-visibility',
             get columns() {
                 return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode);
             },
@@ -349,15 +378,15 @@
         const aggregations = chartDataQuery.data?.aggregations;
         const timeRange = parseDateMathRange(getQueryTime());
         const totalEvents = agg.sum(aggregations, 'sum_count')?.value ?? chartDataQuery.data?.total ?? 0;
-        const totalIssues = agg.cardinality(aggregations, 'cardinality_stack')?.value ?? 0;
-        const newIssues = agg.terms<boolean>(aggregations, 'terms_first')?.buckets[0]?.total ?? 0;
+        const totalStacks = agg.cardinality(aggregations, 'cardinality_stack')?.value ?? 0;
+        const newStacks = agg.terms<boolean>(aggregations, 'terms_first')?.buckets[0]?.total ?? 0;
         const hours = Math.max((timeRange.end.getTime() - timeRange.start.getTime()) / 3_600_000, 1);
 
         return {
             eventsPerHour: totalEvents / hours,
-            newIssues,
+            newStacks,
             totalEvents,
-            totalIssues
+            totalStacks
         };
     });
 
@@ -409,9 +438,9 @@
             <EventsStatsDashboard
                 eventsPerHour={stats.eventsPerHour}
                 isLoading={chartDataQuery.isLoading && !chartDataQuery.isSuccess}
-                newIssues={stats.newIssues}
+                newStacks={stats.newStacks}
                 totalEvents={stats.totalEvents}
-                totalIssues={stats.totalIssues}
+                totalStacks={stats.totalStacks}
             />
         {/if}
 
@@ -436,4 +465,4 @@
     </div>
 </div>
 
-<IssueDetailSheet stackId={selectedStackId} filterChanged={onFilterChanged} onClose={() => (selectedStackId = undefined)} onError={handleStackError} />
+<StackDetailSheet stackId={selectedStackId} filterChanged={onFilterChanged} onClose={() => (selectedStackId = undefined)} onError={handleStackError} />

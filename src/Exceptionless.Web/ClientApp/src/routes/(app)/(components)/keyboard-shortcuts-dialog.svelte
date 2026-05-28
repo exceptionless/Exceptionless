@@ -23,7 +23,7 @@
     const shortcutSections: ShortcutSection[] = [
         {
             rows: [
-                { action: 'Go to Issues', shortcuts: [appKeyboardShortcuts.issues.keys] },
+                { action: 'Go to Stacks', shortcuts: [appKeyboardShortcuts.stacks.keys] },
                 { action: 'Go to All Events', shortcuts: [appKeyboardShortcuts.allEvents.keys] },
                 { action: 'Show Keyboard Shortcuts', shortcuts: [appKeyboardShortcuts.keyboardShortcuts.keys] }
             ],

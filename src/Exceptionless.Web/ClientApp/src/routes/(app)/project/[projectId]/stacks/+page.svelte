@@ -11,7 +11,6 @@
     import { StatusFilter, StringFilter, TagFilter } from '$features/events/components/filters';
     import {
         buildFilterCacheKey,
-        filterCacheVersionNumber,
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
@@ -115,7 +114,7 @@
 
     let filters = $state(sanitizeStackFilters(getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter)));
     watch(
-        [() => queryParams.filter, () => filterCacheVersionNumber()],
+        [() => queryParams.filter],
         ([filter]) => {
             filters = sanitizeStackFilters(getFiltersFromCache(filterCacheKey(filter), filter), true);
         },
@@ -130,20 +129,28 @@
 
     function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
         if (!isStackFilterSupported(addedOrUpdated)) {
-            toast.error(`"${describeStackFilter(addedOrUpdated)}" is not supported in issue management.`);
+            toast.error(`"${describeStackFilter(addedOrUpdated)}" is not supported in stack management.`);
             return;
         }
 
-        updateFilters(filterChanged(filters ?? [], addedOrUpdated));
+        const isNew = !filters?.some((f) => f.id === addedOrUpdated.id);
+        const updatedFilters = filterChanged(filters ?? [], addedOrUpdated);
+        updateFilters(updatedFilters);
+        if (isNew) {
+            filters = sanitizeStackFilters(updatedFilters);
+        }
     }
 
     function onFilterRemoved(removed?: FacetedFilter.IFilter): void {
         if (!removed) {
             updateFilters([]);
+            filters = [];
             return;
         }
 
-        updateFilters(filterRemoved(filters ?? [], removed));
+        const updatedFilters = filterRemoved(filters ?? [], removed);
+        updateFilters(updatedFilters);
+        filters = updatedFilters;
     }
 
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
@@ -197,7 +204,7 @@
     });
 
     function rowHref(row: Stack): string {
-        return resolve('/(app)/project/[projectId]/issues/[stackId]', { projectId: projectId ?? '', stackId: row.id });
+        return resolve('/(app)/project/[projectId]/stacks/[stackId]', { projectId: projectId ?? '', stackId: row.id });
     }
 
     const table = createTable(getTableOptions(stacksQueryParameters, stacksQuery, handleTagClick));
@@ -230,7 +237,7 @@
 
 <div class="flex flex-col">
     <div class="mb-4 flex flex-wrap items-start gap-2">
-        <Muted class="w-full shrink-0">Manage project issues, including restoring ignored or discarded issues</Muted>
+        <Muted class="w-full shrink-0">Manage project stacks, including restoring ignored or discarded stacks</Muted>
         <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <StackFacetedFilterBuilder includeProject={false} />

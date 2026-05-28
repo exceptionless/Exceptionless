@@ -47,18 +47,18 @@ describe('getSafeRedirectUrl', () => {
     describe('valid redirects', () => {
         it('should allow simple relative paths', () => {
             expect(getSafeRedirectUrl('/dashboard', fallback)).toBe('/dashboard');
-            expect(getSafeRedirectUrl('/app/issues', fallback)).toBe('/app/issues');
+            expect(getSafeRedirectUrl('/app/stacks', fallback)).toBe('/app/stacks');
             expect(getSafeRedirectUrl('/', fallback)).toBe('/');
         });
 
         it('should allow paths with query parameters', () => {
             expect(getSafeRedirectUrl('/app?filter=test', fallback)).toBe('/app?filter=test');
-            expect(getSafeRedirectUrl('/app/issues?page=1&size=10', fallback)).toBe('/app/issues?page=1&size=10');
+            expect(getSafeRedirectUrl('/app/stacks?page=1&size=10', fallback)).toBe('/app/stacks?page=1&size=10');
         });
 
         it('should allow paths with hash fragments', () => {
             expect(getSafeRedirectUrl('/app#section', fallback)).toBe('/app#section');
-            expect(getSafeRedirectUrl('/app/issues#details', fallback)).toBe('/app/issues#details');
+            expect(getSafeRedirectUrl('/app/stacks#details', fallback)).toBe('/app/stacks#details');
         });
 
         it('should allow paths with encoded characters', () => {
@@ -109,7 +109,7 @@ describe('getSafeRedirectUrl', () => {
 
         it('should reject paths not starting with /', () => {
             expect(getSafeRedirectUrl('dashboard', fallback)).toBe(fallback);
-            expect(getSafeRedirectUrl('app/issues', fallback)).toBe(fallback);
+            expect(getSafeRedirectUrl('app/stacks', fallback)).toBe(fallback);
         });
 
         it('should allow URL-encoded paths (they stay on same origin)', () => {

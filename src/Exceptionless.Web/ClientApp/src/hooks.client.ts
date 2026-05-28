@@ -1,4 +1,4 @@
-import type { HandleClientError, ServerInit } from '@sveltejs/kit';
+import type { ClientInit, HandleClientError } from '@sveltejs/kit';
 
 import { dev } from '$app/environment';
 import { page } from '$app/state';
@@ -12,7 +12,7 @@ if (PUBLIC_BASE_URL) {
     env.PUBLIC_BASE_URL = PUBLIC_BASE_URL;
 }
 
-export const init: ServerInit = async () => {
+export const init: ClientInit = async () => {
     if (!env.PUBLIC_EXCEPTIONLESS_API_KEY) {
         return;
     }
@@ -54,13 +54,13 @@ export const init: ServerInit = async () => {
         }
 
         const method = ctx.request?.method ?? 'UNKNOWN';
-        const pathname = (() => {
-            try {
-                return new URL(rawUrl).pathname;
-            } catch {
-                return rawUrl;
-            }
-        })();
+        let pathname = rawUrl;
+        try {
+            pathname = new URL(rawUrl).pathname;
+        } catch {
+            /* relative or malformed URL — use as-is */
+        }
+
         const path = normalizePath(pathname, '');
         void Exceptionless.createLog(`${method} ${path}`, `HTTP ${status}`, 'warn').addTags('api-failure').submit();
     });
