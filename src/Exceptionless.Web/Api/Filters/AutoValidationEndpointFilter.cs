@@ -18,9 +18,9 @@ public class AutoValidationEndpointFilter : IEndpointFilter
         {
             if (!MiniValidator.TryValidate(argument!, out var errors))
             {
-                var normalizedErrors = new Dictionary<string, string[]>();
-                foreach (var error in errors)
-                    normalizedErrors[error.Key.ToLowerUnderscoredWords()] = error.Value;
+                var normalizedErrors = errors.ToDictionary(
+                    e => e.Key.ToLowerUnderscoredWords(),
+                    e => e.Value);
 
                 return Microsoft.AspNetCore.Http.Results.ValidationProblem(normalizedErrors, statusCode: StatusCodes.Status422UnprocessableEntity);
             }
