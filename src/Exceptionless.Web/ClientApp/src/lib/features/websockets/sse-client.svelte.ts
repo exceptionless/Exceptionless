@@ -54,6 +54,7 @@ export class SseClient {
     private accessToken: null | string = null;
     private authFailed: boolean = false;
     private connectionTimeoutId: null | ReturnType<typeof setTimeout> = null;
+    private endpointUnavailable: boolean = false;
     private forcedClose: boolean = false;
     private hasConnectedBefore: boolean = false;
     private pausedForVisibility: boolean = false;
@@ -77,6 +78,7 @@ export class SseClient {
                 this.accessToken = accessToken.current;
                 this.reconnectAttempts = 0;
                 this.authFailed = false;
+                this.endpointUnavailable = false;
                 this.pausedForVisibility = false;
                 this.close(false);
             } else if (!visibility.visible) {
@@ -92,6 +94,7 @@ export class SseClient {
                 this.readyState === SSE_CLOSED &&
                 this.reconnectTimeoutId === null &&
                 !this.authFailed &&
+                !this.endpointUnavailable &&
                 !this.forcedClose
             ) {
                 this.connect();
@@ -162,7 +165,14 @@ export class SseClient {
     }
 
     private scheduleReconnect() {
-        if (this.reconnectTimeoutId !== null || this.authFailed || this.forcedClose || this.pausedForVisibility || !(this.accessToken ?? accessToken.current)) {
+        if (
+            this.reconnectTimeoutId !== null ||
+            this.authFailed ||
+            this.endpointUnavailable ||
+            this.forcedClose ||
+            this.pausedForVisibility ||
+            !(this.accessToken ?? accessToken.current)
+        ) {
             this.readyState = SSE_CLOSED;
             return;
         }
@@ -200,6 +210,14 @@ export class SseClient {
                 if (response.status === 401 || response.status === 403) {
                     console.warn('[SseClient] Auth failure, not reconnecting', { status: response.status });
                     this.authFailed = true;
+                    this.readyState = SSE_CLOSED;
+                    this.onClose();
+                    return;
+                }
+
+                if (response.status === 404) {
+                    console.info('[SseClient] Push endpoint unavailable, not reconnecting');
+                    this.endpointUnavailable = true;
                     this.readyState = SSE_CLOSED;
                     this.onClose();
                     return;

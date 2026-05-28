@@ -245,6 +245,21 @@ describe('SseClient', () => {
             expect(client.readyState).toBe(SSE_CLOSED);
             expect(fetchMock).toHaveBeenCalledTimes(1);
         });
+
+        it('should NOT reconnect when push endpoint is unavailable', async () => {
+            const onClose = vi.fn();
+            fetchMock.mockImplementation(() => Promise.resolve(new Response(null, { status: 404 })));
+
+            const client = trackedClient();
+            client.onClose = onClose;
+            client.connect();
+
+            await new Promise((resolve) => setTimeout(resolve, 100));
+
+            expect(onClose).toHaveBeenCalledTimes(1);
+            expect(client.readyState).toBe(SSE_CLOSED);
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+        });
     });
 
     describe('Reconnection Logic', () => {
