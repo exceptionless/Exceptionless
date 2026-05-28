@@ -15,7 +15,7 @@
     variant="ghost"
     size={children ? 'xs' : 'icon-xs'}
     onclick={() => changed(new TypeFilter(value))}
-    title={`Search type:${value}`}
+    title={`Filter type:${value}`}
     class={['cursor-pointer', children ? '' : 'opacity-50 hover:opacity-100 focus-visible:opacity-100', className]}
     {...props}
 >

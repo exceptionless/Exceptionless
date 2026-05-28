@@ -17,7 +17,7 @@
     variant="ghost"
     size={children ? 'xs' : 'icon-xs'}
     onclick={() => changed(new StatusFilter(value))}
-    title={`Search status:${value}`}
+    title={`Filter status:${value}`}
     class={['cursor-pointer', children ? '' : 'opacity-50 hover:opacity-100 focus-visible:opacity-100', className]}
     {...props}
 >

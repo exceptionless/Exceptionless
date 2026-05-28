@@ -53,7 +53,7 @@ public class SavedViewSerializerTests : TestWithServices
             Name = "Open Issues",
             Time = "[now-7d TO now]",
             Version = 1,
-            ViewType = "issues",
+            ViewType = "stacks",
             CreatedUtc = new DateTime(2024, 1, 15, 12, 0, 0, DateTimeKind.Utc),
             UpdatedUtc = new DateTime(2024, 6, 1, 8, 30, 0, DateTimeKind.Utc)
         };
@@ -91,7 +91,7 @@ public class SavedViewSerializerTests : TestWithServices
         Assert.Equal("(status:open OR status:regressed)", result.Filter);
         Assert.Equal("Open Issues", result.Name);
         Assert.Equal("[now-7d TO now]", result.Time);
-        Assert.Equal("issues", result.ViewType);
+        Assert.Equal("stacks", result.ViewType);
         Assert.NotNull(result.Columns);
         Assert.Equal(3, result.Columns.Count);
         Assert.True(result.Columns["title"]);

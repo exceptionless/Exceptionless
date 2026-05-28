@@ -228,9 +228,9 @@
                 return;
             }
 
-            if (isKeyboardShortcut(e, appKeyboardShortcuts.issues)) {
+            if (isKeyboardShortcut(e, appKeyboardShortcuts.stacks)) {
                 e.preventDefault();
-                void goto(resolve('/(app)/issues'));
+                void goto(resolve('/(app)/stacks'));
                 return;
             }
 
@@ -356,7 +356,7 @@
 
     const viewToHref: Record<string, string> = {
         events: resolve('/(app)/events'),
-        issues: resolve('/(app)/issues'),
+        stacks: resolve('/(app)/stacks'),
         stream: resolve('/(app)/stream')
     };
 
@@ -366,35 +366,7 @@
 
     const filteredRoutes = $derived.by(() => {
         const context: NavigationItemContext = { authenticated: isAuthenticated, impersonating: isImpersonating, user: meQuery.data };
-        const allRoutes = routes()
-            .filter((route) => (route.show ? route.show(context) : true))
-            .map((route) => {
-                if (route.group !== 'Dashboards') {
-                    return route;
-                }
-
-                if (route.href === resolve('/(app)/events') && page.params.eventId) {
-                    return {
-                        ...route,
-                        children: [
-                            ...(route.children ?? []),
-                            { href: resolve('/(app)/events/[eventId=objectid]', { eventId: page.params.eventId }), title: 'Details' }
-                        ]
-                    };
-                }
-
-                if (route.href === resolve('/(app)/issues') && page.params.stackId) {
-                    return {
-                        ...route,
-                        children: [
-                            ...(route.children ?? []),
-                            { href: resolve('/(app)/issues/[stackId=objectid]', { stackId: page.params.stackId }), title: 'Details' }
-                        ]
-                    };
-                }
-
-                return route;
-            });
+        const allRoutes = routes().filter((route) => (route.show ? route.show(context) : true));
 
         const savedViews = (savedViewsQuery.data ?? []).filter((savedView) => !isSavedViewDeleted(savedView));
         if (savedViews.length === 0) {
@@ -463,7 +435,6 @@
     <Sidebar routes={filteredRoutes}>
         {#snippet header()}
             <SidebarOrganizationSwitcher
-                class="pt-2"
                 isLoading={organizationsQuery.isLoading}
                 {organizations}
                 {impersonatedOrganization}
@@ -486,8 +457,8 @@
             />
         {/snippet}
     </Sidebar>
-    <div class="flex min-h-screen min-w-0 flex-1 pt-16">
-        <div class="text-secondary-foreground flex min-h-full min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
+    <div class="flex h-screen min-w-0 flex-1 flex-col overflow-hidden pt-16">
+        <div class="text-secondary-foreground flex min-h-0 min-w-0 flex-1 scrollbar-gutter-stable flex-col overflow-x-hidden overflow-y-auto">
             <main class="flex-1 px-4 pt-4">
                 <NavigationCommand
                     bind:open={isCommandOpen}

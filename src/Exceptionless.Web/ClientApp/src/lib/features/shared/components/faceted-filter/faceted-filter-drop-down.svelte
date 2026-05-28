@@ -46,22 +46,15 @@
         updatedValue = value;
     });
 
-    function applyAndClose() {
-        if (updatedValue !== value) {
-            changed(updatedValue);
-        }
-
-        open = false;
-    }
-
     function cancelAndClose() {
         updatedValue = value;
+        changed(updatedValue);
         open = false;
     }
 
     function onOpenChange(isOpen: boolean) {
         if (!isOpen) {
-            applyAndClose();
+            open = false;
         }
     }
 
@@ -76,10 +69,13 @@
         } else {
             updatedValue = currentValue;
         }
+
+        changed(updatedValue);
     }
 
     export function onClearFilter() {
         updatedValue = undefined;
+        changed(updatedValue);
     }
 
     function displayValue(value: string | undefined) {
@@ -116,7 +112,7 @@
             </Button>
         {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={applyAndClose}>
+    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={(e) => e.preventDefault()}>
         <Command.Root {filter}>
             <Command.Input placeholder={title} autofocus={open} aria-describedby={`${title}-help`} />
             <Command.List>
