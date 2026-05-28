@@ -28,6 +28,11 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
+      # SSE connections are long-lived; give the pod enough time to drain before SIGTERM.
+      # The preStop sleep lets the ALB/ingress controller deregister the pod before traffic stops,
+      # then the remaining window allows ASP.NET Core to cancel RequestAborted tokens and clean up.
+      # When push is eventually enabled behind a Gateway API RoutePolicy, revisit this value.
+      terminationGracePeriodSeconds: 60
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
@@ -39,6 +44,13 @@ spec:
         - name: {{ template "exceptionless.name" . }}-api
           image: "{{ .Values.api.image.repository }}:{{ .Values.version }}"
           imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          lifecycle:
+            preStop:
+              # Give the ALB ~15s to deregister this pod before SIGTERM fires.
+              # The total graceful window is terminationGracePeriodSeconds (60s) minus
+              # this sleep, leaving ~45s for ASP.NET Core to drain active SSE connections.
+              exec:
+                command: ["sleep", "15"]
           livenessProbe:
             httpGet:
               path: /health
