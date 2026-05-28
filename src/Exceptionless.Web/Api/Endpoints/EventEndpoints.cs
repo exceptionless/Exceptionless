@@ -8,9 +8,11 @@ using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Repositories.Models;
-using IMediator = Foundatio.Mediator.IMediator;
+using Exceptionless.Web.Api.Results;
+using Foundatio.Mediator;
 using Microsoft.AspNetCore.Mvc;
 using Exceptionless.Web.Utility.OpenApi;
+using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Exceptionless.Web.Api.Endpoints;
 
@@ -25,7 +27,7 @@ public static class EventEndpoints
 
         // Count
         group.MapGet("events/count", async (HttpContext httpContext, IMediator mediator, string? filter = null, string? aggregations = null, string? time = null, string? offset = null, string? mode = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetEventCount(filter, aggregations, time, offset, mode, httpContext)))
+            => (await mediator.InvokeAsync<Result<CountResult>>(new GetEventCount(filter, aggregations, time, offset, mode, httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<CountResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -44,7 +46,7 @@ public static class EventEndpoints
         });
 
         group.MapGet("organizations/{organizationId:objectid}/events/count", async (string organizationId, HttpContext httpContext, IMediator mediator, string? filter = null, string? aggregations = null, string? time = null, string? offset = null, string? mode = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetEventCountByOrganization(organizationId, filter, aggregations, time, offset, mode, httpContext)))
+            => (await mediator.InvokeAsync<Result<CountResult>>(new GetEventCountByOrganization(organizationId, filter, aggregations, time, offset, mode, httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<CountResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -64,7 +66,7 @@ public static class EventEndpoints
         });
 
         group.MapGet("projects/{projectId:objectid}/events/count", async (string projectId, HttpContext httpContext, IMediator mediator, string? filter = null, string? aggregations = null, string? time = null, string? offset = null, string? mode = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetEventCountByProject(projectId, filter, aggregations, time, offset, mode, httpContext)))
+            => (await mediator.InvokeAsync<Result<CountResult>>(new GetEventCountByProject(projectId, filter, aggregations, time, offset, mode, httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<CountResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -85,7 +87,7 @@ public static class EventEndpoints
 
         // Get by id
         group.MapGet("events/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, string? time = null, string? offset = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetEventById(id, time, offset, httpContext)))
+            => (await mediator.InvokeAsync<Result<PersistentEvent>>(new GetEventById(id, time, offset, httpContext))).ToHttpResult())
         .WithName("GetPersistentEventById")
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<PersistentEvent>()
@@ -106,7 +108,7 @@ public static class EventEndpoints
 
         // Get all
         group.MapGet("events", async (HttpContext httpContext, IMediator mediator, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetAllEvents(filter, sort, time, offset, mode, page, limit, before, after, httpContext)))
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetAllEvents(filter, sort, time, offset, mode, page, limit, before, after, httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -132,7 +134,7 @@ public static class EventEndpoints
 
         // Get by organization
         group.MapGet("organizations/{organizationId:objectid}/events", async (string organizationId, HttpContext httpContext, IMediator mediator, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetEventsByOrganization(organizationId, filter, sort, time, offset, mode, page, limit, before, after, httpContext)))
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsByOrganization(organizationId, filter, sort, time, offset, mode, page, limit, before, after, httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -161,7 +163,7 @@ public static class EventEndpoints
 
         // Get by project
         group.MapGet("projects/{projectId:objectid}/events", async (string projectId, HttpContext httpContext, IMediator mediator, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetEventsByProject(projectId, filter, sort, time, offset, mode, page, limit, before, after, httpContext)))
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsByProject(projectId, filter, sort, time, offset, mode, page, limit, before, after, httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -190,7 +192,7 @@ public static class EventEndpoints
 
         // Get by stack
         group.MapGet("stacks/{stackId:objectid}/events", async (string stackId, HttpContext httpContext, IMediator mediator, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetEventsByStack(stackId, filter, sort, time, offset, mode, page, limit, before, after, httpContext)))
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsByStack(stackId, filter, sort, time, offset, mode, page, limit, before, after, httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -219,7 +221,7 @@ public static class EventEndpoints
 
         // Get by reference id
         group.MapGet("events/by-ref/{referenceId:identifier}", async (string referenceId, HttpContext httpContext, IMediator mediator, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetEventsByReferenceId(referenceId, offset, mode, page, limit, before, after, httpContext)))
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsByReferenceId(referenceId, offset, mode, page, limit, before, after, httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -243,7 +245,7 @@ public static class EventEndpoints
 
         // Get by reference id + project
         group.MapGet("projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}", async (string referenceId, string projectId, HttpContext httpContext, IMediator mediator, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetEventsByReferenceIdAndProject(referenceId, projectId, offset, mode, page, limit, before, after, httpContext)))
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsByReferenceIdAndProject(referenceId, projectId, offset, mode, page, limit, before, after, httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -270,7 +272,7 @@ public static class EventEndpoints
 
         // Sessions by session id
         group.MapGet("events/sessions/{sessionId:identifier}", async (string sessionId, HttpContext httpContext, IMediator mediator, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetEventsBySessionId(sessionId, filter, sort, time, offset, mode, page, limit, before, after, httpContext)))
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsBySessionId(sessionId, filter, sort, time, offset, mode, page, limit, before, after, httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -297,7 +299,7 @@ public static class EventEndpoints
 
         // Sessions by session id + project
         group.MapGet("projects/{projectId:objectid}/events/sessions/{sessionId:identifier}", async (string sessionId, string projectId, HttpContext httpContext, IMediator mediator, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetEventsBySessionIdAndProject(sessionId, projectId, filter, sort, time, offset, mode, page, limit, before, after, httpContext)))
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetEventsBySessionIdAndProject(sessionId, projectId, filter, sort, time, offset, mode, page, limit, before, after, httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -327,7 +329,7 @@ public static class EventEndpoints
 
         // All sessions
         group.MapGet("events/sessions", async (HttpContext httpContext, IMediator mediator, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetSessions(filter, sort, time, offset, mode, page, limit, before, after, httpContext)))
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetSessions(filter, sort, time, offset, mode, page, limit, before, after, httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -351,7 +353,7 @@ public static class EventEndpoints
 
         // Sessions by organization
         group.MapGet("organizations/{organizationId:objectid}/events/sessions", async (string organizationId, HttpContext httpContext, IMediator mediator, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetSessionsByOrganization(organizationId, filter, sort, time, offset, mode, page, limit, before, after, httpContext)))
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetSessionsByOrganization(organizationId, filter, sort, time, offset, mode, page, limit, before, after, httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -380,7 +382,7 @@ public static class EventEndpoints
 
         // Sessions by project
         group.MapGet("projects/{projectId:objectid}/events/sessions", async (string projectId, HttpContext httpContext, IMediator mediator, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new GetSessionsByProject(projectId, filter, sort, time, offset, mode, page, limit, before, after, httpContext)))
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetSessionsByProject(projectId, filter, sort, time, offset, mode, page, limit, before, after, httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -409,7 +411,7 @@ public static class EventEndpoints
 
         // User description
         group.MapPost("events/by-ref/{referenceId:identifier}/user-description", async (string referenceId, HttpContext httpContext, IMediator mediator, [FromBody] UserDescription description, string? projectId = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SetEventUserDescription(referenceId, description, projectId, httpContext)))
+            => (await mediator.InvokeAsync<Result>(new SetEventUserDescription(referenceId, description, projectId, httpContext))).ToHttpResult())
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .Accepts<UserDescription>("application/json")
         .Produces(StatusCodes.Status202Accepted)
@@ -430,7 +432,7 @@ public static class EventEndpoints
         });
 
         group.MapPost("projects/{projectId:objectid}/events/by-ref/{referenceId:identifier}/user-description", async (string referenceId, string projectId, HttpContext httpContext, IMediator mediator, [FromBody] UserDescription description)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SetEventUserDescription(referenceId, description, projectId, httpContext)))
+            => (await mediator.InvokeAsync<Result>(new SetEventUserDescription(referenceId, description, projectId, httpContext))).ToHttpResult())
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .Accepts<UserDescription>("application/json")
         .Produces(StatusCodes.Status202Accepted)
@@ -453,7 +455,7 @@ public static class EventEndpoints
 
         // Legacy patch (v1)
         endpoints.MapPatch("api/v1/error/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, [FromBody] Delta<UpdateEvent> changes)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new LegacyPatchEvent(id, changes, httpContext)))
+            => (await mediator.InvokeAsync<Result>(new LegacyPatchEvent(id, changes, httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithTags("Event")
@@ -461,7 +463,7 @@ public static class EventEndpoints
 
         // Heartbeat
         group.MapGet("events/session/heartbeat", async (HttpContext httpContext, IMediator mediator, string? id = null, bool close = false)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new RecordEventHeartbeat(id, close, httpContext)))
+            => (await mediator.InvokeAsync<Result>(new RecordEventHeartbeat(id, close, httpContext))).ToHttpResult())
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -479,7 +481,7 @@ public static class EventEndpoints
 
         // Submit via GET - v1 legacy
         endpoints.MapGet("api/v1/events/submit", async (HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(null, 1, null, httpContext.Request.GetClientUserAgent(), httpContext)))
+            => (await mediator.InvokeAsync<Result>(new SubmitEventByGet(null, 1, null, httpContext.Request.GetClientUserAgent(), httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithTags("Event")
@@ -496,7 +498,7 @@ public static class EventEndpoints
         });
 
         endpoints.MapGet("api/v1/events/submit/{type:minlength(1)}", async (string type, HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(null, 1, type, httpContext.Request.GetClientUserAgent(), httpContext)))
+            => (await mediator.InvokeAsync<Result>(new SubmitEventByGet(null, 1, type, httpContext.Request.GetClientUserAgent(), httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithTags("Event")
@@ -513,7 +515,7 @@ public static class EventEndpoints
         });
 
         endpoints.MapGet("api/v1/projects/{projectId:objectid}/events/submit", async (string projectId, HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(projectId, 1, null, httpContext.Request.GetClientUserAgent(), httpContext)))
+            => (await mediator.InvokeAsync<Result>(new SubmitEventByGet(projectId, 1, null, httpContext.Request.GetClientUserAgent(), httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithTags("Event")
@@ -530,7 +532,7 @@ public static class EventEndpoints
         });
 
         endpoints.MapGet("api/v1/projects/{projectId:objectid}/events/submit/{type:minlength(1)}", async (string projectId, string type, HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(projectId, 1, type, httpContext.Request.GetClientUserAgent(), httpContext)))
+            => (await mediator.InvokeAsync<Result>(new SubmitEventByGet(projectId, 1, type, httpContext.Request.GetClientUserAgent(), httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithTags("Event")
@@ -548,7 +550,7 @@ public static class EventEndpoints
 
         // Submit via GET - v2
         group.MapGet("events/submit", async (HttpContext httpContext, IMediator mediator, string? type = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(null, 2, type, httpContext.Request.GetClientUserAgent(), httpContext)))
+            => (await mediator.InvokeAsync<Result>(new SubmitEventByGet(null, 2, type, httpContext.Request.GetClientUserAgent(), httpContext))).ToHttpResult())
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -587,7 +589,7 @@ public static class EventEndpoints
         });
 
         group.MapGet("events/submit/{type:minlength(1)}", async (string type, HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(null, 2, type, httpContext.Request.GetClientUserAgent(), httpContext)))
+            => (await mediator.InvokeAsync<Result>(new SubmitEventByGet(null, 2, type, httpContext.Request.GetClientUserAgent(), httpContext))).ToHttpResult())
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -626,7 +628,7 @@ public static class EventEndpoints
         });
 
         group.MapGet("projects/{projectId:objectid}/events/submit", async (string projectId, HttpContext httpContext, IMediator mediator, string? type = null)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(projectId, 2, type, httpContext.Request.GetClientUserAgent(), httpContext)))
+            => (await mediator.InvokeAsync<Result>(new SubmitEventByGet(projectId, 2, type, httpContext.Request.GetClientUserAgent(), httpContext))).ToHttpResult())
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -657,7 +659,7 @@ public static class EventEndpoints
         });
 
         group.MapGet("projects/{projectId:objectid}/events/submit/{type:minlength(1)}", async (string projectId, string type, HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByGet(projectId, 2, type, httpContext.Request.GetClientUserAgent(), httpContext)))
+            => (await mediator.InvokeAsync<Result>(new SubmitEventByGet(projectId, 2, type, httpContext.Request.GetClientUserAgent(), httpContext))).ToHttpResult())
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -690,7 +692,7 @@ public static class EventEndpoints
 
         // Submit via POST - v1 legacy
         endpoints.MapPost("api/v1/error", async (HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByPost(null, 1, httpContext.Request.GetClientUserAgent(), httpContext)))
+            => await SubmitEventByPostAsync(null, 1, httpContext, mediator))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithTags("Event")
@@ -709,7 +711,7 @@ public static class EventEndpoints
         });
 
         endpoints.MapPost("api/v1/events", async (HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByPost(null, 1, httpContext.Request.GetClientUserAgent(), httpContext)))
+            => await SubmitEventByPostAsync(null, 1, httpContext, mediator))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithTags("Event")
@@ -727,7 +729,7 @@ public static class EventEndpoints
         });
 
         endpoints.MapPost("api/v1/projects/{projectId:objectid}/events", async (string projectId, HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByPost(projectId, 1, httpContext.Request.GetClientUserAgent(), httpContext)))
+            => await SubmitEventByPostAsync(projectId, 1, httpContext, mediator))
         .RequireAuthorization(AuthorizationRoles.ClientPolicy)
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .WithTags("Event")
@@ -746,7 +748,7 @@ public static class EventEndpoints
 
         // Submit via POST - v2
         group.MapPost("events", async (HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByPost(null, 2, httpContext.Request.GetClientUserAgent(), httpContext)))
+            => await SubmitEventByPostAsync(null, 2, httpContext, mediator))
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .Produces(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -779,7 +781,7 @@ public static class EventEndpoints
         });
 
         group.MapPost("projects/{projectId:objectid}/events", async (string projectId, HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SubmitEventByPost(projectId, 2, httpContext.Request.GetClientUserAgent(), httpContext)))
+            => await SubmitEventByPostAsync(projectId, 2, httpContext, mediator))
         .AddEndpointFilter<ConfigurationResponseEndpointFilter>()
         .Produces(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -814,7 +816,7 @@ public static class EventEndpoints
 
         // Delete
         group.MapDelete("events/{ids:objectids}", async (string ids, HttpContext httpContext, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new DeleteEvents(ids, httpContext)))
+            => (await mediator.InvokeAsync<Result<WorkInProgressResult>>(new DeleteEvents(ids, httpContext))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -834,6 +836,22 @@ public static class EventEndpoints
         });
 
         return endpoints;
+    }
+
+    private static async Task<IResult> SubmitEventByPostAsync(string? projectId, int apiVersion, HttpContext httpContext, IMediator mediator)
+    {
+        var body = await ReadRequestBodyAsync(httpContext.Request);
+        return (await mediator.InvokeAsync<Result>(new SubmitEventByPost(projectId, apiVersion, httpContext.Request.GetClientUserAgent(), body, httpContext))).ToHttpResult();
+    }
+
+    private static async Task<byte[]> ReadRequestBodyAsync(HttpRequest request)
+    {
+        if (request.ContentLength is <= 0)
+            return [];
+
+        using var body = new MemoryStream();
+        await request.Body.CopyToAsync(body);
+        return body.ToArray();
     }
 }
 

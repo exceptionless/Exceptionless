@@ -1,0 +1,21 @@
+{
+  "type": "log",
+  "message": "Date format variations test",
+  "date": "2026-05-20T12:00:00.1234567\u002B05:30",
+  "tags": [
+    "audit",
+    "dates"
+  ],
+  "reference_id": "audit-dates-001",
+  "data": {
+    "iso_utc": "2026-05-20T12:00:00Z",
+    "iso_offset": "2026-05-20T12:00:00\u002B05:30",
+    "iso_no_tz": "2026-05-20T12:00:00",
+    "iso_millis": "2026-05-20T12:00:00.123Z",
+    "iso_micros": "2026-05-20T12:00:00.123456Z",
+    "epoch_seconds": 1736942400,
+    "epoch_millis": 1736942400000,
+    "date_only": "2026-01-15",
+    "not_a_date": "2026-13-45T99:99:99Z"
+  }
+}

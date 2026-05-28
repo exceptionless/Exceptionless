@@ -1,0 +1,66 @@
+{
+  "id": "6a0da240a0b5235dcf5abec8",
+  "organization_id": "537650f3b77efe23a47914f3",
+  "project_id": "537650f3b77efe23a47914f4",
+  "stack_id": "6a0e196aa0b5235dcf5abec7",
+  "is_first_occurrence": true,
+  "created_utc": "2026-05-20T20:28:26.122187",
+  "type": "error",
+  "date": "2026-05-20T12:00:00\u002B00:00",
+  "tags": [
+    "audit",
+    "MIXED"
+  ],
+  "message": "Test error with MIXED casing",
+  "geo": "40.7128,-74.006",
+  "value": 42.5,
+  "count": 1,
+  "data": {
+    "@request": {
+      "user_agent": "AuditAgent/1.0",
+      "http_method": "POST",
+      "is_secure": true,
+      "host": "audit.localhost",
+      "port": 443,
+      "path": "/api/audit",
+      "client_ip_address": "10.0.0.100",
+      "data": {
+        "@is_bot": false,
+        "@device": "Generic Feature Phone"
+      }
+    },
+    "@user": {
+      "identity": "user@example.com",
+      "name": "Test User",
+      "data": {}
+    },
+    "@submission_client": {
+      "user_agent": "fluentrest",
+      "version": "11.1.0.0"
+    },
+    "@environment": {
+      "o_s_name": "Windows 11",
+      "o_s_version": "10.0.22621",
+      "ip_address": "192.168.1.100",
+      "machine_name": "AUDIT-MACHINE"
+    },
+    "CUSTOM_FIELD": "custom_value",
+    "@simple_error": {
+      "message": "Null reference exception",
+      "type": "System.NullReferenceException",
+      "stack_trace": "   at Audit.Tests.Run() in AuditTests.cs:line 42",
+      "data": {
+        "@target": {
+          "ExceptionType": "System.NullReferenceException",
+          "StackTrace": "b34014e5c4c99d1a35e6e088afafb3dda802daf1"
+        }
+      }
+    },
+    "@ref:session": "6a0de890a0b5235dcf5abec4",
+    "nestedObject": {
+      "innerNumber": 123,
+      "INNER_KEY": "inner_value"
+    }
+  },
+  "reference_id": "audit-mixed-001"
+}

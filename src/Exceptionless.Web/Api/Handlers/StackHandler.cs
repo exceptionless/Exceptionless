@@ -20,12 +20,12 @@ using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
+using Foundatio.Mediator;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
 using McSherry.SemanticVersioning;
-using HttpResults = Microsoft.AspNetCore.Http.Results;
 using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 
 namespace Exceptionless.Web.Api.Handlers;
@@ -50,17 +50,17 @@ public class StackHandler(
     private static readonly ICollection<string> _allowedDateFields = new List<string> { StackIndex.Alias.FirstOccurrence, StackIndex.Alias.LastOccurrence };
     private const string DefaultDateField = StackIndex.Alias.LastOccurrence;
 
-    public async Task<IResult> Handle(GetStackById message)
+    public async Task<Result<Stack>> Handle(GetStackById message)
     {
         var stack = await GetModelAsync(message.Id, message.Context);
         if (stack is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Stack not found.");
 
         var offset = TimeRangeParser.GetOffset(message.Offset);
-        return HttpResults.Ok(stack.ApplyOffset(offset));
+        return stack.ApplyOffset(offset);
     }
 
-    public async Task<IResult> Handle(MarkStacksFixed message)
+    public async Task<Result> Handle(MarkStacksFixed message)
     {
         SemanticVersion? semanticVersion = null;
 
@@ -68,22 +68,22 @@ public class StackHandler(
         {
             semanticVersion = semanticVersionParser.Parse(message.Version);
             if (semanticVersion is null)
-                return HttpResults.BadRequest("Invalid semantic version");
+                return Result.BadRequest("Invalid semantic version");
         }
 
         var stacks = await GetModelsAsync(message.Ids.FromDelimitedString(), message.Context, false);
         if (stacks.Count is 0)
-            return HttpResults.NotFound();
+            return Result.NotFound("Stacks not found.");
 
         foreach (var stack in stacks)
             stack.MarkFixed(semanticVersion, timeProvider);
 
         await stackRepository.SaveAsync(stacks);
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(MarkStacksFixedByZapier message)
+    public async Task<Result> Handle(MarkStacksFixedByZapier message)
     {
         string? id = null;
         if (message.Data.RootElement.TryGetProperty("ErrorStack", out var errorStackProp))
@@ -93,7 +93,7 @@ public class StackHandler(
             id = stackProp.GetString();
 
         if (String.IsNullOrEmpty(id))
-            return HttpResults.NotFound();
+            return Result.NotFound("Stack not found.");
 
         if (id.StartsWith("http"))
             id = id.Substring(id.LastIndexOf('/') + 1);
@@ -101,14 +101,14 @@ public class StackHandler(
         return await Handle(new MarkStacksFixed(id, null, message.Context));
     }
 
-    public async Task<IResult> Handle(SnoozeStacks message)
+    public async Task<Result> Handle(SnoozeStacks message)
     {
         if (message.SnoozeUntilUtc < timeProvider.GetUtcNow().UtcDateTime.AddMinutes(5))
-            return HttpResults.BadRequest("Must snooze for at least 5 minutes.");
+            return Result.BadRequest("Must snooze for at least 5 minutes.");
 
         var stacks = await GetModelsAsync(message.Ids.FromDelimitedString(), message.Context, false);
         if (stacks.Count is 0)
-            return HttpResults.NotFound();
+            return Result.NotFound("Stacks not found.");
 
         foreach (var stack in stacks)
         {
@@ -120,17 +120,17 @@ public class StackHandler(
 
         await stackRepository.SaveAsync(stacks);
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(AddStackLink message)
+    public async Task<Result> Handle(AddStackLink message)
     {
         if (String.IsNullOrWhiteSpace(message.Url?.Value))
-            return HttpResults.BadRequest();
+            return Result.BadRequest("URL is required.");
 
         var stack = await GetModelAsync(message.Id, message.Context, false);
         if (stack is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Stack not found.");
 
         if (!stack.References.Contains(message.Url.Value.Trim()))
         {
@@ -138,10 +138,10 @@ public class StackHandler(
             await stackRepository.SaveAsync(stack);
         }
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(AddStackLinkByZapier message)
+    public async Task<Result> Handle(AddStackLinkByZapier message)
     {
         string? id = null;
         if (message.Data.RootElement.TryGetProperty("ErrorStack", out var errorStackProp))
@@ -151,7 +151,7 @@ public class StackHandler(
             id = stackProp.GetString();
 
         if (String.IsNullOrEmpty(id))
-            return HttpResults.NotFound();
+            return Result.NotFound("Stack not found.");
 
         if (id.StartsWith("http"))
             id = id.Substring(id.LastIndexOf('/') + 1);
@@ -160,14 +160,14 @@ public class StackHandler(
         return await Handle(new AddStackLink(id, new ValueFromBody<string?>(url), message.Context));
     }
 
-    public async Task<IResult> Handle(RemoveStackLink message)
+    public async Task<Result> Handle(RemoveStackLink message)
     {
         if (String.IsNullOrWhiteSpace(message.Url?.Value))
-            return HttpResults.BadRequest();
+            return Result.BadRequest("URL is required.");
 
         var stack = await GetModelAsync(message.Id, message.Context, false);
         if (stack is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Stack not found.");
 
         if (stack.References.Contains(message.Url.Value.Trim()))
         {
@@ -175,14 +175,14 @@ public class StackHandler(
             await stackRepository.SaveAsync(stack);
         }
 
-        return HttpResults.StatusCode(StatusCodes.Status204NoContent);
+        return Result.NoContent();
     }
 
-    public async Task<IResult> Handle(MarkStacksCritical message)
+    public async Task<Result> Handle(MarkStacksCritical message)
     {
         var stacks = await GetModelsAsync(message.Ids.FromDelimitedString(), message.Context, false);
         if (stacks.Count is 0)
-            return HttpResults.NotFound();
+            return Result.NotFound("Stacks not found.");
 
         stacks = stacks.Where(s => !s.OccurrencesAreCritical).ToList();
         if (stacks.Count > 0)
@@ -193,14 +193,14 @@ public class StackHandler(
             await stackRepository.SaveAsync(stacks);
         }
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(MarkStacksNotCritical message)
+    public async Task<Result> Handle(MarkStacksNotCritical message)
     {
         var stacks = await GetModelsAsync(message.Ids.FromDelimitedString(), message.Context, false);
         if (stacks.Count is 0)
-            return HttpResults.NotFound();
+            return Result.NotFound("Stacks not found.");
 
         stacks = stacks.Where(s => s.OccurrencesAreCritical).ToList();
         if (stacks.Count > 0)
@@ -211,17 +211,17 @@ public class StackHandler(
             await stackRepository.SaveAsync(stacks);
         }
 
-        return HttpResults.StatusCode(StatusCodes.Status204NoContent);
+        return Result.NoContent();
     }
 
-    public async Task<IResult> Handle(ChangeStacksStatus message)
+    public async Task<Result> Handle(ChangeStacksStatus message)
     {
         if (message.Status is StackStatus.Regressed or StackStatus.Snoozed)
-            return HttpResults.BadRequest("Can't set stack status to regressed or snoozed.");
+            return Result.BadRequest("Can't set stack status to regressed or snoozed.");
 
         var stacks = await GetModelsAsync(message.Ids.FromDelimitedString(), message.Context, false);
         if (stacks.Count is 0)
-            return HttpResults.NotFound();
+            return Result.NotFound("Stacks not found.");
 
         stacks = stacks.Where(s => s.Status != message.Status).ToList();
         if (stacks.Count > 0)
@@ -245,29 +245,29 @@ public class StackHandler(
             await stackRepository.SaveAsync(stacks);
         }
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(PromoteStack message)
+    public async Task<Result> Handle(PromoteStack message)
     {
         var httpContext = message.Context;
         if (String.IsNullOrEmpty(message.Id))
-            return HttpResults.NotFound();
+            return Result.NotFound("Stack not found.");
 
         var stack = await stackRepository.GetByIdAsync(message.Id);
         if (stack is null || !httpContext.Request.CanAccessOrganization(stack.OrganizationId))
-            return HttpResults.NotFound();
+            return Result.NotFound("Stack not found.");
 
         var organization = await GetOrganizationAsync(stack.OrganizationId, httpContext);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         if (!organization.HasPremiumFeatures)
-            return ApiResults.PlanLimitReached("Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.");
+            return Result.Forbidden("Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.");
 
         var promotedProjectHooks = (await webHookRepository.GetByProjectIdAsync(stack.ProjectId)).Documents.Where(p => p.EventTypes.Contains(WebHook.KnownEventTypes.StackPromoted)).ToList();
         if (promotedProjectHooks.Count is 0)
-            return ApiResults.NotImplemented("No promoted web hooks are configured for this project. Please add a promoted web hook to use this feature.");
+            return Result.BadRequest("No promoted web hooks are configured for this project. Please add a promoted web hook to use this feature.");
 
         var currentUser = httpContext.Request.GetUser();
         using var _ = _logger.BeginScope(new ExceptionlessState()
@@ -280,7 +280,7 @@ public class StackHandler(
 
         var project = await GetProjectAsync(stack.ProjectId, httpContext);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         foreach (var hook in promotedProjectHooks)
         {
@@ -309,16 +309,16 @@ public class StackHandler(
             });
         }
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(DeleteStacks message)
+    public async Task<Result<WorkInProgressResult>> Handle(DeleteStacks message)
     {
         var httpContext = message.Context;
         var ids = message.Ids.FromDelimitedString();
         var items = await GetModelsAsync(ids, httpContext, false);
         if (items.Count == 0)
-            return HttpResults.NotFound();
+            return Result.NotFound("Stacks not found.");
 
         var results = new ModelActionResults();
         results.AddNotFound(ids.Except(items.Select(i => i.Id)));
@@ -330,7 +330,7 @@ public class StackHandler(
         var list = items.Except(denied).ToList();
 
         if (list.Count == 0)
-            return results.Failure.Count == 1 ? PermissionToResult(results.Failure.First()) : HttpResults.BadRequest(results);
+            return results.Failure.Count == 1 ? PermissionToResult(results.Failure.First()) : Result.BadRequest("One or more stacks could not be deleted.");
 
         var currentUser = httpContext.Request.GetUser();
         foreach (var projectStacks in list.GroupBy(ev => ev.ProjectId))
@@ -344,69 +344,69 @@ public class StackHandler(
         await stackRepository.SaveAsync(list);
 
         if (results.Failure.Count == 0)
-            return TypedResults.Json(new WorkInProgressResult(), statusCode: StatusCodes.Status202Accepted);
+            return new WorkInProgressResult();
 
         results.Success.AddRange(list.Select(i => i.Id));
-        return HttpResults.BadRequest(results);
+        return Result.BadRequest("Some stacks could not be deleted.");
     }
 
-    public async Task<IResult> Handle(GetAllStacks message)
+    public async Task<Result<PagedResult<object>>> Handle(GetAllStacks message)
     {
         var httpContext = message.Context;
         var organizations = await GetSelectedOrganizationsAsync(httpContext, message.Filter);
         if (organizations.All(o => o.IsSuspended))
-            return HttpResults.Ok(Array.Empty<Stack>());
+            return new PagedResult<object>(Array.Empty<object>(), false);
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(options.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
         return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit);
     }
 
-    public async Task<IResult> Handle(GetStacksByOrganization message)
+    public async Task<Result<PagedResult<object>>> Handle(GetStacksByOrganization message)
     {
         var httpContext = message.Context;
         var organization = await GetOrganizationAsync(message.OrganizationId, httpContext);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return ApiResults.PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
+            return Result.Forbidden("Unable to view stack occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(options.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organization);
         return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit);
     }
 
-    public async Task<IResult> Handle(GetStacksByProject message)
+    public async Task<Result<PagedResult<object>>> Handle(GetStacksByProject message)
     {
         var httpContext = message.Context;
         var project = await GetProjectAsync(message.ProjectId, httpContext);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         var organization = await GetOrganizationAsync(project.OrganizationId, httpContext);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return ApiResults.PlanLimitReached("Unable to view stack occurrences for the suspended organization.");
+            return Result.Forbidden("Unable to view stack occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, options.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
         return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit);
     }
 
-    private async Task<IResult> GetInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? sort = null, string? mode = null, int page = 1, int limit = 10)
+    private async Task<Result<PagedResult<object>>> GetInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? sort = null, string? mode = null, int page = 1, int limit = 10)
     {
         page = Pagination.GetPage(page);
         limit = Pagination.GetLimit(limit);
         int skip = Pagination.GetSkip(page, limit);
         if (skip > Pagination.MaximumSkip)
-            return HttpResults.Ok(Array.Empty<Stack>());
+            return new PagedResult<object>(Array.Empty<object>(), false);
 
         var pr = await validator.ValidateQueryAsync(filter);
         if (!pr.IsValid)
-            return HttpResults.BadRequest(pr.Message);
+            return Result.BadRequest(pr.Message ?? "Invalid filter.");
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures;
 
@@ -416,9 +416,9 @@ public class StackHandler(
 
             var stacks = results.Documents.Select(s => s.ApplyOffset(ti.Offset)).ToList();
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase))
-                return ApiResults.OkWithResourceLinks(httpContext, await GetStackSummariesAsync(stacks, sf, ti), results.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page);
+                return new PagedResult<object>((await GetStackSummariesAsync(stacks, sf, ti)).Cast<object>().ToList(), results.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page);
 
-            return ApiResults.OkWithResourceLinks(httpContext, stacks, results.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page);
+            return new PagedResult<object>(stacks.Cast<object>().ToList(), results.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page);
         }
         catch (ApplicationException ex)
         {
@@ -599,11 +599,11 @@ public class StackHandler(
         return await organizationRepository.GetByIdsAsync(associatedOrganizationIds.ToArray(), o => o.Cache());
     }
 
-    private static IResult PermissionToResult(PermissionResult permission)
+    private static Result<WorkInProgressResult> PermissionToResult(PermissionResult permission)
     {
-        if (String.IsNullOrEmpty(permission.Message))
-            return TypedResults.Problem(statusCode: permission.StatusCode);
+        if (!String.IsNullOrEmpty(permission.Message))
+            return Result.NotFound(permission.Message);
 
-        return TypedResults.Problem(statusCode: permission.StatusCode, title: permission.Message);
+        return Result.NotFound("Access denied.");
     }
 }

@@ -1,8 +1,9 @@
 using Exceptionless.Core.Authorization;
 using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Infrastructure;
+using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Models;
-using IMediator = Foundatio.Mediator.IMediator;
+using Foundatio.Mediator;
 using Microsoft.AspNetCore.Mvc;
 using AuthMessages = Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Utility.OpenApi;
@@ -24,7 +25,7 @@ public static class AuthEndpoints
             if (validation is not null)
                 return validation;
 
-            return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.LoginMessage(model, httpContext));
+            return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.LoginMessage(model, httpContext))).ToHttpResult();
         })
         .AllowAnonymous()
         .Accepts<Login>("application/json", "application/*+json")
@@ -52,7 +53,7 @@ public static class AuthEndpoints
         });
 
         group.MapGet("intercom", async (IMediator mediator, HttpContext httpContext)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.GetIntercomToken(httpContext)))
+            => (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.GetIntercomToken(httpContext))).ToHttpResult())
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
@@ -66,7 +67,7 @@ public static class AuthEndpoints
         });
 
         group.MapGet("logout", async (IMediator mediator, HttpContext httpContext)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.LogoutMessage(httpContext)))
+            => (await mediator.InvokeAsync<Result>(new AuthMessages.LogoutMessage(httpContext))).ToHttpResult())
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
@@ -85,7 +86,7 @@ public static class AuthEndpoints
             if (validation is not null)
                 return validation;
 
-            return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.SignupMessage(model, httpContext));
+            return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.SignupMessage(model, httpContext))).ToHttpResult();
         })
         .AllowAnonymous()
         .Accepts<Signup>("application/json", "application/*+json")
@@ -109,7 +110,7 @@ public static class AuthEndpoints
             if (validation is not null)
                 return validation;
 
-            return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.GitHubLogin(value, httpContext));
+            return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.GitHubLogin(value, httpContext))).ToHttpResult();
         })
         .AllowAnonymous()
         .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
@@ -131,7 +132,7 @@ public static class AuthEndpoints
             if (validation is not null)
                 return validation;
 
-            return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.GoogleLogin(value, httpContext));
+            return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.GoogleLogin(value, httpContext))).ToHttpResult();
         })
         .AllowAnonymous()
         .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
@@ -153,7 +154,7 @@ public static class AuthEndpoints
             if (validation is not null)
                 return validation;
 
-            return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.FacebookLogin(value, httpContext));
+            return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.FacebookLogin(value, httpContext))).ToHttpResult();
         })
         .AllowAnonymous()
         .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
@@ -175,7 +176,7 @@ public static class AuthEndpoints
             if (validation is not null)
                 return validation;
 
-            return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.LiveLogin(value, httpContext));
+            return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.LiveLogin(value, httpContext))).ToHttpResult();
         })
         .AllowAnonymous()
         .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
@@ -192,7 +193,7 @@ public static class AuthEndpoints
         });
 
         group.MapPost("unlink/{providerName:minlength(1)}", async (string providerName, IMediator mediator, HttpContext httpContext, [FromBody] ValueFromBody<string> providerUserId)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.RemoveExternalLogin(providerName, providerUserId, httpContext)))
+            => (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.RemoveExternalLogin(providerName, providerUserId, httpContext))).ToHttpResult())
         .Accepts<ValueFromBody<string>>("application/json", "application/*+json")
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -214,7 +215,7 @@ public static class AuthEndpoints
             if (validation is not null)
                 return validation;
 
-            return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.ChangePassword(model, httpContext));
+            return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.ChangePassword(model, httpContext))).ToHttpResult();
         })
         .Accepts<ChangePasswordModel>("application/json", "application/*+json")
         .Produces<TokenResult>()
@@ -228,12 +229,12 @@ public static class AuthEndpoints
         });
 
         group.MapGet("check-email-address/{email:minlength(1)}", async (string email, IMediator mediator, HttpContext httpContext)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.CheckEmailAddress(email, httpContext)))
+            => (await mediator.InvokeAsync<Result>(new AuthMessages.CheckEmailAddress(email, httpContext))).ToHttpResult())
         .AllowAnonymous()
         .ExcludeFromDescription();
 
         group.MapGet("forgot-password/{email:minlength(1)}", async (string email, IMediator mediator, HttpContext httpContext)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.ForgotPassword(email, httpContext)))
+            => (await mediator.InvokeAsync<Result>(new AuthMessages.ForgotPassword(email, httpContext))).ToHttpResult())
         .AllowAnonymous()
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -254,7 +255,7 @@ public static class AuthEndpoints
             if (validation is not null)
                 return validation;
 
-            return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.ResetPassword(model, httpContext));
+            return (await mediator.InvokeAsync<Result>(new AuthMessages.ResetPassword(model, httpContext))).ToHttpResult();
         })
         .AllowAnonymous()
         .Accepts<ResetPasswordModel>("application/json", "application/*+json")
@@ -269,7 +270,7 @@ public static class AuthEndpoints
         });
 
         group.MapPost("cancel-reset-password/{token:minlength(1)}", async (string token, IMediator mediator, HttpContext httpContext)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new AuthMessages.CancelResetPassword(token, httpContext)))
+            => (await mediator.InvokeAsync<Result>(new AuthMessages.CancelResetPassword(token, httpContext))).ToHttpResult())
         .AllowAnonymous()
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)

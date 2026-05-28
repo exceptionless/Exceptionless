@@ -1,0 +1,9 @@
+{
+  "organizationId": "537650f3b77efe23a47914f3",
+  "projectId": "537650f3b77efe23a47914f4",
+  "url": "https://example.com/webhook-camel",
+  "eventTypes": [
+    "NewEvent",
+    "CriticalEvent"
+  ]
+}

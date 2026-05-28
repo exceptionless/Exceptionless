@@ -1,0 +1,27 @@
+{
+  "id": "6a0e1968a0b5235dcf5abea5",
+  "organization_id": "537650f3b77efe23a47914f3",
+  "project_id": "537650f3b77efe23a47914f4",
+  "type": "error",
+  "status": "open",
+  "signature_hash": "d712299616a8310d2010ca8d6d5f633d8e84d567",
+  "signature_info": {
+    "ExceptionType": "System.ArgumentException",
+    "StackTrace": "79f7ba94504724f23cf389a08522f0afe712ca5b"
+  },
+  "title": "Stack test exception",
+  "total_occurrences": 1,
+  "first_occurrence": "2026-05-20T12:00:00Z",
+  "last_occurrence": "2026-05-20T12:00:00Z",
+  "occurrences_are_critical": false,
+  "references": [],
+  "tags": [
+    "audit",
+    "stack-test"
+  ],
+  "duplicate_signature": "537650f3b77efe23a47914f4:d712299616a8310d2010ca8d6d5f633d8e84d567",
+  "created_utc": "2026-05-20T20:28:24.774594Z",
+  "updated_utc": "2026-05-20T20:28:24.774594Z",
+  "is_deleted": false,
+  "allow_notifications": true
+}

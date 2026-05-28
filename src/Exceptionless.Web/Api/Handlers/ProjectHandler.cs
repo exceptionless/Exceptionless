@@ -17,10 +17,12 @@ using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Foundatio.Jobs;
 using Foundatio.Queues;
+using Foundatio.Mediator;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Exceptionless.Web.Utility;
 using HttpResults = Microsoft.AspNetCore.Http.Results;
+using IResult = Microsoft.AspNetCore.Http.IResult;
 using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 

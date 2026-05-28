@@ -1,0 +1,14 @@
+{
+  "id": "6a0e196ca0b5235dcf5abef2",
+  "organization_id": "537650f3b77efe23a47914f3",
+  "project_id": "537650f3b77efe23a47914f4",
+  "url": "https://example.com/webhook",
+  "event_types": [
+    "NewEvent",
+    "CriticalEvent",
+    "StackRegression"
+  ],
+  "is_enabled": true,
+  "version": "v2",
+  "created_utc": "2026-05-20T20:28:28.015252Z"
+}

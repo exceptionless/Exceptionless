@@ -1,0 +1,18 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "One or more validation errors occurred.",
+  "status": 400,
+  "errors": {
+    "project_id": [
+      "The ProjectId field is required."
+    ],
+    "event_types": [
+      "The EventTypes field is required."
+    ],
+    "organization_id": [
+      "The OrganizationId field is required."
+    ]
+  },
+  "traceId": "00-5c53e4be948a3c7f1ae96b7bd8cfff52-8d9e1e0da0b4f377-01",
+  "instance": "POST /api/v2/webhooks"
+}

@@ -23,6 +23,7 @@ using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
+using Foundatio.Mediator;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
@@ -30,7 +31,6 @@ using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
-using HttpResults = Microsoft.AspNetCore.Http.Results;
 using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 
 namespace Exceptionless.Web.Api.Handlers;
@@ -56,281 +56,283 @@ public class EventHandler(
     private static readonly ICollection<string> _allowedDateFields = new List<string> { EventIndex.Alias.Date };
     private const string DefaultDateField = EventIndex.Alias.Date;
 
-    public async Task<IResult> Handle(GetEventCount message)
+    public async Task<Result<CountResult>> Handle(GetEventCount message)
     {
         var httpContext = message.Context;
         var organizations = await GetSelectedOrganizationsAsync(httpContext, message.Filter);
         if (organizations.All(o => o.IsSuspended))
-            return HttpResults.Ok(CountResult.Empty);
+            return CountResult.Empty;
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
         return await CountInternalAsync(sf, ti, httpContext, message.Filter, message.Aggregations, message.Mode);
     }
 
-    public async Task<IResult> Handle(GetEventCountByOrganization message)
+    public async Task<Result<CountResult>> Handle(GetEventCountByOrganization message)
     {
         var httpContext = message.Context;
         var organization = await GetOrganizationAsync(message.OrganizationId, httpContext);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return ApiResults.PlanLimitReached("Unable to view event occurrences for the suspended organization.");
+            return Result.Forbidden("Unable to view event occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organization);
         return await CountInternalAsync(sf, ti, httpContext, message.Filter, message.Aggregations, message.Mode);
     }
 
-    public async Task<IResult> Handle(GetEventCountByProject message)
+    public async Task<Result<CountResult>> Handle(GetEventCountByProject message)
     {
         var httpContext = message.Context;
         var project = await GetProjectAsync(message.ProjectId, httpContext);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         var organization = await GetOrganizationAsync(project.OrganizationId, httpContext);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return ApiResults.PlanLimitReached("Unable to view event occurrences for the suspended organization.");
+            return Result.Forbidden("Unable to view event occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
         return await CountInternalAsync(sf, ti, httpContext, message.Filter, message.Aggregations, message.Mode);
     }
 
-    public async Task<IResult> Handle(GetEventById message)
+    public async Task<Result<PersistentEvent>> Handle(GetEventById message)
     {
         var httpContext = message.Context;
         var model = await GetModelAsync(message.Id, httpContext, false);
         if (model is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Event not found.");
 
         var organization = await GetOrganizationAsync(model.OrganizationId, httpContext);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended || organization.RetentionDays > 0 && model.Date.UtcDateTime < timeProvider.GetUtcNow().UtcDateTime.SubtractDays(organization.RetentionDays))
-            return ApiResults.PlanLimitReached("Unable to view event occurrence due to plan limits.");
+            return Result.Forbidden("Unable to view event occurrence due to plan limits.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organization);
         var result = await eventRepository.GetPreviousAndNextEventIdsAsync(model, sf, ti.Range.UtcStart, ti.Range.UtcEnd);
 
-        var links = new List<string?>();
+        var links = new List<string>();
         if (!String.IsNullOrEmpty(result.Previous))
             links.Add($"</api/v2/events/{result.Previous}>; rel=\"previous\"");
         if (!String.IsNullOrEmpty(result.Next))
             links.Add($"</api/v2/events/{result.Next}>; rel=\"next\"");
         links.Add($"</api/v2/stacks/{model.StackId}>; rel=\"parent\"");
 
-        return ApiResults.OkWithLinks(model, links.Where(l => l is not null).ToArray()!);
+        if (links.Count > 0)
+            httpContext.Response.Headers[HeaderNames.Link] = links.ToArray();
+
+        return model;
     }
 
-    public async Task<IResult> Handle(GetAllEvents message)
+    public async Task<Result<PagedResult<object>>> Handle(GetAllEvents message)
     {
         var httpContext = message.Context;
         var organizations = await GetSelectedOrganizationsAsync(httpContext, message.Filter);
         if (organizations.All(o => o.IsSuspended))
-            return HttpResults.Ok(Array.Empty<PersistentEvent>());
+            return new PagedResult<object>(Array.Empty<PersistentEvent>(), false);
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
         return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After);
     }
 
-    public async Task<IResult> Handle(GetEventsByOrganization message)
+    public async Task<Result<PagedResult<object>>> Handle(GetEventsByOrganization message)
     {
         var httpContext = message.Context;
         var organization = await GetOrganizationAsync(message.OrganizationId, httpContext);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return ApiResults.PlanLimitReached("Unable to view event occurrences for the suspended organization.");
+            return Result.Forbidden("Unable to view event occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organization);
         return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After);
     }
 
-    public async Task<IResult> Handle(GetEventsByProject message)
+    public async Task<Result<PagedResult<object>>> Handle(GetEventsByProject message)
     {
         var httpContext = message.Context;
         var project = await GetProjectAsync(message.ProjectId, httpContext);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         var organization = await GetOrganizationAsync(project.OrganizationId, httpContext);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return ApiResults.PlanLimitReached("Unable to view event occurrences for the suspended organization.");
+            return Result.Forbidden("Unable to view event occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
         return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After);
     }
 
-    public async Task<IResult> Handle(GetEventsByStack message)
+    public async Task<Result<PagedResult<object>>> Handle(GetEventsByStack message)
     {
         var httpContext = message.Context;
         var stack = await GetStackAsync(message.StackId, httpContext);
         if (stack is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Stack not found.");
 
         var organization = await GetOrganizationAsync(stack.OrganizationId, httpContext);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return ApiResults.PlanLimitReached("Unable to view event occurrences for the suspended organization.");
+            return Result.Forbidden("Unable to view event occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(stack, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(stack, organization);
         return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After);
     }
 
-    public async Task<IResult> Handle(GetEventsByReferenceId message)
+    public async Task<Result<PagedResult<object>>> Handle(GetEventsByReferenceId message)
     {
         var httpContext = message.Context;
         var organizations = await GetSelectedOrganizationsAsync(httpContext);
         if (organizations.All(o => o.IsSuspended))
-            return HttpResults.Ok(Array.Empty<PersistentEvent>());
+            return new PagedResult<object>(Array.Empty<PersistentEvent>(), false);
 
         var ti = TimeRangeParser.GetTimeInfo(null, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
         return await GetInternalAsync(sf, ti, httpContext, String.Concat("reference:", message.ReferenceId), null, message.Mode, message.Page, message.Limit, message.Before, message.After);
     }
 
-    public async Task<IResult> Handle(GetEventsByReferenceIdAndProject message)
+    public async Task<Result<PagedResult<object>>> Handle(GetEventsByReferenceIdAndProject message)
     {
         var httpContext = message.Context;
         var project = await GetProjectAsync(message.ProjectId, httpContext);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         var organization = await GetOrganizationAsync(project.OrganizationId, httpContext);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return ApiResults.PlanLimitReached("Unable to view event occurrences for the suspended organization.");
+            return Result.Forbidden("Unable to view event occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(null, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
         return await GetInternalAsync(sf, ti, httpContext, String.Concat("reference:", message.ReferenceId), null, message.Mode, message.Page, message.Limit, message.Before, message.After);
     }
 
-    public async Task<IResult> Handle(GetEventsBySessionId message)
+    public async Task<Result<PagedResult<object>>> Handle(GetEventsBySessionId message)
     {
         var httpContext = message.Context;
         var organizations = await GetSelectedOrganizationsAsync(httpContext, message.Filter);
         if (organizations.All(o => o.IsSuspended))
-            return HttpResults.Ok(Array.Empty<PersistentEvent>());
+            return new PagedResult<object>(Array.Empty<PersistentEvent>(), false);
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
         return await GetInternalAsync(sf, ti, httpContext, $"(reference:{message.SessionId} OR ref.session:{message.SessionId}) {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, true);
     }
 
-    public async Task<IResult> Handle(GetEventsBySessionIdAndProject message)
+    public async Task<Result<PagedResult<object>>> Handle(GetEventsBySessionIdAndProject message)
     {
         var httpContext = message.Context;
         var project = await GetProjectAsync(message.ProjectId, httpContext);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         var organization = await GetOrganizationAsync(project.OrganizationId, httpContext);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return ApiResults.PlanLimitReached("Unable to view event occurrences for the suspended organization.");
+            return Result.Forbidden("Unable to view event occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
         return await GetInternalAsync(sf, ti, httpContext, $"(reference:{message.SessionId} OR ref.session:{message.SessionId}) {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, true);
     }
 
-    public async Task<IResult> Handle(GetSessions message)
+    public async Task<Result<PagedResult<object>>> Handle(GetSessions message)
     {
         var httpContext = message.Context;
         var organizations = await GetSelectedOrganizationsAsync(httpContext, message.Filter);
         if (organizations.All(o => o.IsSuspended))
-            return HttpResults.Ok(Array.Empty<PersistentEvent>());
+            return new PagedResult<object>(Array.Empty<PersistentEvent>(), false);
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
         return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, true);
     }
 
-    public async Task<IResult> Handle(GetSessionsByOrganization message)
+    public async Task<Result<PagedResult<object>>> Handle(GetSessionsByOrganization message)
     {
         var httpContext = message.Context;
         var organization = await GetOrganizationAsync(message.OrganizationId, httpContext);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return ApiResults.PlanLimitReached("Unable to view event occurrences for the suspended organization.");
+            return Result.Forbidden("Unable to view event occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organization);
         return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, true);
     }
 
-    public async Task<IResult> Handle(GetSessionsByProject message)
+    public async Task<Result<PagedResult<object>>> Handle(GetSessionsByProject message)
     {
         var httpContext = message.Context;
         var project = await GetProjectAsync(message.ProjectId, httpContext);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         var organization = await GetOrganizationAsync(project.OrganizationId, httpContext);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         if (organization.IsSuspended)
-            return ApiResults.PlanLimitReached("Unable to view event occurrences for the suspended organization.");
+            return Result.Forbidden("Unable to view event occurrences for the suspended organization.");
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
         return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, true);
     }
 
-    public async Task<IResult> Handle(SetEventUserDescription message)
+    public async Task<Result> Handle(SetEventUserDescription message)
     {
         var httpContext = message.Context;
         string? claimProjectId = httpContext.Request.GetProjectId();
         if (message.ProjectId is not null && claimProjectId is not null && !String.Equals(message.ProjectId, claimProjectId))
         {
             _logger.ProjectRouteDoesNotMatch(claimProjectId, message.ProjectId);
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
         }
 
         if (String.IsNullOrEmpty(message.ReferenceId))
-            return HttpResults.NotFound();
+            return Result.NotFound("Event not found.");
 
         string? projectId = message.ProjectId ?? claimProjectId ?? httpContext.Request.GetDefaultProjectId();
 
         if (String.IsNullOrEmpty(projectId))
-            return HttpResults.BadRequest("No project id specified and no default project was found");
+            return Result.BadRequest("No project id specified and no default project was found");
 
         var (isValid, errors) = await miniValidationValidator.ValidateAsync(message.Description);
         if (!isValid)
         {
-            var errorDict = errors.ToDictionary(e => e.Key, e => e.Value.ToArray());
-            return HttpResults.ValidationProblem(errorDict, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return Result.Invalid(errors.SelectMany(e => e.Value.Select(validationMessage => ValidationError.Create(e.Key, validationMessage))));
         }
 
         var project = await GetProjectAsync(projectId, httpContext);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         // Set the project for the configuration response filter.
         httpContext.Request.SetProject(project);
@@ -345,14 +347,14 @@ public class EventHandler(
         };
 
         await eventUserDescriptionQueue.EnqueueAsync(eventUserDescription);
-        return HttpResults.StatusCode(StatusCodes.Status202Accepted);
+        return Result.Accepted();
     }
 
-    public async Task<IResult> Handle(LegacyPatchEvent message)
+    public async Task<Result> Handle(LegacyPatchEvent message)
     {
         var httpContext = message.Context;
         if (message.Changes is null)
-            return HttpResults.Ok();
+            return Result.Success();
 
         var changes = message.Changes;
         if (changes.UnknownProperties.TryGetValue("UserEmail", out object? value))
@@ -366,15 +368,15 @@ public class EventHandler(
         return await Handle(new SetEventUserDescription(message.Id, userDescription, null, httpContext));
     }
 
-    public async Task<IResult> Handle(RecordEventHeartbeat message)
+    public async Task<Result> Handle(RecordEventHeartbeat message)
     {
         var httpContext = message.Context;
         if (appOptions.EventSubmissionDisabled || String.IsNullOrEmpty(message.Id))
-            return HttpResults.Ok();
+            return Result.Success();
 
         string? projectId = httpContext.Request.GetDefaultProjectId();
         if (String.IsNullOrEmpty(projectId))
-            return HttpResults.BadRequest("No project id specified and no default project was found.");
+            return Result.BadRequest("No project id specified and no default project was found.");
 
         string identityHash = message.Id.ToSHA1();
         string heartbeatCacheKey = String.Concat("Project:", projectId, ":heartbeat:", identityHash);
@@ -396,31 +398,31 @@ public class EventHandler(
             throw;
         }
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(SubmitEventByGet message)
+    public async Task<Result> Handle(SubmitEventByGet message)
     {
         var httpContext = message.Context;
         string? claimProjectId = httpContext.Request.GetProjectId();
         if (message.ProjectId is not null && claimProjectId is not null && !String.Equals(message.ProjectId, claimProjectId))
         {
             _logger.ProjectRouteDoesNotMatch(claimProjectId, message.ProjectId);
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
         }
 
         var filteredParameters = httpContext.Request.Query.Where(p => !String.IsNullOrEmpty(p.Key) && !p.Value.All(String.IsNullOrEmpty) && !_ignoredKeys.Contains(p.Key)).ToList();
         if (filteredParameters.Count == 0)
-            return HttpResults.Ok();
+            return Result.Success();
 
         string? projectId = message.ProjectId ?? claimProjectId ?? httpContext.Request.GetDefaultProjectId();
 
         if (String.IsNullOrEmpty(projectId))
-            return HttpResults.BadRequest("No project id specified and no default project was found");
+            return Result.BadRequest("No project id specified and no default project was found");
 
         var project = await GetProjectAsync(projectId, httpContext);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         // Set the project for the configuration response filter.
         httpContext.Request.SetProject(project);
@@ -524,30 +526,30 @@ public class EventHandler(
             throw;
         }
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(SubmitEventByPost message)
+    public async Task<Result> Handle(SubmitEventByPost message)
     {
         var httpContext = message.Context;
         string? claimProjectId = httpContext.Request.GetProjectId();
         if (message.ProjectId is not null && claimProjectId is not null && !String.Equals(message.ProjectId, claimProjectId))
         {
             _logger.ProjectRouteDoesNotMatch(claimProjectId, message.ProjectId);
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
         }
 
-        if (httpContext.Request.ContentLength is <= 0)
-            return HttpResults.StatusCode(StatusCodes.Status202Accepted);
+        if (message.Body.Length == 0)
+            return Result.Accepted();
 
         string? projectId = message.ProjectId ?? claimProjectId ?? httpContext.Request.GetDefaultProjectId();
 
         if (String.IsNullOrEmpty(projectId))
-            return HttpResults.BadRequest("No project id specified and no default project was found");
+            return Result.BadRequest("No project id specified and no default project was found");
 
         var project = await GetProjectAsync(projectId, httpContext);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         // Set the project for the configuration response filter.
         httpContext.Request.SetProject(project);
@@ -563,6 +565,7 @@ public class EventHandler(
                 charSet = contentType.Charset.ToString();
             }
 
+            await using var body = new MemoryStream(message.Body, writable: false);
             await eventPostService.EnqueueAsync(new EventPost(appOptions.EnableArchive)
             {
                 ApiVersion = message.ApiVersion,
@@ -573,7 +576,7 @@ public class EventHandler(
                 OrganizationId = project.OrganizationId,
                 ProjectId = project.Id,
                 UserAgent = message.UserAgent,
-            }, httpContext.Request.Body);
+            }, body);
         }
         catch (Exception ex)
         {
@@ -586,16 +589,16 @@ public class EventHandler(
             throw;
         }
 
-        return HttpResults.StatusCode(StatusCodes.Status202Accepted);
+        return Result.Accepted();
     }
 
-    public async Task<IResult> Handle(DeleteEvents message)
+    public async Task<Result<WorkInProgressResult>> Handle(DeleteEvents message)
     {
         var httpContext = message.Context;
         var ids = message.Ids.FromDelimitedString();
         var items = await GetModelsAsync(ids, httpContext, false);
         if (items.Count == 0)
-            return HttpResults.NotFound();
+            return Result.NotFound("Events not found.");
 
         var results = new ModelActionResults();
         results.AddNotFound(ids.Except(items.Select(i => i.Id)));
@@ -607,7 +610,7 @@ public class EventHandler(
         var list = items.Where(model => httpContext.Request.CanAccessOrganization(model.OrganizationId)).ToList();
 
         if (list.Count == 0)
-            return results.Failure.Count == 1 ? PermissionToResult(results.Failure.First()) : HttpResults.BadRequest(results);
+            return results.Failure.Count == 1 ? PermissionToResult(results.Failure.First()) : Result.BadRequest("One or more events could not be deleted.");
 
         var currentUser = httpContext.Request.GetUser();
         foreach (var projectEvents in list.GroupBy(ev => ev.ProjectId))
@@ -620,23 +623,23 @@ public class EventHandler(
         await eventRepository.RemoveAsync(list);
 
         if (results.Failure.Count == 0)
-            return TypedResults.Json(new WorkInProgressResult(), statusCode: StatusCodes.Status202Accepted);
+            return new WorkInProgressResult();
 
         results.Success.AddRange(list.Select(i => i.Id));
-        return HttpResults.BadRequest(results);
+        return Result.BadRequest("Some events could not be deleted.");
     }
 
     #region Private Helpers
 
-    private async Task<IResult> CountInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? aggregations = null, string? mode = null)
+    private async Task<Result<CountResult>> CountInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? aggregations = null, string? mode = null)
     {
         var pr = await validator.ValidateQueryAsync(filter);
         if (!pr.IsValid)
-            return HttpResults.BadRequest(pr.Message);
+            return Result.BadRequest(pr.Message ?? "Invalid filter.");
 
         var far = await validator.ValidateAggregationsAsync(aggregations);
         if (!far.IsValid)
-            return HttpResults.BadRequest(far.Message);
+            return Result.BadRequest(far.Message ?? "Invalid aggregations.");
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || far.UsesPremiumFeatures;
 
@@ -662,10 +665,10 @@ public class EventHandler(
             throw;
         }
 
-        return HttpResults.Ok(result);
+        return result;
     }
 
-    private async Task<IResult> GetInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? sort = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, bool usesPremiumFeatures = false)
+    private async Task<Result<PagedResult<object>>> GetInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? sort = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, bool usesPremiumFeatures = false)
     {
         var currentUser = httpContext.Request.GetUser();
         using var _ = _logger.BeginScope(new ExceptionlessState()
@@ -690,11 +693,11 @@ public class EventHandler(
         limit = Pagination.GetLimit(limit);
         int skip = Pagination.GetSkip(resolvedPage, limit);
         if (skip > Pagination.MaximumSkip)
-            return HttpResults.Ok(Array.Empty<PersistentEvent>());
+            return new PagedResult<object>(Array.Empty<PersistentEvent>(), false);
 
         var pr = await validator.ValidateQueryAsync(filter);
         if (!pr.IsValid)
-            return HttpResults.BadRequest(pr.Message);
+            return Result.BadRequest(pr.Message ?? "Invalid filter.");
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || usesPremiumFeatures;
 
@@ -716,13 +719,13 @@ public class EventHandler(
                             Data = summaryData.Data
                         };
                     }).ToList();
-                    return ApiResults.OkWithResourceLinks(httpContext, summaries, events.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(), events.Hits.LastOrDefault()?.GetSortToken());
+                    return new PagedResult<object>(summaries.Cast<object>().ToList(), events.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(), events.Hits.LastOrDefault()?.GetSortToken());
                 case "stack_recent":
                 case "stack_frequent":
                 case "stack_new":
                 case "stack_users":
                     if (!String.IsNullOrEmpty(sort))
-                        return HttpResults.BadRequest("Sort is not supported in stack mode.");
+                        return Result.BadRequest("Sort is not supported in stack mode.");
 
                     var systemFilter = new RepositoryQuery<PersistentEvent>()
                         .AppFilter(ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null)
@@ -751,7 +754,7 @@ public class EventHandler(
 
                     var stackTerms = countResponse.Aggregations.Terms<string>("terms_stack_id");
                     if (stackTerms is null || stackTerms.Buckets.Count == 0)
-                        return HttpResults.Ok(Array.Empty<PersistentEvent>());
+                        return new PagedResult<object>(Array.Empty<PersistentEvent>(), false);
 
                     string[] stackIds = stackTerms.Buckets.Skip(skip).Take(limit + 1).Select(t => t.Key).ToArray();
                     var stacks = (await stackRepository.GetByIdsAsync(stackIds)).Select(s => s.ApplyOffset(ti.Offset)).ToList();
@@ -759,10 +762,10 @@ public class EventHandler(
                     var stackSummaries = await GetStackSummariesAsync(stacks, stackTerms.Buckets, sf, ti);
 
                     long total = (stackTerms.Data?.GetValueOrDefault("SumOtherDocCount") as long? ?? 0L) + stackTerms.Buckets.Count;
-                    return ApiResults.OkWithResourceLinks(httpContext, stackSummaries.Take(limit).ToList(), stackSummaries.Count > limit && !Pagination.NextPageExceedsSkipLimit(resolvedPage, limit), resolvedPage, total);
+                    return new PagedResult<object>(stackSummaries.Take(limit).Cast<object>().ToList(), stackSummaries.Count > limit && !Pagination.NextPageExceedsSkipLimit(resolvedPage, limit), resolvedPage, total);
                 default:
                     events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after, httpContext.Request);
-                    return ApiResults.OkWithResourceLinks(httpContext, events.Documents.ToArray(), events.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(), events.Hits.LastOrDefault()?.GetSortToken());
+                    return new PagedResult<object>(events.Documents.Cast<object>().ToList(), events.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, events.Total, events.Hits.FirstOrDefault()?.GetSortToken(), events.Hits.LastOrDefault()?.GetSortToken());
             }
         }
         catch (ApplicationException ex)
@@ -997,12 +1000,12 @@ public class EventHandler(
         return await organizationRepository.GetByIdsAsync(associatedOrganizationIds.ToArray(), o => o.Cache());
     }
 
-    private static IResult PermissionToResult(PermissionResult permission)
+    private static Result<WorkInProgressResult> PermissionToResult(PermissionResult permission)
     {
-        if (String.IsNullOrEmpty(permission.Message))
-            return TypedResults.Problem(statusCode: permission.StatusCode);
+        if (!String.IsNullOrEmpty(permission.Message))
+            return Result.NotFound(permission.Message);
 
-        return TypedResults.Problem(statusCode: permission.StatusCode, title: permission.Message);
+        return Result.NotFound("Access denied.");
     }
 
     #endregion

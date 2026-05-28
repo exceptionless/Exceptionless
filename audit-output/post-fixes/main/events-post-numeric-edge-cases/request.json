@@ -1,0 +1,25 @@
+{
+  "type": "log",
+  "message": "Numeric edge cases test",
+  "date": "2026-05-20T12:00:00\u002B00:00",
+  "tags": [
+    "audit",
+    "numeric"
+  ],
+  "reference_id": "audit-numeric-001",
+  "count": 0,
+  "value": 0.0,
+  "data": {
+    "int_max": 2147483647,
+    "int_min": -2147483648,
+    "long_max": 9223372036854775807,
+    "long_min": -9223372036854775808,
+    "double_val": 1.7976931348623157e308,
+    "small_decimal": 0.000000001,
+    "negative_zero": -0.0,
+    "large_exponent": 1e100,
+    "zero_int": 0,
+    "zero_float": 0.0,
+    "one_point_zero": 1.0
+  }
+}

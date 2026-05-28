@@ -1,0 +1,136 @@
+{
+  "id": "537650f3b77efe23a47914f3",
+  "created_utc": "2026-05-20T20:28:23.184558",
+  "updated_utc": "2026-05-20T20:28:23.435472Z",
+  "name": "Updated Org Name (CamelCase audit)",
+  "plan_id": "EX_UNLIMITED",
+  "plan_name": "Unlimited",
+  "plan_description": "Unlimited",
+  "billing_change_date": "2026-05-20T20:28:23.183874",
+  "billing_changed_by_user_id": "6a0e1967a0b5235dcf5abe93",
+  "billing_status": 0,
+  "billing_price": 0,
+  "max_events_per_month": -1,
+  "bonus_events_per_month": 0,
+  "retention_days": 3650,
+  "is_suspended": false,
+  "has_premium_features": true,
+  "features": [],
+  "max_users": -1,
+  "max_projects": -1,
+  "project_count": 0,
+  "stack_count": 0,
+  "event_count": 0,
+  "invites": [],
+  "usage_hours": [
+    {
+      "date": "2026-05-01T00:00:00Z",
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    }
+  ],
+  "usage": [
+    {
+      "date": "2025-06-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2025-07-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2025-08-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2025-09-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2025-10-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2025-11-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2025-12-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2026-01-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2026-02-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2026-03-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2026-04-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2026-05-01T00:00:00",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    }
+  ],
+  "data": {},
+  "is_throttled": false,
+  "is_over_monthly_limit": false,
+  "is_over_request_limit": false
+}

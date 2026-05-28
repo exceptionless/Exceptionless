@@ -1,0 +1,122 @@
+{
+  "id": "537650f3b77efe23a47914f4",
+  "created_utc": "2026-05-20T20:28:26.638022Z",
+  "organization_id": "537650f3b77efe23a47914f3",
+  "organization_name": "Acme",
+  "name": "Disintegrating Pistol",
+  "delete_bot_data_enabled": false,
+  "data": {},
+  "promoted_tabs": [],
+  "is_configured": true,
+  "stack_count": 0,
+  "event_count": 0,
+  "has_premium_features": true,
+  "has_slack_integration": false,
+  "usage_hours": [
+    {
+      "date": "2026-05-20T20:00:00Z",
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    }
+  ],
+  "usage": [
+    {
+      "date": "2025-06-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2025-07-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2025-08-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2025-09-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2025-10-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2025-11-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2025-12-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2026-01-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2026-02-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2026-03-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2026-04-01T00:00:00Z",
+      "limit": -1,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    },
+    {
+      "date": "2026-05-01T00:00:00Z",
+      "limit": 0,
+      "total": 0,
+      "blocked": 0,
+      "discarded": 0,
+      "too_big": 0
+    }
+  ]
+}

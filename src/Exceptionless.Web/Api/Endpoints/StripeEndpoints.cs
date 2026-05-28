@@ -1,6 +1,7 @@
 using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Messages;
-using IMediator = Foundatio.Mediator.IMediator;
+using Exceptionless.Web.Api.Results;
+using Foundatio.Mediator;
 
 namespace Exceptionless.Web.Api.Endpoints;
 
@@ -13,7 +14,7 @@ public static class StripeEndpoints
             using var reader = new StreamReader(httpContext.Request.Body, leaveOpen: true);
             string json = await reader.ReadToEndAsync();
             string? signature = httpContext.Request.Headers["Stripe-Signature"];
-            return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new HandleStripeWebhook(json, signature));
+            return (await mediator.InvokeAsync<Result>(new HandleStripeWebhook(json, signature))).ToHttpResult();
         })
         .AddEndpointFilter<AutoValidationEndpointFilter>()
         .AllowAnonymous()

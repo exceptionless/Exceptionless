@@ -1,0 +1,44 @@
+{
+  "TYPE": "error",
+  "message": "Test error with MIXED casing",
+  "Date": "2026-05-20T12:00:00\u002B00:00",
+  "TAGS": [
+    "audit",
+    "MIXED"
+  ],
+  "reference_id": "audit-mixed-001",
+  "COUNT": 1,
+  "value": 42.5,
+  "GEO": "40.7128,-74.0060",
+  "data": {
+    "CUSTOM_FIELD": "custom_value",
+    "nestedObject": {
+      "INNER_KEY": "inner_value",
+      "innerNumber": 123
+    }
+  },
+  "@user": {
+    "IDENTITY": "user@example.com",
+    "name": "Test User"
+  },
+  "@environment": {
+    "O_S_NAME": "Windows 11",
+    "osVersion": "10.0.22621",
+    "IP_ADDRESS": "192.168.1.100",
+    "machineName": "AUDIT-MACHINE"
+  },
+  "@request": {
+    "CLIENT_IP_ADDRESS": "10.0.0.100",
+    "httpMethod": "POST",
+    "USER_AGENT": "AuditAgent/1.0",
+    "isSecure": true,
+    "HOST": "audit.localhost",
+    "path": "/api/audit",
+    "PORT": 443
+  },
+  "@simple_error": {
+    "MESSAGE": "Null reference exception",
+    "type": "System.NullReferenceException",
+    "STACK_TRACE": "   at Audit.Tests.Run() in AuditTests.cs:line 42"
+  }
+}

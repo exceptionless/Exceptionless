@@ -20,6 +20,7 @@ public static class ResultExtensions
         {
             ResultStatus.Success => HttpResults.Ok(),
             ResultStatus.Created => HttpResults.Created(result.Location, null),
+            ResultStatus.Accepted => HttpResults.StatusCode(StatusCodes.Status202Accepted),
             ResultStatus.NoContent => HttpResults.NoContent(),
             ResultStatus.NotFound => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status404NotFound, title: "Not Found"),
             ResultStatus.Forbidden => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status403Forbidden, title: "Forbidden"),
@@ -44,7 +45,15 @@ public static class ResultExtensions
 
         var value = result.ValueOrDefault;
         if (value is null)
-            return HttpResults.Ok();
+        {
+            return result.Status switch
+            {
+                ResultStatus.Accepted => HttpResults.StatusCode(StatusCodes.Status202Accepted),
+                ResultStatus.Created => HttpResults.Created(result.Location, null),
+                ResultStatus.NoContent => HttpResults.NoContent(),
+                _ => HttpResults.Ok()
+            };
+        }
 
         if (value is IPagedResult paged)
             return new PagedHttpResult(paged);
@@ -55,6 +64,7 @@ public static class ResultExtensions
 
         return result.Status switch
         {
+            ResultStatus.Accepted => HttpResults.Json(value, statusCode: StatusCodes.Status202Accepted),
             ResultStatus.Created => HttpResults.Created(result.Location, value),
             _ => HttpResults.Ok(value)
         };
@@ -82,6 +92,10 @@ public static class ResultExtensions
         var errors = result.ValidationErrors?.ToList();
         if (errors is null || errors.Count == 0)
             return HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status422UnprocessableEntity, title: "Validation failed");
+
+        var rateLimitError = errors.FirstOrDefault(error => String.Equals(error.Identifier, "rate_limit", StringComparison.OrdinalIgnoreCase));
+        if (rateLimitError is not null)
+            return HttpResults.Problem(statusCode: StatusCodes.Status429TooManyRequests, title: rateLimitError.ErrorMessage);
 
         var errorDict = new Dictionary<string, string[]>();
         foreach (var error in errors)

@@ -1,0 +1,29 @@
+{
+  "id": "6a0da240a0b5235dcf5abeb6",
+  "organization_id": "537650f3b77efe23a47914f3",
+  "project_id": "537650f3b77efe23a47914f4",
+  "stack_id": "6a0e1969a0b5235dcf5abeb5",
+  "is_first_occurrence": true,
+  "created_utc": "2026-05-20T20:28:25.566348",
+  "type": "log",
+  "date": "2026-05-20T12:00:00\u002B00:00",
+  "tags": [],
+  "message": "Null and empty values test",
+  "data": {
+    "nested_nulls": {
+      "a": null,
+      "b": "",
+      "c": []
+    },
+    "empty_array": [],
+    "_@user": null,
+    "null_value": null,
+    "@submission_client": {
+      "user_agent": "fluentrest",
+      "version": "11.1.0.0"
+    },
+    "empty_object": {},
+    "empty_string": ""
+  },
+  "reference_id": "audit-null-001"
+}

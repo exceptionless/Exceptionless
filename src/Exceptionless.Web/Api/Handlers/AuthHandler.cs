@@ -13,6 +13,7 @@ using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using Foundatio.Caching;
+using Foundatio.Mediator;
 using Foundatio.Repositories;
 using Microsoft.IdentityModel.Tokens;
 using OAuth2.Client;
@@ -20,7 +21,6 @@ using OAuth2.Client.Impl;
 using OAuth2.Configuration;
 using OAuth2.Infrastructure;
 using OAuth2.Models;
-using HttpResults = Microsoft.AspNetCore.Http.Results;
 
 namespace Exceptionless.Web.Api.Handlers;
 
@@ -40,7 +40,7 @@ public class AuthHandler(
     private static bool _isFirstUserChecked;
     private static readonly TimeSpan IntercomJwtLifetime = TimeSpan.FromMinutes(60);
 
-    public async Task<IResult> Handle(LoginMessage message)
+    public async Task<Result<TokenResult>> Handle(LoginMessage message)
     {
         var httpContext = message.Context;
         var model = message.Model;
@@ -56,13 +56,13 @@ public class AuthHandler(
         if (userLoginAttempts > 5)
         {
             logger.LogError("Login denied for {EmailAddress} for the {UserLoginAttempts} time", email, userLoginAttempts);
-            return HttpResults.Unauthorized();
+            return Result.Unauthorized("Login denied.");
         }
 
         if (ipLoginAttempts > 15)
         {
             logger.LogError("Login denied for {EmailAddress} for the {IPLoginAttempts} time", httpContext.Request.GetClientIpAddress(), ipLoginAttempts);
-            return HttpResults.Unauthorized();
+            return Result.Unauthorized("Login denied.");
         }
 
         User? user;
@@ -73,19 +73,19 @@ public class AuthHandler(
         catch (Exception ex)
         {
             logger.LogCritical(ex, "Login failed for {EmailAddress}: {Message}", email, ex.Message);
-            return HttpResults.Unauthorized();
+            return Result.Unauthorized("Login failed.");
         }
 
         if (user is null)
         {
             logger.LogError("Login failed for {EmailAddress}: User not found", email);
-            return HttpResults.Unauthorized();
+            return Result.Unauthorized("Login failed.");
         }
 
         if (!user.IsActive)
         {
             logger.LogError("Login failed for {EmailAddress}: The user is inactive", user.EmailAddress);
-            return HttpResults.Unauthorized();
+            return Result.Unauthorized("Login failed.");
         }
 
         if (!authOptions.EnableActiveDirectoryAuth)
@@ -93,19 +93,19 @@ public class AuthHandler(
             if (String.IsNullOrEmpty(user.Salt))
             {
                 logger.LogError("Login failed for {EmailAddress}: The user has no salt defined", user.EmailAddress);
-                return HttpResults.Unauthorized();
+                return Result.Unauthorized("Login failed.");
             }
 
             if (!user.IsCorrectPassword(model.Password))
             {
                 logger.LogError("Login failed for {EmailAddress}: Invalid Password", user.EmailAddress);
-                return HttpResults.Unauthorized();
+                return Result.Unauthorized("Login failed.");
             }
         }
         else if (!IsValidActiveDirectoryLogin(email, model.Password))
         {
             logger.LogError("Domain login failed for {EmailAddress}: Invalid Password or Account", user.EmailAddress);
-            return HttpResults.Unauthorized();
+            return Result.Unauthorized("Login failed.");
         }
 
         if (!String.IsNullOrEmpty(model.InviteToken))
@@ -115,15 +115,15 @@ public class AuthHandler(
         await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromMinutes(15)));
 
         logger.UserLoggedIn(user.EmailAddress);
-        return HttpResults.Ok(new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) });
+        return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
     }
 
-    public Task<IResult> Handle(GetIntercomToken message)
+    public Task<Result<TokenResult>> Handle(GetIntercomToken message)
     {
         var httpContext = message.Context;
 
         if (!intercomOptions.EnableIntercom || String.IsNullOrWhiteSpace(intercomOptions.IntercomSecret))
-            return Task.FromResult(ValidationProblem("intercom", "Intercom is not enabled."));
+            return Task.FromResult(TokenValidationProblem("intercom", "Intercom is not enabled."));
 
         var currentUser = httpContext.Request.GetUser();
         var issuedAt = timeProvider.GetUtcNow();
@@ -144,21 +144,21 @@ public class AuthHandler(
             }
         );
 
-        return Task.FromResult<IResult>(HttpResults.Ok(new TokenResult { Token = new JwtSecurityTokenHandler().WriteToken(token) }));
+        return Task.FromResult<Result<TokenResult>>(new TokenResult { Token = new JwtSecurityTokenHandler().WriteToken(token) });
     }
 
-    public async Task<IResult> Handle(LogoutMessage message)
+    public async Task<Result> Handle(LogoutMessage message)
     {
         var httpContext = message.Context;
         var currentUser = httpContext.Request.GetUser();
         using var _ = logger.BeginScope(new ExceptionlessState().Tag("Logout").Identity(currentUser.EmailAddress).SetHttpContext(httpContext));
 
         if (httpContext.User.IsTokenAuthType())
-            return HttpResults.Problem(statusCode: StatusCodes.Status403Forbidden, title: "Logout not supported for current user access token");
+            return Result.Forbidden("Logout not supported for current user access token");
 
         string? id = httpContext.User.GetLoggedInUsersTokenId();
         if (String.IsNullOrEmpty(id))
-            return HttpResults.Problem(statusCode: StatusCodes.Status403Forbidden, title: "Logout not supported");
+            return Result.Forbidden("Logout not supported");
 
         try
         {
@@ -170,10 +170,10 @@ public class AuthHandler(
             throw;
         }
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(SignupMessage message)
+    public async Task<Result<TokenResult>> Handle(SignupMessage message)
     {
         var httpContext = message.Context;
         var model = message.Model;
@@ -182,7 +182,7 @@ public class AuthHandler(
 
         bool valid = await IsAccountCreationEnabledAsync(model.InviteToken);
         if (!valid)
-            return HttpResults.Problem(statusCode: StatusCodes.Status403Forbidden, title: "Account Creation is currently disabled");
+            return Result.Forbidden("Account Creation is currently disabled");
 
         User? user;
         try
@@ -206,14 +206,14 @@ public class AuthHandler(
             if (ipSignupAttempts > 10)
             {
                 logger.LogError("Signup denied for {EmailAddress} for the {IPSignupAttempts} time", email, ipSignupAttempts);
-                return HttpResults.Unauthorized();
+                return Result.Unauthorized("Signup denied.");
             }
         }
 
         if (authOptions.EnableActiveDirectoryAuth && !IsValidActiveDirectoryLogin(email, model.Password))
         {
             logger.LogError("Signup failed for {EmailAddress}: Active Directory authentication failed", email);
-            return HttpResults.Unauthorized();
+            return Result.Unauthorized("Signup failed.");
         }
 
         user = new User
@@ -256,10 +256,10 @@ public class AuthHandler(
             await mailer.SendUserEmailVerifyAsync(user);
 
         logger.UserSignedUp(user.EmailAddress);
-        return HttpResults.Ok(new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) });
+        return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
     }
 
-    public Task<IResult> Handle(GitHubLogin message)
+    public Task<Result<TokenResult>> Handle(GitHubLogin message)
     {
         return ExternalLoginAsync(message.AuthInfo, message.Context,
             authOptions.GitHubId,
@@ -272,7 +272,7 @@ public class AuthHandler(
         );
     }
 
-    public Task<IResult> Handle(GoogleLogin message)
+    public Task<Result<TokenResult>> Handle(GoogleLogin message)
     {
         return ExternalLoginAsync(message.AuthInfo, message.Context,
             authOptions.GoogleId,
@@ -285,7 +285,7 @@ public class AuthHandler(
         );
     }
 
-    public Task<IResult> Handle(FacebookLogin message)
+    public Task<Result<TokenResult>> Handle(FacebookLogin message)
     {
         return ExternalLoginAsync(message.AuthInfo, message.Context,
             authOptions.FacebookId,
@@ -298,7 +298,7 @@ public class AuthHandler(
         );
     }
 
-    public Task<IResult> Handle(LiveLogin message)
+    public Task<Result<TokenResult>> Handle(LiveLogin message)
     {
         return ExternalLoginAsync(message.AuthInfo, message.Context,
             authOptions.MicrosoftId,
@@ -311,7 +311,7 @@ public class AuthHandler(
         );
     }
 
-    public async Task<IResult> Handle(RemoveExternalLogin message)
+    public async Task<Result<TokenResult>> Handle(RemoveExternalLogin message)
     {
         var httpContext = message.Context;
         var user = httpContext.Request.GetUser();
@@ -320,13 +320,13 @@ public class AuthHandler(
         if (String.IsNullOrWhiteSpace(message.ProviderName) || String.IsNullOrWhiteSpace(message.ProviderUserId?.Value))
         {
             logger.LogError("Remove external login failed for {EmailAddress}: Invalid Provider Name or Provider User Id", user.EmailAddress);
-            return HttpResults.BadRequest("Invalid Provider Name or Provider User Id.");
+            return Result.BadRequest("Invalid Provider Name or Provider User Id.");
         }
 
         if (user.OAuthAccounts.Count <= 1 && String.IsNullOrEmpty(user.Password))
         {
             logger.LogError("Remove external login failed for {EmailAddress}: You must set a local password before removing your external login", user.EmailAddress);
-            return HttpResults.BadRequest("You must set a local password before removing your external login.");
+            return Result.BadRequest("You must set a local password before removing your external login.");
         }
 
         try
@@ -343,10 +343,10 @@ public class AuthHandler(
         await ResetUserTokensAsync(user, "RemoveExternalLoginAsync", httpContext);
 
         logger.UserRemovedExternalLogin(user.EmailAddress, message.ProviderName);
-        return HttpResults.Ok(new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) });
+        return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
     }
 
-    public async Task<IResult> Handle(ChangePassword message)
+    public async Task<Result<TokenResult>> Handle(ChangePassword message)
     {
         var httpContext = message.Context;
         var model = message.Model;
@@ -358,21 +358,21 @@ public class AuthHandler(
             if (String.IsNullOrWhiteSpace(model.CurrentPassword))
             {
                 logger.LogError("Change password failed for {EmailAddress}: The current password is incorrect", user.EmailAddress);
-                return ValidationProblem("CurrentPassword", "The current password is incorrect.");
+                return TokenValidationProblem("current_password", "The current password is incorrect.");
             }
 
             string encodedPassword = model.CurrentPassword.ToSaltedHash(user.Salt!);
             if (!String.Equals(encodedPassword, user.Password))
             {
                 logger.LogError("Change password failed for {EmailAddress}: The current password is incorrect", user.EmailAddress);
-                return ValidationProblem("CurrentPassword", "The current password is incorrect.");
+                return TokenValidationProblem("current_password", "The current password is incorrect.");
             }
 
             string newPasswordHash = model.Password!.ToSaltedHash(user.Salt!);
             if (String.Equals(newPasswordHash, user.Password))
             {
                 logger.LogError("Change password failed for {EmailAddress}: The new password is the same as the current password", user.EmailAddress);
-                return ValidationProblem("Password", "The new password must be different than the previous password.");
+                return TokenValidationProblem("password", "The new password must be different than the previous password.");
             }
         }
 
@@ -388,31 +388,31 @@ public class AuthHandler(
             await _cache.RemoveAsync(ipLoginAttemptsCacheKey);
 
         logger.UserChangedPassword(user.EmailAddress);
-        return HttpResults.Ok(new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) });
+        return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
     }
 
-    public async Task<IResult> Handle(CheckEmailAddress message)
+    public async Task<Result> Handle(CheckEmailAddress message)
     {
         var httpContext = message.Context;
         string email = message.Email;
 
         if (String.IsNullOrWhiteSpace(email))
-            return HttpResults.NoContent();
+            return Result.NoContent();
 
         email = email.Trim().ToLowerInvariant();
         if (httpContext.User.IsUserAuthType() && String.Equals(httpContext.Request.GetUser().EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
-            return HttpResults.StatusCode(StatusCodes.Status201Created);
+            return Result.Created();
 
         string ipEmailAddressAttemptsCacheKey = $"ip:{httpContext.Request.GetClientIpAddress()}:email:attempts";
         long attempts = await _cache.IncrementAsync(ipEmailAddressAttemptsCacheKey, 1, timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromHours(1)));
 
         if (attempts > 3 || await userRepository.GetByEmailAddressAsync(email) is null)
-            return HttpResults.NoContent();
+            return Result.NoContent();
 
-        return HttpResults.StatusCode(StatusCodes.Status201Created);
+        return Result.Created();
     }
 
-    public async Task<IResult> Handle(ForgotPassword message)
+    public async Task<Result> Handle(ForgotPassword message)
     {
         var httpContext = message.Context;
         string email = message.Email;
@@ -421,7 +421,7 @@ public class AuthHandler(
         if (String.IsNullOrWhiteSpace(email))
         {
             logger.LogError("Forgot password failed: Please specify a valid Email Address");
-            return HttpResults.BadRequest("Please specify a valid Email Address.");
+            return Result.BadRequest("Please specify a valid Email Address.");
         }
 
         string ipResetPasswordAttemptsCacheKey = $"ip:{httpContext.Request.GetClientIpAddress()}:password:attempts";
@@ -429,7 +429,7 @@ public class AuthHandler(
         if (attempts > 3)
         {
             logger.LogError("Login denied for {EmailAddress} for the {ResetPasswordAttempts} time", email, attempts);
-            return HttpResults.Ok();
+            return Result.Success();
         }
 
         email = email.Trim().ToLowerInvariant();
@@ -437,7 +437,7 @@ public class AuthHandler(
         if (user is null)
         {
             logger.LogError("Forgot password failed for {EmailAddress}: No user was found", email);
-            return HttpResults.Ok();
+            return Result.Success();
         }
 
         user.CreatePasswordResetToken(timeProvider);
@@ -445,10 +445,10 @@ public class AuthHandler(
 
         await mailer.SendUserPasswordResetAsync(user);
         logger.UserForgotPassword(user.EmailAddress);
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(ResetPassword message)
+    public async Task<Result> Handle(ResetPassword message)
     {
         var httpContext = message.Context;
         var model = message.Model;
@@ -458,13 +458,13 @@ public class AuthHandler(
         if (user is null)
         {
             logger.LogError("Reset password failed: Invalid Password Reset Token");
-            return ValidationProblem("PasswordResetToken", "Invalid Password Reset Token");
+            return Result.Invalid(ValidationError.Create("password_reset_token", "Invalid Password Reset Token"));
         }
 
         if (!user.HasValidPasswordResetTokenExpiration(timeProvider))
         {
             logger.LogError("Reset password failed for {EmailAddress}: Password Reset Token has expired", user.EmailAddress);
-            return ValidationProblem("PasswordResetToken", "Password Reset Token has expired");
+            return Result.Invalid(ValidationError.Create("password_reset_token", "Password Reset Token has expired"));
         }
 
         if (!String.IsNullOrWhiteSpace(user.Password))
@@ -473,7 +473,7 @@ public class AuthHandler(
             if (String.Equals(newPasswordHash, user.Password))
             {
                 logger.LogError("Reset password failed for {EmailAddress}: The new password is the same as the current password", user.EmailAddress);
-                return ValidationProblem("Password", "The new password must be different than the previous password");
+                return Result.Invalid(ValidationError.Create("password", "The new password must be different than the previous password"));
             }
         }
 
@@ -490,10 +490,10 @@ public class AuthHandler(
             await _cache.RemoveAsync(ipLoginAttemptsCacheKey);
 
         logger.UserResetPassword(user.EmailAddress);
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(CancelResetPassword message)
+    public async Task<Result> Handle(CancelResetPassword message)
     {
         var httpContext = message.Context;
         string token = message.Token;
@@ -503,12 +503,12 @@ public class AuthHandler(
             using (logger.BeginScope(new ExceptionlessState().Tag("Cancel Reset Password").SetHttpContext(httpContext)))
                 logger.LogError("Cancel reset password failed: Invalid Password Reset Token");
 
-            return HttpResults.BadRequest("Invalid password reset token.");
+            return Result.BadRequest("Invalid password reset token.");
         }
 
         var user = await userRepository.GetByPasswordResetTokenAsync(token);
         if (user is null)
-            return HttpResults.Ok();
+            return Result.Success();
 
         user.ResetPasswordResetToken();
         await userRepository.SaveAsync(user, o => o.Cache());
@@ -516,7 +516,7 @@ public class AuthHandler(
         using (logger.BeginScope(new ExceptionlessState().Tag("Cancel Reset Password").Identity(user.EmailAddress).Property("User", user).SetHttpContext(httpContext)))
             logger.UserCanceledResetPassword(user.EmailAddress);
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
     private async Task AddGlobalAdminRoleIfFirstUserAsync(User user)
@@ -531,7 +531,7 @@ public class AuthHandler(
         _isFirstUserChecked = true;
     }
 
-    private async Task<IResult> ExternalLoginAsync<TClient>(ExternalAuthInfo authInfo, HttpContext httpContext, string? appId, string? appSecret, Func<IRequestFactory, IClientConfiguration, TClient> createClient) where TClient : OAuth2Client
+    private async Task<Result<TokenResult>> ExternalLoginAsync<TClient>(ExternalAuthInfo authInfo, HttpContext httpContext, string? appId, string? appSecret, Func<IRequestFactory, IClientConfiguration, TClient> createClient) where TClient : OAuth2Client
     {
         using var _ = logger.BeginScope(new ExceptionlessState().Tag("External Login").SetHttpContext(httpContext));
         if (String.IsNullOrEmpty(appId) || String.IsNullOrEmpty(appSecret))
@@ -563,7 +563,7 @@ public class AuthHandler(
         catch (ApplicationException ex)
         {
             logger.LogCritical(ex, "External login failed for {EmailAddress}: {Message}", userInfo.Email, ex.Message);
-            return HttpResults.Problem(statusCode: StatusCodes.Status403Forbidden, title: "Account Creation is currently disabled");
+            return Result.Forbidden("Account Creation is currently disabled");
         }
         catch (Exception ex)
         {
@@ -575,7 +575,7 @@ public class AuthHandler(
             await AddInvitedUserToOrganizationAsync(authInfo.InviteToken, user, httpContext);
 
         logger.UserLoggedIn(user.EmailAddress);
-        return HttpResults.Ok(new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) });
+        return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
     }
 
     private async Task<User> FromExternalLoginAsync(UserInfo userInfo, HttpContext httpContext)
@@ -754,6 +754,6 @@ public class AuthHandler(
         return domainUsername is not null && domainLoginProvider.Login(domainUsername, password);
     }
 
-    private static IResult ValidationProblem(string key, string error)
-        => global::Microsoft.AspNetCore.Http.Results.ValidationProblem(new Dictionary<string, string[]> { [key.ToLowerUnderscoredWords()] = [error] }, statusCode: StatusCodes.Status422UnprocessableEntity);
+    private static Result<TokenResult> TokenValidationProblem(string key, string error)
+        => Result.Invalid(ValidationError.Create(key.ToLowerUnderscoredWords(), error));
 }

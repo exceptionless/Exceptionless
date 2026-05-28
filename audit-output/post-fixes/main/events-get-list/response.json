@@ -1,0 +1,23 @@
+[
+  {
+    "id": "6a0da240a0b5235dcf5abf01",
+    "organization_id": "537650f3b77efe23a47914f3",
+    "project_id": "537650f3b77efe23a47914f4",
+    "stack_id": "6a0e196ca0b5235dcf5abf00",
+    "is_first_occurrence": true,
+    "created_utc": "2026-05-20T20:28:28.426009",
+    "type": "log",
+    "date": "2026-05-20T12:00:00\u002B00:00",
+    "tags": [
+      "audit"
+    ],
+    "message": "List format test event",
+    "data": {
+      "@submission_client": {
+        "user_agent": "fluentrest",
+        "version": "11.1.0.0"
+      }
+    },
+    "reference_id": "audit-list-001"
+  }
+]

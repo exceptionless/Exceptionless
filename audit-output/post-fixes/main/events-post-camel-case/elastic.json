@@ -1,0 +1,82 @@
+{
+  "date": "2026-05-20T12:00:00\u002B00:00",
+  "data": {
+    "@request": {
+      "path": "/api/audit?key=value\u0026other=123",
+      "http_method": "POST",
+      "data": {
+        "@is_bot": false,
+        "@device": "Generic Feature Phone"
+      },
+      "port": 443,
+      "is_secure": true,
+      "host": "audit.localhost",
+      "client_ip_address": "10.0.0.100",
+      "user_agent": "AuditAgent/1.0",
+      "cookies": {
+        "sessionId": "abc123"
+      },
+      "query_string": {
+        "specialChars": "\u003Cscript\u003Ealert(\u0027xss\u0027)\u003C/script\u003E",
+        "key": "value"
+      }
+    },
+    "@user": {
+      "data": {
+        "planName": "premium"
+      },
+      "identity": "user@example.com",
+      "name": "Test User"
+    },
+    "@submission_client": {
+      "version": "11.1.0.0",
+      "user_agent": "fluentrest"
+    },
+    "@environment": {
+      "process_id": "12345",
+      "runtime_version": ".NET 8.0.1",
+      "processor_count": 8,
+      "total_physical_memory": 17179869184,
+      "available_physical_memory": 8589934592,
+      "ip_address": "192.168.1.100",
+      "machine_name": "AUDIT-MACHINE",
+      "o_s_version": "10.0.22621",
+      "process_memory_size": 104857600,
+      "thread_id": "1",
+      "process_name": "AuditApp",
+      "o_s_name": "Windows 11",
+      "command_line": "AuditApp.exe --test"
+    },
+    "@ref:session": "6a0de890a0b5235dcf5abebb",
+    "nestedObject": {
+      "innerNumber": 123,
+      "innerKey": "inner_value"
+    },
+    "customField": "custom_value",
+    "@simpleError": {
+      "stackTrace": "   at Audit.Tests.Run() in AuditTests.cs:line 42\n   at Audit.Main() in Program.cs:line 10",
+      "message": "Null reference exception occurred",
+      "type": "System.NullReferenceException"
+    }
+  },
+  "reference_id": "audit-camel-001",
+  "count": 1,
+  "type": "error",
+  "message": "Test error with camelCase payload",
+  "tags": [
+    "audit",
+    "camelCase"
+  ],
+  "geo": "40.7128,-74.006",
+  "project_id": "537650f3b77efe23a47914f4",
+  "organization_id": "537650f3b77efe23a47914f3",
+  "stack_id": "6a0e1969a0b5235dcf5abebe",
+  "id": "6a0da240a0b5235dcf5abebf",
+  "created_utc": "2026-05-20T20:28:25.815554Z",
+  "idx": {
+    "session-r": "6a0de890a0b5235dcf5abebb",
+    "customfield-s": "custom_value"
+  },
+  "is_first_occurrence": true,
+  "value": 42.5
+}

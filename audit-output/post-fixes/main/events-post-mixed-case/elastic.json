@@ -1,0 +1,77 @@
+{
+  "date": "2026-05-20T12:00:00\u002B00:00",
+  "data": {
+    "@request": {
+      "path": "/api/audit",
+      "http_method": "POST",
+      "data": {
+        "@is_bot": false,
+        "@device": "Generic Feature Phone"
+      },
+      "port": 443,
+      "is_secure": true,
+      "host": "audit.localhost",
+      "client_ip_address": "10.0.0.100",
+      "user_agent": "AuditAgent/1.0"
+    },
+    "@user": {
+      "identity": "user@example.com",
+      "name": "Test User"
+    },
+    "@submission_client": {
+      "version": "11.1.0.0",
+      "user_agent": "fluentrest"
+    },
+    "@environment": {
+      "o_s_version": "10.0.22621",
+      "o_s_name": "Windows 11",
+      "ip_address": "192.168.1.100",
+      "machine_name": "AUDIT-MACHINE"
+    },
+    "CUSTOM_FIELD": "custom_value",
+    "@simple_error": {
+      "data": {
+        "@target": {
+          "ExceptionType": "System.NullReferenceException",
+          "StackTrace": "b34014e5c4c99d1a35e6e088afafb3dda802daf1"
+        }
+      },
+      "stack_trace": "   at Audit.Tests.Run() in AuditTests.cs:line 42",
+      "message": "Null reference exception",
+      "type": "System.NullReferenceException"
+    },
+    "@ref:session": "6a0de890a0b5235dcf5abec4",
+    "nestedObject": {
+      "innerNumber": 123,
+      "INNER_KEY": "inner_value"
+    }
+  },
+  "reference_id": "audit-mixed-001",
+  "count": 1,
+  "type": "error",
+  "message": "Test error with MIXED casing",
+  "error": {
+    "code": [],
+    "type": [
+      "System.NullReferenceException"
+    ],
+    "message": [
+      "Null reference exception"
+    ]
+  },
+  "tags": [
+    "audit",
+    "MIXED"
+  ],
+  "geo": "40.7128,-74.006",
+  "project_id": "537650f3b77efe23a47914f4",
+  "organization_id": "537650f3b77efe23a47914f3",
+  "stack_id": "6a0e196aa0b5235dcf5abec7",
+  "id": "6a0da240a0b5235dcf5abec8",
+  "created_utc": "2026-05-20T20:28:26.122187Z",
+  "idx": {
+    "session-r": "6a0de890a0b5235dcf5abec4"
+  },
+  "is_first_occurrence": true,
+  "value": 42.5
+}

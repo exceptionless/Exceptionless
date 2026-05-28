@@ -1,0 +1,24 @@
+{
+  "type": "error",
+  "message": "A potentially dangerous Request.Path value was detected from the client (\u0026).",
+  "date": "2026-05-20T12:00:00\u002B00:00",
+  "tags": [
+    "\u003Cscript\u003E",
+    "special\u0026chars",
+    "quotes\u0022here"
+  ],
+  "reference_id": "audit-special-001",
+  "data": {
+    "html_content": "\u003Cdiv class=\u0022test\u0022\u003EHello \u0026 World\u003C/div\u003E",
+    "url": "https://example.com/path?a=1\u0026b=2\u0026c=\u003Cvalue\u003E",
+    "unicode_text": "\u65E5\u672C\u8A9E\u30C6\u30B9\u30C8 \uD83C\uDF89 \u00E9mojis caf\u00E9",
+    "null_bytes": "before\u0000after",
+    "apostrophe": "it\u0027s a test",
+    "backslash": "path\\to\\file"
+  },
+  "@simple_error": {
+    "message": "Error: \u0027Failed\u0027 at \u003CModule\u003E::Method(int\u0026 param)",
+    "type": "System.InvalidOperationException",
+    "stack_trace": "   at Namespace.Class.Method(String\u0026 value) in C:\\Users\\test\\file.cs:line 10"
+  }
+}
