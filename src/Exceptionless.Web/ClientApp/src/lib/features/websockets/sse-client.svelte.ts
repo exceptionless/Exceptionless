@@ -56,6 +56,7 @@ export class SseClient {
     private connectionTimeoutId: null | ReturnType<typeof setTimeout> = null;
     private forcedClose: boolean = false;
     private hasConnectedBefore: boolean = false;
+    private pausedForVisibility: boolean = false;
     private reconnectAttempts: number = 0;
     private reconnectTimeoutId: null | ReturnType<typeof setTimeout> = null;
 
@@ -76,9 +77,13 @@ export class SseClient {
                 this.accessToken = accessToken.current;
                 this.reconnectAttempts = 0;
                 this.authFailed = false;
+                this.pausedForVisibility = false;
                 this.close(false);
             } else if (!visibility.visible) {
+                this.pausedForVisibility = true;
                 this.close(false);
+            } else {
+                this.pausedForVisibility = false;
             }
 
             if (
@@ -157,7 +162,7 @@ export class SseClient {
     }
 
     private scheduleReconnect() {
-        if (this.reconnectTimeoutId !== null || this.authFailed || this.forcedClose || !(this.accessToken ?? accessToken.current)) {
+        if (this.reconnectTimeoutId !== null || this.authFailed || this.forcedClose || this.pausedForVisibility || !(this.accessToken ?? accessToken.current)) {
             this.readyState = SSE_CLOSED;
             return;
         }
@@ -283,7 +288,7 @@ export class SseClient {
                 return;
             }
 
-            if (signal.aborted && this.forcedClose) {
+            if (signal.aborted && (this.forcedClose || this.pausedForVisibility)) {
                 // Intentional close - don't reconnect
                 this.readyState = SSE_CLOSED;
                 this.onClose();
@@ -301,7 +306,7 @@ export class SseClient {
         }
 
         // Stream ended (server closed connection) - reconnect
-        if (generation === this.streamGeneration && !this.forcedClose) {
+        if (generation === this.streamGeneration && !this.forcedClose && !this.pausedForVisibility) {
             this.scheduleReconnect();
         }
     }

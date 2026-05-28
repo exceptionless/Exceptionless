@@ -474,4 +474,20 @@ public sealed class SseDeduplicationTests : TestWithServices
         Assert.Equal("critical-1", item1!.Value.Data);
         Assert.Equal("critical-2", item2!.Value.Data);
     }
+
+    [Fact]
+    public async Task KeepAlive_WhenQueueFull_DoesNotEvictCriticalMessage()
+    {
+        var queue = new SseConnection.DedupQueue(1);
+        queue.TryEnqueue(new SseConnection.SseEvent { Data = "critical-1", CanDrop = false });
+
+        var result = queue.TryEnqueue(SseConnection.SseEvent.KeepAlive);
+
+        using var cts = new CancellationTokenSource();
+        var item = await queue.DequeueAsync(cts.Token);
+
+        Assert.Equal(SseConnection.EnqueueResult.Skipped, result);
+        Assert.Equal("critical-1", item!.Value.Data);
+        Assert.False(item.Value.IsKeepAlive);
+    }
 }
