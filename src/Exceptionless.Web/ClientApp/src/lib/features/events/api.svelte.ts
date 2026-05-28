@@ -4,7 +4,7 @@ import type { CountResult, WorkInProgressResult } from '$shared/models';
 import { accessToken } from '$features/auth/index.svelte';
 import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
-import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
+import { createMutation, createQuery, keepPreviousData, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { EventSummaryModel, SummaryTemplateKeys } from './components/summary/index';
 import type { PersistentEvent } from './models';
@@ -215,10 +215,7 @@ export function getEventWithNavigationQuery(request: GetEventRequest) {
     const queryClient = useQueryClient();
     return createQuery<EventWithNavigation, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
-        placeholderData: () => {
-            const cachedEvent = queryClient.getQueryData<PersistentEvent>(queryKeys.id(request.route.id));
-            return cachedEvent ? { event: cachedEvent, navigation: { nextId: null, previousId: null } } : undefined;
-        },
+        placeholderData: keepPreviousData,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<PersistentEvent>(`events/${request.route.id}`, {
