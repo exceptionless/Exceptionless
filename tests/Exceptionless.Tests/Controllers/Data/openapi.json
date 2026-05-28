@@ -150,7 +150,7 @@
           {
             "name": "viewType",
             "in": "path",
-            "description": "The dashboard view type (events, issues, stream).",
+            "description": "The dashboard view type (events, stacks, stream).",
             "required": true,
             "schema": {
               "type": "string"

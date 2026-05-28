@@ -15,7 +15,6 @@
     import { ProjectFilter, StatusFilter } from '$features/events/components/filters';
     import {
         buildFilterCacheKey,
-        filterCacheVersionNumber,
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
@@ -93,6 +92,10 @@
     });
     const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Event Stream');
 
+    $effect(() => {
+        document.title = `${pageTitle} - Exceptionless`;
+    });
+
     watch(
         () => organization.current,
         () => {
@@ -106,7 +109,7 @@
 
     let filters = $state(getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter));
     watch(
-        [() => queryParams.filter, () => filterCacheVersionNumber()],
+        [() => queryParams.filter],
         ([filter]) => {
             filters = getFiltersFromCache(filterCacheKey(filter), filter);
         },
@@ -122,14 +125,21 @@
 
         // For all other filters (skipping date filters), apply them to the current page
         if (addedOrUpdated.type !== 'date') {
-            updateFilters(filterChanged(filters ?? [], addedOrUpdated));
+            const isNew = !filters?.some((f) => f.id === addedOrUpdated.id);
+            const updatedFilters = filterChanged(filters ?? [], addedOrUpdated);
+            updateFilters(updatedFilters);
+            if (isNew) {
+                filters = updatedFilters;
+            }
         }
 
         selectedEventId = null;
     }
 
     function onFilterRemoved(removed?: FacetedFilter.IFilter): void {
-        updateFilters(filterRemoved(filters ?? [], removed));
+        const updatedFilters = filterRemoved(filters ?? [], removed);
+        updateFilters(updatedFilters);
+        filters = updatedFilters;
     }
 
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {

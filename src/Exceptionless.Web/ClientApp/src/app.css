@@ -154,11 +154,7 @@
     }
 
     html {
-        overflow-y: scroll;
-    }
-
-    html:has([data-slot='sheet-content']) {
-        overflow-y: hidden;
+        overflow: hidden;
     }
 
     body {

@@ -18,7 +18,6 @@
         applyTimeFilter,
         buildFilterCacheKey,
         deserializeFilters,
-        filterCacheVersionNumber,
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
@@ -78,24 +77,24 @@
     }
 
     function getQueryTime(): null | string {
-        if (page.url.searchParams.has('time')) {
-            return page.url.searchParams.get('time') === '' ? null : queryParams.time;
+        if (queryParams.time != null) {
+            return queryParams.time || null;
         }
 
         return savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
     }
 
     function getEffectiveFilter(): null | string {
-        if (page.url.searchParams.has('filter')) {
-            return queryParams.filter ?? '';
+        if (queryParams.filter != null) {
+            return queryParams.filter;
         }
 
         return savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
     }
 
     function getEffectiveSort(): null | string | undefined {
-        if (page.url.searchParams.has('sort')) {
-            return queryParams.sort;
+        if (queryParams.sort != null) {
+            return queryParams.sort || undefined;
         }
 
         return savedViewsState.activeSavedView?.sort ?? undefined;
@@ -141,6 +140,10 @@
     });
     const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Events');
 
+    $effect(() => {
+        document.title = `${pageTitle} - Exceptionless`;
+    });
+
     // NOTE: This might be applying query string parameters when redirecting away.
     watch(
         () => organization.current,
@@ -156,7 +159,8 @@
     function getCurrentFilters(): FacetedFilter.IFilter[] {
         const filter = getEffectiveFilter();
         const savedView = savedViewsState.activeSavedView;
-        if (!page.url.searchParams.has('filter') && savedView?.filter_definitions && filter === (savedView.filter ?? null)) {
+
+        if (queryParams.filter == null && savedView?.filter_definitions && filter === (savedView.filter ?? null)) {
             const hydrated = deserializeFilters(savedView.filter_definitions);
             return applyTimeFilter(hydrated, getQueryTime());
         }
@@ -165,9 +169,15 @@
     }
 
     let filters = $state(getCurrentFilters());
+    let isInternalFilterUpdate = false;
     watch(
-        [() => page.url.pathname, () => page.url.search, () => savedViewsState.activeSavedView, () => filterCacheVersionNumber()],
+        [() => page.url.pathname, () => page.url.search, () => savedViewsState.activeSavedView],
         () => {
+            if (isInternalFilterUpdate) {
+                isInternalFilterUpdate = false;
+                return;
+            }
+
             filters = getCurrentFilters();
         },
         { lazy: true }
@@ -179,12 +189,20 @@
     });
 
     function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
-        updateFilters(filterChanged(filters ?? [], addedOrUpdated));
+        const isNew = !filters?.some((f) => f.id === addedOrUpdated.id);
+        const updatedFilters = filterChanged(filters ?? [], addedOrUpdated);
+        updateFilters(updatedFilters);
+        if (isNew) {
+            filters = updatedFilters;
+        }
+
         selectedEventId = null;
     }
 
     function onFilterRemoved(removed?: FacetedFilter.IFilter): void {
-        updateFilters(filterRemoved(filters ?? [], removed));
+        const updatedFilters = filterRemoved(filters ?? [], removed);
+        updateFilters(updatedFilters);
+        filters = updatedFilters;
     }
 
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
@@ -193,9 +211,18 @@
         const baseFilter = savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
         const baseTime = savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
 
+        const newFilterParam = filter === baseFilter ? null : filter;
+        const newTimeParam = time === baseTime ? null : (time ?? '');
+
         updateFilterCache(filterCacheKey(filter), updatedFilters);
-        queryParams.time = time === baseTime ? null : (time ?? '');
-        queryParams.filter = filter === baseFilter ? null : filter;
+        // Only skip the watch when the URL will actually change from our update.
+        // If the URL doesn't change, the watch won't fire and the flag would stay stale.
+        if (newFilterParam !== queryParams.filter || newTimeParam !== queryParams.time) {
+            isInternalFilterUpdate = true;
+        }
+
+        queryParams.time = newTimeParam;
+        queryParams.filter = newFilterParam;
     }
 
     const eventsQueryParameters: GetEventsParams = $state({
@@ -367,15 +394,15 @@
         const aggregations = chartDataQuery.data?.aggregations;
         const timeRange = parseDateMathRange(getQueryTime() || undefined);
         const totalEvents = agg.sum(aggregations, 'sum_count')?.value ?? chartDataQuery.data?.total ?? 0;
-        const totalIssues = agg.cardinality(aggregations, 'cardinality_stack')?.value ?? 0;
-        const newIssues = agg.terms<boolean>(aggregations, 'terms_first')?.buckets[0]?.total ?? 0;
+        const totalStacks = agg.cardinality(aggregations, 'cardinality_stack')?.value ?? 0;
+        const newStacks = agg.terms<boolean>(aggregations, 'terms_first')?.buckets[0]?.total ?? 0;
         const hours = Math.max((timeRange.end.getTime() - timeRange.start.getTime()) / 3_600_000, 1);
 
         return {
             eventsPerHour: totalEvents / hours,
-            newIssues,
+            newStacks,
             totalEvents,
-            totalIssues
+            totalStacks
         };
     });
 
@@ -441,9 +468,9 @@
             <EventsStatsDashboard
                 eventsPerHour={stats.eventsPerHour}
                 isLoading={chartDataQuery.isLoading && !chartDataQuery.isSuccess}
-                newIssues={stats.newIssues}
+                newStacks={stats.newStacks}
                 totalEvents={stats.totalEvents}
-                totalIssues={stats.totalIssues}
+                totalStacks={stats.totalStacks}
             />
         {/if}
 

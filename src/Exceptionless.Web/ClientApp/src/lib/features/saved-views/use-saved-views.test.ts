@@ -38,7 +38,7 @@ function buildSavedView({ id, name, ...overrides }: Partial<SavedView> & Pick<Sa
         updated_utc: new Date().toISOString(),
         user_id: null,
         version: 1,
-        view_type: 'issues',
+        view_type: 'stacks',
         ...overrides,
         slug
     };
@@ -266,7 +266,7 @@ describe('useSavedViews', () => {
             const view = buildSavedView({ id: 'view-1', name: 'My View' });
             const otherView = buildSavedView({ id: 'view-2', name: 'Other View' });
             queryClient.setQueryData(queryKeys.organization(TEST_ORG_ID), [view, otherView]);
-            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'issues'), [view, otherView]);
+            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'stacks'), [view, otherView]);
 
             // Act
             await invalidateSavedViewQueries(queryClient, {
@@ -279,7 +279,7 @@ describe('useSavedViews', () => {
 
             // Assert - view removed from both caches without refetch
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([otherView]);
-            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'issues'))).toEqual([otherView]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'stacks'))).toEqual([otherView]);
         });
 
         it('falls back to invalidation for Removed events when view is not cached', async () => {
@@ -308,14 +308,14 @@ describe('useSavedViews', () => {
             const existingView = buildSavedView({ id: 'view-1', name: 'Existing View' });
             const createdView = buildSavedView({ id: 'view-2', name: 'New View' });
 
-            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'issues'), [existingView]);
+            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'stacks'), [existingView]);
             queryClient.setQueryData(queryKeys.organization(TEST_ORG_ID), [existingView]);
 
             // Act
             syncSavedViewCaches(queryClient, createdView);
 
             // Assert
-            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'issues'))).toEqual([existingView, createdView]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'stacks'))).toEqual([existingView, createdView]);
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([existingView, createdView]);
         });
 
@@ -328,7 +328,7 @@ describe('useSavedViews', () => {
             syncSavedViewCaches(queryClient, createdView, TEST_ORG_ID);
 
             // Assert
-            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'issues'))).toEqual([createdView]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'stacks'))).toEqual([createdView]);
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([createdView]);
         });
 
@@ -343,14 +343,14 @@ describe('useSavedViews', () => {
                 time: '[now-15m TO now]'
             };
 
-            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'issues'), [existingView, otherView]);
+            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'stacks'), [existingView, otherView]);
             queryClient.setQueryData(queryKeys.organization(TEST_ORG_ID), [existingView, otherView]);
 
             // Act
             syncSavedViewCaches(queryClient, updatedView);
 
             // Assert
-            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'issues'))).toEqual([updatedView, otherView]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'stacks'))).toEqual([updatedView, otherView]);
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([updatedView, otherView]);
         });
 
@@ -361,7 +361,7 @@ describe('useSavedViews', () => {
             const otherView = buildSavedView({ id: 'view-2', name: 'Other View' });
 
             queryClient.setQueryData(queryKeys.organization(TEST_ORG_ID), [deletedView, otherView]);
-            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'issues'), [deletedView, otherView]);
+            queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'stacks'), [deletedView, otherView]);
             queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'events'), [deletedView, otherView]);
 
             // Act
@@ -369,7 +369,7 @@ describe('useSavedViews', () => {
 
             // Assert
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([otherView]);
-            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'issues'))).toEqual([otherView]);
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'stacks'))).toEqual([otherView]);
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'events'))).toEqual([otherView]);
         });
     });

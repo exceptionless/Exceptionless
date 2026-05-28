@@ -1,6 +1,6 @@
 <script lang="ts">
     import { type QuickRangeOption, quickRanges } from '$features/shared/components/date-range-picker/quick-ranges';
-    import { formatDateLabel } from '$features/shared/dates';
+    import { formatDateLabel, formatDateRangeLabel } from '$features/shared/dates';
     import { extractRangeExpressions, TIME_UNIT_NAMES } from '$features/shared/utils/datemath';
     import { parseDateMathRange } from '$features/shared/utils/datemath';
 
@@ -91,7 +91,7 @@
             // Try to parse as a time parameter (date range expression)
             try {
                 const { end, start } = parseDateMathRange(trimmed);
-                return `${formatDateLabel(start)} to ${formatDateLabel(end)}`;
+                return formatDateRangeLabel(start, end);
             } catch {
                 // If parsing fails, just return the original value
                 return trimmed;

@@ -220,7 +220,7 @@
         {/if}
     </Sidebar.Header>
     <Sidebar.Content>
-        <Sidebar.Group class="pt-1">
+        <Sidebar.Group class="pt-0">
             <Sidebar.Menu>
                 {#each dashboardRoutes as route (route.href)}
                     {@const Icon = route.icon}

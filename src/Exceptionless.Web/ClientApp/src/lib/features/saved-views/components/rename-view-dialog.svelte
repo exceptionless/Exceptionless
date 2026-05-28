@@ -64,7 +64,7 @@
 
         if (!isSavedViewSlugValid(normalizedSlug)) {
             if (isSavedViewSlugReserved(normalizedSlug)) {
-                return 'URL name cannot look like an event or issue id.';
+                return 'URL name cannot look like an event or stack id.';
             }
 
             return 'URL name can only contain lowercase letters, numbers, and single dashes.';
