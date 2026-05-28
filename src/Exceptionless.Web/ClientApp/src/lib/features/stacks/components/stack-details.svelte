@@ -43,11 +43,18 @@
             eventId = stackEventsQuery.data?.[0]?.id ?? null;
         }
     });
+
+    function handleNavigate(newEventId: string) {
+        eventId = newEventId;
+    }
 </script>
 
-{#if stackEventsQuery.isSuccess && !eventId}
-    <StackCard {filterChanged} id={stackId} />
-    <Muted>This stack has no events to display.</Muted>
-{:else if eventId}
-    <EventsOverview {filterChanged} id={eventId} {handleError} />
+{#if eventId}
+    <EventsOverview {filterChanged} id={eventId} {handleError} onNavigate={handleNavigate} />
+{:else if stackEventsQuery.isSuccess}
+    <section>
+        <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
+        <StackCard {filterChanged} id={stackId} />
+    </section>
+    <Muted class="mt-4">No events available for this stack.</Muted>
 {/if}

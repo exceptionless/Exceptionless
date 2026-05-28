@@ -140,6 +140,10 @@
     });
     const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Events');
 
+    $effect(() => {
+        document.title = `${pageTitle} - Exceptionless`;
+    });
+
     // NOTE: This might be applying query string parameters when redirecting away.
     watch(
         () => organization.current,

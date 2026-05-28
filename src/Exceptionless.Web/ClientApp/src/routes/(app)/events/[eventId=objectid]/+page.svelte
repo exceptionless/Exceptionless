@@ -5,7 +5,6 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as FacetedFilter from '$comp/faceted-filter';
-    import { H3 } from '$comp/typography';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import EventsOverview from '$features/events/components/events-overview.svelte';
     import { organization } from '$features/organizations/context.svelte';
@@ -35,9 +34,15 @@
         toast.error(`The event "${page.params.eventId}" could not be found.`);
         await goto(resolve('/(app)/events'));
     }
+
+    $effect(() => {
+        document.title = 'Event Details - Exceptionless';
+    });
 </script>
 
-<div class="flex flex-col gap-4">
-    <H3>Event Details</H3>
-    <EventsOverview {filterChanged} id={page.params.eventId || ''} {handleError} />
-</div>
+<EventsOverview
+    {filterChanged}
+    id={page.params.eventId || ''}
+    {handleError}
+    onNavigate={(newId) => goto(resolve('/(app)/events/[eventId=objectid]', { eventId: newId }))}
+/>
