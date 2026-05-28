@@ -4,7 +4,7 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build && node dist/build.js",
+        "build": "vite build",
         "dev": "vite build --watch",
         "check": "svelte-check --tsconfig ./tsconfig.json",
         "lint": "npm run lint:prettier && npm run lint:eslint",

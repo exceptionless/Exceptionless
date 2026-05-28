@@ -12,8 +12,8 @@
 /** A single item in a {{#each}} loop (all properties are strings for simplicity). */
 export type EachItem = Record<string, string>;
 
-/** Token value — either a scalar string or an array for {{#each}} loops. */
-export type TokenValue = string | EachItem[];
+/** Token value — either a scalar string, a number (for @index), or an array for {{#each}} loops. */
+export type TokenValue = string | number | EachItem[];
 
 /** The full token context passed to fillTokens. */
 export type TokenData = Record<string, TokenValue>;
@@ -23,8 +23,12 @@ export type TokenData = Record<string, TokenValue>;
 function isTruthy(val: TokenValue | undefined): boolean {
     if (val === undefined || val === null) return false;
     if (Array.isArray(val)) return val.length > 0;
-    // '0', '', 'false' are falsy; everything else is truthy
-    return val !== '' && val !== 'false' && val !== '0';
+    // Numbers: match HandlebarsDotNet — 0 is falsy, non-zero is truthy.
+    // This matters for {{#if @index}} where @index is stored as a real number.
+    if (typeof val === 'number') return val !== 0;
+    // Strings: match Handlebars semantics — only empty string, 'false', 'null', 'undefined' are falsy.
+    // Note: "0" is intentionally truthy here (Handlebars string truthiness).
+    return val !== '' && val !== 'false' && val !== 'null' && val !== 'undefined';
 }
 
 /** Entry point — render a Handlebars template against the given context. */
@@ -82,7 +86,7 @@ function evalTemplate(tpl: string, ctx: TokenData): string {
                         const itemCtx: TokenData = {
                             ...ctx,
                             ...item,
-                            '@index': String(index)
+                            '@index': index
                         };
                         return evalTemplate(body, itemCtx);
                     })
@@ -220,7 +224,9 @@ function collectBlock(tpl: string, start: number, blockType: string): BlockResul
 
 // ─── Sample Data ─────────────────────────────────────────────────────────────
 
-const BASE_URL = 'https://be.exceptionless.io';
+// Use the local dev URL so reviewers never accidentally hit production from email previews.
+// The API health endpoint is at http://localhost:7110/api/v2/about
+const BASE_URL = 'http://localhost:7110';
 const ORG_ID = 'org_123456';
 const PROJECT_ID = 'proj_abcdef';
 
