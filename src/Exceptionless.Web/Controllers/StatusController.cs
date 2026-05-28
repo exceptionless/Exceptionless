@@ -15,8 +15,6 @@ namespace Exceptionless.Web.Controllers;
 [Authorize(Policy = AuthorizationRoles.UserPolicy)]
 public class StatusController : ExceptionlessApiController
 {
-    private const int MaxNotificationMessageLength = 1000;
-
     private readonly NotificationService _notificationService;
     private readonly IQueue<EventPost> _eventQueue;
     private readonly IQueue<MailMessage> _mailQueue;
@@ -109,10 +107,8 @@ public class StatusController : ExceptionlessApiController
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     public async Task<ActionResult<ReleaseNotification>> PostReleaseNotificationAsync(ValueFromBody<string> message, bool critical = false)
     {
-        if (message.Value?.Length > MaxNotificationMessageLength)
-            return BadRequest();
-
         var notification = await _notificationService.SendReleaseNotificationAsync(message.Value, critical);
+
         return Ok(notification);
     }
 
@@ -137,10 +133,8 @@ public class StatusController : ExceptionlessApiController
         if (String.IsNullOrWhiteSpace(message?.Value))
             return BadRequest();
 
-        if (message.Value.Length > MaxNotificationMessageLength)
-            return BadRequest();
-
         var notification = await _notificationService.SetSystemNotificationAsync(message.Value, publish);
+
         return Ok(notification);
     }
 
@@ -149,6 +143,7 @@ public class StatusController : ExceptionlessApiController
     public async Task<IActionResult> RemoveSystemNotificationAsync(bool publish = true)
     {
         await _notificationService.ClearSystemNotificationAsync(publish);
+
         return Ok();
     }
 
@@ -157,10 +152,11 @@ public class StatusController : ExceptionlessApiController
     /// </summary>
     [HttpGet("notifications/settings")]
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-    public async Task<ActionResult<NotificationSettingsResponse>> GetNotificationSettingsAsync()
+    public async Task<IActionResult> GetNotificationSettingsAsync()
     {
         var notification = await _notificationService.GetSystemNotificationAsync();
-        return Ok(new NotificationSettingsResponse
+
+        return Ok(new
         {
             ConfiguredSystemNotificationMessage = _appOptions.NotificationMessage,
             SystemNotification = notification
@@ -174,10 +170,8 @@ public class StatusController : ExceptionlessApiController
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     public async Task<ActionResult<ReleaseNotification>> ForceRefreshAsync(ValueFromBody<string?>? message)
     {
-        if (message?.Value?.Length > MaxNotificationMessageLength)
-            return BadRequest();
-
         var notification = await _notificationService.SendReleaseNotificationAsync(message?.Value, critical: true);
+
         return Ok(notification);
     }
 }
