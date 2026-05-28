@@ -156,6 +156,49 @@ jobs:
       - name: Run Integration Tests
         run: echo "npm run test:integration"
 
+  test-email-templates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: src/Exceptionless.EmailTemplates
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Cache node_modules
+        uses: actions/cache@v5
+        id: cache-email-template-node-modules
+        with:
+          path: src/Exceptionless.EmailTemplates/node_modules
+          key: node-modules-email-${{ hashFiles('src/Exceptionless.EmailTemplates/package-lock.json') }}
+
+      - name: Install Npm Packages
+        if: steps.cache-email-template-node-modules.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type Check
+        run: npm run check
+
+      - name: Build Templates
+        run: npm run build
+
+      - name: Verify Generated HTML is Up-To-Date
+        run: |
+          if ! git diff --exit-code ../Exceptionless.Core/Mail/Templates/; then
+            echo "::error::Generated HTML templates are stale. Run 'npm run build' in src/Exceptionless.EmailTemplates and commit the updated files."
+            exit 1
+          fi
+
   docker-build:
     runs-on: ubuntu-latest
     needs: [version]
