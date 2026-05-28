@@ -225,8 +225,8 @@ public class Bootstrapper
         if (String.IsNullOrEmpty(appOptions.StorageOptions.Provider))
             logger.LogWarning("Distributed storage is NOT enabled on {MachineName}", Environment.MachineName);
 
-        if (!appOptions.EnableWebSockets)
-            logger.LogWarning("Web Sockets is NOT enabled on {MachineName}", Environment.MachineName);
+        if (!appOptions.EnablePush)
+            logger.LogWarning("Real-time push (SSE) is NOT enabled on {MachineName}", Environment.MachineName);
 
         if (String.IsNullOrEmpty(appOptions.EmailOptions.SmtpHost))
             logger.LogWarning("Emails will NOT be sent until the SmtpHost is configured on {MachineName}", Environment.MachineName);
