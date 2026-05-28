@@ -14,6 +14,7 @@ namespace Exceptionless.Tests;
 public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 {
     private static readonly string[] s_indexPrefixes = ["events", "migrations", "organizations", "projects", "saved-views", "stacks", "tokens", "users", "webhooks"];
+    private static readonly string s_runScope = $"test-{Guid.NewGuid().ToString("N")[..8]}";
     private static int s_counter = -1;
     private static readonly ConcurrentQueue<int> s_pool = new();
     private static readonly Lazy<Task<SharedApplicationContext>> s_sharedApplication = new(StartSharedApplicationAsync, LazyThreadSafetyMode.ExecutionAndPublication);
@@ -25,7 +26,7 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
             instanceId = Interlocked.Increment(ref s_counter);
 
         InstanceId = instanceId;
-        AppScope = instanceId == 0 ? "test" : $"test-{instanceId}";
+        AppScope = instanceId == 0 ? s_runScope : $"{s_runScope}-{instanceId}";
     }
 
     public string AppScope { get; }
@@ -98,9 +99,8 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
             Timeout = TimeSpan.FromSeconds(10)
         };
 
-        foreach (var prefix in s_indexPrefixes)
+        foreach (string pattern in s_indexPrefixes.Select(prefix => Uri.EscapeDataString($"{AppScope}-{prefix}*")))
         {
-            string pattern = Uri.EscapeDataString($"{AppScope}-{prefix}*");
             using var listResponse = await client.GetAsync($"/_cat/indices/{pattern}?h=index&format=json&expand_wildcards=all");
             if (listResponse.StatusCode == HttpStatusCode.NotFound)
                 continue;

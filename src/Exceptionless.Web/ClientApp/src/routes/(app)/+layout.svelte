@@ -29,7 +29,7 @@
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { invalidateWebhookQueries } from '$features/webhooks/api.svelte';
-    import { isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
+    import { type EntityChanged, isEntityChangedType, type UserMembershipChanged, type WebSocketMessageType } from '$features/websockets/models';
     import { SseClient } from '$features/websockets/sse-client.svelte';
     import { Telemetry } from '$lib/telemetry';
     import { useMiddleware } from '@exceptionless/fetchclient';
@@ -158,10 +158,24 @@
         // When a user is added or removed from an organization, invalidate org/project caches
         // so the UI reflects the membership change without a manual reload.
         if (data.type === 'UserMembershipChanged') {
-            const msg = data.message as { organization_id?: string };
-            if (msg?.organization_id) {
-                await invalidateOrganizationQueries(queryClient, msg);
-                await invalidateProjectQueries(queryClient, msg);
+            const membershipMessage = data.message as UserMembershipChanged;
+            if (membershipMessage.organization_id) {
+                const organizationChangedMessage: EntityChanged = {
+                    change_type: membershipMessage.change_type,
+                    data: {},
+                    id: membershipMessage.organization_id,
+                    organization_id: membershipMessage.organization_id,
+                    type: 'Organization'
+                };
+                const projectChangedMessage: EntityChanged = {
+                    change_type: membershipMessage.change_type,
+                    data: {},
+                    organization_id: membershipMessage.organization_id,
+                    type: 'Project'
+                };
+
+                await invalidateOrganizationQueries(queryClient, organizationChangedMessage);
+                await invalidateProjectQueries(queryClient, projectChangedMessage);
             }
         }
     }

@@ -56,10 +56,10 @@ public sealed class WebSocketPushMiddleware
 
         using var socket = await context.WebSockets.AcceptWebSocketAsync();
         string connectionId = _connectionManager.AddConnection(socket);
-        await OnConnected(context, connectionId).ConfigureAwait(false);
 
         try
         {
+            await OnConnected(context, connectionId).ConfigureAwait(false);
             await ReceiveUntilCloseAsync(socket, context.RequestAborted).ConfigureAwait(false);
         }
         catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely) { }

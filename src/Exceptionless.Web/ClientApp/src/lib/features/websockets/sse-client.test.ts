@@ -18,27 +18,12 @@ vi.mock('$shared/document-visibility.svelte', () => {
     };
 });
 
-// Helper to create a mock fetch response that streams SSE data
-function createSseResponse(events: string[] = [], options: { status?: number; delay?: number } = {}) {
-    const { status = 200, delay = 0 } = options;
-
-    return new Response(
-        new ReadableStream({
-            async start(controller) {
-                for (const event of events) {
-                    if (delay > 0) {
-                        await new Promise((resolve) => setTimeout(resolve, delay));
-                    }
-                    controller.enqueue(new TextEncoder().encode(event));
-                }
-                controller.close();
-            }
-        }),
-        {
-            status,
-            headers: { 'Content-Type': 'text/event-stream' }
-        }
-    );
+function createClient(options?: SseClientOptions): SseClient {
+    return new SseClient('/api/v2/push', {
+        baseUrl: 'http://localhost:5200',
+        reconnectDelay: () => 50,
+        ...options
+    });
 }
 
 // Creates a response whose stream stays open indefinitely (for testing open connections)
@@ -53,33 +38,51 @@ function createOpenSseResponse(initialEvents: string[] = []) {
             }
         }),
         {
-            status: 200,
-            headers: { 'Content-Type': 'text/event-stream' }
+            headers: { 'Content-Type': 'text/event-stream' },
+            status: 200
         }
     );
 }
 
-function createClient(options?: SseClientOptions): SseClient {
-    return new SseClient('/api/v2/push', {
-        baseUrl: 'http://localhost:5200',
-        reconnectDelay: () => 50,
-        ...options
-    });
+// Helper to create a mock fetch response that streams SSE data
+function createSseResponse(events: string[] = [], options: { delay?: number; status?: number } = {}) {
+    const { delay = 0, status = 200 } = options;
+
+    return new Response(
+        new ReadableStream({
+            async start(controller) {
+                for (const event of events) {
+                    if (delay > 0) {
+                        await new Promise((resolve) => setTimeout(resolve, delay));
+                    }
+
+                    controller.enqueue(new TextEncoder().encode(event));
+                }
+
+                controller.close();
+            }
+        }),
+        {
+            headers: { 'Content-Type': 'text/event-stream' },
+            status
+        }
+    );
 }
 
 describe('SseClient', () => {
-    let fetchMock: ReturnType<typeof vi.fn>;
+    let fetchMock: ReturnType<typeof vi.fn<typeof fetch>>;
     let activeClients: SseClient[] = [];
 
     beforeEach(() => {
-        fetchMock = vi.fn();
-        global.fetch = fetchMock;
+        fetchMock = vi.fn<typeof fetch>();
+        global.fetch = fetchMock as typeof fetch;
     });
 
     afterEach(() => {
         for (const client of activeClients) {
             client.close();
         }
+
         activeClients = [];
         vi.restoreAllMocks();
     });
@@ -152,7 +155,7 @@ describe('SseClient', () => {
                             // Never close - simulate long-lived connection
                         }
                     }),
-                    { status: 200, headers: { 'Content-Type': 'text/event-stream' } }
+                    { headers: { 'Content-Type': 'text/event-stream' }, status: 200 }
                 )
             );
 
@@ -182,7 +185,7 @@ describe('SseClient', () => {
                             // intentionally never close - stream stays open
                         }
                     }),
-                    { status: 200, headers: { 'Content-Type': 'text/event-stream' } }
+                    { headers: { 'Content-Type': 'text/event-stream' }, status: 200 }
                 )
             );
 
