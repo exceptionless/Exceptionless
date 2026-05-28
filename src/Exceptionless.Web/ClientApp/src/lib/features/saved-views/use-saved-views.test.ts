@@ -37,6 +37,7 @@ function buildSavedView({ id, name, ...overrides }: Partial<SavedView> & Pick<Sa
         updated_by_user_id: null,
         updated_utc: new Date().toISOString(),
         user_id: null,
+        uses_premium_features: false,
         version: 1,
         view_type: 'stacks',
         ...overrides,
