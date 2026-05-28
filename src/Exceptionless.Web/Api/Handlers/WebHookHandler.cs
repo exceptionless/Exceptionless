@@ -72,7 +72,7 @@ public class WebHookHandler(
             if (results.Failure.Count == 1)
                 return Result<ModelActionResults>.FromResult(PermissionToResult(results.Failure.First()));
 
-            return Result.BadRequest("Unable to delete web hooks.");
+            return results;
         }
 
         await repository.RemoveAsync(deletableItems);

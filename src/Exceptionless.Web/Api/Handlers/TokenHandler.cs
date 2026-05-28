@@ -173,7 +173,7 @@ public class TokenHandler(
         {
             if (results.Failure.Count == 1)
                 return PermissionToResult(results.Failure.First());
-            return Result.BadRequest("Unable to delete tokens.");
+            return results;
         }
 
         await repository.RemoveAsync(deletableItems);

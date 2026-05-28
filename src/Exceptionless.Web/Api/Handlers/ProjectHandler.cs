@@ -155,7 +155,7 @@ public class ProjectHandler(
         }
 
         if (deletableItems.Count == 0)
-            return results.Failure.Count == 1 ? Result<ModelActionResults>.FromResult(PermissionToResult(results.Failure.First())) : Result.BadRequest("Unable to delete projects.");
+            return results.Failure.Count == 1 ? Result<ModelActionResults>.FromResult(PermissionToResult(results.Failure.First())) : results;
 
         IEnumerable<string> workIds = await DeleteModelsAsync(deletableItems, message.Context);
         if (results.Failure.Count == 0)

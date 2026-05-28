@@ -175,7 +175,7 @@ public class SavedViewHandler(
         }
 
         if (deletableItems.Count == 0)
-            return results.Failure.Count == 1 ? Result<ModelActionResults>.FromResult(PermissionToResult(results.Failure.First())) : Result.BadRequest("Unable to delete saved views.");
+            return results.Failure.Count == 1 ? Result<ModelActionResults>.FromResult(PermissionToResult(results.Failure.First())) : results;
 
         await repository.RemoveAsync(deletableItems);
 

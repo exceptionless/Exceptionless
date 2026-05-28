@@ -271,7 +271,7 @@ public class UserHandler(
         }
 
         if (deletableItems.Count == 0)
-            return results.Failure.Count == 1 ? Result<ModelActionResults>.FromResult(PermissionToResult(results.Failure.First())) : Result.BadRequest("Unable to delete users.");
+            return results.Failure.Count == 1 ? Result<ModelActionResults>.FromResult(PermissionToResult(results.Failure.First())) : results;
 
         foreach (var user in deletableItems)
         {
