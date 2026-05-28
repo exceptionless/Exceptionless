@@ -8,4 +8,4 @@
     let { frame }: Props = $props();
 </script>
 
-<span class="text-green-300">{frame.name || '<anonymous>'}</span>
+<span class="text-green-700 dark:text-green-300">{frame.name || '<anonymous>'}</span>

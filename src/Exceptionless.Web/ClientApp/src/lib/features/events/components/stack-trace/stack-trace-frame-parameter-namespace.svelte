@@ -8,6 +8,6 @@
     let { parameter }: Props = $props();
 </script>
 
-{#if parameter.type_namespace}<span class="text-purple-300">{parameter.type_namespace}.</span>{/if}{#if parameter.type}<span class="text-purple-300"
+{#if parameter.type_namespace}<span class="text-purple-700 dark:text-purple-300">{parameter.type_namespace}.</span>{/if}{#if parameter.type}<span class="text-purple-700 dark:text-purple-300"
         >{parameter.type.replace('+', '')}</span
     >{/if}
