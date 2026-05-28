@@ -82,8 +82,8 @@ spec:
 {{- include "exceptionless.otel-env" . | indent 12 }}
             - name: RunJobsInProcess
               value: 'false'
-            - name: EnableWebSockets
-              value: 'false'
+            - name: EnablePush
+              value: 'true'
 {{- if (empty .Values.storage.connectionString) }}
           volumeMounts:
             - mountPath: "/app/storage"

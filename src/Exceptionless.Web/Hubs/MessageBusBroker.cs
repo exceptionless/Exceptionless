@@ -13,13 +13,13 @@ public sealed class MessageBusBroker : IStartupAction
 {
     private static readonly string TokenTypeName = nameof(Token);
     private static readonly string UserTypeName = nameof(User);
-    private readonly WebSocketConnectionManager _connectionManager;
+    private readonly SseConnectionManager _connectionManager;
     private readonly IConnectionMapping _connectionMapping;
     private readonly IMessageSubscriber _subscriber;
     private readonly AppOptions _options;
     private readonly ILogger _logger;
 
-    public MessageBusBroker(WebSocketConnectionManager connectionManager, IConnectionMapping connectionMapping, IMessageSubscriber subscriber, AppOptions options, ILogger<MessageBusBroker> logger)
+    public MessageBusBroker(SseConnectionManager connectionManager, IConnectionMapping connectionMapping, IMessageSubscriber subscriber, AppOptions options, ILogger<MessageBusBroker> logger)
     {
         _connectionManager = connectionManager;
         _connectionMapping = connectionMapping;
@@ -30,7 +30,7 @@ public sealed class MessageBusBroker : IStartupAction
 
     public async Task RunAsync(CancellationToken shutdownToken = default)
     {
-        if (!_options.EnableWebSockets)
+        if (!_options.EnablePush)
             return;
 
         _logger.LogDebug("Subscribing to message bus notifications");
@@ -91,7 +91,7 @@ public sealed class MessageBusBroker : IStartupAction
             var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(entityChanged.Id);
             _logger.LogTrace("Sending {UserTypeName} message to user: {UserId} (to {UserConnectionCount} connections)", UserTypeName, entityChanged.Id, userConnectionIds.Count);
             foreach (string connectionId in userConnectionIds)
-                await TypedSendAsync(connectionId, entityChanged);
+                TypedSend(connectionId, entityChanged);
 
             return;
         }
@@ -106,11 +106,11 @@ public sealed class MessageBusBroker : IStartupAction
             {
                 var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userId);
 
-                // Auth token removed = logout. Close sockets immediately without sending;
+                // Auth token removed = logout. Close connections immediately without sending;
                 // there is no point delivering a message to a connection we are about to tear down.
                 if (isAuthToken && entityChanged.ChangeType is ChangeType.Removed)
                 {
-                    _logger.LogTrace("Auth token removed for user {UserId}; closing {ConnectionCount} WebSocket connection(s)", userId, userConnectionIds.Count);
+                    _logger.LogTrace("Auth token removed for user {UserId}; closing {ConnectionCount} SSE connection(s)", userId, userConnectionIds.Count);
                     string? organizationId = entityChanged.OrganizationId;
                     foreach (string connectionId in userConnectionIds)
                     {
@@ -118,7 +118,7 @@ public sealed class MessageBusBroker : IStartupAction
                             await _connectionMapping.GroupRemoveAsync(organizationId, connectionId);
 
                         await _connectionMapping.UserIdRemoveAsync(userId, connectionId);
-                        await _connectionManager.RemoveWebSocketAsync(connectionId);
+                        await _connectionManager.RemoveConnectionAsync(connectionId);
                     }
 
                     return;
@@ -126,7 +126,7 @@ public sealed class MessageBusBroker : IStartupAction
 
                 _logger.LogTrace("Sending {TokenTypeName} message for user: {UserId} (to {UserConnectionCount} connections)", TokenTypeName, userId, userConnectionIds.Count);
                 foreach (string connectionId in userConnectionIds)
-                    await TypedSendAsync(connectionId, entityChanged);
+                    TypedSend(connectionId, entityChanged);
 
                 return;
             }
@@ -172,13 +172,15 @@ public sealed class MessageBusBroker : IStartupAction
     private Task OnReleaseNotificationAsync(ReleaseNotification notification, CancellationToken cancellationToken = default)
     {
         _logger.LogTrace("Sending release notification message: {Message}", notification.Message);
-        return TypedBroadcastAsync(notification);
+        TypedBroadcast(notification);
+        return Task.CompletedTask;
     }
 
     private Task OnSystemNotificationAsync(SystemNotification notification, CancellationToken cancellationToken = default)
     {
         _logger.LogTrace("Sending system notification message: {Message}", notification.Message);
-        return TypedBroadcastAsync(notification);
+        TypedBroadcast(notification);
+        return Task.CompletedTask;
     }
 
     private async Task GroupSendAsync(string group, object value)
@@ -190,22 +192,22 @@ public sealed class MessageBusBroker : IStartupAction
             return;
         }
 
-        await TypedSendAsync(connectionIds.ToList(), value);
+        TypedSend(connectionIds, value);
     }
 
-    public Task TypedSendAsync(string connectionId, object value)
+    public void TypedSend(string connectionId, object value)
     {
-        return _connectionManager.SendMessageAsync(connectionId, new TypedMessage { Type = GetMessageType(value), Message = value });
+        _connectionManager.SendMessage(connectionId, new TypedMessage { Type = GetMessageType(value), Message = value });
     }
 
-    public Task TypedSendAsync(IList<string> connectionIds, object value)
+    public void TypedSend(IEnumerable<string> connectionIds, object value)
     {
-        return _connectionManager.SendMessageAsync(connectionIds, new TypedMessage { Type = GetMessageType(value), Message = value });
+        _connectionManager.SendMessage(connectionIds, new TypedMessage { Type = GetMessageType(value), Message = value });
     }
 
-    public Task TypedBroadcastAsync(object value)
+    public void TypedBroadcast(object value)
     {
-        return _connectionManager.SendMessageToAllAsync(new TypedMessage { Type = GetMessageType(value), Message = value });
+        _connectionManager.SendMessageToAll(new TypedMessage { Type = GetMessageType(value), Message = value });
     }
 
     private static string GetMessageType(object value)

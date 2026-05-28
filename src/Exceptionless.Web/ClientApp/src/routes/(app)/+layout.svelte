@@ -29,7 +29,7 @@
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { invalidateWebhookQueries } from '$features/webhooks/api.svelte';
     import { isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
-    import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
+    import { SseClient } from '$features/websockets/sse-client.svelte';
     import { useMiddleware } from '@exceptionless/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
     import { tick } from 'svelte';
@@ -153,11 +153,15 @@
             }
         }
 
-        // This event is fired when a user is added or removed from an organization.
-        // if (data.type === "UserMembershipChanged" && data.message?.organization_id) {
-        //     $rootScope.$emit("OrganizationChanged", data.message);
-        //     $rootScope.$emit("ProjectChanged", data.message);
-        // }
+        // When a user is added or removed from an organization, invalidate org/project caches
+        // so the UI reflects the membership change without a manual reload.
+        if (data.type === 'UserMembershipChanged') {
+            const msg = data.message as { organization_id?: string };
+            if (msg?.organization_id) {
+                await invalidateOrganizationQueries(queryClient, msg);
+                await invalidateProjectQueries(queryClient, msg);
+            }
+        }
     }
 
     // Close Sidebar on page change on mobile
@@ -185,7 +189,7 @@
         }
     });
 
-    // WebSocket + keyboard shortcuts — only depends on token, not navigation
+    // SSE + keyboard shortcuts — only depends on token, not navigation
     $effect(() => {
         const currentToken = accessToken.current;
 
@@ -246,15 +250,15 @@
 
         document.addEventListener('keydown', handleKeydown, { capture: true });
 
-        const ws = new WebSocketClient();
-        ws.onMessage = onMessage;
-        ws.onOpen = (_, isReconnect) => {
+        const sse = new SseClient();
+        sse.onMessage = onMessage;
+        sse.onOpen = (isReconnect) => {
             if (isReconnect) {
                 queryClient.invalidateQueries();
                 document.dispatchEvent(
                     new CustomEvent('refresh', {
                         bubbles: true,
-                        detail: 'WebSocket Connected'
+                        detail: 'SSE Connected'
                     })
                 );
             }
@@ -262,7 +266,7 @@
 
         return () => {
             document.removeEventListener('keydown', handleKeydown, { capture: true });
-            ws?.close();
+            sse?.close();
         };
     });
 
