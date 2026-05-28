@@ -4,12 +4,15 @@ let _activeUserId: null | string = null;
 
 /**
  * Ends the current Exceptionless session and clears user identity.
- * Call on logout.
+ * Call on logout. Clears local state unconditionally even if submitSessionEnd fails.
  */
 export async function endSession(): Promise<void> {
-    await Exceptionless.submitSessionEnd();
-    Exceptionless.config.setUserIdentity('', '');
-    _activeUserId = null;
+    try {
+        await Exceptionless.submitSessionEnd();
+    } finally {
+        Exceptionless.config.setUserIdentity('', '');
+        _activeUserId = null;
+    }
 }
 
 /**

@@ -83,7 +83,9 @@ public class UsageService
                     var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, organizationId));
                     var bucketDeleted = await _cache.GetAsync<long>(GetBucketDeletedCacheKey(bucketUtc, organizationId));
 
-                    organization.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
+                    bool hasIngestion = (bucketTotal?.Value ?? 0) > 0 || (bucketBlocked?.Value ?? 0) > 0 || (bucketDiscarded?.Value ?? 0) > 0 || (bucketTooBig?.Value ?? 0) > 0;
+                    if (hasIngestion)
+                        organization.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
                     var usage = organization.GetUsage(bucketUtc, _timeProvider);
                     usage.Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
@@ -165,7 +167,9 @@ public class UsageService
                     var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, project.OrganizationId, projectId));
                     var bucketDeleted = await _cache.GetAsync<long>(GetBucketDeletedCacheKey(bucketUtc, project.OrganizationId, projectId));
 
-                    project.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
+                    bool hasIngestion = (bucketTotal?.Value ?? 0) > 0 || (bucketBlocked?.Value ?? 0) > 0 || (bucketDiscarded?.Value ?? 0) > 0 || (bucketTooBig?.Value ?? 0) > 0;
+                    if (hasIngestion)
+                        project.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
                     (string OrganizationId, Organization? Organization) context = (OrganizationId: project.OrganizationId, Organization: null);
                     int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(context);
