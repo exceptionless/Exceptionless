@@ -28,7 +28,7 @@
     }
 </script>
 
-<DetailSheet detailsHref={resolvedHref} {onClose} open={!!eventId} title="Event Details">
+<DetailSheet detailsHref={resolvedHref} {onClose} open={!!eventId} title="Event">
     {#if eventId}
         <EventsOverview {filterChanged} id={eventId} {handleError} onNavigate={(newId) => (eventId = newId)} />
     {/if}

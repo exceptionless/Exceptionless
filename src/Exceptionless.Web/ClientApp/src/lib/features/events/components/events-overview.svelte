@@ -20,6 +20,7 @@
     import Braces from '@lucide/svelte/icons/braces';
     import ChevronLeft from '@lucide/svelte/icons/chevron-left';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
+    import Funnel from '@lucide/svelte/icons/funnel';
     import { onMount, tick } from 'svelte';
 
     import type { PersistentEvent } from '../models/index';
@@ -223,6 +224,17 @@
                     variant="outline"
                 >
                     <Braces class="size-4" />
+                </Button>
+            {/if}
+            {#if event?.stack_id}
+                <Button
+                    aria-label="Show all events"
+                    onclick={() => filterChanged(new EventsFacetedFilter.StringFilter('stack', event!.stack_id))}
+                    size="icon-sm"
+                    title="Show all events"
+                    variant="outline"
+                >
+                    <Funnel class="size-4" />
                 </Button>
             {/if}
             {#if onNavigate && (navigation?.previousId || navigation?.nextId)}

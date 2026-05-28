@@ -27,7 +27,7 @@
     }
 </script>
 
-<DetailSheet detailsHref={resolvedHref} {onClose} open={!!stackId} title="Stack Details">
+<DetailSheet detailsHref={resolvedHref} {onClose} open={!!stackId} title="Stack">
     {#if stackId}
         <StackDetails {filterChanged} {handleError} {stackId} />
     {/if}

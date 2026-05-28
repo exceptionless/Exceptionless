@@ -128,7 +128,6 @@
             <Card.Title class="flex flex-row items-center justify-between text-lg font-semibold">
                 <div class="mb-2 flex w-0 min-w-0 flex-1 flex-col lg:mb-0">
                     <div class="flex min-w-0 items-center">
-                        <EventsFacetedFilter.StringTrigger changed={filterChanged} class="mr-2 shrink-0" term="stack" value={stack.id} />
                         <span class="block max-w-full min-w-0 truncate" title={stack.title}>{stack.title}</span>
                     </div>
                 </div>
