@@ -41,7 +41,7 @@ export function savedViewHref(savedView: SavedViewLink): string {
         return `${resolve('/(app)/stream')}?saved=${savedView.id}`;
     }
 
-    const base = savedView.view_type === 'events' ? resolve('/(app)/events') : resolve('/(app)/issues');
+    const base = savedView.view_type === 'events' ? resolve('/(app)/events') : resolve('/(app)/stacks');
     return `${base}/${savedViewResolvedSlug(savedView)}`;
 }
 

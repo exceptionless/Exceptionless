@@ -139,7 +139,7 @@ export function getTableOptions(
     onTagClick?: (tag: string) => void
 ) {
     return getSharedTableOptions<Stack>({
-        columnPersistenceKey: 'project-issues-v2-column-visibility',
+        columnPersistenceKey: 'project-stacks-column-visibility',
         get columns() {
             return getColumns(onTagClick);
         },

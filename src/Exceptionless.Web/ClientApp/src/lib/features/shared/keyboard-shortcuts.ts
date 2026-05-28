@@ -10,8 +10,8 @@ export type ShortcutKey = 'Alt' | 'Mod' | 'Shift' | string;
 export const appKeyboardShortcuts = {
     allEvents: { key: 'e', keys: ['E'] },
     commandPalette: { key: '/', keys: ['/'] },
-    issues: { key: 'i', keys: ['I'] },
     keyboardShortcuts: { key: '?', keys: ['?'] },
+    stacks: { key: 'i', keys: ['I'] },
     switchOrganization: { key: 'o', keys: ['O'] },
     userMenu: { key: 'u', keys: ['U'] }
 } as const satisfies Record<string, KeyboardShortcut>;

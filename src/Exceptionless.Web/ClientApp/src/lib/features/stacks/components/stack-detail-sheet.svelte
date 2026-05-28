@@ -5,19 +5,18 @@
     import { resolve } from '$app/paths';
     import DetailSheet from '$comp/detail-sheet.svelte';
 
-    import EventsOverview from './events-overview.svelte';
+    import StackDetails from './stack-details.svelte';
 
     interface Props {
-        detailsHref?: string;
-        eventId: null | string;
         filterChanged: (filter: IFilter) => void;
         onClose: () => void;
         onError?: (problem: ProblemDetails) => void;
+        stackId: null | string | undefined;
     }
 
-    let { detailsHref, eventId = $bindable(), filterChanged, onClose, onError }: Props = $props();
+    let { filterChanged, onClose, onError, stackId = $bindable() }: Props = $props();
 
-    const resolvedHref = $derived(detailsHref ?? (eventId ? resolve('/(app)/events/[eventId=objectid]', { eventId }) : '#'));
+    const resolvedHref = $derived(stackId ? resolve('/(app)/stacks/[stackId=objectid]', { stackId }) : '#');
 
     function handleError(problem: ProblemDetails) {
         if (onError) {
@@ -28,8 +27,8 @@
     }
 </script>
 
-<DetailSheet detailsHref={resolvedHref} {onClose} open={!!eventId} title="Event">
-    {#if eventId}
-        <EventsOverview {filterChanged} id={eventId} {handleError} onNavigate={(newId) => (eventId = newId)} />
+<DetailSheet detailsHref={resolvedHref} {onClose} open={!!stackId} title="Stack">
+    {#if stackId}
+        <StackDetails {filterChanged} {handleError} {stackId} />
     {/if}
 </DetailSheet>

@@ -4,6 +4,7 @@
     import { Input } from '$comp/ui/input';
     import * as Popover from '$comp/ui/popover';
     import Separator from '$comp/ui/separator/separator.svelte';
+    import { onDestroy } from 'svelte';
 
     interface Props {
         changed: (value?: string) => void;
@@ -17,12 +18,27 @@
 
     let { changed, hidden = false, open = $bindable(), remove, title, toggleHidden, value }: Props = $props();
 
+    const DEBOUNCE_MS = 500;
+
     // eslint-disable-next-line svelte/prefer-writable-derived
     let updatedValue = $state<string | undefined>();
+    let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+    onDestroy(() => clearTimeout(debounceTimer));
 
     $effect.pre(() => {
         updatedValue = value;
     });
+
+    function scheduleApply() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            const normalized = updatedValue?.trim() || undefined;
+            if (normalized !== value) {
+                changed(normalized);
+            }
+        }, DEBOUNCE_MS);
+    }
 
     function handleKeyDown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
@@ -35,14 +51,17 @@
     }
 
     function applyAndClose() {
-        if (updatedValue !== value) {
-            changed(updatedValue);
+        clearTimeout(debounceTimer);
+        const normalized = updatedValue?.trim() || undefined;
+        if (normalized !== value) {
+            changed(normalized);
         }
 
         open = false;
     }
 
     function cancelAndClose() {
+        clearTimeout(debounceTimer);
         updatedValue = value;
         open = false;
     }
@@ -77,8 +96,8 @@
             </Button>
         {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={applyAndClose}>
-        <div class="flex items-center border-b">
+    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={(e) => e.preventDefault()}>
+        <div class="p-2">
             <Input
                 bind:value={updatedValue}
                 placeholder={title}
@@ -86,6 +105,7 @@
                 aria-label={`Filter by ${title}`}
                 aria-describedby={`${title}-help`}
                 onkeydown={handleKeyDown}
+                oninput={scheduleApply}
                 autofocus={open}
             />
         </div>
