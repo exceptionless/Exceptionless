@@ -81,7 +81,7 @@ public class UsageService
                     var bucketBlocked = await _cache.GetAsync<int>(GetBucketBlockedCacheKey(bucketUtc, organizationId));
                     var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, organizationId));
                     var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, organizationId));
-                    var bucketDeleted = await _cache.GetAsync<long>(GetBucketDeletedCacheKey(bucketUtc, organizationId));
+                    var bucketDeleted = await _cache.GetAsync<int>(GetBucketDeletedCacheKey(bucketUtc, organizationId));
 
                     bool hasIngestion = (bucketTotal?.Value ?? 0) > 0 || (bucketBlocked?.Value ?? 0) > 0 || (bucketDiscarded?.Value ?? 0) > 0 || (bucketTooBig?.Value ?? 0) > 0;
                     if (hasIngestion)
@@ -165,7 +165,7 @@ public class UsageService
                     var bucketBlocked = await _cache.GetAsync<int>(GetBucketBlockedCacheKey(bucketUtc, project.OrganizationId, projectId));
                     var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, project.OrganizationId, projectId));
                     var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, project.OrganizationId, projectId));
-                    var bucketDeleted = await _cache.GetAsync<long>(GetBucketDeletedCacheKey(bucketUtc, project.OrganizationId, projectId));
+                    var bucketDeleted = await _cache.GetAsync<int>(GetBucketDeletedCacheKey(bucketUtc, project.OrganizationId, projectId));
 
                     bool hasIngestion = (bucketTotal?.Value ?? 0) > 0 || (bucketBlocked?.Value ?? 0) > 0 || (bucketDiscarded?.Value ?? 0) > 0 || (bucketTooBig?.Value ?? 0) > 0;
                     if (hasIngestion)
@@ -344,7 +344,7 @@ public class UsageService
             usage.CurrentUsage.TooBig += bucketTooBig?.Value ?? 0;
             usage.CurrentHourUsage.TooBig += bucketTooBig?.Value ?? 0;
 
-            var bucketDeleted = await _cache.GetAsync<long>(GetBucketDeletedCacheKey(bucketUtc, organizationId, projectId));
+            var bucketDeleted = await _cache.GetAsync<int>(GetBucketDeletedCacheKey(bucketUtc, organizationId, projectId));
             usage.CurrentUsage.Deleted += bucketDeleted?.Value ?? 0;
             usage.CurrentHourUsage.Deleted += bucketDeleted?.Value ?? 0;
 
@@ -489,7 +489,7 @@ public class UsageService
         AppDiagnostics.PostTooBig.Add(1);
     }
 
-    public async Task IncrementDeletedAsync(string organizationId, string? projectId, long eventCount = 1)
+    public async Task IncrementDeletedAsync(string organizationId, string? projectId, int eventCount = 1)
     {
         if (eventCount <= 0)
             return;

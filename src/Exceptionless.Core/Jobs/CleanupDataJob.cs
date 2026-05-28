@@ -210,7 +210,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         long removedEvents = await _eventRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);
 
         if (removedEvents > 0)
-            await _usageService.IncrementDeletedAsync(project.OrganizationId, project.Id, removedEvents);
+            await _usageService.IncrementDeletedAsync(project.OrganizationId, project.Id, (int)removedEvents);
 
         await RenewLockAsync(context);
         long removedStacks = await _stackRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);
@@ -233,7 +233,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
             totalRemovedEvents += removedEvents;
 
             if (trackDeletedUsage && removedEvents > 0)
-                await _usageService.IncrementDeletedAsync(projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, removedEvents);
+                await _usageService.IncrementDeletedAsync(projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, (int)removedEvents);
         }
 
         await _stackRepository.RemoveAsync(stacks);
@@ -290,6 +290,9 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         {
             try
             {
+                // Retention-based deletions intentionally do NOT track deleted usage.
+                // These events expired by plan policy, not user action — surfacing them
+                // in usage charts would be misleading.
                 await RemoveStacksAsync(stackResults.Documents, context);
             }
             catch (Exception ex)

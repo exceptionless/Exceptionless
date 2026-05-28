@@ -460,7 +460,7 @@ export const UsageHourInfoSchema = object({
   blocked: int32(),
   discarded: int32(),
   too_big: int32(),
-  deleted: number(),
+  deleted: int32(),
 });
 export type UsageHourInfoFormData = Infer<typeof UsageHourInfoSchema>;
 
@@ -471,7 +471,7 @@ export const UsageInfoSchema = object({
   blocked: int32(),
   discarded: int32(),
   too_big: int32(),
-  deleted: number(),
+  deleted: int32(),
 });
 export type UsageInfoFormData = Infer<typeof UsageInfoSchema>;
 

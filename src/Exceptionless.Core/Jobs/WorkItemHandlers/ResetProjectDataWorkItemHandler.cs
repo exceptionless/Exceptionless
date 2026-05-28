@@ -45,7 +45,7 @@ public class ResetProjectDataWorkItemHandler : WorkItemHandlerBase
             await context.ReportProgressAsync(50, $"Events removed: {removedEvents}");
 
             if (removedEvents > 0)
-                await _usageService.IncrementDeletedAsync(workItem.OrganizationId, workItem.ProjectId, removedEvents);
+                await _usageService.IncrementDeletedAsync(workItem.OrganizationId, workItem.ProjectId, (int)removedEvents);
 
             long removedStacks = await _stackRepository.RemoveAllByProjectIdAsync(workItem.OrganizationId, workItem.ProjectId);
             await _cacheClient.RemoveByPrefixAsync(EventStackFilterQueryBuilder.GetScopedCachePrefix(workItem.OrganizationId, workItem.ProjectId));
