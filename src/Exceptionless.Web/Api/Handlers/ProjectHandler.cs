@@ -522,16 +522,16 @@ public class ProjectHandler(
     private async Task<Result<ViewProject>?> CanAddAsync(Project value, HttpContext httpContext)
     {
         if (String.IsNullOrEmpty(value.Name))
-            return Result.Invalid(ValidationError.Create("name", "Project name is required."));
+            return Result.BadRequest("Project name is required.");
 
         if (!await IsProjectNameAvailableInternalAsync(value.OrganizationId, value.Name, httpContext))
-            return Result.Invalid(ValidationError.Create("name", "A project with this name already exists."));
+            return Result.BadRequest("A project with this name already exists.");
 
         if (!await billingManager.CanAddProjectAsync(value))
             return Result.Invalid(ValidationError.Create("plan_limit", "Please upgrade your plan to add additional projects."));
 
         if (!httpContext.Request.CanAccessOrganization(value.OrganizationId))
-            return Result.Invalid(ValidationError.Create("organization_id", "Invalid organization id specified."));
+            return Result.BadRequest("Invalid organization id specified.");
 
         return null;
     }
@@ -550,13 +550,13 @@ public class ProjectHandler(
     {
         var changed = changes.GetEntity();
         if (changes.ContainsChangedProperty(p => p.Name) && !await IsProjectNameAvailableInternalAsync(original.OrganizationId, changed.Name, httpContext))
-            return Result.Invalid(ValidationError.Create("name", "A project with this name already exists."));
+            return Result.BadRequest("A project with this name already exists.");
 
         if (!httpContext.Request.CanAccessOrganization(original.OrganizationId))
-            return Result.Invalid(ValidationError.Create("organization_id", "Invalid organization id specified."));
+            return Result.BadRequest("Invalid organization id specified.");
 
         if (changes.GetChangedPropertyNames().Contains(nameof(Project.OrganizationId)))
-            return Result.Invalid(ValidationError.Create("organization_id", "OrganizationId cannot be modified."));
+            return Result.BadRequest("OrganizationId cannot be modified.");
 
         return null;
     }

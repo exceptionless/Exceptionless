@@ -758,7 +758,6 @@ public sealed class SerializationAuditTests : IntegrationTestsBase
         {
             "type": "error",
             "message": "Stack audit test error",
-            "date": "2026-05-20T12:00:00+00:00",
             "tags": ["audit", "stack-test"],
             "reference_id": "audit-stack-001",
             "@simple_error": {

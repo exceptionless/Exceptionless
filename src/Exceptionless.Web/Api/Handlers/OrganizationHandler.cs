@@ -710,10 +710,10 @@ public class OrganizationHandler(
     private async Task<Result<ViewOrganization>?> CanAddAsync(Organization value, HttpContext httpContext)
     {
         if (String.IsNullOrEmpty(value.Name))
-            return Result.Invalid(ValidationError.Create("name", "Organization name is required."));
+            return Result.BadRequest("Organization name is required.");
 
         if (!await IsOrganizationNameAvailableInternalAsync(value.Name, httpContext))
-            return Result.Invalid(ValidationError.Create("name", "A organization with this name already exists."));
+            return Result.BadRequest("A organization with this name already exists.");
 
         if (!await billingManager.CanAddOrganizationAsync(GetCurrentUser(httpContext)))
             return Result.Invalid(ValidationError.Create("plan_limit", "Please upgrade your plan to add an additional organization."));
@@ -747,10 +747,10 @@ public class OrganizationHandler(
     {
         var changed = changes.GetEntity();
         if (!await IsOrganizationNameAvailableInternalAsync(changed.Name, httpContext))
-            return Result.Invalid(ValidationError.Create("name", "A organization with this name already exists."));
+            return Result.BadRequest("A organization with this name already exists.");
 
         if (changes.GetChangedPropertyNames().Contains("OrganizationId"))
-            return Result.Invalid(ValidationError.Create("organization_id", "OrganizationId cannot be modified."));
+            return Result.BadRequest("OrganizationId cannot be modified.");
 
         return null;
     }

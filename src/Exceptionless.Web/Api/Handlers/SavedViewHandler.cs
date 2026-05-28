@@ -216,7 +216,7 @@ public class SavedViewHandler(
 
         var count = await repository.CountByOrganizationIdAsync(value.OrganizationId);
         if (count >= MaxViewsPerOrganization)
-            return Result.Invalid(ValidationError.Create("general", $"Organization is limited to {MaxViewsPerOrganization} saved views."));
+            return Result.BadRequest($"Organization is limited to {MaxViewsPerOrganization} saved views.");
 
         if (String.IsNullOrWhiteSpace(value.Slug))
             return Result.Invalid(ValidationError.Create("slug", "URL name cannot be empty. Use at least one letter or number."));

@@ -164,8 +164,8 @@ public class WebHookHandler(
 
     private async Task<Result<Exceptionless.Core.Models.WebHook>?> CanAddAsync(Exceptionless.Core.Models.WebHook value)
     {
-        if (String.IsNullOrEmpty(value.Url) || value.EventTypes.Length == 0)
-            return Result.Forbidden("Access denied.");
+        if (String.IsNullOrEmpty(value.Url) || value.EventTypes is null || value.EventTypes.Length == 0)
+            return Result.BadRequest("Url and EventTypes are required.");
 
         if (String.IsNullOrEmpty(value.ProjectId) && String.IsNullOrEmpty(value.OrganizationId))
             return Result.Forbidden("Access denied.");

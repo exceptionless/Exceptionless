@@ -22,11 +22,11 @@ public static class ResultExtensions
             ResultStatus.Created => HttpResults.Created(result.Location, null),
             ResultStatus.Accepted => HttpResults.StatusCode(StatusCodes.Status202Accepted),
             ResultStatus.NoContent => HttpResults.NoContent(),
-            ResultStatus.NotFound => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status404NotFound, title: "Not Found"),
-            ResultStatus.Forbidden => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status403Forbidden, title: "Forbidden"),
-            ResultStatus.Unauthorized => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status401Unauthorized, title: "Unauthorized"),
-            ResultStatus.BadRequest => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status400BadRequest, title: "Bad Request"),
-            ResultStatus.Conflict => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status409Conflict, title: "Conflict"),
+            ResultStatus.NotFound => HttpResults.Problem(statusCode: StatusCodes.Status404NotFound, title: result.Message ?? "Not Found"),
+            ResultStatus.Forbidden => HttpResults.Problem(statusCode: StatusCodes.Status403Forbidden, title: result.Message ?? "Forbidden"),
+            ResultStatus.Unauthorized => HttpResults.Problem(statusCode: StatusCodes.Status401Unauthorized, title: result.Message ?? "Unauthorized"),
+            ResultStatus.BadRequest => HttpResults.Problem(statusCode: StatusCodes.Status400BadRequest, title: result.Message ?? "Bad Request"),
+            ResultStatus.Conflict => HttpResults.Problem(statusCode: StatusCodes.Status409Conflict, title: result.Message ?? "Conflict"),
             ResultStatus.Invalid => MapValidation(result),
             ResultStatus.Error => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status500InternalServerError),
             ResultStatus.CriticalError => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status500InternalServerError),
@@ -77,11 +77,11 @@ public static class ResultExtensions
     {
         return result.Status switch
         {
-            ResultStatus.NotFound => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status404NotFound, title: "Not Found"),
-            ResultStatus.Forbidden => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status403Forbidden, title: "Forbidden"),
-            ResultStatus.Unauthorized => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status401Unauthorized, title: "Unauthorized"),
-            ResultStatus.BadRequest => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status400BadRequest, title: "Bad Request"),
-            ResultStatus.Conflict => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status409Conflict, title: "Conflict"),
+            ResultStatus.NotFound => HttpResults.Problem(statusCode: StatusCodes.Status404NotFound, title: result.Message ?? "Not Found"),
+            ResultStatus.Forbidden => HttpResults.Problem(statusCode: StatusCodes.Status403Forbidden, title: result.Message ?? "Forbidden"),
+            ResultStatus.Unauthorized => HttpResults.Problem(statusCode: StatusCodes.Status401Unauthorized, title: result.Message ?? "Unauthorized"),
+            ResultStatus.BadRequest => HttpResults.Problem(statusCode: StatusCodes.Status400BadRequest, title: result.Message ?? "Bad Request"),
+            ResultStatus.Conflict => HttpResults.Problem(statusCode: StatusCodes.Status409Conflict, title: result.Message ?? "Conflict"),
             ResultStatus.Invalid => MapValidation(result),
             ResultStatus.Error => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status500InternalServerError),
             ResultStatus.CriticalError => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status500InternalServerError),
@@ -99,6 +99,10 @@ public static class ResultExtensions
         var planLimitError = errors.FirstOrDefault(error => String.Equals(error.Identifier, "plan_limit", StringComparison.OrdinalIgnoreCase));
         if (planLimitError is not null)
             return HttpResults.Problem(statusCode: StatusCodes.Status426UpgradeRequired, title: planLimitError.ErrorMessage);
+
+        var notImplementedError = errors.FirstOrDefault(error => String.Equals(error.Identifier, "not_implemented", StringComparison.OrdinalIgnoreCase));
+        if (notImplementedError is not null)
+            return HttpResults.Problem(statusCode: StatusCodes.Status501NotImplemented, title: notImplementedError.ErrorMessage);
 
         var rateLimitError = errors.FirstOrDefault(error => String.Equals(error.Identifier, "rate_limit", StringComparison.OrdinalIgnoreCase));
         if (rateLimitError is not null)
