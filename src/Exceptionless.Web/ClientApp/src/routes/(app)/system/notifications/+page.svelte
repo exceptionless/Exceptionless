@@ -12,6 +12,7 @@
         sendReleaseNotificationMutation,
         setSystemNotificationMutation
     } from '$features/system-notifications/api.svelte';
+    import { flagSelfInitiatedForceRefresh } from '$features/system-notifications/force-refresh-coordinator';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import Bell from '@lucide/svelte/icons/bell';
     import RefreshCw from '@lucide/svelte/icons/refresh-cw';
@@ -75,6 +76,7 @@
 
     async function handleForceRefresh() {
         try {
+            flagSelfInitiatedForceRefresh();
             await forceRefresh.mutateAsync(forceRefreshMessage ? { message: forceRefreshMessage } : undefined);
             toast.success('Force refresh sent to all clients.');
             showForceRefreshDialog = false;
@@ -192,7 +194,7 @@
         <div class="space-y-4 py-4">
             <div class="space-y-2">
                 <Label for="system-message">Message</Label>
-                <Textarea id="system-message" bind:value={systemMessage} placeholder="Enter notification message..." rows={3} />
+                <Textarea id="system-message" bind:value={systemMessage} placeholder="Enter notification message..." rows={3} maxlength={1000} />
             </div>
             <div class="flex items-center gap-2">
                 <Checkbox id="system-publish" bind:checked={systemPublish} />
@@ -240,7 +242,7 @@
         <div class="space-y-4 py-4">
             <div class="space-y-2">
                 <Label for="release-message">Message (optional)</Label>
-                <Textarea id="release-message" bind:value={releaseMessage} placeholder="Enter release message..." rows={3} />
+                <Textarea id="release-message" bind:value={releaseMessage} placeholder="Enter release message..." rows={3} maxlength={1000} />
             </div>
             <div class="flex items-center gap-2">
                 <Checkbox id="release-critical" bind:checked={releaseCritical} />
@@ -268,7 +270,7 @@
         <div class="space-y-4 py-4">
             <div class="space-y-2">
                 <Label for="refresh-message">Message (optional)</Label>
-                <Textarea id="refresh-message" bind:value={forceRefreshMessage} placeholder="Reason for force refresh..." rows={2} />
+                <Textarea id="refresh-message" bind:value={forceRefreshMessage} placeholder="Reason for force refresh..." rows={2} maxlength={1000} />
             </div>
         </div>
         <Dialog.Footer>

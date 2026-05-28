@@ -4,6 +4,7 @@
     import { env } from '$env/dynamic/public';
     import { Notification, NotificationDescription } from '$features/shared/components/notification';
     import { getCurrentSystemNotificationQuery } from '$features/system-notifications/api.svelte';
+    import { consumeSelfInitiatedFlag } from '$features/system-notifications/force-refresh-coordinator';
     import { resolveDisplayMessage } from '$features/system-notifications/resolve-message';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import Info from '@lucide/svelte/icons/info';
@@ -26,7 +27,14 @@
         function onReleaseNotification(e: Event) {
             const detail = (e as CustomEvent<ReleaseNotification>).detail;
             if (detail?.critical) {
-                window.location.reload();
+                if (consumeSelfInitiatedFlag()) {
+                    // Delay reload on the initiating tab so the success toast is visible.
+                    // All other clients still reload immediately.
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    window.location.reload();
+                }
+
                 return;
             }
 

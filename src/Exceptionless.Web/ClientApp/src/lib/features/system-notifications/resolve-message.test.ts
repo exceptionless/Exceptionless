@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolveDisplayMessage } from '../resolve-message';
+import { resolveDisplayMessage } from './resolve-message';
 
 describe('resolveDisplayMessage', () => {
     describe('when realtime message has not been received (undefined)', () => {

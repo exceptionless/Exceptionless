@@ -19,7 +19,7 @@
 
 - [x] **Task 4: Add backend integration tests**
   - Added tests to existing `tests/Exceptionless.Tests/Controllers/StatusControllerTests.cs`
-  - Tests: settings (admin/non-admin), force-refresh (with message/without/non-admin), publish flag
+  - Tests: settings (admin/non-admin), force-refresh (with message/without/non-admin), publish flag, message length limits
   - All tests follow AAA (Arrange/Act/Assert) pattern
 
 ## Frontend — System Notification Banner
@@ -31,16 +31,21 @@
 
 - [x] **Task 6: Create system-notification-banner component**
   - Created `src/Exceptionless.Web/ClientApp/src/lib/features/system-notifications/components/system-notification-banner.svelte`
-  - Three-tier message resolution: realtime WebSocket → persisted API → env fallback
+  - Three-tier message resolution: realtime WebSocket → persisted API → env fallback (implemented in `resolve-message.ts`)
   - System = destructive Alert with `role="alert"` `aria-live="assertive"`
   - Release = info Alert with `role="status"` `aria-live="polite"`
-  - Critical release = `window.location.reload()`
+  - Critical release = `window.location.reload()` (immediate for all clients; 1500ms delayed on initiating admin tab via `force-refresh-coordinator.ts`)
+
+- [x] **Task 6b: Add force-refresh coordinator**
+  - Created `src/Exceptionless.Web/ClientApp/src/lib/features/system-notifications/force-refresh-coordinator.ts`
+  - Prevents admin self-reload race: flags are set before API call, consumed in banner's critical handler
 
 - [x] **Task 7: Integrate banner into app layout**
   - Added `<SystemNotificationBanner />` to `(app)/+layout.svelte`
 
 - [x] **Task 8: Add unit tests**
-  - Created `system-notification-banner.test.ts` with 6 tests covering event handling and message resolution logic
+  - `resolve-message.test.ts` — 9 tests for `resolveDisplayMessage` three-tier resolution logic
+  - `force-refresh-coordinator.test.ts` — 4 tests for the self-initiated reload flag
 
 ## Frontend — Admin Page
 

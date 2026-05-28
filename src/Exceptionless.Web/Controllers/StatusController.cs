@@ -15,6 +15,8 @@ namespace Exceptionless.Web.Controllers;
 [Authorize(Policy = AuthorizationRoles.UserPolicy)]
 public class StatusController : ExceptionlessApiController
 {
+    private const int MaxNotificationMessageLength = 1000;
+
     private readonly NotificationService _notificationService;
     private readonly IQueue<EventPost> _eventQueue;
     private readonly IQueue<MailMessage> _mailQueue;
@@ -107,6 +109,9 @@ public class StatusController : ExceptionlessApiController
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     public async Task<ActionResult<ReleaseNotification>> PostReleaseNotificationAsync(ValueFromBody<string> message, bool critical = false)
     {
+        if (message?.Value?.Length > MaxNotificationMessageLength)
+            return BadRequest();
+
         var notification = await _notificationService.SendReleaseNotificationAsync(message.Value, critical);
         return Ok(notification);
     }
@@ -130,6 +135,9 @@ public class StatusController : ExceptionlessApiController
     public async Task<ActionResult<SystemNotification>> PostSystemNotificationAsync(ValueFromBody<string> message, bool publish = true)
     {
         if (String.IsNullOrWhiteSpace(message?.Value))
+            return BadRequest();
+
+        if (message.Value.Length > MaxNotificationMessageLength)
             return BadRequest();
 
         var notification = await _notificationService.SetSystemNotificationAsync(message.Value, publish);
@@ -166,6 +174,9 @@ public class StatusController : ExceptionlessApiController
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     public async Task<ActionResult<ReleaseNotification>> ForceRefreshAsync(ValueFromBody<string?>? message)
     {
+        if (message?.Value?.Length > MaxNotificationMessageLength)
+            return BadRequest();
+
         var notification = await _notificationService.SendReleaseNotificationAsync(message?.Value, critical: true);
         return Ok(notification);
     }

@@ -263,4 +263,37 @@ public class StatusControllerTests : IntegrationTestsBase
         Assert.NotNull(persisted);
         Assert.Equal("Silent notification", persisted.Message);
     }
+
+    [Fact]
+    public Task PostSystemNotificationAsync_WithMessageExceedingMaxLength_ReturnsBadRequest()
+    {
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/system")
+            .Content(new ValueFromBody<string>(new string('x', 1001)))
+            .StatusCodeShouldBeBadRequest());
+    }
+
+    [Fact]
+    public Task PostReleaseNotificationAsync_WithMessageExceedingMaxLength_ReturnsBadRequest()
+    {
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/release")
+            .Content(new ValueFromBody<string>(new string('x', 1001)))
+            .StatusCodeShouldBeBadRequest());
+    }
+
+    [Fact]
+    public Task ForceRefresh_WithMessageExceedingMaxLength_ReturnsBadRequest()
+    {
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/force-refresh")
+            .Content(new ValueFromBody<string?>(new string('x', 1001)))
+            .StatusCodeShouldBeBadRequest());
+    }
 }

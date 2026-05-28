@@ -74,6 +74,12 @@ Then:
 - A `ReleaseNotification` is published with `critical=true` and optional message
 - The response is 200 with the `ReleaseNotification` object
 
+#### Scenario: Message exceeds max length
+
+Given an authenticated global admin user
+When they send `POST /api/v2/notifications/force-refresh` with a message body exceeding 1000 characters
+Then the response is 400 Bad Request.
+
 ## ADDED: Svelte notification banners (Svelte UI only)
 
 ### Requirement: System notification banner displays on page load
@@ -118,7 +124,14 @@ Then an info banner is displayed with the release message.
 
 Given a user has the Svelte app open
 When a `ReleaseNotification` WebSocket message is received with `critical=true`
-Then `window.location.reload()` is called immediately.
+Then `window.location.reload()` is called.
+
+#### Scenario: Initiating admin tab gets a grace period
+
+Given an admin has just triggered force-refresh from the admin page
+When the resulting `critical=true` WebSocket event arrives on their own tab
+Then `window.location.reload()` is delayed by 1500ms (so the success toast is visible).
+All other connected clients still reload immediately.
 
 ### Requirement: Notification banners use accessible markup
 
