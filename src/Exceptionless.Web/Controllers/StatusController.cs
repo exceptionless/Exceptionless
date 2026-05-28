@@ -109,7 +109,7 @@ public class StatusController : ExceptionlessApiController
     [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
     public async Task<ActionResult<ReleaseNotification>> PostReleaseNotificationAsync(ValueFromBody<string> message, bool critical = false)
     {
-        if (message?.Value?.Length > MaxNotificationMessageLength)
+        if (message.Value?.Length > MaxNotificationMessageLength)
             return BadRequest();
 
         var notification = await _notificationService.SendReleaseNotificationAsync(message.Value, critical);
