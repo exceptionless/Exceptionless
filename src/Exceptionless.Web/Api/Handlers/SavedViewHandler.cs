@@ -30,7 +30,7 @@ public class SavedViewHandler(
 {
     private const int MaxViewsPerOrganization = 100;
     private const string PredefinedSavedViewsDataKey = "@@PredefinedSavedViewsVersion";
-    private const int PredefinedSavedViewsVersion = 2;
+    private const int PredefinedSavedViewsVersion = 4;
 
     private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
 

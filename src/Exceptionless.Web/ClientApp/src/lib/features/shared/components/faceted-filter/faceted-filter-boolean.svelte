@@ -36,6 +36,8 @@
         } else if (selectedValue === 'no-value') {
             updatedValue = undefined;
         }
+
+        changed(updatedValue);
     }
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -49,21 +51,18 @@
     }
 
     function applyAndClose() {
-        if (updatedValue !== value) {
-            changed(updatedValue);
-        }
-
         open = false;
     }
 
     function cancelAndClose() {
         updatedValue = value;
+        changed(updatedValue);
         open = false;
     }
 
     function onOpenChange(isOpen: boolean) {
         if (!isOpen) {
-            applyAndClose();
+            open = false;
         }
     }
 
@@ -91,7 +90,7 @@
             </Button>
         {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={applyAndClose}>
+    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={(e) => e.preventDefault()}>
         <div class="border-b p-4">
             <RadioGroup.Root
                 value={radioValue}

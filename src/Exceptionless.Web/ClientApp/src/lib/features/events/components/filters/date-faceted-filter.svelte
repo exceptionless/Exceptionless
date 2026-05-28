@@ -8,7 +8,6 @@
     import { Button } from '$comp/ui/button';
     import * as Popover from '$comp/ui/popover';
     import Separator from '$comp/ui/separator/separator.svelte';
-    import { quickRanges } from '$features/shared/components/date-range-picker/quick-ranges';
 
     import { DateFilter } from './models.svelte';
 
@@ -69,11 +68,9 @@
             </Button>
         {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="w-auto p-0" side="bottom" onkeydown={handleKeyDown}>
+    <Popover.Content align="start" class="p-0" side="bottom" onkeydown={handleKeyDown}>
         <div id={`${title}-help`} class="sr-only">Press Enter to apply filter, Escape to cancel</div>
-        <div class="flex flex-col">
-            <DateRangePicker bind:this={dateRangePickerRef} {quickRanges} value={filter.value} onselect={handleSelect} />
-        </div>
+        <DateRangePicker bind:this={dateRangePickerRef} value={filter.value} onselect={handleSelect} />
         <FacetedFilter.Actions clear={onClearFilter} hidden={filter.hidden} remove={onRemoveFilter} showClear={filter.value !== undefined} {toggleHidden} />
     </Popover.Content>
 </Popover.Root>

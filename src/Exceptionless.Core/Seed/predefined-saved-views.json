@@ -60,10 +60,10 @@
         "showChart": true
     },
     {
-        "key": "issues:most-frequent-404s",
+        "key": "stacks:most-frequent-404s",
         "name": "Most Frequent 404s",
         "slug": "most-frequent-404s",
-        "viewType": "issues",
+        "viewType": "stacks",
         "filter": "(status:open OR status:regressed) type:404",
         "time": "[now-7d TO now]",
         "sort": "-events",
@@ -88,10 +88,10 @@
         "showChart": true
     },
     {
-        "key": "issues:most-frequent-errors",
+        "key": "stacks:most-frequent-errors",
         "name": "Most Frequent Errors",
         "slug": "most-frequent-errors",
-        "viewType": "issues",
+        "viewType": "stacks",
         "filter": "type:error (status:open OR status:regressed)",
         "time": "[now-7d TO now]",
         "sort": "-events",
@@ -116,10 +116,10 @@
         "showChart": true
     },
     {
-        "key": "issues:most-used-features",
+        "key": "stacks:most-used-features",
         "name": "Most Used Features",
         "slug": "most-used-features",
-        "viewType": "issues",
+        "viewType": "stacks",
         "filter": "type:usage",
         "time": "[now-7d TO now]",
         "sort": "-events",

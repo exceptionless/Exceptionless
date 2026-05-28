@@ -54,6 +54,16 @@ export interface DeleteEventsRequest {
     };
 }
 
+export interface EventNavigation {
+    nextId: null | string;
+    previousId: null | string;
+}
+
+export interface EventWithNavigation {
+    event: PersistentEvent;
+    navigation: EventNavigation;
+}
+
 export interface GetEventRequest {
     params?: {
         offset?: string;
@@ -198,6 +208,42 @@ export function getEventQuery(request: GetEventRequest) {
             return response.data!;
         },
         queryKey: queryKeys.id(request.route.id)
+    }));
+}
+
+export function getEventWithNavigationQuery(request: GetEventRequest) {
+    const queryClient = useQueryClient();
+    return createQuery<EventWithNavigation, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        placeholderData: () => {
+            const cachedEvent = queryClient.getQueryData<PersistentEvent>(queryKeys.id(request.route.id));
+            return cachedEvent ? { event: cachedEvent, navigation: { nextId: null, previousId: null } } : undefined;
+        },
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<PersistentEvent>(`events/${request.route.id}`, {
+                params: {
+                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...request.params
+                },
+                signal
+            });
+
+            const event = response.data!;
+            queryClient.setQueryData(queryKeys.id(request.route.id), event);
+
+            const previousUrl = response.meta?.links?.previous?.url;
+            const nextUrl = response.meta?.links?.next?.url;
+
+            return {
+                event,
+                navigation: {
+                    nextId: nextUrl ? (nextUrl.split('/').pop() ?? null) : null,
+                    previousId: previousUrl ? (previousUrl.split('/').pop() ?? null) : null
+                }
+            };
+        },
+        queryKey: [...queryKeys.id(request.route.id), 'withNavigation']
     }));
 }
 

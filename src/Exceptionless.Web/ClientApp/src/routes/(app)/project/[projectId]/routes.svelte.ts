@@ -2,8 +2,8 @@ import { resolve } from '$app/paths';
 import { page } from '$app/state';
 import Usage from '@lucide/svelte/icons/bar-chart';
 import ClientConfig from '@lucide/svelte/icons/braces';
-import Issues from '@lucide/svelte/icons/bug';
 import ApiKey from '@lucide/svelte/icons/key';
+import Stacks from '@lucide/svelte/icons/layers';
 import Integration from '@lucide/svelte/icons/plug-2';
 import Settings from '@lucide/svelte/icons/settings';
 
@@ -53,9 +53,9 @@ export function routes(): NavigationItem[] {
         },
         {
             group: 'Project Settings',
-            href: resolve('/(app)/project/[projectId]/issues', { projectId: page.params.projectId }),
-            icon: Issues,
-            title: 'Issue Management'
+            href: resolve('/(app)/project/[projectId]/stacks', { projectId: page.params.projectId }),
+            icon: Stacks,
+            title: 'Stack Management'
         }
     ];
 }
