@@ -133,6 +133,10 @@
     });
     const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Stacks');
 
+    $effect(() => {
+        document.title = `${pageTitle} - Exceptionless`;
+    });
+
     watch(
         () => organization.current,
         () => {

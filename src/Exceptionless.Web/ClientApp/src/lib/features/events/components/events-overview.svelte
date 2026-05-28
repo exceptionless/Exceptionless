@@ -5,16 +5,19 @@
 
     import DateTime from '$comp/formatters/date-time.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
+    import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import { Button } from '$comp/ui/button';
+    import * as Dialog from '$comp/ui/dialog';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import * as Tabs from '$comp/ui/tabs';
-    import { getEventQuery } from '$features/events/api.svelte';
+    import { getEventWithNavigationQuery } from '$features/events/api.svelte';
     import * as EventsFacetedFilter from '$features/events/components/filters';
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { getProjectQuery } from '$features/projects/api.svelte';
     import StackCard from '$features/stacks/components/stack-card.svelte';
+    import Braces from '@lucide/svelte/icons/braces';
     import ChevronLeft from '@lucide/svelte/icons/chevron-left';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
     import { onMount, tick } from 'svelte';
@@ -35,9 +38,10 @@
         filterChanged: (filter: IFilter) => void;
         handleError: (problem: ProblemDetails) => void;
         id: string;
+        onNavigate?: (eventId: string) => void;
     }
 
-    let { filterChanged, handleError, id }: Props = $props();
+    let { filterChanged, handleError, id, onNavigate }: Props = $props();
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -87,7 +91,7 @@
         return tabs;
     }
 
-    const eventQuery = getEventQuery({
+    const eventQuery = getEventWithNavigationQuery({
         route: {
             get id() {
                 return id;
@@ -95,10 +99,13 @@
         }
     });
 
+    const event = $derived(eventQuery.data?.event);
+    const navigation = $derived(eventQuery.data?.navigation);
+
     const projectQuery = getProjectQuery({
         route: {
             get id() {
-                return eventQuery.data?.project_id;
+                return event?.project_id;
             }
         }
     });
@@ -106,7 +113,7 @@
     const organizationQuery = getOrganizationQuery({
         route: {
             get id() {
-                return eventQuery.data?.organization_id;
+                return event?.organization_id;
             }
         }
     });
@@ -116,10 +123,11 @@
     type TabType = 'Environment' | 'Exception' | 'Extended Data' | 'Overview' | 'Request' | 'Trace Log' | string;
 
     let activeTab = $state<TabType>('Overview');
-    let tabs = $derived<TabType[]>(getTabs(eventQuery.data, projectQuery.data));
+    let tabs = $derived<TabType[]>(getTabs(event, projectQuery.data));
     let tabsListRef = $state<HTMLElement | null>(null);
     let canScrollTabsLeft = $state(false);
     let canScrollTabsRight = $state(false);
+    let showJsonDialog = $state(false);
 
     function updateTabsOverflow(): void {
         if (!tabsListRef) {
@@ -147,6 +155,18 @@
 
     function onDemoted(): void {
         activeTab = 'Extended Data';
+    }
+
+    function navigateToPrevious(): void {
+        if (navigation?.previousId && onNavigate) {
+            onNavigate(navigation.previousId);
+        }
+    }
+
+    function navigateToNext(): void {
+        if (navigation?.nextId && onNavigate) {
+            onNavigate(navigation.nextId);
+        }
     }
 
     $effect(() => {
@@ -185,107 +205,168 @@
     });
 </script>
 
-<StackCard {filterChanged} id={eventQuery.data?.stack_id}></StackCard>
+<section>
+    <h4 class="text-muted-foreground mb-3 text-sm font-semibold uppercase tracking-wide">Stack</h4>
+    <StackCard {filterChanged} id={event?.stack_id}></StackCard>
+</section>
 
-<Table.Root class="mt-4">
-    <Table.Body>
-        <Table.Row class="group">
-            {#if eventQuery.isSuccess}
-                <Table.Head class="w-40 font-semibold whitespace-nowrap">Occurred On</Table.Head>
-                <Table.Cell class="w-4 pr-0"></Table.Cell>
-                <Table.Cell class="flex items-center"
-                    ><DateTime value={eventQuery.data.date}></DateTime> (<TimeAgo value={eventQuery.data.date}></TimeAgo>)</Table.Cell
-                >
-            {:else}
-                <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
-                <Table.Cell class="w-4 pr-0"></Table.Cell>
-                <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>{/if}
-        </Table.Row>
-        <Table.Row class="group">
-            {#if projectQuery.isSuccess}
-                <Table.Head class="w-40 font-semibold whitespace-nowrap">Project</Table.Head>
-                <Table.Cell class="w-4 pr-0"
-                    ><EventsFacetedFilter.ProjectTrigger changed={filterChanged} class="mr-0" value={[projectQuery.data.id!]} /></Table.Cell
-                >
-                <Table.Cell>{projectQuery.data.name}</Table.Cell>
-            {:else}
-                <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
-                <Table.Cell class="w-4 pr-0"></Table.Cell>
-                <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>
-            {/if}
-        </Table.Row>
-    </Table.Body>
-</Table.Root>
-
-{#if eventQuery.isSuccess}
-    <Tabs.Root class="mt-4 mb-4" value={activeTab}>
-        <div class="relative">
-            {#if canScrollTabsLeft}
+<section class="mt-2">
+    <div class="mb-2 flex items-center justify-between">
+        <h4 class="text-muted-foreground text-sm font-semibold uppercase tracking-wide">Event</h4>
+        <div class="flex items-center gap-1">
+            {#if event}
                 <Button
-                    aria-label="Scroll tabs left"
-                    class="bg-background/95 absolute top-1/2 left-0 z-10 -translate-y-1/2 shadow-sm"
-                    onclick={() => scrollTabs('left')}
+                    aria-label="View Event JSON"
+                    onclick={() => (showJsonDialog = true)}
                     size="icon-sm"
+                    title="View Event JSON"
+                    variant="outline"
+                >
+                    <Braces class="size-4" />
+                </Button>
+            {/if}
+            {#if onNavigate && (navigation?.previousId || navigation?.nextId)}
+                <Button
+                    aria-label="Older event"
+                    disabled={!navigation?.previousId}
+                    onclick={navigateToPrevious}
+                    size="icon-sm"
+                    title="Older event"
                     variant="outline"
                 >
                     <ChevronLeft class="size-4" />
                 </Button>
-            {/if}
-            <Tabs.List
-                bind:ref={tabsListRef}
-                class="no-scrollbar w-full justify-normal overflow-x-auto overflow-y-hidden scroll-smooth"
-                onscroll={updateTabsOverflow}
-            >
-                {#each tabs as tab (tab)}
-                    <Tabs.Trigger class="flex-none px-3" value={tab}>{tab}</Tabs.Trigger>
-                {/each}
-            </Tabs.List>
-            {#if canScrollTabsRight}
                 <Button
-                    aria-label="Scroll tabs right"
-                    class="bg-background/95 absolute top-1/2 right-0 z-10 -translate-y-1/2 shadow-sm"
-                    onclick={() => scrollTabs('right')}
+                    aria-label="Newer event"
+                    disabled={!navigation?.nextId}
+                    onclick={navigateToNext}
                     size="icon-sm"
+                    title="Newer event"
                     variant="outline"
                 >
                     <ChevronRight class="size-4" />
                 </Button>
             {/if}
         </div>
+    </div>
 
-        {#each tabs as tab (tab)}
-            <Tabs.Content value={tab}>
-                {#if tab === 'Overview'}
-                    <Overview {filterChanged} event={eventQuery.data}></Overview>
-                {:else if tab === 'Exception'}
-                    <Error {filterChanged} event={eventQuery.data}></Error>
-                {:else if tab === 'Environment'}
-                    <Environment {filterChanged} event={eventQuery.data}></Environment>
-                {:else if tab === 'Request'}
-                    <Request {filterChanged} event={eventQuery.data}></Request>
-                {:else if tab === 'Trace Log'}
-                    <TraceLog logs={eventQuery.data.data?.['@trace']}></TraceLog>
-                {:else if tab === 'Session Events'}
-                    <SessionEvents event={eventQuery.data} {hasPremiumFeatures}></SessionEvents>
-                {:else if tab === 'Extended Data'}
-                    <ExtendedData event={eventQuery.data} project={projectQuery.data} promoted={onPromoted}></ExtendedData>
-                {:else}
-                    <PromotedExtendedData demoted={onDemoted} event={eventQuery.data} title={tab + ''}></PromotedExtendedData>
-                {/if}
-            </Tabs.Content>
-        {/each}
-    </Tabs.Root>
-{:else}
-    <Skeleton class="mt-4 h-7.5 w-full rounded-full" />
-    <Table.Root class="mt-4">
+    <Table.Root>
         <Table.Body>
-            {#each { length: 5 } as name, index (`${name}-${index}`)}
-                <Table.Row class="group">
+            <Table.Row class="group">
+                {#if event}
+                    <Table.Head class="w-40 font-semibold whitespace-nowrap">Occurred On</Table.Head>
+                    <Table.Cell class="w-4 pr-0"></Table.Cell>
+                    <Table.Cell class="flex items-center"
+                        ><DateTime value={event.date}></DateTime> (<TimeAgo value={event.date}></TimeAgo>)</Table.Cell
+                    >
+                {:else}
+                    <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
+                    <Table.Cell class="w-4 pr-0"></Table.Cell>
+                    <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>{/if}
+            </Table.Row>
+            <Table.Row class="group">
+                {#if projectQuery.isSuccess}
+                    <Table.Head class="w-40 font-semibold whitespace-nowrap">Project</Table.Head>
+                    <Table.Cell class="w-4 pr-0"
+                        ><EventsFacetedFilter.ProjectTrigger changed={filterChanged} class="mr-0" value={[projectQuery.data.id!]} /></Table.Cell
+                    >
+                    <Table.Cell>{projectQuery.data.name}</Table.Cell>
+                {:else}
                     <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
                     <Table.Cell class="w-4 pr-0"></Table.Cell>
                     <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>
-                </Table.Row>
-            {/each}
+                {/if}
+            </Table.Row>
         </Table.Body>
     </Table.Root>
-{/if}
+
+    {#if event}
+        <Tabs.Root class="mt-4 mb-4" value={activeTab}>
+            <div class="relative">
+                {#if canScrollTabsLeft}
+                    <Button
+                        aria-label="Scroll tabs left"
+                        class="bg-background/95 absolute top-1/2 left-0 z-10 -translate-y-1/2 shadow-sm"
+                        onclick={() => scrollTabs('left')}
+                        size="icon-sm"
+                        variant="outline"
+                    >
+                        <ChevronLeft class="size-4" />
+                    </Button>
+                {/if}
+                <Tabs.List
+                    bind:ref={tabsListRef}
+                    class="no-scrollbar w-full justify-normal overflow-x-auto overflow-y-hidden scroll-smooth"
+                    onscroll={updateTabsOverflow}
+                >
+                    {#each tabs as tab (tab)}
+                        <Tabs.Trigger class="flex-none px-3" value={tab}>{tab}</Tabs.Trigger>
+                    {/each}
+                </Tabs.List>
+                {#if canScrollTabsRight}
+                    <Button
+                        aria-label="Scroll tabs right"
+                        class="bg-background/95 absolute top-1/2 right-0 z-10 -translate-y-1/2 shadow-sm"
+                        onclick={() => scrollTabs('right')}
+                        size="icon-sm"
+                        variant="outline"
+                    >
+                        <ChevronRight class="size-4" />
+                    </Button>
+                {/if}
+            </div>
+
+            {#each tabs as tab (tab)}
+                <Tabs.Content value={tab}>
+                    {#if tab === 'Overview'}
+                        <Overview {filterChanged} {event}></Overview>
+                    {:else if tab === 'Exception'}
+                        <Error {filterChanged} {event}></Error>
+                    {:else if tab === 'Environment'}
+                        <Environment {filterChanged} {event}></Environment>
+                    {:else if tab === 'Request'}
+                        <Request {filterChanged} {event}></Request>
+                    {:else if tab === 'Trace Log'}
+                        <TraceLog logs={event.data?.['@trace']}></TraceLog>
+                    {:else if tab === 'Session Events'}
+                        <SessionEvents {event} {hasPremiumFeatures}></SessionEvents>
+                    {:else if tab === 'Extended Data'}
+                        <ExtendedData {event} project={projectQuery.data} promoted={onPromoted}></ExtendedData>
+                    {:else}
+                        <PromotedExtendedData demoted={onDemoted} {event} title={tab + ''}></PromotedExtendedData>
+                    {/if}
+                </Tabs.Content>
+            {/each}
+        </Tabs.Root>
+    {:else}
+        <Skeleton class="mt-4 h-7.5 w-full rounded-full" />
+        <Table.Root class="mt-4">
+            <Table.Body>
+                {#each { length: 5 } as name, index (`${name}-${index}`)}
+                    <Table.Row class="group">
+                        <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
+                        <Table.Cell class="w-4 pr-0"></Table.Cell>
+                        <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>
+                    </Table.Row>
+                {/each}
+            </Table.Body>
+        </Table.Root>
+    {/if}
+</section>
+
+<Dialog.Root bind:open={showJsonDialog}>
+    <Dialog.Content class="flex max-h-[min(42rem,calc(100vh-2rem))] flex-col sm:max-w-3xl">
+        <Dialog.Header>
+            <Dialog.Title>View Event JSON</Dialog.Title>
+            <Dialog.Description class="sr-only">Raw JSON representation of the event</Dialog.Description>
+        </Dialog.Header>
+        <div class="flex-1 overflow-y-auto rounded-md border p-4">
+            <pre class="text-xs whitespace-pre-wrap break-all">{JSON.stringify(event, null, 2)}</pre>
+        </div>
+        <Dialog.Footer>
+            <CopyToClipboardButton size="sm" title="Copy JSON to Clipboard" value={JSON.stringify(event, null, 2)} variant="outline">
+                Copy to Clipboard
+            </CopyToClipboardButton>
+        </Dialog.Footer>
+    </Dialog.Content>
+</Dialog.Root>

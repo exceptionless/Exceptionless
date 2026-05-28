@@ -20,7 +20,7 @@
     let { eventsPerHour = 0, isLoading = false, newStacks = 0, totalEvents = 0, totalStacks = 0 }: Props = $props();
 
     const metricCardClass =
-        "relative h-[66px]! justify-between gap-1! overflow-hidden bg-card py-2! ring-[color-mix(in_oklab,var(--chart-1)_42%,transparent)] before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-[linear-gradient(90deg,var(--chart-1),var(--chart-2))] before:content-['']";
+        "relative h-[66px]! justify-between gap-1! overflow-hidden bg-background py-2! ring-[color-mix(in_oklab,var(--chart-1)_42%,transparent)] before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-[linear-gradient(90deg,var(--chart-1),var(--chart-2))] before:content-['']";
     const metricHeaderClass = 'flex flex-row items-center justify-between gap-1.5 px-3 pb-0';
     const metricTitleClass = 'min-w-0 truncate text-xs font-semibold text-[color-mix(in_oklab,var(--chart-2)_82%,var(--foreground))]';
     const metricIconClass = 'size-3.5 shrink-0 text-[var(--chart-2)]';

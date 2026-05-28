@@ -92,6 +92,10 @@
     });
     const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Event Stream');
 
+    $effect(() => {
+        document.title = `${pageTitle} - Exceptionless`;
+    });
+
     watch(
         () => organization.current,
         () => {

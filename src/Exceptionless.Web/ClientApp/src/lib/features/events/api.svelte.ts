@@ -201,6 +201,52 @@ export function getEventQuery(request: GetEventRequest) {
     }));
 }
 
+export interface EventNavigation {
+    nextId: string | null;
+    previousId: string | null;
+}
+
+export interface EventWithNavigation {
+    event: PersistentEvent;
+    navigation: EventNavigation;
+}
+
+export function getEventWithNavigationQuery(request: GetEventRequest) {
+    const queryClient = useQueryClient();
+    return createQuery<EventWithNavigation, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        placeholderData: () => {
+            const cachedEvent = queryClient.getQueryData<PersistentEvent>(queryKeys.id(request.route.id));
+            return cachedEvent ? { event: cachedEvent, navigation: { previousId: null, nextId: null } } : undefined;
+        },
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<PersistentEvent>(`events/${request.route.id}`, {
+                params: {
+                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...request.params
+                },
+                signal
+            });
+
+            const event = response.data!;
+            queryClient.setQueryData(queryKeys.id(request.route.id), event);
+
+            const previousUrl = response.meta?.links?.previous?.url;
+            const nextUrl = response.meta?.links?.next?.url;
+
+            return {
+                event,
+                navigation: {
+                    previousId: previousUrl ? previousUrl.split('/').pop() ?? null : null,
+                    nextId: nextUrl ? nextUrl.split('/').pop() ?? null : null
+                }
+            };
+        },
+        queryKey: [...queryKeys.id(request.route.id), 'withNavigation']
+    }));
+}
+
 export function getOrganizationCountQuery(request: GetOrganizationCountRequest) {
     const queryClient = useQueryClient();
 

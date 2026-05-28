@@ -5,7 +5,6 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { H3 } from '$comp/typography';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import { organization } from '$features/organizations/context.svelte';
     import StackDetails from '$features/stacks/components/stack-details.svelte';
@@ -35,9 +34,10 @@
 
         toast.error('Unable to load stack event details.');
     }
+
+    $effect(() => {
+        document.title = 'Stack Details - Exceptionless';
+    });
 </script>
 
-<div class="flex flex-col gap-4">
-    <H3>Stack Details</H3>
-    <StackDetails {filterChanged} {handleError} {stackId} />
-</div>
+<StackDetails {filterChanged} {handleError} {stackId} />
