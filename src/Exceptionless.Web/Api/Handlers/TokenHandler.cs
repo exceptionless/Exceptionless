@@ -10,8 +10,8 @@ using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
+using Foundatio.Mediator;
 using Foundatio.Repositories;
-using HttpResults = Microsoft.AspNetCore.Http.Results;
 using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 
 namespace Exceptionless.Web.Api.Handlers;
@@ -27,130 +27,133 @@ public class TokenHandler(
     private readonly IAppQueryValidator _validator = validator;
     private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
 
-    public async Task<IResult> Handle(GetTokensByOrganization message)
+    public async Task<Result<PagedResult<ViewToken>>> Handle(GetTokensByOrganization message)
     {
         if (HttpContext.User.IsTokenAuthType())
-            return HttpResults.Forbid();
+            return Result.Forbidden("Token authentication cannot access tokens.");
 
         if (String.IsNullOrEmpty(message.OrganizationId) || !HttpContext.Request.CanAccessOrganization(message.OrganizationId))
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         int page = GetPage(message.Page);
         int limit = GetLimit(message.Limit);
         var tokens = await repository.GetByTypeAndOrganizationIdAsync(TokenType.Access, message.OrganizationId, o => o.PageNumber(page).PageLimit(limit));
         var viewTokens = mapper.MapToViewTokens(tokens.Documents);
         AfterResultMap(viewTokens);
-        return ApiResults.OkWithResourceLinks(HttpContext, viewTokens, tokens.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
+        return new PagedResult<ViewToken>(viewTokens, tokens.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
     }
 
-    public async Task<IResult> Handle(GetTokensByProject message)
+    public async Task<Result<PagedResult<ViewToken>>> Handle(GetTokensByProject message)
     {
         if (HttpContext.User.IsTokenAuthType())
-            return HttpResults.Forbid();
+            return Result.Forbidden("Token authentication cannot access tokens.");
 
         var project = await GetProjectAsync(message.ProjectId);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         int page = GetPage(message.Page);
         int limit = GetLimit(message.Limit);
         var tokens = await repository.GetByTypeAndProjectIdAsync(TokenType.Access, message.ProjectId, o => o.PageNumber(page).PageLimit(limit));
         var viewTokens = mapper.MapToViewTokens(tokens.Documents);
         AfterResultMap(viewTokens);
-        return ApiResults.OkWithResourceLinks(HttpContext, viewTokens, tokens.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
+        return new PagedResult<ViewToken>(viewTokens, tokens.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
     }
 
-    public async Task<IResult> Handle(GetDefaultToken message)
+    public async Task<Result<ViewToken>> Handle(GetDefaultToken message)
     {
         if (HttpContext.User.IsTokenAuthType())
-            return HttpResults.Forbid();
+            return Result.Forbidden("Token authentication cannot access tokens.");
 
         var project = await GetProjectAsync(message.ProjectId);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         var defaultTokenResults = await repository.GetByTypeAndProjectIdAsync(TokenType.Access, message.ProjectId, o => o.PageLimit(1));
         var token = defaultTokenResults.Documents.FirstOrDefault();
         if (token is not null)
-            return OkModel(token);
+            return MapToView(token);
 
-        return await PostImplAsync(new NewToken { OrganizationId = project.OrganizationId, ProjectId = message.ProjectId });
+        return await CreateTokenImplAsync(new NewToken { OrganizationId = project.OrganizationId, ProjectId = message.ProjectId });
     }
 
-    public async Task<IResult> Handle(GetTokenById message)
+    public async Task<Result<ViewToken>> Handle(GetTokenById message)
     {
         if (HttpContext.User.IsTokenAuthType())
-            return HttpResults.Forbid();
+            return Result.Forbidden("Token authentication cannot access tokens.");
 
         var model = await GetModelAsync(message.Id);
-        return model is null ? HttpResults.NotFound() : OkModel(model);
+        if (model is null)
+            return Result.NotFound("Token not found.");
+
+        return MapToView(model);
     }
 
-    public Task<IResult> Handle(CreateToken message)
+    public Task<Result<ViewToken>> Handle(CreateToken message)
     {
         if (HttpContext.User.IsTokenAuthType())
-            return Task.FromResult<IResult>(HttpResults.Forbid());
+            return Task.FromResult<Result<ViewToken>>(Result.Forbidden("Token authentication cannot create tokens."));
 
-        return PostImplAsync(message.Token);
+        return CreateTokenImplAsync(message.Token);
     }
 
-    public async Task<IResult> Handle(CreateTokenByProject message)
+    public async Task<Result<ViewToken>> Handle(CreateTokenByProject message)
     {
         if (HttpContext.User.IsTokenAuthType())
-            return HttpResults.Forbid();
+            return Result.Forbidden("Token authentication cannot create tokens.");
 
         var project = await GetProjectAsync(message.ProjectId);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         var token = message.Token ?? new NewToken();
         token.OrganizationId = project.OrganizationId;
         token.ProjectId = message.ProjectId;
-        return await PostImplAsync(token);
+        return await CreateTokenImplAsync(token);
     }
 
-    public Task<IResult> Handle(CreateTokenByOrganization message)
+    public Task<Result<ViewToken>> Handle(CreateTokenByOrganization message)
     {
         if (HttpContext.User.IsTokenAuthType())
-            return Task.FromResult<IResult>(HttpResults.Forbid());
+            return Task.FromResult<Result<ViewToken>>(Result.Forbidden("Token authentication cannot create tokens."));
 
         if (!HttpContext.Request.IsInOrganization(message.OrganizationId))
-            return Task.FromResult<IResult>(HttpResults.BadRequest());
+            return Task.FromResult<Result<ViewToken>>(Result.BadRequest("Invalid organization."));
 
         var token = message.Token ?? new NewToken();
         token.OrganizationId = message.OrganizationId;
-        return PostImplAsync(token);
+        return CreateTokenImplAsync(token);
     }
 
-    public async Task<IResult> Handle(UpdateTokenMessage message)
+    public async Task<Result<ViewToken>> Handle(UpdateTokenMessage message)
     {
         if (HttpContext.User.IsTokenAuthType())
-            return HttpResults.Forbid();
+            return Result.Forbidden("Token authentication cannot update tokens.");
 
         var original = await GetModelAsync(message.Id, useCache: false);
         if (original is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Token not found.");
 
         if (!message.Changes.GetChangedPropertyNames().Any())
-            return OkModel(original);
+            return MapToView(original);
 
-        var permission = CanUpdate(original, message.Changes);
-        if (permission is not null)
-            return permission;
+        var error = CanUpdate(original, message.Changes);
+        if (error is not null)
+            return error;
 
         message.Changes.Patch(original);
         await repository.SaveAsync(original, o => o.Cache());
-        return OkModel(original);
+        return MapToView(original);
     }
 
-    public async Task<IResult> Handle(DeleteTokens message)
+    public async Task<Result<ModelActionResults>> Handle(DeleteTokens message)
     {
         if (HttpContext.User.IsTokenAuthType())
-            return HttpResults.Forbid();
+            return Result.Forbidden("Token authentication cannot delete tokens.");
 
         var items = await GetModelsAsync(message.Ids, useCache: false);
         if (items.Count == 0)
-            return HttpResults.NotFound();
+            return Result.NotFound("No tokens found.");
 
         var results = new ModelActionResults();
         results.AddNotFound(message.Ids.Except(items.Select(i => i.Id)));
@@ -167,53 +170,52 @@ public class TokenHandler(
         }
 
         if (deletableItems.Count == 0)
-            return results.Failure.Count == 1 ? PermissionToResult(results.Failure.First()) : HttpResults.BadRequest(results);
+        {
+            if (results.Failure.Count == 1)
+                return PermissionToResult(results.Failure.First());
+            return Result.BadRequest("Unable to delete tokens.");
+        }
 
         await repository.RemoveAsync(deletableItems);
 
         if (results.Failure.Count == 0)
-            return TypedResults.Json(new WorkInProgressResult(), statusCode: StatusCodes.Status202Accepted);
+            return results;
 
         results.Success.AddRange(deletableItems.Select(i => i.Id));
-        return HttpResults.BadRequest(results);
+        return results;
     }
 
-    private async Task<IResult> PostImplAsync(NewToken value)
+    private async Task<Result<ViewToken>> CreateTokenImplAsync(NewToken value)
     {
         if (value is null)
-            return HttpResults.BadRequest();
-
-        // ProjectId is required for direct token creation (mirrors old MVC implicit-required behavior)
-        if (String.IsNullOrEmpty(value.ProjectId))
-            return TypedResults.ValidationProblem(
-                new Dictionary<string, string[]> { ["project_id"] = ["The project_id field is required."] });
+            return Result.BadRequest("Token value is required.");
 
         var mapped = mapper.MapToToken(value);
         if (String.IsNullOrEmpty(mapped.OrganizationId) && HttpContext.Request.GetAssociatedOrganizationIds().Count > 0)
             mapped.OrganizationId = HttpContext.Request.GetDefaultOrganizationId()!;
 
-        var permission = await CanAddAsync(mapped);
-        if (permission is not null)
-            return permission;
+        var error = await CanAddAsync(mapped);
+        if (error is not null)
+            return error;
 
         var model = await AddModelAsync(mapped);
         var viewModel = mapper.MapToViewToken(model);
         AfterResultMap([viewModel]);
-        return TypedResults.Created($"/api/v2/tokens/{model.Id}", viewModel);
+        return Result<ViewToken>.Created(viewModel, $"/api/v2/tokens/{model.Id}");
     }
 
-    private async Task<IResult?> CanAddAsync(Token value)
+    private async Task<Result<ViewToken>?> CanAddAsync(Token value)
     {
         if (String.IsNullOrEmpty(value.OrganizationId))
-            return PermissionToResult(PermissionResult.Deny);
+            return Result.Forbidden("Organization is required.");
 
         bool hasUserRole = HttpContext.User.IsInRole(AuthorizationRoles.User);
         bool hasGlobalAdminRole = HttpContext.User.IsInRole(AuthorizationRoles.GlobalAdmin);
         if (!hasGlobalAdminRole && !String.IsNullOrEmpty(value.UserId) && value.UserId != GetCurrentUserId())
-            return PermissionToResult(PermissionResult.Deny);
+            return Result.Forbidden("Cannot create tokens for other users.");
 
         if (!String.IsNullOrEmpty(value.ProjectId) && !String.IsNullOrEmpty(value.UserId))
-            return PermissionToResult(PermissionResult.DenyWithMessage("Token can't be associated to both user and project."));
+            return Result.Invalid(ValidationError.Create("", "Token can't be associated to both user and project."));
 
         foreach (string scope in value.Scopes.ToList())
         {
@@ -225,7 +227,7 @@ public class TokenHandler(
             }
 
             if (!AuthorizationRoles.AllScopes.Contains(lowerCaseScope))
-                return ValidationProblem("scopes", "Invalid token scope requested.");
+                return Result.Invalid(ValidationError.Create("scopes", "Invalid token scope requested."));
         }
 
         if (value.Scopes.Count == 0)
@@ -234,13 +236,13 @@ public class TokenHandler(
         if ((value.Scopes.Contains(AuthorizationRoles.Client) && !hasUserRole)
             || (value.Scopes.Contains(AuthorizationRoles.User) && !hasUserRole)
             || (value.Scopes.Contains(AuthorizationRoles.GlobalAdmin) && !hasGlobalAdminRole))
-            return ValidationProblem("scopes", "Invalid token scope requested.");
+            return Result.Invalid(ValidationError.Create("scopes", "Invalid token scope requested."));
 
         if (!String.IsNullOrEmpty(value.ProjectId))
         {
             var project = await GetProjectAsync(value.ProjectId);
             if (project is null)
-                return ValidationProblem("project_id", "Please specify a valid project id.");
+                return Result.Invalid(ValidationError.Create("project_id", "Please specify a valid project id."));
 
             value.OrganizationId = project.OrganizationId;
             value.DefaultProjectId = null;
@@ -250,12 +252,11 @@ public class TokenHandler(
         {
             var project = await GetProjectAsync(value.DefaultProjectId);
             if (project is null)
-                return ValidationProblem("default_project_id", "Please specify a valid default project id.");
+                return Result.Invalid(ValidationError.Create("default_project_id", "Please specify a valid default project id."));
         }
 
-        // Organization access check comes last (matches old base.CanAddAsync order)
         if (!HttpContext.Request.CanAccessOrganization(value.OrganizationId))
-            return PermissionToResult(PermissionResult.DenyWithMessage("Invalid organization id specified."));
+            return Result.Invalid(ValidationError.Create("organization_id", "Invalid organization id specified."));
 
         return null;
     }
@@ -341,11 +342,11 @@ public class TokenHandler(
         return project is not null;
     }
 
-    private IResult OkModel(Token model)
+    private ViewToken MapToView(Token model)
     {
         var viewModel = mapper.MapToViewToken(model);
         AfterResultMap([viewModel]);
-        return HttpResults.Ok(viewModel);
+        return viewModel;
     }
 
     private string GetCurrentUserId() => HttpContext.Request.GetUser().Id;
@@ -356,32 +357,21 @@ public class TokenHandler(
             model.Data?.RemoveSensitiveData();
     }
 
-    private static IResult PermissionToResult(PermissionResult permission)
+    private static Result<ModelActionResults> PermissionToResult(PermissionResult permission)
     {
-        if (permission.StatusCode is StatusCodes.Status422UnprocessableEntity)
-            return HttpResults.ValidationProblem(String.IsNullOrEmpty(permission.Message)
-                ? new Dictionary<string, string[]>()
-                : new Dictionary<string, string[]> { ["general"] = [permission.Message] },
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+        if (permission.StatusCode is StatusCodes.Status404NotFound)
+            return Result.NotFound(permission.Message ?? "Not found.");
 
-        if (String.IsNullOrEmpty(permission.Message))
-            return TypedResults.Problem(statusCode: permission.StatusCode);
-
-        return TypedResults.Problem(statusCode: permission.StatusCode, title: permission.Message);
+        return Result.Forbidden(permission.Message ?? "Access denied.");
     }
 
-    private static IResult ValidationProblem(string key, string error)
-        => Microsoft.AspNetCore.Http.Results.ValidationProblem(
-            new Dictionary<string, string[]> { [key] = [error] },
-            statusCode: StatusCodes.Status422UnprocessableEntity);
-
-    private IResult? CanUpdate(Token original, Delta<UpdateToken> changes)
+    private Result<ViewToken>? CanUpdate(Token original, Delta<UpdateToken> changes)
     {
         if (!HttpContext.Request.CanAccessOrganization(original.OrganizationId))
-            return PermissionToResult(PermissionResult.DenyWithMessage("Invalid organization id specified."));
+            return Result.Invalid(ValidationError.Create("organization_id", "Invalid organization id specified."));
 
         if (changes.GetChangedPropertyNames().Contains(nameof(Token.OrganizationId)))
-            return PermissionToResult(PermissionResult.DenyWithMessage("OrganizationId cannot be modified."));
+            return Result.Invalid(ValidationError.Create("organization_id", "OrganizationId cannot be modified."));
 
         return null;
     }

@@ -1,0 +1,98 @@
+using Exceptionless.Web.Controllers;
+using Foundatio.Mediator;
+using HttpResults = Microsoft.AspNetCore.Http.Results;
+using IHttpResult = Microsoft.AspNetCore.Http.IResult;
+
+namespace Exceptionless.Web.Api.Results;
+
+/// <summary>
+/// Extension methods to convert Foundatio.Mediator Result types to ASP.NET IResult.
+/// Used in endpoint lambdas after invoking handlers via the mediator.
+/// </summary>
+public static class ResultExtensions
+{
+    /// <summary>
+    /// Converts a Result (non-generic) to an HTTP IResult.
+    /// </summary>
+    public static IHttpResult ToHttpResult(this Result result)
+    {
+        return result.Status switch
+        {
+            ResultStatus.Success => HttpResults.Ok(),
+            ResultStatus.Created => HttpResults.Created(result.Location, null),
+            ResultStatus.NoContent => HttpResults.NoContent(),
+            ResultStatus.NotFound => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status404NotFound, title: "Not Found"),
+            ResultStatus.Forbidden => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status403Forbidden, title: "Forbidden"),
+            ResultStatus.Unauthorized => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status401Unauthorized, title: "Unauthorized"),
+            ResultStatus.BadRequest => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status400BadRequest, title: "Bad Request"),
+            ResultStatus.Conflict => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status409Conflict, title: "Conflict"),
+            ResultStatus.Invalid => MapValidation(result),
+            ResultStatus.Error => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status500InternalServerError),
+            ResultStatus.CriticalError => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status500InternalServerError),
+            ResultStatus.Unavailable => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status503ServiceUnavailable),
+            _ => HttpResults.Problem(detail: result.Message ?? "An unexpected error occurred", statusCode: StatusCodes.Status500InternalServerError)
+        };
+    }
+
+    /// <summary>
+    /// Converts a Result&lt;T&gt; to an HTTP IResult with the value as the body.
+    /// </summary>
+    public static IHttpResult ToHttpResult<T>(this Result<T> result)
+    {
+        if (!result.IsSuccess)
+            return ((Foundatio.Mediator.IResult)result).ToHttpResultError();
+
+        var value = result.ValueOrDefault;
+        if (value is null)
+            return HttpResults.Ok();
+
+        if (value is IPagedResult paged)
+            return new PagedHttpResult(paged);
+
+        // WorkInProgressResult (and ModelActionResults) returns 202 Accepted
+        if (value is Controllers.WorkInProgressResult)
+            return HttpResults.Json(value, statusCode: StatusCodes.Status202Accepted);
+
+        return result.Status switch
+        {
+            ResultStatus.Created => HttpResults.Created(result.Location, value),
+            _ => HttpResults.Ok(value)
+        };
+    }
+
+    private static IHttpResult ToHttpResultError(this Foundatio.Mediator.IResult result)
+    {
+        return result.Status switch
+        {
+            ResultStatus.NotFound => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status404NotFound, title: "Not Found"),
+            ResultStatus.Forbidden => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status403Forbidden, title: "Forbidden"),
+            ResultStatus.Unauthorized => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status401Unauthorized, title: "Unauthorized"),
+            ResultStatus.BadRequest => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status400BadRequest, title: "Bad Request"),
+            ResultStatus.Conflict => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status409Conflict, title: "Conflict"),
+            ResultStatus.Invalid => MapValidation(result),
+            ResultStatus.Error => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status500InternalServerError),
+            ResultStatus.CriticalError => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status500InternalServerError),
+            ResultStatus.Unavailable => HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status503ServiceUnavailable),
+            _ => HttpResults.Problem(detail: result.Message ?? "An unexpected error occurred", statusCode: StatusCodes.Status500InternalServerError)
+        };
+    }
+
+    private static IHttpResult MapValidation(Foundatio.Mediator.IResult result)
+    {
+        var errors = result.ValidationErrors?.ToList();
+        if (errors is null || errors.Count == 0)
+            return HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status422UnprocessableEntity, title: "Validation failed");
+
+        var errorDict = new Dictionary<string, string[]>();
+        foreach (var error in errors)
+        {
+            var key = error.Identifier ?? "";
+            if (errorDict.TryGetValue(key, out var existing))
+                errorDict[key] = [.. existing, error.ErrorMessage];
+            else
+                errorDict[key] = [error.ErrorMessage];
+        }
+
+        return HttpResults.ValidationProblem(errorDict, title: result.Message ?? "Validation failed", statusCode: StatusCodes.Status422UnprocessableEntity);
+    }
+}

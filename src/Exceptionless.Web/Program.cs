@@ -8,6 +8,7 @@ using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Validation;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Web.Api;
+using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Security;
@@ -179,6 +180,7 @@ public partial class Program
                 o.AddSchemaTransformer<XEnumNamesSchemaTransformer>();
             });
 
+            builder.Services.AddSingleton<IMediatorResultMapper<Microsoft.AspNetCore.Http.IResult>, ApiResultMapper>();
             builder.Services.AddMediator();
             Bootstrapper.RegisterServices(builder.Services, options, Log.Logger.ToLoggerFactory());
             builder.Services.AddSingleton(_ => new ThrottlingOptions

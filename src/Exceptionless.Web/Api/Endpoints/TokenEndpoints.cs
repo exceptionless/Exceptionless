@@ -2,10 +2,11 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Infrastructure;
+using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
-using IMediator = Foundatio.Mediator.IMediator;
+using Foundatio.Mediator;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using TokenMessages = Exceptionless.Web.Api.Messages;
@@ -23,7 +24,7 @@ public static class TokenEndpoints
             .WithTags("Token");
 
         group.MapGet("organizations/{organizationId:objectid}/tokens", async (string organizationId, IMediator mediator, int page = 1, int limit = 10)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.GetTokensByOrganization(organizationId, page, limit)))
+            => (await mediator.InvokeAsync<Result<PagedResult<ViewToken>>>(new TokenMessages.GetTokensByOrganization(organizationId, page, limit))).ToHttpResult())
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Get by organization")
@@ -39,7 +40,7 @@ public static class TokenEndpoints
         });
 
         group.MapGet("projects/{projectId:objectid}/tokens", async (string projectId, IMediator mediator, int page = 1, int limit = 10)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.GetTokensByProject(projectId, page, limit)))
+            => (await mediator.InvokeAsync<Result<PagedResult<ViewToken>>>(new TokenMessages.GetTokensByProject(projectId, page, limit))).ToHttpResult())
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Get by project")
@@ -55,7 +56,7 @@ public static class TokenEndpoints
         });
 
         group.MapGet("projects/{projectId:objectid}/tokens/default", async (string projectId, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.GetDefaultToken(projectId)))
+            => (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.GetDefaultToken(projectId))).ToHttpResult())
         .Produces<ViewToken>()
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Get a projects default token")
@@ -69,7 +70,7 @@ public static class TokenEndpoints
         });
 
         group.MapGet("tokens/{id:token}", async (string id, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.GetTokenById(id)))
+            => (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.GetTokenById(id))).ToHttpResult())
         .WithName("GetTokenById")
         .Produces<ViewToken>()
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -89,7 +90,11 @@ public static class TokenEndpoints
             if (validation is not null)
                 return validation;
 
-            return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.CreateToken(token));
+            if (String.IsNullOrEmpty(token.ProjectId))
+                return Microsoft.AspNetCore.Http.Results.ValidationProblem(
+                    new Dictionary<string, string[]> { ["project_id"] = ["The project_id field is required."] });
+
+            return (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.CreateToken(token))).ToHttpResult();
         })
         .Produces<ViewToken>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -115,7 +120,7 @@ public static class TokenEndpoints
                     return validation;
             }
 
-            return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.CreateTokenByProject(projectId, token));
+            return (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.CreateTokenByProject(projectId, token))).ToHttpResult();
         })
         .Produces<ViewToken>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -146,7 +151,7 @@ public static class TokenEndpoints
                     return validation;
             }
 
-            return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.CreateTokenByOrganization(organizationId, token));
+            return (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.CreateTokenByOrganization(organizationId, token))).ToHttpResult();
         })
         .Produces<ViewToken>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -167,7 +172,7 @@ public static class TokenEndpoints
         });
 
         group.MapPatch("tokens/{id:tokens}", async (string id, IMediator mediator, [FromBody] Delta<UpdateToken> changes)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.UpdateTokenMessage(id, changes)))
+            => (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.UpdateTokenMessage(id, changes))).ToHttpResult())
         .Produces<ViewToken>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -184,7 +189,7 @@ public static class TokenEndpoints
         });
 
         group.MapPut("tokens/{id:tokens}", async (string id, IMediator mediator, [FromBody] Delta<UpdateToken> changes)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.UpdateTokenMessage(id, changes)))
+            => (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.UpdateTokenMessage(id, changes))).ToHttpResult())
         .Produces<ViewToken>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -201,7 +206,7 @@ public static class TokenEndpoints
         });
 
         group.MapDelete("tokens/{ids:tokens}", async (string ids, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new TokenMessages.DeleteTokens(ids.FromDelimitedString())))
+            => (await mediator.InvokeAsync<Result<ModelActionResults>>(new TokenMessages.DeleteTokens(ids.FromDelimitedString()))).ToHttpResult())
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
