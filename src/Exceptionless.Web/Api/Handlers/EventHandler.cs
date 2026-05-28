@@ -539,7 +539,7 @@ public class EventHandler(
             return Result.NotFound("Project not found.");
         }
 
-        if (message.Body.Length == 0)
+        if (httpContext.Request.ContentLength is <= 0)
             return Result.Accepted();
 
         string? projectId = message.ProjectId ?? claimProjectId ?? httpContext.Request.GetDefaultProjectId();
@@ -565,7 +565,6 @@ public class EventHandler(
                 charSet = contentType.Charset.ToString();
             }
 
-            await using var body = new MemoryStream(message.Body, writable: false);
             await eventPostService.EnqueueAsync(new EventPost(appOptions.EnableArchive)
             {
                 ApiVersion = message.ApiVersion,
@@ -576,7 +575,7 @@ public class EventHandler(
                 OrganizationId = project.OrganizationId,
                 ProjectId = project.Id,
                 UserAgent = message.UserAgent,
-            }, body);
+            }, httpContext.Request.Body);
         }
         catch (Exception ex)
         {

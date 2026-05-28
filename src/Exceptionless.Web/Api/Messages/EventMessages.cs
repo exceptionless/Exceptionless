@@ -36,7 +36,7 @@ public record RecordEventHeartbeat(string? Id, bool Close, HttpContext Context);
 public record SubmitEventByGet(string? ProjectId, int ApiVersion, string? Type, string? UserAgent, HttpContext Context);
 
 // Submit via POST
-public record SubmitEventByPost(string? ProjectId, int ApiVersion, string? UserAgent, byte[] Body, HttpContext Context);
+public record SubmitEventByPost(string? ProjectId, int ApiVersion, string? UserAgent, HttpContext Context);
 
 // Delete
 public record DeleteEvents(string Ids, HttpContext Context);

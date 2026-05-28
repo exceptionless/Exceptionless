@@ -840,18 +840,10 @@ public static class EventEndpoints
 
     private static async Task<IResult> SubmitEventByPostAsync(string? projectId, int apiVersion, HttpContext httpContext, IMediator mediator)
     {
-        var body = await ReadRequestBodyAsync(httpContext.Request);
-        return (await mediator.InvokeAsync<Result>(new SubmitEventByPost(projectId, apiVersion, httpContext.Request.GetClientUserAgent(), body, httpContext))).ToHttpResult();
-    }
+        if (httpContext.Request.ContentLength is <= 0)
+            return Microsoft.AspNetCore.Http.Results.StatusCode(StatusCodes.Status202Accepted);
 
-    private static async Task<byte[]> ReadRequestBodyAsync(HttpRequest request)
-    {
-        if (request.ContentLength is <= 0)
-            return [];
-
-        using var body = new MemoryStream();
-        await request.Body.CopyToAsync(body);
-        return body.ToArray();
+        return (await mediator.InvokeAsync<Result>(new SubmitEventByPost(projectId, apiVersion, httpContext.Request.GetClientUserAgent(), httpContext))).ToHttpResult();
     }
 }
 

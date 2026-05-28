@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Reflection;
 using Foundatio.Mediator;
 using Microsoft.AspNetCore.Http;
 using HttpResults = Microsoft.AspNetCore.Http.Results;
@@ -12,12 +14,15 @@ namespace Exceptionless.Web.Api.Results;
 /// </summary>
 public sealed class ApiResultMapper : IMediatorResultMapper<IResult>
 {
+    private static readonly ConcurrentDictionary<Type, PropertyInfo?> s_valuePropertyCache = new();
+
     public IResult MapResult(Foundatio.Mediator.IResult result)
     {
         return result.Status switch
         {
             ResultStatus.Success => MapSuccess(result),
             ResultStatus.Created => MapCreated(result),
+            ResultStatus.Accepted => MapAccepted(result),
             ResultStatus.NoContent => HttpResults.NoContent(),
             ResultStatus.BadRequest => HttpResults.Problem(
                 detail: result.Message, statusCode: StatusCodes.Status400BadRequest, title: "Bad Request"),
@@ -68,6 +73,15 @@ public sealed class ApiResultMapper : IMediatorResultMapper<IResult>
         return HttpResults.Created(location, value);
     }
 
+    private static IResult MapAccepted(Foundatio.Mediator.IResult result)
+    {
+        var value = GetValue(result);
+        if (value is WorkInProgressResponse wip)
+            return HttpResults.Json(new { workers = wip.Workers }, statusCode: StatusCodes.Status202Accepted);
+
+        return HttpResults.StatusCode(StatusCodes.Status202Accepted);
+    }
+
     private static IResult MapValidation(Foundatio.Mediator.IResult result)
     {
         var errors = result.ValidationErrors?.ToList();
@@ -102,9 +116,8 @@ public sealed class ApiResultMapper : IMediatorResultMapper<IResult>
 
     private static object? GetValue(Foundatio.Mediator.IResult result)
     {
-        // Use reflection to get Value from Result<T>
         var type = result.GetType();
-        var valueProp = type.GetProperty("ValueOrDefault");
+        var valueProp = s_valuePropertyCache.GetOrAdd(type, t => t.GetProperty("ValueOrDefault"));
         return valueProp?.GetValue(result);
     }
 }
