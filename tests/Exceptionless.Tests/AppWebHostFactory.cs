@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Net;
+using System.Text.Json;
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Exceptionless.Insulation.Configuration;
@@ -12,9 +13,10 @@ namespace Exceptionless.Tests;
 
 public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 {
+    private static readonly string[] s_indexPrefixes = ["events", "migrations", "organizations", "projects", "saved-views", "stacks", "tokens", "users", "webhooks"];
     private static int s_counter = -1;
     private static readonly ConcurrentQueue<int> s_pool = new();
-    private static readonly Lazy<Task<DistributedApplication>> s_sharedApplication = new(StartSharedApplicationAsync, LazyThreadSafetyMode.ExecutionAndPublication);
+    private static readonly Lazy<Task<SharedApplicationContext>> s_sharedApplication = new(StartSharedApplicationAsync, LazyThreadSafetyMode.ExecutionAndPublication);
     private bool _sliceReleased;
 
     public AppWebHostFactory()
@@ -32,10 +34,11 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _ = await s_sharedApplication.Value;
+        var sharedApplication = await s_sharedApplication.Value;
+        await CleanupElasticsearchSliceAsync(sharedApplication.ElasticsearchUri);
     }
 
-    private static async Task<DistributedApplication> StartSharedApplicationAsync()
+    private static async Task<SharedApplicationContext> StartSharedApplicationAsync()
     {
         var options = new DistributedApplicationOptions { AssemblyName = typeof(ElasticsearchResource).Assembly.FullName, DisableDashboard = true };
         var builder = DistributedApplication.CreateBuilder(options);
@@ -53,9 +56,10 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 
         var connectionString = await elasticsearch.Resource.GetConnectionStringAsync()
             ?? throw new InvalidOperationException("Could not resolve Elasticsearch connection string.");
-        await WaitForElasticsearchAsync(new Uri(connectionString));
+        var elasticsearchUri = new Uri(connectionString);
+        await WaitForElasticsearchAsync(elasticsearchUri);
 
-        return app;
+        return new SharedApplicationContext(app, elasticsearchUri);
     }
 
     private static async Task WaitForElasticsearchAsync(Uri elasticsearchUri)
@@ -84,6 +88,41 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
         throw new TimeoutException("Timed out waiting for Elasticsearch test container to be ready.");
     }
 
+    private async Task CleanupElasticsearchSliceAsync(Uri elasticsearchUri)
+    {
+        await WaitForElasticsearchAsync(elasticsearchUri);
+
+        using var client = new HttpClient
+        {
+            BaseAddress = elasticsearchUri,
+            Timeout = TimeSpan.FromSeconds(10)
+        };
+
+        foreach (var prefix in s_indexPrefixes)
+        {
+            string pattern = Uri.EscapeDataString($"{AppScope}-{prefix}*");
+            using var listResponse = await client.GetAsync($"/_cat/indices/{pattern}?h=index&format=json&expand_wildcards=all");
+            if (listResponse.StatusCode == HttpStatusCode.NotFound)
+                continue;
+
+            listResponse.EnsureSuccessStatusCode();
+
+            string payloadJson = await listResponse.Content.ReadAsStringAsync();
+            var payload = JsonSerializer.Deserialize<List<CatIndexRecord>>(payloadJson, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            })
+                ?? [];
+
+            foreach (string indexName in payload.Select(record => record.Index).Where(name => !String.IsNullOrEmpty(name)).Distinct())
+            {
+                using var deleteResponse = await client.DeleteAsync($"/{Uri.EscapeDataString(indexName)}?ignore_unavailable=true");
+                if (deleteResponse.StatusCode != HttpStatusCode.NotFound)
+                    deleteResponse.EnsureSuccessStatusCode();
+            }
+        }
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSolutionRelativeContentRoot("src/Exceptionless.Web", "*.slnx");
@@ -103,14 +142,26 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
         return Web.Program.CreateHostBuilder(config, Environments.Development);
     }
 
-    public override ValueTask DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
-        if (!_sliceReleased)
+        try
         {
-            s_pool.Enqueue(InstanceId);
-            _sliceReleased = true;
+            await base.DisposeAsync();
         }
+        finally
+        {
+            if (!_sliceReleased)
+            {
+                s_pool.Enqueue(InstanceId);
+                _sliceReleased = true;
+            }
+        }
+    }
 
-        return base.DisposeAsync();
+    private sealed record SharedApplicationContext(DistributedApplication Application, Uri ElasticsearchUri);
+
+    private sealed class CatIndexRecord
+    {
+        public string Index { get; set; } = String.Empty;
     }
 }
