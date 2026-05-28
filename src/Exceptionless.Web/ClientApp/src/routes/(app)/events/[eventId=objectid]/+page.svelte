@@ -40,4 +40,9 @@
     });
 </script>
 
-<EventsOverview {filterChanged} id={page.params.eventId || ''} {handleError} onNavigate={(newId) => goto(resolve('/(app)/events/[eventId=objectid]', { eventId: newId }))} />
+<EventsOverview
+    {filterChanged}
+    id={page.params.eventId || ''}
+    {handleError}
+    onNavigate={(newId) => goto(resolve('/(app)/events/[eventId=objectid]', { eventId: newId }))}
+/>

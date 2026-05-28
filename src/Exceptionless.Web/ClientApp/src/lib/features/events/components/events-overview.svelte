@@ -3,9 +3,9 @@
     import type { ViewProject } from '$features/projects/models';
     import type { ProblemDetails } from '@exceptionless/fetchclient';
 
+    import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import DateTime from '$comp/formatters/date-time.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import { Button } from '$comp/ui/button';
     import * as Dialog from '$comp/ui/dialog';
     import { Skeleton } from '$comp/ui/skeleton';
@@ -207,22 +207,16 @@
 </script>
 
 <section>
-    <h4 class="text-muted-foreground mb-3 text-sm font-semibold uppercase tracking-wide">Stack</h4>
+    <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
     <StackCard {filterChanged} id={event?.stack_id}></StackCard>
 </section>
 
 <section class="mt-2">
     <div class="mb-2 flex items-center justify-between">
-        <h4 class="text-muted-foreground text-sm font-semibold uppercase tracking-wide">Event</h4>
+        <h4 class="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Event</h4>
         <div class="flex items-center gap-1">
             {#if event}
-                <Button
-                    aria-label="View Event JSON"
-                    onclick={() => (showJsonDialog = true)}
-                    size="icon-sm"
-                    title="View Event JSON"
-                    variant="outline"
-                >
+                <Button aria-label="View Event JSON" onclick={() => (showJsonDialog = true)} size="icon-sm" title="View Event JSON" variant="outline">
                     <Braces class="size-4" />
                 </Button>
             {/if}
@@ -248,14 +242,7 @@
                 >
                     <ChevronLeft class="size-4" />
                 </Button>
-                <Button
-                    aria-label="Newer event"
-                    disabled={!navigation?.nextId}
-                    onclick={navigateToNext}
-                    size="icon-sm"
-                    title="Newer event"
-                    variant="outline"
-                >
+                <Button aria-label="Newer event" disabled={!navigation?.nextId} onclick={navigateToNext} size="icon-sm" title="Newer event" variant="outline">
                     <ChevronRight class="size-4" />
                 </Button>
             {/if}
@@ -268,9 +255,7 @@
                 {#if event}
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">Occurred On</Table.Head>
                     <Table.Cell class="w-4 pr-0"></Table.Cell>
-                    <Table.Cell class="flex items-center"
-                        ><DateTime value={event.date}></DateTime> (<TimeAgo value={event.date}></TimeAgo>)</Table.Cell
-                    >
+                    <Table.Cell class="flex items-center"><DateTime value={event.date}></DateTime> (<TimeAgo value={event.date}></TimeAgo>)</Table.Cell>
                 {:else}
                     <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
                     <Table.Cell class="w-4 pr-0"></Table.Cell>
@@ -373,7 +358,7 @@
             <Dialog.Description class="sr-only">Raw JSON representation of the event</Dialog.Description>
         </Dialog.Header>
         <div class="flex-1 overflow-y-auto rounded-md border p-4">
-            <pre class="text-xs whitespace-pre-wrap break-all">{JSON.stringify(event, null, 2)}</pre>
+            <pre class="text-xs break-all whitespace-pre-wrap">{JSON.stringify(event, null, 2)}</pre>
         </div>
         <Dialog.Footer>
             <CopyToClipboardButton size="sm" title="Copy JSON to Clipboard" value={JSON.stringify(event, null, 2)} variant="outline">

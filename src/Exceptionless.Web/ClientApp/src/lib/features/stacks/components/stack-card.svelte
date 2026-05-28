@@ -79,8 +79,7 @@
     const firstOccurrence = $derived(agg.min<string>(stackCountQuery?.data?.aggregations, 'min_date')?.value ?? stack?.first_occurrence);
     const lastOccurrence = $derived(agg.max<string>(stackCountQuery?.data?.aggregations, 'max_date')?.value ?? stack?.last_occurrence);
 
-    const metricCardClass =
-        'relative justify-between gap-1! bg-muted/50 py-2! ring-1 ring-border';
+    const metricCardClass = 'relative justify-between gap-1! bg-muted/50 py-2! ring-1 ring-border';
     const metricHeaderClass = 'flex flex-row items-center justify-between gap-1.5 px-3 pb-0';
     const metricTitleClass = 'min-w-0 truncate text-xs font-semibold text-muted-foreground';
     const metricIconClass = 'size-3.5 shrink-0 text-muted-foreground';

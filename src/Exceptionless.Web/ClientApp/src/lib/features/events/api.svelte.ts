@@ -54,6 +54,16 @@ export interface DeleteEventsRequest {
     };
 }
 
+export interface EventNavigation {
+    nextId: null | string;
+    previousId: null | string;
+}
+
+export interface EventWithNavigation {
+    event: PersistentEvent;
+    navigation: EventNavigation;
+}
+
 export interface GetEventRequest {
     params?: {
         offset?: string;
@@ -201,23 +211,13 @@ export function getEventQuery(request: GetEventRequest) {
     }));
 }
 
-export interface EventNavigation {
-    nextId: string | null;
-    previousId: string | null;
-}
-
-export interface EventWithNavigation {
-    event: PersistentEvent;
-    navigation: EventNavigation;
-}
-
 export function getEventWithNavigationQuery(request: GetEventRequest) {
     const queryClient = useQueryClient();
     return createQuery<EventWithNavigation, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
         placeholderData: () => {
             const cachedEvent = queryClient.getQueryData<PersistentEvent>(queryKeys.id(request.route.id));
-            return cachedEvent ? { event: cachedEvent, navigation: { previousId: null, nextId: null } } : undefined;
+            return cachedEvent ? { event: cachedEvent, navigation: { nextId: null, previousId: null } } : undefined;
         },
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
@@ -238,8 +238,8 @@ export function getEventWithNavigationQuery(request: GetEventRequest) {
             return {
                 event,
                 navigation: {
-                    previousId: previousUrl ? previousUrl.split('/').pop() ?? null : null,
-                    nextId: nextUrl ? nextUrl.split('/').pop() ?? null : null
+                    nextId: nextUrl ? (nextUrl.split('/').pop() ?? null) : null,
+                    previousId: previousUrl ? (previousUrl.split('/').pop() ?? null) : null
                 }
             };
         },
