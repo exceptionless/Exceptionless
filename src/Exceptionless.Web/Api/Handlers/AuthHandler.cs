@@ -37,7 +37,6 @@ public class AuthHandler(
     ILogger<AuthHandler> logger)
 {
     private readonly ScopedCacheClient _cache = new(cacheClient, "Auth");
-    private static bool _isFirstUserChecked;
     private static readonly TimeSpan IntercomJwtLifetime = TimeSpan.FromMinutes(60);
 
     public async Task<Result<TokenResult>> Handle(LoginMessage message)
@@ -521,14 +520,9 @@ public class AuthHandler(
 
     private async Task AddGlobalAdminRoleIfFirstUserAsync(User user)
     {
-        if (_isFirstUserChecked)
-            return;
-
         bool isFirstUser = await userRepository.CountAsync() == 0;
         if (isFirstUser)
             user.Roles.Add(AuthorizationRoles.GlobalAdmin);
-
-        _isFirstUserChecked = true;
     }
 
     private async Task<Result<TokenResult>> ExternalLoginAsync<TClient>(ExternalAuthInfo authInfo, HttpContext httpContext, string? appId, string? appSecret, Func<IRequestFactory, IClientConfiguration, TClient> createClient) where TClient : OAuth2Client

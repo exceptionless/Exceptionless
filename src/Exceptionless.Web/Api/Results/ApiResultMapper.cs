@@ -92,10 +92,9 @@ public sealed class ApiResultMapper : IMediatorResultMapper<IResult>
         foreach (var error in errors)
         {
             var key = error.Identifier ?? "";
-            if (errorDict.TryGetValue(key, out var existing))
-                errorDict[key] = [.. existing, error.ErrorMessage];
-            else
-                errorDict[key] = [error.ErrorMessage];
+            errorDict[key] = errorDict.TryGetValue(key, out var existing)
+                ? [.. existing, error.ErrorMessage]
+                : [error.ErrorMessage];
         }
 
         return HttpResults.ValidationProblem(errorDict, title: result.Message ?? "Validation failed");
