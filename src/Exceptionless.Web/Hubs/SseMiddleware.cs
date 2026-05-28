@@ -60,51 +60,45 @@ public class SseMiddleware
         context.Response.Headers.ContentType = "text/event-stream";
         context.Response.Headers.CacheControl = "no-cache, no-store";
         context.Response.Headers["X-Accel-Buffering"] = "no"; // nginx
-        context.Response.Headers.Connection = "keep-alive";
 
         // Disable response buffering
         var bufferingFeature = context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpResponseBodyFeature>();
         bufferingFeature?.DisableBuffering();
 
         string connectionId = Guid.NewGuid().ToString("N");
-        var connection = _connectionManager.AddConnection(connectionId, context.Response, context.RequestAborted);
-
-        await OnConnected(context, connectionId);
+        SseConnection? connection = null;
 
         try
         {
+            connection = _connectionManager.AddConnection(connectionId, context.Response, context.RequestAborted);
+            await OnConnected(context, connectionId).ConfigureAwait(false);
+
             // Send initial connected event
             connection.TryWrite(new { type = "Connected", message = new { connection_id = connectionId } });
 
             // Hold the response open until the client disconnects or the connection is aborted
-            await Task.Delay(Timeout.Infinite, connection.ConnectionAborted);
+            await Task.Delay(Timeout.Infinite, connection.ConnectionAborted).ConfigureAwait(false);
         }
         catch (OperationCanceledException) { }
         finally
         {
-            await OnDisconnected(context, connectionId);
-            await _connectionManager.RemoveConnectionAsync(connectionId);
+            if (connection is not null)
+            {
+                await OnDisconnected(context, connectionId).ConfigureAwait(false);
+                await _connectionManager.RemoveConnectionAsync(connectionId).ConfigureAwait(false);
+            }
         }
     }
 
     private async Task OnConnected(HttpContext context, string connectionId)
     {
         _logger.LogTrace("SSE connected {ConnectionId}", connectionId);
+        foreach (string organizationId in context.User.GetOrganizationIds())
+            await _connectionMapping.GroupAddAsync(organizationId, connectionId).ConfigureAwait(false);
 
-        try
-        {
-            foreach (string organizationId in context.User.GetOrganizationIds())
-                await _connectionMapping.GroupAddAsync(organizationId, connectionId);
-
-            string? userId = context.User.GetUserId();
-            if (!String.IsNullOrEmpty(userId))
-                await _connectionMapping.UserIdAddAsync(userId, connectionId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "SSE OnConnected Error: {Message}", ex.Message);
-            throw;
-        }
+        string? userId = context.User.GetUserId();
+        if (!String.IsNullOrEmpty(userId))
+            await _connectionMapping.UserIdAddAsync(userId, connectionId).ConfigureAwait(false);
     }
 
     private async Task OnDisconnected(HttpContext context, string connectionId)
@@ -114,15 +108,19 @@ public class SseMiddleware
         try
         {
             foreach (string organizationId in context.User.GetOrganizationIds())
-                await _connectionMapping.GroupRemoveAsync(organizationId, connectionId);
+                await _connectionMapping.GroupRemoveAsync(organizationId, connectionId).ConfigureAwait(false);
 
             string? userId = context.User.GetUserId();
             if (!String.IsNullOrEmpty(userId))
-                await _connectionMapping.UserIdRemoveAsync(userId, connectionId);
+                await _connectionMapping.UserIdRemoveAsync(userId, connectionId).ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch (OperationCanceledException ex)
         {
-            _logger.LogError(ex, "SSE OnDisconnected Error: {Message}", ex.Message);
+            _logger.LogDebug(ex, "SSE disconnect was canceled for {ConnectionId}", connectionId);
+        }
+        catch (ObjectDisposedException ex)
+        {
+            _logger.LogDebug(ex, "SSE disconnect raced with disposal for {ConnectionId}", connectionId);
         }
     }
 }

@@ -96,7 +96,11 @@ public sealed class SseConnection : IAsyncDisposable
     public void Abort()
     {
         try { _cts.Cancel(); }
-        catch (ObjectDisposedException) { }
+        catch (ObjectDisposedException ex)
+        {
+            _logger.LogDebug(ex, "SSE cancellation token source was already disposed for {ConnectionId}", ConnectionId);
+        }
+
         _queue.Complete();
     }
 
@@ -104,17 +108,16 @@ public sealed class SseConnection : IAsyncDisposable
     {
         if (Interlocked.Exchange(ref _disposeState, 1) != 0)
             return;
-
         Abort();
-        try
+        Abort();
+        using (_queue)
+        using (_cts)
         {
-            await _writeLoop.ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) { }
-        finally
-        {
-            _queue.Dispose();
-            _cts.Dispose();
+            try
+            {
+                await _writeLoop.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) { }
         }
     }
 
@@ -128,15 +131,9 @@ public sealed class SseConnection : IAsyncDisposable
                 if (evt is null)
                     break; // Queue completed
 
-                byte[] bytes;
-                if (evt.Value.IsKeepAlive)
-                {
-                    bytes = KeepAliveBytes;
-                }
-                else
-                {
-                    bytes = System.Text.Encoding.UTF8.GetBytes($"data: {evt.Value.Data}\n\n");
-                }
+                var bytes = evt.Value.IsKeepAlive
+                    ? KeepAliveBytes
+                    : System.Text.Encoding.UTF8.GetBytes($"data: {evt.Value.Data}\n\n");
 
                 await _response.Body.WriteAsync(bytes, ct);
                 await _response.Body.FlushAsync(ct);
@@ -145,10 +142,6 @@ public sealed class SseConnection : IAsyncDisposable
         catch (OperationCanceledException) { }
         catch (ObjectDisposedException) { }
         catch (IOException) { }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(ex, "SSE write loop ended for connection {ConnectionId}", ConnectionId);
-        }
         finally
         {
             // Always signal ConnectionAborted so the middleware's Task.Delay unblocks
@@ -156,8 +149,14 @@ public sealed class SseConnection : IAsyncDisposable
             _queue.Complete();
             if (!_cts.IsCancellationRequested)
             {
-                try { _cts.Cancel(); }
-                catch (ObjectDisposedException) { }
+                try
+                {
+                    _cts.Cancel();
+                }
+                catch (ObjectDisposedException ex)
+                {
+                    _logger.LogDebug(ex, "SSE cancellation token source was already disposed for {ConnectionId}", ConnectionId);
+                }
             }
         }
     }
@@ -221,7 +220,7 @@ public sealed class SseConnection : IAsyncDisposable
                 // notifications do not get crowded out by stale cache invalidations.
                 if (_list.Count >= _capacity)
                 {
-                    var queuedToDrop = !evt.CanDrop ? FindFirstDroppableNode() : null;
+                    var queuedToDrop = FindFirstDroppableNode();
                     RemoveNode(queuedToDrop ?? _list.First!);
                     result = EnqueueResult.DroppedQueuedMessage;
                 }

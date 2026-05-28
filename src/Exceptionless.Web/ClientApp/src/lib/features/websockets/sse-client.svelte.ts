@@ -26,6 +26,8 @@ export const SSE_CONNECTING = 0;
 export const SSE_OPEN = 1;
 export const SSE_CLOSED = 2;
 
+// EventSource does not support custom Authorization headers, so the app uses fetch +
+// ReadableStream to keep bearer tokens out of the query string.
 export class SseClient {
     public readyState = $state<number>(SSE_CLOSED);
 
@@ -48,6 +50,7 @@ export class SseClient {
     private _options: SseClientOptions;
     private _path: string;
     private _url: null | string = null;
+    private abortController: AbortController | null = null;
     private accessToken: null | string = null;
     private authFailed: boolean = false;
     private connectionTimeoutId: null | ReturnType<typeof setTimeout> = null;
@@ -55,9 +58,8 @@ export class SseClient {
     private hasConnectedBefore: boolean = false;
     private reconnectAttempts: number = 0;
     private reconnectTimeoutId: null | ReturnType<typeof setTimeout> = null;
-    private streamGeneration: number = 0;
 
-    private abortController: AbortController | null = null;
+    private streamGeneration: number = 0;
 
     /**
      * @param path - SSE endpoint path (default: '/api/v2/push')
@@ -79,7 +81,14 @@ export class SseClient {
                 this.close(false);
             }
 
-            if (this.accessToken && visibility.visible && this.readyState === SSE_CLOSED && this.reconnectTimeoutId === null && !this.authFailed && !this.forcedClose) {
+            if (
+                this.accessToken &&
+                visibility.visible &&
+                this.readyState === SSE_CLOSED &&
+                this.reconnectTimeoutId === null &&
+                !this.authFailed &&
+                !this.forcedClose
+            ) {
                 this.connect();
             }
         });
@@ -145,6 +154,26 @@ export class SseClient {
 
         // Default: exponential backoff 1s, 2s, 4s, 8s, 16s, max 30s
         return Math.min(1000 * Math.pow(2, attempt - 1), 30000);
+    }
+
+    private scheduleReconnect() {
+        if (this.reconnectTimeoutId !== null || this.authFailed || this.forcedClose || !(this.accessToken ?? accessToken.current)) {
+            this.readyState = SSE_CLOSED;
+            return;
+        }
+
+        this.reconnectAttempts++;
+        const delay = this.getReconnectDelay(this.reconnectAttempts);
+
+        this.readyState = SSE_CONNECTING;
+        this.onConnecting(true);
+        this.onClose();
+
+        clearTimeout(this.reconnectTimeoutId!);
+        this.reconnectTimeoutId = setTimeout(() => {
+            this.reconnectTimeoutId = null;
+            this.connect();
+        }, delay);
     }
 
     private async startStream(signal: AbortSignal, isReconnect: boolean, generation: number) {
@@ -219,7 +248,9 @@ export class SseClient {
                 buffer = messages.pop() ?? '';
 
                 for (const message of messages) {
-                    if (!message.trim()) continue;
+                    if (!message.trim()) {
+                        continue;
+                    }
 
                     // Parse SSE format
                     const lines = message.split('\n');
@@ -273,25 +304,5 @@ export class SseClient {
         if (generation === this.streamGeneration && !this.forcedClose) {
             this.scheduleReconnect();
         }
-    }
-
-    private scheduleReconnect() {
-        if (this.reconnectTimeoutId !== null || this.authFailed || this.forcedClose || !(this.accessToken ?? accessToken.current)) {
-            this.readyState = SSE_CLOSED;
-            return;
-        }
-
-        this.reconnectAttempts++;
-        const delay = this.getReconnectDelay(this.reconnectAttempts);
-
-        this.readyState = SSE_CONNECTING;
-        this.onConnecting(true);
-        this.onClose();
-
-        clearTimeout(this.reconnectTimeoutId!);
-        this.reconnectTimeoutId = setTimeout(() => {
-            this.reconnectTimeoutId = null;
-            this.connect();
-        }, delay);
     }
 }

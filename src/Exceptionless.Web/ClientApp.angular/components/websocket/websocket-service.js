@@ -1,6 +1,7 @@
 (function () {
     "use strict";
 
+    // Deprecated: keep the legacy Angular client on WebSocket during the SSE rollout.
     angular
         .module("exceptionless.websocket", ["app.config", "exceptionless", "exceptionless.auth"])
         .factory("websocketService", function ($ExceptionlessClient, $rootScope, $timeout, authService, BASE_URL) {
@@ -13,16 +14,12 @@
                     this.timeoutInterval = 2000;
                     this.forcedClose = false;
                     this.timedOut = false;
-                    this.hasConnectedOnce = false;
                     this.protocols = [];
                     this.onopen = function (event) {};
                     this.onclose = function (event) {};
                     this.onconnecting = function () {};
                     this.onmessage = function (event) {};
                     this.onerror = function (event) {};
-                    this.ontransportfallback = function (event) {
-                        return false;
-                    };
                     this.url = url;
                     this.protocols = protocols;
                     this.readyState = WebSocket.CONNECTING;
@@ -42,7 +39,6 @@
                     this.ws.onopen = function (event) {
                         clearTimeout(timeout);
                         _this.readyState = WebSocket.OPEN;
-                        _this.hasConnectedOnce = true;
                         reconnectAttempt = false;
                         _this.onopen(event);
                     };
@@ -52,8 +48,6 @@
                         if (_this.forcedClose) {
                             _this.readyState = WebSocket.CLOSED;
                             _this.onclose(event);
-                        } else if (!_this.hasConnectedOnce && _this.ontransportfallback(event) === true) {
-                            _this.readyState = WebSocket.CLOSED;
                         } else {
                             _this.readyState = WebSocket.CONNECTING;
                             _this.onconnecting();
@@ -108,13 +102,27 @@
 
             function startDelayed(delay) {
                 function startImpl() {
-                    if (supportsWebSocket() && startWebSocket()) {
-                        return;
-                    }
+                    _connection = new ResilientWebSocket(getPushUrl());
+                    _connection.onmessage = function (ev) {
+                        var data = ev.data ? JSON.parse(ev.data) : null;
+                        if (!data || !data.type) {
+                            return;
+                        }
 
-                    if (!startSse()) {
-                        $ExceptionlessClient.submitLog("No supported push transport is available.", "warn", source);
-                    }
+                        if (data.message && data.message.change_type >= 0) {
+                            data.message.added = data.message.change_type === 0;
+                            data.message.updated = data.message.change_type === 1;
+                            data.message.deleted = data.message.change_type === 2;
+                        }
+
+                        $rootScope.$emit(data.type, data.message);
+
+                        // This event is fired when a user is added or removed from an organization.
+                        if (data.type === "UserMembershipChanged" && data.message && data.message.organization_id) {
+                            $rootScope.$emit("OrganizationChanged", data.message);
+                            $rootScope.$emit("ProjectChanged", data.message);
+                        }
+                    };
                 }
 
                 if (_connection || _websocketTimeout) {
@@ -124,60 +132,6 @@
                 _websocketTimeout = $timeout(startImpl, delay || 1000);
             }
 
-            function startWebSocket() {
-                // Keep WebSocket as the preferred Angular transport during rollout so existing
-                // release notification refresh behavior stays unchanged until SSE fully replaces it.
-                try {
-                    _connection = new ResilientWebSocket(getWebSocketPushUrl());
-                } catch (error) {
-                    _connection = null;
-                    return false;
-                }
-
-                _connection.ontransportfallback = function () {
-                    return startSse();
-                };
-                _connection.onmessage = function (ev) {
-                    handleMessage(ev.data);
-                };
-
-                return true;
-            }
-
-            function startSse() {
-                if (typeof EventSource === "undefined") {
-                    return false;
-                }
-
-                _connection = new EventSource(getSsePushUrl());
-                _connection.onmessage = function (ev) {
-                    handleMessage(ev.data);
-                };
-
-                return true;
-            }
-
-            function handleMessage(payload) {
-                var data = payload ? JSON.parse(payload) : null;
-                if (!data || !data.type) {
-                    return;
-                }
-
-                if (data.message && data.message.change_type >= 0) {
-                    data.message.added = data.message.change_type === 0;
-                    data.message.updated = data.message.change_type === 1;
-                    data.message.deleted = data.message.change_type === 2;
-                }
-
-                $rootScope.$emit(data.type, data.message);
-
-                // This event is fired when a user is added or removed from an organization.
-                if (data.type === "UserMembershipChanged" && data.message && data.message.organization_id) {
-                    $rootScope.$emit("OrganizationChanged", data.message);
-                    $rootScope.$emit("ProjectChanged", data.message);
-                }
-            }
-
             function stop() {
                 if (_websocketTimeout) {
                     $timeout.cancel(_websocketTimeout);
@@ -185,31 +139,19 @@
                 }
 
                 if (_connection) {
-                    var connection = _connection;
+                    _connection.close();
                     _connection = null;
-
-                    if (connection.close) {
-                        connection.close();
-                    }
                 }
             }
 
-            function supportsWebSocket() {
-                return typeof WebSocket !== "undefined";
-            }
-
-            function getWebSocketPushUrl() {
-                var pushUrl = getSsePushUrl();
+            function getPushUrl() {
+                var pushUrl = BASE_URL + "/api/v2/push?access_token=" + authService.getToken();
                 var protoMatch = /^(https?):\/\//;
                 if (BASE_URL.startsWith("https:")) {
                     return pushUrl.replace(protoMatch, "wss://");
                 }
 
                 return pushUrl.replace(protoMatch, "ws://");
-            }
-
-            function getSsePushUrl() {
-                return BASE_URL + "/api/v2/push?access_token=" + authService.getToken();
             }
 
             var service = {

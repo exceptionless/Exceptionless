@@ -88,7 +88,7 @@ public sealed class WebSocketConnectionManager : IDisposable
         if (!_connections.TryRemove(connectionId, out var socket))
             return;
 
-        if (!CanSend(socket))
+        if (!CanClose(socket))
         {
             AppDiagnostics.PushWebSocketConnectionsClosed.Add(1);
             AppDiagnostics.Gauge("push.connections.websocket.active", _connections.Count);
@@ -189,7 +189,7 @@ public sealed class WebSocketConnectionManager : IDisposable
         {
             await RemoveConnectionAsync(connectionId).ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch (WebSocketException ex)
         {
             _logger.LogDebug(ex, "Error sending websocket keepalive for {ConnectionId}", connectionId);
         }
@@ -211,7 +211,23 @@ public sealed class WebSocketConnectionManager : IDisposable
         {
             await RemoveConnectionAsync(connectionId).ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch (WebSocketException ex)
+        {
+            _logger.LogDebug(ex, "Error sending websocket message for {ConnectionId}", connectionId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogDebug(ex, "Error sending websocket message for {ConnectionId}", connectionId);
+        }
+        catch (OperationCanceledException ex)
+        {
+            _logger.LogDebug(ex, "Error sending websocket message for {ConnectionId}", connectionId);
+        }
+        catch (NotSupportedException ex)
+        {
+            _logger.LogDebug(ex, "Error sending websocket message for {ConnectionId}", connectionId);
+        }
+        catch (EncoderFallbackException ex)
         {
             _logger.LogDebug(ex, "Error sending websocket message for {ConnectionId}", connectionId);
         }
@@ -220,5 +236,10 @@ public sealed class WebSocketConnectionManager : IDisposable
     private static bool CanSend(WebSocket socket)
     {
         return socket.State is WebSocketState.Open;
+    }
+
+    private static bool CanClose(WebSocket socket)
+    {
+        return socket.State is WebSocketState.Open or WebSocketState.CloseReceived;
     }
 }
