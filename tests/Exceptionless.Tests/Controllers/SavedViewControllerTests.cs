@@ -2186,4 +2186,55 @@ public sealed class SavedViewControllerTests : IntegrationTestsBase
             || IsPredefinedSavedView(savedView, "stacks", "Most Used Features");
     }
 
+    [Fact]
+    public async Task PostAsync_WithCustomFieldFilter_SetsUsesPremiumFeatures()
+    {
+        // Arrange — a filter that references an idx.* custom field is a premium filter.
+        var newView = new NewSavedView
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            Name = "Custom Field View",
+            Filter = "idx.my_field:test",
+            ViewType = "events"
+        };
+
+        // Act
+        var result = await SendRequestAsAsync<ViewSavedView>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(newView)
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.UsesPremiumFeatures, "SavedView with idx.* filter should have UsesPremiumFeatures = true");
+    }
+
+    [Fact]
+    public async Task PostAsync_WithFreeFilter_DoesNotSetUsesPremiumFeatures()
+    {
+        // Arrange — a filter that only references free fields.
+        var newView = new NewSavedView
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            Name = "Free Filter View",
+            Filter = "status:open",
+            ViewType = "events"
+        };
+
+        // Act
+        var result = await SendRequestAsAsync<ViewSavedView>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(newView)
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.UsesPremiumFeatures, "SavedView with only free fields should have UsesPremiumFeatures = false");
+    }
 }

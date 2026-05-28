@@ -1,0 +1,104 @@
+<div>
+    <div ng-if="!vm.hasPremiumFeatures" class="alert alert-info">
+        <i class="fa fa-lock"></i>
+        {{::'Custom fields require a paid plan. Upgrade to define and search custom event data.' | translate}}
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered table-fixed b-t">
+            <thead>
+                <tr>
+                    <th>{{::'Name' | translate}}</th>
+                    <th>{{::'Type' | translate}}</th>
+                    <th>{{::'Description' | translate}}</th>
+                    <th class="action">{{::'Actions' | translate}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="field in vm.fields track by field.id">
+                    <td><strong>{{field.name}}</strong></td>
+                    <td><span class="label label-default">{{field.indexType}}</span></td>
+                    <td>{{field.description || '-'}}</td>
+                    <td>
+                        <button
+                            type="button"
+                            role="button"
+                            class="btn btn-sm btn-danger"
+                            ng-click="vm.removeField(field)"
+                            ng-disabled="!vm.hasPremiumFeatures"
+                            title="{{::'Delete Custom Field' | translate}}"
+                        >
+                            <i class="fa fa-fw fa-trash-o"></i>
+                        </button>
+                    </td>
+                </tr>
+                <tr ng-if="vm.fields.length === 0">
+                    <td colspan="4">
+                        <strong>{{::'No custom fields have been defined.' | translate}}</strong>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div ng-if="vm.showAddForm" class="well well-sm m-t">
+        <form name="vm.addFieldForm" class="form-inline" novalidate>
+            <div class="form-group" style="margin-right: 8px">
+                <label class="sr-only" for="fieldName">{{::'Field Name' | translate}}</label>
+                <input
+                    id="fieldName"
+                    type="text"
+                    class="form-control input-sm"
+                    placeholder="{{::'Field Name (e.g. customer_id)' | translate}}"
+                    ng-model="vm.newField.name"
+                    required
+                    maxlength="100"
+                    style="width: 200px"
+                />
+            </div>
+            <div class="form-group" style="margin-right: 8px">
+                <label class="sr-only" for="fieldType">{{::'Index Type' | translate}}</label>
+                <select
+                    id="fieldType"
+                    class="form-control input-sm"
+                    ng-model="vm.newField.indexType"
+                    ng-options="type for type in vm.indexTypes"
+                    style="width: 120px"
+                ></select>
+            </div>
+            <div class="form-group" style="margin-right: 8px">
+                <label class="sr-only" for="fieldDescription">{{::'Description' | translate}}</label>
+                <input
+                    id="fieldDescription"
+                    type="text"
+                    class="form-control input-sm"
+                    placeholder="{{::'Description (optional)' | translate}}"
+                    ng-model="vm.newField.description"
+                    maxlength="500"
+                    style="width: 200px"
+                />
+            </div>
+            <button
+                type="button"
+                class="btn btn-sm btn-primary"
+                ng-click="vm.addField()"
+                ng-disabled="!vm.newField.name || !vm.newField.indexType"
+            >
+                <i class="fa fa-plus"></i> {{::'Add' | translate}}
+            </button>
+            <button type="button" class="btn btn-sm btn-default" ng-click="vm.showAddForm = false">
+                {{::'Cancel' | translate}}
+            </button>
+        </form>
+    </div>
+
+    <button
+        ng-if="!vm.showAddForm"
+        type="button"
+        class="btn btn-primary"
+        ng-click="vm.showAddForm = true"
+        ng-disabled="!vm.hasPremiumFeatures"
+    >
+        <i class="fa fa-plus"></i> {{::'Add Custom Field' | translate}}
+    </button>
+</div>

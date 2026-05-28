@@ -4,4 +4,5 @@ public class OrganizationMaintenanceWorkItem
 {
     public bool UpgradePlans { get; set; }
     public bool RemoveOldUsageStats { get; set; }
+    public bool EnsureSystemCustomFields { get; set; }
 }

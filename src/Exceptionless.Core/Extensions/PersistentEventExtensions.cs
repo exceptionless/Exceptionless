@@ -9,77 +9,6 @@ public static class PersistentEventExtensions
 {
     private static readonly char[] _commaSeparator = [','];
 
-    public static void CopyDataToIndex(this PersistentEvent ev, string[]? keysToCopy = null)
-    {
-        if (ev.Data is null)
-            return;
-
-        ev.Idx ??= new DataDictionary();
-
-        keysToCopy = keysToCopy?.Length > 0 ? keysToCopy : ev.Data.Keys.ToArray();
-
-        foreach (string key in keysToCopy.Where(k => !String.IsNullOrEmpty(k) && ev.Data.ContainsKey(k)))
-        {
-            string field = key.Trim().ToLowerInvariant();
-
-            if (field.StartsWith("@ref:"))
-            {
-                field = field.Substring(5);
-                if (!field.IsValidFieldName())
-                    continue;
-
-                ev.Idx[field + "-r"] = ev.Data[key]?.ToString();
-                continue;
-            }
-
-            if (field.StartsWith('@') || ev.Data[key] is null)
-                continue;
-
-            if (!field.IsValidFieldName())
-                continue;
-
-            var dataType = ev.Data[key]?.GetType();
-            if (dataType is null)
-                continue;
-
-            if (dataType == typeof(bool))
-            {
-                ev.Idx[field + "-b"] = ev.Data[key];
-            }
-            else if (dataType.IsNumeric())
-            {
-                ev.Idx[field + "-n"] = ev.Data[key];
-            }
-            else if (dataType == typeof(DateTime) || dataType == typeof(DateTimeOffset))
-            {
-                ev.Idx[field + "-d"] = ev.Data[key];
-            }
-            else if (dataType == typeof(string))
-            {
-                string? input = ev.Data[key]?.ToString();
-                if (String.IsNullOrEmpty(input) || input.Length >= 1000)
-                    continue;
-
-                if (input.GetJsonType() != JsonType.None)
-                    continue;
-
-                if (input[0] == '"')
-                    input = input.TrimStart('"').TrimEnd('"');
-
-                if (Boolean.TryParse(input, out bool value))
-                    ev.Idx[field + "-b"] = value;
-                else if (DateTimeOffset.TryParse(input, out var dtoValue))
-                    ev.Idx[field + "-d"] = dtoValue;
-                else if (Decimal.TryParse(input, out decimal decValue))
-                    ev.Idx[field + "-n"] = decValue;
-                else if (Double.TryParse(input, out double dblValue) && !Double.IsNaN(dblValue) && !Double.IsInfinity(dblValue))
-                    ev.Idx[field + "-n"] = dblValue;
-                else
-                    ev.Idx[field + "-s"] = input;
-            }
-        }
-    }
-
     public static string? GetEventReference(this PersistentEvent ev, string name)
     {
         if (String.IsNullOrEmpty(name) || ev.Data is null)
@@ -146,7 +75,7 @@ public static class PersistentEventExtensions
         return null;
     }
 
-    public static bool UpdateSessionStart(this PersistentEvent ev, DateTime lastActivityUtc, bool isSessionEnd = false)
+    public static bool UpdateSessionStart(this PersistentEvent ev, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false)
     {
         if (!ev.IsSessionStart())
             return false;
@@ -167,18 +96,21 @@ public static class PersistentEventExtensions
         if (isSessionEnd)
         {
             ev.Data[Event.KnownDataKeys.SessionEnd] = lastActivityUtc;
-            ev.CopyDataToIndex([Event.KnownDataKeys.SessionEnd]);
         }
         else
         {
             ev.Data.Remove(Event.KnownDataKeys.SessionEnd);
-            ev.Idx?.Remove(Event.KnownDataKeys.SessionEnd + "-d");
         }
+
+        if (hasError)
+            ev.Data[Event.KnownDataKeys.SessionHasError] = true;
+        else
+            ev.Data.Remove(Event.KnownDataKeys.SessionHasError);
 
         return true;
     }
 
-    public static PersistentEvent ToSessionStartEvent(this PersistentEvent source, JsonSerializerOptions jsonOptions, DateTime? lastActivityUtc = null, bool? isSessionEnd = null, bool hasPremiumFeatures = true, bool includePrivateInformation = true)
+    public static PersistentEvent ToSessionStartEvent(this PersistentEvent source, JsonSerializerOptions jsonOptions, DateTime? lastActivityUtc = null, bool? isSessionEnd = null, bool includePrivateInformation = true)
     {
         var startEvent = new PersistentEvent
         {
@@ -238,9 +170,6 @@ public static class PersistentEventExtensions
 
         if (lastActivityUtc.HasValue)
             startEvent.UpdateSessionStart(lastActivityUtc.Value, isSessionEnd.GetValueOrDefault());
-
-        if (hasPremiumFeatures)
-            startEvent.CopyDataToIndex([]);
 
         return startEvent;
     }

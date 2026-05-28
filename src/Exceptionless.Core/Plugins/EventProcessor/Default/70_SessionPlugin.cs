@@ -89,7 +89,8 @@ public sealed class SessionPlugin : EventProcessorPluginBase
             });
 
             // try to update an existing session
-            string? sessionStartEventId = await UpdateSessionStartEventAsync(projectId, session.Key, lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent is not null);
+            bool sessionHasError = session.Any(ctx => String.Equals(ctx.Event.Type, Event.KnownTypes.Error, StringComparison.Ordinal));
+            string? sessionStartEventId = await UpdateSessionStartEventAsync(projectId, session.Key, lastSessionEvent.Event.Date.UtcDateTime, sessionEndEvent is not null, sessionHasError);
 
             // do we already have a session start for this session id?
             if (!String.IsNullOrEmpty(sessionStartEventId) && sessionStartEvent is not null)
@@ -179,11 +180,12 @@ public sealed class SessionPlugin : EventProcessorPluginBase
 
                 session.ForEach(s => s.Event.SetSessionId(sessionId));
 
+                bool identitySessionHasError = session.Any(ctx => String.Equals(ctx.Event.Type, Event.KnownTypes.Error, StringComparison.Ordinal));
                 if (isNewSession)
                 {
                     if (sessionStartEvent is not null)
                     {
-                        sessionStartEvent.Event.UpdateSessionStart(lastSessionEvent.Event.Date.UtcDateTime, lastSessionEvent.Event.IsSessionEnd());
+                        sessionStartEvent.Event.UpdateSessionStart(lastSessionEvent.Event.Date.UtcDateTime, lastSessionEvent.Event.IsSessionEnd(), identitySessionHasError);
                         sessionStartEvent.SetProperty("SetSessionStartEventId", true);
                     }
                     else
@@ -203,7 +205,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
                         sessionStartEvent.IsCancelled = true;
                     }
 
-                    await UpdateSessionStartEventAsync(projectId, sessionId, lastSessionEvent.Event.Date.UtcDateTime, lastSessionEvent.Event.IsSessionEnd());
+                    await UpdateSessionStartEventAsync(projectId, sessionId, lastSessionEvent.Event.Date.UtcDateTime, lastSessionEvent.Event.IsSessionEnd(), identitySessionHasError);
                 }
             }
         }
@@ -286,7 +288,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
 
     private async Task<PersistentEvent> CreateSessionStartEventAsync(EventContext startContext, DateTime? lastActivityUtc, bool? isSessionEnd)
     {
-        var startEvent = startContext.Event.ToSessionStartEvent(_jsonOptions, lastActivityUtc, isSessionEnd, startContext.Organization.HasPremiumFeatures, startContext.IncludePrivateInformation);
+        var startEvent = startContext.Event.ToSessionStartEvent(_jsonOptions, lastActivityUtc, isSessionEnd, startContext.IncludePrivateInformation);
         var startEventContexts = new List<EventContext> {
                 new(startEvent, startContext.Organization, startContext.Project)
             };

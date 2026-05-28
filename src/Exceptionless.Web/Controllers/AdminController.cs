@@ -240,6 +240,9 @@ public class AdminController : ExceptionlessApiController
 
         switch (name.ToLowerInvariant())
         {
+            case "ensure-system-custom-fields":
+                await _workItemQueue.EnqueueAsync(new OrganizationMaintenanceWorkItem { EnsureSystemCustomFields = true });
+                break;
             case "fix-stack-stats":
                 var effectiveUtcStart = utcStart ?? _timeProvider.GetUtcNow().UtcDateTime.AddDays(-90);
 

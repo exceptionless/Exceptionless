@@ -542,43 +542,6 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(StackStatus.Ignored, stack.Status);
     }
 
-    [Fact]
-    public void CanIndexExtendedData()
-    {
-        var ev = _eventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: DateTime.UtcNow);
-        ev.Data ??= new DataDictionary();
-        ev.Data.Add("First Name", "Eric"); // invalid field name
-        ev.Data.Add("IsVerified", true);
-        ev.Data.Add("IsVerified1", true.ToString());
-        ev.Data.Add("Age", Int32.MaxValue);
-        ev.Data.Add("Age1", Int32.MaxValue.ToString(CultureInfo.InvariantCulture));
-        ev.Data.Add("AgeDec", Decimal.MaxValue);
-        ev.Data.Add("AgeDec1", Decimal.MaxValue.ToString(CultureInfo.InvariantCulture));
-        ev.Data.Add("AgeDbl", Double.MaxValue);
-        ev.Data.Add("AgeDbl1", Double.MaxValue.ToString("r", CultureInfo.InvariantCulture));
-        ev.Data.Add(" Birthday ", DateTime.MinValue);
-        ev.Data.Add("BirthdayWithOffset", DateTimeOffset.MinValue);
-        ev.Data.Add("@excluded", DateTime.MinValue);
-        ev.Data.Add("Address", new { State = "Texas" });
-        ev.SetSessionId("123456789");
-
-        ev.CopyDataToIndex([]);
-        Assert.NotNull(ev.Idx);
-
-        Assert.False(ev.Idx!.ContainsKey("first-name-s"));
-        Assert.True(ev.Idx.ContainsKey("isverified-b"));
-        Assert.True(ev.Idx.ContainsKey("isverified1-b"));
-        Assert.True(ev.Idx.ContainsKey("age-n"));
-        Assert.True(ev.Idx.ContainsKey("age1-n"));
-        Assert.True(ev.Idx.ContainsKey("agedec-n"));
-        Assert.True(ev.Idx.ContainsKey("agedec1-n"));
-        Assert.True(ev.Idx.ContainsKey("agedbl-n"));
-        Assert.True(ev.Idx.ContainsKey("agedbl1-n"));
-        Assert.True(ev.Idx.ContainsKey("birthday-d"));
-        Assert.True(ev.Idx.ContainsKey("birthdaywithoffset-d"));
-        Assert.True(ev.Idx.ContainsKey("session-r"));
-        Assert.Equal(11, ev.Idx.Count);
-    }
 
     [Fact]
     public async Task SyncStackTagsAsync()

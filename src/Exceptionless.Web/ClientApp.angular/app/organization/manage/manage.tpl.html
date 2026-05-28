@@ -111,6 +111,12 @@
                             </p>
                             <invoices settings="vm.invoices"></invoices>
                         </uib-tab>
+                        <uib-tab heading="{{::'Custom Fields' | translate}}">
+                            <custom-fields
+                                organization-id="vm._organizationId"
+                                has-premium-features="vm.organization.has_premium_features"
+                            ></custom-fields>
+                        </uib-tab>
                     </uib-tabset>
                 </div>
                 <footer class="panel-footer">
