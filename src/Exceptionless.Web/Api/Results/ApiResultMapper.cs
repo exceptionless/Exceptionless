@@ -51,6 +51,9 @@ public sealed class ApiResultMapper : IMediatorResultMapper<IResult>
         if (value is IPagedResult paged)
             return new PagedHttpResult(paged);
 
+        if (value is NotModifiedResponse)
+            return HttpResults.StatusCode(StatusCodes.Status304NotModified);
+
         // Handle WorkInProgressResponse
         if (value is WorkInProgressResponse wip)
             return HttpResults.Json(new { workers = wip.Workers }, statusCode: StatusCodes.Status202Accepted);
@@ -71,6 +74,14 @@ public sealed class ApiResultMapper : IMediatorResultMapper<IResult>
         if (errors is null || errors.Count == 0)
             return HttpResults.Problem(
                 detail: result.Message, statusCode: StatusCodes.Status400BadRequest, title: "Validation failed");
+
+        var planLimitError = errors.FirstOrDefault(error => String.Equals(error.Identifier, "plan_limit", StringComparison.OrdinalIgnoreCase));
+        if (planLimitError is not null)
+            return HttpResults.Problem(statusCode: StatusCodes.Status426UpgradeRequired, title: planLimitError.ErrorMessage);
+
+        var rateLimitError = errors.FirstOrDefault(error => String.Equals(error.Identifier, "rate_limit", StringComparison.OrdinalIgnoreCase));
+        if (rateLimitError is not null)
+            return HttpResults.Problem(statusCode: StatusCodes.Status429TooManyRequests, title: rateLimitError.ErrorMessage);
 
         // Convert to dictionary format matching existing ProblemDetails shape
         var errorDict = new Dictionary<string, string[]>();

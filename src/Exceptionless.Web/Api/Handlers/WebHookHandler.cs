@@ -10,8 +10,8 @@ using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
+using Foundatio.Mediator;
 using Foundatio.Repositories;
-using HttpResults = Microsoft.AspNetCore.Http.Results;
 using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 
 namespace Exceptionless.Web.Api.Handlers;
@@ -27,31 +27,31 @@ public class WebHookHandler(
     private readonly ILogger _logger = loggerFactory.CreateLogger<WebHookHandler>();
     private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
 
-    public async Task<IResult> Handle(GetWebHooksByProject message)
+    public async Task<Result<PagedResult<Exceptionless.Core.Models.WebHook>>> Handle(GetWebHooksByProject message)
     {
         var project = await GetProjectAsync(message.ProjectId);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         int page = GetPage(message.Page);
         int limit = GetLimit(message.Limit);
         var results = await repository.GetByProjectIdAsync(message.ProjectId, o => o.PageNumber(page).PageLimit(limit));
-        return ApiResults.OkWithResourceLinks(HttpContext, results.Documents.ToArray(), results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
+        return new PagedResult<Exceptionless.Core.Models.WebHook>(results.Documents.ToArray(), results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
     }
 
-    public async Task<IResult> Handle(GetWebHookById message)
+    public async Task<Result<Exceptionless.Core.Models.WebHook>> Handle(GetWebHookById message)
     {
         var model = await GetModelAsync(message.Id);
-        return model is null ? HttpResults.NotFound() : HttpResults.Ok(model);
+        return model is null ? Result.NotFound("Web hook not found.") : model;
     }
 
-    public Task<IResult> Handle(CreateWebHook message) => PostImplAsync(message.WebHook);
+    public Task<Result<Exceptionless.Core.Models.WebHook>> Handle(CreateWebHook message) => PostImplAsync(message.WebHook);
 
-    public async Task<IResult> Handle(DeleteWebHooks message)
+    public async Task<Result<ModelActionResults>> Handle(DeleteWebHooks message)
     {
         var items = await GetModelsAsync(message.Ids, useCache: false);
         if (items.Count == 0)
-            return HttpResults.NotFound();
+            return Result.NotFound("No web hooks found.");
 
         var results = new ModelActionResults();
         results.AddNotFound(message.Ids.Except(items.Select(i => i.Id)));
@@ -68,31 +68,36 @@ public class WebHookHandler(
         }
 
         if (deletableItems.Count == 0)
-            return results.Failure.Count == 1 ? PermissionToResult(results.Failure.First()) : HttpResults.BadRequest(results);
+        {
+            if (results.Failure.Count == 1)
+                return Result<ModelActionResults>.FromResult(PermissionToResult(results.Failure.First()));
+
+            return Result.BadRequest("Unable to delete web hooks.");
+        }
 
         await repository.RemoveAsync(deletableItems);
 
         if (results.Failure.Count == 0)
-            return TypedResults.Json(new WorkInProgressResult(), statusCode: StatusCodes.Status202Accepted);
+            return new ModelActionResults();
 
         results.Success.AddRange(deletableItems.Select(i => i.Id));
-        return HttpResults.BadRequest(results);
+        return results;
     }
 
-    public async Task<IResult> Handle(SubscribeWebHook message)
+    public async Task<Result<Exceptionless.Core.Models.WebHook>> Handle(SubscribeWebHook message)
     {
         string? eventType = message.Data.RootElement.TryGetProperty("event", out var eventProp) ? eventProp.GetString() : null;
         string? url = message.Data.RootElement.TryGetProperty("target_url", out var urlProp) ? urlProp.GetString() : null;
         if (String.IsNullOrEmpty(eventType) || String.IsNullOrEmpty(url))
-            return HttpResults.BadRequest();
+            return Result.BadRequest("Webhook subscription event and target_url are required.");
 
         string? projectId = HttpContext.User.GetProjectId();
         if (projectId is null)
-            return HttpResults.BadRequest();
+            return Result.BadRequest("Project id is required.");
 
         string? organizationId = HttpContext.Request.GetDefaultOrganizationId();
         if (organizationId is null)
-            return HttpResults.BadRequest();
+            return Result.BadRequest("Organization id is required.");
 
         var webHook = new NewWebHook
         {
@@ -104,16 +109,16 @@ public class WebHookHandler(
         };
 
         if (!webHook.Url.StartsWith("https://hooks.zapier.com", StringComparison.OrdinalIgnoreCase))
-            return HttpResults.NotFound();
+            return Result.NotFound("Webhook target not found.");
 
         return await PostImplAsync(webHook);
     }
 
-    public async Task<IResult> Handle(UnsubscribeWebHook message)
+    public async Task<Result> Handle(UnsubscribeWebHook message)
     {
         string? targetUrl = message.Data.RootElement.TryGetProperty("target_url", out var urlProp) ? urlProp.GetString() : null;
         if (targetUrl is null || !targetUrl.StartsWith("https://hooks.zapier.com", StringComparison.OrdinalIgnoreCase))
-            return HttpResults.NotFound();
+            return Result.NotFound("Webhook target not found.");
 
         var results = await repository.GetByUrlAsync(targetUrl);
         if (results.Documents.Count > 0)
@@ -126,62 +131,62 @@ public class WebHookHandler(
             await repository.RemoveAsync(results.Documents);
         }
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public IResult Handle(TestWebHook message)
+    public Result<object[]> Handle(TestWebHook message)
     {
-        return HttpResults.Ok(new[] {
+        return new object[] {
             new { id = 1, Message = "Test message 1." },
             new { id = 2, Message = "Test message 2." }
-        });
+        };
     }
 
-    private async Task<IResult> PostImplAsync(NewWebHook value)
+    private async Task<Result<Exceptionless.Core.Models.WebHook>> PostImplAsync(NewWebHook value)
     {
         if (value is null)
-            return HttpResults.BadRequest();
+            return Result.BadRequest("Web hook value is required.");
 
         var mapped = mapper.MapToWebHook(value);
         if (String.IsNullOrEmpty(mapped.OrganizationId) && HttpContext.Request.GetAssociatedOrganizationIds().Count > 0)
             mapped.OrganizationId = HttpContext.Request.GetDefaultOrganizationId()!;
 
-        var permission = await CanAddAsync(mapped);
-        if (!permission.Allowed)
-            return PermissionToResult(permission);
+        var error = await CanAddAsync(mapped);
+        if (error is not null)
+            return error;
 
         if (!IsValidWebHookVersion(mapped.Version))
             mapped.Version = WebHook.KnownVersions.Version2;
 
         var model = await repository.AddAsync(mapped, o => o.Cache());
-        return TypedResults.Created($"/api/v2/webhooks/{model.Id}", model);
+        return Result<Exceptionless.Core.Models.WebHook>.Created(model, $"/api/v2/webhooks/{model.Id}");
     }
 
-    private async Task<PermissionResult> CanAddAsync(WebHook value)
+    private async Task<Result<Exceptionless.Core.Models.WebHook>?> CanAddAsync(Exceptionless.Core.Models.WebHook value)
     {
         if (String.IsNullOrEmpty(value.Url) || value.EventTypes.Length == 0)
-            return PermissionResult.Deny;
+            return Result.Forbidden("Access denied.");
 
         if (String.IsNullOrEmpty(value.ProjectId) && String.IsNullOrEmpty(value.OrganizationId))
-            return PermissionResult.Deny;
+            return Result.Forbidden("Access denied.");
 
         if (!String.IsNullOrEmpty(value.OrganizationId) && !HttpContext.Request.IsInOrganization(value.OrganizationId))
-            return PermissionResult.DenyWithMessage("Invalid organization id specified.");
+            return Result.Invalid(ValidationError.Create("organization_id", "Invalid organization id specified."));
 
         Project? project = null;
         if (!String.IsNullOrEmpty(value.ProjectId))
         {
             project = await GetProjectAsync(value.ProjectId);
             if (project is null)
-                return PermissionResult.DenyWithMessage("Invalid project id specified.");
+                return Result.Invalid(ValidationError.Create("project_id", "Invalid project id specified."));
 
             value.OrganizationId = project.OrganizationId;
         }
 
         if (!await billingManager.HasPremiumFeaturesAsync(project is not null ? project.OrganizationId : value.OrganizationId))
-            return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add integrations.");
+            return Result.Invalid(ValidationError.Create("plan_limit", "Please upgrade your plan to add integrations."));
 
-        return PermissionResult.Allow;
+        return null;
     }
 
     private async Task<PermissionResult> CanDeleteAsync(WebHook value)
@@ -251,12 +256,12 @@ public class WebHookHandler(
         return project is not null;
     }
 
-    private static IResult PermissionToResult(PermissionResult permission)
+    private static Result PermissionToResult(PermissionResult permission)
     {
-        if (String.IsNullOrEmpty(permission.Message))
-            return TypedResults.Problem(statusCode: permission.StatusCode);
+        if (permission.StatusCode is StatusCodes.Status404NotFound)
+            return Result.NotFound(permission.Message ?? "Not found.");
 
-        return TypedResults.Problem(statusCode: permission.StatusCode, title: permission.Message);
+        return Result.Forbidden(permission.Message ?? "Access denied.");
     }
 
     private static bool IsValidWebHookVersion(string version)

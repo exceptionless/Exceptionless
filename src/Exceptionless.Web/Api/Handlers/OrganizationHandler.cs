@@ -22,7 +22,7 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Exceptionless.Web.Utility;
 using Stripe;
-using HttpResults = Microsoft.AspNetCore.Http.Results;
+using Foundatio.Mediator;
 using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 using Invoice = Exceptionless.Web.Models.Invoice;
@@ -52,11 +52,11 @@ public class OrganizationHandler(
     private readonly ILogger _logger = loggerFactory.CreateLogger<OrganizationHandler>();
     private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
 
-    public async Task<IResult> Handle(GetOrganizations message)
+    public async Task<Result<IReadOnlyCollection<ViewOrganization>>> Handle(GetOrganizations message)
     {
         var organizations = await GetModelsAsync(message.Context.Request.GetAssociatedOrganizationIds().ToArray());
         if (organizations.Count == 0)
-            return HttpResults.Ok(Array.Empty<ViewOrganization>());
+            return Result<IReadOnlyCollection<ViewOrganization>>.Success(Array.Empty<ViewOrganization>());
 
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
         organizations = String.IsNullOrWhiteSpace(message.Filter)
@@ -66,12 +66,12 @@ public class OrganizationHandler(
         await AfterResultMapAsync(viewOrganizations);
 
         if (IsStatsMode(message.Mode))
-            return HttpResults.Ok(await PopulateOrganizationStatsAsync(viewOrganizations));
+            return Result<IReadOnlyCollection<ViewOrganization>>.Success(await PopulateOrganizationStatsAsync(viewOrganizations));
 
-        return HttpResults.Ok(viewOrganizations);
+        return Result<IReadOnlyCollection<ViewOrganization>>.Success(viewOrganizations);
     }
 
-    public async Task<IResult> Handle(GetAdminOrganizations message)
+    public async Task<Result<PagedResult<ViewOrganization>>> Handle(GetAdminOrganizations message)
     {
         int page = Pagination.GetPage(message.Page);
         int limit = Pagination.GetLimit(message.Limit);
@@ -80,70 +80,70 @@ public class OrganizationHandler(
         await AfterResultMapAsync(viewOrganizations);
 
         if (IsStatsMode(message.Mode))
-            return ApiResults.OkWithResourceLinks(message.Context, await PopulateOrganizationStatsAsync(viewOrganizations), organizations.HasMore, page, organizations.Total);
+            return new PagedResult<ViewOrganization>(await PopulateOrganizationStatsAsync(viewOrganizations), organizations.HasMore, page, organizations.Total);
 
-        return ApiResults.OkWithResourceLinks(message.Context, viewOrganizations, organizations.HasMore, page, organizations.Total);
+        return new PagedResult<ViewOrganization>(viewOrganizations, organizations.HasMore, page, organizations.Total);
     }
 
-    public async Task<IResult> Handle(GetOrganizationPlanStats message)
+    public async Task<Result<BillingPlanStats>> Handle(GetOrganizationPlanStats message)
     {
-        return HttpResults.Ok(await repository.GetBillingPlanStatsAsync());
+        return await repository.GetBillingPlanStatsAsync();
     }
 
-    public async Task<IResult> Handle(GetOrganizationById message)
+    public async Task<Result<ViewOrganization>> Handle(GetOrganizationById message)
     {
         var organization = await GetModelAsync(message.Id);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         var viewOrganization = mapper.MapToViewOrganization(organization);
         await AfterResultMapAsync([viewOrganization]);
 
         if (IsStatsMode(message.Mode))
-            return HttpResults.Ok(await PopulateOrganizationStatsAsync(viewOrganization));
+            return await PopulateOrganizationStatsAsync(viewOrganization);
 
-        return HttpResults.Ok(viewOrganization);
+        return viewOrganization;
     }
 
-    public async Task<IResult> Handle(CreateOrganization message)
+    public async Task<Result<ViewOrganization>> Handle(CreateOrganization message)
     {
         if (message.Organization is null)
-            return HttpResults.BadRequest();
+            return Result.BadRequest("Organization value is required.");
 
         var model = mapper.MapToOrganization(message.Organization);
-        var permission = await CanAddAsync(model, message.Context);
-        if (!permission.Allowed)
-            return PermissionToResult(permission);
+        var error = await CanAddAsync(model, message.Context);
+        if (error is not null)
+            return error;
 
         model = await AddModelAsync(model, message.Context);
         var viewModel = mapper.MapToViewOrganization(model);
         await AfterResultMapAsync([viewModel]);
-        return TypedResults.Created($"/api/v2/organizations/{model.Id}", viewModel);
+        return Result<ViewOrganization>.Created(viewModel, $"/api/v2/organizations/{model.Id}");
     }
 
-    public async Task<IResult> Handle(UpdateOrganizationMessage message)
+    public async Task<Result<ViewOrganization>> Handle(UpdateOrganizationMessage message)
     {
         var original = await GetModelAsync(message.Id, useCache: false);
         if (original is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         if (!message.Changes.GetChangedPropertyNames().Any())
-            return await OkModelAsync(original);
+            return await MapToViewAsync(original);
 
-        var permission = await CanUpdateAsync(original, message.Changes, message.Context);
-        if (!permission.Allowed)
-            return PermissionToResult(permission);
+        var error = await CanUpdateAsync(original, message.Changes, message.Context);
+        if (error is not null)
+            return error;
 
         message.Changes.Patch(original);
         await repository.SaveAsync(original, o => o.Cache());
-        return await OkModelAsync(original);
+        return await MapToViewAsync(original);
     }
 
-    public async Task<IResult> Handle(DeleteOrganizations message)
+    public async Task<Result<ModelActionResults>> Handle(DeleteOrganizations message)
     {
         var items = await GetModelsAsync(message.Ids, useCache: false);
         if (items.Count == 0)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         var results = new ModelActionResults();
         results.AddNotFound(message.Ids.Except(items.Select(i => i.Id)));
@@ -160,21 +160,21 @@ public class OrganizationHandler(
         }
 
         if (deletableItems.Count == 0)
-            return results.Failure.Count == 1 ? PermissionToResult(results.Failure.First()) : HttpResults.BadRequest(results);
+            return results.Failure.Count == 1 ? Result<ModelActionResults>.FromResult(PermissionToResult(results.Failure.First())) : Result.BadRequest("Unable to delete organizations.");
 
         IEnumerable<string> workIds = await DeleteModelsAsync(deletableItems, message.Context);
         if (results.Failure.Count == 0)
-            return TypedResults.Json(new WorkInProgressResult(workIds), statusCode: StatusCodes.Status202Accepted);
+            return new ModelActionResults { Workers = workIds.ToList() };
 
         results.Workers.AddRange(workIds);
         results.Success.AddRange(deletableItems.Select(i => i.Id));
-        return HttpResults.BadRequest(results);
+        return results;
     }
 
-    public async Task<IResult> Handle(GetInvoice message)
+    public async Task<Result<Invoice>> Handle(GetInvoice message)
     {
         if (!options.StripeOptions.EnableBilling)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Invoice").Identity(GetCurrentUser(message.Context).EmailAddress)
             .Property("User", GetCurrentUser(message.Context)).SetHttpContext(message.Context));
@@ -198,11 +198,11 @@ public class OrganizationHandler(
         }
 
         if (String.IsNullOrEmpty(stripeInvoice?.CustomerId))
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         var organization = await repository.GetByStripeCustomerIdAsync(stripeInvoice.CustomerId);
         if (organization is null || !message.Context.Request.CanAccessOrganization(organization.Id))
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         var invoice = new Invoice
         {
@@ -253,20 +253,20 @@ public class OrganizationHandler(
             }
         }
 
-        return HttpResults.Ok(invoice);
+        return invoice;
     }
 
-    public async Task<IResult> Handle(GetInvoices message)
+    public async Task<Result<PagedResult<InvoiceGridModel>>> Handle(GetInvoices message)
     {
         if (!options.StripeOptions.EnableBilling)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         var organization = await GetModelAsync(message.Id);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         if (String.IsNullOrWhiteSpace(organization.StripeCustomerId))
-            return HttpResults.Ok(new List<InvoiceGridModel>());
+            return new PagedResult<InvoiceGridModel>(new List<InvoiceGridModel>(), false);
 
         string? before = message.Before;
         string? after = message.After;
@@ -277,14 +277,14 @@ public class OrganizationHandler(
 
         var invoiceOptions = new InvoiceListOptions { Customer = organization.StripeCustomerId, Limit = message.Limit + 1, EndingBefore = before, StartingAfter = after };
         var invoices = mapper.MapToInvoiceGridModels(await stripeBillingClient.ListInvoicesAsync(invoiceOptions));
-        return ApiResults.OkWithResourceLinks(message.Context, invoices.Take(message.Limit).ToList(), invoices.Count > message.Limit);
+        return new PagedResult<InvoiceGridModel>(invoices.Take(message.Limit).ToList(), invoices.Count > message.Limit);
     }
 
-    public async Task<IResult> Handle(GetPlans message)
+    public async Task<Result<IReadOnlyCollection<BillingPlan>>> Handle(GetPlans message)
     {
         var organization = await GetModelAsync(message.Id);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         var availablePlans = message.Context.Request.IsGlobalAdmin()
             ? plans.Plans.ToList()
@@ -310,10 +310,10 @@ public class OrganizationHandler(
         else
             availablePlans.Add(currentPlan);
 
-        return HttpResults.Ok(availablePlans);
+        return Result<IReadOnlyCollection<BillingPlan>>.Success(availablePlans);
     }
 
-    public async Task<IResult> Handle(ChangeOrganizationPlan message)
+    public async Task<Result<ChangePlanResult>> Handle(ChangeOrganizationPlan message)
     {
         var model = message.Model ?? new ChangePlanRequest { PlanId = message.PlanId ?? String.Empty };
         if (String.IsNullOrEmpty(model.PlanId) && !String.IsNullOrEmpty(message.PlanId))
@@ -326,34 +326,33 @@ public class OrganizationHandler(
             model.CouponId = message.CouponId;
 
         if (String.IsNullOrEmpty(message.Id) || !message.Context.Request.CanAccessOrganization(message.Id))
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Change Plan").Organization(message.Id)
             .Identity(GetCurrentUser(message.Context).EmailAddress).Property("User", GetCurrentUser(message.Context)).SetHttpContext(message.Context));
 
         if (!options.StripeOptions.EnableBilling)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         var organization = await GetModelAsync(message.Id, useCache: false);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         var plan = billingManager.GetBillingPlan(model.PlanId);
         if (plan is null)
         {
             _logger.LogWarning("Plan {PlanId} not found for organization {OrganizationId}", model.PlanId, message.Id);
-            return HttpResults.ValidationProblem(new Dictionary<string, string[]> { ["general"] = ["Invalid plan. Please select a valid plan."] },
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return Result.Invalid(ValidationError.Create("general", "Invalid plan. Please select a valid plan."));
         }
 
         if (String.Equals(organization.PlanId, plan.Id) && String.Equals(plans.FreePlan.Id, plan.Id))
-            return HttpResults.Ok(ChangePlanResult.SuccessWithMessage("Your plan was not changed as you were already on the free plan."));
+            return ChangePlanResult.SuccessWithMessage("Your plan was not changed as you were already on the free plan.");
 
         if (!String.Equals(organization.PlanId, plan.Id))
         {
             var result = await billingManager.CanDownGradeAsync(organization, plan, GetCurrentUser(message.Context));
             if (!result.Success)
-                return HttpResults.Ok(result);
+                return result;
         }
 
         bool isPaymentMethod = model.StripeToken?.StartsWith("pm_", StringComparison.Ordinal) is true;
@@ -375,7 +374,7 @@ public class OrganizationHandler(
             else if (String.IsNullOrEmpty(organization.StripeCustomerId))
             {
                 if (String.IsNullOrEmpty(model.StripeToken))
-                    return HttpResults.Ok(ChangePlanResult.FailWithMessage("Billing information was not set."));
+                    return ChangePlanResult.FailWithMessage("Billing information was not set.");
 
                 organization.SubscribeDate = timeProvider.GetUtcNow().UtcDateTime;
 
@@ -500,28 +499,28 @@ public class OrganizationHandler(
         catch (StripeException ex)
         {
             _logger.LogCritical(ex, "Error occurred update billing plan: {Message}", ex.Message);
-            return HttpResults.Ok(ChangePlanResult.FailWithMessage("An error occurred while changing plans. Please try again or contact support."));
+            return ChangePlanResult.FailWithMessage("An error occurred while changing plans. Please try again or contact support.");
         }
         catch (Exception ex)
         {
             _logger.LogCritical(ex, "An unexpected error occurred while trying to update your billing plan: {Message}", ex.Message);
-            return HttpResults.Ok(ChangePlanResult.FailWithMessage("An error occurred while changing plans. Please try again."));
+            return ChangePlanResult.FailWithMessage("An error occurred while changing plans. Please try again.");
         }
 
-        return HttpResults.Ok(new ChangePlanResult { Success = true });
+        return new ChangePlanResult { Success = true };
     }
 
-    public async Task<IResult> Handle(AddOrganizationUser message)
+    public async Task<Result<User>> Handle(AddOrganizationUser message)
     {
         if (String.IsNullOrEmpty(message.Id) || !message.Context.Request.CanAccessOrganization(message.Id) || String.IsNullOrEmpty(message.Email))
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         var organization = await GetModelAsync(message.Id);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         if (!await billingManager.CanAddUserAsync(organization))
-            return ApiResults.PlanLimitReached("Please upgrade your plan to add an additional user.");
+            return Result.Invalid(ValidationError.Create("plan_limit", "Please upgrade your plan to add an additional user."));
 
         var user = await userRepository.GetByEmailAddressAsync(message.Email);
         if (user is not null)
@@ -558,21 +557,21 @@ public class OrganizationHandler(
             await mailer.SendOrganizationInviteAsync(GetCurrentUser(message.Context), organization, invite);
         }
 
-        return HttpResults.Ok(new User { EmailAddress = message.Email });
+        return new User { EmailAddress = message.Email };
     }
 
-    public async Task<IResult> Handle(RemoveOrganizationUser message)
+    public async Task<Result> Handle(RemoveOrganizationUser message)
     {
         var organization = await GetModelAsync(message.Id, useCache: false);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         var user = await userRepository.GetByEmailAddressAsync(message.Email);
         if (user is null || !user.OrganizationIds.Contains(message.Id))
         {
             var invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, message.Email, StringComparison.OrdinalIgnoreCase));
             if (invite is null)
-                return HttpResults.Ok();
+                return Result.Success();
 
             organization.Invites.Remove(invite);
             await repository.SaveAsync(organization, o => o.Cache());
@@ -580,11 +579,11 @@ public class OrganizationHandler(
         else
         {
             if (!user.OrganizationIds.Contains(organization.Id))
-                return HttpResults.BadRequest();
+                return Result.BadRequest("Invalid organization user.");
 
             var organizationUsers = await userRepository.GetByOrganizationIdAsync(organization.Id);
             if (organizationUsers.Total is 1)
-                return HttpResults.BadRequest("An organization must contain at least one user.");
+                return Result.BadRequest("An organization must contain at least one user.");
 
             await organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
             await organizationService.RemoveUserSavedViewsAsync(organization.Id, user.Id);
@@ -599,14 +598,14 @@ public class OrganizationHandler(
             });
         }
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(SuspendOrganization message)
+    public async Task<Result> Handle(SuspendOrganization message)
     {
         var organization = await GetModelAsync(message.Id, useCache: false);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         organization.IsSuspended = true;
         organization.SuspensionDate = timeProvider.GetUtcNow().UtcDateTime;
@@ -615,14 +614,14 @@ public class OrganizationHandler(
         organization.SuspensionNotes = message.Notes;
         await repository.SaveAsync(organization, o => o.Cache().Originals());
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(UnsuspendOrganization message)
+    public async Task<Result> Handle(UnsuspendOrganization message)
     {
         var organization = await GetModelAsync(message.Id, useCache: false);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         organization.IsSuspended = false;
         organization.SuspensionDate = null;
@@ -631,95 +630,95 @@ public class OrganizationHandler(
         organization.SuspensionNotes = null;
         await repository.SaveAsync(organization, o => o.Cache().Originals());
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(SetOrganizationData message)
+    public async Task<Result> Handle(SetOrganizationData message)
     {
         if (String.IsNullOrWhiteSpace(message.Key) || String.IsNullOrWhiteSpace(message.Value?.Value) || message.Key.StartsWith('-'))
-            return HttpResults.BadRequest();
+            return Result.BadRequest("Invalid key or value.");
 
         var organization = await GetModelAsync(message.Id, useCache: false);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         organization.Data ??= new DataDictionary();
         organization.Data[message.Key.Trim()] = message.Value.Value.Trim();
         await repository.SaveAsync(organization, o => o.Cache());
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(DeleteOrganizationData message)
+    public async Task<Result> Handle(DeleteOrganizationData message)
     {
         var organization = await GetModelAsync(message.Id, useCache: false);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         if (organization.Data is not null && organization.Data.Remove(message.Key))
             await repository.SaveAsync(organization, o => o.Cache());
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(SetOrganizationFeature message)
+    public async Task<Result> Handle(SetOrganizationFeature message)
     {
         var organization = await GetModelAsync(message.Id, useCache: false);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         var normalizedFeature = message.Feature.Trim().ToLowerInvariant();
         if (String.IsNullOrEmpty(normalizedFeature))
-            return HttpResults.BadRequest("Invalid feature flag.");
+            return Result.BadRequest("Invalid feature flag.");
 
         organization.Features.Add(normalizedFeature);
         await repository.SaveAsync(organization, o => o.Cache());
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(RemoveOrganizationFeature message)
+    public async Task<Result> Handle(RemoveOrganizationFeature message)
     {
         var organization = await GetModelAsync(message.Id, useCache: false);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         var normalizedFeature = message.Feature.Trim().ToLowerInvariant();
         if (String.IsNullOrEmpty(normalizedFeature))
-            return HttpResults.BadRequest("Invalid feature flag.");
+            return Result.BadRequest("Invalid feature flag.");
 
         if (organization.Features.Remove(normalizedFeature))
             await repository.SaveAsync(organization, o => o.Cache());
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(CheckOrganizationName message)
+    public async Task<Result> Handle(CheckOrganizationName message)
     {
         if (await IsOrganizationNameAvailableInternalAsync(message.Name, message.Context))
-            return HttpResults.StatusCode(StatusCodes.Status204NoContent);
+            return Result.NoContent();
 
-        return HttpResults.StatusCode(StatusCodes.Status201Created);
+        return Result.Created();
     }
 
-    private async Task<IResult> OkModelAsync(Organization model)
+    private async Task<ViewOrganization> MapToViewAsync(Organization model)
     {
         var viewModel = mapper.MapToViewOrganization(model);
         await AfterResultMapAsync([viewModel]);
-        return HttpResults.Ok(viewModel);
+        return viewModel;
     }
 
-    private async Task<PermissionResult> CanAddAsync(Organization value, HttpContext httpContext)
+    private async Task<Result<ViewOrganization>?> CanAddAsync(Organization value, HttpContext httpContext)
     {
         if (String.IsNullOrEmpty(value.Name))
-            return PermissionResult.DenyWithMessage("Organization name is required.");
+            return Result.Invalid(ValidationError.Create("name", "Organization name is required."));
 
         if (!await IsOrganizationNameAvailableInternalAsync(value.Name, httpContext))
-            return PermissionResult.DenyWithMessage("A organization with this name already exists.");
+            return Result.Invalid(ValidationError.Create("name", "A organization with this name already exists."));
 
         if (!await billingManager.CanAddOrganizationAsync(GetCurrentUser(httpContext)))
-            return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add an additional organization.");
+            return Result.Invalid(ValidationError.Create("plan_limit", "Please upgrade your plan to add an additional organization."));
 
-        return PermissionResult.Allow;
+        return null;
     }
 
     private async Task<Organization> AddModelAsync(Organization value, HttpContext httpContext)
@@ -744,16 +743,16 @@ public class OrganizationHandler(
         return organization;
     }
 
-    private async Task<PermissionResult> CanUpdateAsync(Organization original, Delta<NewOrganization> changes, HttpContext httpContext)
+    private async Task<Result<ViewOrganization>?> CanUpdateAsync(Organization original, Delta<NewOrganization> changes, HttpContext httpContext)
     {
         var changed = changes.GetEntity();
         if (!await IsOrganizationNameAvailableInternalAsync(changed.Name, httpContext))
-            return PermissionResult.DenyWithMessage("A organization with this name already exists.");
+            return Result.Invalid(ValidationError.Create("name", "A organization with this name already exists."));
 
         if (changes.GetChangedPropertyNames().Contains("OrganizationId"))
-            return PermissionResult.DenyWithMessage("OrganizationId cannot be modified.");
+            return Result.Invalid(ValidationError.Create("organization_id", "OrganizationId cannot be modified."));
 
-        return PermissionResult.Allow;
+        return null;
     }
 
     private async Task<PermissionResult> CanDeleteAsync(Organization value, HttpContext httpContext)
@@ -881,20 +880,15 @@ public class OrganizationHandler(
         return !results.Any(o => String.Equals(o.Name.Trim().ToLowerInvariant(), decodedName, StringComparison.OrdinalIgnoreCase));
     }
 
-    private static IResult PermissionToResult(PermissionResult permission)
+    private static Result PermissionToResult(PermissionResult permission)
     {
+        if (permission.StatusCode == StatusCodes.Status404NotFound)
+            return Result.NotFound(permission.Message ?? "Organization not found.");
+
         if (permission.StatusCode == StatusCodes.Status422UnprocessableEntity)
-        {
-            return HttpResults.ValidationProblem(String.IsNullOrEmpty(permission.Message)
-                ? new Dictionary<string, string[]>()
-                : new Dictionary<string, string[]> { ["general"] = [permission.Message] },
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
+            return Result.Invalid(ValidationError.Create("general", permission.Message ?? "Validation failed."));
 
-        if (String.IsNullOrEmpty(permission.Message))
-            return TypedResults.Problem(statusCode: permission.StatusCode);
-
-        return TypedResults.Problem(statusCode: permission.StatusCode, title: permission.Message);
+        return Result.Forbidden(permission.Message ?? "Access denied.");
     }
 
     private static User GetCurrentUser(HttpContext httpContext) => httpContext.Request.GetUser();

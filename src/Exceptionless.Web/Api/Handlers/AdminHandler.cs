@@ -18,7 +18,7 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Storage;
-using HttpResults = Microsoft.AspNetCore.Http.Results;
+using Foundatio.Mediator;
 
 namespace Exceptionless.Web.Api.Handlers;
 
@@ -43,12 +43,12 @@ public class AdminHandler(
 {
     private readonly ILogger _logger = loggerFactory.CreateLogger<AdminHandler>();
 
-    public Task<IResult> Handle(GetAdminSettings message)
+    public Task<Result<object>> Handle(GetAdminSettings message)
     {
-        return Task.FromResult<IResult>(HttpResults.Ok(appOptions));
+        return Task.FromResult<Result<object>>(appOptions);
     }
 
-    public async Task<IResult> Handle(GetAdminStats message)
+    public async Task<Result<object>> Handle(GetAdminStats message)
     {
         var organizationCountTask = organizationRepository.CountAsync(q => q
             .AggregationsExpression("terms:billing_status date:created_utc~1M"));
@@ -64,16 +64,16 @@ public class AdminHandler(
 
         await Task.WhenAll(organizationCountTask, userCountTask, projectCountTask, stackCountTask, eventCountTask);
 
-        return HttpResults.Ok(new AdminStatsResponse(
+        return new AdminStatsResponse(
             Organizations: await organizationCountTask,
             Users: await userCountTask,
             Projects: await projectCountTask,
             Stacks: await stackCountTask,
             Events: await eventCountTask
-        ));
+        );
     }
 
-    public async Task<IResult> Handle(GetAdminMigrations message)
+    public async Task<Result<object>> Handle(GetAdminMigrations message)
     {
         var result = await migrationStateRepository.GetAllAsync(o => o.SearchAfterPaging().PageLimit(1000));
         var migrationStates = new List<MigrationState>(result.Documents.Count);
@@ -97,38 +97,38 @@ public class AdminHandler(
             .DefaultIfEmpty(-1)
             .Max();
 
-        return HttpResults.Ok(new MigrationsResponse(currentVersion, states));
+        return new MigrationsResponse(currentVersion, states);
     }
 
-    public Task<IResult> Handle(GetAdminEcho message)
+    public Task<Result<object>> Handle(GetAdminEcho message)
     {
         var httpContext = message.Context;
-        return Task.FromResult<IResult>(HttpResults.Ok(new
+        return Task.FromResult<Result<object>>(new
         {
             httpContext.Request.Headers,
             IpAddress = httpContext.Request.GetClientIpAddress()
-        }));
+        });
     }
 
-    public Task<IResult> Handle(GetAdminAssemblies message)
+    public Task<Result<object>> Handle(GetAdminAssemblies message)
     {
-        var details = AssemblyDetail.ExtractAll().Select(AssemblyDetailResponse.FromAssemblyDetail);
-        return Task.FromResult<IResult>(HttpResults.Ok(details));
+        var details = AssemblyDetail.ExtractAll().Select(AssemblyDetailResponse.FromAssemblyDetail).ToArray();
+        return Task.FromResult(Result<object>.Success(details));
     }
 
-    public async Task<IResult> Handle(AdminChangePlan message)
+    public async Task<Result<object>> Handle(AdminChangePlan message)
     {
         var httpContext = message.Context;
         if (String.IsNullOrEmpty(message.OrganizationId) || !httpContext.Request.CanAccessOrganization(message.OrganizationId))
-            return HttpResults.Ok(new ChangePlanResponse(false, "Invalid Organization Id."));
+            return new ChangePlanResponse(false, "Invalid Organization Id.");
 
         var organization = await organizationRepository.GetByIdAsync(message.OrganizationId);
         if (organization is null)
-            return HttpResults.Ok(new ChangePlanResponse(false, "Invalid Organization Id."));
+            return new ChangePlanResponse(false, "Invalid Organization Id.");
 
         var plan = billingManager.GetBillingPlan(message.PlanId);
         if (plan is null)
-            return HttpResults.Ok(new ChangePlanResponse(false, "Invalid PlanId."));
+            return new ChangePlanResponse(false, "Invalid PlanId.");
 
         organization.BillingStatus = !String.Equals(plan.Id, plans.FreePlan.Id) ? BillingStatus.Active : BillingStatus.Trialing;
         organization.RemoveSuspension();
@@ -141,26 +141,26 @@ public class AdminHandler(
             OrganizationId = organization.Id
         });
 
-        return HttpResults.Ok(new ChangePlanResponse(true));
+        return new ChangePlanResponse(true);
     }
 
-    public async Task<IResult> Handle(AdminSetBonus message)
+    public async Task<Result> Handle(AdminSetBonus message)
     {
         var httpContext = message.Context;
         if (String.IsNullOrEmpty(message.OrganizationId) || !httpContext.Request.CanAccessOrganization(message.OrganizationId))
-            return HttpResults.ValidationProblem(new Dictionary<string, string[]> { ["organizationId"] = ["Invalid Organization Id"] }, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return Result.Invalid(ValidationError.Create("organizationId", "Invalid Organization Id"));
 
         var organization = await organizationRepository.GetByIdAsync(message.OrganizationId);
         if (organization is null)
-            return HttpResults.ValidationProblem(new Dictionary<string, string[]> { ["organizationId"] = ["Invalid Organization Id"] }, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return Result.Invalid(ValidationError.Create("organizationId", "Invalid Organization Id"));
 
         billingManager.ApplyBonus(organization, message.BonusEvents, message.Expires);
         await organizationRepository.SaveAsync(organization, o => o.Cache().Originals());
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(AdminRequeue message)
+    public async Task<Result<object>> Handle(AdminRequeue message)
     {
         string path = message.Path ?? @"q\*";
 
@@ -171,10 +171,10 @@ public class AdminHandler(
             enqueued++;
         }
 
-        return HttpResults.Ok(new { Enqueued = enqueued });
+        return new { Enqueued = enqueued };
     }
 
-    public async Task<IResult> Handle(AdminRunMaintenance message)
+    public async Task<Result> Handle(AdminRunMaintenance message)
     {
         switch (message.Name.ToLowerInvariant())
         {
@@ -182,7 +182,7 @@ public class AdminHandler(
                 var effectiveUtcStart = message.UtcStart ?? timeProvider.GetUtcNow().UtcDateTime.AddDays(-90);
 
                 if (message.UtcEnd.HasValue && message.UtcEnd.Value.IsBefore(effectiveUtcStart))
-                    return HttpResults.ValidationProblem(new Dictionary<string, string[]> { ["utc_end"] = ["utcEnd must be greater than or equal to utcStart."] }, statusCode: StatusCodes.Status422UnprocessableEntity);
+                    return Result.Invalid(ValidationError.Create("utc_end", "utcEnd must be greater than or equal to utcStart."));
 
                 await workItemQueue.EnqueueAsync(new FixStackStatsWorkItem
                 {
@@ -223,13 +223,13 @@ public class AdminHandler(
                 });
                 break;
             default:
-                return HttpResults.NotFound();
+                return Result.NotFound("Maintenance action not found.");
         }
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(GetAdminElasticsearch message)
+    public async Task<Result<object>> Handle(GetAdminElasticsearch message)
     {
         var client = configuration.Client;
         var healthTask = client.Cluster.HealthAsync();
@@ -244,7 +244,7 @@ public class AdminHandler(
         var catShardsResponse = await catShardsTask;
 
         if (!healthResponse.IsValid || !statsResponse.IsValid || !catIndicesResponse.IsValid || !catShardsResponse.IsValid)
-            return TypedResults.Problem(title: "Elasticsearch cluster information is unavailable.");
+            return Result.Error("Elasticsearch cluster information is unavailable.");
 
         var unassignedByIndex = (catShardsResponse.Records ?? [])
             .Where(s => string.Equals(s.State, "UNASSIGNED", StringComparison.OrdinalIgnoreCase))
@@ -265,7 +265,7 @@ public class AdminHandler(
             ))
             .ToArray();
 
-        return HttpResults.Ok(new ElasticsearchInfoResponse(
+        return new ElasticsearchInfoResponse(
             Health: new ElasticsearchHealthResponse(
                 Status: (int)healthResponse.Status,
                 ClusterName: healthResponse.ClusterName,
@@ -282,20 +282,20 @@ public class AdminHandler(
                 StoreSizeInBytes: statsResponse.Indices.Store.SizeInBytes
             ),
             IndexDetails: indexDetails
-        ));
+        );
     }
 
-    public async Task<IResult> Handle(GetAdminElasticsearchSnapshots message)
+    public async Task<Result<object>> Handle(GetAdminElasticsearchSnapshots message)
     {
         var client = configuration.Client;
         try
         {
             var repositoryResponse = await client.Cat.RepositoriesAsync();
             if (!repositoryResponse.IsValid)
-                return TypedResults.Problem(title: "Snapshot repository information is unavailable.");
+                return Result.Error("Snapshot repository information is unavailable.");
 
             if (!(repositoryResponse.Records?.Any() ?? false))
-                return HttpResults.Ok(new ElasticsearchSnapshotsResponse([], []));
+                return new ElasticsearchSnapshotsResponse([], []);
 
             var repositoryNames = repositoryResponse.Records
                 .Where(r => !String.IsNullOrEmpty(r.Id))
@@ -350,7 +350,7 @@ public class AdminHandler(
                 .ToArray();
 
             if (successfulSnapshotResults.Length is 0)
-                return TypedResults.Problem(title: "Unable to retrieve snapshot information.");
+                return Result.Error("Unable to retrieve snapshot information.");
 
             var snapshots = successfulSnapshotResults
                 .SelectMany(r => r.Snapshots)
@@ -361,24 +361,24 @@ public class AdminHandler(
                 .Select(r => r.RepositoryName)
                 .ToArray();
 
-            return HttpResults.Ok(new ElasticsearchSnapshotsResponse(successfulRepositoryNames, snapshots));
+            return new ElasticsearchSnapshotsResponse(successfulRepositoryNames, snapshots);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unable to retrieve snapshot information");
-            return TypedResults.Problem(title: "Unable to retrieve snapshot information.");
+            return Result.Error("Unable to retrieve snapshot information.");
         }
     }
 
-    public async Task<IResult> Handle(AdminGenerateSampleEvents message)
+    public async Task<Result<object>> Handle(AdminGenerateSampleEvents message)
     {
         if (message.EventCount < 1 || message.EventCount > 10000)
-            return HttpResults.ValidationProblem(new Dictionary<string, string[]> { ["eventCount"] = ["Event count must be between 1 and 10,000."] }, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return Result.Invalid(ValidationError.Create("eventCount", "Event count must be between 1 and 10,000."));
 
         if (message.DaysBack < 1 || message.DaysBack > 365)
-            return HttpResults.ValidationProblem(new Dictionary<string, string[]> { ["daysBack"] = ["Days back must be between 1 and 365."] }, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return Result.Invalid(ValidationError.Create("daysBack", "Days back must be between 1 and 365."));
 
         await sampleDataService.EnqueueSampleEventsAsync(message.EventCount, message.DaysBack);
-        return HttpResults.Ok(new { Success = true, Message = $"Enqueued generation of {message.EventCount} sample events over {message.DaysBack} days. Events will appear shortly." });
+        return new { Success = true, Message = $"Enqueued generation of {message.EventCount} sample events over {message.DaysBack} days. Events will appear shortly." };
     }
 }

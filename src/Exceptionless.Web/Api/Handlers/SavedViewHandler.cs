@@ -15,7 +15,7 @@ using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Lock;
 using Foundatio.Repositories;
-using HttpResults = Microsoft.AspNetCore.Http.Results;
+using Foundatio.Mediator;
 using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
@@ -34,10 +34,10 @@ public class SavedViewHandler(
 
     private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
 
-    public async Task<IResult> Handle(GetSavedViewsByOrganization message)
+    public async Task<Result<PagedResult<ViewSavedView>>> Handle(GetSavedViewsByOrganization message)
     {
         if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         await EnsurePredefinedSavedViewsCreatedAsync(message.OrganizationId);
 
@@ -47,16 +47,16 @@ public class SavedViewHandler(
         AppDiagnostics.SavedViewsSize.Add((int)results.Total);
 
         var viewModels = MapToViewModels(results.Documents);
-        return ApiResults.OkWithResourceLinks(HttpContext, viewModels, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
+        return new PagedResult<ViewSavedView>(viewModels, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
     }
 
-    public async Task<IResult> Handle(GetSavedViewsByView message)
+    public async Task<Result<PagedResult<ViewSavedView>>> Handle(GetSavedViewsByView message)
     {
         if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         if (!NewSavedView.ValidViewTypes.Contains(message.ViewType))
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         await EnsurePredefinedSavedViewsCreatedAsync(message.OrganizationId);
 
@@ -66,22 +66,22 @@ public class SavedViewHandler(
         AppDiagnostics.SavedViewsViewTypeSize.Add((int)results.Total);
 
         var viewModels = MapToViewModels(results.Documents);
-        return ApiResults.OkWithResourceLinks(HttpContext, viewModels, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
+        return new PagedResult<ViewSavedView>(viewModels, results.HasMore && !NextPageExceedsSkipLimit(page, limit), page, results.Total);
     }
 
-    public async Task<IResult> Handle(GetSavedViewById message)
+    public async Task<Result<ViewSavedView>> Handle(GetSavedViewById message)
     {
         var model = await GetModelAsync(message.Id);
         if (model is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Saved view not found.");
 
-        return OkModel(model);
+        return MapToViewModel(model);
     }
 
-    public async Task<IResult> Handle(CreateSavedView message)
+    public async Task<Result<ViewSavedView>> Handle(CreateSavedView message)
     {
         if (!HttpContext.Request.IsInOrganization(message.OrganizationId))
-            return HttpResults.BadRequest();
+            return Result.BadRequest("Invalid organization.");
 
         var savedView = message.SavedView;
         savedView.OrganizationId = message.OrganizationId;
@@ -91,52 +91,53 @@ public class SavedViewHandler(
         return await PostImplAsync(savedView);
     }
 
-    public async Task<IResult> Handle(CreatePredefinedSavedViews message)
+    public async Task<Result<IReadOnlyCollection<ViewSavedView>>> Handle(CreatePredefinedSavedViews message)
     {
         if (!HttpContext.Request.IsInOrganization(message.OrganizationId))
-            return HttpResults.NotFound();
+            return Result.NotFound("Organization not found.");
 
         var savedViews = await UpsertPredefinedSavedViewsAsync(message.OrganizationId);
-        return HttpResults.Ok(MapToViewModels(savedViews));
+        return MapToViewModels(savedViews);
     }
 
-    public async Task<IResult> Handle(GetPredefinedSavedViews message)
+    public async Task<Result<IReadOnlyCollection<PredefinedSavedViewDefinition>>> Handle(GetPredefinedSavedViews message)
     {
-        return HttpResults.Ok(await GetPredefinedSavedViewsAsync());
+        var definitions = await GetPredefinedSavedViewsAsync();
+        return Result<IReadOnlyCollection<PredefinedSavedViewDefinition>>.Success(definitions);
     }
 
-    public async Task<IResult> Handle(PromoteToPredefinedSavedView message)
+    public async Task<Result<ViewSavedView>> Handle(PromoteToPredefinedSavedView message)
     {
         var source = await repository.GetByIdAsync(message.Id);
         if (source is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Saved view not found.");
 
         var savedView = await UpsertSystemPredefinedSavedViewAsync(source);
-        return HttpResults.Ok(MapToViewModel(savedView));
+        return MapToViewModel(savedView);
     }
 
-    public async Task<IResult> Handle(DeletePredefinedSavedView message)
+    public async Task<Result> Handle(DeletePredefinedSavedView message)
     {
         var source = await repository.GetByIdAsync(message.Id);
         if (source is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Saved view not found.");
 
         await DeleteSystemPredefinedSavedViewAsync(source);
-        return HttpResults.NoContent();
+        return Result.NoContent();
     }
 
-    public async Task<IResult> Handle(UpdateSavedViewMessage message)
+    public async Task<Result<ViewSavedView>> Handle(UpdateSavedViewMessage message)
     {
         var original = await GetModelAsync(message.Id, useCache: false);
         if (original is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Saved view not found.");
 
         if (!message.Changes.GetChangedPropertyNames().Any())
-            return OkModel(original);
+            return MapToViewModel(original);
 
-        var permission = await CanUpdateAsync(original, message.Changes);
-        if (!permission.Allowed)
-            return PermissionToResult(permission);
+        var error = await CanUpdateAsync(original, message.Changes);
+        if (error is not null)
+            return error;
 
         var changedNames = message.Changes.GetChangedPropertyNames();
         message.Changes.Patch(original);
@@ -150,14 +151,14 @@ public class SavedViewHandler(
         original.UpdatedByUserId = GetCurrentUserId();
 
         await repository.SaveAsync(original, o => o.Cache());
-        return OkModel(original);
+        return MapToViewModel(original);
     }
 
-    public async Task<IResult> Handle(DeleteSavedViews message)
+    public async Task<Result<ModelActionResults>> Handle(DeleteSavedViews message)
     {
         var items = await GetModelsAsync(message.Ids, useCache: false);
         if (items.Count == 0)
-            return HttpResults.NotFound();
+            return Result.NotFound("No saved views found.");
 
         var results = new ModelActionResults();
         results.AddNotFound(message.Ids.Except(items.Select(i => i.Id)));
@@ -174,21 +175,21 @@ public class SavedViewHandler(
         }
 
         if (deletableItems.Count == 0)
-            return results.Failure.Count == 1 ? PermissionToResult(results.Failure.First()) : HttpResults.BadRequest(results);
+            return results.Failure.Count == 1 ? Result<ModelActionResults>.FromResult(PermissionToResult(results.Failure.First())) : Result.BadRequest("Unable to delete saved views.");
 
         await repository.RemoveAsync(deletableItems);
 
         if (results.Failure.Count == 0)
-            return TypedResults.Json(new WorkInProgressResult(), statusCode: StatusCodes.Status202Accepted);
+            return new ModelActionResults();
 
         results.Success.AddRange(deletableItems.Select(i => i.Id));
-        return HttpResults.BadRequest(results);
+        return results;
     }
 
-    private async Task<IResult> PostImplAsync(NewSavedView value)
+    private async Task<Result<ViewSavedView>> PostImplAsync(NewSavedView value)
     {
         if (value is null)
-            return HttpResults.BadRequest();
+            return Result.BadRequest("Saved view value is required.");
 
         var mapped = mapper.MapToSavedView(value);
         mapped.Slug = ToSlug(String.IsNullOrWhiteSpace(mapped.Slug) ? mapped.Name : mapped.Slug);
@@ -196,52 +197,52 @@ public class SavedViewHandler(
         if (String.IsNullOrEmpty(mapped.OrganizationId) && HttpContext.Request.GetAssociatedOrganizationIds().Count > 0)
             mapped.OrganizationId = HttpContext.Request.GetDefaultOrganizationId()!;
 
-        var permission = await CanAddAsync(mapped);
-        if (!permission.Allowed)
-            return PermissionToResult(permission);
+        var error = await CanAddAsync(mapped);
+        if (error is not null)
+            return error;
 
         mapped.CreatedByUserId = GetCurrentUserId();
         mapped.Version = 1;
 
         var model = await repository.AddAsync(mapped, o => o.Cache());
         var viewModel = MapToViewModel(model);
-        return TypedResults.Created($"/api/v2/saved-views/{model.Id}", viewModel);
+        return Result<ViewSavedView>.Created(viewModel, $"/api/v2/saved-views/{model.Id}");
     }
 
-    private async Task<PermissionResult> CanAddAsync(SavedView value)
+    private async Task<Result<ViewSavedView>?> CanAddAsync(SavedView value)
     {
         if (String.IsNullOrEmpty(value.OrganizationId) || !HttpContext.Request.IsInOrganization(value.OrganizationId))
-            return PermissionResult.Deny;
+            return Result.Forbidden("Access denied.");
 
         var count = await repository.CountByOrganizationIdAsync(value.OrganizationId);
         if (count >= MaxViewsPerOrganization)
-            return PermissionResult.DenyWithMessage($"Organization is limited to {MaxViewsPerOrganization} saved views.");
+            return Result.Invalid(ValidationError.Create("general", $"Organization is limited to {MaxViewsPerOrganization} saved views."));
 
         if (String.IsNullOrWhiteSpace(value.Slug))
-            return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "URL name cannot be empty. Use at least one letter or number.");
+            return Result.Invalid(ValidationError.Create("slug", "URL name cannot be empty. Use at least one letter or number."));
 
         if (IsReservedSlug(value.Slug))
-            return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "URL name cannot look like an event or issue id.");
+            return Result.Invalid(ValidationError.Create("general", "URL name cannot look like an event or issue id."));
 
         if (!IsValidSlug(value.Slug))
-            return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "URL name can only contain lowercase letters, numbers, and single dashes.");
+            return Result.Invalid(ValidationError.Create("general", "URL name can only contain lowercase letters, numbers, and single dashes."));
 
         if (await NameExistsAsync(value.OrganizationId, value.ViewType, value.Name, null))
-            return PermissionResult.DenyWithStatus(StatusCodes.Status409Conflict, $"A saved view named '{value.Name.Trim()}' already exists.");
+            return Result.Conflict($"A saved view named '{value.Name.Trim()}' already exists.");
 
         if (await SlugExistsAsync(value.OrganizationId, value.ViewType, value.Slug, null))
-            return PermissionResult.DenyWithStatus(StatusCodes.Status409Conflict, $"A saved view with URL name '{value.Slug}' already exists.");
+            return Result.Conflict($"A saved view with URL name '{value.Slug}' already exists.");
 
         if (!HttpContext.Request.CanAccessOrganization(value.OrganizationId))
-            return PermissionResult.DenyWithMessage("Invalid organization id specified.");
+            return Result.Invalid(ValidationError.Create("organization_id", "Invalid organization id specified."));
 
-        return PermissionResult.Allow;
+        return null;
     }
 
-    private async Task<PermissionResult> CanUpdateAsync(SavedView original, Delta<UpdateSavedView> changes)
+    private async Task<Result<ViewSavedView>?> CanUpdateAsync(SavedView original, Delta<UpdateSavedView> changes)
     {
         if (original.UserId is not null && original.UserId != GetCurrentUserId() && !HttpContext.User.IsInRole(AuthorizationRoles.GlobalAdmin))
-            return PermissionResult.DenyWithNotFound(original.Id);
+            return Result.NotFound("Saved view not found.");
 
         var changedNames = changes.GetChangedPropertyNames();
 
@@ -249,14 +250,14 @@ public class SavedViewHandler(
             && changes.TryGetPropertyValue(nameof(UpdateSavedView.Name), out object? nameValue)
             && nameValue is string name && String.IsNullOrWhiteSpace(name))
         {
-            return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "Name cannot be empty or whitespace.");
+            return Result.Invalid(ValidationError.Create("name", "Name cannot be empty or whitespace."));
         }
 
         if (changedNames.Contains(nameof(UpdateSavedView.Slug))
             && changes.TryGetPropertyValue(nameof(UpdateSavedView.Slug), out object? slugValue)
             && (slugValue is not string slug || String.IsNullOrWhiteSpace(slug)))
         {
-            return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "URL name cannot be empty. Use at least one letter or number.");
+            return Result.Invalid(ValidationError.Create("slug", "URL name cannot be empty. Use at least one letter or number."));
         }
 
         var lengthResult = ValidateStringLength(changes, changedNames, nameof(UpdateSavedView.Name), 100)
@@ -266,14 +267,14 @@ public class SavedViewHandler(
             ?? ValidateStringLength(changes, changedNames, nameof(UpdateSavedView.Sort), 100)
             ?? ValidateStringLength(changes, changedNames, nameof(UpdateSavedView.FilterDefinitions), SavedView.MaxFilterDefinitionsLength);
         if (lengthResult is not null)
-            return lengthResult;
+            return Result<ViewSavedView>.FromResult(lengthResult);
 
         if (changedNames.Contains(nameof(UpdateSavedView.Name))
             && changes.TryGetPropertyValue(nameof(UpdateSavedView.Name), out nameValue)
             && nameValue is string changedName
             && await NameExistsAsync(original.OrganizationId, original.ViewType, changedName, original.Id))
         {
-            return PermissionResult.DenyWithStatus(StatusCodes.Status409Conflict, $"A saved view named '{changedName.Trim()}' already exists.");
+            return Result.Conflict($"A saved view named '{changedName.Trim()}' already exists.");
         }
 
         if (changedNames.Contains(nameof(UpdateSavedView.Slug))
@@ -282,13 +283,13 @@ public class SavedViewHandler(
         {
             var normalizedSlug = ToSlug(changedSlug);
             if (IsReservedSlug(normalizedSlug))
-                return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "URL name cannot look like an event or issue id.");
+                return Result.Invalid(ValidationError.Create("general", "URL name cannot look like an event or issue id."));
 
             if (!IsValidSlug(normalizedSlug))
-                return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "URL name can only contain lowercase letters, numbers, and single dashes.");
+                return Result.Invalid(ValidationError.Create("general", "URL name can only contain lowercase letters, numbers, and single dashes."));
 
             if (await SlugExistsAsync(original.OrganizationId, original.ViewType, normalizedSlug, original.Id))
-                return PermissionResult.DenyWithStatus(StatusCodes.Status409Conflict, $"A saved view with URL name '{normalizedSlug}' already exists.");
+                return Result.Conflict($"A saved view with URL name '{normalizedSlug}' already exists.");
         }
 
         if (changedNames.Contains(nameof(UpdateSavedView.FilterDefinitions))
@@ -296,7 +297,7 @@ public class SavedViewHandler(
             && filterDefsValue is string filterDefs
             && !NewSavedView.IsValidJsonArray(filterDefs))
         {
-            return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, "FilterDefinitions must be a valid JSON array.");
+            return Result.Invalid(ValidationError.Create("filter_definitions", "FilterDefinitions must be a valid JSON array."));
         }
 
         if (changedNames.Contains(nameof(UpdateSavedView.Columns)) || changedNames.Contains(nameof(UpdateSavedView.ColumnOrder)))
@@ -307,17 +308,17 @@ public class SavedViewHandler(
             var validationError = ValidateColumns(original.ViewType, patchedChanges);
             if (validationError is not null)
             {
-                return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, validationError.ErrorMessage ?? "Invalid column keys.");
+                return Result.Invalid(ValidationError.Create("columns", validationError.ErrorMessage ?? "Invalid column keys."));
             }
         }
 
         if (!HttpContext.Request.CanAccessOrganization(original.OrganizationId))
-            return PermissionResult.DenyWithMessage("Invalid organization id specified.");
+            return Result.Invalid(ValidationError.Create("organization_id", "Invalid organization id specified."));
 
         if (changedNames.Contains("OrganizationId"))
-            return PermissionResult.DenyWithMessage("OrganizationId cannot be modified.");
+            return Result.Invalid(ValidationError.Create("organization_id", "OrganizationId cannot be modified."));
 
-        return PermissionResult.Allow;
+        return null;
     }
 
     private PermissionResult CanDelete(SavedView value)
@@ -358,19 +359,13 @@ public class SavedViewHandler(
         return models.Where(m => HttpContext.Request.CanAccessOrganization(m.OrganizationId)).ToList();
     }
 
-    private IResult OkModel(SavedView model)
-    {
-        var viewModel = MapToViewModel(model);
-        AfterResultMap([viewModel]);
-        return HttpResults.Ok(viewModel);
-    }
-
     private ViewSavedView MapToViewModel(SavedView model)
     {
         var viewModel = mapper.MapToViewSavedView(model);
         if (String.IsNullOrWhiteSpace(viewModel.Slug))
             viewModel.Slug = ToFallbackSlug(viewModel.Name, viewModel.Id);
 
+        AfterResultMap([viewModel]);
         return viewModel;
     }
 
@@ -384,27 +379,27 @@ public class SavedViewHandler(
             model.Data?.RemoveSensitiveData();
     }
 
-    private static IResult PermissionToResult(PermissionResult permission)
+    private static Result PermissionToResult(PermissionResult permission)
     {
+        if (permission.StatusCode is StatusCodes.Status404NotFound)
+            return Result.NotFound(permission.Message ?? "Saved view not found.");
+
+        if (permission.StatusCode is StatusCodes.Status409Conflict)
+            return Result.Conflict(permission.Message ?? "Conflict.");
+
         if (permission.StatusCode is StatusCodes.Status422UnprocessableEntity)
-            return HttpResults.ValidationProblem(String.IsNullOrEmpty(permission.Message)
-                ? new Dictionary<string, string[]>()
-                : new Dictionary<string, string[]> { ["general"] = [permission.Message] },
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return Result.Invalid(ValidationError.Create("general", permission.Message ?? "Validation failed."));
 
-        if (String.IsNullOrEmpty(permission.Message))
-            return TypedResults.Problem(statusCode: permission.StatusCode);
-
-        return TypedResults.Problem(statusCode: permission.StatusCode, title: permission.Message);
+        return Result.Forbidden(permission.Message ?? "Access denied.");
     }
 
-    private static PermissionResult? ValidateStringLength(Delta<UpdateSavedView> changes, IEnumerable<string> changedNames, string propertyName, int maxLength)
+    private static Result? ValidateStringLength(Delta<UpdateSavedView> changes, IEnumerable<string> changedNames, string propertyName, int maxLength)
     {
         if (changedNames.Contains(propertyName)
             && changes.TryGetPropertyValue(propertyName, out object? value)
             && value is string s && s.Length > maxLength)
         {
-            return PermissionResult.DenyWithStatus(StatusCodes.Status422UnprocessableEntity, $"{propertyName} cannot exceed {maxLength} characters.");
+            return Result.Invalid(ValidationError.Create(propertyName.ToLowerInvariant(), $"{propertyName} cannot exceed {maxLength} characters."));
         }
 
         return null;

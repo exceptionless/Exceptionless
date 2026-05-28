@@ -14,7 +14,7 @@ using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
 using Foundatio.Repositories;
-using HttpResults = Microsoft.AspNetCore.Http.Results;
+using Foundatio.Mediator;
 using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 
 namespace Exceptionless.Web.Api.Handlers;
@@ -35,38 +35,38 @@ public class UserHandler(
     private readonly ILogger _logger = loggerFactory.CreateLogger<UserHandler>();
     private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
 
-    public async Task<IResult> Handle(GetCurrentUser message)
+    public async Task<Result<ViewCurrentUser>> Handle(GetCurrentUser message)
     {
         var currentUser = await GetModelAsync(GetCurrentUserId());
         if (currentUser is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("User not found.");
 
-        return HttpResults.Ok(new ViewCurrentUser(currentUser, intercomOptions));
+        return new ViewCurrentUser(currentUser, intercomOptions);
     }
 
-    public async Task<IResult> Handle(GetUserById message)
+    public async Task<Result<object>> Handle(GetUserById message)
     {
         var model = await GetModelAsync(message.Id);
         if (model is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("User not found.");
 
-        return OkModel(model);
+        return Result<object>.Success(MapToView(model));
     }
 
-    public async Task<IResult> Handle(GetUsersByOrganization message)
+    public async Task<Result<PagedResult<ViewUser>>> Handle(GetUsersByOrganization message)
     {
         if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
-            return HttpResults.NotFound();
+            return Result.NotFound("User not found.");
 
         var organization = await organizationRepository.GetByIdAsync(message.OrganizationId, o => o.Cache());
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("User not found.");
 
         int page = GetPage(message.Page);
         int limit = GetLimit(message.Limit);
         int skip = GetSkip(page, limit);
         if (skip > 1000)
-            return HttpResults.Ok(Enumerable.Empty<ViewUser>());
+            return new PagedResult<ViewUser>(Array.Empty<ViewUser>(), false, page, 0);
 
         var results = await repository.GetByOrganizationIdAsync(message.OrganizationId, o => o.PageLimit(1000));
         var users = mapper.MapToViewUsers(results.Documents);
@@ -85,17 +85,17 @@ public class UserHandler(
 
         long total = results.Total + organization.Invites.Count;
         var pagedUsers = users.Skip(skip).Take(limit).ToList();
-        return ApiResults.OkWithResourceLinks(HttpContext, pagedUsers, total > GetSkip(page + 1, limit), page, total);
+        return new PagedResult<ViewUser>(pagedUsers, total > GetSkip(page + 1, limit), page, total);
     }
 
-    public async Task<IResult> Handle(UpdateUserMessage message)
+    public async Task<Result<object>> Handle(UpdateUserMessage message)
     {
         var original = await GetModelAsync(message.Id, useCache: false);
         if (original is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("User not found.");
 
         if (!message.Changes.GetChangedPropertyNames().Any())
-            return OkModel(original);
+            return Result<object>.Success(MapToView(original));
 
         var permission = CanUpdate(original, message.Changes);
         if (permission is not null)
@@ -103,45 +103,42 @@ public class UserHandler(
 
         message.Changes.Patch(original);
         await repository.SaveAsync(original, o => o.Cache());
-        return OkModel(original);
+        return Result<object>.Success(MapToView(original));
     }
 
-    public Task<IResult> Handle(DeleteCurrentUser message)
+    public Task<Result<ModelActionResults>> Handle(DeleteCurrentUser message)
     {
         string userId = GetCurrentUserId();
         string[] userIds = !String.IsNullOrEmpty(userId) ? [userId] : [];
         return DeleteImplAsync(userIds);
     }
 
-    public Task<IResult> Handle(DeleteUsers message)
+    public Task<Result<ModelActionResults>> Handle(DeleteUsers message)
     {
         return DeleteImplAsync(message.Ids);
     }
 
-    public async Task<IResult> Handle(UpdateEmailAddress message)
+    public async Task<Result<UpdateEmailAddressResult>> Handle(UpdateEmailAddress message)
     {
         var user = await GetModelAsync(message.Id, false);
         if (user is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("User not found.");
 
         using var _ = _logger.BeginScope(new ExceptionlessState().Property("User", user).SetHttpContext(HttpContext));
 
         string email = message.Email.Trim().ToLowerInvariant();
         var currentUser = HttpContext.Request.GetUser();
         if (String.Equals(currentUser.EmailAddress, email, StringComparison.InvariantCultureIgnoreCase))
-            return HttpResults.Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
+            return new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified };
 
         // Only allow 3 email address updates per hour period by a single user.
         string updateEmailAddressAttemptsCacheKey = $"{currentUser.Id}:attempts";
         long attempts = await _cache.IncrementAsync(updateEmailAddressAttemptsCacheKey, 1, timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromHours(1)));
         if (attempts > 3)
-            return ApiResults.TooManyRequests("Unable to update email address. Please try later.");
+            return Result.Invalid(ValidationError.Create("rate_limit", "Unable to update email address. Please try later."));
 
         if (!await IsEmailAddressAvailableInternalAsync(email))
-            return HttpResults.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["email_address"] = ["A user already exists with this email address."]
-            }, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return Result.Invalid(ValidationError.Create("email_address", "A user already exists with this email address."));
 
         user.ResetPasswordResetToken();
         user.EmailAddress = email;
@@ -164,48 +161,45 @@ public class UserHandler(
         if (!user.IsEmailAddressVerified)
             await ResendVerificationEmailInternalAsync(user);
 
-        return HttpResults.Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
+        return new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified };
     }
 
-    public async Task<IResult> Handle(VerifyEmailAddress message)
+    public async Task<Result> Handle(VerifyEmailAddress message)
     {
         var user = await repository.GetByVerifyEmailAddressTokenAsync(message.Token);
         if (user is null)
         {
             var currentUser = HttpContext.Request.GetUser();
             if (currentUser.IsEmailAddressVerified)
-                return HttpResults.Ok();
+                return Result.Success();
 
-            return HttpResults.NotFound();
+            return Result.NotFound("User not found.");
         }
 
         if (!user.HasValidVerifyEmailAddressTokenExpiration(timeProvider))
-            return HttpResults.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["verify_email_address_token_expiration"] = ["Verify Email Address Token has expired."]
-            }, statusCode: StatusCodes.Status422UnprocessableEntity);
+            return Result.Invalid(ValidationError.Create("verify_email_address_token_expiration", "Verify Email Address Token has expired."));
 
         user.MarkEmailAddressVerified();
         await repository.SaveAsync(user, o => o.Cache());
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(ResendVerificationEmail message)
+    public async Task<Result> Handle(ResendVerificationEmail message)
     {
         var user = await GetModelAsync(message.Id, false);
         if (user is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("User not found.");
 
         if (!user.IsEmailAddressVerified)
         {
             await ResendVerificationEmailInternalAsync(user);
         }
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(UnverifyEmailAddresses message)
+    public async Task<Result> Handle(UnverifyEmailAddresses message)
     {
         using var reader = new StreamReader(HttpContext.Request.Body);
         string[] emailAddresses = (await reader.ReadToEndAsync()).SplitAndTrim([',']);
@@ -224,14 +218,14 @@ public class UserHandler(
             _logger.LogInformation("User {UserId} with email address {EmailAddress} is now unverified", user.Id, emailAddress);
         }
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(AddAdminRole message)
+    public async Task<Result> Handle(AddAdminRole message)
     {
         var user = await GetModelAsync(message.Id, false);
         if (user is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("User not found.");
 
         if (!user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
         {
@@ -239,28 +233,28 @@ public class UserHandler(
             await repository.SaveAsync(user, o => o.Cache());
         }
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(RemoveAdminRole message)
+    public async Task<Result> Handle(RemoveAdminRole message)
     {
         var user = await GetModelAsync(message.Id, false);
         if (user is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("User not found.");
 
         if (user.Roles.Remove(AuthorizationRoles.GlobalAdmin))
         {
             await repository.SaveAsync(user, o => o.Cache());
         }
 
-        return HttpResults.StatusCode(StatusCodes.Status204NoContent);
+        return Result.NoContent();
     }
 
-    private async Task<IResult> DeleteImplAsync(string[] ids)
+    private async Task<Result<ModelActionResults>> DeleteImplAsync(string[] ids)
     {
         var items = await GetModelsAsync(ids, useCache: false);
         if (items.Count == 0)
-            return HttpResults.NotFound();
+            return Result.NotFound("User not found.");
 
         var results = new ModelActionResults();
         results.AddNotFound(ids.Except(items.Select(i => i.Id)));
@@ -277,7 +271,7 @@ public class UserHandler(
         }
 
         if (deletableItems.Count == 0)
-            return results.Failure.Count == 1 ? PermissionToResult(results.Failure.First()) : HttpResults.BadRequest(results);
+            return results.Failure.Count == 1 ? Result<ModelActionResults>.FromResult(PermissionToResult(results.Failure.First())) : Result.BadRequest("Unable to delete users.");
 
         foreach (var user in deletableItems)
         {
@@ -288,10 +282,10 @@ public class UserHandler(
         await repository.RemoveAsync(deletableItems);
 
         if (results.Failure.Count == 0)
-            return TypedResults.Json(new WorkInProgressResult(), statusCode: StatusCodes.Status202Accepted);
+            return new ModelActionResults();
 
         results.Success.AddRange(deletableItems.Select(i => i.Id));
-        return HttpResults.BadRequest(results);
+        return results;
     }
 
     private PermissionResult CanDelete(User value)
@@ -338,29 +332,29 @@ public class UserHandler(
         return filteredModels.ToList();
     }
 
-    private IResult OkModel(User model)
+    private object MapToView(User model)
     {
         if (String.Equals(GetCurrentUserId(), model.Id))
         {
             var currentUserViewModel = new ViewCurrentUser(model, intercomOptions);
             AfterResultMap([currentUserViewModel]);
-            return HttpResults.Ok(currentUserViewModel);
+            return currentUserViewModel;
         }
 
         var viewModel = mapper.MapToViewUser(model);
         AfterResultMap([viewModel]);
-        return HttpResults.Ok(viewModel);
+        return viewModel;
     }
 
-    private IResult? CanUpdate(User original, Delta<UpdateUser> changes)
+    private Result<object>? CanUpdate(User original, Delta<UpdateUser> changes)
     {
         // Users don't have a single OrganizationId - only check if not global admin and not self
         if (!HttpContext.Request.CanAccessOrganization(original.OrganizationIds.FirstOrDefault() ?? "")
             && !HttpContext.Request.IsGlobalAdmin() && original.Id != GetCurrentUserId())
-            return PermissionToResult(PermissionResult.DenyWithMessage("Invalid organization id specified."));
+            return Result<object>.FromResult(Result.Invalid(ValidationError.Create("organization_id", "Invalid organization id specified.")));
 
         if (changes.GetChangedPropertyNames().Contains("OrganizationId"))
-            return PermissionToResult(PermissionResult.DenyWithMessage("OrganizationId cannot be modified."));
+            return Result<object>.FromResult(Result.Invalid(ValidationError.Create("organization_id", "OrganizationId cannot be modified.")));
 
         return null;
     }
@@ -393,18 +387,15 @@ public class UserHandler(
             model.Data?.RemoveSensitiveData();
     }
 
-    private static IResult PermissionToResult(PermissionResult permission)
+    private static Result PermissionToResult(PermissionResult permission)
     {
+        if (permission.StatusCode is StatusCodes.Status404NotFound)
+            return Result.NotFound(permission.Message ?? "User not found.");
+
         if (permission.StatusCode is StatusCodes.Status422UnprocessableEntity)
-            return HttpResults.ValidationProblem(String.IsNullOrEmpty(permission.Message)
-                ? new Dictionary<string, string[]>()
-                : new Dictionary<string, string[]> { ["general"] = [permission.Message] },
-                statusCode: StatusCodes.Status422UnprocessableEntity);
+            return Result.Invalid(ValidationError.Create("general", permission.Message ?? "Validation failed."));
 
-        if (String.IsNullOrEmpty(permission.Message))
-            return TypedResults.Problem(statusCode: permission.StatusCode);
-
-        return TypedResults.Problem(statusCode: permission.StatusCode, title: permission.Message);
+        return Result.Forbidden(permission.Message ?? "Access denied.");
     }
 
     private static int GetPage(int page) => page < 1 ? 1 : page;

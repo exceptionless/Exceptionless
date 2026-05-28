@@ -3,12 +3,12 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Seed;
 using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Infrastructure;
+using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Controllers;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
-using IMediator = Foundatio.Mediator.IMediator;
+using Foundatio.Mediator;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using SavedViewMessages = Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Utility.OpenApi;
 
@@ -24,7 +24,7 @@ public static class SavedViewEndpoints
             .WithTags("SavedView");
 
         group.MapGet("organizations/{organizationId:objectid}/saved-views", async (string organizationId, IMediator mediator, int page = 1, int limit = 25)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SavedViewMessages.GetSavedViewsByOrganization(organizationId, page, limit)))
+            => (await mediator.InvokeAsync<Result<PagedResult<ViewSavedView>>>(new SavedViewMessages.GetSavedViewsByOrganization(organizationId, page, limit))).ToHttpResult())
         .Produces<IReadOnlyCollection<ViewSavedView>>()
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Get by organization")
@@ -40,7 +40,7 @@ public static class SavedViewEndpoints
         });
 
         group.MapGet("organizations/{organizationId:objectid}/saved-views/{viewType}", async (string organizationId, string viewType, IMediator mediator, int page = 1, int limit = 25)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SavedViewMessages.GetSavedViewsByView(organizationId, viewType, page, limit)))
+            => (await mediator.InvokeAsync<Result<PagedResult<ViewSavedView>>>(new SavedViewMessages.GetSavedViewsByView(organizationId, viewType, page, limit))).ToHttpResult())
         .Produces<IReadOnlyCollection<ViewSavedView>>()
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Get by organization and view")
@@ -57,7 +57,7 @@ public static class SavedViewEndpoints
         });
 
         group.MapGet("saved-views/{id:objectid}", async (string id, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SavedViewMessages.GetSavedViewById(id)))
+            => (await mediator.InvokeAsync<Result<ViewSavedView>>(new SavedViewMessages.GetSavedViewById(id))).ToHttpResult())
         .WithName("GetSavedViewById")
         .Produces<ViewSavedView>()
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -78,7 +78,7 @@ public static class SavedViewEndpoints
             if (validation is not null)
                 return validation;
 
-            return await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SavedViewMessages.CreateSavedView(organizationId, savedView));
+            return (await mediator.InvokeAsync<Result<ViewSavedView>>(new SavedViewMessages.CreateSavedView(organizationId, savedView))).ToHttpResult();
         })
         .Produces<ViewSavedView>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -98,7 +98,7 @@ public static class SavedViewEndpoints
         });
 
         group.MapPost("organizations/{organizationId:objectid}/saved-views/predefined", async (string organizationId, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SavedViewMessages.CreatePredefinedSavedViews(organizationId)))
+            => (await mediator.InvokeAsync<Result<IReadOnlyCollection<ViewSavedView>>>(new SavedViewMessages.CreatePredefinedSavedViews(organizationId))).ToHttpResult())
         .Produces<IReadOnlyCollection<ViewSavedView>>()
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Create or update predefined saved views")
@@ -113,7 +113,7 @@ public static class SavedViewEndpoints
         });
 
         group.MapGet("saved-views/predefined", async (IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SavedViewMessages.GetPredefinedSavedViews()))
+            => (await mediator.InvokeAsync<Result<IReadOnlyCollection<PredefinedSavedViewDefinition>>>(new SavedViewMessages.GetPredefinedSavedViews())).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces<IReadOnlyCollection<PredefinedSavedViewDefinition>>()
         .WithSummary("Get global predefined saved views as seed JSON")
@@ -124,7 +124,7 @@ public static class SavedViewEndpoints
         });
 
         group.MapPost("saved-views/{id:objectid}/predefined", async (string id, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SavedViewMessages.PromoteToPredefinedSavedView(id)))
+            => (await mediator.InvokeAsync<Result<ViewSavedView>>(new SavedViewMessages.PromoteToPredefinedSavedView(id))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces<ViewSavedView>()
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -140,7 +140,7 @@ public static class SavedViewEndpoints
         });
 
         group.MapDelete("saved-views/{id:objectid}/predefined", async (string id, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SavedViewMessages.DeletePredefinedSavedView(id)))
+            => (await mediator.InvokeAsync<Result>(new SavedViewMessages.DeletePredefinedSavedView(id))).ToHttpResult())
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status204NoContent)
@@ -157,7 +157,7 @@ public static class SavedViewEndpoints
         });
 
         group.MapPatch("saved-views/{id:objectid}", async (string id, IMediator mediator, [FromBody] Delta<UpdateSavedView> changes)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SavedViewMessages.UpdateSavedViewMessage(id, changes)))
+            => (await mediator.InvokeAsync<Result<ViewSavedView>>(new SavedViewMessages.UpdateSavedViewMessage(id, changes))).ToHttpResult())
         .Produces<ViewSavedView>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -176,7 +176,7 @@ public static class SavedViewEndpoints
         });
 
         group.MapPut("saved-views/{id:objectid}", async (string id, IMediator mediator, [FromBody] Delta<UpdateSavedView> changes)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SavedViewMessages.UpdateSavedViewMessage(id, changes)))
+            => (await mediator.InvokeAsync<Result<ViewSavedView>>(new SavedViewMessages.UpdateSavedViewMessage(id, changes))).ToHttpResult())
         .Produces<ViewSavedView>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -195,7 +195,7 @@ public static class SavedViewEndpoints
         });
 
         group.MapDelete("saved-views/{ids:objectids}", async (string ids, IMediator mediator)
-            => await mediator.InvokeAsync<Microsoft.AspNetCore.Http.IResult>(new SavedViewMessages.DeleteSavedViews(ids.FromDelimitedString())))
+            => (await mediator.InvokeAsync<Result<ModelActionResults>>(new SavedViewMessages.DeleteSavedViews(ids.FromDelimitedString()))).ToHttpResult())
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)

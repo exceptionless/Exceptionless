@@ -58,6 +58,9 @@ public static class ResultExtensions
         if (value is IPagedResult paged)
             return new PagedHttpResult(paged);
 
+        if (value is NotModifiedResponse)
+            return HttpResults.StatusCode(StatusCodes.Status304NotModified);
+
         // WorkInProgressResult (and ModelActionResults) returns 202 Accepted
         if (value is Controllers.WorkInProgressResult)
             return HttpResults.Json(value, statusCode: StatusCodes.Status202Accepted);
@@ -92,6 +95,10 @@ public static class ResultExtensions
         var errors = result.ValidationErrors?.ToList();
         if (errors is null || errors.Count == 0)
             return HttpResults.Problem(detail: result.Message, statusCode: StatusCodes.Status422UnprocessableEntity, title: "Validation failed");
+
+        var planLimitError = errors.FirstOrDefault(error => String.Equals(error.Identifier, "plan_limit", StringComparison.OrdinalIgnoreCase));
+        if (planLimitError is not null)
+            return HttpResults.Problem(statusCode: StatusCodes.Status426UpgradeRequired, title: planLimitError.ErrorMessage);
 
         var rateLimitError = errors.FirstOrDefault(error => String.Equals(error.Identifier, "rate_limit", StringComparison.OrdinalIgnoreCase));
         if (rateLimitError is not null)

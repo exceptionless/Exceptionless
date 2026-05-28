@@ -21,8 +21,6 @@ using Foundatio.Mediator;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Exceptionless.Web.Utility;
-using HttpResults = Microsoft.AspNetCore.Http.Results;
-using IResult = Microsoft.AspNetCore.Http.IResult;
 using PermissionResult = Exceptionless.Web.Controllers.PermissionResult;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
@@ -46,11 +44,11 @@ public class ProjectHandler(
 {
     private readonly ILogger _logger = loggerFactory.CreateLogger<ProjectHandler>();
 
-    public async Task<IResult> Handle(GetProjects message)
+    public async Task<Result<PagedResult<ViewProject>>> Handle(GetProjects message)
     {
         var organizations = await GetSelectedOrganizationsAsync(message.Context, message.Filter);
         if (organizations.Count == 0)
-            return HttpResults.Ok(Array.Empty<ViewProject>());
+            return new PagedResult<ViewProject>(Array.Empty<ViewProject>(), false, 1, 0);
 
         int page = Pagination.GetPage(message.Page);
         int limit = Pagination.GetLimit(message.Limit, Pagination.MaximumSkip);
@@ -60,16 +58,16 @@ public class ProjectHandler(
         await AfterResultMapAsync(viewProjects);
 
         if (IsStatsMode(message.Mode))
-            return ApiResults.OkWithResourceLinks(message.Context, await PopulateProjectStatsAsync(viewProjects), projects.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, projects.Total);
+            return new PagedResult<ViewProject>(await PopulateProjectStatsAsync(viewProjects), projects.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, projects.Total);
 
-        return ApiResults.OkWithResourceLinks(message.Context, viewProjects, projects.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, projects.Total);
+        return new PagedResult<ViewProject>(viewProjects, projects.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, projects.Total);
     }
 
-    public async Task<IResult> Handle(GetProjectsByOrganization message)
+    public async Task<Result<PagedResult<ViewProject>>> Handle(GetProjectsByOrganization message)
     {
         var organization = await GetOrganizationAsync(message.OrganizationId, message.Context);
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         int page = Pagination.GetPage(message.Page);
         int limit = Pagination.GetLimit(message.Limit, Pagination.MaximumSkip);
@@ -79,68 +77,68 @@ public class ProjectHandler(
         await AfterResultMapAsync(viewProjects);
 
         if (IsStatsMode(message.Mode))
-            return ApiResults.OkWithResourceLinks(message.Context, await PopulateProjectStatsAsync(viewProjects), projects.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, projects.Total);
+            return new PagedResult<ViewProject>(await PopulateProjectStatsAsync(viewProjects), projects.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, projects.Total);
 
-        return ApiResults.OkWithResourceLinks(message.Context, viewProjects, projects.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, projects.Total);
+        return new PagedResult<ViewProject>(viewProjects, projects.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, projects.Total);
     }
 
-    public async Task<IResult> Handle(GetProjectById message)
+    public async Task<Result<ViewProject>> Handle(GetProjectById message)
     {
         var project = await GetModelAsync(message.Id, message.Context);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         var viewProject = mapper.MapToViewProject(project);
         await AfterResultMapAsync([viewProject]);
 
         if (IsStatsMode(message.Mode))
-            return HttpResults.Ok(await PopulateProjectStatsAsync(viewProject));
+            return await PopulateProjectStatsAsync(viewProject);
 
-        return HttpResults.Ok(viewProject);
+        return viewProject;
     }
 
-    public async Task<IResult> Handle(CreateProject message)
+    public async Task<Result<ViewProject>> Handle(CreateProject message)
     {
         if (message.Project is null)
-            return HttpResults.BadRequest();
+            return Result.BadRequest("Project value is required.");
 
         var model = mapper.MapToProject(message.Project);
         if (String.IsNullOrEmpty(model.OrganizationId) && message.Context.Request.GetAssociatedOrganizationIds().Count > 0)
             model.OrganizationId = message.Context.Request.GetDefaultOrganizationId()!;
 
-        var permission = await CanAddAsync(model, message.Context);
-        if (!permission.Allowed)
-            return PermissionToResult(permission);
+        var error = await CanAddAsync(model, message.Context);
+        if (error is not null)
+            return error;
 
         model = await AddModelAsync(model, message.Context);
         var viewModel = mapper.MapToViewProject(model);
         await AfterResultMapAsync([viewModel]);
-        return TypedResults.Created($"/api/v2/projects/{model.Id}", viewModel);
+        return Result<ViewProject>.Created(viewModel, $"/api/v2/projects/{model.Id}");
     }
 
-    public async Task<IResult> Handle(UpdateProjectMessage message)
+    public async Task<Result<ViewProject>> Handle(UpdateProjectMessage message)
     {
         var original = await GetModelAsync(message.Id, message.Context, useCache: false);
         if (original is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         if (!message.Changes.GetChangedPropertyNames().Any())
-            return await OkModelAsync(original);
+            return await MapToViewAsync(original);
 
-        var permission = await CanUpdateAsync(original, message.Changes, message.Context);
-        if (!permission.Allowed)
-            return PermissionToResult(permission);
+        var error = await CanUpdateAsync(original, message.Changes, message.Context);
+        if (error is not null)
+            return error;
 
         message.Changes.Patch(original);
         await repository.SaveAsync(original, o => o.Cache());
-        return await OkModelAsync(original);
+        return await MapToViewAsync(original);
     }
 
-    public async Task<IResult> Handle(DeleteProjects message)
+    public async Task<Result<ModelActionResults>> Handle(DeleteProjects message)
     {
         var items = await GetModelsAsync(message.Ids, message.Context, useCache: false);
         if (items.Count == 0)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         var results = new ModelActionResults();
         results.AddNotFound(message.Ids.Except(items.Select(i => i.Id)));
@@ -157,50 +155,50 @@ public class ProjectHandler(
         }
 
         if (deletableItems.Count == 0)
-            return results.Failure.Count == 1 ? PermissionToResult(results.Failure.First()) : HttpResults.BadRequest(results);
+            return results.Failure.Count == 1 ? Result<ModelActionResults>.FromResult(PermissionToResult(results.Failure.First())) : Result.BadRequest("Unable to delete projects.");
 
         IEnumerable<string> workIds = await DeleteModelsAsync(deletableItems, message.Context);
         if (results.Failure.Count == 0)
-            return TypedResults.Json(new WorkInProgressResult(workIds), statusCode: StatusCodes.Status202Accepted);
+            return new ModelActionResults { Workers = workIds.ToList() };
 
         results.Workers.AddRange(workIds);
         results.Success.AddRange(deletableItems.Select(i => i.Id));
-        return HttpResults.BadRequest(results);
+        return results;
     }
 
-    public Task<IResult> Handle(GetLegacyProjectConfig message)
+    public Task<Result<object>> Handle(GetLegacyProjectConfig message)
     {
         return GetConfigAsync(null, message.Version, message.Context);
     }
 
-    public Task<IResult> Handle(GetProjectConfig message)
+    public Task<Result<object>> Handle(GetProjectConfig message)
     {
         return GetConfigAsync(message.Id, message.Version, message.Context);
     }
 
-    public async Task<IResult> Handle(SetProjectConfig message)
+    public async Task<Result> Handle(SetProjectConfig message)
     {
         if (String.IsNullOrWhiteSpace(message.Key) || String.IsNullOrWhiteSpace(message.Value?.Value))
-            return HttpResults.BadRequest();
+            return Result.BadRequest("Invalid configuration value.");
 
         var project = await GetModelAsync(message.Id, message.Context, useCache: false);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         project.Configuration.Settings[message.Key.Trim()] = message.Value.Value.Trim();
         project.Configuration.IncrementVersion();
         await repository.SaveAsync(project, o => o.Cache());
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(DeleteProjectConfig message)
+    public async Task<Result> Handle(DeleteProjectConfig message)
     {
         if (String.IsNullOrWhiteSpace(message.Key))
-            return HttpResults.BadRequest();
+            return Result.BadRequest("Invalid key value.");
 
         var project = await GetModelAsync(message.Id, message.Context, useCache: false);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         if (project.Configuration.Settings.Remove(message.Key.Trim()))
         {
@@ -208,24 +206,24 @@ public class ProjectHandler(
             await repository.SaveAsync(project, o => o.Cache());
         }
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(GenerateProjectSampleData message)
+    public async Task<Result<WorkInProgressResult>> Handle(GenerateProjectSampleData message)
     {
         var project = await GetModelAsync(message.Id, message.Context);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         string workItemId = await sampleDataService.EnqueueSampleEventsAsync(project.OrganizationId, project.Id);
-        return TypedResults.Json(new WorkInProgressResult([workItemId]), statusCode: StatusCodes.Status202Accepted);
+        return new WorkInProgressResult([workItemId]);
     }
 
-    public async Task<IResult> Handle(ResetProjectData message)
+    public async Task<Result<WorkInProgressResult>> Handle(ResetProjectData message)
     {
         var project = await GetModelAsync(message.Id, message.Context);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         string workItemId = await workItemQueue.EnqueueAsync(new ResetProjectDataWorkItem
         {
@@ -233,50 +231,50 @@ public class ProjectHandler(
             ProjectId = project.Id
         });
 
-        return TypedResults.Json(new WorkInProgressResult([workItemId]), statusCode: StatusCodes.Status202Accepted);
+        return new WorkInProgressResult([workItemId]);
     }
 
-    public async Task<IResult> Handle(GetProjectNotificationSettings message)
+    public async Task<Result<IDictionary<string, NotificationSettings>>> Handle(GetProjectNotificationSettings message)
     {
         var project = await GetModelAsync(message.Id, message.Context);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
-        return HttpResults.Ok(project.NotificationSettings);
+        return project.NotificationSettings;
     }
 
-    public async Task<IResult> Handle(GetProjectUserNotificationSettings message)
+    public async Task<Result<NotificationSettings>> Handle(GetProjectUserNotificationSettings message)
     {
         var project = await GetModelAsync(message.Id, message.Context);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         if (!message.Context.Request.IsGlobalAdmin() && !String.Equals(GetCurrentUserId(message.Context), message.UserId, StringComparison.Ordinal))
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
-        return HttpResults.Ok(project.NotificationSettings.TryGetValue(message.UserId, out var settings) ? settings : new NotificationSettings());
+        return project.NotificationSettings.TryGetValue(message.UserId, out var settings) ? settings : new NotificationSettings();
     }
 
-    public async Task<IResult> Handle(GetProjectIntegrationNotificationSettings message)
+    public async Task<Result<NotificationSettings>> Handle(GetProjectIntegrationNotificationSettings message)
     {
         var project = await GetModelAsync(message.Id, message.Context);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         if (!String.Equals(Project.NotificationIntegrations.Slack, message.Integration, StringComparison.Ordinal))
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
-        return HttpResults.Ok(project.NotificationSettings.TryGetValue(Project.NotificationIntegrations.Slack, out var settings) ? settings : new NotificationSettings());
+        return project.NotificationSettings.TryGetValue(Project.NotificationIntegrations.Slack, out var settings) ? settings : new NotificationSettings();
     }
 
-    public async Task<IResult> Handle(SetProjectUserNotificationSettings message)
+    public async Task<Result> Handle(SetProjectUserNotificationSettings message)
     {
         var project = await GetModelAsync(message.Id, message.Context, useCache: false);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         if (!message.Context.Request.IsGlobalAdmin() && !String.Equals(GetCurrentUserId(message.Context), message.UserId, StringComparison.Ordinal))
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         if (message.Settings is null)
             project.NotificationSettings.Remove(message.UserId);
@@ -284,24 +282,24 @@ public class ProjectHandler(
             project.NotificationSettings[message.UserId] = message.Settings;
 
         await repository.SaveAsync(project, o => o.Cache());
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(SetProjectIntegrationNotificationSettings message)
+    public async Task<Result> Handle(SetProjectIntegrationNotificationSettings message)
     {
         if (!String.Equals(Project.NotificationIntegrations.Slack, message.Integration, StringComparison.Ordinal))
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         var project = await GetModelAsync(message.Id, message.Context, useCache: false);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         var organization = await organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
         if (organization is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         if (!organization.HasPremiumFeatures)
-            return ApiResults.PlanLimitReached($"Please upgrade your plan to enable {message.Integration} integration.");
+            return Result.Invalid(ValidationError.Create("plan_limit", $"Please upgrade your plan to enable {message.Integration} integration."));
 
         if (message.Settings is null)
             project.NotificationSettings.Remove(message.Integration);
@@ -309,107 +307,107 @@ public class ProjectHandler(
             project.NotificationSettings[message.Integration] = message.Settings;
 
         await repository.SaveAsync(project, o => o.Cache());
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(DeleteProjectNotificationSettings message)
+    public async Task<Result> Handle(DeleteProjectNotificationSettings message)
     {
         var project = await GetModelAsync(message.Id, message.Context, useCache: false);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         if (!message.Context.Request.IsGlobalAdmin() && !String.Equals(GetCurrentUserId(message.Context), message.UserId, StringComparison.Ordinal))
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         if (project.NotificationSettings.Remove(message.UserId))
             await repository.SaveAsync(project, o => o.Cache());
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(PromoteProjectTab message)
+    public async Task<Result> Handle(PromoteProjectTab message)
     {
         if (String.IsNullOrWhiteSpace(message.Name))
-            return HttpResults.BadRequest();
+            return Result.BadRequest("Invalid tab name.");
 
         var project = await GetModelAsync(message.Id, message.Context, useCache: false);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         project.PromotedTabs ??= [];
         if (project.PromotedTabs.Add(message.Name.Trim()))
             await repository.SaveAsync(project, o => o.Cache());
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(DemoteProjectTab message)
+    public async Task<Result> Handle(DemoteProjectTab message)
     {
         if (String.IsNullOrWhiteSpace(message.Name))
-            return HttpResults.BadRequest();
+            return Result.BadRequest("Invalid tab name.");
 
         var project = await GetModelAsync(message.Id, message.Context, useCache: false);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         if (project.PromotedTabs is not null && project.PromotedTabs.Remove(message.Name.Trim()))
             await repository.SaveAsync(project, o => o.Cache());
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(CheckProjectName message)
+    public async Task<Result> Handle(CheckProjectName message)
     {
         if (await IsProjectNameAvailableInternalAsync(message.OrganizationId, message.Name, message.Context))
-            return HttpResults.StatusCode(StatusCodes.Status204NoContent);
+            return Result.NoContent();
 
-        return HttpResults.StatusCode(StatusCodes.Status201Created);
+        return Result.Created();
     }
 
-    public async Task<IResult> Handle(SetProjectData message)
+    public async Task<Result> Handle(SetProjectData message)
     {
         if (String.IsNullOrWhiteSpace(message.Key) || String.IsNullOrWhiteSpace(message.Value?.Value) || message.Key.StartsWith('-'))
-            return HttpResults.BadRequest();
+            return Result.BadRequest("Invalid key or value.");
 
         var project = await GetModelAsync(message.Id, message.Context, useCache: false);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         project.Data ??= new DataDictionary();
         project.Data[message.Key.Trim()] = message.Value.Value.Trim();
         await repository.SaveAsync(project, o => o.Cache());
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(DeleteProjectData message)
+    public async Task<Result> Handle(DeleteProjectData message)
     {
         if (String.IsNullOrWhiteSpace(message.Key) || message.Key.StartsWith('-'))
-            return HttpResults.BadRequest();
+            return Result.BadRequest("Invalid key value.");
 
         var project = await GetModelAsync(message.Id, message.Context, useCache: false);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         if (project.Data is not null && project.Data.Remove(message.Key.Trim()))
             await repository.SaveAsync(project, o => o.Cache());
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    public async Task<IResult> Handle(AddProjectSlack message)
+    public async Task<Result<object>> Handle(AddProjectSlack message)
     {
         if (String.IsNullOrWhiteSpace(message.Code))
-            return HttpResults.BadRequest();
+            return Result.BadRequest("Invalid Slack authorization code.");
 
         var project = await GetModelAsync(message.Id, message.Context, useCache: false);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         using var _ = _logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Property("Code", message.Code).Tag("Slack").Identity(GetCurrentUser(message.Context).EmailAddress).Property("User", GetCurrentUser(message.Context)).SetHttpContext(message.Context));
 
         if (project.Data is not null && project.Data.ContainsKey(Project.KnownDataKeys.SlackToken))
-            return HttpResults.StatusCode(StatusCodes.Status304NotModified);
+            return new NotModifiedResponse();
 
         SlackToken? token;
         try
@@ -427,14 +425,14 @@ public class ProjectHandler(
         project.Data[Project.KnownDataKeys.SlackToken] = token;
         await repository.SaveAsync(project, o => o.Cache());
 
-        return HttpResults.Ok();
+        return Result.Success().Cast<object>();
     }
 
-    public async Task<IResult> Handle(RemoveProjectSlack message)
+    public async Task<Result> Handle(RemoveProjectSlack message)
     {
         var project = await GetModelAsync(message.Id, message.Context, useCache: false);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         var token = project.GetSlackToken();
         using var _ = _logger.BeginScope(new ExceptionlessState().Property("Token", token).Tag("Slack").Identity(GetCurrentUser(message.Context).EmailAddress).Property("User", GetCurrentUser(message.Context)).SetHttpContext(message.Context));
@@ -449,32 +447,32 @@ public class ProjectHandler(
         if (shouldSave)
             await repository.SaveAsync(project, o => o.Cache());
 
-        return HttpResults.Ok();
+        return Result.Success();
     }
 
-    private async Task<IResult> GetConfigAsync(string? id, int? version, HttpContext httpContext)
+    private async Task<Result<object>> GetConfigAsync(string? id, int? version, HttpContext httpContext)
     {
         if (String.IsNullOrEmpty(id))
             id = httpContext.User.GetProjectId();
 
         var project = await repository.GetConfigAsync(id);
         if (project is null)
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         if (!httpContext.Request.CanAccessOrganization(project.OrganizationId))
-            return HttpResults.NotFound();
+            return Result.NotFound("Project not found.");
 
         if (version.HasValue && version == project.Configuration.Version)
-            return HttpResults.StatusCode(StatusCodes.Status304NotModified);
+            return new NotModifiedResponse();
 
-        return HttpResults.Ok(project.Configuration);
+        return project.Configuration;
     }
 
-    private async Task<IResult> OkModelAsync(Project model)
+    private async Task<ViewProject> MapToViewAsync(Project model)
     {
         var viewModel = mapper.MapToViewProject(model);
         await AfterResultMapAsync([viewModel]);
-        return HttpResults.Ok(viewModel);
+        return viewModel;
     }
 
     private async Task AfterResultMapAsync<TDestination>(ICollection<TDestination> models)
@@ -521,21 +519,21 @@ public class ProjectHandler(
         }
     }
 
-    private async Task<PermissionResult> CanAddAsync(Project value, HttpContext httpContext)
+    private async Task<Result<ViewProject>?> CanAddAsync(Project value, HttpContext httpContext)
     {
         if (String.IsNullOrEmpty(value.Name))
-            return PermissionResult.DenyWithMessage("Project name is required.");
+            return Result.Invalid(ValidationError.Create("name", "Project name is required."));
 
         if (!await IsProjectNameAvailableInternalAsync(value.OrganizationId, value.Name, httpContext))
-            return PermissionResult.DenyWithMessage("A project with this name already exists.");
+            return Result.Invalid(ValidationError.Create("name", "A project with this name already exists."));
 
         if (!await billingManager.CanAddProjectAsync(value))
-            return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add additional projects.");
+            return Result.Invalid(ValidationError.Create("plan_limit", "Please upgrade your plan to add additional projects."));
 
         if (!httpContext.Request.CanAccessOrganization(value.OrganizationId))
-            return PermissionResult.DenyWithMessage("Invalid organization id specified.");
+            return Result.Invalid(ValidationError.Create("organization_id", "Invalid organization id specified."));
 
-        return PermissionResult.Allow;
+        return null;
     }
 
     private Task<Project> AddModelAsync(Project value, HttpContext httpContext)
@@ -548,19 +546,19 @@ public class ProjectHandler(
         return repository.AddAsync(value, o => o.Cache());
     }
 
-    private async Task<PermissionResult> CanUpdateAsync(Project original, Delta<UpdateProject> changes, HttpContext httpContext)
+    private async Task<Result<ViewProject>?> CanUpdateAsync(Project original, Delta<UpdateProject> changes, HttpContext httpContext)
     {
         var changed = changes.GetEntity();
         if (changes.ContainsChangedProperty(p => p.Name) && !await IsProjectNameAvailableInternalAsync(original.OrganizationId, changed.Name, httpContext))
-            return PermissionResult.DenyWithMessage("A project with this name already exists.");
+            return Result.Invalid(ValidationError.Create("name", "A project with this name already exists."));
 
         if (!httpContext.Request.CanAccessOrganization(original.OrganizationId))
-            return PermissionResult.DenyWithMessage("Invalid organization id specified.");
+            return Result.Invalid(ValidationError.Create("organization_id", "Invalid organization id specified."));
 
         if (changes.GetChangedPropertyNames().Contains(nameof(Project.OrganizationId)))
-            return PermissionResult.DenyWithMessage("OrganizationId cannot be modified.");
+            return Result.Invalid(ValidationError.Create("organization_id", "OrganizationId cannot be modified."));
 
-        return PermissionResult.Allow;
+        return null;
     }
 
     private Task<PermissionResult> CanDeleteAsync(Project value, HttpContext httpContext)
@@ -710,20 +708,15 @@ public class ProjectHandler(
         return viewProjects;
     }
 
-    private static IResult PermissionToResult(PermissionResult permission)
+    private static Result PermissionToResult(PermissionResult permission)
     {
+        if (permission.StatusCode == StatusCodes.Status404NotFound)
+            return Result.NotFound(permission.Message ?? "Project not found.");
+
         if (permission.StatusCode == StatusCodes.Status422UnprocessableEntity)
-        {
-            return HttpResults.ValidationProblem(String.IsNullOrEmpty(permission.Message)
-                ? new Dictionary<string, string[]>()
-                : new Dictionary<string, string[]> { ["general"] = [permission.Message] },
-                statusCode: StatusCodes.Status422UnprocessableEntity);
-        }
+            return Result.Invalid(ValidationError.Create("general", permission.Message ?? "Validation failed."));
 
-        if (String.IsNullOrEmpty(permission.Message))
-            return TypedResults.Problem(statusCode: permission.StatusCode);
-
-        return TypedResults.Problem(statusCode: permission.StatusCode, title: permission.Message);
+        return Result.Forbidden(permission.Message ?? "Access denied.");
     }
 
     private static User GetCurrentUser(HttpContext httpContext) => httpContext.Request.GetUser();
