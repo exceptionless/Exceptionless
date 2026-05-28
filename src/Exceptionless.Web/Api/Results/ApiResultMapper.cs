@@ -79,6 +79,10 @@ public sealed class ApiResultMapper : IMediatorResultMapper<IResult>
         if (planLimitError is not null)
             return HttpResults.Problem(statusCode: StatusCodes.Status426UpgradeRequired, title: planLimitError.ErrorMessage);
 
+        var notImplementedError = errors.FirstOrDefault(error => String.Equals(error.Identifier, "not_implemented", StringComparison.OrdinalIgnoreCase));
+        if (notImplementedError is not null)
+            return HttpResults.Problem(statusCode: StatusCodes.Status501NotImplemented, title: notImplementedError.ErrorMessage);
+
         var rateLimitError = errors.FirstOrDefault(error => String.Equals(error.Identifier, "rate_limit", StringComparison.OrdinalIgnoreCase));
         if (rateLimitError is not null)
             return HttpResults.Problem(statusCode: StatusCodes.Status429TooManyRequests, title: rateLimitError.ErrorMessage);

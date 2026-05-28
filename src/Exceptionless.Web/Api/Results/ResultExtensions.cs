@@ -61,7 +61,11 @@ public static class ResultExtensions
         if (value is NotModifiedResponse)
             return HttpResults.StatusCode(StatusCodes.Status304NotModified);
 
-        // WorkInProgressResult (and ModelActionResults) returns 202 Accepted
+        // ModelActionResults with failures returns 400 BadRequest (preserving legacy behavior)
+        if (value is Controllers.ModelActionResults { Failure.Count: > 0 } modelAction)
+            return HttpResults.Json(modelAction, statusCode: StatusCodes.Status400BadRequest);
+
+        // WorkInProgressResult (and ModelActionResults with no failures) returns 202 Accepted
         if (value is Controllers.WorkInProgressResult)
             return HttpResults.Json(value, statusCode: StatusCodes.Status202Accepted);
 

@@ -92,7 +92,8 @@ public static class TokenEndpoints
 
             if (String.IsNullOrEmpty(token.ProjectId))
                 return Microsoft.AspNetCore.Http.Results.ValidationProblem(
-                    new Dictionary<string, string[]> { ["project_id"] = ["The project_id field is required."] });
+                    new Dictionary<string, string[]> { ["project_id"] = ["The project_id field is required."] },
+                    statusCode: StatusCodes.Status400BadRequest);
 
             return (await mediator.InvokeAsync<Result<ViewToken>>(new TokenMessages.CreateToken(token))).ToHttpResult();
         })

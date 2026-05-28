@@ -209,6 +209,9 @@ public class TokenHandler(
         if (String.IsNullOrEmpty(value.OrganizationId))
             return Result.Forbidden("Organization is required.");
 
+        if (String.IsNullOrEmpty(value.ProjectId))
+            return Result.Invalid(ValidationError.Create("project_id", "The project_id field is required."));
+
         bool hasUserRole = HttpContext.User.IsInRole(AuthorizationRoles.User);
         bool hasGlobalAdminRole = HttpContext.User.IsInRole(AuthorizationRoles.GlobalAdmin);
         if (!hasGlobalAdminRole && !String.IsNullOrEmpty(value.UserId) && value.UserId != GetCurrentUserId())
