@@ -1459,6 +1459,21 @@
   },
   {
     "Controller": "SavedViewController",
+    "Action": "PostPredefinedAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/organizations/{organizationId:objectid}/saved-views/predefined",
+    "Authorization": [
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "SavedViewController",
     "Action": "GetByViewAsync",
     "HttpMethod": "GET",
     "Route": "/api/v2/organizations/{organizationId:objectid}/saved-views/{viewType}",
@@ -2196,6 +2211,22 @@
   },
   {
     "Controller": "SavedViewController",
+    "Action": "GetPredefinedAsync",
+    "HttpMethod": "GET",
+    "Route": "/api/v2/saved-views/predefined",
+    "Authorization": [
+      "Authorize(Policy=GlobalAdminPolicy)",
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "SavedViewController",
     "Action": "GetAsync",
     "HttpMethod": "GET",
     "Route": "/api/v2/saved-views/{id:objectid}",
@@ -2238,6 +2269,38 @@
     "Consumes": [
       "application/json"
     ],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "SavedViewController",
+    "Action": "DeletePredefinedSavedViewAsync",
+    "HttpMethod": "DELETE",
+    "Route": "/api/v2/saved-views/{id:objectid}/predefined",
+    "Authorization": [
+      "Authorize(Policy=GlobalAdminPolicy)",
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
+    "Produces": [
+      "application/json",
+      "application/problem\u002Bjson"
+    ],
+    "ExcludeFromDescription": false
+  },
+  {
+    "Controller": "SavedViewController",
+    "Action": "PostPredefinedSavedViewAsync",
+    "HttpMethod": "POST",
+    "Route": "/api/v2/saved-views/{id:objectid}/predefined",
+    "Authorization": [
+      "Authorize(Policy=GlobalAdminPolicy)",
+      "Authorize(Policy=UserPolicy)"
+    ],
+    "Consumes": [],
     "Produces": [
       "application/json",
       "application/problem\u002Bjson"
