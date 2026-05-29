@@ -63,7 +63,3 @@ Content-Type: application/json
 ### Force Refresh (no message)
 POST {{apiUrl}}/notifications/force-refresh
 Authorization: Bearer {{token}}
-
-### Notification Settings (admin)
-GET {{apiUrl}}/notifications/settings
-Authorization: Bearer {{token}}

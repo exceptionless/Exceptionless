@@ -131,7 +131,7 @@ public class StatusController : ExceptionlessApiController
     public async Task<ActionResult<SystemNotification>> PostSystemNotificationAsync(ValueFromBody<string> message, bool publish = true)
     {
         if (String.IsNullOrWhiteSpace(message?.Value))
-            return BadRequest();
+            return NotFound();
 
         var notification = await _notificationService.SetSystemNotificationAsync(message.Value, publish);
 
@@ -145,22 +145,6 @@ public class StatusController : ExceptionlessApiController
         await _notificationService.ClearSystemNotificationAsync(publish);
 
         return Ok();
-    }
-
-    /// <summary>
-    /// Returns the current notification settings state for the admin management page.
-    /// </summary>
-    [HttpGet("notifications/settings")]
-    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-    public async Task<IActionResult> GetNotificationSettingsAsync()
-    {
-        var notification = await _notificationService.GetSystemNotificationAsync();
-
-        return Ok(new
-        {
-            ConfiguredSystemNotificationMessage = _appOptions.NotificationMessage,
-            SystemNotification = notification
-        });
     }
 
     /// <summary>

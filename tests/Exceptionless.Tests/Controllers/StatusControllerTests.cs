@@ -112,14 +112,14 @@ public class StatusControllerTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task PostSystemNotificationAsync_WithEmptyMessage_ReturnsBadRequest()
+    public Task PostSystemNotificationAsync_WithEmptyMessage_ReturnsNotFound()
     {
         return SendRequestAsync(r => r
             .Post()
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
             .Content(new ValueFromBody<string>(String.Empty))
-            .StatusCodeShouldBeBadRequest());
+            .StatusCodeShouldBeNotFound());
     }
 
     [Fact]
@@ -170,23 +170,6 @@ public class StatusControllerTests : IntegrationTestsBase
             .StatusCodeShouldBeForbidden());
     }
 
-    [Fact]
-    public Task GetNotificationSettings_AsGlobalAdmin_ReturnsSettings()
-    {
-        return SendRequestAsync(r => r
-            .AsGlobalAdminUser()
-            .AppendPath("notifications/settings")
-            .StatusCodeShouldBeOk());
-    }
-
-    [Fact]
-    public Task GetNotificationSettings_AsNonAdmin_ReturnsForbidden()
-    {
-        return SendRequestAsync(r => r
-            .AsTestOrganizationUser()
-            .AppendPath("notifications/settings")
-            .StatusCodeShouldBeForbidden());
-    }
 
     [Fact]
     public async Task ForceRefresh_AsGlobalAdmin_ReturnsCriticalNotification()

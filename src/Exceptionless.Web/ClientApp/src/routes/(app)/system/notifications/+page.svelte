@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { H2, Muted, P } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import { Checkbox } from '$comp/ui/checkbox';
@@ -8,7 +9,7 @@
     import {
         clearSystemNotificationMutation,
         forceRefreshClientsMutation,
-        getNotificationSettingsQuery,
+        getCurrentSystemNotificationQuery,
         sendReleaseNotificationMutation,
         setSystemNotificationMutation
     } from '$features/notifications/api.svelte';
@@ -18,7 +19,7 @@
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import { toast } from 'svelte-sonner';
 
-    const settingsQuery = getNotificationSettingsQuery();
+    const currentNotificationQuery = getCurrentSystemNotificationQuery();
     const setSystemNotification = setSystemNotificationMutation();
     const clearSystemNotification = clearSystemNotificationMutation();
     const sendRelease = sendReleaseNotificationMutation();
@@ -87,42 +88,27 @@
 
 <div class="space-y-6">
     <div>
-        <h2 class="text-2xl font-bold tracking-tight">Notifications</h2>
-        <p class="text-muted-foreground">Manage system notifications, release announcements, and client refresh.</p>
+        <H2>Notifications</H2>
+        <Muted>Manage system notifications, release announcements, and client refresh.</Muted>
     </div>
 
     <Card.Root>
         <Card.Header>
             <Card.Title>Current Status</Card.Title>
-            <Card.Description>Active notification configuration and state.</Card.Description>
+            <Card.Description>Active system notification state.</Card.Description>
         </Card.Header>
-        <Card.Content class="space-y-3">
-            {#if settingsQuery.isLoading}
-                <p class="text-muted-foreground text-sm">Loading...</p>
-            {:else if settingsQuery.isError}
-                <p class="text-destructive text-sm">Failed to load notification settings.</p>
-            {:else if settingsQuery.data}
-                <div class="space-y-2">
-                    <div>
-                        <span class="text-sm font-medium">Configured Fallback Message:</span>
-                        <span class="text-muted-foreground ml-2 text-sm">
-                            {settingsQuery.data.configured_system_notification_message || '(none)'}
-                        </span>
-                    </div>
-                    <div>
-                        <span class="text-sm font-medium">Active System Notification:</span>
-                        {#if settingsQuery.data.system_notification?.message}
-                            <span class="ml-2 text-sm text-red-600 dark:text-red-400">
-                                {settingsQuery.data.system_notification.message}
-                            </span>
-                            <span class="text-muted-foreground ml-2 text-xs">
-                                (set {new Date(settingsQuery.data.system_notification.date).toLocaleString()})
-                            </span>
-                        {:else}
-                            <span class="text-muted-foreground ml-2 text-sm">(none)</span>
-                        {/if}
-                    </div>
-                </div>
+        <Card.Content>
+            {#if currentNotificationQuery.isLoading}
+                <Muted>Loading...</Muted>
+            {:else if currentNotificationQuery.data?.message}
+                <P class="text-red-600 dark:text-red-400">
+                    {currentNotificationQuery.data.message}
+                </P>
+                <Muted>
+                    Set {new Date(currentNotificationQuery.data.date).toLocaleString()}
+                </Muted>
+            {:else}
+                <Muted>(no active notification)</Muted>
             {/if}
         </Card.Content>
     </Card.Root>

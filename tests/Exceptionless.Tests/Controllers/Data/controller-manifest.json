@@ -950,22 +950,6 @@
   },
   {
     "Controller": "StatusController",
-    "Action": "GetNotificationSettingsAsync",
-    "HttpMethod": "GET",
-    "Route": "/api/v2/notifications/settings",
-    "Authorization": [
-      "Authorize(Policy=GlobalAdminPolicy)",
-      "Authorize(Policy=UserPolicy)"
-    ],
-    "Consumes": [],
-    "Produces": [
-      "application/json",
-      "application/problem\u002Bjson"
-    ],
-    "ExcludeFromDescription": true
-  },
-  {
-    "Controller": "StatusController",
     "Action": "RemoveSystemNotificationAsync",
     "HttpMethod": "DELETE",
     "Route": "/api/v2/notifications/system",

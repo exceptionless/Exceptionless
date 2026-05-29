@@ -3,11 +3,8 @@ import type { ReleaseNotification, SystemNotification } from '$features/websocke
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
-import type { NotificationSettings } from './models';
-
 export const queryKeys = {
-    current: ['notifications', 'system'] as const,
-    settings: ['notifications', 'settings'] as const
+    current: ['notifications', 'system'] as const
 };
 
 export function clearSystemNotificationMutation() {
@@ -19,7 +16,6 @@ export function clearSystemNotificationMutation() {
             await client.delete(`notifications/system?publish=${publish}`);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.settings });
             queryClient.invalidateQueries({ queryKey: queryKeys.current });
         }
     }));
@@ -32,6 +28,7 @@ export function forceRefreshClientsMutation() {
             const response = params?.message
                 ? await client.postJSON<ReleaseNotification>('notifications/force-refresh', { value: params.message })
                 : await client.postJSON<ReleaseNotification>('notifications/force-refresh');
+
             return response.data!;
         }
     }));
@@ -42,21 +39,10 @@ export function getCurrentSystemNotificationQuery() {
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<SystemNotification>('notifications/system', { signal });
+
             return response.data ?? null;
         },
         queryKey: queryKeys.current,
-        staleTime: 30_000
-    }));
-}
-
-export function getNotificationSettingsQuery() {
-    return createQuery<NotificationSettings, ProblemDetails>(() => ({
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const response = await client.getJSON<NotificationSettings>('notifications/settings', { signal });
-            return response.data!;
-        },
-        queryKey: queryKeys.settings,
         staleTime: 30_000
     }));
 }
@@ -69,6 +55,7 @@ export function sendReleaseNotificationMutation() {
             const response = await client.postJSON<ReleaseNotification>(`notifications/release?critical=${critical}`, {
                 value: params.message ?? null
             });
+
             return response.data!;
         }
     }));
@@ -83,10 +70,10 @@ export function setSystemNotificationMutation() {
             const response = await client.postJSON<SystemNotification>(`notifications/system?publish=${publish}`, {
                 value: params.message
             });
+
             return response.data!;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.settings });
             queryClient.invalidateQueries({ queryKey: queryKeys.current });
         }
     }));
