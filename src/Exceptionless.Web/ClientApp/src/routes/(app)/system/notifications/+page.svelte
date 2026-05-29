@@ -68,7 +68,6 @@
             toast.error('Failed to send release notification.');
         }
     }
-
 </script>
 
 <div class="space-y-6">
@@ -137,7 +136,6 @@
                 <Button variant="outline" onclick={() => (showReleaseDialog = true)} disabled={sendRelease.isPending}>Send Release Notification</Button>
             </Card.Content>
         </Card.Root>
-
     </div>
 </div>
 
