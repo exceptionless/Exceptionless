@@ -60,6 +60,7 @@
     let isOrganizationSwitcherOpen = $state(false);
     let isUserMenuOpen = $state(false);
 
+    // Auto-reset premium page state on navigation so pages don't need cleanup
     beforeNavigate(() => {
         premiumPage.current = undefined;
     });

@@ -7,9 +7,21 @@ import { normalizePath, normalizeRouteId } from '$lib/telemetry';
 import { Exceptionless, guid, toError } from '@exceptionless/browser';
 import { useMiddleware } from '@exceptionless/fetchclient';
 
+// If any of these are set in local storage, use them instead of the build-time environment variables.
+// This allows you to target other environments from your browser without a rebuild.
 const PUBLIC_BASE_URL = localStorage?.getItem('PUBLIC_BASE_URL');
 if (PUBLIC_BASE_URL) {
     env.PUBLIC_BASE_URL = PUBLIC_BASE_URL;
+}
+
+const PUBLIC_EXCEPTIONLESS_API_KEY = localStorage?.getItem('PUBLIC_EXCEPTIONLESS_API_KEY');
+if (PUBLIC_EXCEPTIONLESS_API_KEY) {
+    env.PUBLIC_EXCEPTIONLESS_API_KEY = PUBLIC_EXCEPTIONLESS_API_KEY;
+}
+
+const PUBLIC_EXCEPTIONLESS_SERVER_URL = localStorage?.getItem('PUBLIC_EXCEPTIONLESS_SERVER_URL');
+if (PUBLIC_EXCEPTIONLESS_SERVER_URL) {
+    env.PUBLIC_EXCEPTIONLESS_SERVER_URL = PUBLIC_EXCEPTIONLESS_SERVER_URL;
 }
 
 export const init: ClientInit = async () => {
