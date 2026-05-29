@@ -39,6 +39,7 @@ export const init: ClientInit = async () => {
         }
 
         if (dev) {
+            c.useDebugLogger();
             c.settings['@@log:*'] = 'debug';
         }
 
