@@ -8,14 +8,12 @@
     import { Textarea } from '$comp/ui/textarea';
     import {
         clearSystemNotificationMutation,
-        forceRefreshClientsMutation,
         getCurrentSystemNotificationQuery,
         sendReleaseNotificationMutation,
         setSystemNotificationMutation
     } from '$features/notifications/api.svelte';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import Bell from '@lucide/svelte/icons/bell';
-    import RefreshCw from '@lucide/svelte/icons/refresh-cw';
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import { toast } from 'svelte-sonner';
 
@@ -23,13 +21,11 @@
     const setSystemNotification = setSystemNotificationMutation();
     const clearSystemNotification = clearSystemNotificationMutation();
     const sendRelease = sendReleaseNotificationMutation();
-    const forceRefresh = forceRefreshClientsMutation();
 
     // Dialog state
     let showSetDialog = $state(false);
     let showClearDialog = $state(false);
     let showReleaseDialog = $state(false);
-    let showForceRefreshDialog = $state(false);
 
     // Form state
     let systemMessage = $state('');
@@ -37,7 +33,6 @@
     let clearPublish = $state(true);
     let releaseMessage = $state('');
     let releaseCritical = $state(false);
-    let forceRefreshMessage = $state('');
 
     async function handleSetSystemNotification() {
         try {
@@ -74,22 +69,12 @@
         }
     }
 
-    async function handleForceRefresh() {
-        try {
-            await forceRefresh.mutateAsync(forceRefreshMessage ? { message: forceRefreshMessage } : undefined);
-            toast.success('Force refresh sent to all clients.');
-            showForceRefreshDialog = false;
-            forceRefreshMessage = '';
-        } catch {
-            toast.error('Failed to send force refresh.');
-        }
-    }
 </script>
 
 <div class="space-y-6">
     <div>
         <H2>Notifications</H2>
-        <Muted>Manage system notifications, release announcements, and client refresh.</Muted>
+        <Muted>Manage system notifications and release announcements.</Muted>
     </div>
 
     <Card.Root>
@@ -153,18 +138,6 @@
             </Card.Content>
         </Card.Root>
 
-        <Card.Root>
-            <Card.Header>
-                <Card.Title class="flex items-center gap-2">
-                    <RefreshCw class="size-4" />
-                    Force Refresh Clients
-                </Card.Title>
-                <Card.Description>Force all connected clients to reload. Use with caution.</Card.Description>
-            </Card.Header>
-            <Card.Content>
-                <Button variant="destructive" onclick={() => (showForceRefreshDialog = true)} disabled={forceRefresh.isPending}>Force Refresh</Button>
-            </Card.Content>
-        </Card.Root>
     </div>
 </div>
 
@@ -237,30 +210,6 @@
             <Button variant="outline" onclick={() => (showReleaseDialog = false)}>Cancel</Button>
             <Button onclick={handleSendReleaseNotification} disabled={sendRelease.isPending}>
                 {sendRelease.isPending ? 'Sending...' : 'Send Notification'}
-            </Button>
-        </Dialog.Footer>
-    </Dialog.Content>
-</Dialog.Root>
-
-<!-- Force Refresh Dialog -->
-<Dialog.Root bind:open={showForceRefreshDialog}>
-    <Dialog.Content>
-        <Dialog.Header>
-            <Dialog.Title>Force Refresh All Clients</Dialog.Title>
-            <Dialog.Description class="text-destructive">
-                Warning: This will force ALL connected clients to reload their browser. Any unsaved work will be lost.
-            </Dialog.Description>
-        </Dialog.Header>
-        <div class="space-y-4 py-4">
-            <div class="space-y-2">
-                <Label for="refresh-message">Message (optional)</Label>
-                <Textarea id="refresh-message" bind:value={forceRefreshMessage} placeholder="Reason for force refresh..." rows={2} />
-            </div>
-        </div>
-        <Dialog.Footer>
-            <Button variant="outline" onclick={() => (showForceRefreshDialog = false)}>Cancel</Button>
-            <Button variant="destructive" onclick={handleForceRefresh} disabled={forceRefresh.isPending}>
-                {forceRefresh.isPending ? 'Refreshing...' : 'Force Refresh All Clients'}
             </Button>
         </Dialog.Footer>
     </Dialog.Content>

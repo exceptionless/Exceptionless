@@ -52,14 +52,3 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "value": "We just released a new release!! Check it out <a href=\"blah\">here</a>" }
-
-### Force Refresh All Clients
-POST {{apiUrl}}/notifications/force-refresh
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{ "value": "Deploying breaking changes - forcing client refresh." }
-
-### Force Refresh (no message)
-POST {{apiUrl}}/notifications/force-refresh
-Authorization: Bearer {{token}}

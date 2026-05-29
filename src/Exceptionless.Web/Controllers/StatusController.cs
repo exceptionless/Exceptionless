@@ -147,15 +147,4 @@ public class StatusController : ExceptionlessApiController
         return Ok();
     }
 
-    /// <summary>
-    /// Force all connected clients to reload their browser.
-    /// </summary>
-    [HttpPost("notifications/force-refresh")]
-    [Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-    public async Task<ActionResult<ReleaseNotification>> ForceRefreshAsync(ValueFromBody<string?>? message)
-    {
-        var notification = await _notificationService.SendReleaseNotificationAsync(message?.Value, critical: true);
-
-        return Ok(notification);
-    }
 }

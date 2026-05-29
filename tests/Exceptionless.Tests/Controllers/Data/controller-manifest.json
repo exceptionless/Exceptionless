@@ -916,22 +916,6 @@
   },
   {
     "Controller": "StatusController",
-    "Action": "ForceRefreshAsync",
-    "HttpMethod": "POST",
-    "Route": "/api/v2/notifications/force-refresh",
-    "Authorization": [
-      "Authorize(Policy=GlobalAdminPolicy)",
-      "Authorize(Policy=UserPolicy)"
-    ],
-    "Consumes": [],
-    "Produces": [
-      "application/json",
-      "application/problem\u002Bjson"
-    ],
-    "ExcludeFromDescription": true
-  },
-  {
-    "Controller": "StatusController",
     "Action": "PostReleaseNotificationAsync",
     "HttpMethod": "POST",
     "Route": "/api/v2/notifications/release",

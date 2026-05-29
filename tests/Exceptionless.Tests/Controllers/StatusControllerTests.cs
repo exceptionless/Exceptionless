@@ -172,57 +172,6 @@ public class StatusControllerTests : IntegrationTestsBase
 
 
     [Fact]
-    public async Task ForceRefresh_AsGlobalAdmin_ReturnsCriticalNotification()
-    {
-        // Arrange
-        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
-
-        // Act
-        var notification = await SendRequestAsAsync<ReleaseNotification>(r => r
-            .Post()
-            .AsGlobalAdminUser()
-            .AppendPath("notifications/force-refresh")
-            .Content(new ValueFromBody<string?>("Deploy v9.0"))
-            .StatusCodeShouldBeOk());
-
-        // Assert
-        Assert.NotNull(notification);
-        Assert.True(notification.Critical);
-        Assert.Equal("Deploy v9.0", notification.Message);
-        Assert.True(notification.Date.IsAfterOrEqual(utcNow));
-    }
-
-    [Fact]
-    public async Task ForceRefresh_WithNoBody_ReturnsCriticalNotificationWithNullMessage()
-    {
-        // Arrange
-        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
-
-        // Act
-        var notification = await SendRequestAsAsync<ReleaseNotification>(r => r
-            .Post()
-            .AsGlobalAdminUser()
-            .AppendPath("notifications/force-refresh")
-            .StatusCodeShouldBeOk());
-
-        // Assert
-        Assert.NotNull(notification);
-        Assert.True(notification.Critical);
-        Assert.Null(notification.Message);
-        Assert.True(notification.Date.IsAfterOrEqual(utcNow));
-    }
-
-    [Fact]
-    public Task ForceRefresh_AsNonAdmin_ReturnsForbidden()
-    {
-        return SendRequestAsync(r => r
-            .Post()
-            .AsTestOrganizationUser()
-            .AppendPath("notifications/force-refresh")
-            .StatusCodeShouldBeForbidden());
-    }
-
-    [Fact]
     public async Task PostSystemNotificationAsync_WithPublishFalse_StoresWithoutPublishing()
     {
         // Arrange & Act

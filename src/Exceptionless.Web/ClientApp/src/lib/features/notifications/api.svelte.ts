@@ -21,19 +21,6 @@ export function clearSystemNotificationMutation() {
     }));
 }
 
-export function forceRefreshClientsMutation() {
-    return createMutation<ReleaseNotification, ProblemDetails, undefined | { message?: string }>(() => ({
-        mutationFn: async (params?: { message?: string }) => {
-            const client = useFetchClient();
-            const response = params?.message
-                ? await client.postJSON<ReleaseNotification>('notifications/force-refresh', { value: params.message })
-                : await client.postJSON<ReleaseNotification>('notifications/force-refresh');
-
-            return response.data!;
-        }
-    }));
-}
-
 export function getCurrentSystemNotificationQuery() {
     return createQuery<null | SystemNotification, ProblemDetails>(() => ({
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
