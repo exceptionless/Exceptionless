@@ -200,13 +200,3 @@ function getSummaryDataValue<TSummaryModel extends SummaryModel<SummaryTemplateK
     return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
-const TYPE_FILTER_REGEX = /\btype:(\w+)\b/g;
-
-export function hasSingleTypeFilter(filter: null | string | undefined): boolean {
-    if (!filter) {
-        return false;
-    }
-
-    const matches = filter.match(TYPE_FILTER_REGEX);
-    return matches?.length === 1;
-}
