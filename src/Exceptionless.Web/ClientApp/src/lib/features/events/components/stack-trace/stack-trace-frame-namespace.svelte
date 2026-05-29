@@ -8,6 +8,6 @@
     let { frame }: Props = $props();
 </script>
 
-{#if frame.declaring_namespace || frame.declaring_type}<span class="text-purple-400"
+{#if frame.declaring_namespace || frame.declaring_type}<span class="text-purple-300"
         >{#if frame.declaring_namespace}{frame.declaring_namespace}.{/if}{#if frame.declaring_type}{frame.declaring_type.replace('+', '')}.{/if}</span
     >{/if}
