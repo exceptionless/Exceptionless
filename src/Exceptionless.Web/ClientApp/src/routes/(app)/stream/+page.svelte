@@ -178,11 +178,10 @@
             get columns() {
                 return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode, {
                     showType: !hasSingleTypeFilter(eventsQueryParameters.filter)
-                })
-                    .filter((c) => c.id !== 'select')
-                    .map((c) => ({ ...c, enableSorting: false }));
+                });
             },
             configureOptions: (options) => {
+                options.columns = options.columns.filter((c) => c.id !== 'select').map((c) => ({ ...c, enableSorting: false }));
                 options.enableMultiRowSelection = false;
                 options.enableRowSelection = false;
                 options.manualSorting = false;
