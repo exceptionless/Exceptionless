@@ -169,8 +169,6 @@ public class StatusControllerTests : IntegrationTestsBase
             .AppendPath("notifications/system")
             .StatusCodeShouldBeForbidden());
     }
-
-
     [Fact]
     public async Task PostSystemNotificationAsync_WithPublishFalse_StoresWithoutPublishing()
     {

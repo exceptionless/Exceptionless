@@ -146,5 +146,4 @@ public class StatusController : ExceptionlessApiController
 
         return Ok();
     }
-
 }
