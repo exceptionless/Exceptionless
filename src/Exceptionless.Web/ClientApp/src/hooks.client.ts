@@ -76,10 +76,14 @@ export const init: ClientInit = async () => {
 
         const path = normalizePath(pathname, '');
 
-        if (status === 404) {
-            await Exceptionless.submitNotFound(`${method} ${path}`);
-        } else {
-            await Exceptionless.createLog(`${method} ${path}`, `HTTP ${status}`, 'warn').addTags('api-failure').submit();
+        try {
+            if (status === 404) {
+                await Exceptionless.submitNotFound(`${method} ${path}`);
+            } else {
+                await Exceptionless.createLog(`${method} ${path}`, `HTTP ${status}`, 'warn').addTags('api-failure').submit();
+            }
+        } catch {
+            // never let telemetry break API calls
         }
     });
 };
