@@ -46,7 +46,6 @@
 
     const chartConfig = {
         blocked: { color: 'var(--chart-2)', label: 'Blocked' },
-        deleted: { color: 'var(--chart-7)', label: 'Deleted' },
         discarded: { color: 'var(--chart-3)', label: 'Discarded' },
         limit: { color: 'var(--chart-6)', label: 'Limit' },
         org_total: { color: 'var(--chart-5)', label: 'Total in Organization' },
@@ -74,7 +73,6 @@
             return {
                 blocked: projItem.blocked,
                 date: new Date(projItem.date),
-                deleted: projItem.deleted,
                 discarded: projItem.discarded,
                 limit: orgItem?.limit || 0,
                 org_total: orgItem?.total || 0,
@@ -90,7 +88,6 @@
         { key: 'discarded', ...chartConfig.discarded },
         { key: 'blocked', ...chartConfig.blocked },
         { key: 'too_big', ...chartConfig.too_big },
-        { key: 'deleted', ...chartConfig.deleted },
         {
             key: 'limit',
             ...chartConfig.limit,

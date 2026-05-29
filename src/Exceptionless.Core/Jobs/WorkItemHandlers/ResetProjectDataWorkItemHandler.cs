@@ -1,7 +1,6 @@
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
-using Exceptionless.Core.Services;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
@@ -15,15 +14,13 @@ public class ResetProjectDataWorkItemHandler : WorkItemHandlerBase
     private readonly IStackRepository _stackRepository;
     private readonly ICacheClient _cacheClient;
     private readonly ILockProvider _lockProvider;
-    private readonly UsageService _usageService;
 
-    public ResetProjectDataWorkItemHandler(IEventRepository eventRepository, IStackRepository stackRepository, ICacheClient cacheClient, ILockProvider lockProvider, UsageService usageService, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public ResetProjectDataWorkItemHandler(IEventRepository eventRepository, IStackRepository stackRepository, ICacheClient cacheClient, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _eventRepository = eventRepository;
         _stackRepository = stackRepository;
         _cacheClient = cacheClient;
         _lockProvider = lockProvider;
-        _usageService = usageService;
     }
 
     public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = default)
@@ -43,9 +40,6 @@ public class ResetProjectDataWorkItemHandler : WorkItemHandlerBase
 
             long removedEvents = await _eventRepository.RemoveAllByProjectIdAsync(workItem.OrganizationId, workItem.ProjectId);
             await context.ReportProgressAsync(50, $"Events removed: {removedEvents}");
-
-            if (removedEvents > 0)
-                await _usageService.IncrementDeletedAsync(workItem.OrganizationId, workItem.ProjectId, (int)removedEvents);
 
             long removedStacks = await _stackRepository.RemoveAllByProjectIdAsync(workItem.OrganizationId, workItem.ProjectId);
             await _cacheClient.RemoveByPrefixAsync(EventStackFilterQueryBuilder.GetScopedCachePrefix(workItem.OrganizationId, workItem.ProjectId));

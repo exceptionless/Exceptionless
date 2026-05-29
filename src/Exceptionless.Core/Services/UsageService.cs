@@ -81,11 +81,8 @@ public class UsageService
                     var bucketBlocked = await _cache.GetAsync<int>(GetBucketBlockedCacheKey(bucketUtc, organizationId));
                     var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, organizationId));
                     var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, organizationId));
-                    var bucketDeleted = await _cache.GetAsync<int>(GetBucketDeletedCacheKey(bucketUtc, organizationId));
 
-                    bool hasIngestion = (bucketTotal?.Value ?? 0) > 0 || (bucketBlocked?.Value ?? 0) > 0 || (bucketDiscarded?.Value ?? 0) > 0 || (bucketTooBig?.Value ?? 0) > 0;
-                    if (hasIngestion)
-                        organization.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
+                    organization.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
                     var usage = organization.GetUsage(bucketUtc, _timeProvider);
                     usage.Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
@@ -93,14 +90,12 @@ public class UsageService
                     usage.Blocked += bucketBlocked?.Value ?? 0;
                     usage.Discarded += bucketDiscarded?.Value ?? 0;
                     usage.TooBig += bucketTooBig?.Value ?? 0;
-                    usage.Deleted += bucketDeleted?.Value ?? 0;
 
                     var hourlyUsage = organization.GetHourlyUsage(bucketUtc);
                     hourlyUsage.Total += bucketTotal?.Value ?? 0;
                     hourlyUsage.Blocked += bucketBlocked?.Value ?? 0;
                     hourlyUsage.Discarded += bucketDiscarded?.Value ?? 0;
                     hourlyUsage.TooBig += bucketTooBig?.Value ?? 0;
-                    hourlyUsage.Deleted += bucketDeleted?.Value ?? 0;
 
                     organization.TrimUsage(_timeProvider);
 
@@ -109,7 +104,6 @@ public class UsageService
                         GetBucketBlockedCacheKey(bucketUtc, organizationId),
                         GetBucketDiscardedCacheKey(bucketUtc, organizationId),
                         GetBucketTooBigCacheKey(bucketUtc, organizationId),
-                        GetBucketDeletedCacheKey(bucketUtc, organizationId),
                         GetThrottledKey(bucketUtc, organizationId)
                     });
 
@@ -165,11 +159,8 @@ public class UsageService
                     var bucketBlocked = await _cache.GetAsync<int>(GetBucketBlockedCacheKey(bucketUtc, project.OrganizationId, projectId));
                     var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, project.OrganizationId, projectId));
                     var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, project.OrganizationId, projectId));
-                    var bucketDeleted = await _cache.GetAsync<int>(GetBucketDeletedCacheKey(bucketUtc, project.OrganizationId, projectId));
 
-                    bool hasIngestion = (bucketTotal?.Value ?? 0) > 0 || (bucketBlocked?.Value ?? 0) > 0 || (bucketDiscarded?.Value ?? 0) > 0 || (bucketTooBig?.Value ?? 0) > 0;
-                    if (hasIngestion)
-                        project.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
+                    project.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
                     (string OrganizationId, Organization? Organization) context = (OrganizationId: project.OrganizationId, Organization: null);
                     int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(context);
@@ -180,14 +171,12 @@ public class UsageService
                     usage.Blocked += bucketBlocked?.Value ?? 0;
                     usage.Discarded += bucketDiscarded?.Value ?? 0;
                     usage.TooBig += bucketTooBig?.Value ?? 0;
-                    usage.Deleted += bucketDeleted?.Value ?? 0;
 
                     var hourlyUsage = project.GetHourlyUsage(bucketUtc);
                     hourlyUsage.Total += bucketTotal?.Value ?? 0;
                     hourlyUsage.Blocked += bucketBlocked?.Value ?? 0;
                     hourlyUsage.Discarded += bucketDiscarded?.Value ?? 0;
                     hourlyUsage.TooBig += bucketTooBig?.Value ?? 0;
-                    hourlyUsage.Deleted += bucketDeleted?.Value ?? 0;
 
                     project.TrimUsage(_timeProvider);
 
@@ -195,8 +184,7 @@ public class UsageService
                         GetBucketTotalCacheKey(bucketUtc, project.OrganizationId, projectId),
                         GetBucketDiscardedCacheKey(bucketUtc, project.OrganizationId, projectId),
                         GetBucketBlockedCacheKey(bucketUtc, project.OrganizationId, projectId),
-                        GetBucketTooBigCacheKey(bucketUtc, project.OrganizationId, projectId),
-                        GetBucketDeletedCacheKey(bucketUtc, project.OrganizationId, projectId)
+                        GetBucketTooBigCacheKey(bucketUtc, project.OrganizationId, projectId)
                     });
 
                     await _cache.SetAsync(GetTotalCacheKey(utcNow, project.OrganizationId, projectId), usage.Total, TimeSpan.FromHours(8));
@@ -344,10 +332,6 @@ public class UsageService
             usage.CurrentUsage.TooBig += bucketTooBig?.Value ?? 0;
             usage.CurrentHourUsage.TooBig += bucketTooBig?.Value ?? 0;
 
-            var bucketDeleted = await _cache.GetAsync<int>(GetBucketDeletedCacheKey(bucketUtc, organizationId, projectId));
-            usage.CurrentUsage.Deleted += bucketDeleted?.Value ?? 0;
-            usage.CurrentHourUsage.Deleted += bucketDeleted?.Value ?? 0;
-
             bucketUtc = bucketUtc.Add(_bucketSize);
         }
 
@@ -489,29 +473,6 @@ public class UsageService
         AppDiagnostics.PostTooBig.Add(1);
     }
 
-    public async Task IncrementDeletedAsync(string organizationId, string? projectId, int eventCount = 1)
-    {
-        if (eventCount <= 0)
-            return;
-
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-
-        var tasks = new List<Task>(4)
-        {
-            _cache.IncrementAsync(GetBucketDeletedCacheKey(utcNow, organizationId), eventCount, TimeSpan.FromHours(8)),
-            _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId, TimeSpan.FromHours(8))
-        };
-
-        if (!String.IsNullOrEmpty(projectId))
-        {
-            tasks.Add(_cache.IncrementAsync(GetBucketDeletedCacheKey(utcNow, organizationId, projectId), eventCount, TimeSpan.FromHours(8)));
-            tasks.Add(_cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8)));
-        }
-
-        await Task.WhenAll(tasks);
-        AppDiagnostics.EventsDeleted.Add(eventCount);
-    }
-
     private int GetBucketEventLimit(int maxEventsPerMonth)
     {
         if (maxEventsPerMonth < 5000)
@@ -576,16 +537,6 @@ public class UsageService
             return $"usage:{bucket}:{organizationId}:toobig";
 
         return $"usage:{bucket}:{organizationId}:{projectId}:toobig";
-    }
-
-    private string GetBucketDeletedCacheKey(DateTime utcTime, string organizationId, string? projectId = null)
-    {
-        int bucket = GetCurrentBucket(utcTime);
-
-        if (String.IsNullOrEmpty(projectId))
-            return $"usage:{bucket}:{organizationId}:deleted";
-
-        return $"usage:{bucket}:{organizationId}:{projectId}:deleted";
     }
 
     private string GetOrganizationSetKey(DateTime utcTime)

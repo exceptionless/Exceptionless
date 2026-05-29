@@ -963,14 +963,12 @@ public class OrganizationController : RepositoryApiController<IOrganizationRepos
             currentUsage.Blocked = realTimeUsage.CurrentUsage.Blocked;
             currentUsage.Discarded = realTimeUsage.CurrentUsage.Discarded;
             currentUsage.TooBig = realTimeUsage.CurrentUsage.TooBig;
-            currentUsage.Deleted = realTimeUsage.CurrentUsage.Deleted;
 
             var currentHourUsage = viewOrganization.GetCurrentHourlyUsage(_timeProvider);
             currentHourUsage.Total = realTimeUsage.CurrentHourUsage.Total;
             currentHourUsage.Blocked = realTimeUsage.CurrentHourUsage.Blocked;
             currentHourUsage.Discarded = realTimeUsage.CurrentHourUsage.Discarded;
             currentHourUsage.TooBig = realTimeUsage.CurrentHourUsage.TooBig;
-            currentHourUsage.Deleted = realTimeUsage.CurrentHourUsage.Deleted;
 
             viewOrganization.IsThrottled = realTimeUsage.IsThrottled;
             viewOrganization.IsOverRequestLimit = await OrganizationExtensions.IsOverRequestLimitAsync(viewOrganization.Id, _cacheClient, _options.ApiThrottleLimit, _timeProvider);

@@ -8876,8 +8876,7 @@
           "total",
           "blocked",
           "discarded",
-          "too_big",
-          "deleted"
+          "too_big"
         ],
         "type": "object",
         "properties": {
@@ -8900,10 +8899,6 @@
           "too_big": {
             "type": "integer",
             "format": "int32"
-          },
-          "deleted": {
-            "type": "integer",
-            "format": "int32"
           }
         }
       },
@@ -8914,8 +8909,7 @@
           "total",
           "blocked",
           "discarded",
-          "too_big",
-          "deleted"
+          "too_big"
         ],
         "type": "object",
         "properties": {
@@ -8940,10 +8934,6 @@
             "format": "int32"
           },
           "too_big": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "deleted": {
             "type": "integer",
             "format": "int32"
           }

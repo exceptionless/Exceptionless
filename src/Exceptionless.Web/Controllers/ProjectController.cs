@@ -755,14 +755,12 @@ public class ProjectController : RepositoryApiController<IProjectRepository, Pro
             currentUsage.Blocked = realTimeUsage.CurrentUsage.Blocked;
             currentUsage.Discarded = realTimeUsage.CurrentUsage.Discarded;
             currentUsage.TooBig = realTimeUsage.CurrentUsage.TooBig;
-            currentUsage.Deleted = realTimeUsage.CurrentUsage.Deleted;
 
             var currentHourUsage = viewProject.GetCurrentHourlyUsage(_timeProvider);
             currentHourUsage.Total = realTimeUsage.CurrentHourUsage.Total;
             currentHourUsage.Blocked = realTimeUsage.CurrentHourUsage.Blocked;
             currentHourUsage.Discarded = realTimeUsage.CurrentHourUsage.Discarded;
             currentHourUsage.TooBig = realTimeUsage.CurrentHourUsage.TooBig;
-            currentHourUsage.Deleted = realTimeUsage.CurrentHourUsage.Deleted;
         }
     }
 

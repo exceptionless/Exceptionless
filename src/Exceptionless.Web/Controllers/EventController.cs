@@ -49,7 +49,6 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
     private readonly ICacheClient _cache;
     private readonly JsonSerializerSettings _jsonSerializerSettings;
     private readonly AppOptions _appOptions;
-    private readonly UsageService _usageService;
 
     public EventController(IEventRepository repository,
         IOrganizationRepository organizationRepository,
@@ -64,7 +63,6 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         ApiMapper mapper,
         PersistentEventQueryValidator validator,
         AppOptions appOptions,
-        UsageService usageService,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory
     ) : base(repository, mapper, validator, timeProvider, loggerFactory)
@@ -79,7 +77,6 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         _cache = cacheClient;
         _jsonSerializerSettings = jsonSerializerSettings;
         _appOptions = appOptions;
-        _usageService = usageService;
 
         AllowedDateFields.Add(EventIndex.Alias.Date);
         DefaultDateField = EventIndex.Alias.Date;
@@ -1459,31 +1456,16 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
         return totals;
     }
 
-    protected override async Task<IEnumerable<string>> DeleteModelsAsync(ICollection<PersistentEvent> events)
+    protected override Task<IEnumerable<string>> DeleteModelsAsync(ICollection<PersistentEvent> events)
     {
         var user = CurrentUser;
-        var projectGroups = events.GroupBy(ev => new { ev.OrganizationId, ev.ProjectId }).ToList();
-        foreach (var projectGroup in projectGroups)
+        foreach (var projectEvents in events.GroupBy(ev => ev.ProjectId))
         {
-            var ev = projectGroup.First();
+            var ev = projectEvents.First();
             using var _ = _logger.BeginScope(new ExceptionlessState().Organization(ev.OrganizationId).Project(ev.ProjectId).Tag("Delete").Identity(user.EmailAddress).Property("User", user).SetHttpContext(HttpContext));
-            _logger.LogInformation("User {User} deleted {RemovedCount} events in project ({ProjectId})", user.Id, projectGroup.Count(), ev.ProjectId);
+            _logger.LogInformation("User {User} deleted {RemovedCount} events in project ({ProjectId})", user.Id, projectEvents.Count(), ev.ProjectId);
         }
 
-        var result = await base.DeleteModelsAsync(events);
-
-        foreach (var projectGroup in projectGroups)
-        {
-            try
-            {
-                await _usageService.IncrementDeletedAsync(projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, projectGroup.Count());
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to increment deleted usage metrics for org {OrganizationId} project {ProjectId}", projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId);
-            }
-        }
-
-        return result;
+        return base.DeleteModelsAsync(events);
     }
 }

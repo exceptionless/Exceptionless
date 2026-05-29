@@ -7,7 +7,6 @@ import { createQuery, type QueryClient } from '@tanstack/svelte-query';
 
 import type { Login, TokenResult } from './models';
 
-import { endSession } from './exceptionless-session';
 import { accessToken } from './index.svelte';
 
 const queryKeys = {
@@ -98,7 +97,6 @@ export async function login(email: string, password: string) {
 
 export async function logout(queryClient?: QueryClient, client = useFetchClient()) {
     await client.get('auth/logout', { expectedStatusCodes: [200, 401, 403] });
-    endSession().catch(() => {});
 
     await queryClient?.cancelQueries();
     queryClient?.clear();

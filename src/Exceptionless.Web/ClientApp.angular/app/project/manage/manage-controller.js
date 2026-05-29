@@ -261,11 +261,7 @@
                             return { x: moment.utc(item.date).unix(), y: item.too_big, data: item };
                         });
 
-                        vm.chart.options.series[5].data = vm.project.usage.map(function (item) {
-                            return { x: moment.utc(item.date).unix(), y: item.deleted || 0, data: item };
-                        });
-
-                        vm.chart.options.series[6].data = vm.organization.usage.map(function (item) {
+                        vm.chart.options.series[5].data = vm.organization.usage.map(function (item) {
                             return { x: moment.utc(item.date).unix(), y: item.limit, data: item };
                         });
 
@@ -790,11 +786,6 @@
                                 {
                                     name: translateService.T("Too Big"),
                                     color: "#ccc",
-                                    renderer: "stack",
-                                },
-                                {
-                                    name: translateService.T("Deleted"),
-                                    color: "#f0ad4e",
                                     renderer: "stack",
                                 },
                                 {

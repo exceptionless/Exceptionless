@@ -50,7 +50,6 @@
     --chart-4: #f7d34a; /* Ignored / too big: golden yellow */
     --chart-5: #8a8f98; /* Organization total / snoozed: neutral gray */
     --chart-6: #d9534f; /* Limit / destructive: classic red */
-    --chart-7: #9b2d30; /* Deleted: dark rose */
 }
 
 .dark {
@@ -98,7 +97,6 @@
     --chart-4: #ffe16a; /* Ignored / too big: golden yellow */
     --chart-5: #a4abb5; /* Organization total / snoozed: neutral gray */
     --chart-6: #ff746f; /* Limit / destructive: classic red */
-    --chart-7: #c94f53; /* Deleted: dark rose */
 }
 
 @theme inline {
