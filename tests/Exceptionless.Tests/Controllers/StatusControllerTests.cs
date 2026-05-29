@@ -169,4 +169,28 @@ public class StatusControllerTests : IntegrationTestsBase
             .AppendPath("notifications/system")
             .StatusCodeShouldBeForbidden());
     }
+    [Fact]
+    public async Task PostSystemNotificationAsync_WithPublishFalse_StoresWithoutPublishing()
+    {
+        // Arrange & Act
+        var notification = await SendRequestAsAsync<SystemNotification>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/system")
+            .QueryString("publish", "false")
+            .Content(new ValueFromBody<string>("Silent notification"))
+            .StatusCodeShouldBeOk());
+
+        // Assert — notification is persisted and returned
+        Assert.NotNull(notification);
+        Assert.Equal("Silent notification", notification.Message);
+
+        // Verify it was actually persisted to cache
+        var persisted = await SendRequestAsAsync<SystemNotification>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/system")
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(persisted);
+        Assert.Equal("Silent notification", persisted.Message);
+    }
 }
