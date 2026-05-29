@@ -68,7 +68,11 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     const isMemoryPaging = $derived(configuration.paginationStrategy === 'memory');
 
     const [pageCount, setPageCount] = createTableState(0);
-    const columns = $derived(configuration.columns);
+    const [columns, setColumns] = createTableState<ColumnDef<StockFeatures, TData, unknown>[]>(configuration.columns);
+
+    $effect(() => {
+        setColumns(configuration.columns);
+    });
 
     // Use the persistKey if provided, otherwise default to events-column-visibility
     const visibilityKey = configuration.columnPersistenceKey ? `${configuration.columnPersistenceKey}-column-visibility` : 'events-column-visibility';
@@ -80,9 +84,9 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
 
     const orderKey = configuration.columnPersistenceKey ? `${configuration.columnPersistenceKey}-column-order` : 'events-column-order';
     const [persistedColumnOrder, setPersistedColumnOrder] = createPersistedTableState(orderKey, configuration.defaultColumnOrder ?? <ColumnOrderState>[]);
-    const columnOrder = () => sanitizeColumnOrder(persistedColumnOrder(), columns);
+    const columnOrder = () => sanitizeColumnOrder(persistedColumnOrder(), columns());
     const setColumnOrder = (updaterOrValue: Updater<ColumnOrderState>) => {
-        setPersistedColumnOrder(updaterOrValue instanceof Function ? updaterOrValue(resolveColumnOrder(columnOrder(), columns)) : updaterOrValue);
+        setPersistedColumnOrder(updaterOrValue instanceof Function ? updaterOrValue(resolveColumnOrder(columnOrder(), columns())) : updaterOrValue);
     };
 
     // Initialize pagination state from parameters
@@ -226,7 +230,10 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         _features: stockFeatures,
         _rowModels: { coreRowModel: createCoreRowModel<StockFeatures, TData>() },
         get columns() {
-            return columns;
+            return columns();
+        },
+        set columns(value) {
+            setColumns(value);
         },
         get data() {
             return data();
