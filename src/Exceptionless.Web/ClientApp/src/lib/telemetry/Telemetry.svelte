@@ -11,8 +11,10 @@
 
     let { userId, userName }: Props = $props();
 
-    afterNavigate(({ to }) => {
-        void Exceptionless.submitFeatureUsage(normalizeRouteId(to?.route.id ?? null));
+    afterNavigate(async ({ to }) => {
+        await Exceptionless.createFeatureUsage(normalizeRouteId(to?.route.id ?? null))
+        .setProperty('params', to?.params)
+        .submit();
     });
 
     $effect(() => {

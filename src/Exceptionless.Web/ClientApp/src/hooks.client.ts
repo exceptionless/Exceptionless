@@ -57,7 +57,7 @@ export const init: ClientInit = async () => {
         await next();
 
         const status = ctx.response?.status;
-        if (!status || (status < 500 && status !== 429)) {
+        if (!status || (status !== 404 && status < 500 && status !== 429)) {
             return;
         }
 
@@ -75,7 +75,12 @@ export const init: ClientInit = async () => {
         }
 
         const path = normalizePath(pathname, '');
-        void Exceptionless.createLog(`${method} ${path}`, `HTTP ${status}`, 'warn').addTags('api-failure').submit();
+
+        if (status === 404) {
+            await Exceptionless.submitNotFound(`${method} ${path}`);
+        } else {
+            await Exceptionless.createLog(`${method} ${path}`, `HTTP ${status}`, 'warn').addTags('api-failure').submit();
+        }
     });
 };
 
@@ -86,9 +91,14 @@ export const handleError: HandleClientError = async ({ error, event, message, st
 
     let errorId: null | string = null;
     try {
-        await Exceptionless.createException(toError(error ?? message))
-            .setProperty('status', String(status))
-            .submit();
+        if (status === 404) {
+            await Exceptionless.submitNotFound(event.url.pathname);
+        } else {
+            await Exceptionless.createException(toError(error ?? message))
+                .setProperty('status', String(status))
+                .submit();
+        }
+
         errorId = Exceptionless.getLastReferenceId();
     } catch {
         // never throw

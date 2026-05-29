@@ -509,4 +509,4 @@
     {/if}
 {/if}
 
-<Telemetry userId={isAuthenticated ? meQuery.data?.id : undefined} userName={isAuthenticated ? meQuery.data?.full_name : undefined} />
+<Telemetry userId={isAuthenticated ? meQuery.data?.email_address : undefined} userName={isAuthenticated ? meQuery.data?.full_name : undefined} />
