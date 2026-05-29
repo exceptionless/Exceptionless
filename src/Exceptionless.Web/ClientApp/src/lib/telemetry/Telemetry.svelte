@@ -1,8 +1,9 @@
 <script lang="ts">
     import { afterNavigate } from '$app/navigation';
+    import { page } from '$app/state';
     import { Exceptionless } from '@exceptionless/browser';
 
-    import { normalizeRouteId } from './route';
+    import { normalizePath, normalizeRouteId } from './route';
 
     interface Props {
         userId?: string;
@@ -12,9 +13,13 @@
     let { userId, userName }: Props = $props();
 
     afterNavigate(async ({ to }) => {
-        await Exceptionless.createFeatureUsage(normalizeRouteId(to?.route.id ?? null))
-        .setProperty('params', to?.params)
-        .submit();
+        if (page.status === 404) {
+            await Exceptionless.submitNotFound(normalizePath(page.url.pathname));
+        } else {
+            await Exceptionless.createFeatureUsage(normalizeRouteId(to?.route.id ?? null))
+                .setProperty('params', to?.params)
+                .submit();
+        }
     });
 
     $effect(() => {

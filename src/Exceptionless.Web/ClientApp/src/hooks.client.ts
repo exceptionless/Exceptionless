@@ -96,7 +96,7 @@ export const handleError: HandleClientError = async ({ error, event, message, st
     let errorId: null | string = null;
     try {
         if (status === 404) {
-            await Exceptionless.submitNotFound(event.url.pathname);
+            await Exceptionless.submitNotFound(normalizePath(event.url.pathname));
         } else {
             await Exceptionless.createException(toError(error ?? message))
                 .setProperty('status', String(status))
