@@ -199,3 +199,4 @@ function getSummaryDataValue<TSummaryModel extends SummaryModel<SummaryTemplateK
     const value = (summary.data as Record<string, unknown>)[key];
     return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
+
