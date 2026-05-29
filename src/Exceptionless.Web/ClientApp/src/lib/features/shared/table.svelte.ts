@@ -70,6 +70,10 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     const [pageCount, setPageCount] = createTableState(0);
     const [columns, setColumns] = createTableState<ColumnDef<StockFeatures, TData, unknown>[]>(configuration.columns);
 
+    $effect(() => {
+        setColumns(configuration.columns);
+    });
+
     // Use the persistKey if provided, otherwise default to events-column-visibility
     const visibilityKey = configuration.columnPersistenceKey ? `${configuration.columnPersistenceKey}-column-visibility` : 'events-column-visibility';
     const [persistedColumnVisibility, setColumnVisibility] = createPersistedTableState(
