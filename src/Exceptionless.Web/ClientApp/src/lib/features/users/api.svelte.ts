@@ -1,5 +1,6 @@
 import type { WebSocketMessageValue } from '$features/websockets/models';
 
+import { setUserIdentity } from '$features/auth/exceptionless-session';
 import { accessToken } from '$features/auth/index.svelte';
 import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
@@ -68,6 +69,7 @@ export function getMeQuery() {
         enabled: () => !!accessToken.current,
         onSuccess: (data: ViewCurrentUser) => {
             queryClient.setQueryData(queryKeys.id(data.id!), data);
+            setUserIdentity(data.id, data.full_name).catch(() => {});
         },
         queryClient,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
