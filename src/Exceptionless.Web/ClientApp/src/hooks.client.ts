@@ -43,7 +43,7 @@ export const init: ClientInit = async () => {
             c.settings['@@log:*'] = 'debug';
         }
 
-        c.useSessions();
+        c.useSessions(true, 60000, true);
 
         c.addPlugin('route-context', 10, async (ctx) => {
             if (ctx.event.type !== 'usage') {

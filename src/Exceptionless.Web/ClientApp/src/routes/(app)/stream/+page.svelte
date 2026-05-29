@@ -24,7 +24,7 @@
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
-    import { defaultEventColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
+    import { defaultEventColumnVisibility, getColumns, hasSingleTypeFilter } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
     import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
@@ -175,7 +175,9 @@
         getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
             columnPersistenceKey: 'stream-column-visibility',
             get columns() {
-                return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode);
+                return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode, {
+                    showType: !hasSingleTypeFilter(eventsQueryParameters.filter)
+                });
             },
             configureOptions: (options) => {
                 options.columns = options.columns.filter((c) => c.id !== 'select').map((c) => ({ ...c, enableSorting: false }));

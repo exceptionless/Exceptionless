@@ -24,8 +24,10 @@ export const defaultEventColumnVisibility: ColumnVisibilityState = {
 };
 
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
-    mode: GetEventsMode = 'summary'
+    mode: GetEventsMode = 'summary',
+    options?: { showType?: boolean }
 ): ColumnDef<StockFeatures, TSummaryModel, unknown>[] {
+    const showType = options?.showType ?? true;
     const columns: ColumnDef<StockFeatures, TSummaryModel, unknown>[] = [
         {
             cell: (props) =>
@@ -51,7 +53,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             }
         },
         {
-            cell: (prop) => renderComponent(Summary, { showStatus: false, summary: prop.row.original }),
+            cell: (prop) => renderComponent(Summary, { showStatus: false, showType, summary: prop.row.original }),
             header: 'Summary',
             id: 'summary',
             meta: {
@@ -196,4 +198,15 @@ function getSource<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(summ
 function getSummaryDataValue<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(summary: TSummaryModel, key: string): string | undefined {
     const value = (summary.data as Record<string, unknown>)[key];
     return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+const TYPE_FILTER_REGEX = /\btype:(\w+)\b/g;
+
+export function hasSingleTypeFilter(filter: null | string | undefined): boolean {
+    if (!filter) {
+        return false;
+    }
+
+    const matches = filter.match(TYPE_FILTER_REGEX);
+    return matches?.length === 1;
 }
