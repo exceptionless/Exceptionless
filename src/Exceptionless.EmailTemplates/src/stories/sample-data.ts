@@ -1,231 +1,25 @@
 /**
  * Sample data for Storybook email template previews.
- * Replaces Handlebars tokens with realistic values so templates render correctly.
- *
- * Uses a proper Handlebars-like evaluator supporting:
- *   {{token}}, {{../token}} (parent scope)
- *   {{#if token}}...{{else if token2}}...{{else}}...{{/if}}
- *   {{#unless token}}...{{/unless}}
+ * Uses the `handlebars` npm package to evaluate templates, which matches
+ * HandlebarsDotNet's behaviour for the constructs used in these templates:
+ *   {{token}}, {{../token}} (parent scope in each loops)
+ *   {{#if}}...{{else}}...{{/if}}, {{#unless}}...{{/unless}}
  *   {{#each array}}...{{@index}}...{{@key}}...{{this}}...{{/each}}
  */
+import Handlebars from 'handlebars';
 
-/** A single item in a {{#each}} loop (all properties are strings for simplicity). */
-export type EachItem = Record<string, string>;
-
-/** Token value — either a scalar string, a number (for @index), or an array for {{#each}} loops. */
-export type TokenValue = string | number | EachItem[];
-
-/** The full token context passed to fillTokens. */
+export type EachItem = Record<string, unknown>;
+export type TokenValue = string | number | boolean | EachItem[] | Record<string, unknown>;
 export type TokenData = Record<string, TokenValue>;
 
-// ─── Evaluator ──────────────────────────────────────────────────────────────
-
-function isTruthy(val: TokenValue | undefined): boolean {
-    if (val === undefined || val === null) return false;
-    if (Array.isArray(val)) return val.length > 0;
-    // Numbers: match HandlebarsDotNet — 0 is falsy, non-zero is truthy.
-    // This matters for {{#if @index}} where @index is stored as a real number.
-    if (typeof val === 'number') return val !== 0;
-    // Strings: match Handlebars semantics — only empty string, 'false', 'null', 'undefined' are falsy.
-    // Note: "0" is intentionally truthy here (Handlebars string truthiness).
-    return val !== '' && val !== 'false' && val !== 'null' && val !== 'undefined';
-}
-
-/** Entry point — render a Handlebars template against the given context. */
 export function fillTokens(html: string, tokens: TokenData): string {
-    return evalTemplate(html, tokens);
-}
-
-function evalTemplate(tpl: string, ctx: TokenData): string {
-    let i = 0;
-    let out = '';
-
-    while (i < tpl.length) {
-        const next = tpl.indexOf('{{', i);
-        if (next === -1) {
-            out += tpl.slice(i);
-            break;
-        }
-
-        out += tpl.slice(i, next);
-
-        const closeIdx = tpl.indexOf('}}', next + 2);
-        if (closeIdx === -1) {
-            out += tpl.slice(next);
-            break;
-        }
-
-        const tag = tpl.slice(next + 2, closeIdx).trim();
-        const afterTag = closeIdx + 2;
-
-        if (tag.startsWith('#if ') || tag.startsWith('#unless ')) {
-            const isUnless = tag.startsWith('#unless ');
-            const key = tag.slice(isUnless ? 8 : 4).trim();
-            const condition = isUnless ? !isTruthy(ctx[key]) : isTruthy(ctx[key]);
-            const { branches, elseConditions, nextIdx } = collectIfBranches(tpl, afterTag);
-
-            let selected = condition ? (branches[0] ?? '') : '';
-            if (!condition) {
-                for (let b = 0; b < elseConditions.length; b++) {
-                    const cond = elseConditions[b];
-                    if (cond === null || isTruthy(ctx[cond])) {
-                        selected = branches[b + 1] ?? '';
-                        break;
-                    }
-                }
-            }
-            out += evalTemplate(selected, ctx);
-            i = nextIdx;
-        } else if (tag.startsWith('#each ')) {
-            const key = tag.slice(6).trim();
-            const { body, nextIdx } = collectBlock(tpl, afterTag, 'each');
-            const items = ctx[key];
-            if (Array.isArray(items)) {
-                out += items
-                    .map((item, index) => {
-                        const itemCtx: TokenData = {
-                            ...ctx,
-                            ...item,
-                            '@index': index
-                        };
-                        return evalTemplate(body, itemCtx);
-                    })
-                    .join('');
-            }
-            i = nextIdx;
-        } else if (tag.startsWith('/') || tag === 'else' || tag.startsWith('else ')) {
-            // Should never reach here at top level — skip stray closing/else tags
-            i = afterTag;
-        } else {
-            // Simple token — strip leading ../ for parent-scope access ({{../BaseUrl}} → BaseUrl)
-            const key = tag.startsWith('../') ? tag.slice(3) : tag;
-            const val = ctx[key];
-            out += val !== undefined ? String(val) : `[${key}]`;
-            i = afterTag;
-        }
-    }
-
-    return out;
-}
-
-interface IfBranchResult {
-    /** branches[0] = true branch; branches[1..n] = else/else-if branches */
-    branches: string[];
-    /** null = plain {{else}}, 'key' = {{else if key}}; length = branches.length - 1 */
-    elseConditions: (string | null)[];
-    /** index in the template immediately after the closing {{/if}} or {{/unless}} */
-    nextIdx: number;
-}
-
-function collectIfBranches(tpl: string, start: number): IfBranchResult {
-    let i = start;
-    let depth = 0;
-    let current = '';
-    const branches: string[] = [];
-    const elseConditions: (string | null)[] = [];
-
-    while (i < tpl.length) {
-        const next = tpl.indexOf('{{', i);
-        if (next === -1) {
-            current += tpl.slice(i);
-            i = tpl.length;
-            break;
-        }
-
-        const closeIdx = tpl.indexOf('}}', next + 2);
-        if (closeIdx === -1) {
-            current += tpl.slice(i);
-            i = tpl.length;
-            break;
-        }
-
-        const tag = tpl.slice(next + 2, closeIdx).trim();
-
-        if (tag.startsWith('#if ') || tag.startsWith('#unless ') || tag.startsWith('#each ')) {
-            depth++;
-            current += tpl.slice(i, closeIdx + 2);
-            i = closeIdx + 2;
-        } else if ((tag === '/if' || tag === '/unless') && depth === 0) {
-            current += tpl.slice(i, next); // literal content before {{/if}}
-            branches.push(current);
-            return { branches, elseConditions, nextIdx: closeIdx + 2 };
-        } else if ((tag === '/if' || tag === '/unless' || tag === '/each') && depth > 0) {
-            depth--;
-            current += tpl.slice(i, closeIdx + 2);
-            i = closeIdx + 2;
-        } else if (tag === 'else' && depth === 0) {
-            current += tpl.slice(i, next); // literal before {{else}}
-            branches.push(current);
-            elseConditions.push(null);
-            current = '';
-            i = closeIdx + 2;
-        } else if (tag.startsWith('else if ') && depth === 0) {
-            current += tpl.slice(i, next); // literal before {{else if}}
-            branches.push(current);
-            elseConditions.push(tag.slice(8).trim());
-            current = '';
-            i = closeIdx + 2;
-        } else {
-            current += tpl.slice(i, closeIdx + 2);
-            i = closeIdx + 2;
-        }
-    }
-
-    branches.push(current);
-    return { branches, elseConditions, nextIdx: i };
-}
-
-interface BlockResult {
-    body: string;
-    nextIdx: number;
-}
-
-function collectBlock(tpl: string, start: number, blockType: string): BlockResult {
-    let i = start;
-    let depth = 0;
-    let body = '';
-
-    while (i < tpl.length) {
-        const next = tpl.indexOf('{{', i);
-        if (next === -1) {
-            body += tpl.slice(i);
-            i = tpl.length;
-            break;
-        }
-
-        const closeIdx = tpl.indexOf('}}', next + 2);
-        if (closeIdx === -1) {
-            body += tpl.slice(i);
-            i = tpl.length;
-            break;
-        }
-
-        const tag = tpl.slice(next + 2, closeIdx).trim();
-
-        if (tag.startsWith('#if ') || tag.startsWith('#unless ') || tag.startsWith('#each ')) {
-            depth++;
-            body += tpl.slice(i, closeIdx + 2);
-            i = closeIdx + 2;
-        } else if (tag === `/${blockType}` && depth === 0) {
-            body += tpl.slice(i, next); // literal before closing tag
-            return { body, nextIdx: closeIdx + 2 };
-        } else if ((tag === '/if' || tag === '/unless' || tag === '/each') && depth > 0) {
-            depth--;
-            body += tpl.slice(i, closeIdx + 2);
-            i = closeIdx + 2;
-        } else {
-            body += tpl.slice(i, closeIdx + 2);
-            i = closeIdx + 2;
-        }
-    }
-
-    return { body, nextIdx: i };
+    const template = Handlebars.compile(html, { noEscape: true });
+    return template(tokens);
 }
 
 // ─── Sample Data ─────────────────────────────────────────────────────────────
 
 // Use the local dev URL so reviewers never accidentally hit production from email previews.
-// The API health endpoint is at http://localhost:7110/api/v2/about
 const BASE_URL = 'http://localhost:7110';
 const ORG_ID = 'org_123456';
 const PROJECT_ID = 'proj_abcdef';

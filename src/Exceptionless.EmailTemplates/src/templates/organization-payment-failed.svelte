@@ -1,7 +1,28 @@
 <script module lang="ts">
     import { Button, Text, Heading, Section, Link } from '@better-svelte-email/components';
     import EmailLayout from '../components/EmailLayout.svelte';
+    import { wrapJsonLd } from '../lib/json-ld';
     import ActionsFooter from '../components/ActionsFooter.svelte';
+
+    const jsonLd = wrapJsonLd(`
+{
+  "@context": "http://schema.org",
+  "@type": "EmailMessage",
+  "description": "{{Subject}}",
+  "potentialAction": {
+    "@type": "ViewAction",
+    "target": "{{BaseUrl}}/organization/{{OrganizationId}}/manage?tab=billing",
+    "url": "{{BaseUrl}}/organization/{{OrganizationId}}/manage?tab=billing",
+    "name": "Update Billing Information"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Exceptionless",
+    "url": "https://exceptionless.com",
+    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
+  }
+}
+`);
 </script>
 
 <EmailLayout>
@@ -39,22 +60,4 @@
     {/snippet}
 </EmailLayout>
 
-{@html `<script type="application/ld+json">
-{
-  "@context": "http://schema.org",
-  "@type": "EmailMessage",
-  "description": "{{Subject}}",
-  "potentialAction": {
-    "@type": "ViewAction",
-    "target": "{{BaseUrl}}/organization/{{OrganizationId}}/manage?tab=billing",
-    "url": "{{BaseUrl}}/organization/{{OrganizationId}}/manage?tab=billing",
-    "name": "Update Billing Information"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "Exceptionless",
-    "url": "https://exceptionless.com",
-    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
-  }
-}
-</script>`}
+{@html jsonLd}
