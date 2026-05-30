@@ -100,7 +100,7 @@ public class OrganizationNotificationWorkItemHandlerTests : TestWithServices
         var workItem = CreateMonthlyNotificationWorkItem(DequeuedNotificationOrganizationId);
 
         await workItemQueue.EnqueueAsync(workItem);
-        var queueEntry = await workItemQueue.DequeueAsync(TestContext.Current.CancellationToken);
+        var queueEntry = await workItemQueue.DequeueAsync(TestCancellationToken);
         Assert.NotNull(queueEntry);
         await queueEntry.CompleteAsync();
 
@@ -123,7 +123,7 @@ public class OrganizationNotificationWorkItemHandlerTests : TestWithServices
         await PublishPlanOverageAndWaitForQueueAsync(workItemQueue, new PlanOverage { OrganizationId = HourlyOrganizationId, IsHourly = true }, expectedEnqueueAttempts: 1, expectedEnqueuedCount: 1);
 
         // Assert
-        var queueEntry = await workItemQueue.DequeueAsync(TestContext.Current.CancellationToken);
+        var queueEntry = await workItemQueue.DequeueAsync(TestCancellationToken);
         Assert.NotNull(queueEntry);
 
         var workItem = GetService<ISerializer>().Deserialize<OrganizationNotificationWorkItem>(queueEntry.Value.Data)!;
@@ -208,7 +208,7 @@ public class OrganizationNotificationWorkItemHandlerTests : TestWithServices
             return Task.CompletedTask;
         });
 
-        await MessagePublisher.PublishAsync(overage, cancellationToken: TestContext.Current.CancellationToken);
+        await MessagePublisher.PublishAsync(overage, cancellationToken: TestCancellationToken);
         await enqueueAttempts.WaitAsync(TimeSpan.FromSeconds(5));
         await enqueued.WaitAsync(TimeSpan.FromSeconds(5));
     }
