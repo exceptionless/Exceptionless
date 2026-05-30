@@ -63,10 +63,10 @@ public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWith
         if (Data is null) return new DataDictionary();
         var result = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
         foreach (var kvp in Data.Where(kvp => !String.IsNullOrEmpty(kvp.Key)
-            && (!kvp.Key.StartsWith('@') || kvp.Key.StartsWith("@ref:", StringComparison.OrdinalIgnoreCase))))
+            && (!kvp.Key.StartsWith('@') || kvp.Key.StartsWith("@ref:", StringComparison.OrdinalIgnoreCase))
+            && kvp.Value is string or bool or int or long or float or double or decimal or DateTime or DateTimeOffset))
         {
-            if (kvp.Value is string or bool or int or long or float or double or decimal or DateTime or DateTimeOffset)
-                result[kvp.Key] = kvp.Value;
+            result[kvp.Key] = kvp.Value;
         }
         return result;
     }

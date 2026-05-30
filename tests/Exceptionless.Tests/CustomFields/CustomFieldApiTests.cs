@@ -232,7 +232,7 @@ public sealed class CustomFieldApiTests : IntegrationTestsBase
     public async Task PatchField_UpdatesDisplayOrder()
     {
         var definition = await _customFieldDefinitionRepository.AddFieldAsync(
-            nameof(PersistentEvent), SampleDataService.TEST_ORG_ID, "priority", "integer", displayOrder: 1);
+            nameof(PersistentEvent), SampleDataService.TEST_ORG_ID, "priority", "int", displayOrder: 1);
 
         var updated = await SendRequestAsAsync<CustomFieldDefinitionResponse>(r => r
             .AsTestOrganizationUser()
@@ -930,8 +930,8 @@ public sealed class CustomFieldApiTests : IntegrationTestsBase
         // hasError = true should add SessionHasError
         var updated = ev.UpdateSessionStart(now, hasError: true);
         Assert.True(updated);
-        Assert.True(ev.Data.ContainsKey(Event.KnownDataKeys.SessionHasError));
-        Assert.Equal(true, ev.Data[Event.KnownDataKeys.SessionHasError]);
+        Assert.True(ev.Data.TryGetValue(Event.KnownDataKeys.SessionHasError, out var sessionHasError));
+        Assert.Equal(true, sessionHasError);
 
         // hasError = false should remove it
         ev.UpdateSessionStart(now, hasError: false);

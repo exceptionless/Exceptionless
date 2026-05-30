@@ -89,7 +89,7 @@ public sealed class CustomFieldIndexingTests : IntegrationTestsBase
         if (context.Event.Idx is not null)
         {
             Assert.DoesNotContain(context.Event.Idx.Keys, k =>
-                System.Text.RegularExpressions.Regex.IsMatch(k, @"^(keyword|double|integer|boolean|long|float|date)-\d+$")
+                System.Text.RegularExpressions.Regex.IsMatch(k, @"^(bool|date|double|float|int|keyword|long|string)-\d+$")
                 && Equals(context.Event.Idx[k], "value"));
         }
     }

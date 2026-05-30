@@ -145,7 +145,7 @@ public class EventCustomFieldService : IStartupAction
 
         var documentsByOrganization = args.Documents
             .Select(d => d.Value)
-            .Where(d => d is not null)
+            .OfType<PersistentEvent>()
             .GroupBy(d => d.OrganizationId)
             .Where(g => !String.IsNullOrEmpty(g.Key));
 
@@ -170,7 +170,7 @@ public class EventCustomFieldService : IStartupAction
                 continue;
             }
 
-            foreach (var document in organizationGroup.Where(d => d is not null))
+            foreach (var document in organizationGroup)
             {
                 try
                 {
