@@ -272,7 +272,6 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                         lastStatus = _timeProvider.GetUtcNow().UtcDateTime;
                         await RenewLockAsync(context);
                         _logger.LogInformation("Total={Processed}/{Total} Errors={ErrorCount}", processed, total, error);
-                        await _cacheClient.RemoveByPrefixAsync(nameof(Stack));
                     }
                 }
                 catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
@@ -296,7 +295,6 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         }
 
         _logger.LogInformation("Done de-duping stacks: Total={Processed}/{Total} Errors={ErrorCount}", processed, total, error);
-        await _cacheClient.RemoveByPrefixAsync(nameof(Stack));
     }
 
     private Task RenewLockAsync(JobContext context)
