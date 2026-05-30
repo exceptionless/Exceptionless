@@ -6,8 +6,11 @@ using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
+using Foundatio.FastCloner;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Options;
+using Foundatio.Repositories.Utility;
+using Foundatio.Utility;
 using Xunit;
 
 namespace Exceptionless.Tests.Repositories;
@@ -275,5 +278,59 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         Assert.Equal(2, stacks.Documents.Count);
         Assert.NotNull(stacks.Documents.SingleOrDefault(s => String.Equals(s.Id, TestConstants.StackId)));
         Assert.NotNull(stacks.Documents.SingleOrDefault(s => String.Equals(s.Id, TestConstants.StackId2)));
+    }
+
+    [Fact]
+    public async Task GetDuplicateSignatures_WithDuplicates_ReturnsSignatures()
+    {
+        string uniqueProjectId = ObjectId.GenerateNewId().ToString();
+        var stack1 = _stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: uniqueProjectId);
+        stack1.DuplicateSignature = $"{uniqueProjectId}:dup_sig_test";
+
+        var stack2 = stack1.DeepClone();
+        stack2.Id = ObjectId.GenerateNewId().ToString();
+
+        await _repository.AddAsync(new[] { stack1, stack2 }, o => o.ImmediateConsistency());
+
+        var duplicates = await _repository.GetDuplicateSignaturesAsync();
+        Assert.Contains($"{uniqueProjectId}:dup_sig_test", duplicates);
+    }
+
+    [Fact]
+    public async Task GetDuplicateSignatures_WithNoDuplicates_ReturnsEmpty()
+    {
+        // Use a unique project ID to avoid interference from pre-existing sample data
+        string uniqueProjectId = ObjectId.GenerateNewId().ToString();
+        var stack1 = _stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: uniqueProjectId);
+        stack1.DuplicateSignature = $"{uniqueProjectId}:unique_sig_1";
+
+        var stack2 = _stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: uniqueProjectId);
+        stack2.DuplicateSignature = $"{uniqueProjectId}:unique_sig_2";
+
+        await _repository.AddAsync(new[] { stack1, stack2 }, o => o.ImmediateConsistency());
+
+        var duplicates = await _repository.GetDuplicateSignaturesAsync();
+        // Should not contain our unique signatures since they each appear only once
+        Assert.DoesNotContain($"{uniqueProjectId}:unique_sig_1", duplicates);
+        Assert.DoesNotContain($"{uniqueProjectId}:unique_sig_2", duplicates);
+    }
+
+    [Fact]
+    public async Task GetDuplicateSignatures_WithSoftDeletedStacks_ExcludesThem()
+    {
+        // Use a unique project ID to avoid interference from pre-existing sample data
+        string uniqueProjectId = ObjectId.GenerateNewId().ToString();
+        var stack1 = _stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: uniqueProjectId);
+        stack1.DuplicateSignature = $"{uniqueProjectId}:softdelete_sig";
+
+        var stack2 = stack1.DeepClone();
+        stack2.Id = ObjectId.GenerateNewId().ToString();
+        stack2.IsDeleted = true;
+
+        await _repository.AddAsync(new[] { stack1, stack2 }, o => o.ImmediateConsistency());
+
+        var duplicates = await _repository.GetDuplicateSignaturesAsync();
+        // The soft-deleted stack should be excluded, leaving only 1 stack with this signature
+        Assert.DoesNotContain($"{uniqueProjectId}:softdelete_sig", duplicates);
     }
 }

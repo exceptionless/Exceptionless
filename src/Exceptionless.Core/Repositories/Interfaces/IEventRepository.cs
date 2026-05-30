@@ -13,6 +13,17 @@ public interface IEventRepository : IRepositoryOwnedByOrganizationAndProject<Per
     Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false, bool sendNotifications = true);
     Task<long> RemoveAllAsync(string organizationId, string? clientIpAddress, DateTime? utcStart, DateTime? utcEnd, CommandOptionsDescriptor<PersistentEvent>? options = null);
     Task<long> RemoveAllByStackIdsAsync(string[] stackIds);
+    Task<long> RemoveAllByProjectIdsAsync(string[] projectIds);
+    Task<long> RemoveAllByOrganizationIdsAsync(string[] organizationIds);
+    Task<long> ReassignStackAsync(IEnumerable<string> sourceStackIds, string targetStackId);
+    Task<IReadOnlyCollection<string>> GetDistinctStackIdsAsync(int batchSize, CompositeKeyResult? afterKey = null);
+    Task<IReadOnlyCollection<string>> GetDistinctProjectIdsAsync(int batchSize, CompositeKeyResult? afterKey = null);
+    Task<IReadOnlyCollection<string>> GetDistinctOrganizationIdsAsync(int batchSize, CompositeKeyResult? afterKey = null);
+}
+
+public record CompositeKeyResult
+{
+    public Dictionary<string, object> AfterKey { get; init; } = [];
 }
 
 public static class EventRepositoryExtensions

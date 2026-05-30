@@ -188,6 +188,22 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
         );
     }
 
+    public async Task<IReadOnlyCollection<string>> GetDuplicateSignaturesAsync(int maxResults = 10000)
+    {
+        // ImmediateConsistency forces a segment refresh before the aggregation so that
+        // any stacks soft-deleted in a previous batch are excluded here. Cost: one refresh
+        // per batch (not per item), equivalent to the original explicit index refresh.
+        var result = await CountAsync(
+            q => q.AggregationsExpression($"terms:(duplicate_signature~{maxResults} @min:2)"),
+            o => o.ImmediateConsistency());
+
+        var buckets = result.Aggregations.Terms("terms_duplicate_signature")?.Buckets;
+        if (buckets is not { Count: > 0 })
+            return [];
+
+        return buckets.Select(b => b.Key).ToArray();
+    }
+
     protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<Stack>> findHits, ICommandOptions options, bool isDirtyRead)
     {
         await base.AddDocumentsToCacheAsync(findHits, options, isDirtyRead);
