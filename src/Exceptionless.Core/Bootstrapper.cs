@@ -43,6 +43,7 @@ using Foundatio.Resilience;
 using Foundatio.Serializer;
 using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 using MaintainIndexesJob = Foundatio.Repositories.Elasticsearch.Jobs.MaintainIndexesJob;
@@ -127,6 +128,8 @@ public class Bootstrapper
         services.AddSingleton(s => CreateQueue<WebHookNotification>(s));
         services.AddSingleton(s => CreateQueue<MailMessage>(s));
         services.AddSingleton(s => CreateQueue<WorkItemData>(s, TimeSpan.FromHours(1)));
+
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IQueueBehavior<WorkItemData>, WorkItemDuplicateDetectionQueueBehavior>());
 
         services.AddSingleton<IConnectionMapping, ConnectionMapping>();
         services.AddSingleton<MessageService>();
@@ -301,10 +304,14 @@ public class Bootstrapper
         return new InMemoryQueue<T>(new InMemoryQueueOptions<T>
         {
             WorkItemTimeout = workItemTimeout.GetValueOrDefault(TimeSpan.FromMinutes(5.0)),
+            Behaviors = container.GetServices<IQueueBehavior<T>>().ToList(),
             Serializer = container.GetRequiredService<ISerializer>(),
             TimeProvider = container.GetRequiredService<TimeProvider>(),
             ResiliencePolicyProvider = container.GetRequiredService<IResiliencePolicyProvider>(),
             LoggerFactory = loggerFactory
         });
     }
+
+    private sealed class WorkItemDuplicateDetectionQueueBehavior(ICacheClient cacheClient, ILoggerFactory loggerFactory)
+        : DuplicateDetectionQueueBehavior<WorkItemData>(cacheClient, loggerFactory, TimeSpan.FromHours(24));
 }
