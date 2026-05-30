@@ -227,7 +227,7 @@
     <div class="mt-4 flex justify-between">
         <H3>Stack Trace</H3>
         <div class="flex justify-end">
-            <CopyToClipboardButton title="Copy Stack Trace to Clipboard" value={stackTrace}></CopyToClipboardButton>
+            <CopyToClipboardButton size="icon-sm" title="Copy Stack Trace to Clipboard" value={stackTrace} variant="outline"></CopyToClipboardButton>
         </div>
     </div>
     <div class="mt-2 max-h-75 grow overflow-auto text-xs">

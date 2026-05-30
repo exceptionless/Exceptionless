@@ -3,7 +3,6 @@ using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Models;
-using Foundatio.Caching;
 using Foundatio.Mediator;
 using Microsoft.AspNetCore.Mvc;
 using HttpResults = Microsoft.AspNetCore.Http.Results;
@@ -43,16 +42,16 @@ public static class StatusEndpoints
 
         group.MapGet("notifications/system", async (IMediator mediator) =>
         {
-            var result = await mediator.InvokeAsync<CacheValue<SystemNotification>>(new GetSystemNotification());
-            return result.HasValue ? HttpResults.Ok(result.Value) : HttpResults.Ok();
+            var result = await mediator.InvokeAsync<SystemNotification>(new GetSystemNotification());
+            return result.Date == DateTime.MinValue ? HttpResults.Ok() : HttpResults.Ok(result);
         });
 
-        group.MapPost("notifications/system", async (IMediator mediator, [FromBody] ValueFromBody<string> message) =>
+        group.MapPost("notifications/system", async (IMediator mediator, [FromBody] ValueFromBody<string> message, bool publish = true) =>
         {
             if (String.IsNullOrWhiteSpace(message?.Value))
                 return HttpResults.NotFound();
 
-            var result = await mediator.InvokeAsync<object>(new PostSystemNotification(message.Value));
+            var result = await mediator.InvokeAsync<object>(new PostSystemNotification(message.Value, publish));
             return HttpResults.Ok(result);
         })
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy);

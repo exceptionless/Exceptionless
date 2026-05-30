@@ -407,6 +407,8 @@ export interface UsageHourInfo {
   discarded: number;
   /** @format int32 */
   too_big: number;
+  /** @format int32 */
+  deleted: number;
 }
 
 export interface UsageInfo {
@@ -422,6 +424,8 @@ export interface UsageInfo {
   discarded: number;
   /** @format int32 */
   too_big: number;
+  /** @format int32 */
+  deleted: number;
 }
 
 export interface User {

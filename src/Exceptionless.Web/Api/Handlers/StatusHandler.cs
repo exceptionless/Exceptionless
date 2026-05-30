@@ -1,23 +1,20 @@
 using Exceptionless.Core;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Services;
 using Exceptionless.Web.Api.Messages;
-using Foundatio.Caching;
-using Foundatio.Messaging;
 using Foundatio.Queues;
 
 namespace Exceptionless.Web.Api.Handlers;
 
 public class StatusHandler(
-    ICacheClient cacheClient,
-    IMessagePublisher messagePublisher,
+    NotificationService notificationService,
     IQueue<EventPost> eventQueue,
     IQueue<MailMessage> mailQueue,
     IQueue<EventNotification> notificationQueue,
     IQueue<WebHookNotification> webHooksQueue,
     IQueue<EventUserDescription> userDescriptionQueue,
-    AppOptions appOptions,
-    TimeProvider timeProvider)
+    AppOptions appOptions)
 {
     public object Handle(GetAboutInfo message)
     {
@@ -72,21 +69,14 @@ public class StatusHandler(
         };
     }
 
-    public async Task<ReleaseNotification> Handle(PostReleaseNotification message)
+    public Task<ReleaseNotification> Handle(PostReleaseNotification message)
     {
-        var notification = new ReleaseNotification
-        {
-            Critical = message.Critical,
-            Date = timeProvider.GetUtcNow().UtcDateTime,
-            Message = message.Message
-        };
-        await messagePublisher.PublishAsync(notification);
-        return notification;
+        return notificationService.SendReleaseNotificationAsync(message.Message, message.Critical);
     }
 
-    public Task<CacheValue<SystemNotification>> Handle(GetSystemNotification message)
+    public async Task<SystemNotification> Handle(GetSystemNotification message)
     {
-        return cacheClient.GetAsync<SystemNotification>("system-notification");
+        return await notificationService.GetSystemNotificationAsync() ?? new SystemNotification { Date = DateTime.MinValue };
     }
 
     public async Task<SystemNotification> Handle(PostSystemNotification message)
@@ -94,19 +84,11 @@ public class StatusHandler(
         if (String.IsNullOrWhiteSpace(message.Message))
             return new SystemNotification { Date = DateTime.MinValue };
 
-        var notification = new SystemNotification
-        {
-            Date = timeProvider.GetUtcNow().UtcDateTime,
-            Message = message.Message
-        };
-        await cacheClient.SetAsync("system-notification", notification);
-        await messagePublisher.PublishAsync(notification);
-        return notification;
+        return await notificationService.SetSystemNotificationAsync(message.Message, message.Publish);
     }
 
-    public async Task Handle(RemoveSystemNotification message)
+    public Task Handle(RemoveSystemNotification message)
     {
-        await cacheClient.RemoveAsync("system-notification");
-        await messagePublisher.PublishAsync(new SystemNotification { Date = timeProvider.GetUtcNow().UtcDateTime });
+        return notificationService.ClearSystemNotificationAsync();
     }
 }

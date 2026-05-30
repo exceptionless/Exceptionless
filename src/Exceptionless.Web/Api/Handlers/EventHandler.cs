@@ -48,6 +48,7 @@ public class EventHandler(
     JsonSerializerSettings jsonSerializerSettings,
     IAppQueryValidator validator,
     AppOptions appOptions,
+    UsageService usageService,
     TimeProvider timeProvider,
     ILoggerFactory loggerFactory)
 {
@@ -612,14 +613,31 @@ public class EventHandler(
             return results.Failure.Count == 1 ? PermissionToResult(results.Failure.First()) : Result.BadRequest("One or more events could not be deleted.");
 
         var currentUser = httpContext.Request.GetUser();
-        foreach (var projectEvents in list.GroupBy(ev => ev.ProjectId))
+        var projectGroups = list.GroupBy(ev => new { ev.OrganizationId, ev.ProjectId }).ToList();
+        foreach (var projectGroup in projectGroups)
         {
-            var ev = projectEvents.First();
+            var ev = projectGroup.First();
             using var _ = _logger.BeginScope(new ExceptionlessState().Organization(ev.OrganizationId).Project(ev.ProjectId).Tag("Delete").Identity(currentUser.EmailAddress).Property("User", currentUser).SetHttpContext(httpContext));
-            _logger.LogInformation("User {User} deleted {RemovedCount} events in project ({ProjectId})", currentUser.Id, projectEvents.Count(), ev.ProjectId);
+            _logger.LogInformation("User {User} deleted {RemovedCount} events in project ({ProjectId})", currentUser.Id, projectGroup.Count(), ev.ProjectId);
         }
 
         await eventRepository.RemoveAsync(list);
+
+        foreach (var projectGroup in projectGroups)
+        {
+            try
+            {
+                await usageService.IncrementDeletedAsync(projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, projectGroup.Count());
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to increment deleted usage metrics for org {OrganizationId} project {ProjectId}: {Message}", projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, ex.Message);
+            }
+        }
 
         if (results.Failure.Count == 0)
             return new WorkInProgressResult();

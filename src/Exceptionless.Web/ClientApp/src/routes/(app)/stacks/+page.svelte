@@ -19,6 +19,7 @@
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
+        hasSingleTypeFilter,
         serializeFilters,
         toFilter,
         updateFilterCache
@@ -258,7 +259,9 @@
         getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
             columnPersistenceKey: 'stacks-column-visibility',
             get columns() {
-                return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode);
+                return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode, {
+                    showType: !hasSingleTypeFilter(eventsQueryParameters.filter)
+                });
             },
             paginationStrategy: 'offset',
             get queryData() {

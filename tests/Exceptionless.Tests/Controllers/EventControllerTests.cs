@@ -37,6 +37,7 @@ public class EventControllerTests : IntegrationTestsBase
 {
     private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly IProjectRepository _projectRepository;
     private readonly StackData _stackData;
     private readonly Exceptionless.Helpers.RandomEventGenerator _randomEventGenerator;
     private readonly EventData _eventData;
@@ -49,6 +50,7 @@ public class EventControllerTests : IntegrationTestsBase
     {
         _jsonSerializerOptions = GetService<JsonSerializerOptions>();
         _organizationRepository = GetService<IOrganizationRepository>();
+        _projectRepository = GetService<IProjectRepository>();
         _stackData = GetService<StackData>();
         _randomEventGenerator = GetService<Exceptionless.Helpers.RandomEventGenerator>();
         _eventData = GetService<EventData>();
@@ -1990,5 +1992,105 @@ public class EventControllerTests : IntegrationTestsBase
         Assert.NotNull(userDescription);
         Assert.Equal("legacy@exceptionless.test", userDescription.EmailAddress);
         Assert.Equal("Legacy description", userDescription.Description);
+    }
+
+    [Fact]
+    public async Task DeleteModelsAsync_SingleEvent_IncrementsDeletedUsage()
+    {
+        // Arrange
+        var usageService = GetService<UsageService>();
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(new Event { Message = "test-delete-usage", Type = Event.KnownTypes.Log })
+            .StatusCodeShouldBeAccepted());
+
+        var processEventsJob = GetService<EventPostsJob>();
+        await processEventsJob.RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        var events = await _eventRepository.GetAllAsync();
+        var targetEvent = events.Documents.Single(e => String.Equals(e.Message, "test-delete-usage", StringComparison.Ordinal));
+
+        // Act
+        await SendRequestAsync(r => r
+            .Delete()
+            .AsTestOrganizationUser()
+            .AppendPath($"events/{targetEvent.Id}")
+            .StatusCodeShouldBeAccepted());
+
+        await RefreshDataAsync();
+
+        // Assert
+        var remainingEvent = await _eventRepository.GetByIdAsync(targetEvent.Id);
+        Assert.Null(remainingEvent);
+
+        var usageResponse = await usageService.GetUsageAsync(targetEvent.OrganizationId, targetEvent.ProjectId);
+        Assert.Equal(1, usageResponse.CurrentUsage.Deleted);
+        Assert.Equal(1, usageResponse.CurrentHourUsage.Deleted);
+
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+        await usageService.SavePendingUsageAsync();
+
+        var organization = await _organizationRepository.GetByIdAsync(targetEvent.OrganizationId);
+        Assert.NotNull(organization);
+        var orgUsage = organization.Usage.FirstOrDefault();
+        Assert.NotNull(orgUsage);
+        Assert.Equal(1, orgUsage.Deleted);
+    }
+
+    [Fact]
+    public async Task DeleteModelsAsync_MultipleEvents_IncrementsDeletedUsageForAll()
+    {
+        // Arrange
+        var usageService = GetService<UsageService>();
+
+        for (int eventIndex = 0; eventIndex < 3; eventIndex++)
+        {
+            await SendRequestAsync(r => r
+                .Post()
+                .AsTestOrganizationClientUser()
+                .AppendPath("events")
+                .Content(new Event { Message = $"test-multi-delete-{eventIndex}", Type = Event.KnownTypes.Log })
+                .StatusCodeShouldBeAccepted());
+        }
+
+        var processEventsJob = GetService<EventPostsJob>();
+        await processEventsJob.RunUntilEmptyAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        var events = await _eventRepository.GetAllAsync();
+        var targetEvents = events.Documents.Where(e => e.Message is not null && e.Message.StartsWith("test-multi-delete-", StringComparison.Ordinal)).ToList();
+        Assert.Equal(3, targetEvents.Count);
+
+        var ids = String.Join(",", targetEvents.Select(e => e.Id));
+
+        // Act
+        await SendRequestAsync(r => r
+            .Delete()
+            .AsTestOrganizationUser()
+            .AppendPath($"events/{ids}")
+            .StatusCodeShouldBeAccepted());
+
+        await RefreshDataAsync();
+
+        // Assert
+        var firstEvent = targetEvents.First();
+        var usageResponse = await usageService.GetUsageAsync(firstEvent.OrganizationId, firstEvent.ProjectId);
+        Assert.Equal(3, usageResponse.CurrentUsage.Deleted);
+        Assert.Equal(3, usageResponse.CurrentHourUsage.Deleted);
+
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+        await usageService.SavePendingUsageAsync();
+
+        var organization = await _organizationRepository.GetByIdAsync(firstEvent.OrganizationId);
+        Assert.NotNull(organization);
+        Assert.Equal(3, organization.Usage.Sum(u => u.Deleted));
+
+        var project = await _projectRepository.GetByIdAsync(firstEvent.ProjectId);
+        Assert.NotNull(project);
+        Assert.Equal(3, project.Usage.Sum(u => u.Deleted));
     }
 }

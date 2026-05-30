@@ -38,9 +38,9 @@
 <div bind:this={ref} data-slot="notification" class={[notificationVariants({ variant }), className]} {...restProps} role="alert">
     {#if icon || action}
         <div class="flex w-full flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-            <div class="flex items-start gap-3">
+            <div class="flex items-center gap-3">
                 {#if icon}
-                    <span class="mt-0.5 shrink-0 [&>svg]:size-4">
+                    <span class="shrink-0 [&>svg]:size-4">
                         {@render icon()}
                     </span>
                 {/if}
