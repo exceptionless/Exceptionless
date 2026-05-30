@@ -56,9 +56,9 @@ public static class StatusEndpoints
         })
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy);
 
-        group.MapDelete("notifications/system", async (IMediator mediator) =>
+        group.MapDelete("notifications/system", async (IMediator mediator, bool publish = true) =>
         {
-            await mediator.InvokeAsync(new RemoveSystemNotification());
+            await mediator.InvokeAsync(new RemoveSystemNotification(publish));
             return HttpResults.Ok();
         })
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy);

@@ -89,6 +89,6 @@ public class StatusHandler(
 
     public Task Handle(RemoveSystemNotification message)
     {
-        return notificationService.ClearSystemNotificationAsync();
+        return notificationService.ClearSystemNotificationAsync(message.Publish);
     }
 }
