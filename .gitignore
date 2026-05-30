@@ -87,3 +87,4 @@ docs/_cache/
 .devcontainer/devcontainer-lock.json
 
 *.lscache
+.gstack/
