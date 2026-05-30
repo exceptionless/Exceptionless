@@ -343,6 +343,8 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
 
     private Task RenewLockAsync(JobContext context)
     {
+        // Called at each page boundary to prevent the distributed lock from expiring
+        // during long-running bulk cleanup operations that span multiple pages.
         _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
         return context.RenewLockAsync();
     }

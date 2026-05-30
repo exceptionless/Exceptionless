@@ -79,7 +79,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             hasMore = stackIds.Count == 500;
             totalStackIds += stackIds.Count;
 
-            var existingStacks = await _stackRepository.GetByIdsAsync(stackIds.ToArray(), o => o.Include(s => s.Id));
+            var existingStacks = await _stackRepository.GetByIdsAsync(stackIds.ToArray(), o => o.Include(s => s.Id, s => s.IsDeleted));
             var existingStackIds = existingStacks.Select(s => s.Id).ToHashSet();
             string[] missingStackIds = stackIds.Where(id => !existingStackIds.Contains(id)).ToArray();
 
@@ -114,7 +114,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             hasMore = projectIds.Count == 500;
             totalProjectIds += projectIds.Count;
 
-            var existingProjects = await _projectRepository.GetByIdsAsync(projectIds.ToArray(), o => o.Include(p => p.Id));
+            var existingProjects = await _projectRepository.GetByIdsAsync(projectIds.ToArray(), o => o.Include(p => p.Id, p => p.IsDeleted));
             var existingProjectIds = existingProjects.Select(p => p.Id).ToHashSet();
             string[] missingProjectIds = projectIds.Where(id => !existingProjectIds.Contains(id)).ToArray();
 
@@ -149,7 +149,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             hasMore = organizationIds.Count == 500;
             totalOrganizationIds += organizationIds.Count;
 
-            var existingOrgs = await _organizationRepository.GetByIdsAsync(organizationIds.ToArray(), o => o.Include(org => org.Id));
+            var existingOrgs = await _organizationRepository.GetByIdsAsync(organizationIds.ToArray(), o => o.Include(org => org.Id, org => org.IsDeleted));
             var existingOrgIds = existingOrgs.Select(o => o.Id).ToHashSet();
             string[] missingOrganizationIds = organizationIds.Where(id => !existingOrgIds.Contains(id)).ToArray();
 
