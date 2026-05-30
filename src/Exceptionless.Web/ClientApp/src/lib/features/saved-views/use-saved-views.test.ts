@@ -7,6 +7,17 @@ import type { SavedView } from './models';
 import { invalidateSavedViewQueries, queryKeys, removeSavedViewFromCaches, SAVED_VIEW_REFRESH_DELAY_MS, syncSavedViewCaches } from './api.svelte';
 import { type SavedViewQueryParams, setSortQueryParam, setTimeQueryParam, supportsSortQueryParam, supportsTimeQueryParam } from './use-saved-views.svelte';
 
+vi.mock('@exceptionless/browser', () => ({
+    Exceptionless: {
+        config: {
+            setUserIdentity: vi.fn()
+        },
+        submitFeatureUsage: vi.fn(),
+        submitSessionEnd: vi.fn().mockResolvedValue(undefined),
+        submitSessionStart: vi.fn().mockResolvedValue(undefined)
+    }
+}));
+
 const TEST_ORG_ID = '507f1f77bcf86cd799439011';
 const TEST_USER_ID = '66a1b2c3d4e5f6a7b8c9d0e1';
 

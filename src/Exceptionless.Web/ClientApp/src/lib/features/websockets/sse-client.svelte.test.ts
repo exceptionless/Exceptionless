@@ -1,30 +1,19 @@
+// @vitest-environment jsdom
+
+import { render } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SSE_CLOSED, SSE_CONNECTING, SSE_OPEN, SseClient, type SseClientOptions } from './sse-client.svelte';
+import SseClientTestHarness from './sse-client.test-harness.svelte';
 
 // Mock the auth module
-vi.mock('../auth/index.svelte', () => ({
-    accessToken: {
-        current: 'test-token-123'
-    }
+const mockAccessToken = vi.hoisted(() => ({
+    current: 'test-token-123' as null | string
 }));
 
-// Mock DocumentVisibility to always return visible
-vi.mock('$shared/document-visibility.svelte', () => {
-    return {
-        DocumentVisibility: class {
-            visible = true;
-        }
-    };
-});
-
-function createClient(options?: SseClientOptions): SseClient {
-    return new SseClient('/api/v2/push', {
-        baseUrl: 'http://localhost:5200',
-        reconnectDelay: () => 50,
-        ...options
-    });
-}
+vi.mock('../auth/index.svelte', () => ({
+    accessToken: mockAccessToken
+}));
 
 // Creates a response whose stream stays open indefinitely (for testing open connections)
 function createOpenSseResponse(initialEvents: string[] = []) {
@@ -69,34 +58,69 @@ function createSseResponse(events: string[] = [], options: { delay?: number; sta
     );
 }
 
+function setDocumentHidden(hidden: boolean) {
+    Object.defineProperty(document, 'hidden', {
+        configurable: true,
+        get: () => hidden
+    });
+
+    document.dispatchEvent(new Event('visibilitychange'));
+}
+
 describe('SseClient', () => {
     let fetchMock: ReturnType<typeof vi.fn<typeof fetch>>;
-    let activeClients: SseClient[] = [];
+    let activeUnmounts: Array<() => void> = [];
 
     beforeEach(() => {
         fetchMock = vi.fn<typeof fetch>();
         global.fetch = fetchMock as typeof fetch;
+        mockAccessToken.current = 'test-token-123';
+        setDocumentHidden(false);
     });
 
     afterEach(() => {
-        for (const client of activeClients) {
-            client.close();
+        for (const unmount of activeUnmounts) {
+            unmount();
         }
 
-        activeClients = [];
+        activeUnmounts = [];
+        Reflect.deleteProperty(document, 'hidden');
+        vi.useRealTimers();
         vi.restoreAllMocks();
     });
 
     function trackedClient(options?: SseClientOptions): SseClient {
-        const client = createClient(options);
-        activeClients.push(client);
+        const currentToken = mockAccessToken.current;
+        mockAccessToken.current = null;
+
+        let client: SseClient | undefined;
+        const { unmount } = render(SseClientTestHarness, {
+            props: {
+                onClient: (value: SseClient) => {
+                    client = value;
+                },
+                options: {
+                    baseUrl: 'http://localhost:5200',
+                    reconnectDelay: () => 50,
+                    ...options
+                }
+            }
+        });
+
+        mockAccessToken.current = currentToken;
+        activeUnmounts.push(unmount);
+
+        if (!client) {
+            throw new Error('Expected test harness to provide an SseClient instance');
+        }
+
         return client;
     }
 
     describe('Connection Lifecycle', () => {
         it('should connect successfully and call onOpen', async () => {
             const onOpen = vi.fn();
-            fetchMock.mockResolvedValue(createOpenSseResponse([': keepalive\n\n']));
+            fetchMock.mockImplementation(() => Promise.resolve(createOpenSseResponse([': keepalive\n\n'])));
 
             const client = trackedClient();
             client.onOpen = onOpen;
@@ -119,7 +143,7 @@ describe('SseClient', () => {
         });
 
         it('should set readyState to CONNECTING then OPEN', async () => {
-            fetchMock.mockResolvedValue(createOpenSseResponse([': keepalive\n\n']));
+            fetchMock.mockImplementation(() => Promise.resolve(createOpenSseResponse([': keepalive\n\n'])));
 
             const client = trackedClient();
             client.connect();
@@ -134,7 +158,7 @@ describe('SseClient', () => {
 
         it('should call onConnecting with isReconnect=false on first connection', async () => {
             const onConnecting = vi.fn();
-            fetchMock.mockResolvedValue(createSseResponse([]));
+            fetchMock.mockImplementation(() => Promise.resolve(createSseResponse([])));
 
             const client = trackedClient();
             client.onConnecting = onConnecting;
@@ -246,7 +270,8 @@ describe('SseClient', () => {
             expect(fetchMock).toHaveBeenCalledTimes(1);
         });
 
-        it('should NOT reconnect when push endpoint is unavailable', async () => {
+        it('should retry slowly when push endpoint is unavailable', async () => {
+            vi.useFakeTimers();
             const onClose = vi.fn();
             fetchMock.mockImplementation(() => Promise.resolve(new Response(null, { status: 404 })));
 
@@ -254,11 +279,17 @@ describe('SseClient', () => {
             client.onClose = onClose;
             client.connect();
 
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await vi.advanceTimersByTimeAsync(100);
 
             expect(onClose).toHaveBeenCalledTimes(1);
-            expect(client.readyState).toBe(SSE_CLOSED);
+            expect(client.readyState).toBe(SSE_CONNECTING);
             expect(fetchMock).toHaveBeenCalledTimes(1);
+
+            await vi.advanceTimersByTimeAsync(59000);
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+
+            await vi.advanceTimersByTimeAsync(1000);
+            expect(fetchMock).toHaveBeenCalledTimes(2);
         });
     });
 
@@ -282,7 +313,7 @@ describe('SseClient', () => {
 
         it('should use custom reconnectDelay', async () => {
             const reconnectDelay = vi.fn(() => 50);
-            fetchMock.mockResolvedValue(createSseResponse([]));
+            fetchMock.mockImplementation(() => Promise.resolve(createSseResponse([])));
 
             const client = trackedClient({ baseUrl: 'http://localhost:5200', reconnectDelay });
             client.connect();
@@ -292,13 +323,38 @@ describe('SseClient', () => {
             expect(reconnectDelay).toHaveBeenCalled();
             client.close();
         });
+
+        it('should reconnect when tab becomes visible after being hidden during a pending reconnect', async () => {
+            vi.useFakeTimers();
+            fetchMock.mockImplementation(() => Promise.resolve(createSseResponse([': keepalive\n\n'])));
+
+            const client = trackedClient({ baseUrl: 'http://localhost:5200', reconnectDelay: () => 1000 });
+            client.connect();
+
+            await vi.advanceTimersByTimeAsync(100);
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+            expect(client.readyState).toBe(SSE_CONNECTING);
+
+            setDocumentHidden(true);
+            await Promise.resolve();
+            expect(client.readyState).toBe(SSE_CLOSED);
+
+            await vi.advanceTimersByTimeAsync(1000);
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+
+            setDocumentHidden(false);
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(fetchMock).toHaveBeenCalledTimes(2);
+        });
     });
 
     describe('Message Handling', () => {
         it('should parse SSE data messages and call onMessage', async () => {
             const onMessage = vi.fn();
             const sseData = 'data: {"type":"StackChanged","message":{"id":"123"}}\n\n';
-            fetchMock.mockResolvedValue(createSseResponse([sseData]));
+            fetchMock.mockImplementation(() => Promise.resolve(createOpenSseResponse([sseData])));
 
             const client = trackedClient();
             client.onMessage = onMessage;
@@ -317,7 +373,7 @@ describe('SseClient', () => {
         it('should ignore keep-alive comments', async () => {
             const onMessage = vi.fn();
             const sseData = ': keepalive\n\ndata: {"type":"test","message":{}}\n\n';
-            fetchMock.mockResolvedValue(createSseResponse([sseData]));
+            fetchMock.mockImplementation(() => Promise.resolve(createOpenSseResponse([sseData])));
 
             const client = trackedClient();
             client.onMessage = onMessage;
@@ -338,7 +394,7 @@ describe('SseClient', () => {
         it('should handle multiple messages in one chunk', async () => {
             const onMessage = vi.fn();
             const sseData = 'data: {"type":"A","message":{}}\n\ndata: {"type":"B","message":{}}\n\n';
-            fetchMock.mockResolvedValue(createSseResponse([sseData]));
+            fetchMock.mockImplementation(() => Promise.resolve(createOpenSseResponse([sseData])));
 
             const client = trackedClient();
             client.onMessage = onMessage;
@@ -352,7 +408,7 @@ describe('SseClient', () => {
 
         it('should handle messages split across chunks', async () => {
             const onMessage = vi.fn();
-            fetchMock.mockResolvedValue(createSseResponse(['data: {"type":"Sp', 'lit","message":{}}\n\n']));
+            fetchMock.mockImplementation(() => Promise.resolve(createOpenSseResponse(['data: {"type":"Sp', 'lit","message":{}}\n\n'])));
 
             const client = trackedClient();
             client.onMessage = onMessage;

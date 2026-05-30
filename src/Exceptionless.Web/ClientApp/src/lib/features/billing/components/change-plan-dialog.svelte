@@ -15,6 +15,7 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import { Spinner } from '$comp/ui/spinner';
     import * as Tabs from '$comp/ui/tabs';
+    import { submitFeatureUsage } from '$features/auth/exceptionless-session';
     import { FREE_PLAN_ID, isStripeEnabled, StripeProvider } from '$features/billing';
     import { type ChangePlanFormData, ChangePlanSchema } from '$features/billing/schemas';
     import { changePlanMutation, getPlansQuery } from '$features/organizations/api.svelte';
@@ -256,6 +257,7 @@
                     }
 
                     toast.success(result.message ?? 'Your billing plan has been successfully changed.');
+                    await submitFeatureUsage('organization.ChangePlan');
                     onclose(true);
 
                     return null;

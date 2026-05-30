@@ -104,6 +104,7 @@ public static class ConnectionMappingExtensions
 {
     public const string UserIdPrefix = "u-";
     public const string GroupPrefix = "g-";
+    public const string ConnectionGroupPrefix = "cg-";
 
     public static Task GroupAddAsync(this IConnectionMapping map, string group, string connectionId)
     {
@@ -123,6 +124,21 @@ public static class ConnectionMappingExtensions
     public static Task<int> GetGroupConnectionCountAsync(this IConnectionMapping map, string group)
     {
         return map.GetConnectionCountAsync(GroupPrefix + group);
+    }
+
+    public static Task ConnectionGroupAddAsync(this IConnectionMapping map, string connectionId, string group)
+    {
+        return map.AddAsync(ConnectionGroupPrefix + connectionId, group);
+    }
+
+    public static Task ConnectionGroupRemoveAsync(this IConnectionMapping map, string connectionId, string group)
+    {
+        return map.RemoveAsync(ConnectionGroupPrefix + connectionId, group);
+    }
+
+    public static Task<ICollection<string>> GetConnectionGroupsAsync(this IConnectionMapping map, string connectionId)
+    {
+        return map.GetConnectionsAsync(ConnectionGroupPrefix + connectionId);
     }
 
     public static Task UserIdAddAsync(this IConnectionMapping map, string userId, string connectionId)

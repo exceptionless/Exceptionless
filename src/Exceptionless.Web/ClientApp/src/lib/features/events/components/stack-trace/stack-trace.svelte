@@ -16,7 +16,7 @@
     const errors = $derived(getErrors(error));
 </script>
 
-<pre class="bg-muted rounded p-2 wrap-break-word whitespace-pre-wrap"><Code class="px-0"
+<pre class="bg-muted/50 border-border rounded-xl border p-2 wrap-break-word whitespace-pre-wrap"><Code class="bg-transparent px-0 py-0"
         >{#each errors.reverse() as error, index (index)}<StackTraceHeader {error} /><StackTraceFrames {error} />{#if index < errors.length - 1}<br
                 />{/if}{/each}</Code
     ></pre>

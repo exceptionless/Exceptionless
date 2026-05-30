@@ -1,5 +1,6 @@
 using System.Net.WebSockets;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Web.Hubs;
@@ -14,13 +15,15 @@ public sealed class WebSocketPushMiddleware
     private readonly ILogger _logger;
     private readonly WebSocketConnectionManager _connectionManager;
     private readonly IConnectionMapping _connectionMapping;
+    private readonly IUserRepository _userRepository;
     private readonly RequestDelegate _next;
 
-    public WebSocketPushMiddleware(RequestDelegate next, WebSocketConnectionManager connectionManager, IConnectionMapping connectionMapping, ILogger<WebSocketPushMiddleware> logger)
+    public WebSocketPushMiddleware(RequestDelegate next, WebSocketConnectionManager connectionManager, IConnectionMapping connectionMapping, IUserRepository userRepository, ILogger<WebSocketPushMiddleware> logger)
     {
         _next = next;
         _connectionManager = connectionManager;
         _connectionMapping = connectionMapping;
+        _userRepository = userRepository;
         _logger = logger;
     }
 
@@ -66,8 +69,14 @@ public sealed class WebSocketPushMiddleware
         catch (OperationCanceledException) { }
         finally
         {
-            await OnDisconnected(context, connectionId).ConfigureAwait(false);
-            await _connectionManager.RemoveConnectionAsync(connectionId).ConfigureAwait(false);
+            try
+            {
+                await OnDisconnected(context, connectionId).ConfigureAwait(false);
+            }
+            finally
+            {
+                await _connectionManager.RemoveConnectionAsync(connectionId).ConfigureAwait(false);
+            }
         }
     }
 
@@ -76,7 +85,10 @@ public sealed class WebSocketPushMiddleware
         _logger.LogTrace("WebSocket push connected {ConnectionId}", connectionId);
 
         foreach (string organizationId in context.User.GetOrganizationIds())
+        {
             await _connectionMapping.GroupAddAsync(organizationId, connectionId).ConfigureAwait(false);
+            await _connectionMapping.ConnectionGroupAddAsync(connectionId, organizationId).ConfigureAwait(false);
+        }
 
         string? userId = context.User.GetUserId();
         if (!String.IsNullOrEmpty(userId))
@@ -87,8 +99,11 @@ public sealed class WebSocketPushMiddleware
     {
         _logger.LogTrace("WebSocket push disconnected {ConnectionId}", connectionId);
 
-        foreach (string organizationId in context.User.GetOrganizationIds())
+        foreach (string organizationId in await PushDisconnectCleanup.GetOrganizationIdsAsync(context.User, connectionId, _connectionMapping, () => _userRepository.GetByIdAsync(context.User.GetUserId()!), _logger).ConfigureAwait(false))
+        {
             await _connectionMapping.GroupRemoveAsync(organizationId, connectionId).ConfigureAwait(false);
+            await _connectionMapping.ConnectionGroupRemoveAsync(connectionId, organizationId).ConfigureAwait(false);
+        }
 
         string? userId = context.User.GetUserId();
         if (!String.IsNullOrEmpty(userId))

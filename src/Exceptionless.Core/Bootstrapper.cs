@@ -198,6 +198,7 @@ public class Bootstrapper
         services.AddSingleton<UserAgentParser>();
         services.AddSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
 
+        services.AddSingleton<NotificationService>();
         services.AddSingleton<OrganizationService>();
         services.AddStartupAction<OrganizationService>();
         services.AddSingleton<UsageService>();

@@ -1,5 +1,8 @@
 using System.Collections.Concurrent;
 using System.Net;
+using System.Net.Http.Json;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
@@ -14,7 +17,7 @@ namespace Exceptionless.Tests;
 public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
 {
     private static readonly string[] s_indexPrefixes = ["events", "migrations", "organizations", "projects", "saved-views", "stacks", "tokens", "users", "webhooks"];
-    private static readonly string s_runScope = $"test-{Guid.NewGuid().ToString("N")[..8]}";
+    private static readonly string s_runScope = CreateRunScope();
     private static int s_counter = -1;
     private static readonly ConcurrentQueue<int> s_pool = new();
     private static readonly Lazy<Task<SharedApplicationContext>> s_sharedApplication = new(StartSharedApplicationAsync, LazyThreadSafetyMode.ExecutionAndPublication);
@@ -63,17 +66,54 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
         return new SharedApplicationContext(app, elasticsearchUri);
     }
 
+    private static string CreateRunScope()
+    {
+        string workspacePath = GetWorkspaceRoot();
+        byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(workspacePath));
+        return $"test-{Convert.ToHexString(hash)[..8].ToLowerInvariant()}";
+    }
+
+    private static string GetWorkspaceRoot()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, ".git")) || directory.EnumerateFiles("*.slnx").Any())
+                return directory.FullName;
+        }
+
+        return Directory.GetCurrentDirectory();
+    }
+
     private static async Task WaitForElasticsearchAsync(Uri elasticsearchUri)
     {
-        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(1) };
+        using var client = new HttpClient
+        {
+            BaseAddress = elasticsearchUri,
+            Timeout = TimeSpan.FromSeconds(2)
+        };
         var deadline = TimeProvider.System.GetUtcNow() + TimeSpan.FromSeconds(60);
 
         while (TimeProvider.System.GetUtcNow() < deadline)
         {
             try
             {
-                using var response = await client.GetAsync(elasticsearchUri);
-                if (response.StatusCode == HttpStatusCode.OK)
+                using var pingRequest = new HttpRequestMessage(HttpMethod.Head, "/");
+                using var pingResponse = await client.SendAsync(pingRequest);
+                if (!pingResponse.IsSuccessStatusCode)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(250));
+                    continue;
+                }
+
+                using var healthResponse = await client.GetAsync("/_cluster/health?wait_for_status=yellow&timeout=1s");
+                if (!healthResponse.IsSuccessStatusCode)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(250));
+                    continue;
+                }
+
+                var health = await healthResponse.Content.ReadFromJsonAsync<ClusterHealthResponse>();
+                if (health?.Status is "yellow" or "green")
                     return;
             }
             catch (HttpRequestException)
@@ -163,5 +203,10 @@ public class AppWebHostFactory : WebApplicationFactory<Startup>, IAsyncLifetime
     private sealed class CatIndexRecord
     {
         public string Index { get; set; } = String.Empty;
+    }
+
+    private sealed class ClusterHealthResponse
+    {
+        public string Status { get; set; } = String.Empty;
     }
 }

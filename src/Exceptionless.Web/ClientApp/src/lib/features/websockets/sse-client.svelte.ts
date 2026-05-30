@@ -25,6 +25,7 @@ export interface SseClientOptions {
 export const SSE_CONNECTING = 0;
 export const SSE_OPEN = 1;
 export const SSE_CLOSED = 2;
+const ENDPOINT_UNAVAILABLE_RETRY_DELAY_MS = 60000;
 
 // EventSource does not support custom Authorization headers, so the app uses fetch +
 // ReadableStream to keep bearer tokens out of the query string.
@@ -54,7 +55,6 @@ export class SseClient {
     private accessToken: null | string = null;
     private authFailed: boolean = false;
     private connectionTimeoutId: null | ReturnType<typeof setTimeout> = null;
-    private endpointUnavailable: boolean = false;
     private forcedClose: boolean = false;
     private hasConnectedBefore: boolean = false;
     private pausedForVisibility: boolean = false;
@@ -78,7 +78,6 @@ export class SseClient {
                 this.accessToken = accessToken.current;
                 this.reconnectAttempts = 0;
                 this.authFailed = false;
-                this.endpointUnavailable = false;
                 this.pausedForVisibility = false;
                 this.close(false);
             } else if (!visibility.visible) {
@@ -94,7 +93,6 @@ export class SseClient {
                 this.readyState === SSE_CLOSED &&
                 this.reconnectTimeoutId === null &&
                 !this.authFailed &&
-                !this.endpointUnavailable &&
                 !this.forcedClose
             ) {
                 this.connect();
@@ -103,6 +101,10 @@ export class SseClient {
     }
 
     public close(isManual: boolean = true): boolean {
+        const hadPendingReconnect = this.reconnectTimeoutId !== null;
+        const hadPendingConnectionTimeout = this.connectionTimeoutId !== null;
+        const hadActiveStream = this.abortController !== null;
+
         clearTimeout(this.reconnectTimeoutId!);
         this.reconnectTimeoutId = null;
         clearTimeout(this.connectionTimeoutId!);
@@ -113,11 +115,10 @@ export class SseClient {
             this.streamGeneration++;
             this.abortController.abort();
             this.abortController = null;
-            this.readyState = SSE_CLOSED;
-            return true;
         }
 
-        return false;
+        this.readyState = SSE_CLOSED;
+        return hadPendingReconnect || hadPendingConnectionTimeout || hadActiveStream;
     }
 
     public connect() {
@@ -164,21 +165,17 @@ export class SseClient {
         return Math.min(1000 * Math.pow(2, attempt - 1), 30000);
     }
 
-    private scheduleReconnect() {
-        if (
-            this.reconnectTimeoutId !== null ||
-            this.authFailed ||
-            this.endpointUnavailable ||
-            this.forcedClose ||
-            this.pausedForVisibility ||
-            !(this.accessToken ?? accessToken.current)
-        ) {
+    private scheduleReconnect(delayOverrideMs?: number, incrementAttempts: boolean = true) {
+        if (this.reconnectTimeoutId !== null || this.authFailed || this.forcedClose || this.pausedForVisibility || !(this.accessToken ?? accessToken.current)) {
             this.readyState = SSE_CLOSED;
             return;
         }
 
-        this.reconnectAttempts++;
-        const delay = this.getReconnectDelay(this.reconnectAttempts);
+        if (incrementAttempts) {
+            this.reconnectAttempts++;
+        }
+
+        const delay = delayOverrideMs ?? this.getReconnectDelay(this.reconnectAttempts);
 
         this.readyState = SSE_CONNECTING;
         this.onConnecting(true);
@@ -216,10 +213,8 @@ export class SseClient {
                 }
 
                 if (response.status === 404) {
-                    console.info('[SseClient] Push endpoint unavailable, not reconnecting');
-                    this.endpointUnavailable = true;
-                    this.readyState = SSE_CLOSED;
-                    this.onClose();
+                    console.info('[SseClient] Push endpoint unavailable, retrying later');
+                    this.scheduleReconnect(ENDPOINT_UNAVAILABLE_RETRY_DELAY_MS, false);
                     return;
                 }
 

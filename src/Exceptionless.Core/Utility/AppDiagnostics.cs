@@ -97,6 +97,7 @@ public static class AppDiagnostics
     internal static readonly Counter<int> EventsDiscarded = Meter.CreateCounter<int>("ex.events.discarded", description: "Events that were discarded");
     internal static readonly Counter<int> EventsBlocked = Meter.CreateCounter<int>("ex.events.blocked", description: "Events that were blocked");
     internal static readonly Counter<int> EventsProcessCancelled = Meter.CreateCounter<int>("ex.events.processing.cancelled", description: "Events that started processing and were cancelled");
+    internal static readonly Counter<int> EventsDeleted = Meter.CreateCounter<int>("ex.events.deleted", description: "Events that were deleted");
     internal static readonly Counter<int> EventsRetryCount = Meter.CreateCounter<int>("ex.events.retry.count", description: "Events where processing was retried");
     internal static readonly Counter<int> EventsRetryErrors = Meter.CreateCounter<int>("ex.events.retry.errors", description: "Events where retry processing got an error");
     internal static readonly Histogram<double> EventsFieldCount = Meter.CreateHistogram<double>("ex.events.field.count", description: "Number of fields per event");

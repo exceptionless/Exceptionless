@@ -5,6 +5,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Web.Hubs;
 using Foundatio.Repositories.Models;
 using Foundatio.Serializer;
+using System.Reflection;
 using Xunit;
 
 namespace Exceptionless.Tests.Hubs;
@@ -328,6 +329,163 @@ public sealed class SseBrokerTests : TestWithServices
             await _connectionManager.RemoveConnectionAsync(otherConn);
         }
     }
+
+    [Fact]
+    public async Task OnUserMembershipChangedAsync_AddedAndRemoved_UpdatesForwardAndReverseMappings()
+    {
+        const string userId = "membership-user";
+        const string organizationId = "membership-org";
+        using var response1 = new FakeHttpResponse();
+        using var response2 = new FakeHttpResponse();
+        using var cts1 = new CancellationTokenSource();
+        using var cts2 = new CancellationTokenSource();
+
+        string connectionId1 = "membership-conn-1";
+        string connectionId2 = "membership-conn-2";
+
+        _connectionManager.AddConnection(connectionId1, response1, cts1.Token);
+        _connectionManager.AddConnection(connectionId2, response2, cts2.Token);
+
+        try
+        {
+            await _connectionMapping.UserIdAddAsync(userId, connectionId1);
+            await _connectionMapping.UserIdAddAsync(userId, connectionId2);
+
+            var addMessage = new UserMembershipChanged {
+                UserId = userId,
+                OrganizationId = organizationId,
+                ChangeType = ChangeType.Added
+            };
+
+            await InvokeUserMembershipChangedAsync(addMessage);
+
+            var organizationConnections = await _connectionMapping.GetGroupConnectionsAsync(organizationId);
+            Assert.Contains(connectionId1, organizationConnections);
+            Assert.Contains(connectionId2, organizationConnections);
+            Assert.Contains(organizationId, await _connectionMapping.GetConnectionGroupsAsync(connectionId1));
+            Assert.Contains(organizationId, await _connectionMapping.GetConnectionGroupsAsync(connectionId2));
+
+            var removeMessage = addMessage with { ChangeType = ChangeType.Removed };
+            await InvokeUserMembershipChangedAsync(removeMessage);
+
+            Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync(organizationId));
+            Assert.Empty(await _connectionMapping.GetConnectionGroupsAsync(connectionId1));
+            Assert.Empty(await _connectionMapping.GetConnectionGroupsAsync(connectionId2));
+        }
+        finally
+        {
+            await _connectionMapping.UserIdRemoveAsync(userId, connectionId1);
+            await _connectionMapping.UserIdRemoveAsync(userId, connectionId2);
+            await _connectionManager.RemoveConnectionAsync(connectionId1);
+            await _connectionManager.RemoveConnectionAsync(connectionId2);
+        }
+    }
+
+    [Fact]
+    public async Task OnUserMembershipChangedAsync_Removed_SendsRefreshToRemovedUserAndRemainingOrganizationMembers()
+    {
+        const string removedUserId = "removed-user";
+        const string remainingUserId = "remaining-user";
+        const string organizationId = "shared-org";
+        using var removedResponse = new FakeHttpResponse();
+        using var remainingResponse = new FakeHttpResponse();
+        using var removedCts = new CancellationTokenSource();
+        using var remainingCts = new CancellationTokenSource();
+
+        string removedConnectionId = "removed-conn";
+        string remainingConnectionId = "remaining-conn";
+
+        _connectionManager.AddConnection(removedConnectionId, removedResponse, removedCts.Token);
+        _connectionManager.AddConnection(remainingConnectionId, remainingResponse, remainingCts.Token);
+
+        try
+        {
+            await _connectionMapping.UserIdAddAsync(removedUserId, removedConnectionId);
+            await _connectionMapping.UserIdAddAsync(remainingUserId, remainingConnectionId);
+            await _connectionMapping.GroupAddAsync(organizationId, removedConnectionId);
+            await _connectionMapping.GroupAddAsync(organizationId, remainingConnectionId);
+            await _connectionMapping.ConnectionGroupAddAsync(removedConnectionId, organizationId);
+
+            var message = new UserMembershipChanged {
+                UserId = removedUserId,
+                OrganizationId = organizationId,
+                ChangeType = ChangeType.Removed
+            };
+
+            await InvokeUserMembershipChangedAsync(message);
+            await Task.Delay(200, TestContext.Current.CancellationToken);
+
+            Assert.Contains(nameof(UserMembershipChanged), removedResponse.WrittenData);
+            Assert.Contains(nameof(UserMembershipChanged), remainingResponse.WrittenData);
+            Assert.DoesNotContain(removedConnectionId, await _connectionMapping.GetGroupConnectionsAsync(organizationId));
+            Assert.Empty(await _connectionMapping.GetConnectionGroupsAsync(removedConnectionId));
+        }
+        finally
+        {
+            await _connectionMapping.UserIdRemoveAsync(removedUserId, removedConnectionId);
+            await _connectionMapping.UserIdRemoveAsync(remainingUserId, remainingConnectionId);
+            await _connectionMapping.GroupRemoveAsync(organizationId, removedConnectionId);
+            await _connectionMapping.GroupRemoveAsync(organizationId, remainingConnectionId);
+            await _connectionMapping.ConnectionGroupRemoveAsync(removedConnectionId, organizationId);
+            await _connectionManager.RemoveConnectionAsync(removedConnectionId);
+            await _connectionManager.RemoveConnectionAsync(remainingConnectionId);
+        }
+    }
+
+    [Fact]
+    public async Task OnEntityChangedAsync_AuthTokenRemoved_ClearsAllTrackedOrganizationMappings()
+    {
+        const string userId = "tracked-user";
+        const string firstOrganizationId = "tracked-org-1";
+        const string secondOrganizationId = "tracked-org-2";
+        using var response = new FakeHttpResponse();
+        using var cts = new CancellationTokenSource();
+
+        string connectionId = "tracked-conn";
+        _connectionManager.AddConnection(connectionId, response, cts.Token);
+
+        try
+        {
+            await _connectionMapping.UserIdAddAsync(userId, connectionId);
+            await _connectionMapping.GroupAddAsync(firstOrganizationId, connectionId);
+            await _connectionMapping.GroupAddAsync(secondOrganizationId, connectionId);
+            await _connectionMapping.ConnectionGroupAddAsync(connectionId, firstOrganizationId);
+            await _connectionMapping.ConnectionGroupAddAsync(connectionId, secondOrganizationId);
+
+            var entityChanged = new EntityChanged
+            {
+                Id = "tracked-token-id",
+                Type = nameof(Token),
+                ChangeType = ChangeType.Removed
+            };
+            entityChanged.Data[ExtendedEntityChanged.KnownKeys.OrganizationId] = firstOrganizationId;
+            entityChanged.Data[ExtendedEntityChanged.KnownKeys.UserId] = userId;
+            entityChanged.Data[ExtendedEntityChanged.KnownKeys.IsAuthenticationToken] = true;
+
+            await _broker.OnEntityChangedAsync(entityChanged, CancellationToken.None);
+
+            Assert.Null(_connectionManager.GetConnectionById(connectionId));
+            Assert.Empty(await _connectionMapping.GetUserIdConnectionsAsync(userId));
+            Assert.Empty(await _connectionMapping.GetConnectionGroupsAsync(connectionId));
+            Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync(firstOrganizationId));
+            Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync(secondOrganizationId));
+        }
+        finally
+        {
+            await _connectionMapping.UserIdRemoveAsync(userId, connectionId);
+            await _connectionMapping.GroupRemoveAsync(firstOrganizationId, connectionId);
+            await _connectionMapping.GroupRemoveAsync(secondOrganizationId, connectionId);
+            await _connectionMapping.ConnectionGroupRemoveAsync(connectionId, firstOrganizationId);
+            await _connectionMapping.ConnectionGroupRemoveAsync(connectionId, secondOrganizationId);
+        }
+    }
+
+    private Task InvokeUserMembershipChangedAsync(UserMembershipChanged message)
+    {
+        var method = typeof(MessageBusBroker).GetMethod("OnUserMembershipChangedAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        return Assert.IsAssignableFrom<Task>(method!.Invoke(_broker, [message, CancellationToken.None]));
+    }
 }
 
 /// <summary>
@@ -486,8 +644,40 @@ public sealed class SseDeduplicationTests : TestWithServices
         using var cts = new CancellationTokenSource();
         var item = await queue.DequeueAsync(cts.Token);
 
-        Assert.Equal(SseConnection.EnqueueResult.Skipped, result);
-        Assert.Equal("critical-1", item!.Value.Data);
+        Assert.Equal(SseConnection.EnqueueResult.BackpressureSkipped, result);
+        Assert.True(item.HasValue);
+        Assert.Equal("critical-1", item.Value.Data);
         Assert.False(item.Value.IsKeepAlive);
+    }
+
+    [Fact]
+    public async Task TryWriteKeepAlive_WhenQueueIsBackpressured_ReturnsTrue()
+    {
+        using var response = new FakeHttpResponse();
+        using var cts = new CancellationTokenSource();
+        var serializer = GetService<ITextSerializer>();
+
+        await using var connection = new SseConnection("dedup-test-6", response, serializer, cts.Token, Log.CreateLogger<SseConnection>(), capacity: 0);
+
+        Assert.True(connection.TryWriteKeepAlive());
+    }
+
+    [Fact]
+    public async Task TryWrite_WhenQueueCompleted_ReturnsFalse()
+    {
+        using var response = new FakeHttpResponse();
+        using var cts = new CancellationTokenSource();
+        var serializer = GetService<ITextSerializer>();
+
+        await using var connection = new SseConnection("dedup-test-5", response, serializer, cts.Token, Log.CreateLogger<SseConnection>());
+
+        var queueField = typeof(SseConnection).GetField("_queue", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(queueField);
+
+        var queue = Assert.IsType<SseConnection.DedupQueue>(queueField!.GetValue(connection));
+        queue.Complete();
+
+        Assert.False(connection.TryWrite(new { type = "StackChanged", id = "stack-race" }));
+        Assert.False(connection.TryWriteKeepAlive());
     }
 }

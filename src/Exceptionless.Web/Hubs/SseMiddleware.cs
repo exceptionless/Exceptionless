@@ -1,4 +1,5 @@
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Web.Hubs;
@@ -14,13 +15,15 @@ public class SseMiddleware
     private readonly ILogger _logger;
     private readonly SseConnectionManager _connectionManager;
     private readonly IConnectionMapping _connectionMapping;
+    private readonly IUserRepository _userRepository;
     private readonly RequestDelegate _next;
 
-    public SseMiddleware(RequestDelegate next, SseConnectionManager connectionManager, IConnectionMapping connectionMapping, ILogger<SseMiddleware> logger)
+    public SseMiddleware(RequestDelegate next, SseConnectionManager connectionManager, IConnectionMapping connectionMapping, IUserRepository userRepository, ILogger<SseMiddleware> logger)
     {
         _next = next;
         _connectionManager = connectionManager;
         _connectionMapping = connectionMapping;
+        _userRepository = userRepository;
         _logger = logger;
     }
 
@@ -79,13 +82,22 @@ public class SseMiddleware
             // Hold the response open until the client disconnects or the connection is aborted
             await Task.Delay(Timeout.Infinite, connection.ConnectionAborted).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException ex)
+        {
+            _logger.LogDebug(ex, "SSE request ended for {ConnectionId}", connectionId);
+        }
         finally
         {
             if (connection is not null)
             {
-                await OnDisconnected(context, connectionId).ConfigureAwait(false);
-                await _connectionManager.RemoveConnectionAsync(connectionId).ConfigureAwait(false);
+                try
+                {
+                    await OnDisconnected(context, connectionId).ConfigureAwait(false);
+                }
+                finally
+                {
+                    await _connectionManager.RemoveConnectionAsync(connectionId).ConfigureAwait(false);
+                }
             }
         }
     }
@@ -94,7 +106,10 @@ public class SseMiddleware
     {
         _logger.LogTrace("SSE connected {ConnectionId}", connectionId);
         foreach (string organizationId in context.User.GetOrganizationIds())
+        {
             await _connectionMapping.GroupAddAsync(organizationId, connectionId).ConfigureAwait(false);
+            await _connectionMapping.ConnectionGroupAddAsync(connectionId, organizationId).ConfigureAwait(false);
+        }
 
         string? userId = context.User.GetUserId();
         if (!String.IsNullOrEmpty(userId))
@@ -107,8 +122,11 @@ public class SseMiddleware
 
         try
         {
-            foreach (string organizationId in context.User.GetOrganizationIds())
+            foreach (string organizationId in await PushDisconnectCleanup.GetOrganizationIdsAsync(context.User, connectionId, _connectionMapping, () => _userRepository.GetByIdAsync(context.User.GetUserId()!), _logger).ConfigureAwait(false))
+            {
                 await _connectionMapping.GroupRemoveAsync(organizationId, connectionId).ConfigureAwait(false);
+                await _connectionMapping.ConnectionGroupRemoveAsync(connectionId, organizationId).ConfigureAwait(false);
+            }
 
             string? userId = context.User.GetUserId();
             if (!String.IsNullOrEmpty(userId))
@@ -123,4 +141,5 @@ public class SseMiddleware
             _logger.LogDebug(ex, "SSE disconnect raced with disposal for {ConnectionId}", connectionId);
         }
     }
+
 }

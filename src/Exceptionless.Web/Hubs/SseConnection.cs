@@ -74,7 +74,7 @@ public sealed class SseConnection : IAsyncDisposable
         if (result == EnqueueResult.DroppedQueuedMessage)
             Interlocked.Increment(ref _droppedMessages);
 
-        return true;
+        return result != EnqueueResult.Skipped;
     }
 
     /// <summary>
@@ -86,8 +86,7 @@ public sealed class SseConnection : IAsyncDisposable
         if (_cts.IsCancellationRequested)
             return false;
 
-        _queue.TryEnqueue(SseEvent.KeepAlive);
-        return true;
+        return _queue.TryEnqueue(SseEvent.KeepAlive) != EnqueueResult.Skipped;
     }
 
     /// <summary>
@@ -116,7 +115,10 @@ public sealed class SseConnection : IAsyncDisposable
             {
                 await _writeLoop.ConfigureAwait(false);
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException ex)
+            {
+                _logger.LogDebug(ex, "SSE dispose canceled for {ConnectionId}", ConnectionId);
+            }
         }
     }
 
@@ -138,9 +140,18 @@ public sealed class SseConnection : IAsyncDisposable
                 await _response.Body.FlushAsync(ct);
             }
         }
-        catch (OperationCanceledException) { }
-        catch (ObjectDisposedException) { }
-        catch (IOException) { }
+        catch (OperationCanceledException ex)
+        {
+            _logger.LogDebug(ex, "SSE write loop canceled for {ConnectionId}", ConnectionId);
+        }
+        catch (ObjectDisposedException ex)
+        {
+            _logger.LogDebug(ex, "SSE response was disposed for {ConnectionId}", ConnectionId);
+        }
+        catch (IOException ex)
+        {
+            _logger.LogDebug(ex, "SSE write failed for {ConnectionId}", ConnectionId);
+        }
         finally
         {
             // Always signal ConnectionAborted so the middleware's Task.Delay unblocks
@@ -181,6 +192,7 @@ public sealed class SseConnection : IAsyncDisposable
         Enqueued,
         Deduped,
         DroppedQueuedMessage,
+        BackpressureSkipped,
         Skipped
     }
 
@@ -208,7 +220,7 @@ public sealed class SseConnection : IAsyncDisposable
             lock (_lock)
             {
                 if (_completed)
-                    return EnqueueResult.Enqueued;
+                    return EnqueueResult.Skipped;
 
                 // Dedup check: if same key is already queued, skip
                 if (evt.DedupeKey is not null && _index.ContainsKey(evt.DedupeKey))
@@ -221,7 +233,7 @@ public sealed class SseConnection : IAsyncDisposable
                 if (_list.Count >= _capacity)
                 {
                     if (evt.IsKeepAlive)
-                        return EnqueueResult.Skipped;
+                        return EnqueueResult.BackpressureSkipped;
 
                     var queuedToDrop = FindFirstDroppableNode();
                     RemoveNode(queuedToDrop ?? _list.First!);

@@ -293,11 +293,14 @@
                 {/if}
                 <Tabs.List
                     bind:ref={tabsListRef}
-                    class="no-scrollbar w-full justify-normal overflow-x-auto overflow-y-hidden scroll-smooth"
+                    class="no-scrollbar h-auto w-full justify-normal gap-1 overflow-x-auto overflow-y-hidden scroll-smooth p-1"
                     onscroll={updateTabsOverflow}
                 >
                     {#each tabs as tab (tab)}
-                        <Tabs.Trigger class="flex-none px-3" value={tab}>{tab}</Tabs.Trigger>
+                        <Tabs.Trigger
+                            class="dark:data-[state=active]:bg-background flex-none shrink-0 px-3 py-1.5 data-[state=active]:shadow-xs dark:data-[state=active]:border-transparent"
+                            value={tab}>{tab}</Tabs.Trigger
+                        >
                     {/each}
                 </Tabs.List>
                 {#if canScrollTabsRight}
