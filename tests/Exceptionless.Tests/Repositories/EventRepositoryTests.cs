@@ -356,4 +356,70 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         var count = await _repository.CountAsync(o => o.IncludeSoftDeletes());
         Assert.Equal(0, count);
     }
+
+    [Fact]
+    public async Task RemoveAllByStackIds_WithMatchingEvents_RemovesAll()
+    {
+        var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
+        await _repository.AddAsync(_eventData.GenerateEvents(10, TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id), o => o.ImmediateConsistency());
+
+        long removed = await _repository.RemoveAllByStackIdsAsync([stack.Id]);
+        Assert.Equal(10, removed);
+
+        await RefreshDataAsync();
+        var count = await _repository.CountAsync(o => o.IncludeSoftDeletes());
+        Assert.Equal(0, count);
+    }
+
+    [Fact]
+    public async Task ReassignStack_WithEmptySourceIds_ReturnsZeroWithoutModification()
+    {
+        var stack1 = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
+        var stack2 = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
+        await _repository.AddAsync(_eventData.GenerateEvents(10, TestConstants.OrganizationId, TestConstants.ProjectId, stack1.Id), o => o.ImmediateConsistency());
+
+        // Empty source list must be a no-op; an unchecked empty .Stack() filter would patch ALL events.
+        long affected = await _repository.ReassignStackAsync([], stack2.Id);
+        Assert.Equal(0, affected);
+
+        await RefreshDataAsync();
+        var stack1Events = await _repository.CountAsync(q => q.Stack(stack1.Id));
+        var stack2Events = await _repository.CountAsync(q => q.Stack(stack2.Id));
+        Assert.Equal(10, stack1Events);
+        Assert.Equal(0, stack2Events);
+    }
+
+    [Fact]
+    public async Task GetDistinctProjectIds_WithMultipleProjects_ReturnsAllUniqueIds()
+    {
+        var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
+        string project2Id = ObjectId.GenerateNewId().ToString();
+
+        await _repository.AddAsync(_eventData.GenerateEvents(3, TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id), o => o.ImmediateConsistency());
+        await _repository.AddAsync(_eventData.GenerateEvents(2, TestConstants.OrganizationId, project2Id, stack.Id), o => o.ImmediateConsistency());
+
+        var afterKey = new CompositeKeyResult();
+        var projectIds = await _repository.GetDistinctProjectIdsAsync(100, afterKey);
+
+        Assert.Equal(2, projectIds.Count);
+        Assert.Contains(TestConstants.ProjectId, projectIds);
+        Assert.Contains(project2Id, projectIds);
+    }
+
+    [Fact]
+    public async Task GetDistinctOrganizationIds_WithMultipleOrganizations_ReturnsAllUniqueIds()
+    {
+        var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
+        string org2Id = ObjectId.GenerateNewId().ToString();
+
+        await _repository.AddAsync(_eventData.GenerateEvents(3, TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id), o => o.ImmediateConsistency());
+        await _repository.AddAsync(_eventData.GenerateEvents(2, org2Id, TestConstants.ProjectId, stack.Id), o => o.ImmediateConsistency());
+
+        var afterKey = new CompositeKeyResult();
+        var orgIds = await _repository.GetDistinctOrganizationIdsAsync(100, afterKey);
+
+        Assert.Equal(2, orgIds.Count);
+        Assert.Contains(TestConstants.OrganizationId, orgIds);
+        Assert.Contains(org2Id, orgIds);
+    }
 }
