@@ -11,7 +11,7 @@ public record OrganizationNotificationWorkItem : IHaveUniqueIdentifier
     public required bool IsOverHourlyLimit { get; init; }
     public required bool IsOverMonthlyLimit { get; init; }
 
-    public string? UniqueIdentifier => GetNotificationKey(OrganizationId, IsOverMonthlyLimit);
+    public string UniqueIdentifier => GetNotificationKey(OrganizationId, IsOverMonthlyLimit);
 
     public static string GetNotificationKey(string organizationId, bool isOverMonthlyLimit)
     {

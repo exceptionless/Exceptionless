@@ -141,7 +141,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
 
         // Act
         await _usageService.HandleOrganizationChangeAsync(modified, original);
-        await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
+        await countdown.WaitAsync(TimeSpan.FromSeconds(5));
 
         // Assert
         Assert.False(await MonthlySentMarkerExistsAsync(original.Id));

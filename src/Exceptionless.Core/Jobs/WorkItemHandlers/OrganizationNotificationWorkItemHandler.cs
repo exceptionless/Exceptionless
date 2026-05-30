@@ -80,7 +80,7 @@ public class EnqueueOrganizationNotificationOnPlanOverage : IStartupAction
 /// </summary>
 public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
 {
-    private static readonly TimeSpan WorkItemLockTimeout = TimeSpan.FromMinutes(65);
+    private static readonly TimeSpan WorkItemLockTimeout = TimeSpan.FromMinutes(90);
 
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IUserRepository _userRepository;
@@ -114,8 +114,8 @@ public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
         if (!ShouldSendNotificationEmail(wi))
             return base.GetWorkItemLockAsync(workItem, cancellationToken);
 
-        // timeUntilExpires: exceed the 1-hour work-item queue timeout so a slow send does not let
-        // a duplicate worker acquire the notification lock at the queue visibility boundary.
+        // timeUntilExpires: comfortably exceed the 1-hour work-item queue timeout so a slow send
+        // does not let a duplicate worker acquire the notification lock at the queue visibility boundary.
         //
         // acquireTimeout: TimeSpan.Zero — if another worker already holds the lock, return null
         // immediately so WorkItemJob calls AbandonAsync. The item is retried later, at which point
