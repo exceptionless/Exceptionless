@@ -1478,6 +1478,10 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
             {
                 await _usageService.IncrementDeletedAsync(projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, projectGroup.Count());
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to increment deleted usage metrics for org {OrganizationId} project {ProjectId}: {Message}", projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, ex.Message);
