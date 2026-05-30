@@ -60,15 +60,12 @@ export const eventNoticeTokens: TokenData = {
     UserEmail: 'jane@example.com',
     UserDescription: 'User reported: app crashed on checkout',
     HasSubmittedEvents: 'true',
-    // Fields is a dictionary iterated with {{#each Fields}} — each item provides @key and this
-    Fields: [
-        { '@key': 'Error.Message', this: 'Object reference not set to an instance of an object.' },
-        { '@key': 'Error.Type', this: 'System.NullReferenceException' },
-        {
-            '@key': 'Error.StackTrace',
-            this: 'at MyApp.Controllers.CheckoutController.ProcessOrder() in CheckoutController.cs:line 42'
-        }
-    ]
+    // Fields is a plain object — {{#each Fields}} iterates with @key = property name, this = value
+    Fields: {
+        'Error.Message': 'Object reference not set to an instance of an object.',
+        'Error.Type': 'System.NullReferenceException',
+        'Error.StackTrace': 'at MyApp.Controllers.CheckoutController.ProcessOrder() in CheckoutController.cs:line 42'
+    }
 };
 
 export const dailySummaryTokens: TokenData = {
