@@ -21,6 +21,7 @@
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
+        hasSingleTypeFilter,
         serializeFilters,
         shouldRefreshPersistentEventChanged,
         toFilter,
@@ -263,7 +264,9 @@
         getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
             columnPersistenceKey: 'events-column-visibility',
             get columns() {
-                return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode);
+                return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode, {
+                    showType: !hasSingleTypeFilter(eventsQueryParameters.filter)
+                });
             },
             defaultColumnVisibility: defaultEventColumnVisibility,
             paginationStrategy: 'cursor',

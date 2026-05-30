@@ -34,7 +34,7 @@ export function getSessionColumns(): ColumnDef<StockFeatures, EventSummaryModel<
             }
         },
         {
-            cell: (prop) => renderComponent(Summary, { showStatus: false, summary: prop.row.original }),
+            cell: (prop) => renderComponent(Summary, { showStatus: false, showType: false, summary: prop.row.original }),
             enableHiding: false,
             header: 'Summary'
         },

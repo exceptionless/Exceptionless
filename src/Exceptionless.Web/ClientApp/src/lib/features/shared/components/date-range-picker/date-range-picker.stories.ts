@@ -26,8 +26,7 @@ export const DefaultQuickRanges: Story = {
 export const CustomRange: Story = {
     args: {
         value: '[2025-01-01T00:00:00 TO 2025-01-02T00:00:00]'
-    },
-    name: 'Custom Range'
+    }
 };
 
 export const WithSelectedRange: Story = {
@@ -53,7 +52,6 @@ export const AutoSelectCustomTab: Story = {
     args: {
         value: '[2025-01-01T00:00:00 TO 2025-01-02T00:00:00]'
     },
-    name: 'Auto Expands Custom Section (non quick value)',
     parameters: {
         docs: {
             description: {
@@ -67,7 +65,6 @@ export const AutoSelectQuickTab: Story = {
     args: {
         value: '[now-1d TO now]'
     },
-    name: 'Auto Selects Quick Tab (matching value)',
     parameters: {
         docs: {
             description: {
@@ -81,7 +78,6 @@ export const CommandSearchFiltering: Story = {
     args: {
         value: '[now-5m TO now]'
     },
-    name: 'Command Palette Search',
     parameters: {
         docs: {
             description: {

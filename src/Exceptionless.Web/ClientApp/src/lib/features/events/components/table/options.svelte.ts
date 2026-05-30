@@ -24,8 +24,10 @@ export const defaultEventColumnVisibility: ColumnVisibilityState = {
 };
 
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
-    mode: GetEventsMode = 'summary'
+    mode: GetEventsMode = 'summary',
+    options?: { showType?: boolean }
 ): ColumnDef<StockFeatures, TSummaryModel, unknown>[] {
+    const showType = options?.showType ?? true;
     const columns: ColumnDef<StockFeatures, TSummaryModel, unknown>[] = [
         {
             cell: (props) =>
@@ -51,7 +53,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             }
         },
         {
-            cell: (prop) => renderComponent(Summary, { showStatus: false, summary: prop.row.original }),
+            cell: (prop) => renderComponent(Summary, { showStatus: false, showType, summary: prop.row.original }),
             header: 'Summary',
             id: 'summary',
             meta: {
