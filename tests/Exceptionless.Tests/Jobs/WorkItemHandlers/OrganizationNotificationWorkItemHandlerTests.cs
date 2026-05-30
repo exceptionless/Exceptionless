@@ -172,6 +172,16 @@ public class OrganizationNotificationWorkItemHandlerTests : TestWithServices
         Assert.NotEqual(monthlyKey, hourlyKey);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void GetNotificationKey_WhenOrganizationIdIsNullOrEmpty_ShouldThrowArgumentException(string? organizationId)
+    {
+        // Arrange
+        // Act & Assert
+        Assert.ThrowsAny<ArgumentException>(() => OrganizationNotificationWorkItem.GetNotificationKey(organizationId!, isOverMonthlyLimit: true));
+    }
+
     private async Task SubscribeToPlanOverageAsync(IQueue<WorkItemData> workItemQueue, int subscriberCount)
     {
         for (int i = 0; i < subscriberCount; i++)

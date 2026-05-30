@@ -44,29 +44,38 @@ public class NotificationService(ICacheClient cacheClient, IMessagePublisher mes
 
     public async Task<bool> IsOrganizationNotificationSentAsync(string organizationId, bool isOverMonthlyLimit)
     {
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
+
         var sent = await cacheClient.GetAsync<bool>(GetOrganizationNotificationSentKey(organizationId, isOverMonthlyLimit));
         return sent.HasValue && sent.Value;
     }
 
     public Task SetOrganizationNotificationSentAsync(string organizationId, bool isOverMonthlyLimit)
     {
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
+
         return cacheClient.SetAsync(GetOrganizationNotificationSentKey(organizationId, isOverMonthlyLimit), true, GetOrganizationNotificationSentExpiresAtUtc());
     }
 
     public Task RemoveOrganizationNotificationSentAsync(string organizationId, bool isOverMonthlyLimit)
     {
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
+
         return cacheClient.RemoveAsync(GetOrganizationNotificationSentKey(organizationId, isOverMonthlyLimit));
     }
 
     public Task<ILock?> TryAcquireOrganizationNotificationLockAsync(string organizationId, bool isOverMonthlyLimit)
     {
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
+
         return lockProvider.TryAcquireAsync(GetOrganizationNotificationLockKey(organizationId, isOverMonthlyLimit), OrganizationNotificationLockTimeout, TimeSpan.Zero);
     }
 
-    public async Task<bool> IsOrganizationNotificationLockedAsync(string organizationId, bool isOverMonthlyLimit)
+    public Task<bool> IsOrganizationNotificationLockedAsync(string organizationId, bool isOverMonthlyLimit)
     {
-        await using var notificationLock = await TryAcquireOrganizationNotificationLockAsync(organizationId, isOverMonthlyLimit);
-        return notificationLock is null;
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
+
+        return lockProvider.IsLockedAsync(GetOrganizationNotificationLockKey(organizationId, isOverMonthlyLimit));
     }
 
     private static string GetOrganizationNotificationLockKey(string organizationId, bool isOverMonthlyLimit)

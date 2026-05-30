@@ -15,6 +15,8 @@ public record OrganizationNotificationWorkItem : IHaveUniqueIdentifier
 
     public static string GetNotificationKey(string organizationId, bool isOverMonthlyLimit)
     {
+        ArgumentException.ThrowIfNullOrEmpty(organizationId);
+
         return $"Organization:{organizationId}:notification:{(isOverMonthlyLimit ? MonthlyNotificationType : HourlyNotificationType)}";
     }
 }
