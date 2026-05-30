@@ -6,10 +6,9 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
-using Exceptionless.DateTimeExtensions;
+using Exceptionless.Core.Services;
 using Exceptionless.Tests.Mail;
 using Exceptionless.Tests.Utility;
-using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Repositories;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,7 +29,7 @@ public class OrganizationNotificationWorkItemHandlerIntegrationTests : Integrati
     public OrganizationNotificationWorkItemHandlerIntegrationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) { }
 
     private CountingMailer Mailer => GetService<CountingMailer>();
-    private ICacheClient CacheClient => GetService<ICacheClient>();
+    private NotificationService NotificationService => GetService<NotificationService>();
     private OrganizationNotificationWorkItemHandler Handler => GetService<OrganizationNotificationWorkItemHandler>();
     private IOrganizationRepository OrganizationRepository => GetService<IOrganizationRepository>();
     private IUserRepository UserRepository => GetService<IUserRepository>();
@@ -41,10 +40,7 @@ public class OrganizationNotificationWorkItemHandlerIntegrationTests : Integrati
 
     private Task SetMonthlySentMarkerAsync(string organizationId)
     {
-        return CacheClient.SetAsync(
-            OrganizationNotificationWorkItemHandler.GetNotificationSentKey(organizationId, isOverMonthlyLimit: true),
-            true,
-            TimeProvider.GetUtcNow().UtcDateTime.EndOfMonth());
+        return NotificationService.SetOrganizationNotificationSentAsync(organizationId, isOverMonthlyLimit: true);
     }
 
     protected override void RegisterServices(IServiceCollection services)
@@ -85,6 +81,9 @@ public class OrganizationNotificationWorkItemHandlerIntegrationTests : Integrati
     public async Task HandleItemAsync_WhenDuplicateMonthlyNotificationsAreProcessedAcrossHours_ShouldSendOneEmail()
     {
         // Arrange
+        TimeProvider.SetUtcNow(new DateTime(2026, 5, 15, 12, 0, 0, DateTimeKind.Utc));
+        await SetOrganizationOverMonthlyLimitAsync(PrimaryOrganizationId);
+
         // Act
         await HandleWorkItemAsync(CreateMonthlyNotificationWorkItem(PrimaryOrganizationId));
 
@@ -246,9 +245,22 @@ public class OrganizationNotificationWorkItemHandlerIntegrationTests : Integrati
         await HandleWorkItemAsync(workItem);
 
         // Assert
-        var sentMarkerExists = await CacheClient.ExistsAsync(
-            OrganizationNotificationWorkItemHandler.GetNotificationSentKey(PrimaryOrganizationId, isOverMonthlyLimit: true));
-        Assert.True(sentMarkerExists);
+        Assert.True(await NotificationService.IsOrganizationNotificationSentAsync(PrimaryOrganizationId, isOverMonthlyLimit: true));
+    }
+
+    [Fact]
+    public async Task HandleItemAsync_WhenMonthlyEmailIsSentInLastMillisecondOfUtcMonth_ShouldWriteObservableSentMarker()
+    {
+        // Arrange
+        TimeProvider.SetUtcNow(new DateTime(2026, 5, 31, 23, 59, 59, 999, DateTimeKind.Utc));
+        await SetOrganizationOverMonthlyLimitAsync(PrimaryOrganizationId);
+
+        // Act
+        await HandleWorkItemAsync(CreateMonthlyNotificationWorkItem(PrimaryOrganizationId));
+
+        // Assert
+        Assert.True(await NotificationService.IsOrganizationNotificationSentAsync(PrimaryOrganizationId, isOverMonthlyLimit: true));
+        Assert.Equal(1, Mailer.OrganizationNoticeCount);
     }
 
     [Fact]
@@ -265,9 +277,7 @@ public class OrganizationNotificationWorkItemHandlerIntegrationTests : Integrati
         await HandleWorkItemAsync(CreateMonthlyNotificationWorkItem(PrimaryOrganizationId));
 
         // Assert
-        var sentMarkerExists = await CacheClient.ExistsAsync(
-            OrganizationNotificationWorkItemHandler.GetNotificationSentKey(PrimaryOrganizationId, isOverMonthlyLimit: true));
-        Assert.False(sentMarkerExists);
+        Assert.False(await NotificationService.IsOrganizationNotificationSentAsync(PrimaryOrganizationId, isOverMonthlyLimit: true));
         Assert.Equal(0, Mailer.OrganizationNoticeCount);
     }
 
@@ -281,9 +291,7 @@ public class OrganizationNotificationWorkItemHandlerIntegrationTests : Integrati
         await HandleWorkItemAsync(workItem);
 
         // Assert
-        var sentMarkerExists = await CacheClient.ExistsAsync(
-            OrganizationNotificationWorkItemHandler.GetNotificationSentKey(MissingOrganizationId, isOverMonthlyLimit: true));
-        Assert.False(sentMarkerExists);
+        Assert.False(await NotificationService.IsOrganizationNotificationSentAsync(MissingOrganizationId, isOverMonthlyLimit: true));
         Assert.Equal(0, Mailer.OrganizationNoticeCount);
     }
 
@@ -370,8 +378,7 @@ public class OrganizationNotificationWorkItemHandlerIntegrationTests : Integrati
         // Act
         await Assert.ThrowsAsync<InvalidOperationException>(() => HandleWorkItemAsync(workItem));
 
-        var sentMarkerExists = await CacheClient.ExistsAsync(
-            OrganizationNotificationWorkItemHandler.GetNotificationSentKey(PrimaryOrganizationId, isOverMonthlyLimit: true));
+        var sentMarkerExists = await NotificationService.IsOrganizationNotificationSentAsync(PrimaryOrganizationId, isOverMonthlyLimit: true);
 
         Mailer.ShouldThrow = false;
         await HandleWorkItemAsync(workItem);

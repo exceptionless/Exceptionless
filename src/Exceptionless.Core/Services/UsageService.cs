@@ -1,5 +1,4 @@
 ﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -17,11 +16,13 @@ public class UsageService
     private readonly IProjectRepository _projectRepository;
     private readonly ICacheClient _cache;
     private readonly IMessagePublisher _messagePublisher;
+    private readonly NotificationService _notificationService;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
     private readonly TimeSpan _bucketSize = TimeSpan.FromMinutes(5);
 
     public UsageService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cache, IMessagePublisher messagePublisher,
+        NotificationService notificationService,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory)
     {
@@ -29,6 +30,7 @@ public class UsageService
         _projectRepository = projectRepository;
         _cache = cache;
         _messagePublisher = messagePublisher;
+        _notificationService = notificationService;
         _timeProvider = timeProvider;
         _logger = loggerFactory.CreateLogger<UsageService>();
     }
@@ -227,7 +229,8 @@ public class UsageService
         bool isMonthlyLimitIncrease = modifiedMaxEvents < 0 || (originalMaxEvents >= 0 && modifiedMaxEvents > originalMaxEvents);
         if (isMonthlyLimitIncrease)
         {
-            await _cache.RemoveAsync(OrganizationNotificationWorkItemHandler.GetNotificationSentKey(modified.Id, isOverMonthlyLimit: true));
+            // A higher monthly limit ends the current overage state: allow a future monthly overage email and clear the hourly throttle window.
+            await _notificationService.RemoveOrganizationNotificationSentAsync(modified.Id, isOverMonthlyLimit: true);
             await _cache.RemoveAsync(GetThrottledKey(utcNow, modified.Id));
             return;
         }
@@ -236,7 +239,7 @@ public class UsageService
         bool isOverMonthlyLimit = modified.IsOverMonthlyLimit(_timeProvider);
         if (!wasOverMonthlyLimit && isOverMonthlyLimit)
         {
-            await _cache.RemoveAsync(OrganizationNotificationWorkItemHandler.GetNotificationSentKey(modified.Id, isOverMonthlyLimit: true));
+            await _notificationService.RemoveOrganizationNotificationSentAsync(modified.Id, isOverMonthlyLimit: true);
             await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = modified.Id });
         }
 

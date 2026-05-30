@@ -1,12 +1,10 @@
 using System.Diagnostics;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
-using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Extensions;
 using Foundatio.AsyncEx;
 using Foundatio.Caching;
@@ -22,6 +20,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly UsageService _usageService;
+    private readonly NotificationService _notificationService;
     private readonly BillingPlans _plans;
     private readonly ICacheClient _cache;
 
@@ -30,6 +29,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         TimeProvider.SetUtcNow(new DateTime(2015, 2, 13, 0, 0, 0, DateTimeKind.Utc));
         Log.SetLogLevel<OrganizationRepository>(LogLevel.Information);
         _usageService = GetService<UsageService>();
+        _notificationService = GetService<NotificationService>();
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectRepository = GetService<IProjectRepository>();
         _plans = GetService<BillingPlans>();
@@ -38,15 +38,12 @@ public sealed class UsageServiceTests : IntegrationTestsBase
 
     private Task SetMonthlySentMarkerAsync(string organizationId)
     {
-        return _cache.SetAsync(
-            OrganizationNotificationWorkItemHandler.GetNotificationSentKey(organizationId, isOverMonthlyLimit: true),
-            true,
-            TimeProvider.GetUtcNow().UtcDateTime.EndOfMonth());
+        return _notificationService.SetOrganizationNotificationSentAsync(organizationId, isOverMonthlyLimit: true);
     }
 
     private Task<bool> MonthlySentMarkerExistsAsync(string organizationId)
     {
-        return _cache.ExistsAsync(OrganizationNotificationWorkItemHandler.GetNotificationSentKey(organizationId, isOverMonthlyLimit: true));
+        return _notificationService.IsOrganizationNotificationSentAsync(organizationId, isOverMonthlyLimit: true);
     }
 
     [Fact]

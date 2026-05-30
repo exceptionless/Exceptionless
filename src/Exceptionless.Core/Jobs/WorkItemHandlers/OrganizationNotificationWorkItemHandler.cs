@@ -4,8 +4,7 @@ using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
-using Exceptionless.DateTimeExtensions;
-using Foundatio.Caching;
+using Exceptionless.Core.Services;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Lock;
@@ -66,7 +65,7 @@ public class EnqueueOrganizationNotificationOnPlanOverage : IStartupAction
 ///   </description></item>
 ///   <item><description>
 ///     Handler-level idempotency: a distributed lock serializes concurrent processing, and a
-///     sent marker (<see cref="GetNotificationSentKey"/>) ensures that any stale duplicates
+///     sent marker ensures that any stale duplicates
 ///     already in the queue before the fix deployed cannot re-trigger an email in the same UTC
 ///     month. The marker is reset when a monthly plan limit change re-evaluates the overage state.
 ///   </description></item>
@@ -80,27 +79,19 @@ public class EnqueueOrganizationNotificationOnPlanOverage : IStartupAction
 /// </summary>
 public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
 {
-    private static readonly TimeSpan WorkItemLockTimeout = TimeSpan.FromMinutes(90);
-
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IUserRepository _userRepository;
     private readonly IMailer _mailer;
-    private readonly ICacheClient _cacheClient;
+    private readonly NotificationService _notificationService;
     private readonly TimeProvider _timeProvider;
 
-    // ILockProvider is kept local rather than pushed to WorkItemHandlerBase because the
-    // lock/sent-key contract is specific to plan-limit email idempotency. Passing it through
-    // the base class would force every unrelated handler to acquire unnecessary plan-limit locks.
-    private readonly ILockProvider _lockProvider;
-
-    public OrganizationNotificationWorkItemHandler(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer, ICacheClient cacheClient, TimeProvider timeProvider, ILockProvider lockProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public OrganizationNotificationWorkItemHandler(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer, NotificationService notificationService, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _userRepository = userRepository;
         _mailer = mailer;
-        _cacheClient = cacheClient;
+        _notificationService = notificationService;
         _timeProvider = timeProvider;
-        _lockProvider = lockProvider;
     }
 
     public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = default)
@@ -114,14 +105,15 @@ public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
         if (!ShouldSendNotificationEmail(wi))
             return base.GetWorkItemLockAsync(workItem, cancellationToken);
 
-        // timeUntilExpires: comfortably exceed the 1-hour work-item queue timeout so a slow send
-        // does not let a duplicate worker acquire the notification lock at the queue visibility boundary.
+        // The notification service uses a 90-minute lease, comfortably exceeding the 1-hour
+        // work-item queue timeout so a slow send does not let a duplicate worker acquire the
+        // notification lock at the queue visibility boundary.
         //
         // acquireTimeout: TimeSpan.Zero — if another worker already holds the lock, return null
         // immediately so WorkItemJob calls AbandonAsync. The item is retried later, at which point
         // the sent marker is already set and the handler skips. Blocking here instead would stall
         // a worker slot for up to the lock timeout with no correctness benefit.
-        return _lockProvider.TryAcquireAsync(GetNotificationLockKey(wi.OrganizationId, wi.IsOverMonthlyLimit), WorkItemLockTimeout, TimeSpan.Zero);
+        return _notificationService.TryAcquireOrganizationNotificationLockAsync(wi.OrganizationId, wi.IsOverMonthlyLimit);
     }
 
     public override async Task HandleItemAsync(WorkItemContext context)
@@ -142,14 +134,14 @@ public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
             return;
         }
 
-        if (await WasNotificationSentAsync(wi.OrganizationId, wi.IsOverMonthlyLimit))
+        if (await _notificationService.IsOrganizationNotificationSentAsync(wi.OrganizationId, wi.IsOverMonthlyLimit))
         {
             Log.LogInformation("Skipping duplicate monthly overage notification for organization: {OrganizationId}", wi.OrganizationId);
             return;
         }
 
         await SendOverageNotificationsAsync(organization, wi.IsOverHourlyLimit, wi.IsOverMonthlyLimit);
-        await _cacheClient.SetAsync(GetNotificationSentKey(wi.OrganizationId, wi.IsOverMonthlyLimit), true, GetNotificationSentExpiresAtUtc());
+        await _notificationService.SetOrganizationNotificationSentAsync(wi.OrganizationId, wi.IsOverMonthlyLimit);
     }
 
     private async Task SendOverageNotificationsAsync(Organization organization, bool isOverHourlyLimit, bool isOverMonthlyLimit)
@@ -183,26 +175,5 @@ public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
     private static bool ShouldSendNotificationEmail(OrganizationNotificationWorkItem workItem)
     {
         return workItem.IsOverMonthlyLimit;
-    }
-
-    private async Task<bool> WasNotificationSentAsync(string organizationId, bool isOverMonthlyLimit)
-    {
-        var sent = await _cacheClient.GetAsync<bool>(GetNotificationSentKey(organizationId, isOverMonthlyLimit));
-        return sent.HasValue && sent.Value;
-    }
-
-    private DateTime GetNotificationSentExpiresAtUtc()
-    {
-        return _timeProvider.GetUtcNow().UtcDateTime.EndOfMonth();
-    }
-
-    public static string GetNotificationLockKey(string organizationId, bool isOverMonthlyLimit)
-    {
-        return $"{OrganizationNotificationWorkItem.GetNotificationKey(organizationId, isOverMonthlyLimit)}-lock";
-    }
-
-    public static string GetNotificationSentKey(string organizationId, bool isOverMonthlyLimit)
-    {
-        return $"{OrganizationNotificationWorkItem.GetNotificationKey(organizationId, isOverMonthlyLimit)}-sent";
     }
 }
