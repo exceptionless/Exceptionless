@@ -233,7 +233,8 @@ public class Mailer : IMailer
             StackId = s.Id,
             Title = s.Title.Truncate(50),
             TypeName = s.GetTypeName()?.Truncate(50),
-            s.Status
+            s.Status,
+            IsRegressed = s.Status == StackStatus.Regressed
         });
     }
 

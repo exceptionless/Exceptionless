@@ -1,6 +1,27 @@
 <script module lang="ts">
-    import { Button, Text, Heading, Section, Link } from '@better-svelte-email/components';
+    import { Button, Text, Heading, Section } from '@better-svelte-email/components';
     import EmailLayout from '../components/EmailLayout.svelte';
+    import { wrapJsonLd } from '../lib/json-ld';
+
+    const jsonLd = wrapJsonLd(`
+{
+  "@context": "http://schema.org",
+  "@type": "EmailMessage",
+  "description": "{{Subject}}",
+  "potentialAction": {
+    "@type": "ViewAction",
+    "target": "{{BaseUrl}}/account/verify?token={{UserVerifyEmailAddressToken}}",
+    "url": "{{BaseUrl}}/account/verify?token={{UserVerifyEmailAddressToken}}",
+    "name": "Verify Address"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Exceptionless",
+    "url": "https://exceptionless.com",
+    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
+  }
+}
+`);
 </script>
 
 <EmailLayout>
@@ -27,22 +48,4 @@
     {/snippet}
 </EmailLayout>
 
-{@html `<script type="application/ld+json">
-{
-  "@context": "http://schema.org",
-  "@type": "EmailMessage",
-  "description": "{{Subject}}",
-  "potentialAction": {
-    "@type": "ViewAction",
-    "target": "{{BaseUrl}}/account/verify?token={{UserVerifyEmailAddressToken}}",
-    "url": "{{BaseUrl}}/account/verify?token={{UserVerifyEmailAddressToken}}",
-    "name": "Verify Address"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "Exceptionless",
-    "url": "https://exceptionless.com",
-    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
-  }
-}
-</script>`}
+{@html jsonLd}

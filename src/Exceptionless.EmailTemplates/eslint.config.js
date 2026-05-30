@@ -26,6 +26,14 @@ export default [
         }
     },
     {
-        ignores: ['dist/**', 'node_modules/**', '.storybook/**', 'storybook-static/**', 'src/templates/**']
+        // Templates use {@html '{{#if ...}}'} to pass Handlebars block syntax through Svelte.
+        // This is intentional — disable the no-at-html-tags rule for templates only.
+        files: ['src/templates/**/*.svelte'],
+        rules: {
+            'svelte/no-at-html-tags': 'off'
+        }
+    },
+    {
+        ignores: ['dist/**', 'node_modules/**', '.storybook/**', 'storybook-static/**']
     }
 ];

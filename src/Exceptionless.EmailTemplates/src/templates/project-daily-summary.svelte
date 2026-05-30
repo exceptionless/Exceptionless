@@ -1,7 +1,34 @@
 <script module lang="ts">
     import { Button, Text, Heading, Section, Link } from '@better-svelte-email/components';
     import EmailLayout from '../components/EmailLayout.svelte';
+    import { wrapJsonLd } from '../lib/json-ld';
     import ActionsFooter from '../components/ActionsFooter.svelte';
+
+    const jsonLd = wrapJsonLd(`
+{
+  "@context": "http://schema.org",
+  "@type": "EmailMessage",
+  "description": "{{Subject}}",
+  "potentialAction": {
+    "@type": "ViewAction",
+    {{#if HasSubmittedEvents}}
+    "target": "{{BaseUrl}}/project/{{ProjectId}}/error/timeline",
+    "url": "{{BaseUrl}}/project/{{ProjectId}}/error/timeline",
+    "name": "View Timeline"
+    {{else}}
+    "target": "{{BaseUrl}}/project/{{ProjectId}}/configure",
+    "url": "{{BaseUrl}}/project/{{ProjectId}}/configure",
+    "name": "Configure Project"
+    {{/if}}
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Exceptionless",
+    "url": "https://exceptionless.com",
+    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
+  }
+}
+`);
 </script>
 
 <EmailLayout>
@@ -60,18 +87,16 @@
             <Heading as="h5" class="text-[20px] font-normal text-muted leading-[1.3] mt-0 mb-[5px]"
                 >Most Frequent</Heading
             >
-            {@html '{{#each MostFrequent}}'}
-            {@html '<ul style="margin-top:0"><li style="margin-top:5px;margin-left:5px"><a href="{{../BaseUrl}}/stack/{{StackId}}" style="color:#5E9A00;text-decoration:none">{{#if IsRegressed}}<strong>[REGRESSED]</strong> {{/if}}{{#if TypeName}}<strong>{{TypeName}}:</strong> {{/if}}{{Title}}</a></li></ul>'}
-            {@html '{{/each}}'}
-            {@html '<ul style="margin-top:0"><li style="margin-top:5px;margin-left:5px"><a href="{{BaseUrl}}/project/{{ProjectId}}/error/frequent" style="color:#5E9A00;text-decoration:none">View more...</a></li></ul>'}
+            {@html '<ul style="margin-top:0">'}
+            {@html '{{#each MostFrequent}}<li style="margin-top:5px;margin-left:5px"><a href="{{../BaseUrl}}/stack/{{StackId}}" style="color:#5E9A00;text-decoration:none">{{#if IsRegressed}}<strong>[REGRESSED]</strong> {{/if}}{{#if TypeName}}<strong>{{TypeName}}:</strong> {{/if}}{{Title}}</a></li>{{/each}}'}
+            {@html '<li style="margin-top:5px;margin-left:5px"><a href="{{BaseUrl}}/project/{{ProjectId}}/error/frequent" style="color:#5E9A00;text-decoration:none">View more...</a></li></ul>'}
             {@html '{{/if}}'}
 
             {@html '{{#if Newest}}'}
             <Heading as="h5" class="text-[20px] font-normal text-muted leading-[1.3] mt-0 mb-[5px]">Newest</Heading>
-            {@html '{{#each Newest}}'}
-            {@html '<ul style="margin-top:0"><li style="margin-top:5px;margin-left:5px"><a href="{{../BaseUrl}}/stack/{{StackId}}" style="color:#5E9A00;text-decoration:none">{{#if IsRegressed}}<strong>[REGRESSED]</strong> {{/if}}{{#if TypeName}}<strong>{{TypeName}}:</strong> {{/if}}{{Title}}</a></li></ul>'}
-            {@html '{{/each}}'}
-            {@html '<ul style="margin-top:0"><li style="margin-top:5px;margin-left:5px"><a href="{{BaseUrl}}/project/{{ProjectId}}/error/new" style="color:#5E9A00;text-decoration:none">View more...</a></li></ul>'}
+            {@html '<ul style="margin-top:0">'}
+            {@html '{{#each Newest}}<li style="margin-top:5px;margin-left:5px"><a href="{{../BaseUrl}}/stack/{{StackId}}" style="color:#5E9A00;text-decoration:none">{{#if IsRegressed}}<strong>[REGRESSED]</strong> {{/if}}{{#if TypeName}}<strong>{{TypeName}}:</strong> {{/if}}{{Title}}</a></li>{{/each}}'}
+            {@html '<li style="margin-top:5px;margin-left:5px"><a href="{{BaseUrl}}/project/{{ProjectId}}/error/new" style="color:#5E9A00;text-decoration:none">View more...</a></li></ul>'}
             {@html '{{/if}}'}
 
             {@html '{{#if IsFreePlan}}'}
@@ -117,28 +142,4 @@
     {/snippet}
 </EmailLayout>
 
-{@html `<script type="application/ld+json">
-{
-  "@context": "http://schema.org",
-  "@type": "EmailMessage",
-  "description": "{{Subject}}",
-  "potentialAction": {
-    "@type": "ViewAction",
-    {{#if HasSubmittedEvents}}
-    "target": "{{BaseUrl}}/project/{{ProjectId}}/error/timeline",
-    "url": "{{BaseUrl}}/project/{{ProjectId}}/error/timeline",
-    "name": "View Timeline"
-    {{else}}
-    "target": "{{BaseUrl}}/project/{{ProjectId}}/configure",
-    "url": "{{BaseUrl}}/project/{{ProjectId}}/configure",
-    "name": "Configure Project"
-    {{/if}}
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "Exceptionless",
-    "url": "https://exceptionless.com",
-    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
-  }
-}
-</script>`}
+{@html jsonLd}

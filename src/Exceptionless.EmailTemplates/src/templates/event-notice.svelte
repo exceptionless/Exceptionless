@@ -1,7 +1,28 @@
 <script module lang="ts">
     import { Button, Text, Heading, Section, Hr, Link } from '@better-svelte-email/components';
     import EmailLayout from '../components/EmailLayout.svelte';
+    import { wrapJsonLd } from '../lib/json-ld';
     import ActionsFooter from '../components/ActionsFooter.svelte';
+
+    const jsonLd = wrapJsonLd(`
+{
+  "@context": "http://schema.org",
+  "@type": "EmailMessage",
+  "description": "{{Subject}}",
+  "potentialAction": {
+    "@type": "ViewAction",
+    "target": "{{BaseUrl}}/event/{{EventId}}",
+    "url": "{{BaseUrl}}/event/{{EventId}}",
+    "name": "View Event Details"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Exceptionless",
+    "url": "https://exceptionless.com",
+    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
+  }
+}
+`);
 </script>
 
 <EmailLayout>
@@ -81,22 +102,4 @@
     {/snippet}
 </EmailLayout>
 
-{@html `<script type="application/ld+json">
-{
-  "@context": "http://schema.org",
-  "@type": "EmailMessage",
-  "description": "{{Subject}}",
-  "potentialAction": {
-    "@type": "ViewAction",
-    "target": "{{BaseUrl}}/event/{{EventId}}",
-    "url": "{{BaseUrl}}/event/{{EventId}}",
-    "name": "View Event Details"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "Exceptionless",
-    "url": "https://exceptionless.com",
-    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
-  }
-}
-</script>`}
+{@html jsonLd}
