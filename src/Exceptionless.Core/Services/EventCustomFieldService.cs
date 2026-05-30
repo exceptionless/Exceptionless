@@ -278,7 +278,7 @@ public class EventCustomFieldService : IStartupAction
 
     private static object? ConvertToKeyword(object value)
     {
-        var str = value.ToString();
+        string? str = FormatInvariant(value);
         if (str is null || str.Length > MaxKeywordLength)
             return null;
         return str;
@@ -286,10 +286,33 @@ public class EventCustomFieldService : IStartupAction
 
     private static object? ConvertToString(object value)
     {
-        var str = value.ToString();
+        string? str = FormatInvariant(value);
         if (str is null || str.Length > 8192)
             return null;
         return str;
+    }
+
+    /// <summary>
+    /// Formats a primitive value to a culture-invariant string suitable for keyword/string ES fields.
+    /// Using <see cref="object.ToString()"/> without a format provider would produce locale-dependent
+    /// output for float/double/decimal (e.g., "1,5" on German servers) and non-ISO DateTime strings.
+    /// </summary>
+    private static string? FormatInvariant(object value)
+    {
+        return value switch
+        {
+            string s => s,
+            bool b => b.ToString(),                                                                 // "True"/"False"
+            int i => i.ToString(CultureInfo.InvariantCulture),
+            long l => l.ToString(CultureInfo.InvariantCulture),
+            float f => f.ToString(CultureInfo.InvariantCulture),
+            double d => d.ToString(CultureInfo.InvariantCulture),
+            decimal m => m.ToString(CultureInfo.InvariantCulture),
+            DateTime dt when dt.Kind != DateTimeKind.Unspecified => dt.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture),
+            DateTime dt => DateTime.SpecifyKind(dt, DateTimeKind.Utc).ToString("O", CultureInfo.InvariantCulture),
+            DateTimeOffset dto => dto.UtcDateTime.ToString("O", CultureInfo.InvariantCulture),
+            _ => null
+        };
     }
 
     private static object? ConvertToBool(object value)
