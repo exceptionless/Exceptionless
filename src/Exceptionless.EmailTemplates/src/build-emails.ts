@@ -5,7 +5,6 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { tailwindTheme } from './theme.js';
 
-// Import all templates
 import UserPasswordReset from './templates/user-password-reset.svelte';
 import UserEmailVerify from './templates/user-email-verify.svelte';
 import EventNotice from './templates/event-notice.svelte';
@@ -18,7 +17,6 @@ import OrganizationPaymentFailed from './templates/organization-payment-failed.s
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Template registry: name → component
 const templates: Record<string, Component> = {
     'user-password-reset': UserPasswordReset as unknown as Component,
     'user-email-verify': UserEmailVerify as unknown as Component,
@@ -31,34 +29,26 @@ const templates: Record<string, Component> = {
 };
 
 function cleanHtml(html: string): string {
-    // Remove all Svelte SSR comment markers
     html = html.replace(/<!--\[!?-->/g, '');
     html = html.replace(/<!--]-->/g, '');
     html = html.replace(/<!--\[-->/g, '');
     html = html.replace(/<!---->/g, '');
-
-    // Strip HTML comments (e.g. <!-- prevent Gmail iOS ... -->) before output
     html = html.replace(/<!--[\s\S]*?-->/g, '');
 
-    // Extract JSON-LD script blocks before whitespace collapsing.
-    // Without this, adjacent JSON `}` chars can merge with Handlebars `}}` tokens.
+    // Extract JSON-LD script blocks before whitespace collapsing — adjacent `}` chars
+    // can merge into `}}` after collapse, which HandlebarsDotNet parses as a closing token.
     const scripts: string[] = [];
     html = html.replace(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g, (_match, content: string) => {
         scripts.push(content);
         return `__SCRIPT_PLACEHOLDER_${scripts.length - 1}__`;
     });
 
-    // Collapse inter-tag whitespace (between adjacent HTML tags, no space needed).
     html = html.replace(/>\s+</g, '><');
-    // Replace remaining newlines (within text nodes) with a space so that
-    // multi-line text in Svelte templates doesn't get concatenated without a
-    // separator (e.g. "from\nwhich" → "from which", not "fromwhich").
+    // Replace newlines within text nodes with a space (not empty string) to prevent
+    // adjacent words from being concatenated (e.g. "from\nwhich" → "from which").
     html = html.replace(/\n[ \t]*/g, ' ');
-    // Collapse runs of spaces to a single space.
     html = html.replace(/ {2,}/g, ' ');
 
-    // Restore script blocks preserving newlines so `}}` inside JSON
-    // cannot be mis-parsed as Handlebars closing tokens.
     html = html.replace(/__SCRIPT_PLACEHOLDER_(\d+)__/g, (_match, idx: string) => {
         const content = scripts[parseInt(idx, 10)];
         return `<script type="application/ld+json">\n${content.trim()}\n</script>`;

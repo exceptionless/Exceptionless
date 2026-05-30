@@ -1,6 +1,27 @@
 <script module lang="ts">
     import { Button, Text, Heading, Section, Link } from '@better-svelte-email/components';
     import EmailLayout from '../components/EmailLayout.svelte';
+    import { wrapJsonLd } from '../lib/json-ld';
+
+    const jsonLd = wrapJsonLd(`
+{
+  "@context": "http://schema.org",
+  "@type": "EmailMessage",
+  "description": "{{Subject}}",
+  "potentialAction": {
+    "@type": "ViewAction",
+    "target": "{{BaseUrl}}/reset-password/{{UserPasswordResetToken}}",
+    "url": "{{BaseUrl}}/reset-password/{{UserPasswordResetToken}}",
+    "name": "Reset Password"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Exceptionless",
+    "url": "https://exceptionless.com",
+    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
+  }
+}
+`);
 </script>
 
 <EmailLayout>
@@ -30,22 +51,4 @@
     {/snippet}
 </EmailLayout>
 
-{@html `<script type="application/ld+json">
-{
-  "@context": "http://schema.org",
-  "@type": "EmailMessage",
-  "description": "{{Subject}}",
-  "potentialAction": {
-    "@type": "ViewAction",
-    "target": "{{BaseUrl}}/reset-password/{{UserPasswordResetToken}}",
-    "url": "{{BaseUrl}}/reset-password/{{UserPasswordResetToken}}",
-    "name": "Reset Password"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "Exceptionless",
-    "url": "https://exceptionless.com",
-    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
-  }
-}
-</script>`}
+{@html jsonLd}
