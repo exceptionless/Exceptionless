@@ -53,13 +53,16 @@ internal static class ProjectIndexExtensions
                 .FloatNumber("blocked")
                 .FloatNumber("discarded")
                 .FloatNumber("limit")
-                .FloatNumber("too_big")))
+                .FloatNumber("too_big")
+                .FloatNumber("deleted")))
             .Object(o => o.UsageHours, ui => ui.Properties(p => p
                 .Date("date")
                 .FloatNumber("total")
                 .FloatNumber("blocked")
                 .FloatNumber("discarded")
                 .FloatNumber("limit")
-                .FloatNumber("too_big")));
+                .FloatNumber("too_big")
+                .FloatNumber("deleted")));
+
     }
 }

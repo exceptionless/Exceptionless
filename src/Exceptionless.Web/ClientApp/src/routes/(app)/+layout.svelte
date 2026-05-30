@@ -15,6 +15,7 @@
     import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
     import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
     import { shouldLoadIntercomOrganization } from '$features/intercom/config';
+    import Notifications from '$features/notifications/components/notifications.svelte';
     import { getOrganizationQuery, getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
     import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
     import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
@@ -30,6 +31,7 @@
     import { invalidateWebhookQueries } from '$features/webhooks/api.svelte';
     import { isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
     import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
+    import { Telemetry } from '$lib/telemetry';
     import { useMiddleware } from '@exceptionless/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
     import { tick } from 'svelte';
@@ -470,6 +472,8 @@
                 />
                 <KeyboardShortcutsDialog bind:open={isKeyboardShortcutsOpen} />
 
+                <Notifications />
+
                 {#if showOrganizationNotifications.current}
                     <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} premiumFeatureName={premiumPage.current} class="mb-4" />
                 {/if}
@@ -504,3 +508,5 @@
         <UpgradeRequiredDialog />
     {/if}
 {/if}
+
+<Telemetry userId={isAuthenticated ? meQuery.data?.email_address : undefined} userName={isAuthenticated ? meQuery.data?.full_name : undefined} />

@@ -3,6 +3,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
@@ -14,6 +15,7 @@ namespace Exceptionless.Tests.Jobs;
 public class CleanupDataJobTests : IntegrationTestsBase
 {
     private readonly CleanupDataJob _job;
+    private readonly UsageService _usageService;
     private readonly OrganizationData _organizationData;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ProjectData _projectData;
@@ -30,6 +32,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
     public CleanupDataJobTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _job = GetService<CleanupDataJob>();
+        _usageService = GetService<UsageService>();
         _organizationData = GetService<OrganizationData>();
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectData = GetService<ProjectData>();
@@ -565,5 +568,153 @@ public class CleanupDataJobTests : IntegrationTestsBase
         var updatedToken2 = await _tokenRepository.GetByIdAsync(token2.Id);
         Assert.False(updatedToken1!.IsSuspended);
         Assert.False(updatedToken2!.IsSuspended);
+    }
+
+    [Fact]
+    public async Task RemoveProjectsAsync_SoftDeletedProjectWithEvents_IncrementsDeletedUsage()
+    {
+        // Arrange
+        var organization = await _organizationRepository.AddAsync(_organizationData.GenerateSampleOrganization(_billingManager, _plans), o => o.ImmediateConsistency());
+
+        var project = _projectData.GenerateSampleProject();
+        project.IsDeleted = true;
+        await _projectRepository.AddAsync(project, o => o.ImmediateConsistency());
+
+        var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
+        var events = _eventData.GenerateEvents(5, organization.Id, project.Id, stack.Id).ToList();
+        await _eventRepository.AddAsync(events, o => o.ImmediateConsistency());
+
+        // Act
+        await _job.RunAsync(TestCancellationToken);
+
+        // Assert
+        var orgUsage = await _usageService.GetUsageAsync(organization.Id, null);
+        Assert.Equal(5, orgUsage.CurrentUsage.Deleted);
+        Assert.Equal(5, orgUsage.CurrentHourUsage.Deleted);
+
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+        await _usageService.SavePendingUsageAsync();
+
+        var savedOrg = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.NotNull(savedOrg);
+        Assert.Equal(5, savedOrg.Usage.Sum(u => u.Deleted));
+
+        Assert.Null(await _projectRepository.GetByIdAsync(project.Id, o => o.IncludeSoftDeletes()));
+        var allEvents = await _eventRepository.GetAllAsync();
+        Assert.DoesNotContain(allEvents.Documents, e => String.Equals(e.ProjectId, project.Id, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task RemoveProjectsAsync_SoftDeletedEmptyProject_DoesNotIncrementDeletedUsage()
+    {
+        // Arrange
+        var organization = await _organizationRepository.AddAsync(_organizationData.GenerateSampleOrganization(_billingManager, _plans), o => o.ImmediateConsistency());
+
+        var project = _projectData.GenerateSampleProject();
+        project.IsDeleted = true;
+        await _projectRepository.AddAsync(project, o => o.ImmediateConsistency());
+
+        // Act
+        await _job.RunAsync(TestCancellationToken);
+
+        // Assert
+        var orgUsage = await _usageService.GetUsageAsync(organization.Id, null);
+        Assert.Equal(0, orgUsage.CurrentUsage.Deleted);
+        Assert.Equal(0, orgUsage.CurrentHourUsage.Deleted);
+
+        Assert.Null(await _projectRepository.GetByIdAsync(project.Id, o => o.IncludeSoftDeletes()));
+    }
+
+    [Fact]
+    public async Task RemoveStacksAsync_SoftDeletedStack_IncrementsDeletedUsage()
+    {
+        // Arrange
+        var organization = await _organizationRepository.AddAsync(_organizationData.GenerateSampleOrganization(_billingManager, _plans), o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+
+        var stack = _stackData.GenerateSampleStack();
+        stack.IsDeleted = true;
+        await _stackRepository.AddAsync(stack, o => o.ImmediateConsistency());
+
+        var events = _eventData.GenerateEvents(3, organization.Id, project.Id, stack.Id).ToList();
+        await _eventRepository.AddAsync(events, o => o.ImmediateConsistency());
+
+        // Act
+        await _job.RunAsync(TestCancellationToken);
+
+        // Assert
+        var usageResponse = await _usageService.GetUsageAsync(organization.Id, project.Id);
+        Assert.Equal(3, usageResponse.CurrentUsage.Deleted);
+        Assert.Equal(3, usageResponse.CurrentHourUsage.Deleted);
+
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+        await _usageService.SavePendingUsageAsync();
+
+        var savedOrg = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.NotNull(savedOrg);
+        Assert.Equal(3, savedOrg.Usage.Sum(u => u.Deleted));
+
+        Assert.Null(await _stackRepository.GetByIdAsync(stack.Id, o => o.IncludeSoftDeletes()));
+    }
+
+    [Fact]
+    public async Task RemoveStacksAsync_MultipleProjectsSoftDeleted_TracksExactDeletedUsagePerProject()
+    {
+        // Arrange
+        var organization = await _organizationRepository.AddAsync(_organizationData.GenerateSampleOrganization(_billingManager, _plans), o => o.ImmediateConsistency());
+        var project1 = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+        var project2 = await _projectRepository.AddAsync(_projectData.GenerateProject(generateId: true, organizationId: organization.Id), o => o.ImmediateConsistency());
+
+        var stack1a = _stackData.GenerateStack(generateId: true, organizationId: organization.Id, projectId: project1.Id);
+        stack1a.IsDeleted = true;
+        var stack1b = _stackData.GenerateStack(generateId: true, organizationId: organization.Id, projectId: project1.Id);
+        stack1b.IsDeleted = true;
+        var stack2 = _stackData.GenerateStack(generateId: true, organizationId: organization.Id, projectId: project2.Id);
+        stack2.IsDeleted = true;
+        await _stackRepository.AddAsync([stack1a, stack1b, stack2], o => o.ImmediateConsistency());
+
+        await _eventRepository.AddAsync(_eventData.GenerateEvents(4, organization.Id, project1.Id, stack1a.Id), o => o.ImmediateConsistency());
+        await _eventRepository.AddAsync(_eventData.GenerateEvents(2, organization.Id, project1.Id, stack1b.Id), o => o.ImmediateConsistency());
+        await _eventRepository.AddAsync(_eventData.GenerateEvents(3, organization.Id, project2.Id, stack2.Id), o => o.ImmediateConsistency());
+
+        // Act
+        await _job.RunAsync(TestCancellationToken);
+
+        // Assert
+        var usageProject1 = await _usageService.GetUsageAsync(organization.Id, project1.Id);
+        var usageProject2 = await _usageService.GetUsageAsync(organization.Id, project2.Id);
+        Assert.Equal(6, usageProject1.CurrentUsage.Deleted);
+        Assert.Equal(3, usageProject2.CurrentUsage.Deleted);
+
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+        await _usageService.SavePendingUsageAsync();
+
+        var savedOrg = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.NotNull(savedOrg);
+        Assert.Equal(9, savedOrg.Usage.Sum(u => u.Deleted));
+    }
+
+    [Fact]
+    public async Task EnforceRetentionAsync_ExpiredEvents_DoesNotIncrementDeletedUsage()
+    {
+        // Arrange
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        _billingManager.ApplyBillingPlan(organization, _plans.FreePlan);
+        await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+
+        var options = GetService<AppOptions>();
+        var expiredDate = DateTimeOffset.UtcNow.SubtractDays(options.MaximumRetentionDays);
+
+        var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
+        await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id, expiredDate, expiredDate, expiredDate), o => o.ImmediateConsistency());
+
+        // Act
+        await _job.RunAsync(TestCancellationToken);
+
+        // Assert
+        var usageResponse = await _usageService.GetUsageAsync(organization.Id, project.Id);
+        Assert.Equal(0, usageResponse.CurrentUsage.Deleted);
+        Assert.Equal(0, usageResponse.CurrentHourUsage.Deleted);
     }
 }
