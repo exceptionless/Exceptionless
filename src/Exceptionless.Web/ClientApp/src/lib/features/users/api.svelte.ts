@@ -67,9 +67,9 @@ export function getMeQuery() {
 
     return createQuery<ViewCurrentUser, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current,
-        onSuccess: (data: ViewCurrentUser) => {
+        onSuccess: async (data: ViewCurrentUser) => {
             queryClient.setQueryData(queryKeys.id(data.id!), data);
-            setUserIdentity(data.id, data.full_name).catch(() => {});
+            await setUserIdentity(data.id, data.full_name);
         },
         queryClient,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {

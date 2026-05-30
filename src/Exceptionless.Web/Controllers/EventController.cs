@@ -1480,7 +1480,7 @@ public class EventController : RepositoryApiController<IEventRepository, Persist
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to increment deleted usage metrics for org {OrganizationId} project {ProjectId}", projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId);
+                _logger.LogWarning(ex, "Failed to increment deleted usage metrics for org {OrganizationId} project {ProjectId}: {Message}", projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, ex.Message);
             }
         }
 

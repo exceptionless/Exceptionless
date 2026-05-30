@@ -226,14 +226,22 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         var projectGroups = stacks.GroupBy(s => (s.OrganizationId, s.ProjectId)).ToList();
 
         long totalRemovedEvents = 0;
-        foreach (var projectGroup in projectGroups)
+        if (trackDeletedUsage)
         {
-            string[] stackIds = projectGroup.Select(s => s.Id).ToArray();
-            long removedEvents = await _eventRepository.RemoveAllByStackIdsAsync(stackIds);
-            totalRemovedEvents += removedEvents;
+            foreach (var projectGroup in projectGroups)
+            {
+                string[] stackIds = projectGroup.Select(s => s.Id).ToArray();
+                long removedEvents = await _eventRepository.RemoveAllByStackIdsAsync(stackIds);
+                totalRemovedEvents += removedEvents;
 
-            if (trackDeletedUsage && removedEvents > 0)
-                await _usageService.IncrementDeletedAsync(projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, (int)removedEvents);
+                if (removedEvents > 0)
+                    await _usageService.IncrementDeletedAsync(projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, (int)removedEvents);
+            }
+        }
+        else
+        {
+            string[] allStackIds = stacks.Select(s => s.Id).ToArray();
+            totalRemovedEvents = await _eventRepository.RemoveAllByStackIdsAsync(allStackIds);
         }
 
         await _stackRepository.RemoveAsync(stacks);

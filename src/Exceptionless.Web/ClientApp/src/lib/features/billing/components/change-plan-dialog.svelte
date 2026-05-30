@@ -257,7 +257,7 @@
                     }
 
                     toast.success(result.message ?? 'Your billing plan has been successfully changed.');
-                    submitFeatureUsage('organization.ChangePlan').catch(() => {});
+                    await submitFeatureUsage('organization.ChangePlan');
                     onclose(true);
 
                     return null;
