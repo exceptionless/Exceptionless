@@ -3,6 +3,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models.WorkItems;
+using Exceptionless.Tests.Extensions;
 using Foundatio.AsyncEx;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -194,8 +195,8 @@ public class OrganizationNotificationWorkItemHandlerTests : TestWithServices
 
     private async Task PublishPlanOverageAndWaitForQueueAsync(IQueue<WorkItemData> workItemQueue, PlanOverage overage, int expectedEnqueueAttempts, int expectedEnqueuedCount)
     {
-        using var enqueueAttempts = new AsyncCountdownEvent(expectedEnqueueAttempts);
-        using var enqueued = new AsyncCountdownEvent(expectedEnqueuedCount);
+        var enqueueAttempts = new AsyncCountdownEvent(expectedEnqueueAttempts);
+        var enqueued = new AsyncCountdownEvent(expectedEnqueuedCount);
         using var enqueueAttemptSubscription = workItemQueue.Enqueuing.AddHandler((_, _) =>
         {
             enqueueAttempts.Signal();
