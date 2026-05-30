@@ -3,6 +3,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models.WorkItems;
+using Foundatio.AsyncEx;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
@@ -50,7 +51,7 @@ public class OrganizationNotificationWorkItemHandlerTests : TestWithServices
         await SubscribeToPlanOverageAsync(workItemQueue, subscriberCount: 6);
 
         // Act
-        await MessagePublisher.PublishAsync(new PlanOverage { OrganizationId = PrimaryOrganizationId }, cancellationToken: TestContext.Current.CancellationToken);
+        await PublishPlanOverageAndWaitForQueueAsync(workItemQueue, new PlanOverage { OrganizationId = PrimaryOrganizationId }, expectedEnqueueAttempts: 6, expectedEnqueuedCount: 6);
 
         // Assert
         var queueStats = await workItemQueue.GetQueueStatsAsync();
@@ -66,7 +67,7 @@ public class OrganizationNotificationWorkItemHandlerTests : TestWithServices
         await SubscribeToPlanOverageAsync(workItemQueue, subscriberCount: 6);
 
         // Act
-        await MessagePublisher.PublishAsync(new PlanOverage { OrganizationId = QueueDuplicateDetectionOrganizationId }, cancellationToken: TestContext.Current.CancellationToken);
+        await PublishPlanOverageAndWaitForQueueAsync(workItemQueue, new PlanOverage { OrganizationId = QueueDuplicateDetectionOrganizationId }, expectedEnqueueAttempts: 6, expectedEnqueuedCount: 1);
 
         // Assert
         var queueStats = await workItemQueue.GetQueueStatsAsync();
@@ -118,7 +119,7 @@ public class OrganizationNotificationWorkItemHandlerTests : TestWithServices
         await SubscribeToPlanOverageAsync(workItemQueue, subscriberCount: 1);
 
         // Act
-        await MessagePublisher.PublishAsync(new PlanOverage { OrganizationId = HourlyOrganizationId, IsHourly = true }, cancellationToken: TestContext.Current.CancellationToken);
+        await PublishPlanOverageAndWaitForQueueAsync(workItemQueue, new PlanOverage { OrganizationId = HourlyOrganizationId, IsHourly = true }, expectedEnqueueAttempts: 1, expectedEnqueuedCount: 1);
 
         // Assert
         var queueEntry = await workItemQueue.DequeueAsync(TestContext.Current.CancellationToken);
@@ -189,6 +190,26 @@ public class OrganizationNotificationWorkItemHandlerTests : TestWithServices
             var startupAction = new EnqueueOrganizationNotificationOnPlanOverage(workItemQueue, MessageSubscriber, GetService<ILoggerFactory>());
             await startupAction.RunAsync();
         }
+    }
+
+    private async Task PublishPlanOverageAndWaitForQueueAsync(IQueue<WorkItemData> workItemQueue, PlanOverage overage, int expectedEnqueueAttempts, int expectedEnqueuedCount)
+    {
+        using var enqueueAttempts = new AsyncCountdownEvent(expectedEnqueueAttempts);
+        using var enqueued = new AsyncCountdownEvent(expectedEnqueuedCount);
+        using var enqueueAttemptSubscription = workItemQueue.Enqueuing.AddHandler((_, _) =>
+        {
+            enqueueAttempts.Signal();
+            return Task.CompletedTask;
+        });
+        using var enqueuedSubscription = workItemQueue.Enqueued.AddHandler((_, _) =>
+        {
+            enqueued.Signal();
+            return Task.CompletedTask;
+        });
+
+        await MessagePublisher.PublishAsync(overage, cancellationToken: TestContext.Current.CancellationToken);
+        await enqueueAttempts.WaitAsync(TimeSpan.FromSeconds(5));
+        await enqueued.WaitAsync(TimeSpan.FromSeconds(5));
     }
 
     private InMemoryQueue<WorkItemData> CreateWorkItemQueue(params IQueueBehavior<WorkItemData>[] behaviors)

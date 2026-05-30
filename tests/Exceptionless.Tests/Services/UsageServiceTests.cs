@@ -7,7 +7,6 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Tests.Extensions;
 using Foundatio.AsyncEx;
-using Foundatio.Caching;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Xunit;
@@ -22,7 +21,6 @@ public sealed class UsageServiceTests : IntegrationTestsBase
     private readonly UsageService _usageService;
     private readonly NotificationService _notificationService;
     private readonly BillingPlans _plans;
-    private readonly ICacheClient _cache;
 
     public UsageServiceTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -33,7 +31,6 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectRepository = GetService<IProjectRepository>();
         _plans = GetService<BillingPlans>();
-        _cache = GetService<ICacheClient>();
     }
 
     private Task SetMonthlySentMarkerAsync(string organizationId)
