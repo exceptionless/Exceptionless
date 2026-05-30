@@ -76,6 +76,37 @@ public sealed class UsageServiceTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task HandleOrganizationChangeAsync_WhenMonthlyPlanLimitIncreasesButOrganizationIsStillOverLimit_ShouldKeepOverageNotificationSentMarker()
+    {
+        // Arrange
+        var original = new Organization
+        {
+            Id = "664ec4c1f12e4f2b7a0d3005",
+            Name = "Primary Organization",
+            PlanId = _plans.SmallPlan.Id,
+            MaxEventsPerMonth = 100
+        };
+        original.GetCurrentUsage(TimeProvider).Total = 250;
+
+        var modified = new Organization
+        {
+            Id = original.Id,
+            Name = original.Name,
+            PlanId = _plans.MediumPlan.Id,
+            MaxEventsPerMonth = 200
+        };
+        modified.GetCurrentUsage(TimeProvider).Total = 250;
+
+        await SetMonthlySentMarkerAsync(original.Id);
+
+        // Act
+        await _usageService.HandleOrganizationChangeAsync(modified, original);
+
+        // Assert
+        Assert.True(await MonthlySentMarkerExistsAsync(original.Id));
+    }
+
+    [Fact]
     public async Task HandleOrganizationChangeAsync_WhenPlanChangesToUnlimited_ShouldResetOverageNotificationSentMarker()
     {
         // Arrange

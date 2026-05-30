@@ -229,8 +229,10 @@ public class UsageService
         bool isMonthlyLimitIncrease = modifiedMaxEvents < 0 || (originalMaxEvents >= 0 && modifiedMaxEvents > originalMaxEvents);
         if (isMonthlyLimitIncrease)
         {
-            // A higher monthly limit ends the current overage state: allow a future monthly overage email and clear the hourly throttle window.
-            await _notificationService.RemoveOrganizationNotificationSentAsync(modified.Id, isOverMonthlyLimit: true);
+            // A higher monthly limit only resets monthly notification state when it actually ends the current overage.
+            if (!modified.IsOverMonthlyLimit(_timeProvider))
+                await _notificationService.RemoveOrganizationNotificationSentAsync(modified.Id, isOverMonthlyLimit: true);
+
             await _cache.RemoveAsync(GetThrottledKey(utcNow, modified.Id));
             return;
         }
