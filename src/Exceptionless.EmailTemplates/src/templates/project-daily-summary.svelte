@@ -1,5 +1,5 @@
 <script module lang="ts">
-    import { Button, Text, Heading, Section, Link } from '@better-svelte-email/components';
+    import { Button, Text, Heading, Section, Row, Column, Link } from '@better-svelte-email/components';
     import EmailLayout from '../components/EmailLayout.svelte';
     import { wrapJsonLd } from '../lib/json-ld';
     import ActionsFooter from '../components/ActionsFooter.svelte';
@@ -40,11 +40,55 @@
 
             {@html '{{#if HasSubmittedEvents}}{{#if Blocked}}'}
             <Section class="my-4">
-                {@html '<table width="100%" cellpadding="0" cellspacing="0" role="presentation"><tbody><tr><td width="25%" style="padding:4px;vertical-align:top"><div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center"><b>Count</b><div style="font-size:34px;font-weight:400;text-align:center">{{Count}}</div></div></td><td width="25%" style="padding:4px;vertical-align:top"><div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center"><b>Unique</b><div style="font-size:34px;font-weight:400;text-align:center">{{Unique}}</div></div></td><td width="25%" style="padding:4px;vertical-align:top"><div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center"><b>New</b><div style="font-size:34px;font-weight:400;text-align:center">{{New}}</div></div></td><td width="25%" style="padding:4px;vertical-align:top"><div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center"><b>Discarded</b><div style="font-size:34px;font-weight:400;text-align:center">{{Blocked}}</div></div></td></tr></tbody></table>'}
+                <Row>
+                    <Column width="25%" style="padding:4px;vertical-align:top">
+                        <div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center">
+                            <b>Count</b>
+                            <div style="font-size:34px;font-weight:400;text-align:center">{@html '{{Count}}'}</div>
+                        </div>
+                    </Column>
+                    <Column width="25%" style="padding:4px;vertical-align:top">
+                        <div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center">
+                            <b>Unique</b>
+                            <div style="font-size:34px;font-weight:400;text-align:center">{@html '{{Unique}}'}</div>
+                        </div>
+                    </Column>
+                    <Column width="25%" style="padding:4px;vertical-align:top">
+                        <div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center">
+                            <b>New</b>
+                            <div style="font-size:34px;font-weight:400;text-align:center">{@html '{{New}}'}</div>
+                        </div>
+                    </Column>
+                    <Column width="25%" style="padding:4px;vertical-align:top">
+                        <div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center">
+                            <b>Discarded</b>
+                            <div style="font-size:34px;font-weight:400;text-align:center">{@html '{{Blocked}}'}</div>
+                        </div>
+                    </Column>
+                </Row>
             </Section>
             {@html '{{else}}'}
             <Section class="my-4">
-                {@html '<table width="100%" cellpadding="0" cellspacing="0" role="presentation"><tbody><tr><td width="33%" style="padding:4px;vertical-align:top"><div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center"><b>Count</b><div style="font-size:34px;font-weight:400;text-align:center">{{Count}}</div></div></td><td width="33%" style="padding:4px;vertical-align:top"><div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center"><b>Unique</b><div style="font-size:34px;font-weight:400;text-align:center">{{Unique}}</div></div></td><td width="34%" style="padding:4px;vertical-align:top"><div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center"><b>New</b><div style="font-size:34px;font-weight:400;text-align:center">{{New}}</div></div></td></tr></tbody></table>'}
+                <Row>
+                    <Column width="33%" style="padding:4px;vertical-align:top">
+                        <div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center">
+                            <b>Count</b>
+                            <div style="font-size:34px;font-weight:400;text-align:center">{@html '{{Count}}'}</div>
+                        </div>
+                    </Column>
+                    <Column width="33%" style="padding:4px;vertical-align:top">
+                        <div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center">
+                            <b>Unique</b>
+                            <div style="font-size:34px;font-weight:400;text-align:center">{@html '{{Unique}}'}</div>
+                        </div>
+                    </Column>
+                    <Column width="34%" style="padding:4px;vertical-align:top">
+                        <div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center">
+                            <b>New</b>
+                            <div style="font-size:34px;font-weight:400;text-align:center">{@html '{{New}}'}</div>
+                        </div>
+                    </Column>
+                </Row>
             </Section>
             {@html '{{/if}}{{/if}}'}
 
@@ -64,14 +108,7 @@
             {@html '{{#if Blocked}}'}
             <Section class="border border-alert bg-alert-bg p-[10px] my-4 rounded-[3px]">
                 <Text class="text-base text-dark leading-[1.3]"
-                    >{@html '<strong>{{Blocked}} events</strong> were discarded due to throttling.'}
-                    <Link
-                        href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/upgrade"
-                        class="text-primary no-underline">Upgrade now</Link
-                    > to increase your limits. <Link
-                        href="https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled"
-                        class="text-primary no-underline">Click here to learn more about throttling.</Link
-                    ></Text
+                    >{@html '<strong>{{Blocked}} events</strong> were discarded due to throttling. <a href="{{BaseUrl}}/organization/{{OrganizationId}}/upgrade" target="_blank" style="color:#5E9A00;text-decoration:none">Upgrade now</a> to increase your limits. <a href="https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled" target="_blank" style="color:#5E9A00;text-decoration:none">Click here to learn more about throttling.</a>'}</Text
                 >
                 <Section class="text-center">
                     <Button
