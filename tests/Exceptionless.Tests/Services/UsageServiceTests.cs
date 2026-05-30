@@ -1,9 +1,9 @@
 using System.Diagnostics;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.DateTimeExtensions;
@@ -39,14 +39,14 @@ public sealed class UsageServiceTests : IntegrationTestsBase
     private Task SetMonthlySentMarkerAsync(string organizationId)
     {
         return _cache.SetAsync(
-            OrganizationNotificationWorkItem.GetNotificationSentKey(organizationId, isOverMonthlyLimit: true),
+            OrganizationNotificationWorkItemHandler.GetNotificationSentKey(organizationId, isOverMonthlyLimit: true),
             true,
             TimeProvider.GetUtcNow().UtcDateTime.EndOfMonth());
     }
 
     private Task<bool> MonthlySentMarkerExistsAsync(string organizationId)
     {
-        return _cache.ExistsAsync(OrganizationNotificationWorkItem.GetNotificationSentKey(organizationId, isOverMonthlyLimit: true));
+        return _cache.ExistsAsync(OrganizationNotificationWorkItemHandler.GetNotificationSentKey(organizationId, isOverMonthlyLimit: true));
     }
 
     [Fact]

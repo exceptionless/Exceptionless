@@ -1,7 +1,7 @@
 ﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
@@ -227,7 +227,7 @@ public class UsageService
         bool isMonthlyLimitIncrease = modifiedMaxEvents < 0 || (originalMaxEvents >= 0 && modifiedMaxEvents > originalMaxEvents);
         if (isMonthlyLimitIncrease)
         {
-            await _cache.RemoveAsync(OrganizationNotificationWorkItem.GetNotificationSentKey(modified.Id, isOverMonthlyLimit: true));
+            await _cache.RemoveAsync(OrganizationNotificationWorkItemHandler.GetNotificationSentKey(modified.Id, isOverMonthlyLimit: true));
             await _cache.RemoveAsync(GetThrottledKey(utcNow, modified.Id));
             return;
         }
@@ -236,7 +236,7 @@ public class UsageService
         bool isOverMonthlyLimit = modified.IsOverMonthlyLimit(_timeProvider);
         if (!wasOverMonthlyLimit && isOverMonthlyLimit)
         {
-            await _cache.RemoveAsync(OrganizationNotificationWorkItem.GetNotificationSentKey(modified.Id, isOverMonthlyLimit: true));
+            await _cache.RemoveAsync(OrganizationNotificationWorkItemHandler.GetNotificationSentKey(modified.Id, isOverMonthlyLimit: true));
             await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = modified.Id });
         }
 

@@ -17,9 +17,4 @@ public record OrganizationNotificationWorkItem : IHaveUniqueIdentifier
     {
         return $"Organization:{organizationId}:notification:{(isOverMonthlyLimit ? MonthlyNotificationType : HourlyNotificationType)}";
     }
-
-    public static string GetNotificationSentKey(string organizationId, bool isOverMonthlyLimit)
-    {
-        return $"{GetNotificationKey(organizationId, isOverMonthlyLimit)}-sent";
-    }
 }

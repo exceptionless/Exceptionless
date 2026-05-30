@@ -30,7 +30,7 @@ namespace Exceptionless.Tests.Jobs.WorkItemHandlers;
 ///
 /// Fix: queue-level dedup (<see cref="OrganizationNotificationWorkItem.UniqueIdentifier"/> +
 /// <c>DuplicateDetectionQueueBehavior</c>) collapses the fanout at enqueue time, and
-/// handler-level idempotency (per-org distributed lock + sent marker) ensures that stale
+/// handler-level idempotency (per-organization distributed lock + sent marker) ensures that stale
 /// duplicates already in the queue when the fix deployed cannot retrigger an email.
 /// </summary>
 public class OrganizationNotificationWorkItemHandlerTests : TestWithServices
@@ -240,13 +240,12 @@ public class OrganizationNotificationWorkItemHandlerTests : TestWithServices
     {
         var options = new InMemoryQueueOptions<WorkItemData>
         {
+            Behaviors = behaviors,
             Serializer = GetService<ISerializer>(),
             TimeProvider = TimeProvider,
+            ResiliencePolicyProvider = GetService<IResiliencePolicyProvider>(),
             LoggerFactory = GetService<ILoggerFactory>()
         };
-
-        if (behaviors.Length > 0)
-            options.Behaviors = behaviors;
 
         return new InMemoryQueue<WorkItemData>(options);
     }

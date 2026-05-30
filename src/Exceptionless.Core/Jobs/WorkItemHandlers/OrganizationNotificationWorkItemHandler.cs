@@ -65,7 +65,7 @@ public class EnqueueOrganizationNotificationOnPlanOverage : IStartupAction
 ///     queue entry, preventing duplicates from being enqueued in the first place.
 ///   </description></item>
 ///   <item><description>
-///     Handler-level idempotency: a distributed lock serialises concurrent processing, and a
+///     Handler-level idempotency: a distributed lock serializes concurrent processing, and a
 ///     sent marker (<see cref="GetNotificationSentKey"/>) ensures that any stale duplicates
 ///     already in the queue before the fix deployed cannot re-trigger an email in the same UTC
 ///     month. The marker is reset when a monthly plan limit change re-evaluates the overage state.
@@ -203,6 +203,6 @@ public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
 
     public static string GetNotificationSentKey(string organizationId, bool isOverMonthlyLimit)
     {
-        return OrganizationNotificationWorkItem.GetNotificationSentKey(organizationId, isOverMonthlyLimit);
+        return $"{OrganizationNotificationWorkItem.GetNotificationKey(organizationId, isOverMonthlyLimit)}-sent";
     }
 }
