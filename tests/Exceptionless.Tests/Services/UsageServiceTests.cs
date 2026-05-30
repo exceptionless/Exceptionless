@@ -186,7 +186,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         await _usageService.HandleOrganizationChangeAsync(modified, original);
 
         // Assert
-        await Assert.ThrowsAsync<TimeoutException>(() => countdown.WaitAsync(TimeSpan.FromMilliseconds(150)));
+        await Assert.ThrowsAsync<TimeoutException>(() => countdown.WaitAsync(TimeSpan.FromSeconds(1)));
         Assert.True(await MonthlySentMarkerExistsAsync(original.Id));
     }
 

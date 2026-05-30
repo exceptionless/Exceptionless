@@ -127,10 +127,10 @@ public class OrganizationNotificationWorkItemHandler : WorkItemHandlerBase
     public override async Task HandleItemAsync(WorkItemContext context)
     {
         var wi = context.GetData<OrganizationNotificationWorkItem>()!;
+        Log.LogInformation("Received organization notification work item for: {OrganizationId} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", wi.OrganizationId, wi.IsOverHourlyLimit, wi.IsOverMonthlyLimit);
+
         if (!ShouldSendNotificationEmail(wi))
             return;
-
-        Log.LogInformation("Received organization notification work item for: {OrganizationId} IsOverHourlyLimit: {IsOverHourlyLimit} IsOverMonthlyLimit: {IsOverMonthlyLimit}", wi.OrganizationId, wi.IsOverHourlyLimit, wi.IsOverMonthlyLimit);
 
         var organization = await _organizationRepository.GetByIdAsync(wi.OrganizationId, o => o.Cache());
         if (organization is null)
