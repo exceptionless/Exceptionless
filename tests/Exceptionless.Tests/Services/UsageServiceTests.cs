@@ -1,11 +1,15 @@
 using System.Diagnostics;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Extensions;
 using Foundatio.AsyncEx;
+using Foundatio.Caching;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Xunit;
@@ -19,6 +23,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
     private readonly IProjectRepository _projectRepository;
     private readonly UsageService _usageService;
     private readonly BillingPlans _plans;
+    private readonly ICacheClient _cache;
 
     public UsageServiceTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -28,6 +33,161 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectRepository = GetService<IProjectRepository>();
         _plans = GetService<BillingPlans>();
+        _cache = GetService<ICacheClient>();
+    }
+
+    private Task SetMonthlySentMarkerAsync(string organizationId)
+    {
+        return _cache.SetAsync(
+            OrganizationNotificationWorkItem.GetNotificationSentKey(organizationId, isOverMonthlyLimit: true),
+            true,
+            TimeProvider.GetUtcNow().UtcDateTime.EndOfMonth());
+    }
+
+    private Task<bool> MonthlySentMarkerExistsAsync(string organizationId)
+    {
+        return _cache.ExistsAsync(OrganizationNotificationWorkItem.GetNotificationSentKey(organizationId, isOverMonthlyLimit: true));
+    }
+
+    [Fact]
+    public async Task HandleOrganizationChangeAsync_WhenMonthlyPlanLimitIncreases_ShouldResetOverageNotificationSentMarker()
+    {
+        // Arrange
+        var original = new Organization
+        {
+            Id = "664ec4c1f12e4f2b7a0d3001",
+            Name = "Primary Organization",
+            PlanId = _plans.SmallPlan.Id,
+            MaxEventsPerMonth = 100
+        };
+
+        var modified = new Organization
+        {
+            Id = original.Id,
+            Name = original.Name,
+            PlanId = _plans.MediumPlan.Id,
+            MaxEventsPerMonth = 200
+        };
+
+        await SetMonthlySentMarkerAsync(original.Id);
+
+        // Act
+        await _usageService.HandleOrganizationChangeAsync(modified, original);
+
+        // Assert
+        Assert.False(await MonthlySentMarkerExistsAsync(original.Id));
+    }
+
+    [Fact]
+    public async Task HandleOrganizationChangeAsync_WhenPlanChangesToUnlimited_ShouldResetOverageNotificationSentMarker()
+    {
+        // Arrange
+        var original = new Organization
+        {
+            Id = "664ec4c1f12e4f2b7a0d3002",
+            Name = "Primary Organization",
+            PlanId = _plans.EnterprisePlan.Id,
+            MaxEventsPerMonth = _plans.EnterprisePlan.MaxEventsPerMonth
+        };
+
+        var modified = new Organization
+        {
+            Id = original.Id,
+            Name = original.Name,
+            PlanId = _plans.UnlimitedPlan.Id,
+            MaxEventsPerMonth = _plans.UnlimitedPlan.MaxEventsPerMonth
+        };
+
+        await SetMonthlySentMarkerAsync(original.Id);
+
+        // Act
+        await _usageService.HandleOrganizationChangeAsync(modified, original);
+
+        // Assert
+        Assert.False(await MonthlySentMarkerExistsAsync(original.Id));
+    }
+
+    [Fact]
+    public async Task HandleOrganizationChangeAsync_WhenPlanLimitDecreasesBelowCurrentUsage_ShouldResetMarkerAndPublishMonthlyOverage()
+    {
+        // Arrange
+        var messageBus = GetService<IMessageBus>();
+        var countdown = new AsyncCountdownEvent(1);
+        PlanOverage? overage = null;
+        await messageBus.SubscribeAsync<PlanOverage>(po =>
+        {
+            overage = po;
+            countdown.Signal();
+        }, TestCancellationToken);
+
+        var original = new Organization
+        {
+            Id = "664ec4c1f12e4f2b7a0d3003",
+            Name = "Primary Organization",
+            PlanId = _plans.MediumPlan.Id,
+            MaxEventsPerMonth = 200
+        };
+
+        var modified = new Organization
+        {
+            Id = original.Id,
+            Name = original.Name,
+            PlanId = _plans.SmallPlan.Id,
+            MaxEventsPerMonth = 100
+        };
+        modified.GetCurrentUsage(TimeProvider).Total = 150;
+
+        await SetMonthlySentMarkerAsync(original.Id);
+
+        // Act
+        await _usageService.HandleOrganizationChangeAsync(modified, original);
+        await countdown.WaitAsync(TimeSpan.FromMilliseconds(150));
+
+        // Assert
+        Assert.False(await MonthlySentMarkerExistsAsync(original.Id));
+        Assert.NotNull(overage);
+        Assert.Equal(modified.Id, overage.OrganizationId);
+        Assert.False(overage.IsHourly);
+    }
+
+    [Fact]
+    public async Task HandleOrganizationChangeAsync_WhenAlreadyOverMonthlyLimitAndPlanLimitDecreases_ShouldKeepMarkerAndNotPublishMonthlyOverage()
+    {
+        // Arrange
+        var messageBus = GetService<IMessageBus>();
+        var countdown = new AsyncCountdownEvent(1);
+        await messageBus.SubscribeAsync<PlanOverage>(po =>
+        {
+            if (!po.IsHourly)
+                countdown.Signal();
+        }, TestCancellationToken);
+
+        var original = new Organization
+        {
+            Id = "664ec4c1f12e4f2b7a0d3004",
+            Name = "Primary Organization",
+            PlanId = _plans.MediumPlan.Id,
+            MaxEventsPerMonth = 200
+        };
+        original.GetCurrentUsage(TimeProvider).Total = 250;
+
+        var modified = new Organization
+        {
+            Id = original.Id,
+            Name = original.Name,
+            PlanId = _plans.SmallPlan.Id,
+            MaxEventsPerMonth = 100
+        };
+        modified.GetCurrentUsage(TimeProvider).Total = 250;
+
+        await SetMonthlySentMarkerAsync(original.Id);
+
+        // Act
+        await _usageService.HandleOrganizationChangeAsync(modified, original);
+
+        // Assert
+        await Assert.ThrowsAsync<TimeoutException>(() => countdown.WaitAsync(TimeSpan.FromMilliseconds(150)));
+        Assert.True(await MonthlySentMarkerExistsAsync(original.Id));
     }
 
     [Fact]

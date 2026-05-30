@@ -1,6 +1,7 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
@@ -223,28 +224,36 @@ public class UsageService
         if (modifiedMaxEvents == originalMaxEvents)
             return;
 
-        if (modifiedMaxEvents > originalMaxEvents)
+        bool isMonthlyLimitIncrease = modifiedMaxEvents < 0 || (originalMaxEvents >= 0 && modifiedMaxEvents > originalMaxEvents);
+        if (isMonthlyLimitIncrease)
         {
-            // remove is throttled flag
+            await _cache.RemoveAsync(OrganizationNotificationWorkItem.GetNotificationSentKey(modified.Id, isOverMonthlyLimit: true));
             await _cache.RemoveAsync(GetThrottledKey(utcNow, modified.Id));
+            return;
         }
-        else
+
+        bool wasOverMonthlyLimit = original.IsOverMonthlyLimit(_timeProvider);
+        bool isOverMonthlyLimit = modified.IsOverMonthlyLimit(_timeProvider);
+        if (!wasOverMonthlyLimit && isOverMonthlyLimit)
         {
-            var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(utcNow, modified.Id));
-            if (!bucketTotal.HasValue)
-                return;
+            await _cache.RemoveAsync(OrganizationNotificationWorkItem.GetNotificationSentKey(modified.Id, isOverMonthlyLimit: true));
+            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = modified.Id });
+        }
 
-            int bucketLimit = GetBucketEventLimit(modifiedMaxEvents);
+        var bucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(utcNow, modified.Id));
+        if (!bucketTotal.HasValue)
+            return;
 
-            // unlimited
-            if (bucketLimit < 0)
-                return;
+        int bucketLimit = GetBucketEventLimit(modifiedMaxEvents);
 
-            if (bucketTotal.Value >= bucketLimit)
-            {
-                await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = modified.Id, IsHourly = true });
-                await _cache.SetAsync(GetThrottledKey(utcNow, modified.Id), true, TimeSpan.FromMinutes(5));
-            }
+        // unlimited
+        if (bucketLimit < 0)
+            return;
+
+        if (bucketTotal.Value >= bucketLimit)
+        {
+            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = modified.Id, IsHourly = true });
+            await _cache.SetAsync(GetThrottledKey(utcNow, modified.Id), true, TimeSpan.FromMinutes(5));
         }
     }
 
